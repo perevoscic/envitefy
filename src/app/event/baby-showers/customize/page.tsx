@@ -1191,7 +1191,7 @@ export default function BabyShowerTemplateCustomizePage() {
           <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
             Typography
           </label>
-          <div className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 gap-3 max-h-none overflow-visible pr-1">
             {Object.entries(FONTS).map(([key, font]) => (
               <button
                 key={key}

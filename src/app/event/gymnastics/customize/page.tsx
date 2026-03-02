@@ -6,8 +6,6 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
-  ChevronDown,
-  ChevronUp,
   Edit2,
   Image as ImageIcon,
   Menu,
@@ -44,6 +42,7 @@ import {
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
+import { DesignPanel } from "@/components/design-panel";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 
@@ -61,6 +60,9 @@ type ThemeSpec = {
   text: string;
   accent: string;
   preview: string;
+  /** Optional: two-band swatch (left/right) for strict 2-color display */
+  previewFrom?: string;
+  previewTo?: string;
 };
 
 type AdvancedSectionRenderContext = {
@@ -283,30 +285,22 @@ const InputGroup = ({
 
 InputGroup.displayName = "InputGroup";
 
-const ThemeSwatch = ({
-  theme,
-  active,
-  onClick,
-}: {
-  theme: ThemeSpec;
-  active: boolean;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className={`relative overflow-hidden rounded-lg border text-left transition-all ${
-      active
-        ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md"
-        : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
-    }`}
-  >
-    <div className={`h-12 w-full ${theme.preview} border-b border-black/5`} />
-    <div className="p-3">
-      <div className="text-sm font-semibold text-slate-700">{theme.name}</div>
-      <div className="text-xs text-slate-400">Palette preset</div>
-    </div>
-  </button>
-);
+/** Where each editor section appears on the generated public event page */
+const SECTION_SHOWS_ON_EVENT: Record<string, string> = {
+  headline: "Event header (title, date, time, venue)",
+  details: "Meet Essentials card + description in Meet Details tab",
+  design: "Theme & typography across the whole page",
+  images: "Hero image and header area",
+  roster: "Team Roster & Attendance section",
+  meet: "Meet Details tab (warm-up, march-in, apparatus, judging, scores link)",
+  practice: "Practice Planner section",
+  logistics: "Logistics & Travel section",
+  gear: "Gear & Uniform section",
+  volunteers: "Volunteers & Carpool section",
+  announcements: "Announcements section",
+  rsvp: "Attendance / RSVP area",
+  passcode: "Access gate for the whole page (when enabled)",
+};
 
 const MenuCard = ({
   title,
@@ -314,12 +308,15 @@ const MenuCard = ({
   icon,
   status,
   onClick,
+  showsOnEvent,
 }: {
   title: string;
   desc: string;
   icon: React.ReactNode;
   status?: "not-started" | "in-progress" | "ready";
   onClick: () => void;
+  /** Where this section appears on the generated event page */
+  showsOnEvent?: string;
 }) => (
   <button
     type="button"
@@ -357,6 +354,11 @@ const MenuCard = ({
         </div>
       </div>
       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+      {showsOnEvent && (
+        <p className="text-[11px] text-slate-400 mt-1.5 italic">
+          Shows on event: {showsOnEvent}
+        </p>
+      )}
     </div>
   </button>
 );
@@ -440,15 +442,16 @@ function GymnasticsEditorLayout({
   showBack?: boolean;
 }) {
   return (
-    <div className="animate-fade-in-right">
-      <div className="mb-6 pb-4 border-b border-slate-100">
+    <div className="animate-fade-in-right" style={{ pointerEvents: "auto" }} data-no-scroll-capture>
+      <div className="mb-6 pb-4 border-b border-slate-100 relative z-10" style={{ pointerEvents: "auto" }}>
         {!isEmbed && (
           <div className="flex items-center">
             <div className="mr-3 w-8">
               {showBack && (
                 <button
+                  type="button"
                   onClick={onBack}
-                  className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+                  className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -462,17 +465,38 @@ function GymnasticsEditorLayout({
         <h2
           className={`text-lg font-serif font-bold text-slate-800 ${isEmbed && showBack ? "flex items-center gap-2" : "mt-2 text-center"}`}
         >
-          {isEmbed && showBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              className="p-1.5 -ml-1.5 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-              aria-label="Back to menu"
-            >
-              <ChevronLeft size={20} />
-            </button>
+          {isEmbed && showBack ? (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onBack();
+                }}
+                className="min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer touch-manipulation"
+                aria-label="Back to menu"
+                style={{ pointerEvents: "auto" }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onBack();
+                }}
+                className="flex-1 text-left hover:bg-slate-100 rounded px-2 py-2 -mx-1 transition-colors cursor-pointer touch-manipulation min-h-[44px] flex items-center"
+                aria-label="Back to edit meet options"
+                style={{ pointerEvents: "auto" }}
+              >
+                {title}
+              </button>
+            </>
+          ) : (
+            title
           )}
-          {title}
         </h2>
       </div>
       {children}
@@ -538,6 +562,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       passcodeRequired: false,
       passcode: "",
       passcodeHint: "",
+      simpleDesignTokens: null as any,
       extra: Object.fromEntries(
         config.detailFields.map((f) => [f.key, ""])
       ),
@@ -556,20 +581,42 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
     const [discoverError, setDiscoverError] = useState("");
-    const [loadingExisting, setLoadingExisting] = useState(false);
+    const [loadingExisting, setLoadingExisting] = useState(() =>
+      Boolean(search?.get("edit"))
+    );
     const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<
       Record<string, any> | null
     >(null);
     const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(false);
-    const [themesExpanded, setThemesExpanded] = useState(
-      config.themesExpandedByDefault ?? true
-    );
     const [isInIframe, setIsInIframe] = useState(false);
     useEffect(() => {
       if (typeof window !== "undefined") {
         setIsInIframe(window.self !== window.top);
       }
     }, []);
+
+    // When embedded next to the live event page, broadcast theme previews to parent
+    useEffect(() => {
+      if (!isEmbed || !editEventId) return;
+      if (typeof window === "undefined") return;
+      const themePayload =
+        config.themes.find((t) => t.id === themeId) || config.themes[0];
+      if (!themePayload) return;
+      try {
+        window.parent?.postMessage(
+          {
+            type: "envitefy:discovery-theme-preview",
+            eventId: editEventId,
+            themeId,
+            theme: themePayload,
+            designTokens: data.simpleDesignTokens || null,
+          },
+          "*"
+        );
+      } catch {
+        // ignore cross-origin errors in preview mode
+      }
+    }, [themeId, isEmbed, editEventId, config.themes, data.simpleDesignTokens]);
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -587,7 +634,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const currentTheme =
       config.themes.find((t) => t.id === themeId) || config.themes[0];
-
     const selectedFont =
       GYM_FONTS.find((f) => f.id === data.fontId) || GYM_FONTS[0];
     const selectedSize =
@@ -1007,6 +1053,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               typeof accessControl?.passcodeHint === "string"
                 ? accessControl.passcodeHint
                 : "",
+            simpleDesignTokens:
+              existing.designTokens ||
+              existing.customFields?.designTokens ||
+              prev.simpleDesignTokens ||
+              null,
             extra: {
               ...prev.extra,
               ...(existing.extra || {}),
@@ -1140,12 +1191,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
       return () => observer.disconnect();
     }, [navItems]);
-
-    useEffect(() => {
-      if (activeView === "design") {
-        setThemesExpanded(true);
-      }
-    }, [activeView]);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -1281,10 +1326,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             customFields: {
               ...data.extra,
               team: data.hostGym || data.extra?.team || "",
+              ...(data.simpleDesignTokens
+                ? { designTokens: data.simpleDesignTokens }
+                : {}),
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
             heroImage: heroToSave,
+            ...(data.simpleDesignTokens
+              ? { designTokens: data.simpleDesignTokens }
+              : {}),
             themeId: validThemeId,
             theme: themeToSave,
             fontId: validFontId,
@@ -1351,21 +1402,26 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             fontSize: result?.data?.fontSize,
           });
 
-          // When embedded in event page iframe, tell parent to refresh then navigate iframe to event URL
+          const redirectUrl = buildEventPath(editEventId, payload.title, {
+            updated: true,
+            t: Date.now(),
+          });
+
+          // When embedded in event page iframe, tell parent to exit edit mode and navigate.
           if (typeof window !== "undefined" && (window as any).parent !== window) {
             try {
               (window as any).parent.postMessage(
-                { type: "envitefy:discovery-edit-saved", eventId: editEventId },
+                {
+                  type: "envitefy:discovery-edit-saved",
+                  eventId: editEventId,
+                  redirectUrl,
+                },
                 window.location.origin
               );
             } catch {}
+            return;
           }
-          router.push(
-            buildEventPath(editEventId, payload.title, {
-              updated: true,
-              t: Date.now(),
-            })
-          );
+          router.push(redirectUrl);
         } else {
           const res = await fetch("/api/history", {
             method: "POST",
@@ -1404,6 +1460,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.passcodeRequired,
       data.passcode,
       data.passcodeHint,
+      data.simpleDesignTokens,
       advancedState,
       locationParts,
       config.category,
@@ -1602,6 +1659,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<Type size={18} />}
             status={headlineStatus}
             onClick={() => setActiveView("headline")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.headline}
           />
           <MenuCard
             title="Details"
@@ -1609,6 +1667,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<Edit2 size={18} />}
             status={detailsStatus}
             onClick={() => setActiveView("details")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.details}
           />
           <MenuCard
             title="Design"
@@ -1616,6 +1675,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<Palette size={18} />}
             status={themeId ? "ready" : "not-started"}
             onClick={() => setActiveView("design")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.design}
           />
           <MenuCard
             title="Images"
@@ -1623,6 +1683,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<ImageIcon size={18} />}
             status={data.hero ? "ready" : "not-started"}
             onClick={() => setActiveView("images")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.images}
           />
 
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1 pt-2">
@@ -1657,6 +1718,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   icon={<Edit2 size={18} />}
                   status={advancedStatus(sectionEnabled)}
                   onClick={() => setActiveView(section.id)}
+                  showsOnEvent={SECTION_SHOWS_ON_EVENT[section.id]}
                 />
               );
             })}
@@ -1670,6 +1732,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<CheckSquare size={18} />}
             status={rsvpStatus}
             onClick={() => setActiveView("rsvp")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.rsvp}
           />
           <MenuCard
             title="Passcode"
@@ -1677,6 +1740,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<LinkIcon size={18} />}
             status={passcodeStatus}
             onClick={() => setActiveView("passcode")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.passcode}
           />
           {visibleAdvancedSections
             ?.filter((section) => section.id === "announcements")
@@ -1688,6 +1752,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 icon={<Edit2 size={18} />}
                 status={advancedStatus(hasAnnouncementEntries)}
                 onClick={() => setActiveView(section.id)}
+                showsOnEvent={SECTION_SHOWS_ON_EVENT.announcements}
               />
             ))}
         </div>
@@ -1699,6 +1764,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         // Only update if the value actually changed to prevent unnecessary re-renders
         if (prev[field] === value) return prev;
         return { ...prev, [field]: value };
+      });
+    }, []);
+
+    const handleDesignTokensChange = useCallback((tokens: any) => {
+      setData((prev) => {
+        const prevTokens = prev.simpleDesignTokens;
+        if (
+          prevTokens &&
+          tokens &&
+          JSON.stringify(prevTokens) === JSON.stringify(tokens)
+        ) {
+          return prev;
+        }
+        return { ...prev, simpleDesignTokens: tokens };
       });
     }, []);
 
@@ -1936,92 +2015,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         onBack={() => setActiveView("main")}
         showBack
       >
-        <div className="space-y-3">
-          <button
-            onClick={() => setThemesExpanded(!themesExpanded)}
-            className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Palette size={16} /> Theme ({config.themes.length})
-            </div>
-            {themesExpanded ? (
-              <ChevronUp size={16} />
-            ) : (
-              <ChevronDown size={16} />
-            )}
-          </button>
-          {themesExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-1">
-              {config.themes.map((theme) => (
-                <ThemeSwatch
-                  key={theme.id}
-                  theme={theme}
-                  active={themeId === theme.id}
-                  onClick={() => setThemeId(theme.id)}
-                />
-              ))}
-            </div>
-          )}
-          {!themesExpanded && (
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <div
-                className={`w-3 h-3 rounded-full border shadow-sm ${
-                  currentTheme.preview?.split(" ")[0] || "bg-slate-200"
-                }`}
-              ></div>
-              <span>Current theme: {currentTheme.name}</span>
-            </div>
-          )}
-
-          <div className="pt-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Typography
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
-              {GYM_FONTS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setData((p) => ({ ...p, fontId: f.id }))}
-                  className={`border rounded-lg p-3 text-left transition-colors ${
-                    data.fontId === f.id
-                      ? "border-indigo-600 bg-indigo-50"
-                      : "border-slate-200 hover:border-indigo-300"
-                  }`}
-                >
-                  <div
-                    className="text-base font-semibold"
-                    style={{ fontFamily: f.css }}
-                  >
-                    {f.name}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
-              Text Size
-            </label>
-            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
-              {["small", "medium", "large"].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setData((p) => ({ ...p, fontSize: size }))}
-                  className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
-                    data.fontSize === size
-                      ? "bg-white text-indigo-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <DesignPanel
+          previewRootSelector="#guide-preview-root"
+          onTokensChange={handleDesignTokensChange}
+        />
       </GymnasticsEditorLayout>
     );
 
@@ -2337,10 +2334,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
       }
 
+      // For existing meet-discovery edits, keep the discovery layout in preview
+      const isDiscoveryPreview = Boolean(
+        editEventId && (isDiscoveryEdit || loadedDiscoverySource || useParseDrivenSections)
+      );
+
       return {
         category: config.category,
-        createdVia: "simple-template",
-        createdManually: true,
+        createdVia: isDiscoveryPreview ? "meet-discovery" : "simple-template",
+        createdManually: !isDiscoveryPreview,
         startISO,
         endISO,
         location: locationParts || undefined,
@@ -2365,10 +2367,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         customFields: {
           ...data.extra,
           team: data.hostGym || data.extra?.team || "",
+          ...(data.simpleDesignTokens
+            ? { designTokens: data.simpleDesignTokens }
+            : {}),
           advancedSections: advancedState,
         },
         advancedSections: advancedState,
         heroImage: data.hero || config.defaultHero,
+        ...(data.simpleDesignTokens
+          ? { designTokens: data.simpleDesignTokens }
+          : {}),
         themeId: currentTheme?.id,
         theme: currentTheme,
         fontId: data.fontId,
@@ -2406,6 +2414,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.rsvpCopy,
       config.slug,
       currentTheme,
+      editEventId,
+      isDiscoveryEdit,
+      loadedDiscoverySource,
+      useParseDrivenSections,
+      themeId,
       data.address,
       data.city,
       data.date,
@@ -2419,6 +2432,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.passcodeRequired,
       data.rsvpDeadline,
       data.rsvpEnabled,
+      data.simpleDesignTokens,
       data.state,
       data.time,
       data.timezone,
@@ -2433,13 +2447,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div
         className={
           isEmbed
-            ? "flex h-full min-h-screen w-full flex-col bg-white"
+            ? "flex h-full min-h-0 w-full flex-col bg-white flex-1 min-h-0"
             : `w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
                 mobileMenuOpen ? "translate-x-0" : "translate-x-full"
               }`
         }
       >
-          <ScrollHandoffContainer className="flex-1" {...drawerTouchHandlers}>
+          <ScrollHandoffContainer
+            className={`flex-1 min-h-0 ${isEmbed ? "overflow-y-auto" : ""}`}
+            {...drawerTouchHandlers}
+          >
             {!isEmbed && (
               <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
                 <button
@@ -2455,7 +2472,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               </div>
             )}
 
-            <div className="p-6 pt-4 md:pt-6" style={{ pointerEvents: "auto" }}>
+            <div
+              className="p-6 pt-4 pb-8 md:pt-6 md:pb-10"
+              style={{ pointerEvents: "auto" }}
+            >
               {activeView === "main" &&
                 (editEventId && loadingExisting ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -2486,7 +2506,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
           </ScrollHandoffContainer>
 
-          <div className="p-4 border-t border-slate-100 bg-slate-50 sticky bottom-0">
+          <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50">
             <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Before Publish
@@ -2543,7 +2563,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     if (isEmbed) {
       return (
-        <div className="min-h-screen w-full bg-white flex flex-col">
+        <div className="h-dvh min-h-screen w-full bg-white flex flex-col overflow-hidden">
           {sidebarPanel}
         </div>
       );
@@ -2560,8 +2580,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }}
         >
           <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
-            <div className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0">
+            <div
+              id="guide-preview-root"
+              className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0"
+            >
               <SimpleTemplateView
+                key={`preview-${themeId}-${data.fontId}-${data.fontSize}`}
                 eventId={editEventId || "gymnastics-preview"}
                 eventData={previewEventData}
                 eventTitle={data.title || config.displayName}
@@ -2571,6 +2595,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 shareUrl=""
                 sessionEmail={null}
                 disableProtectedSectionLocks={true}
+                disableThemeBackground={true}
               />
             </div>
           </div>

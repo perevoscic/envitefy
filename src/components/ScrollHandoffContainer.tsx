@@ -11,6 +11,7 @@ import React, {
 type ScrollHandoffContainerProps = HTMLAttributes<HTMLDivElement>;
 
 const SCROLL_EPSILON = 1;
+const TOUCH_TAP_SLOP_PX = 8;
 
 /**
  * ScrollHandoffContainer
@@ -38,6 +39,13 @@ export default function ScrollHandoffContainer({
 }: ScrollHandoffContainerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const touchStartYRef = useRef<number | null>(null);
+  const touchTargetRef = useRef<EventTarget | null>(null);
+
+  const isInteractiveTarget = useCallback((target: EventTarget | null): boolean => {
+    if (!target || !(target instanceof HTMLElement)) return false;
+    const el = target.closest?.("button, a, [role='button'], [data-no-scroll-capture]");
+    return Boolean(el);
+  }, []);
 
   const canScrollInDirection = useCallback((el: HTMLDivElement, deltaY: number) => {
     const { scrollTop, scrollHeight, clientHeight } = el;
@@ -81,6 +89,7 @@ export default function ScrollHandoffContainer({
     (event: TouchEvent<HTMLDivElement>) => {
       const touch = event.touches[0];
       touchStartYRef.current = touch?.clientY ?? null;
+      touchTargetRef.current = event.target;
       if (onTouchStart) {
         onTouchStart(event);
       }
@@ -100,6 +109,16 @@ export default function ScrollHandoffContainer({
 
       const currentY = touch.clientY;
       const deltaY = touchStartYRef.current - currentY;
+      const absDeltaY = Math.abs(deltaY);
+
+      // Keep tap behavior for buttons/links, but treat a real vertical swipe as scroll.
+      if (
+        isInteractiveTarget(touchTargetRef.current) &&
+        absDeltaY < TOUCH_TAP_SLOP_PX
+      ) {
+        if (onTouchMove) onTouchMove(event);
+        return;
+      }
 
       if (canScrollInDirection(el, deltaY)) {
         // Consume the scroll inside the panel.
@@ -115,12 +134,13 @@ export default function ScrollHandoffContainer({
         onTouchMove(event);
       }
     },
-    [canScrollInDirection, onTouchMove]
+    [canScrollInDirection, isInteractiveTarget, onTouchMove]
   );
 
   const handleTouchEnd = useCallback(
     (event: TouchEvent<HTMLDivElement>) => {
       touchStartYRef.current = null;
+      touchTargetRef.current = null;
       if (onTouchEnd) {
         onTouchEnd(event);
       }
@@ -129,7 +149,6 @@ export default function ScrollHandoffContainer({
   );
 
   const mergedClassName = [
-    "max-h-screen",
     "overflow-y-auto",
     "overscroll-contain",
     "[-webkit-overflow-scrolling:touch]",
@@ -152,4 +171,3 @@ export default function ScrollHandoffContainer({
     </div>
   );
 }
-

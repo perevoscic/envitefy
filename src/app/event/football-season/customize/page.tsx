@@ -1377,7 +1377,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               )}
             </button>
             {themesExpanded && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-none overflow-visible pr-1">
                 {config.themes.map((theme) => (
                   <ThemeSwatch
                     key={theme.id}
@@ -1408,7 +1408,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
             <div
               ref={fontListRef}
-              className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1"
+              className="grid grid-cols-2 gap-3 max-h-none overflow-visible pr-1"
             >
               {FOOTBALL_FONTS.map((f) => (
                 <button

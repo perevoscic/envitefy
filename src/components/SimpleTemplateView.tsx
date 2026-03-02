@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import {
   Share2,
@@ -47,6 +47,7 @@ import {
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventActions from "@/components/EventActions";
 import StaticMap from "@/components/StaticMap";
+import { applyTheme } from "@/components/design-panel";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
 
@@ -78,6 +79,10 @@ type SimpleTemplateViewProps = {
     logistics?: boolean;
     volunteers?: boolean;
   };
+  /** When true, hide Edit / Delete / Share / Email so the edit sidebar is the only action surface (e.g. discovery edit mode). */
+  hideOwnerActions?: boolean;
+  /** When true, render a neutral page surface instead of theme background fills (used by editor previews). */
+  disableThemeBackground?: boolean;
 };
 
 type NormalizedRosterAthlete = {
@@ -170,6 +175,8 @@ export default function SimpleTemplateView({
   disableProtectedSectionLocks = false,
   protectSensitiveSections: protectSensitiveSectionsProp = false,
   protectedSectionFlags: protectedSectionFlagsProp = {},
+  hideOwnerActions = false,
+  disableThemeBackground = false,
 }: SimpleTemplateViewProps) {
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState("yes");
@@ -232,9 +239,25 @@ export default function SimpleTemplateView({
   const protectSensitiveSections = Boolean(protectSensitiveSectionsProp);
   const protectedSectionFlags = protectedSectionFlagsProp || {};
   const isLocked = false;
+  const templateRootRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep readonly previews in sync with upstream builder changes.
+  useEffect(() => {
+    if (isReadOnly || viewerKind === "readonly") {
+      setEventDataState(eventData);
+    }
+  }, [eventData, isReadOnly, viewerKind]);
 
   // Use state data if available, fallback to prop
   const currentData = eventDataState || eventData;
+  const simpleDesignTokens =
+    currentData?.designTokens || currentData?.customFields?.designTokens || null;
+  const hasSimpleDesignTokens = Boolean(
+    simpleDesignTokens &&
+      simpleDesignTokens.bg &&
+      simpleDesignTokens.primary &&
+      simpleDesignTokens.text
+  );
   const normalizedCategory = (() => {
     const raw = currentData?.category;
     if (typeof raw === "string") {
@@ -255,6 +278,43 @@ export default function SimpleTemplateView({
   const isDiscoveryGymnastics =
     isGymnasticsTemplate && currentData?.createdVia === "meet-discovery";
   const allowGuestAttendanceRsvp = isGymnasticsTemplate;
+
+  // Live theme preview from embedded gymnastics customize editor
+  useEffect(() => {
+    if (!isDiscoveryGymnastics) return;
+    if (typeof window === "undefined") return;
+
+    const handleMessage = (e: MessageEvent) => {
+      if (
+        !e.data ||
+        typeof e.data !== "object" ||
+        e.data.type !== "envitefy:discovery-theme-preview"
+      ) {
+        return;
+      }
+      if (e.data.eventId !== eventId) return;
+      if (!e.data.theme) return;
+      setEventDataState((prev) => {
+        const base = prev || eventData || {};
+        return {
+          ...base,
+          themeId: e.data.themeId || base.themeId,
+          theme: e.data.theme || base.theme,
+          designTokens: e.data.designTokens || base.designTokens,
+          customFields: {
+            ...(base.customFields || {}),
+            ...(e.data.designTokens
+              ? { designTokens: e.data.designTokens }
+              : {}),
+          },
+        };
+      });
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, isDiscoveryGymnastics]);
 
   useEffect(() => {
     if (!isDiscoveryGymnastics) return;
@@ -556,18 +616,26 @@ export default function SimpleTemplateView({
     : undefined;
   const forceLightText =
     isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
-  const textClass = forceLightText
+  const textClass = disableThemeBackground
+    ? "text-slate-900"
+    : hasSimpleDesignTokens
+    ? "text-[color:var(--text)]"
+    : forceLightText
     ? "text-white"
     : rawTextClass || "text-white";
-  const accentClass =
-    theme?.accent ||
-    (paletteIsDark !== null
-      ? paletteIsDark
-        ? "text-slate-100"
-        : "text-slate-700"
-      : textClass);
+  const accentClass = disableThemeBackground
+    ? "text-slate-700"
+    : hasSimpleDesignTokens
+    ? "text-[color:var(--primary)]"
+    : theme?.accent ||
+      (paletteIsDark !== null
+        ? paletteIsDark
+          ? "text-slate-100"
+          : "text-slate-700"
+        : textClass);
   const usesLightText =
-    /text-(white|slate-50|neutral-50|gray-50)/.test(textClass) ||
+    (!hasSimpleDesignTokens &&
+      /text-(white|slate-50|neutral-50|gray-50)/.test(textClass)) ||
     isDarkBackground;
   const headingShadow = usesLightText
     ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" }
@@ -575,8 +643,13 @@ export default function SimpleTemplateView({
   const bodyShadow = usesLightText
     ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
     : undefined;
-  const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
+  const titleColor = hasSimpleDesignTokens
+    ? undefined
+    : isDarkBackground
+    ? { color: "#f5e6d3" }
+    : undefined;
   const headingFontFamily =
+    simpleDesignTokens?.titleFont ||
     currentData?.fontFamily ||
     currentData?.theme?.fontFamily ||
     "var(--font-playfair)";
@@ -590,6 +663,11 @@ export default function SimpleTemplateView({
     ...(titleColor || {}),
     fontFamily: headingFontFamily,
   };
+
+  useEffect(() => {
+    if (!hasSimpleDesignTokens || !templateRootRef.current) return;
+    applyTheme(simpleDesignTokens, templateRootRef.current);
+  }, [hasSimpleDesignTokens, simpleDesignTokens]);
 
   const fontHref =
     currentData?.fontHref ||
@@ -3024,29 +3102,47 @@ export default function SimpleTemplateView({
       return { textWithoutUrl, href };
     };
 
+    // Use token variables with safe fallbacks so the dynamic template always stays synced.
+    const discoveryBg = "bg-[color:var(--bg,#FFFFFF)]";
+    const discoveryText = "text-[color:var(--text,#0F172A)]";
+    const discoveryHeading = "text-[color:var(--color-heading,#2D1B4E)]";
+    const discoveryAccent = "text-[color:var(--accent,#D4AF37)]";
+    const discoveryNavText = "text-[color:var(--color-nav-text,#2D1B4E)]";
+    const discoveryIcon = "text-[color:var(--color-icon,#2D1B4E)]";
+    const discoveryCard =
+      "bg-[color:var(--surface,#FFFFFF)] rounded-[2.5rem] border border-[color:var(--border,#E2E8F0)] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors duration-200 hover:border-[color:var(--color-border-hover,#D4AF37)]";
+    const discoverySectionHeading =
+      "text-xl font-bold mb-6 flex items-center gap-2 border-l-2 border-[color:var(--accent,#D4AF37)] pl-3 text-[color:var(--color-heading,#2D1B4E)]";
+    const discoveryFocusRing =
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-focus,#D4AF37)] focus-visible:ring-offset-2";
+
     return (
-      <div className="min-h-screen bg-[#FAF9F6] font-sans text-slate-900 pb-24">
+      <div
+        ref={templateRootRef}
+        className={`min-h-screen font-sans pb-24 ${discoveryBg} ${discoveryText}`}
+      >
         <nav
           className={`fixed top-0 w-full z-50 transition-all duration-500 ${
             discoveryScrolled
-              ? "bg-[#2D1B4E]/95 backdrop-blur-md shadow-lg py-3"
+              ? `${discoveryBg} backdrop-blur-md shadow-lg py-3 ${discoveryText}`
               : "bg-transparent py-6"
           }`}
         >
           <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#FFD700] rounded-xl flex items-center justify-center text-[#2D1B4E] shadow-lg rotate-3">
-                <Star size={20} fill="currentColor" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[color:var(--chip-bg,#F8FAFC)] shadow-lg rotate-3 border border-[color:var(--chip-border,#D7DCE6)]">
+                <Star size={20} fill="currentColor" className={discoveryIcon} />
               </div>
               <div>
                 <h1
+                  data-role="page-title"
                   className={`text-sm font-black tracking-tight uppercase leading-none ${
-                    discoveryScrolled ? "text-white" : "text-slate-900"
+                    discoveryScrolled ? discoveryHeading : discoveryHeading
                   }`}
                 >
                   {navTitle}
                 </h1>
-                <p className="text-[10px] font-bold text-[#FFD700] uppercase tracking-widest mt-1">
+                <p className="text-[10px] font-bold text-[color:var(--chip-text,#2D1B4E)] uppercase tracking-widest mt-1">
                   Digital Spectator Guide
                 </p>
               </div>
@@ -3054,27 +3150,29 @@ export default function SimpleTemplateView({
           </div>
         </nav>
 
-        <header className="pt-32 pb-16 px-6 bg-white border-b border-slate-100 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#2D1B4E]/5 rounded-full blur-3xl -mr-48 -mt-48" />
+        <header className="pt-32 pb-16 px-6 bg-[color:var(--bg,#FFFFFF)] border-b border-[color:var(--border,#E2E8F0)] relative overflow-hidden">
           <div className="max-w-6xl mx-auto relative z-10">
             {eventDatesLabel && (
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2D1B4E]/5 border border-[#2D1B4E]/10 text-[#2D1B4E] text-[10px] font-bold uppercase tracking-widest mb-6">
-                <CalendarIcon size={12} className="text-[#FFD700]" />{" "}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[color:var(--chip-bg,#F8FAFC)] border border-[color:var(--chip-border,#D7DCE6)] text-[color:var(--chip-text,#2D1B4E)] text-[10px] font-bold uppercase tracking-widest mb-6">
+                <CalendarIcon size={12} className="opacity-80" />{" "}
                 {eventDatesLabel}
               </div>
             )}
-            <h2 className="text-4xl md:text-6xl font-black text-[#2D1B4E] leading-[1.0] tracking-tight mb-6">
+            <h2
+              data-role="page-title"
+              className={`text-4xl md:text-6xl font-black ${discoveryHeading} leading-[1.0] tracking-tight mb-6`}
+            >
               {currentData?.eventTitle || eventTitle || "Gymnastics Meet"}
             </h2>
-            <div className="flex flex-wrap gap-4 text-sm font-bold text-slate-500">
+            <div className={`flex flex-wrap gap-4 text-sm font-bold ${discoveryNavText}`}>
               {venueLabel && (
                 <span className="flex items-center gap-1.5">
-                  <MapPin size={16} className="text-[#FFD700]" /> {venueLabel}
+                  <MapPin size={16} className={discoveryIcon} /> {venueLabel}
                 </span>
               )}
               {scheduleHint && (
                 <span className="flex items-center gap-1.5">
-                  <Clock size={16} className="text-[#FFD700]" /> {scheduleHint}
+                  <Clock size={16} className={discoveryIcon} /> {scheduleHint}
                 </span>
               )}
             </div>
@@ -3082,7 +3180,7 @@ export default function SimpleTemplateView({
         </header>
 
         <main className="max-w-6xl mx-auto px-6 -mt-8 relative z-10">
-          {!isLocked && !isReadOnly && (
+          {!isLocked && !isReadOnly && !hideOwnerActions && (
             <div className="mb-8 flex justify-end">
               <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
                 {isOwner && (
@@ -3122,7 +3220,7 @@ export default function SimpleTemplateView({
             </div>
           )}
 
-          <div className="flex gap-2 bg-white/90 backdrop-blur-md p-1.5 rounded-[22px] shadow-sm border border-slate-100 mb-10 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 bg-[color:var(--surface,#FFFFFF)] backdrop-blur-md p-1.5 rounded-[22px] shadow-sm border border-[color:var(--border,#E2E8F0)] mb-10 overflow-x-auto no-scrollbar">
             {[
               { id: "meet-details", label: "Meet Details", icon: Info },
               { id: "spectator", label: "Admission & Sales", icon: Ticket },
@@ -3133,13 +3231,21 @@ export default function SimpleTemplateView({
               <button
                 key={tab.id}
                 onClick={() => setDiscoveryActiveTab(tab.id)}
-                className={`flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3.5 rounded-[18px] text-xs font-bold uppercase tracking-wider transition-all ${
+                className={`${discoveryFocusRing} flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3.5 rounded-[18px] border text-xs font-bold uppercase tracking-wider transition-all ${
                   discoveryActiveTab === tab.id
-                    ? "bg-[#2D1B4E] text-white shadow-xl"
-                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                    ? "bg-[color:var(--color-nav-active-bg,#F8FAFC)] text-[color:var(--color-nav-active,#2D1B4E)] border-[color:var(--accent,#D4AF37)]"
+                    : "bg-transparent text-[color:var(--color-nav-text,#334155)] border-transparent hover:border-[color:var(--color-border-hover,#D4AF37)] hover:bg-[color:var(--chip-bg,#F8FAFC)]"
                 }`}
+                aria-current={discoveryActiveTab === tab.id ? "page" : undefined}
               >
-                <tab.icon size={16} />
+                <tab.icon
+                  size={16}
+                  className={
+                    discoveryActiveTab === tab.id
+                      ? "text-[color:var(--accent,#D4AF37)]"
+                      : discoveryIcon
+                  }
+                />
                 {tab.label}
               </button>
             ))}
@@ -3149,11 +3255,11 @@ export default function SimpleTemplateView({
             <div className="lg:col-span-2 space-y-8">
               {discoveryActiveTab === "meet-details" && hasMeetDetailsContent && (
                 <div className="space-y-10">
-                  <section className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                      <Info className="text-[#FFD700]" size={24} /> Meet Details
+                  <section className={`${discoveryCard} p-10`}>
+                    <h3 className={discoverySectionHeading}>
+                      <Info className={discoveryIcon} size={24} /> Meet Details
                     </h3>
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6">
+                    <div className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 p-6">
                       <ul className="space-y-4">
                         {meetDetailsLines.map((line) => (
                           (() => {
@@ -3163,7 +3269,7 @@ export default function SimpleTemplateView({
                                 key={`meet-details-line-${line}`}
                                 className="flex items-start gap-3"
                               >
-                                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#2D1B4E]/60" />
+                                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-slate-400/70" />
                                 <div className="space-y-2">
                                   <p className="text-sm text-slate-700 leading-relaxed">
                                     {parsedLine.textWithoutUrl || "Reference link"}
@@ -3173,7 +3279,7 @@ export default function SimpleTemplateView({
                                       href={parsedLine.href}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#2D1B4E] hover:bg-slate-100"
+                                      className={`inline-flex items-center gap-2 rounded-full border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] hover:border-[color:var(--color-border-hover,#D4AF37)] ${discoveryFocusRing}`}
                                     >
                                       Open Link <ExternalLink size={12} />
                                     </a>
@@ -3192,12 +3298,12 @@ export default function SimpleTemplateView({
               {discoveryActiveTab === "spectator" && (
                 <div className="space-y-10">
                   {hasAdmissionContent && (
-                  <section className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden">
+                  <section className={`${discoveryCard} p-10 relative overflow-hidden`}>
                     <div className="absolute top-0 right-0 p-8 opacity-5">
                       <Ticket size={120} />
                     </div>
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                      <CreditCard className="text-[#FFD700]" size={24} /> Spectator
+                    <h3 className={discoverySectionHeading}>
+                      <CreditCard className={discoveryIcon} size={24} /> Spectator
                       Admission
                     </h3>
                     {admissionCards.length > 0 && (
@@ -3205,7 +3311,7 @@ export default function SimpleTemplateView({
                         {admissionCards.map((item, i) => (
                           <div
                             key={`${item.label}-${i}`}
-                            className="bg-slate-50 p-6 rounded-3xl border border-slate-100"
+                            className="bg-slate-50 p-6 rounded-3xl border border-[color:var(--border,#E2E8F0)]"
                           >
                             <div>
                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -3222,12 +3328,12 @@ export default function SimpleTemplateView({
                       </div>
                     )}
                     {admissionPrimaryNote && (
-                      <div className="bg-[#2D1B4E] p-4 rounded-2xl flex items-center gap-4 text-white">
-                        <div className="p-2 bg-white/10 rounded-xl">
-                          <Info size={20} className="text-[#FFD700]" />
+                      <div className="p-4 rounded-2xl flex items-center gap-4 border border-[color:var(--border,#E2E8F0)] bg-[color:var(--chip-bg,#F8FAFC)]">
+                        <div className="p-2 bg-white rounded-xl border border-[color:var(--chip-border,#D7DCE6)]">
+                          <Info size={20} className={discoveryIcon} />
                         </div>
-                        <p className="text-xs text-white/70">
-                          <span className="font-black uppercase tracking-widest text-[#FFD700] block">
+                        <p className="text-xs text-[color:var(--text,#0F172A)]">
+                          <span className="font-black uppercase tracking-widest text-[color:var(--accent,#D4AF37)] block">
                             Admission note
                           </span>
                           {admissionPrimaryNote}
@@ -3240,9 +3346,9 @@ export default function SimpleTemplateView({
                   {hasSpectatorCards && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {(merchandiseText || merchandiseLink?.url) && (
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                      <ShoppingBag className="text-[#FFD700] mb-4" size={28} />
-                      <h4 className="font-bold text-lg mb-2">Merchandise</h4>
+                    <div className={`${discoveryCard} p-8`}>
+                      <ShoppingBag className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
+                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Merchandise</h4>
                       {merchandiseText ? (
                         <p className="text-sm text-slate-500 leading-relaxed">
                           {merchandiseText}
@@ -3252,7 +3358,7 @@ export default function SimpleTemplateView({
                           href={merchandiseLink?.url || "#"}
                           target={merchandiseLink?.url ? "_blank" : undefined}
                           rel={merchandiseLink?.url ? "noopener noreferrer" : undefined}
-                          className="inline-flex items-center gap-2 text-xs font-black uppercase text-[#2D1B4E] hover:underline"
+                          className={`inline-flex items-center gap-2 text-xs font-black uppercase text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
                         >
                           {merchandiseLink?.label || "Merchandise Link"} <ExternalLink size={14} />
                         </a>
@@ -3260,9 +3366,9 @@ export default function SimpleTemplateView({
                     </div>
                     )}
                     {hasRotationLink && (
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                      <ClipboardList className="text-[#FFD700] mb-4" size={28} />
-                      <h4 className="font-bold text-lg mb-2">Rotation Sheets</h4>
+                    <div className={`${discoveryCard} p-8`}>
+                      <ClipboardList className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
+                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Rotation Sheets</h4>
                       <p className="text-sm text-slate-500 leading-relaxed">
                         Download or view updated rotation sheets from the official event links.
                       </p>
@@ -3270,7 +3376,7 @@ export default function SimpleTemplateView({
                         href={rotationLink?.url || "#"}
                         target={rotationLink?.url ? "_blank" : undefined}
                         rel={rotationLink?.url ? "noopener noreferrer" : undefined}
-                        className="mt-6 inline-flex items-center gap-2 text-xs font-black uppercase text-[#2D1B4E] hover:underline"
+                        className={`mt-6 inline-flex items-center gap-2 text-xs font-black uppercase text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
                       >
                         {rotationLink?.label || "Official Website"} <ExternalLink size={14} />
                       </a>
@@ -3320,12 +3426,12 @@ export default function SimpleTemplateView({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {safeString(logistics?.parking) && (
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <div className={`${discoveryCard} p-8`}>
                       <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <div className="p-2 rounded-xl bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--color-icon,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
                           <Car size={20} />
                         </div>
-                        <h4 className="font-black text-sm uppercase tracking-widest">
+                        <h4 className="font-black text-sm uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)]">
                           Mobile Parking
                         </h4>
                       </div>
@@ -3337,7 +3443,7 @@ export default function SimpleTemplateView({
                           href={mapDashboardLink?.url || "#"}
                           target={mapDashboardLink?.url ? "_blank" : undefined}
                           rel={mapDashboardLink?.url ? "noopener noreferrer" : undefined}
-                          className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase text-center"
+                          className={`flex-1 py-3 bg-[color:var(--button-bg,#2D1B4E)] text-[color:var(--button-text,#FFFFFF)] rounded-xl text-[10px] font-bold uppercase text-center ${discoveryFocusRing}`}
                         >
                           Map Dashboard
                         </a>
@@ -3345,7 +3451,7 @@ export default function SimpleTemplateView({
                           href={ratesInfoLink?.url || "#"}
                           target={ratesInfoLink?.url ? "_blank" : undefined}
                           rel={ratesInfoLink?.url ? "noopener noreferrer" : undefined}
-                          className="flex-1 py-3 border border-slate-200 rounded-xl text-[10px] font-bold uppercase text-center"
+                          className={`flex-1 py-3 border border-[color:var(--border,#E2E8F0)] rounded-xl text-[10px] font-bold uppercase text-center text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
                         >
                           Rates Info
                         </a>
@@ -3353,12 +3459,12 @@ export default function SimpleTemplateView({
                     </div>
                     )}
                     {(addressLabel || safeString(logistics?.hotelInfo || parseLogistics?.hotel)) && (
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <div className={`${discoveryCard} p-8`}>
                       <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-teal-50 text-teal-600 rounded-xl">
+                        <div className="p-2 rounded-xl bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--color-icon,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
                           <Navigation size={20} />
                         </div>
-                        <h4 className="font-black text-sm uppercase tracking-widest">
+                        <h4 className="font-black text-sm uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)]">
                           Ride Share
                         </h4>
                       </div>
@@ -3374,7 +3480,7 @@ export default function SimpleTemplateView({
                         </p>
                       )}
                       {safeString(logistics?.hotelInfo || parseLogistics?.hotel) && (
-                        <div className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-[10px] font-bold uppercase inline-block">
+                        <div className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase inline-block bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--chip-text,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
                           {safeString(logistics?.hotelInfo || parseLogistics?.hotel)}
                         </div>
                       )}
@@ -3383,13 +3489,13 @@ export default function SimpleTemplateView({
                   </div>
 
                   {facilityMapAddress && (
-                    <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-                      <h3 className="text-xl font-bold mb-6">Venue location</h3>
+                    <section className={`${discoveryCard} p-8`}>
+                      <h3 className={discoverySectionHeading}>Venue location</h3>
                       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6 items-stretch">
-                        <div className="rounded-3xl overflow-hidden border border-slate-100">
+                        <div className="rounded-3xl overflow-hidden border border-[color:var(--border,#E2E8F0)]">
                           <StaticMap address={facilityMapAddress} height={340} />
                         </div>
-                        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6 flex flex-col justify-between gap-4">
+                        <div className="rounded-3xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 p-6 flex flex-col justify-between gap-4">
                           <div>
                             <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
                               Address
@@ -3403,7 +3509,7 @@ export default function SimpleTemplateView({
                               href={directionsUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2D1B4E] px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-[#22143a]"
+                              className={`inline-flex items-center justify-center gap-2 rounded-xl bg-[color:var(--button-bg,#2D1B4E)] text-[color:var(--button-text,#FFFFFF)] px-4 py-3 text-[10px] font-black uppercase tracking-wider hover:opacity-90 ${discoveryFocusRing}`}
                             >
                               Get Directions <ExternalLink size={12} />
                             </a>
@@ -3417,14 +3523,14 @@ export default function SimpleTemplateView({
 
               {discoveryActiveTab === "facility" && hasFacilityContent && (
                 <div className="space-y-10">
-                  <section className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm">
-                    <h3 className="text-xl font-bold mb-8">Hall Layout</h3>
+                  <section className={`${discoveryCard} p-10`}>
+                    <h3 className={discoverySectionHeading}>Hall Layout</h3>
                     {gymLayoutImageUrl && (
                       <div className="mb-8">
                         <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
                           Gym Layout
                         </h4>
-                        <div className="rounded-3xl border border-slate-200 overflow-hidden">
+                        <div className="rounded-3xl border border-[color:var(--border,#E2E8F0)] overflow-hidden">
                           <img
                             src={gymLayoutImageUrl}
                             alt="Gym layout"
@@ -3435,7 +3541,7 @@ export default function SimpleTemplateView({
                     )}
 
                     {facilityLinesFromSource.length > 0 && (
-                      <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+                      <div className="rounded-3xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 p-6">
                         <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
                           Venue Details
                         </h4>
@@ -3445,7 +3551,7 @@ export default function SimpleTemplateView({
                             return (
                               <div
                                 key={`facility-line-${line}`}
-                                className="space-y-2 rounded-xl border border-slate-100 bg-white px-3 py-2"
+                                className="space-y-2 rounded-xl border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-2"
                               >
                                 <p className="text-sm text-slate-700 leading-relaxed">
                                   {parsedLine.textWithoutUrl || "Reference link"}
@@ -3455,7 +3561,7 @@ export default function SimpleTemplateView({
                                     href={parsedLine.href}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#2D1B4E] hover:bg-slate-100"
+                                    className={`inline-flex items-center gap-2 rounded-full border border-[color:var(--border,#E2E8F0)] bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] hover:border-[color:var(--color-border-hover,#D4AF37)] ${discoveryFocusRing}`}
                                   >
                                     Open Link <ExternalLink size={12} />
                                   </a>
@@ -3470,11 +3576,11 @@ export default function SimpleTemplateView({
                       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                         {showRegistrationDeskNote && (
                           <div className="flex gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0">
+                            <div className="w-12 h-12 rounded-2xl bg-[color:var(--primary,#2D1B4E)] text-white flex items-center justify-center shrink-0">
                               2F
                             </div>
                             <div>
-                              <h4 className="font-black text-xs uppercase tracking-widest text-[#2D1B4E] mb-1">
+                              <h4 className="font-black text-xs uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)] mb-1">
                                 Registration Desk
                               </h4>
                               <p className="text-sm text-slate-500 leading-relaxed">
@@ -3485,11 +3591,11 @@ export default function SimpleTemplateView({
                         )}
                         {showAwardsAreaNote && (
                           <div className="flex gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-teal-600 text-white flex items-center justify-center shrink-0">
+                            <div className="w-12 h-12 rounded-2xl bg-[color:var(--accent,#D4AF37)] text-[color:var(--text,#0F172A)] flex items-center justify-center shrink-0">
                               3F
                             </div>
                             <div>
-                              <h4 className="font-black text-xs uppercase tracking-widest text-[#2D1B4E] mb-1">
+                              <h4 className="font-black text-xs uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)] mb-1">
                                 Awards Area
                               </h4>
                               <p className="text-sm text-slate-500 leading-relaxed">
@@ -3507,36 +3613,36 @@ export default function SimpleTemplateView({
               {discoveryActiveTab === "rules" && hasPolicyCards && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {policyNotes[0] && (
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <Coffee className="text-[#FFD700] mb-4" size={28} />
-                    <h4 className="font-bold text-lg mb-2">Food & Beverage</h4>
+                  <div className={`${discoveryCard} p-8`}>
+                    <Coffee className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
+                    <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Food & Beverage</h4>
                     <p className="text-sm text-slate-500 leading-relaxed">
                       {policyNotes[0]}
                     </p>
                   </div>
                   )}
                   {policyNotes[1] && (
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <Droplets className="text-[#FFD700] mb-4" size={28} />
-                    <h4 className="font-bold text-lg mb-2">Hydration</h4>
+                  <div className={`${discoveryCard} p-8`}>
+                    <Droplets className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
+                    <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Hydration</h4>
                     <p className="text-sm text-slate-500 leading-relaxed">
                       {policyNotes[1]}
                     </p>
                   </div>
                   )}
                   {policyNotes[2] && (
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <Dog className="text-[#FFD700] mb-4" size={28} />
-                    <h4 className="font-bold text-lg mb-2">Service Animals</h4>
+                  <div className={`${discoveryCard} p-8`}>
+                    <Dog className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
+                    <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Service Animals</h4>
                     <p className="text-sm text-slate-500 leading-relaxed">
                       {policyNotes[2]}
                     </p>
                   </div>
                   )}
                   {policyNotes[3] && (
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                  <div className={`${discoveryCard} p-8`}>
                     <Ban className="text-red-500 mb-4" size={28} />
-                    <h4 className="font-bold text-lg mb-2">Safety Policy</h4>
+                    <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Safety Policy</h4>
                     <p className="text-sm text-slate-500 leading-relaxed">
                       {policyNotes[3]}
                     </p>
@@ -3548,15 +3654,15 @@ export default function SimpleTemplateView({
 
             <div className="space-y-8">
               {detailPairs.length > 0 && (
-              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">
+              <div className={`${discoveryCard} p-8`}>
+                <h4 className="text-[10px] font-black text-[color:var(--color-heading,#2D1B4E)] uppercase tracking-[0.2em] mb-6 border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">
                   Meet Essentials
                 </h4>
                 <div className="space-y-6">
                   {detailPairs.map((item) => (
                     <div
                       key={`meet-essential-${item.label}-${item.value}`}
-                      className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
+                      className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 px-4 py-3"
                     >
                       <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
                         {item.label}
@@ -3571,14 +3677,11 @@ export default function SimpleTemplateView({
               )}
 
               {hasHostSupport && (
-              <div className="bg-[#2D1B4E] rounded-[2.5rem] p-8 text-white shadow-xl shadow-[#2D1B4E]/20">
-                <h4
-                  className="font-black text-lg mb-4"
-                  style={{ color: "#FFFFFF" }}
-                >
+              <div className={`${discoveryCard} p-8`}>
+                <h4 className="font-black text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)] border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">
                   Useful Links
                 </h4>
-                <p className="text-xs text-white/50 mb-6 leading-relaxed">
+                <p className="text-xs text-[color:var(--muted-text,#64748B)] mb-6 leading-relaxed">
                   {safeString(parseCommunications?.passcode)
                     ? `Passcode: ${parseCommunications.passcode}`
                     : "Support and reference links are provided below."}
@@ -3589,9 +3692,15 @@ export default function SimpleTemplateView({
                       href={contactLink.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-4 bg-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
+                      className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
                     >
-                      <PhoneCall size={14} /> {contactLink?.label || "Support Link"}
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                          <PhoneCall size={14} />
+                        </span>
+                        {contactLink?.label || "Support Link"}
+                      </span>
+                      <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">›</span>
                     </a>
                   )}
                   {safeString(visitorLink?.url) && (
@@ -3599,9 +3708,15 @@ export default function SimpleTemplateView({
                       href={visitorLink.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-4 bg-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
+                      className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
                     >
-                      <MapPin size={14} /> {visitorLink?.label || "Visitor Guide"}
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                          <MapPin size={14} />
+                        </span>
+                        {visitorLink?.label || "Visitor Guide"}
+                      </span>
+                      <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">›</span>
                     </a>
                   )}
                   {directionsUrl && (
@@ -3609,18 +3724,30 @@ export default function SimpleTemplateView({
                       href={directionsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-4 bg-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
+                      className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
                     >
-                      <Navigation size={14} /> Directions to Venue
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                          <Navigation size={14} />
+                        </span>
+                        Directions to Venue
+                      </span>
+                      <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">›</span>
                     </a>
                   )}
                   {hasSourceFileDownload && (
                     <a
                       href={sourceFileUrl}
                       download={sourceFileName}
-                      className="w-full py-4 bg-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
+                      className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
                     >
-                      <Download size={14} /> Download {isSourcePdf ? "Source PDF" : "Source File"}
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                          <Download size={14} />
+                        </span>
+                        Download {isSourcePdf ? "Source PDF" : "Source File"}
+                      </span>
+                      <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">›</span>
                     </a>
                   )}
                 </div>
@@ -3635,13 +3762,26 @@ export default function SimpleTemplateView({
 
   return (
     <div className="event-modern-page w-full">
-      <div className="event-modern-container flex justify-center py-3 md:py-8">
+      <div
+        ref={templateRootRef}
+        className="event-modern-container flex justify-center py-3 md:py-8"
+      >
       <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px]">
         <div
           className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
-            backgroundClass || ""
+            disableThemeBackground
+              ? "bg-white"
+              : hasSimpleDesignTokens
+              ? "bg-[color:var(--bg)]"
+              : backgroundClass || ""
           } ${textClass} transition-all duration-500 relative z-0`}
-          style={paletteBackgroundStyle || backgroundStyle}
+          style={
+            disableThemeBackground
+              ? undefined
+              : hasSimpleDesignTokens
+              ? { backgroundColor: "var(--bg)", color: "var(--text)" }
+              : paletteBackgroundStyle || backgroundStyle
+          }
         >
           <div className="relative z-10">
             {/* Header */}
@@ -3649,7 +3789,7 @@ export default function SimpleTemplateView({
               className={`relative p-6 md:p-8 border-b border-white/10 ${textClass}`}
             >
               {/* Actions - White background bar with Edit/Delete/Share/Email */}
-              {!isLocked && !isReadOnly && (
+              {!isLocked && !isReadOnly && !hideOwnerActions && (
                 <div className="absolute top-3 right-3 z-40 hidden md:block">
                   <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
                     {isOwner && (
@@ -3693,7 +3833,8 @@ export default function SimpleTemplateView({
               )}
               <div className="pr-0 md:pr-32">
                 <h1
-                  className={`${headingSizeClass} mb-2 leading-tight ${textClass}`}
+                  data-role="page-title"
+                  className={`page-title ${headingSizeClass} mb-2 leading-tight ${textClass}`}
                   style={{
                     ...headingStyle,
                     fontFamily: headingFontFamily,
@@ -4349,7 +4490,7 @@ export default function SimpleTemplateView({
                 RSVP
               </a>
             )}
-            {isOwner && (
+            {isOwner && !hideOwnerActions && (
               <Link
                 href={resolveEditHref(eventId, eventData, eventTitle)}
                 className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
@@ -4357,16 +4498,18 @@ export default function SimpleTemplateView({
                 Edit
               </Link>
             )}
-            <div className="min-w-0 flex-1">
-              <EventActions
-                shareUrl={shareUrl}
-                event={eventData}
-                historyId={eventId}
-                className="w-full justify-center"
-                variant="compact"
-                tone="default"
-              />
-            </div>
+            {!hideOwnerActions && (
+              <div className="min-w-0 flex-1">
+                <EventActions
+                  shareUrl={shareUrl}
+                  event={eventData}
+                  historyId={eventId}
+                  className="w-full justify-center"
+                  variant="compact"
+                  tone="default"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

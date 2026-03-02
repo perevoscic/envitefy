@@ -1285,6 +1285,8 @@ export default async function EventPage({
         viewerKind={viewerKind}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
+        hideOwnerActions={isDiscoveryGymnasticsEdit}
+        disableThemeBackground={isDiscoveryGymnasticsEdit}
       />
     );
     if (isDiscoveryGymnasticsEdit) {
