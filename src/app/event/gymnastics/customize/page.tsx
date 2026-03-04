@@ -577,7 +577,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
-    const [discoverUrl, setDiscoverUrl] = useState("");
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
     const [discoverError, setDiscoverError] = useState("");
@@ -1630,21 +1629,33 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
               Starter Mode
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
               <button
                 type="button"
-                onClick={resetToBlank}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
+                onClick={() => setActiveView("discover")}
+                className="w-full rounded-lg border border-indigo-600 bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 flex items-center justify-center gap-2"
               >
-                Start Blank
+                Upload & Prefill
+                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                  Recommended
+                </span>
               </button>
-              <button
-                type="button"
-                onClick={applySampleData}
-                className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
-              >
-                Load Sample Meet
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={resetToBlank}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
+                >
+                  Start Blank
+                </button>
+                <button
+                  type="button"
+                  onClick={applySampleData}
+                  className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                >
+                  Load Sample Meet
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -2077,20 +2088,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const handleDiscoverParse = useCallback(async () => {
       if (discoverBusy) return;
       setDiscoverError("");
-      const trimmedUrl = discoverUrl.trim();
-      if (!discoverFile && !trimmedUrl) {
-        setDiscoverError("Select a file or paste a URL to continue.");
-        return;
-      }
-      if (discoverFile && trimmedUrl) {
-        setDiscoverError("Use one source at a time (file or URL).");
+      if (!discoverFile) {
+        setDiscoverError("Upload a file to continue.");
         return;
       }
       setDiscoverBusy(true);
       try {
         const formData = new FormData();
-        if (discoverFile) formData.append("file", discoverFile);
-        else formData.append("url", trimmedUrl);
+        formData.append("file", discoverFile);
 
         const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
           method: "POST",
@@ -2116,18 +2121,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       } finally {
         setDiscoverBusy(false);
       }
-    }, [discoverBusy, discoverFile, discoverUrl, router]);
+    }, [discoverBusy, discoverFile, router]);
 
     const renderDiscoverEditor = () => (
       <GymnasticsEditorLayout isEmbed={isEmbed}
-        title="Parse Upload / URL"
+        title="Upload to Prefill"
         onBack={() => setActiveView("main")}
         showBack
       >
         <div className="space-y-4">
           <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900">
-            Upload a PDF/JPG/PNG or paste an event URL. We will parse details
-            and prefill your meet page builder.
+            Upload a PDF/JPG/PNG file. We will parse details and prefill your
+            meet page builder.
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
@@ -2139,33 +2144,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               onChange={(e) => {
                 const picked = e.target.files?.[0] || null;
                 setDiscoverFile(picked);
-                if (picked) setDiscoverUrl("");
               }}
               className={baseInputClass}
             />
             {discoverFile ? (
               <p className="text-xs text-slate-500">Selected: {discoverFile.name}</p>
             ) : null}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" />
-            OR
-            <span className="h-px flex-1 bg-slate-200" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-              Event URL
-            </label>
-            <input
-              type="url"
-              value={discoverUrl}
-              onChange={(e) => {
-                setDiscoverUrl(e.target.value);
-                if (e.target.value.trim()) setDiscoverFile(null);
-              }}
-              placeholder="https://example.com/meet-page"
-              className={baseInputClass}
-            />
           </div>
           {discoverError ? (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -2596,6 +2580,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 sessionEmail={null}
                 disableProtectedSectionLocks={true}
                 disableThemeBackground={true}
+                neutralPreview={{
+                  surface: "light-gradient",
+                  paletteDriven: true,
+                  suppressTextShadows: true,
+                }}
               />
             </div>
           </div>

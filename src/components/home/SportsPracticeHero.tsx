@@ -21,7 +21,7 @@ const SPORTS_CARDS: SportsCard[] = [
     label: "Gymnastics Schedule",
     icon: "🤸",
     copy: "Detailed class times, location maps, and coach notes.",
-    href: "/event/gymnastics",
+    href: "/event/gymnastics/customize",
   },
   {
     label: "General Sports Event",

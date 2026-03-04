@@ -2985,7 +2985,7 @@ const config = {
     namePlaceholder: "Athlete Name",
   },
   prefill: {
-    title: "Illinois State Invitational",
+    title: "",
     venue: "Redbird Arena",
     address: "200 N University St, Normal, IL 61761",
     city: "Normal",

@@ -1,7 +1,13 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Image from "next/image";
 import {
   Share2,
@@ -83,6 +89,12 @@ type SimpleTemplateViewProps = {
   hideOwnerActions?: boolean;
   /** When true, render a neutral page surface instead of theme background fills (used by editor previews). */
   disableThemeBackground?: boolean;
+  /** Optional neutral preview tuning for editor surfaces. */
+  neutralPreview?: {
+    surface?: "white" | "light-gradient";
+    paletteDriven?: boolean;
+    suppressTextShadows?: boolean;
+  };
 };
 
 type NormalizedRosterAthlete = {
@@ -105,7 +117,11 @@ const normalizeRosterStatus = (value?: string) =>
   (value || "").toString().trim().toLowerCase();
 
 const safeString = (value: unknown): string =>
-  typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
+  typeof value === "string"
+    ? value.trim()
+    : value == null
+    ? ""
+    : String(value).trim();
 
 const normalizeRosterAthletes = (roster: any): NormalizedRosterAthlete[] => {
   if (!roster || typeof roster !== "object") return [];
@@ -177,6 +193,7 @@ export default function SimpleTemplateView({
   protectedSectionFlags: protectedSectionFlagsProp = {},
   hideOwnerActions = false,
   disableThemeBackground = false,
+  neutralPreview,
 }: SimpleTemplateViewProps) {
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState("yes");
@@ -251,7 +268,9 @@ export default function SimpleTemplateView({
   // Use state data if available, fallback to prop
   const currentData = eventDataState || eventData;
   const simpleDesignTokens =
-    currentData?.designTokens || currentData?.customFields?.designTokens || null;
+    currentData?.designTokens ||
+    currentData?.customFields?.designTokens ||
+    null;
   const hasSimpleDesignTokens = Boolean(
     simpleDesignTokens &&
       simpleDesignTokens.bg &&
@@ -275,15 +294,14 @@ export default function SimpleTemplateView({
     normalizedCategory === "sport_gymnastics_schedule" ||
     currentData?.templateId === "gymnastics" ||
     currentData?.templateId === "gymnastics-schedule";
-  const isDiscoveryGymnastics =
-    isGymnasticsTemplate &&
-    (currentData?.createdVia === "meet-discovery" ||
-      Boolean(currentData?.discoverySource?.input));
+  // Dynamic spectator guide is now the default gymnastics layout for both
+  // manually built and import/prefill events.
+  const isDynamicGymnasticsLayout = isGymnasticsTemplate;
   const allowGuestAttendanceRsvp = isGymnasticsTemplate;
 
   // Live theme preview from embedded gymnastics customize editor
   useEffect(() => {
-    if (!isDiscoveryGymnastics) return;
+    if (!isDynamicGymnasticsLayout) return;
     if (typeof window === "undefined") return;
 
     const handleMessage = (e: MessageEvent) => {
@@ -316,15 +334,15 @@ export default function SimpleTemplateView({
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId, isDiscoveryGymnastics]);
+  }, [eventId, isDynamicGymnasticsLayout]);
 
   useEffect(() => {
-    if (!isDiscoveryGymnastics) return;
+    if (!isDynamicGymnasticsLayout) return;
     const onScroll = () => setDiscoveryScrolled(window.scrollY > 20);
     onScroll();
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
-  }, [isDiscoveryGymnastics]);
+  }, [isDynamicGymnasticsLayout]);
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -515,7 +533,10 @@ export default function SimpleTemplateView({
     (typeof currentData?.timeZone === "string" && currentData.timeZone) ||
     null;
 
-  const formatDateWithTimeZone = (value: string, options?: Intl.DateTimeFormatOptions) => {
+  const formatDateWithTimeZone = (
+    value: string,
+    options?: Intl.DateTimeFormatOptions
+  ) => {
     if (!value) return "";
     try {
       return new Intl.DateTimeFormat("en-US", {
@@ -562,7 +583,8 @@ export default function SimpleTemplateView({
   const fullLocation =
     currentData?.location ||
     [venue, address, city, state].filter(Boolean).join(", ");
-  const mapAddress = [address, city, state].filter(Boolean).join(", ") || fullLocation;
+  const mapAddress =
+    [address, city, state].filter(Boolean).join(", ") || fullLocation;
 
   // Theme classes
   const isDarkBackground = (() => {
@@ -618,6 +640,15 @@ export default function SimpleTemplateView({
       : "text-slate-900";
 
   const rawTextClass = theme?.text || paletteTextFallback;
+  const neutralPreviewSurface = neutralPreview?.surface || "white";
+  const neutralPaletteDriven = Boolean(neutralPreview?.paletteDriven);
+  const neutralSuppressTextShadows = Boolean(
+    neutralPreview?.suppressTextShadows
+  );
+  const neutralUsesPalette =
+    disableThemeBackground && neutralPaletteDriven && hasSimpleDesignTokens;
+  const neutralUsesGradient =
+    disableThemeBackground && neutralPreviewSurface === "light-gradient";
 
   // Handle background: check for bgStyle (gradient) or bg (solid color)
   const hasBgStyle = theme?.bgStyle && typeof theme.bgStyle === "object";
@@ -638,7 +669,9 @@ export default function SimpleTemplateView({
     : forceLightText
     ? "text-white"
     : rawTextClass || "text-white";
-  const accentClass = disableThemeBackground
+  const accentClass = neutralUsesPalette
+    ? "text-[color:var(--primary)]"
+    : disableThemeBackground
     ? "text-slate-700"
     : hasSimpleDesignTokens
     ? "text-[color:var(--primary)]"
@@ -648,20 +681,37 @@ export default function SimpleTemplateView({
           ? "text-slate-100"
           : "text-slate-700"
         : textClass);
+  const allowThemeShadows = !neutralSuppressTextShadows;
   const usesLightText =
-    (!hasSimpleDesignTokens &&
+    allowThemeShadows &&
+    ((!hasSimpleDesignTokens &&
       /text-(white|slate-50|neutral-50|gray-50)/.test(textClass)) ||
-    isDarkBackground;
+      isDarkBackground);
   const headingShadow = usesLightText
     ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" }
     : undefined;
   const bodyShadow = usesLightText
     ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
     : undefined;
-  const titleColor = hasSimpleDesignTokens
+  const titleColor = neutralUsesPalette
+    ? { color: "var(--color-heading, #1f2937)" }
+    : hasSimpleDesignTokens
     ? undefined
     : isDarkBackground
     ? { color: "#f5e6d3" }
+    : undefined;
+  const neutralBackgroundStyle: CSSProperties | undefined = neutralUsesGradient
+    ? neutralUsesPalette
+      ? {
+          backgroundColor: "var(--bg, #ffffff)",
+          backgroundImage:
+            "linear-gradient(165deg, color-mix(in oklab, var(--bg, #ffffff) 84%, var(--primary, #6366f1) 16%) 0%, color-mix(in oklab, var(--surface, #ffffff) 92%, var(--accent, #14b8a6) 8%) 50%, color-mix(in oklab, var(--bg, #ffffff) 94%, white 6%) 100%)",
+        }
+      : {
+          backgroundColor: "#ffffff",
+          backgroundImage:
+            "linear-gradient(165deg, #f8fafc 0%, #ffffff 52%, #eef2ff 100%)",
+        }
     : undefined;
   const headingFontFamily =
     simpleDesignTokens?.titleFont ||
@@ -883,9 +933,12 @@ export default function SimpleTemplateView({
     const showFees = logistics.showFees !== false;
     const showMeals = logistics.showMeals !== false;
     const showAdditionalDocuments = logistics.showAdditionalDocuments !== false;
-    const additionalDocumentsCount = Array.isArray(logistics.additionalDocuments)
-      ? logistics.additionalDocuments.filter((doc: any) => doc?.name || doc?.url)
-          .length
+    const additionalDocumentsCount = Array.isArray(
+      logistics.additionalDocuments
+    )
+      ? logistics.additionalDocuments.filter(
+          (doc: any) => doc?.name || doc?.url
+        ).length
       : 0;
     return (
       (showTransportation &&
@@ -895,7 +948,8 @@ export default function SimpleTemplateView({
           Boolean(logistics.pickupWindow))) ||
       (showAccommodations &&
         (Boolean(logistics.hotel) || Boolean(logistics.hotelName))) ||
-      (showMeals && (Boolean(logistics.meals) || Boolean(logistics.mealPlan))) ||
+      (showMeals &&
+        (Boolean(logistics.meals) || Boolean(logistics.mealPlan))) ||
       (showFees && Boolean(logistics.feeAmount)) ||
       (showAdditionalDocuments &&
         ((logistics.forms?.length ?? 0) > 0 ||
@@ -922,12 +976,12 @@ export default function SimpleTemplateView({
       ? Boolean(protectedSectionFlags.volunteers)
       : advancedSections?.volunteers?.enabled === false
       ? false
-      : ((advancedSections?.volunteers?.showVolunteerSlots !== false &&
+      : (advancedSections?.volunteers?.showVolunteerSlots !== false &&
           ((advancedSections?.volunteers?.volunteerSlots?.length ?? 0) > 0 ||
             (advancedSections?.volunteers?.slots?.length ?? 0) > 0)) ||
         (advancedSections?.volunteers?.showCarpool !== false &&
           ((advancedSections?.volunteers?.carpoolOffers?.length ?? 0) > 0 ||
-            (advancedSections?.volunteers?.carpools?.length ?? 0) > 0)));
+            (advancedSections?.volunteers?.carpools?.length ?? 0) > 0));
   const hasAnnouncements =
     (advancedSections?.announcements?.items?.length ?? 0) > 0 ||
     (advancedSections?.announcements?.announcements?.length ?? 0) > 0;
@@ -1068,7 +1122,9 @@ export default function SimpleTemplateView({
     if (isSignedIn || disableProtectedSectionLocks) return node;
     const loginHref =
       typeof window !== "undefined"
-        ? `/api/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`
+        ? `/api/auth/signin?callbackUrl=${encodeURIComponent(
+            window.location.href
+          )}`
         : "/api/auth/signin";
     return (
       <div className="relative">
@@ -1725,7 +1781,9 @@ export default function SimpleTemplateView({
     const showMeals = logistics.showMeals !== false;
     const showAdditionalDocuments = logistics.showAdditionalDocuments !== false;
     const additionalDocuments = Array.isArray(logistics.additionalDocuments)
-      ? logistics.additionalDocuments.filter((doc: any) => doc?.name || doc?.url)
+      ? logistics.additionalDocuments.filter(
+          (doc: any) => doc?.name || doc?.url
+        )
       : [];
 
     const hasContent =
@@ -1755,54 +1813,56 @@ export default function SimpleTemplateView({
           {/* Transportation - show if travelMode, callTime, pickupWindow, or transport exists */}
           {showTransportation &&
             (logistics.travelMode ||
-            logistics.callTime ||
-            logistics.pickupWindow ||
-            logistics.transport) && (
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Bus size={18} className={accentClass} />
-                <span
-                  className={`font-semibold ${textClass}`}
-                  style={bodyShadow}
-                >
-                  TRANSPORTATION
-                </span>
+              logistics.callTime ||
+              logistics.pickupWindow ||
+              logistics.transport) && (
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Bus size={18} className={accentClass} />
+                  <span
+                    className={`font-semibold ${textClass}`}
+                    style={bodyShadow}
+                  >
+                    TRANSPORTATION
+                  </span>
+                </div>
+                {logistics.transport && (
+                  <p className={`text-sm opacity-80 ${textClass}`}>
+                    {logistics.transport}
+                  </p>
+                )}
+                {logistics.travelMode && !logistics.transport && (
+                  <p className={`text-sm opacity-80 ${textClass}`}>
+                    {logistics.travelMode === "bus" && "🚌 Team Bus"}
+                    {logistics.travelMode === "parent_drive" &&
+                      "🚗 Parent Drive"}
+                    {logistics.travelMode === "carpool" && "🚙 Carpool"}
+                    {logistics.travelMode === "other" && "Other"}
+                  </p>
+                )}
+                {logistics.callTime && (
+                  <p className={`text-sm mt-2 ${textClass}`}>
+                    <span className="opacity-70">Call time:</span>{" "}
+                    {logistics.callTime.includes(":") &&
+                    !logistics.callTime.includes("AM") &&
+                    !logistics.callTime.includes("PM")
+                      ? (() => {
+                          const [hours, minutes] =
+                            logistics.callTime.split(":");
+                          const hour = parseInt(hours, 10);
+                          if (hour >= 12) {
+                            const pmHour = hour === 12 ? 12 : hour - 12;
+                            return `${pmHour}:${minutes} PM`;
+                          } else {
+                            const amHour = hour === 0 ? 12 : hour;
+                            return `${amHour}:${minutes} AM`;
+                          }
+                        })()
+                      : logistics.callTime}
+                  </p>
+                )}
               </div>
-              {logistics.transport && (
-                <p className={`text-sm opacity-80 ${textClass}`}>
-                  {logistics.transport}
-                </p>
-              )}
-              {logistics.travelMode && !logistics.transport && (
-                <p className={`text-sm opacity-80 ${textClass}`}>
-                  {logistics.travelMode === "bus" && "🚌 Team Bus"}
-                  {logistics.travelMode === "parent_drive" && "🚗 Parent Drive"}
-                  {logistics.travelMode === "carpool" && "🚙 Carpool"}
-                  {logistics.travelMode === "other" && "Other"}
-                </p>
-              )}
-              {logistics.callTime && (
-                <p className={`text-sm mt-2 ${textClass}`}>
-                  <span className="opacity-70">Call time:</span>{" "}
-                  {logistics.callTime.includes(":") &&
-                  !logistics.callTime.includes("AM") &&
-                  !logistics.callTime.includes("PM")
-                    ? (() => {
-                        const [hours, minutes] = logistics.callTime.split(":");
-                        const hour = parseInt(hours, 10);
-                        if (hour >= 12) {
-                          const pmHour = hour === 12 ? 12 : hour - 12;
-                          return `${pmHour}:${minutes} PM`;
-                        } else {
-                          const amHour = hour === 0 ? 12 : hour;
-                          return `${amHour}:${minutes} AM`;
-                        }
-                      })()
-                    : logistics.callTime}
-                </p>
-              )}
-            </div>
-          )}
+            )}
 
           {/* Hotel - show if hotelName or hotel exists */}
           {showAccommodations && (logistics.hotelName || logistics.hotel) && (
@@ -1890,86 +1950,87 @@ export default function SimpleTemplateView({
             (additionalDocuments.length > 0 ||
               logistics.forms?.length > 0 ||
               logistics.waiverLinks?.length > 0) && (
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText size={18} className={accentClass} />
-                <span
-                  className={`font-semibold ${textClass}`}
-                  style={bodyShadow}
-                >
-                  Additional Documents
-                </span>
-              </div>
-              <ul className="space-y-1">
-                {additionalDocuments.map((doc: any, idx: number) => (
-                  <li key={doc.id || `doc-${idx}`}>
-                    {doc.url ? (
-                      (() => {
-                        const isEmbeddedDocument =
-                          typeof doc.url === "string" &&
-                          doc.url.startsWith("data:");
-                        return (
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText size={18} className={accentClass} />
+                  <span
+                    className={`font-semibold ${textClass}`}
+                    style={bodyShadow}
+                  >
+                    Additional Documents
+                  </span>
+                </div>
+                <ul className="space-y-1">
+                  {additionalDocuments.map((doc: any, idx: number) => (
+                    <li key={doc.id || `doc-${idx}`}>
+                      {doc.url ? (
+                        (() => {
+                          const isEmbeddedDocument =
+                            typeof doc.url === "string" &&
+                            doc.url.startsWith("data:");
+                          return (
+                            <a
+                              href={doc.url}
+                              target={isEmbeddedDocument ? undefined : "_blank"}
+                              rel={
+                                isEmbeddedDocument
+                                  ? undefined
+                                  : "noopener noreferrer"
+                              }
+                              download={
+                                isEmbeddedDocument
+                                  ? doc.name || `document-${idx + 1}`
+                                  : undefined
+                              }
+                              className={`text-sm underline ${accentClass}`}
+                            >
+                              {doc.name || `Document ${idx + 1}`}
+                            </a>
+                          );
+                        })()
+                      ) : (
+                        <span className={`text-sm opacity-80 ${textClass}`}>
+                          {doc.name || `Document ${idx + 1}`}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                  {(logistics.forms || []).map((form: any, idx: number) => (
+                    <li key={idx}>
+                      {form.url ? (
+                        <a
+                          href={form.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`text-sm underline ${accentClass}`}
+                        >
+                          {form.name}
+                        </a>
+                      ) : (
+                        <span className={`text-sm opacity-80 ${textClass}`}>
+                          {form.name}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                  {(logistics.waiverLinks || []).map(
+                    (link: string, idx: number) =>
+                      link ? (
+                        <li key={`waiver-${idx}`}>
                           <a
-                            href={doc.url}
-                            target={isEmbeddedDocument ? undefined : "_blank"}
-                            rel={
-                              isEmbeddedDocument
-                                ? undefined
-                                : "noopener noreferrer"
-                            }
-                            download={
-                              isEmbeddedDocument
-                                ? doc.name || `document-${idx + 1}`
-                                : undefined
-                            }
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className={`text-sm underline ${accentClass}`}
                           >
-                            {doc.name || `Document ${idx + 1}`}
+                            Document {idx + 1}
                           </a>
-                        );
-                      })()
-                    ) : (
-                      <span className={`text-sm opacity-80 ${textClass}`}>
-                        {doc.name || `Document ${idx + 1}`}
-                      </span>
-                    )}
-                  </li>
-                ))}
-                {(logistics.forms || []).map((form: any, idx: number) => (
-                  <li key={idx}>
-                    {form.url ? (
-                      <a
-                        href={form.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`text-sm underline ${accentClass}`}
-                      >
-                        {form.name}
-                      </a>
-                    ) : (
-                      <span className={`text-sm opacity-80 ${textClass}`}>
-                        {form.name}
-                      </span>
-                    )}
-                  </li>
-                ))}
-                {(logistics.waiverLinks || []).map((link: string, idx: number) =>
-                  link ? (
-                    <li key={`waiver-${idx}`}>
-                      <a
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`text-sm underline ${accentClass}`}
-                      >
-                        Document {idx + 1}
-                      </a>
-                    </li>
-                  ) : null
-                )}
-              </ul>
-            </div>
-          )}
+                        </li>
+                      ) : null
+                  )}
+                </ul>
+              </div>
+            )}
         </div>
       </section>
     );
@@ -2185,7 +2246,9 @@ export default function SimpleTemplateView({
     if (!isSignedIn && !allowGuestAttendanceRsvp) {
       const loginHref =
         typeof window !== "undefined"
-          ? `/api/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`
+          ? `/api/auth/signin?callbackUrl=${encodeURIComponent(
+              window.location.href
+            )}`
           : "/api/auth/signin";
       window.location.href = loginHref;
       return;
@@ -2508,143 +2571,147 @@ export default function SimpleTemplateView({
           </div>
         )}
         {showCarpool && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className={`text-2xl ${accentClass}`} style={headingStyle}>
-              Carpool Offers
-            </h2>
-            <button
-              onClick={() => setCarpoolAddModal(true)}
-              className="text-xs px-3 py-1.5 bg-cyan-500/30 hover:bg-cyan-500/50 text-cyan-200 rounded transition-colors font-medium flex items-center gap-1"
-            >
-              <Plus size={14} /> Add Offer
-            </button>
-          </div>
-          {carpools.length > 0 ? (
-            <div
-              className={
-                isSoccerTemplate
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4"
-                  : "space-y-3"
-              }
-            >
-              {carpools
-                .filter((cp: any) => cp.driverName || cp.driver)
-                .map((carpool: any, idx: number) => {
-                  const driverName = carpool.driverName || carpool.driver || "";
-                  const seatsAvailable =
-                    carpool.seatsAvailable || carpool.seats || 0;
-                  const seatsTaken = carpool.seatsTaken || 0;
-                  const seatsRemaining = seatsAvailable - seatsTaken;
-                  const phone = carpool.phone || "";
-                  const departureLocation = carpool.departureLocation || "";
-                  const departureTime = carpool.departureTime || "";
-                  const direction = carpool.direction || "";
-                  const signups = carpool.signups || [];
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-2xl ${accentClass}`} style={headingStyle}>
+                Carpool Offers
+              </h2>
+              <button
+                onClick={() => setCarpoolAddModal(true)}
+                className="text-xs px-3 py-1.5 bg-cyan-500/30 hover:bg-cyan-500/50 text-cyan-200 rounded transition-colors font-medium flex items-center gap-1"
+              >
+                <Plus size={14} /> Add Offer
+              </button>
+            </div>
+            {carpools.length > 0 ? (
+              <div
+                className={
+                  isSoccerTemplate
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+                    : "space-y-3"
+                }
+              >
+                {carpools
+                  .filter((cp: any) => cp.driverName || cp.driver)
+                  .map((carpool: any, idx: number) => {
+                    const driverName =
+                      carpool.driverName || carpool.driver || "";
+                    const seatsAvailable =
+                      carpool.seatsAvailable || carpool.seats || 0;
+                    const seatsTaken = carpool.seatsTaken || 0;
+                    const seatsRemaining = seatsAvailable - seatsTaken;
+                    const phone = carpool.phone || "";
+                    const departureLocation = carpool.departureLocation || "";
+                    const departureTime = carpool.departureTime || "";
+                    const direction = carpool.direction || "";
+                    const signups = carpool.signups || [];
 
-                  return (
-                    <div
-                      key={carpool.id || idx}
-                      className="bg-white/5 border border-white/10 rounded-lg p-4"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div
-                          className={`font-semibold ${textClass}`}
-                          style={bodyShadow}
-                        >
-                          {driverName}
-                        </div>
-                        <span
-                          className={`px-2 py-1 rounded text-sm ${
-                            seatsRemaining > 0
-                              ? "bg-cyan-500/30 text-cyan-200"
-                              : "bg-red-500/30 text-red-200"
-                          }`}
-                        >
-                          {seatsRemaining} of {seatsAvailable} seat
-                          {seatsAvailable !== 1 ? "s" : ""} available
-                        </span>
-                      </div>
-                      {(departureLocation || departureTime) && (
-                        <div
-                          className={`text-sm opacity-70 ${textClass}`}
-                          style={bodyShadow}
-                        >
-                          {departureLocation && (
-                            <span>{departureLocation}</span>
-                          )}
-                          {departureTime && (
-                            <span> • {formatTime(departureTime)}</span>
-                          )}
-                        </div>
-                      )}
-                      {direction && !departureLocation && !departureTime && (
-                        <div className={`text-sm opacity-70 ${textClass}`}>
-                          {direction}
-                        </div>
-                      )}
-                      {signups.length > 0 && (
-                        <div className="mt-2 mb-2">
+                    return (
+                      <div
+                        key={carpool.id || idx}
+                        className="bg-white/5 border border-white/10 rounded-lg p-4"
+                      >
+                        <div className="flex items-center justify-between mb-2">
                           <div
-                            className={`text-xs opacity-70 ${textClass}`}
+                            className={`font-semibold ${textClass}`}
                             style={bodyShadow}
                           >
-                            Passengers:{" "}
-                            {signups
-                              .map(
-                                (s: any) =>
-                                  `${s.passengerName} (${
-                                    s.seatsRequested
-                                  } seat${s.seatsRequested !== 1 ? "s" : ""})`
-                              )
-                              .join(", ")}
+                            {driverName}
                           </div>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        {seatsRemaining > 0 && (
-                          <button
-                            onClick={() => {
-                              setCarpoolSignupModal({ open: true, carpool });
-                              setCarpoolSignupForm({
-                                passengerName: "",
-                                passengerPhone: "",
-                                passengerEmail: "",
-                                seatsRequested: 1,
-                              });
-                            }}
-                            className={`inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-orange-500/30 hover:bg-orange-500/50 text-orange-200 rounded transition-colors font-medium`}
+                          <span
+                            className={`px-2 py-1 rounded text-sm ${
+                              seatsRemaining > 0
+                                ? "bg-cyan-500/30 text-cyan-200"
+                                : "bg-red-500/30 text-red-200"
+                            }`}
                           >
-                            <Users size={14} /> Sign Up
-                          </button>
+                            {seatsRemaining} of {seatsAvailable} seat
+                            {seatsAvailable !== 1 ? "s" : ""} available
+                          </span>
+                        </div>
+                        {(departureLocation || departureTime) && (
+                          <div
+                            className={`text-sm opacity-70 ${textClass}`}
+                            style={bodyShadow}
+                          >
+                            {departureLocation && (
+                              <span>{departureLocation}</span>
+                            )}
+                            {departureTime && (
+                              <span> • {formatTime(departureTime)}</span>
+                            )}
+                          </div>
                         )}
-                        {phone && (
-                          <a
-                            href={`tel:${phone}`}
+                        {direction && !departureLocation && !departureTime && (
+                          <div className={`text-sm opacity-70 ${textClass}`}>
+                            {direction}
+                          </div>
+                        )}
+                        {signups.length > 0 && (
+                          <div className="mt-2 mb-2">
+                            <div
+                              className={`text-xs opacity-70 ${textClass}`}
+                              style={bodyShadow}
+                            >
+                              Passengers:{" "}
+                              {signups
+                                .map(
+                                  (s: any) =>
+                                    `${s.passengerName} (${
+                                      s.seatsRequested
+                                    } seat${s.seatsRequested !== 1 ? "s" : ""})`
+                                )
+                                .join(", ")}
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          {seatsRemaining > 0 && (
+                            <button
+                              onClick={() => {
+                                setCarpoolSignupModal({ open: true, carpool });
+                                setCarpoolSignupForm({
+                                  passengerName: "",
+                                  passengerPhone: "",
+                                  passengerEmail: "",
+                                  seatsRequested: 1,
+                                });
+                              }}
+                              className={`inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-orange-500/30 hover:bg-orange-500/50 text-orange-200 rounded transition-colors font-medium`}
+                            >
+                              <Users size={14} /> Sign Up
+                            </button>
+                          )}
+                          {phone && (
+                            <a
+                              href={`tel:${phone}`}
+                              className={`inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors ${textClass}`}
+                            >
+                              <Phone size={14} /> Call
+                            </a>
+                          )}
+                          <button
+                            onClick={() =>
+                              setCarpoolContactModal({ open: true, carpool })
+                            }
                             className={`inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors ${textClass}`}
                           >
-                            <Phone size={14} /> Call
-                          </a>
-                        )}
-                        <button
-                          onClick={() =>
-                            setCarpoolContactModal({ open: true, carpool })
-                          }
-                          className={`inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors ${textClass}`}
-                        >
-                          <Mail size={14} /> Contact
-                        </button>
+                            <Mail size={14} /> Contact
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-            </div>
-          ) : (
-            <p className={`text-sm opacity-70 ${textClass}`} style={bodyShadow}>
-              No carpool offers yet. Be the first to add one!
-            </p>
-          )}
-        </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <p
+                className={`text-sm opacity-70 ${textClass}`}
+                style={bodyShadow}
+              >
+                No carpool offers yet. Be the first to add one!
+              </p>
+            )}
+          </div>
         )}
       </section>
     );
@@ -2751,7 +2818,7 @@ export default function SimpleTemplateView({
     </div>
   );
 
-  if (isDiscoveryGymnastics) {
+  if (isDynamicGymnasticsLayout) {
     const parseAdmissionsFromText = (value: any) => {
       const lines = String(value || "")
         .split(/\n+/)
@@ -2767,7 +2834,11 @@ export default function SimpleTemplateView({
             note: parts[2] || "",
           };
         })
-        .filter(Boolean) as Array<{ label: string; price: string; note: string }>;
+        .filter(Boolean) as Array<{
+        label: string;
+        price: string;
+        note: string;
+      }>;
     };
 
     const parseResultAdmission = Array.isArray(
@@ -2776,10 +2847,12 @@ export default function SimpleTemplateView({
       ? currentData.discoverySource.parseResult.admission
       : [];
     const stripRepeatedAdmissionFromPrice = (value: string) =>
-      safeString(value).replace(
-        /\bcash\s*only\s*;?\s*per\s*day\s*;?\s*no\s*weekend\s*passes\.?/gi,
-        ""
-      ).trim();
+      safeString(value)
+        .replace(
+          /\bcash\s*only\s*;?\s*per\s*day\s*;?\s*no\s*weekend\s*passes\.?/gi,
+          ""
+        )
+        .trim();
     const admissionCards =
       parseResultAdmission.length > 0
         ? parseResultAdmission.map((item: any) => ({
@@ -2798,10 +2871,13 @@ export default function SimpleTemplateView({
     const parseLogistics = parseResult?.logistics || {};
     const parseMeetDetails = parseResult?.meetDetails || {};
     const parseCommunications = parseResult?.communications || {};
-    const parseLinks = Array.isArray(parseResult?.links) ? parseResult.links : [];
-    const quickLinks = Array.isArray(currentData?.links) && currentData.links.length
-      ? currentData.links
-      : parseLinks;
+    const parseLinks = Array.isArray(parseResult?.links)
+      ? parseResult.links
+      : [];
+    const quickLinks =
+      Array.isArray(currentData?.links) && currentData.links.length
+        ? currentData.links
+        : parseLinks;
     const normalizedLinks = (Array.isArray(quickLinks) ? quickLinks : [])
       .map((item: any) => ({
         label: safeString(item?.label),
@@ -2827,31 +2903,36 @@ export default function SimpleTemplateView({
       normalizedLinks.find((item) => item.url !== mapDashboardLink?.url) ||
       normalizedLinks[1];
     const contactLinkCandidate =
-      pickLink(/(contact|support|coach|help|phone|organizer)/i) || normalizedLinks[0];
+      pickLink(/(contact|support|coach|help|phone|organizer)/i) ||
+      normalizedLinks[0];
     const visitorLinkCandidate =
       pickLink(/(visitor|guide|venue|directions|map|travel|hotel|parking)/i) ||
       normalizedLinks.find((item) => item.url !== contactLinkCandidate?.url) ||
       normalizedLinks[1];
     const sourceInput = currentData?.discoverySource?.input || {};
-    const sourceFileName = safeString(sourceInput?.fileName) || "uploaded-source";
+    const sourceFileName =
+      safeString(sourceInput?.fileName) || "uploaded-source";
     const sourceFileUrl =
       sourceInput?.type === "file" && safeString(sourceInput?.dataUrl)
         ? String(sourceInput.dataUrl)
         : "";
     const hasSourceFileDownload = sourceFileUrl.startsWith("data:");
     const sourceMime = safeString(sourceInput?.mimeType);
-    const isSourcePdf = /pdf/i.test(sourceMime) || /\.pdf$/i.test(sourceFileName);
+    const isSourcePdf =
+      /pdf/i.test(sourceMime) || /\.pdf$/i.test(sourceFileName);
     const eventDatesLabel =
       currentData?.discoverySource?.parseResult?.dates ||
       (date ? formatDate(date) : "");
-    const hostName = currentData?.hostGym || customFields?.team || "Host Committee";
-    const navTitle = safeString(currentData?.eventTitle || eventTitle) || hostName;
+    const hostName =
+      currentData?.hostGym || customFields?.team || "Host Committee";
+    const navTitle =
+      safeString(currentData?.eventTitle || eventTitle) || hostName;
     const warmupTimeLabel = formatTime(meet?.warmUpTime);
     const scheduleHint = warmupTimeLabel
       ? `First warmup: ${warmupTimeLabel}`
       : time
-        ? `Start time: ${formatTime(time)}`
-        : "";
+      ? `Start time: ${formatTime(time)}`
+      : "";
     const venueLabel = safeString(currentData?.venue);
     const addressLabel = safeString(currentData?.address);
     const facilityMapAddress = addressLabel || venueLabel;
@@ -2859,16 +2940,23 @@ export default function SimpleTemplateView({
       advancedSections?.logistics?.gymLayoutImage ||
         currentData?.discoverySource?.extractionMeta?.gymLayoutImageDataUrl
     );
-    const extractedDiscoveryText = safeString(currentData?.discoverySource?.extractedText);
+    const extractedDiscoveryText = safeString(
+      currentData?.discoverySource?.extractedText
+    );
     const sourceLines = extractedDiscoveryText
       ? extractedDiscoveryText
           .split(/\n+/)
           .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
           .filter(Boolean)
       : [];
-    const trafficText = safeString(logistics?.trafficAlerts || parseLogistics?.trafficAlerts);
+    const trafficText = safeString(
+      logistics?.trafficAlerts || parseLogistics?.trafficAlerts
+    );
     const normalizeForCompare = (value: string) =>
-      value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
     const trafficEntriesRaw = trafficText
       ? trafficText
           .split(/\n+/)
@@ -2880,14 +2968,20 @@ export default function SimpleTemplateView({
       const fullNormalized = normalizeForCompare(trafficText);
       if (!normalized) return false;
       if (normalized === fullNormalized) return false;
-      return arr.findIndex((candidate) => normalizeForCompare(candidate) === normalized) === idx;
+      return (
+        arr.findIndex(
+          (candidate) => normalizeForCompare(candidate) === normalized
+        ) === idx
+      );
     });
     const trafficSlotsFromText = (() => {
       const candidateLines = [trafficText, ...sourceLines]
         .map((line) => safeString(line))
         .filter(Boolean)
         .filter((line) =>
-          /(traffic|disney on ice|benchmark|march|\bam\b|\bpm\b|parking)/i.test(line)
+          /(traffic|disney on ice|benchmark|march|\bam\b|\bpm\b|parking)/i.test(
+            line
+          )
         );
       const slots: Array<{ date: string; times: string }> = [];
       const seen = new Set<string>();
@@ -2898,7 +2992,9 @@ export default function SimpleTemplateView({
         );
         if (dateMatch?.[0]) pendingDate = dateMatch[0];
         const timeRanges =
-          line.match(/\b\d{1,2}:\d{2}\s*[AP]M\s*-\s*\d{1,2}:\d{2}\s*[AP]M\b/gi) || [];
+          line.match(
+            /\b\d{1,2}:\d{2}\s*[AP]M\s*-\s*\d{1,2}:\d{2}\s*[AP]M\b/gi
+          ) || [];
         if (!timeRanges.length) continue;
         const dateLabel = dateMatch?.[0] || pendingDate;
         if (!dateLabel) continue;
@@ -2918,21 +3014,28 @@ export default function SimpleTemplateView({
             times: entry,
           }));
     const firstAnnouncement = Array.isArray(parseCommunications?.announcements)
-      ? parseCommunications.announcements.find((item: any) => safeString(item?.body))
+      ? parseCommunications.announcements.find((item: any) =>
+          safeString(item?.body)
+        )
       : null;
-    const admissionPrimaryNote = admissionCards.find((item) => safeString(item.note))?.note || "";
-    const merchandiseLink = pickLink(/(merch|shop|store|vendor|apparel|souvenir|leotard)/i);
+    const admissionPrimaryNote =
+      admissionCards.find((item) => safeString(item.note))?.note || "";
+    const merchandiseLink = pickLink(
+      /(merch|shop|store|vendor|apparel|souvenir|leotard)/i
+    );
     const announcementBody = safeString(firstAnnouncement?.body);
     const merchandiseText =
-      /(merch|shop|store|vendor|apparel|souvenir|leotard)/i.test(announcementBody)
+      /(merch|shop|store|vendor|apparel|souvenir|leotard)/i.test(
+        announcementBody
+      )
         ? announcementBody
         : "";
     const hasRotationLink = Boolean(safeString(rotationLink?.url));
-    const hasAdmissionContent = admissionCards.length > 0 || Boolean(admissionPrimaryNote);
+    const hasAdmissionContent =
+      admissionCards.length > 0 || Boolean(admissionPrimaryNote);
     const hasSpectatorCards = Boolean(merchandiseText) || hasRotationLink;
     const rulesUpdateText =
-      safeString(firstAnnouncement?.body) ||
-      safeString(description);
+      safeString(firstAnnouncement?.body) || safeString(description);
     const eventCity = (() => {
       const fromAddress = addressLabel
         .split(",")
@@ -2949,9 +3052,13 @@ export default function SimpleTemplateView({
     );
     const additionalInfoBlock =
       additionalInfoStartIdx >= 0
-        ? sourceLines.slice(additionalInfoStartIdx + 1, additionalInfoStartIdx + 20)
+        ? sourceLines.slice(
+            additionalInfoStartIdx + 1,
+            additionalInfoStartIdx + 20
+          )
         : [];
-    const rideSharePattern = /(rideshare|ride share|uber|lyft|taxi|front drive|drop-?off)/i;
+    const rideSharePattern =
+      /(rideshare|ride share|uber|lyft|taxi|front drive|drop-?off)/i;
     const meetDetailCandidateLines = [
       ...additionalInfoBlock,
       ...sourceLines.filter((line) =>
@@ -2994,7 +3101,12 @@ export default function SimpleTemplateView({
       })
       .filter((line, idx, arr) => {
         const normalized = line.toLowerCase().replace(/\s+/g, " ").trim();
-        return arr.findIndex((candidate) => candidate.toLowerCase().replace(/\s+/g, " ").trim() === normalized) === idx;
+        return (
+          arr.findIndex(
+            (candidate) =>
+              candidate.toLowerCase().replace(/\s+/g, " ").trim() === normalized
+          ) === idx
+        );
       })
       .slice(0, 12);
     const rideShareNote =
@@ -3009,7 +3121,9 @@ export default function SimpleTemplateView({
       facilityLinesFromSource.find((line) =>
         /(registration|guest services|2nd floor|second floor)/i.test(line)
       ) ||
-      sourceLines.find((line) => /(registration|guest services|2nd floor|second floor)/i.test(line)) ||
+      sourceLines.find((line) =>
+        /(registration|guest services|2nd floor|second floor)/i.test(line)
+      ) ||
       "";
     const awardsAreaNote =
       sourceLines.find((line) => /(awards area|north side)/i.test(line)) ||
@@ -3017,7 +3131,10 @@ export default function SimpleTemplateView({
         ? `Awards area: ${safeString(parseResult?.athlete?.awards)}.`
         : "");
     const normalizeCompareText = (value: string) =>
-      value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
     const venueDetailContains = (note: string) => {
       const normalizedNote = normalizeCompareText(note);
       if (!normalizedNote) return false;
@@ -3031,32 +3148,44 @@ export default function SimpleTemplateView({
       });
     };
     const showRegistrationDeskNote =
-      Boolean(registrationDeskNote) && !venueDetailContains(registrationDeskNote);
+      Boolean(registrationDeskNote) &&
+      !venueDetailContains(registrationDeskNote);
     const showAwardsAreaNote =
       Boolean(awardsAreaNote) && !venueDetailContains(awardsAreaNote);
     const sourcePolicyLine = (pattern: RegExp) =>
       sourceLines.find((line) => pattern.test(line)) || "";
     const policyNotes = [
       safeString(logistics?.mealPlan || parseLogistics?.meals) ||
-        sourcePolicyLine(/(food|beverage|coffee|starbucks|kahwa|outside food)/i),
-      sourcePolicyLine(/(hydration|water bottles|filling stations|fill stations|bring water)/i) ||
+        sourcePolicyLine(
+          /(food|beverage|coffee|starbucks|kahwa|outside food)/i
+        ),
+      sourcePolicyLine(
+        /(hydration|water bottles|filling stations|fill stations|bring water)/i
+      ) ||
         (safeString(parseResult?.athlete?.stretchTime)
           ? `Athlete stretch begins at ${parseResult.athlete.stretchTime}. Bring water and arrive prepared.`
           : ""),
       safeString(logistics?.waivers || parseLogistics?.waivers) ||
         sourcePolicyLine(/(service animal|service dog|certified service)/i),
       safeString(parseMeetDetails?.judgingNotes) ||
-        sourcePolicyLine(/(safety policy|throwing objects|baseballs|footballs|safety)/i),
+        sourcePolicyLine(
+          /(safety policy|throwing objects|baseballs|footballs|safety)/i
+        ),
     ];
     const hasPolicyCards = policyNotes.some(Boolean);
     const detailPairs = [
       {
-        label: "Gym Name",
-        value: safeString(currentData?.hostGym || parseResult?.hostGym || currentData?.venue),
+        label: "Host Gym",
+        value: safeString(
+          currentData?.hostGym || parseResult?.hostGym || currentData?.venue
+        ),
       },
       {
         label: "Team Level",
-        value: [safeString(parseResult?.athlete?.team), safeString(parseResult?.athlete?.level)]
+        value: [
+          safeString(parseResult?.athlete?.team),
+          safeString(parseResult?.athlete?.level),
+        ]
           .filter(Boolean)
           .join(" • "),
       },
@@ -3070,10 +3199,16 @@ export default function SimpleTemplateView({
           safeString(parseResult?.athlete?.stretchTime) ||
           formatTime(meet?.warmUpTime || ""),
       },
-      { label: "Assigned Gym", value: safeString(parseResult?.athlete?.assignedGym) },
+      {
+        label: "Assigned Gym",
+        value: safeString(parseResult?.athlete?.assignedGym),
+      },
       { label: "Awards", value: safeString(parseResult?.athlete?.awards) },
       { label: "Uniform", value: safeString(parseResult?.gear?.uniform) },
-      { label: "Volunteer Notes", value: safeString(parseResult?.volunteers?.notes) },
+      {
+        label: "Volunteer Notes",
+        value: safeString(parseResult?.volunteers?.notes),
+      },
       { label: "Waivers", value: safeString(parseLogistics?.waivers) },
     ].filter((item) => item.value);
     const contactLink = contactLinkCandidate;
@@ -3108,9 +3243,10 @@ export default function SimpleTemplateView({
       const raw = (urlMatch[0] || "").replace(/[.,;!?]+$/g, "");
       const href = /^www\./i.test(raw) ? `https://${raw}` : raw;
       const matchIndex = urlMatch.index ?? line.indexOf(urlMatch[0]);
-      const textWithoutUrl = `${line.slice(0, Math.max(0, matchIndex))}${line.slice(
-        Math.max(0, matchIndex) + (urlMatch[0] || "").length
-      )}`
+      const textWithoutUrl = `${line.slice(
+        0,
+        Math.max(0, matchIndex)
+      )}${line.slice(Math.max(0, matchIndex) + (urlMatch[0] || "").length)}`
         .replace(/\s{2,}/g, " ")
         .replace(/\s+([.,;:!?])/g, "$1")
         .trim();
@@ -3157,9 +3293,6 @@ export default function SimpleTemplateView({
                 >
                   {navTitle}
                 </h1>
-                <p className="text-[10px] font-bold text-[color:var(--chip-text,#2D1B4E)] uppercase tracking-widest mt-1">
-                  Digital Spectator Guide
-                </p>
               </div>
             </div>
           </div>
@@ -3179,7 +3312,9 @@ export default function SimpleTemplateView({
             >
               {currentData?.eventTitle || eventTitle || "Gymnastics Meet"}
             </h2>
-            <div className={`flex flex-wrap gap-4 text-sm font-bold ${discoveryNavText}`}>
+            <div
+              className={`flex flex-wrap gap-4 text-sm font-bold ${discoveryNavText}`}
+            >
               {venueLabel && (
                 <span className="flex items-center gap-1.5">
                   <MapPin size={16} className={discoveryIcon} /> {venueLabel}
@@ -3220,7 +3355,10 @@ export default function SimpleTemplateView({
                       </svg>
                       <span className="hidden sm:inline">Edit</span>
                     </Link>
-                    <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
+                    <EventDeleteModal
+                      eventId={eventId}
+                      eventTitle={eventTitle}
+                    />
                   </>
                 )}
                 <EventActions
@@ -3251,7 +3389,9 @@ export default function SimpleTemplateView({
                     ? "bg-[color:var(--color-nav-active-bg,#F8FAFC)] text-[color:var(--color-nav-active,#2D1B4E)] border-[color:var(--accent,#D4AF37)]"
                     : "bg-transparent text-[color:var(--color-nav-text,#334155)] border-transparent hover:border-[color:var(--color-border-hover,#D4AF37)] hover:bg-[color:var(--chip-bg,#F8FAFC)]"
                 }`}
-                aria-current={discoveryActiveTab === tab.id ? "page" : undefined}
+                aria-current={
+                  discoveryActiveTab === tab.id ? "page" : undefined
+                }
               >
                 <tab.icon
                   size={16}
@@ -3268,136 +3408,164 @@ export default function SimpleTemplateView({
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2 space-y-8">
-              {discoveryActiveTab === "meet-details" && hasMeetDetailsContent && (
-                <div className="space-y-10">
-                  <section className={`${discoveryCard} p-10`}>
-                    <h3 className={discoverySectionHeading}>
-                      <Info className={discoveryIcon} size={24} /> Meet Details
-                    </h3>
-                    <div className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 p-6">
-                      <ul className="space-y-4">
-                        {meetDetailsLines.map((line) => (
-                          (() => {
-                            const parsedLine = extractInlineUrl(line);
-                            return (
-                              <li
-                                key={`meet-details-line-${line}`}
-                                className="flex items-start gap-3"
-                              >
-                                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-slate-400/70" />
-                                <div className="space-y-2">
-                                  <p className="text-sm text-slate-700 leading-relaxed">
-                                    {parsedLine.textWithoutUrl || "Reference link"}
-                                  </p>
-                                  {parsedLine.href && (
-                                    <a
-                                      href={parsedLine.href}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={`inline-flex items-center gap-2 rounded-full border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] hover:border-[color:var(--color-border-hover,#D4AF37)] ${discoveryFocusRing}`}
-                                    >
-                                      Open Link <ExternalLink size={12} />
-                                    </a>
-                                  )}
-                                </div>
-                              </li>
-                            );
-                          })()
-                        ))}
-                      </ul>
-                    </div>
-                  </section>
-                </div>
-              )}
+              {discoveryActiveTab === "meet-details" &&
+                hasMeetDetailsContent && (
+                  <div className="space-y-10">
+                    <section className={`${discoveryCard} p-10`}>
+                      <h3 className={discoverySectionHeading}>
+                        <Info className={discoveryIcon} size={24} /> Meet
+                        Details
+                      </h3>
+                      <div className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 p-6">
+                        <ul className="space-y-4">
+                          {meetDetailsLines.map((line) =>
+                            (() => {
+                              const parsedLine = extractInlineUrl(line);
+                              return (
+                                <li
+                                  key={`meet-details-line-${line}`}
+                                  className="flex items-start gap-3"
+                                >
+                                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-slate-400/70" />
+                                  <div className="space-y-2">
+                                    <p className="text-sm text-slate-700 leading-relaxed">
+                                      {parsedLine.textWithoutUrl ||
+                                        "Reference link"}
+                                    </p>
+                                    {parsedLine.href && (
+                                      <a
+                                        href={parsedLine.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`inline-flex items-center gap-2 rounded-full border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] hover:border-[color:var(--color-border-hover,#D4AF37)] ${discoveryFocusRing}`}
+                                      >
+                                        Open Link <ExternalLink size={12} />
+                                      </a>
+                                    )}
+                                  </div>
+                                </li>
+                              );
+                            })()
+                          )}
+                        </ul>
+                      </div>
+                    </section>
+                  </div>
+                )}
 
               {discoveryActiveTab === "spectator" && (
                 <div className="space-y-10">
                   {hasAdmissionContent && (
-                  <section className={`${discoveryCard} p-10 relative overflow-hidden`}>
-                    <div className="absolute top-0 right-0 p-8 opacity-5">
-                      <Ticket size={120} />
-                    </div>
-                    <h3 className={discoverySectionHeading}>
-                      <CreditCard className={discoveryIcon} size={24} /> Spectator
-                      Admission
-                    </h3>
-                    {admissionCards.length > 0 && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                        {admissionCards.map((item, i) => (
-                          <div
-                            key={`${item.label}-${i}`}
-                            className="bg-slate-50 p-6 rounded-3xl border border-[color:var(--border,#E2E8F0)]"
-                          >
-                            <div>
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                {item.label}
-                              </p>
-                              {item.price && (
-                                <p className="text-2xl font-black text-slate-900">
-                                  {item.price}
+                    <section
+                      className={`${discoveryCard} p-10 relative overflow-hidden`}
+                    >
+                      <div className="absolute top-0 right-0 p-8 opacity-5">
+                        <Ticket size={120} />
+                      </div>
+                      <h3 className={discoverySectionHeading}>
+                        <CreditCard className={discoveryIcon} size={24} />{" "}
+                        Spectator Admission
+                      </h3>
+                      {admissionCards.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                          {admissionCards.map((item, i) => (
+                            <div
+                              key={`${item.label}-${i}`}
+                              className="bg-slate-50 p-6 rounded-3xl border border-[color:var(--border,#E2E8F0)]"
+                            >
+                              <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                  {item.label}
                                 </p>
-                              )}
+                                {item.price && (
+                                  <p className="text-2xl font-black text-slate-900">
+                                    {item.price}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {admissionPrimaryNote && (
-                      <div className="p-4 rounded-2xl flex items-center gap-4 border border-[color:var(--border,#E2E8F0)] bg-[color:var(--chip-bg,#F8FAFC)]">
-                        <div className="p-2 bg-white rounded-xl border border-[color:var(--chip-border,#D7DCE6)]">
-                          <Info size={20} className={discoveryIcon} />
+                          ))}
                         </div>
-                        <p className="text-xs text-[color:var(--text,#0F172A)]">
-                          <span className="font-black uppercase tracking-widest text-[color:var(--accent,#D4AF37)] block">
-                            Admission note
-                          </span>
-                          {admissionPrimaryNote}
-                        </p>
-                      </div>
-                    )}
-                  </section>
+                      )}
+                      {admissionPrimaryNote && (
+                        <div className="p-4 rounded-2xl flex items-center gap-4 border border-[color:var(--border,#E2E8F0)] bg-[color:var(--chip-bg,#F8FAFC)]">
+                          <div className="p-2 bg-white rounded-xl border border-[color:var(--chip-border,#D7DCE6)]">
+                            <Info size={20} className={discoveryIcon} />
+                          </div>
+                          <p className="text-xs text-[color:var(--text,#0F172A)]">
+                            <span className="font-black uppercase tracking-widest text-[color:var(--accent,#D4AF37)] block">
+                              Admission note
+                            </span>
+                            {admissionPrimaryNote}
+                          </p>
+                        </div>
+                      )}
+                    </section>
                   )}
 
                   {hasSpectatorCards && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {(merchandiseText || merchandiseLink?.url) && (
-                    <div className={`${discoveryCard} p-8`}>
-                      <ShoppingBag className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
-                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Merchandise</h4>
-                      {merchandiseText ? (
-                        <p className="text-sm text-slate-500 leading-relaxed">
-                          {merchandiseText}
-                        </p>
-                      ) : (
-                        <a
-                          href={merchandiseLink?.url || "#"}
-                          target={merchandiseLink?.url ? "_blank" : undefined}
-                          rel={merchandiseLink?.url ? "noopener noreferrer" : undefined}
-                          className={`inline-flex items-center gap-2 text-xs font-black uppercase text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
-                        >
-                          {merchandiseLink?.label || "Merchandise Link"} <ExternalLink size={14} />
-                        </a>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {(merchandiseText || merchandiseLink?.url) && (
+                        <div className={`${discoveryCard} p-8`}>
+                          <ShoppingBag
+                            className="text-[color:var(--accent,#D4AF37)] mb-4"
+                            size={28}
+                          />
+                          <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                            Merchandise
+                          </h4>
+                          {merchandiseText ? (
+                            <p className="text-sm text-slate-500 leading-relaxed">
+                              {merchandiseText}
+                            </p>
+                          ) : (
+                            <a
+                              href={merchandiseLink?.url || "#"}
+                              target={
+                                merchandiseLink?.url ? "_blank" : undefined
+                              }
+                              rel={
+                                merchandiseLink?.url
+                                  ? "noopener noreferrer"
+                                  : undefined
+                              }
+                              className={`inline-flex items-center gap-2 text-xs font-black uppercase text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
+                            >
+                              {merchandiseLink?.label || "Merchandise Link"}{" "}
+                              <ExternalLink size={14} />
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {hasRotationLink && (
+                        <div className={`${discoveryCard} p-8`}>
+                          <ClipboardList
+                            className="text-[color:var(--accent,#D4AF37)] mb-4"
+                            size={28}
+                          />
+                          <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                            Rotation Sheets
+                          </h4>
+                          <p className="text-sm text-slate-500 leading-relaxed">
+                            Download or view updated rotation sheets from the
+                            official event links.
+                          </p>
+                          <a
+                            href={rotationLink?.url || "#"}
+                            target={rotationLink?.url ? "_blank" : undefined}
+                            rel={
+                              rotationLink?.url
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
+                            className={`mt-6 inline-flex items-center gap-2 text-xs font-black uppercase text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
+                          >
+                            {rotationLink?.label || "Official Website"}{" "}
+                            <ExternalLink size={14} />
+                          </a>
+                        </div>
                       )}
                     </div>
-                    )}
-                    {hasRotationLink && (
-                    <div className={`${discoveryCard} p-8`}>
-                      <ClipboardList className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
-                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Rotation Sheets</h4>
-                      <p className="text-sm text-slate-500 leading-relaxed">
-                        Download or view updated rotation sheets from the official event links.
-                      </p>
-                      <a
-                        href={rotationLink?.url || "#"}
-                        target={rotationLink?.url ? "_blank" : undefined}
-                        rel={rotationLink?.url ? "noopener noreferrer" : undefined}
-                        className={`mt-6 inline-flex items-center gap-2 text-xs font-black uppercase text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
-                      >
-                        {rotationLink?.label || "Official Website"} <ExternalLink size={14} />
-                      </a>
-                    </div>
-                    )}
-                  </div>
                   )}
                 </div>
               )}
@@ -3405,110 +3573,131 @@ export default function SimpleTemplateView({
               {discoveryActiveTab === "parking" && hasParkingContent && (
                 <div className="space-y-10">
                   {trafficText && (
-                  <section className="bg-red-50 border-2 border-red-100 rounded-[2.5rem] p-10">
-                    <div className="flex items-start gap-6">
-                      <div className="p-4 bg-red-500 text-white rounded-2xl shadow-lg shadow-red-200">
-                        <AlertTriangle size={32} />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-2xl font-black text-red-900 leading-tight mb-2">
-                          Disney on Ice Traffic Alert
-                        </h3>
-                        <p className="text-red-800/80 text-sm leading-relaxed mb-8">
-                          {trafficText}
-                        </p>
-                        {trafficSlots.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          {trafficSlots.map((slot, i) => (
-                            <div
-                              key={`${slot.date}-${i}`}
-                              className="bg-white/60 p-4 rounded-2xl border border-red-100"
-                            >
-                              <p className="text-[10px] font-black text-red-900 uppercase tracking-widest mb-1">
-                                {slot.date}
-                              </p>
-                              <p className="text-[10px] font-bold text-red-700/70">
-                                {slot.times}
-                              </p>
-                            </div>
-                          ))}
+                    <section className="bg-red-50 border-2 border-red-100 rounded-[2.5rem] p-10">
+                      <div className="flex items-start gap-6">
+                        <div className="p-4 bg-red-500 text-white rounded-2xl shadow-lg shadow-red-200">
+                          <AlertTriangle size={32} />
                         </div>
-                        )}
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-black text-red-900 leading-tight mb-2">
+                            Disney on Ice Traffic Alert
+                          </h3>
+                          <p className="text-red-800/80 text-sm leading-relaxed mb-8">
+                            {trafficText}
+                          </p>
+                          {trafficSlots.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              {trafficSlots.map((slot, i) => (
+                                <div
+                                  key={`${slot.date}-${i}`}
+                                  className="bg-white/60 p-4 rounded-2xl border border-red-100"
+                                >
+                                  <p className="text-[10px] font-black text-red-900 uppercase tracking-widest mb-1">
+                                    {slot.date}
+                                  </p>
+                                  <p className="text-[10px] font-bold text-red-700/70">
+                                    {slot.times}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </section>
+                    </section>
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {safeString(logistics?.parking) && (
-                    <div className={`${discoveryCard} p-8`}>
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-xl bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--color-icon,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
-                          <Car size={20} />
+                      <div className={`${discoveryCard} p-8`}>
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="p-2 rounded-xl bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--color-icon,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
+                            <Car size={20} />
+                          </div>
+                          <h4 className="font-black text-sm uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)]">
+                            Mobile Parking
+                          </h4>
                         </div>
-                        <h4 className="font-black text-sm uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)]">
-                          Mobile Parking
-                        </h4>
-                      </div>
-                      <p className="text-sm text-slate-500 leading-relaxed mb-6">
-                        {logistics?.parking}
-                      </p>
-                      <div className="flex gap-2">
-                        <a
-                          href={mapDashboardLink?.url || "#"}
-                          target={mapDashboardLink?.url ? "_blank" : undefined}
-                          rel={mapDashboardLink?.url ? "noopener noreferrer" : undefined}
-                          className={`flex-1 py-3 bg-[color:var(--button-bg,#2D1B4E)] text-[color:var(--button-text,#FFFFFF)] rounded-xl text-[10px] font-bold uppercase text-center ${discoveryFocusRing}`}
-                        >
-                          Map Dashboard
-                        </a>
-                        <a
-                          href={ratesInfoLink?.url || "#"}
-                          target={ratesInfoLink?.url ? "_blank" : undefined}
-                          rel={ratesInfoLink?.url ? "noopener noreferrer" : undefined}
-                          className={`flex-1 py-3 border border-[color:var(--border,#E2E8F0)] rounded-xl text-[10px] font-bold uppercase text-center text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
-                        >
-                          Rates Info
-                        </a>
-                      </div>
-                    </div>
-                    )}
-                    {(addressLabel || safeString(logistics?.hotelInfo || parseLogistics?.hotel)) && (
-                    <div className={`${discoveryCard} p-8`}>
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-xl bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--color-icon,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
-                          <Navigation size={20} />
-                        </div>
-                        <h4 className="font-black text-sm uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)]">
-                          Ride Share
-                        </h4>
-                      </div>
-                      {addressLabel && (
-                      <p className="text-sm text-slate-500 leading-relaxed mb-4">
-                        Best drop-off near{" "}
-                        <strong>{addressLabel}</strong>.
-                      </p>
-                      )}
-                      {rideShareNote && (
-                        <p className="text-sm text-slate-500 leading-relaxed mb-4">
-                          {rideShareNote}
+                        <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                          {logistics?.parking}
                         </p>
-                      )}
-                      {safeString(logistics?.hotelInfo || parseLogistics?.hotel) && (
-                        <div className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase inline-block bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--chip-text,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
-                          {safeString(logistics?.hotelInfo || parseLogistics?.hotel)}
+                        <div className="flex gap-2">
+                          <a
+                            href={mapDashboardLink?.url || "#"}
+                            target={
+                              mapDashboardLink?.url ? "_blank" : undefined
+                            }
+                            rel={
+                              mapDashboardLink?.url
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
+                            className={`flex-1 py-3 bg-[color:var(--button-bg,#2D1B4E)] text-[color:var(--button-text,#FFFFFF)] rounded-xl text-[10px] font-bold uppercase text-center ${discoveryFocusRing}`}
+                          >
+                            Map Dashboard
+                          </a>
+                          <a
+                            href={ratesInfoLink?.url || "#"}
+                            target={ratesInfoLink?.url ? "_blank" : undefined}
+                            rel={
+                              ratesInfoLink?.url
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
+                            className={`flex-1 py-3 border border-[color:var(--border,#E2E8F0)] rounded-xl text-[10px] font-bold uppercase text-center text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
+                          >
+                            Rates Info
+                          </a>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+                    {(addressLabel ||
+                      safeString(
+                        logistics?.hotelInfo || parseLogistics?.hotel
+                      )) && (
+                      <div className={`${discoveryCard} p-8`}>
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="p-2 rounded-xl bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--color-icon,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
+                            <Navigation size={20} />
+                          </div>
+                          <h4 className="font-black text-sm uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)]">
+                            Ride Share
+                          </h4>
+                        </div>
+                        {addressLabel && (
+                          <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                            Best drop-off near <strong>{addressLabel}</strong>.
+                          </p>
+                        )}
+                        {rideShareNote && (
+                          <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                            {rideShareNote}
+                          </p>
+                        )}
+                        {safeString(
+                          logistics?.hotelInfo || parseLogistics?.hotel
+                        ) && (
+                          <div className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase inline-block bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--chip-text,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
+                            {safeString(
+                              logistics?.hotelInfo || parseLogistics?.hotel
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
 
                   {facilityMapAddress && (
                     <section className={`${discoveryCard} p-8`}>
-                      <h3 className={discoverySectionHeading}>Venue location</h3>
+                      <h3 className={discoverySectionHeading}>
+                        Venue location
+                      </h3>
                       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6 items-stretch">
                         <div className="rounded-3xl overflow-hidden border border-[color:var(--border,#E2E8F0)]">
-                          <StaticMap address={facilityMapAddress} height={340} />
+                          <StaticMap
+                            address={facilityMapAddress}
+                            height={340}
+                          />
                         </div>
                         <div className="rounded-3xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 p-6 flex flex-col justify-between gap-4">
                           <div>
@@ -3569,7 +3758,8 @@ export default function SimpleTemplateView({
                                 className="space-y-2 rounded-xl border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-2"
                               >
                                 <p className="text-sm text-slate-700 leading-relaxed">
-                                  {parsedLine.textWithoutUrl || "Reference link"}
+                                  {parsedLine.textWithoutUrl ||
+                                    "Reference link"}
                                 </p>
                                 {parsedLine.href && (
                                   <a
@@ -3628,40 +3818,57 @@ export default function SimpleTemplateView({
               {discoveryActiveTab === "rules" && hasPolicyCards && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {policyNotes[0] && (
-                  <div className={`${discoveryCard} p-8`}>
-                    <Coffee className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
-                    <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Food & Beverage</h4>
-                    <p className="text-sm text-slate-500 leading-relaxed">
-                      {policyNotes[0]}
-                    </p>
-                  </div>
+                    <div className={`${discoveryCard} p-8`}>
+                      <Coffee
+                        className="text-[color:var(--accent,#D4AF37)] mb-4"
+                        size={28}
+                      />
+                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                        Food & Beverage
+                      </h4>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        {policyNotes[0]}
+                      </p>
+                    </div>
                   )}
                   {policyNotes[1] && (
-                  <div className={`${discoveryCard} p-8`}>
-                    <Droplets className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
-                    <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Hydration</h4>
-                    <p className="text-sm text-slate-500 leading-relaxed">
-                      {policyNotes[1]}
-                    </p>
-                  </div>
+                    <div className={`${discoveryCard} p-8`}>
+                      <Droplets
+                        className="text-[color:var(--accent,#D4AF37)] mb-4"
+                        size={28}
+                      />
+                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                        Hydration
+                      </h4>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        {policyNotes[1]}
+                      </p>
+                    </div>
                   )}
                   {policyNotes[2] && (
-                  <div className={`${discoveryCard} p-8`}>
-                    <Dog className="text-[color:var(--accent,#D4AF37)] mb-4" size={28} />
-                    <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Service Animals</h4>
-                    <p className="text-sm text-slate-500 leading-relaxed">
-                      {policyNotes[2]}
-                    </p>
-                  </div>
+                    <div className={`${discoveryCard} p-8`}>
+                      <Dog
+                        className="text-[color:var(--accent,#D4AF37)] mb-4"
+                        size={28}
+                      />
+                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                        Service Animals
+                      </h4>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        {policyNotes[2]}
+                      </p>
+                    </div>
                   )}
                   {policyNotes[3] && (
-                  <div className={`${discoveryCard} p-8`}>
-                    <Ban className="text-red-500 mb-4" size={28} />
-                    <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">Safety Policy</h4>
-                    <p className="text-sm text-slate-500 leading-relaxed">
-                      {policyNotes[3]}
-                    </p>
-                  </div>
+                    <div className={`${discoveryCard} p-8`}>
+                      <Ban className="text-red-500 mb-4" size={28} />
+                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                        Safety Policy
+                      </h4>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        {policyNotes[3]}
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
@@ -3669,104 +3876,112 @@ export default function SimpleTemplateView({
 
             <div className="space-y-8">
               {detailPairs.length > 0 && (
-              <div className={`${discoveryCard} p-8`}>
-                <h4 className="text-[10px] font-black text-[color:var(--color-heading,#2D1B4E)] uppercase tracking-[0.2em] mb-6 border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">
-                  Meet Essentials
-                </h4>
-                <div className="space-y-6">
-                  {detailPairs.map((item) => (
-                    <div
-                      key={`meet-essential-${item.label}-${item.value}`}
-                      className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 px-4 py-3"
-                    >
-                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                        {item.label}
-                      </p>
-                      <p className="mt-1 text-xs whitespace-pre-wrap text-slate-700">
-                        {item.value}
-                      </p>
-                    </div>
-                  ))}
+                <div className={`${discoveryCard} p-8`}>
+                  <h4 className="text-[10px] font-black text-[color:var(--color-heading,#2D1B4E)] uppercase tracking-[0.2em] mb-6 border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">
+                    Meet Essentials
+                  </h4>
+                  <div className="space-y-6">
+                    {detailPairs.map((item) => (
+                      <div
+                        key={`meet-essential-${item.label}-${item.value}`}
+                        className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 px-4 py-3"
+                      >
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                          {item.label}
+                        </p>
+                        <p className="mt-1 text-xs whitespace-pre-wrap text-slate-700">
+                          {item.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
               )}
 
               {hasHostSupport && (
-              <div className={`${discoveryCard} p-8`}>
-                <h4 className="font-black text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)] border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">
-                  Useful Links
-                </h4>
-                <p className="text-xs text-[color:var(--muted-text,#64748B)] mb-6 leading-relaxed">
-                  {safeString(parseCommunications?.passcode)
-                    ? `Passcode: ${parseCommunications.passcode}`
-                    : "Support and reference links are provided below."}
-                </p>
-                <div className="space-y-2">
-                  {safeString(contactLink?.url) && (
-                    <a
-                      href={contactLink.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
-                          <PhoneCall size={14} />
+                <div className={`${discoveryCard} p-8`}>
+                  <h4 className="font-black text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)] border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">
+                    Useful Links
+                  </h4>
+                  <p className="text-xs text-[color:var(--muted-text,#64748B)] mb-6 leading-relaxed">
+                    {safeString(parseCommunications?.passcode)
+                      ? `Passcode: ${parseCommunications.passcode}`
+                      : "Support and reference links are provided below."}
+                  </p>
+                  <div className="space-y-2">
+                    {safeString(contactLink?.url) && (
+                      <a
+                        href={contactLink.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                            <PhoneCall size={14} />
+                          </span>
+                          {contactLink?.label || "Support Link"}
                         </span>
-                        {contactLink?.label || "Support Link"}
-                      </span>
-                      <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">›</span>
-                    </a>
-                  )}
-                  {safeString(visitorLink?.url) && (
-                    <a
-                      href={visitorLink.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
-                          <MapPin size={14} />
+                        <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                          ›
                         </span>
-                        {visitorLink?.label || "Visitor Guide"}
-                      </span>
-                      <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">›</span>
-                    </a>
-                  )}
-                  {directionsUrl && (
-                    <a
-                      href={directionsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
-                          <Navigation size={14} />
+                      </a>
+                    )}
+                    {safeString(visitorLink?.url) && (
+                      <a
+                        href={visitorLink.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                            <MapPin size={14} />
+                          </span>
+                          {visitorLink?.label || "Visitor Guide"}
                         </span>
-                        Directions to Venue
-                      </span>
-                      <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">›</span>
-                    </a>
-                  )}
-                  {hasSourceFileDownload && (
-                    <a
-                      href={sourceFileUrl}
-                      download={sourceFileName}
-                      className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
-                          <Download size={14} />
+                        <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                          ›
                         </span>
-                        Download {isSourcePdf ? "Source PDF" : "Source File"}
-                      </span>
-                      <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">›</span>
-                    </a>
-                  )}
+                      </a>
+                    )}
+                    {directionsUrl && (
+                      <a
+                        href={directionsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                            <Navigation size={14} />
+                          </span>
+                          Directions to Venue
+                        </span>
+                        <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                          ›
+                        </span>
+                      </a>
+                    )}
+                    {hasSourceFileDownload && (
+                      <a
+                        href={sourceFileUrl}
+                        download={sourceFileName}
+                        className={`group w-full py-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-between gap-3 border border-[color:var(--border,#E2E8F0)] text-[color:var(--link,#2D1B4E)] hover:border-[color:var(--color-border-hover,#D4AF37)] hover:text-[color:var(--link-hover,#D4AF37)] transition-all ${discoveryFocusRing}`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-7 w-7 rounded-full border border-[color:var(--chip-border,#D7DCE6)] bg-[color:var(--chip-bg,#F8FAFC)] inline-flex items-center justify-center text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                            <Download size={14} />
+                          </span>
+                          Download {isSourcePdf ? "Source PDF" : "Source File"}
+                        </span>
+                        <span className="text-[color:var(--color-icon,#2D1B4E)] group-hover:text-[color:var(--accent,#D4AF37)]">
+                          ›
+                        </span>
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
               )}
             </div>
           </div>
@@ -3781,720 +3996,737 @@ export default function SimpleTemplateView({
         ref={templateRootRef}
         className="event-modern-container flex justify-center py-3 md:py-8"
       >
-      <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px]">
-        <div
-          className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
-            disableThemeBackground
-              ? "bg-white"
-              : hasSimpleDesignTokens
-              ? "bg-[color:var(--bg)]"
-              : backgroundClass || ""
-          } ${textClass} transition-all duration-500 relative z-0`}
-          style={
-            disableThemeBackground
-              ? undefined
-              : hasSimpleDesignTokens
-              ? { backgroundColor: "var(--bg)", color: "var(--text)" }
-              : paletteBackgroundStyle || backgroundStyle
-          }
-        >
-          <div className="relative z-10">
-            {/* Header */}
-            <div
-              className={`relative p-6 md:p-8 border-b border-white/10 ${textClass}`}
-            >
-              {/* Actions - White background bar with Edit/Delete/Share/Email */}
-              {!isLocked && !isReadOnly && !hideOwnerActions && (
-                <div className="absolute top-3 right-3 z-40 hidden md:block">
-                  <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
-                    {isOwner && (
-                      <>
-                        <Link
-                          href={resolveEditHref(eventId, eventData, eventTitle)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
-                          title="Edit event"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
+        <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px]">
+          <div
+            className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
+              disableThemeBackground
+                ? neutralUsesGradient
+                  ? "bg-transparent"
+                  : "bg-white"
+                : hasSimpleDesignTokens
+                ? "bg-[color:var(--bg)]"
+                : backgroundClass || ""
+            } ${textClass} transition-all duration-500 relative z-0`}
+            style={
+              disableThemeBackground
+                ? neutralBackgroundStyle
+                : hasSimpleDesignTokens
+                ? { backgroundColor: "var(--bg)", color: "var(--text)" }
+                : paletteBackgroundStyle || backgroundStyle
+            }
+          >
+            <div className="relative z-10">
+              {/* Header */}
+              <div
+                className={`relative p-6 md:p-8 border-b border-white/10 ${textClass}`}
+              >
+                {/* Actions - White background bar with Edit/Delete/Share/Email */}
+                {!isLocked && !isReadOnly && !hideOwnerActions && (
+                  <div className="absolute top-3 right-3 z-40 hidden md:block">
+                    <div className="flex items-center gap-1 text-sm font-medium bg-white/95 backdrop-blur rounded-lg px-2 py-1.5 shadow-lg border border-white/20">
+                      {isOwner && (
+                        <>
+                          <Link
+                            href={resolveEditHref(
+                              eventId,
+                              eventData,
+                              eventTitle
+                            )}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
+                            title="Edit event"
                           >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                          <span className="hidden sm:inline">Edit</span>
-                        </Link>
-                        <EventDeleteModal
-                          eventId={eventId}
-                          eventTitle={eventTitle}
-                        />
-                      </>
-                    )}
-                    <EventActions
-                      shareUrl={shareUrl}
-                      event={eventData}
-                      historyId={eventId}
-                      className=""
-                      variant="compact"
-                      tone="default"
-                    />
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                            >
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            <span className="hidden sm:inline">Edit</span>
+                          </Link>
+                          <EventDeleteModal
+                            eventId={eventId}
+                            eventTitle={eventTitle}
+                          />
+                        </>
+                      )}
+                      <EventActions
+                        shareUrl={shareUrl}
+                        event={eventData}
+                        historyId={eventId}
+                        className=""
+                        variant="compact"
+                        tone="default"
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-              <div className="pr-0 md:pr-32">
-                <h1
-                  data-role="page-title"
-                  className={`page-title ${headingSizeClass} mb-2 leading-tight ${textClass}`}
-                  style={{
-                    ...headingStyle,
-                    fontFamily: headingFontFamily,
-                  }}
-                >
-                  {currentData?.eventTitle || eventTitle}
-                </h1>
-                {infoLine}
-                {/* Address line (if different from header location) */}
-                {address && (
-                  <div
-                    className={`mt-2 text-sm opacity-80 flex items-center gap-2 ${textClass}`}
-                    style={bodyShadow}
+                )}
+                <div className="pr-0 md:pr-32">
+                  <h1
+                    data-role="page-title"
+                    className={`page-title ${headingSizeClass} mb-2 leading-tight ${textClass}`}
+                    style={{
+                      ...headingStyle,
+                      fontFamily: headingFontFamily,
+                    }}
                   >
-                    <MapPin size={14} />
-                    <span>{address}</span>
-                  </div>
-                )}
-                {navItems.length > 1 && !isLocked && (
-                  <nav className="mt-4 flex flex-wrap items-center gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {navItems.map((item) => {
-                        const isActive = activeSection === item.id;
-                        return (
-                          <a
-                            key={item.id}
-                            href={`#${item.id}`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              const el = document.getElementById(item.id);
-                              if (el) {
-                                el.scrollIntoView({ behavior: "smooth" });
-                                window.history.replaceState(
-                                  null,
-                                  "",
-                                  `#${item.id}`
-                                );
-                                setActiveSection(item.id);
-                              }
-                            }}
-                            className={`rounded-full border px-3 py-1 text-sm font-semibold transition ${
-                              isActive
-                                ? "bg-white/85 text-slate-900 border-white shadow"
-                                : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
-                            }`}
-                            style={headingStyle}
-                          >
-                            {item.label}
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </nav>
-                )}
-                {renderHeaderWidget()}
-              </div>
-            </div>
-
-            {/* Hero Image */}
-            <div className="relative w-full h-64 md:h-96">
-              {heroImage && heroImage.trim() ? (
-                heroImage.startsWith("data:") ? (
-                  <img
-                    src={heroImage}
-                    alt="Hero"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error(
-                        "[SimpleTemplateView] Hero image failed to load (data URL)"
-                      );
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                ) : heroImage.startsWith("http") ? (
-                  <Image
-                    src={heroImage}
-                    alt="Hero"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 1000px"
-                    onError={() => {
-                      console.error(
-                        "[SimpleTemplateView] Hero image failed to load (HTTP URL)"
-                      );
-                    }}
-                  />
-                ) : (
-                  <img
-                    src={heroImage}
-                    alt="Hero"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error(
-                        "[SimpleTemplateView] Hero image failed to load (other)"
-                      );
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                )
-              ) : (
-                <div className="w-full h-full bg-white/5 flex items-center justify-center">
-                  <span className="text-white/30 text-sm">No image</span>
-                </div>
-              )}
-            </div>
-
-            {/* Details Section */}
-            <section
-              id="details"
-              className="py-10 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
-            >
-              <h2
-                className={`text-2xl mb-3 ${accentClass}`}
-                style={headingStyle}
-              >
-                Details
-              </h2>
-              {description ? (
-                <p
-                  className={`text-base leading-relaxed opacity-90 whitespace-pre-wrap ${textClass}`}
-                  style={bodyShadow}
-                >
-                  {description}
-                </p>
-              ) : (
-                <p
-                  className={`text-sm opacity-70 ${textClass}`}
-                  style={bodyShadow}
-                >
-                  No description provided.
-                </p>
-              )}
-
-              {/* Custom Fields Grid */}
-              {detailFields.length > 0 && (
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {detailFields.map((field: any) => {
-                    const val =
-                      customFields[field.key] ??
-                      currentData?.extra?.[field.key];
-                    if (!val) return null;
-                    return (
-                      <div
-                        key={field.key}
-                        className="bg-white/5 border border-white/10 rounded-lg p-4"
-                      >
-                        <div
-                          className={`text-xs uppercase tracking-wide opacity-80 ${textClass}`}
-                          style={bodyShadow}
-                        >
-                          {field.label}
-                        </div>
-                        <div
-                          className={`mt-2 text-base font-semibold opacity-90 ${textClass}`}
-                          style={bodyShadow}
-                        >
-                          {val}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-
-            {/* Advanced Sections */}
-            {renderEventsSection()}
-            {renderLineupSection()}
-            {renderRosterSection()}
-            {renderMeetSection()}
-            {renderPracticeSection()}
-            {renderLogisticsSection()}
-            {renderGearSection()}
-            {renderSnacksSection()}
-            {renderVolunteersSection()}
-            {renderAnnouncementsSection()}
-
-            {/* Hosts Section (for gender reveal, baby showers, etc.) */}
-            {hosts.length > 0 && (
-              <section
-                id="hosts"
-                className={`text-center py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24 ${textClass}`}
-              >
-                <h2
-                  className={`text-2xl mb-6 ${accentClass}`}
-                  style={headingStyle}
-                >
-                  Hosted By
-                </h2>
-                <div className="flex flex-wrap justify-center gap-6">
-                  {hosts.map((host: any) => (
-                    <div key={host.id || host.name} className="text-center">
-                      <div
-                        className="font-semibold text-lg mb-1 opacity-90"
-                        style={bodyShadow}
-                      >
-                        {host.name}
-                      </div>
-                      {host.role && (
-                        <div className="text-sm opacity-70" style={bodyShadow}>
-                          {host.role}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Parents Name Section (for gender reveal) */}
-            {parentsName && (
-              <section
-                id="parents"
-                className={`text-center py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24 ${textClass}`}
-              >
-                <h2
-                  className={`text-2xl mb-4 ${accentClass}`}
-                  style={headingStyle}
-                >
-                  Parents-to-Be
-                </h2>
-                <div
-                  className="text-lg font-semibold opacity-90"
-                  style={bodyShadow}
-                >
-                  {parentsName}
-                </div>
-              </section>
-            )}
-
-            {/* Registry Section (for gender reveal, baby showers, weddings) */}
-            {registries.length > 0 && (
-              <section
-                id="registry"
-                className={`text-center py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24 ${textClass}`}
-              >
-                <h2
-                  className={`text-2xl mb-6 ${accentClass}`}
-                  style={headingStyle}
-                >
-                  Registry
-                </h2>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {registries.map((registry: any, idx: number) => (
-                    <a
-                      key={registry.id || idx}
-                      href={registry.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block px-6 py-3 bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors"
+                    {currentData?.eventTitle || eventTitle}
+                  </h1>
+                  {infoLine}
+                  {/* Address line (if different from header location) */}
+                  {address && (
+                    <div
+                      className={`mt-2 text-sm opacity-80 flex items-center gap-2 ${textClass}`}
+                      style={bodyShadow}
                     >
-                      <span
-                        className="uppercase tracking-widest text-sm font-semibold opacity-90"
-                        style={bodyShadow}
-                      >
-                        {registry.label || "Registry"}
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* RSVP Section */}
-            {rsvpEnabled && (
-              <section
-                id="rsvp"
-                className="max-w-2xl mx-auto text-center p-6 md:p-10 scroll-mt-24"
-              >
-                <h2
-                  className={`text-2xl mb-6 ${accentClass}`}
-                  style={headingStyle}
-                >
-                  {rsvpCopy.editorTitle || "RSVP"}
-                </h2>
-                <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
-                  {!rsvpSubmitted ? (
-                    <div className="space-y-6">
-                      <div className="text-center mb-4">
-                        <p className="opacity-80">
-                          {rsvpDeadline
-                            ? `Kindly respond by ${new Date(
-                                rsvpDeadline
-                              ).toLocaleDateString("en-US", {
-                                timeZone: eventTimeZone || "UTC",
-                              })}`
-                            : "Please RSVP"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                          {isGymnasticsTemplate ? "Athlete Name" : "Full Name"}
-                        </label>
-                        <input
-                          className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                          placeholder={
-                            isGymnasticsTemplate ? "Athlete Name" : "Guest Name"
-                          }
-                          value={rsvpNameInput}
-                          onChange={(e) => setRsvpNameInput(e.target.value)}
-                        />
-                      </div>
-                      {!isSignedIn && allowGuestAttendanceRsvp && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                              Guardian Email (optional)
-                            </label>
-                            <input
-                              className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                              placeholder="name@email.com"
-                              value={rsvpGuestEmailInput}
-                              onChange={(e) =>
-                                setRsvpGuestEmailInput(e.target.value)
-                              }
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                              Guardian Phone (optional)
-                            </label>
-                            <input
-                              className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                              placeholder="(555) 555-5555"
-                              value={rsvpGuestPhoneInput}
-                              onChange={(e) =>
-                                setRsvpGuestPhoneInput(e.target.value)
-                              }
-                            />
-                          </div>
-                        </div>
-                      )}
-                      {hasRoster && (
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                            Select Athlete (updates roster)
-                          </label>
-                          <select
-                            className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                            value={selectedAthleteId}
-                            onChange={(e) =>
-                              setSelectedAthleteId(
-                                e.target.value === "__other"
-                                  ? ""
-                                  : e.target.value
-                              )
-                            }
-                          >
-                            <option
-                              value=""
-                              style={{
-                                color: "#0f172a",
-                                backgroundColor: "#ffffff",
-                              }}
-                            >
-                              Choose athlete
-                            </option>
-                            {rosterAthletes.map((athlete) => {
-                              const labelParts = [
-                                athlete.name,
-                                athlete.jerseyNumber
-                                  ? `#${athlete.jerseyNumber}`
-                                  : null,
-                                athlete.position ||
-                                  athlete.primaryEvents?.[0] ||
-                                  null,
-                                athlete.level,
-                              ].filter(Boolean);
-                              return (
-                                <option
-                                  key={athlete.id}
-                                  value={athlete.id}
-                                  style={{
-                                    color: "#0f172a",
-                                    backgroundColor: "#ffffff",
-                                  }}
-                                >
-                                  {labelParts.join(" • ")}
-                                </option>
-                              );
-                            })}
-                            <option
-                              value="__other"
-                              style={{
-                                color: "#0f172a",
-                                backgroundColor: "#ffffff",
-                              }}
-                            >
-                              Not listed / other
-                            </option>
-                          </select>
-                        </div>
-                      )}
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
-                          Attending?
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <label className="group relative cursor-pointer">
-                            <input
-                              type="radio"
-                              name="attending"
-                              className="peer sr-only"
-                              checked={rsvpAttending === "yes"}
-                              onChange={() => setRsvpAttending("yes")}
-                            />
-                            <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
-                              <div className="mt-0.5">
-                                <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                                  <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                </div>
-                              </div>
-                              <div className="text-left">
-                                <div className="font-semibold">
-                                  {isGymnasticsTemplate
-                                    ? "Going"
-                                    : "Joyfully Accept"}
-                                </div>
-                                <p className="text-sm opacity-70">
-                                  {isGymnasticsTemplate
-                                    ? "Athlete will attend."
-                                    : "I'll be there."}
-                                </p>
-                              </div>
-                            </div>
-                          </label>
-                          <label className="group relative cursor-pointer">
-                            <input
-                              type="radio"
-                              name="attending"
-                              className="peer sr-only"
-                              checked={rsvpAttending === "no"}
-                              onChange={() => setRsvpAttending("no")}
-                            />
-                            <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
-                              <div className="mt-0.5">
-                                <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                                  <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                </div>
-                              </div>
-                              <div className="text-left">
-                                <div className="font-semibold">
-                                  {isGymnasticsTemplate
-                                    ? "Not Going"
-                                    : "Regretfully Decline"}
-                                </div>
-                                <p className="text-sm opacity-70">
-                                  {isGymnasticsTemplate
-                                    ? "Athlete cannot attend."
-                                    : "Sending warm wishes."}
-                                </p>
-                              </div>
-                            </div>
-                          </label>
-                        </div>
-                      </div>
-                      {allowGuestAttendanceRsvp && !isSignedIn && (
-                        <div className="text-sm text-center text-emerald-100 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
-                          Guest attendance is enabled. Submit your athlete
-                          status directly from this page.
-                        </div>
-                      )}
-                      {rsvpError && (
-                        <div className="text-sm text-red-200 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                          {rsvpError}
-                        </div>
-                      )}
-                      <button
-                        onClick={handleRsvpSubmit}
-                        disabled={rsvpSubmitting}
-                        className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {rsvpSubmitting ? "Submitting..." : "Send RSVP"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <div className="text-4xl mb-4">🎉</div>
-                      <h3 className="text-2xl font-serif mb-2">Thank you!</h3>
-                      <p className="opacity-70">Your RSVP has been sent.</p>
-                      <button
-                        onClick={() => {
-                          setRsvpSubmitted(false);
-                          setRsvpAttending("yes");
-                        }}
-                        className="text-sm underline mt-6 opacity-50 hover:opacity-100"
-                      >
-                        Send another response
-                      </button>
+                      <MapPin size={14} />
+                      <span>{address}</span>
                     </div>
                   )}
+                  {navItems.length > 1 && !isLocked && (
+                    <nav className="mt-4 flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {navItems.map((item) => {
+                          const isActive = activeSection === item.id;
+                          return (
+                            <a
+                              key={item.id}
+                              href={`#${item.id}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const el = document.getElementById(item.id);
+                                if (el) {
+                                  el.scrollIntoView({ behavior: "smooth" });
+                                  window.history.replaceState(
+                                    null,
+                                    "",
+                                    `#${item.id}`
+                                  );
+                                  setActiveSection(item.id);
+                                }
+                              }}
+                              className={`rounded-full border px-3 py-1 text-sm font-semibold transition ${
+                                isActive
+                                  ? neutralUsesPalette
+                                    ? "bg-[color:var(--color-nav-active-bg,#F8FAFC)] text-[color:var(--color-nav-active,#2D1B4E)] border-[color:var(--accent,#D4AF37)] shadow"
+                                    : "bg-white/85 text-slate-900 border-white shadow"
+                                  : neutralUsesPalette
+                                  ? "bg-white/70 text-[color:var(--color-nav-text,#334155)] border-[color:var(--border,#E2E8F0)] hover:bg-white hover:border-[color:var(--color-border-hover,#D4AF37)]"
+                                  : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
+                              }`}
+                              style={headingStyle}
+                            >
+                              {item.label}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </nav>
+                  )}
+                  {renderHeaderWidget()}
                 </div>
-              </section>
-            )}
-
-            {/* Calendar buttons */}
-            <section className="py-6 px-6 md:px-10 border-t border-white/10">
-              <div className="flex flex-wrap gap-3 justify-center">
-                <button
-                  onClick={handleShare}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <Share2 size={16} />
-                  Share
-                </button>
-                <button
-                  onClick={handleGoogleCalendar}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <Image
-                    src="/brands/google-white.svg"
-                    alt="Google"
-                    width={16}
-                    height={16}
-                    className="w-4 h-4"
-                  />
-                  Google Calendar
-                </button>
-                <button
-                  onClick={handleAppleCalendar}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <Image
-                    src="/brands/apple-white.svg"
-                    alt="Apple"
-                    width={16}
-                    height={16}
-                    className="w-4 h-4"
-                  />
-                  Apple Calendar
-                </button>
-                <button
-                  onClick={handleOutlookCalendar}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <Image
-                    src="/brands/microsoft-white.svg"
-                    alt="Microsoft"
-                    width={16}
-                    height={16}
-                    className="w-4 h-4"
-                  />
-                  Outlook
-                </button>
               </div>
-            </section>
 
-            {/* Location map preview */}
-            {mapAddress && (
-              <section className="py-8 px-6 md:px-10 border-t border-white/10">
+              {/* Hero Image */}
+              <div className="relative w-full h-64 md:h-96">
+                {heroImage && heroImage.trim() ? (
+                  heroImage.startsWith("data:") ? (
+                    <img
+                      src={heroImage}
+                      alt="Hero"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error(
+                          "[SimpleTemplateView] Hero image failed to load (data URL)"
+                        );
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : heroImage.startsWith("http") ? (
+                    <Image
+                      src={heroImage}
+                      alt="Hero"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 1000px"
+                      onError={() => {
+                        console.error(
+                          "[SimpleTemplateView] Hero image failed to load (HTTP URL)"
+                        );
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={heroImage}
+                      alt="Hero"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error(
+                          "[SimpleTemplateView] Hero image failed to load (other)"
+                        );
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  )
+                ) : (
+                  <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                    <span className="text-white/30 text-sm">No image</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Details Section */}
+              <section
+                id="details"
+                className="py-10 border-t border-white/10 px-6 md:px-10 scroll-mt-24"
+              >
                 <h2
-                  className={`text-2xl text-center mb-5 ${accentClass}`}
+                  className={`text-2xl mb-3 ${accentClass}`}
                   style={headingStyle}
                 >
-                  Location Map
+                  Details
                 </h2>
-                <div className="max-w-3xl mx-auto">
-                  <StaticMap address={mapAddress} height={420} />
+                {description ? (
+                  <p
+                    className={`text-base leading-relaxed opacity-90 whitespace-pre-wrap ${textClass}`}
+                    style={bodyShadow}
+                  >
+                    {description}
+                  </p>
+                ) : (
+                  <p
+                    className={`text-sm opacity-70 ${textClass}`}
+                    style={bodyShadow}
+                  >
+                    No description provided.
+                  </p>
+                )}
+
+                {/* Custom Fields Grid */}
+                {detailFields.length > 0 && (
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {detailFields.map((field: any) => {
+                      const val =
+                        customFields[field.key] ??
+                        currentData?.extra?.[field.key];
+                      if (!val) return null;
+                      return (
+                        <div
+                          key={field.key}
+                          className="bg-white/5 border border-white/10 rounded-lg p-4"
+                        >
+                          <div
+                            className={`text-xs uppercase tracking-wide opacity-80 ${textClass}`}
+                            style={bodyShadow}
+                          >
+                            {field.label}
+                          </div>
+                          <div
+                            className={`mt-2 text-base font-semibold opacity-90 ${textClass}`}
+                            style={bodyShadow}
+                          >
+                            {val}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+
+              {/* Advanced Sections */}
+              {renderEventsSection()}
+              {renderLineupSection()}
+              {renderRosterSection()}
+              {renderMeetSection()}
+              {renderPracticeSection()}
+              {renderLogisticsSection()}
+              {renderGearSection()}
+              {renderSnacksSection()}
+              {renderVolunteersSection()}
+              {renderAnnouncementsSection()}
+
+              {/* Hosts Section (for gender reveal, baby showers, etc.) */}
+              {hosts.length > 0 && (
+                <section
+                  id="hosts"
+                  className={`text-center py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24 ${textClass}`}
+                >
+                  <h2
+                    className={`text-2xl mb-6 ${accentClass}`}
+                    style={headingStyle}
+                  >
+                    Hosted By
+                  </h2>
+                  <div className="flex flex-wrap justify-center gap-6">
+                    {hosts.map((host: any) => (
+                      <div key={host.id || host.name} className="text-center">
+                        <div
+                          className="font-semibold text-lg mb-1 opacity-90"
+                          style={bodyShadow}
+                        >
+                          {host.name}
+                        </div>
+                        {host.role && (
+                          <div
+                            className="text-sm opacity-70"
+                            style={bodyShadow}
+                          >
+                            {host.role}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Parents Name Section (for gender reveal) */}
+              {parentsName && (
+                <section
+                  id="parents"
+                  className={`text-center py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24 ${textClass}`}
+                >
+                  <h2
+                    className={`text-2xl mb-4 ${accentClass}`}
+                    style={headingStyle}
+                  >
+                    Parents-to-Be
+                  </h2>
+                  <div
+                    className="text-lg font-semibold opacity-90"
+                    style={bodyShadow}
+                  >
+                    {parentsName}
+                  </div>
+                </section>
+              )}
+
+              {/* Registry Section (for gender reveal, baby showers, weddings) */}
+              {registries.length > 0 && (
+                <section
+                  id="registry"
+                  className={`text-center py-8 border-t border-white/10 px-6 md:px-10 scroll-mt-24 ${textClass}`}
+                >
+                  <h2
+                    className={`text-2xl mb-6 ${accentClass}`}
+                    style={headingStyle}
+                  >
+                    Registry
+                  </h2>
+                  <div className="flex flex-wrap justify-center gap-4">
+                    {registries.map((registry: any, idx: number) => (
+                      <a
+                        key={registry.id || idx}
+                        href={registry.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-6 py-3 bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors"
+                      >
+                        <span
+                          className="uppercase tracking-widest text-sm font-semibold opacity-90"
+                          style={bodyShadow}
+                        >
+                          {registry.label || "Registry"}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* RSVP Section */}
+              {rsvpEnabled && (
+                <section
+                  id="rsvp"
+                  className="max-w-2xl mx-auto text-center p-6 md:p-10 scroll-mt-24"
+                >
+                  <h2
+                    className={`text-2xl mb-6 ${accentClass}`}
+                    style={headingStyle}
+                  >
+                    {rsvpCopy.editorTitle || "RSVP"}
+                  </h2>
+                  <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
+                    {!rsvpSubmitted ? (
+                      <div className="space-y-6">
+                        <div className="text-center mb-4">
+                          <p className="opacity-80">
+                            {rsvpDeadline
+                              ? `Kindly respond by ${new Date(
+                                  rsvpDeadline
+                                ).toLocaleDateString("en-US", {
+                                  timeZone: eventTimeZone || "UTC",
+                                })}`
+                              : "Please RSVP"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                            {isGymnasticsTemplate
+                              ? "Athlete Name"
+                              : "Full Name"}
+                          </label>
+                          <input
+                            className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                            placeholder={
+                              isGymnasticsTemplate
+                                ? "Athlete Name"
+                                : "Guest Name"
+                            }
+                            value={rsvpNameInput}
+                            onChange={(e) => setRsvpNameInput(e.target.value)}
+                          />
+                        </div>
+                        {!isSignedIn && allowGuestAttendanceRsvp && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                                Guardian Email (optional)
+                              </label>
+                              <input
+                                className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                                placeholder="name@email.com"
+                                value={rsvpGuestEmailInput}
+                                onChange={(e) =>
+                                  setRsvpGuestEmailInput(e.target.value)
+                                }
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                                Guardian Phone (optional)
+                              </label>
+                              <input
+                                className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                                placeholder="(555) 555-5555"
+                                value={rsvpGuestPhoneInput}
+                                onChange={(e) =>
+                                  setRsvpGuestPhoneInput(e.target.value)
+                                }
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {hasRoster && (
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                              Select Athlete (updates roster)
+                            </label>
+                            <select
+                              className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
+                              value={selectedAthleteId}
+                              onChange={(e) =>
+                                setSelectedAthleteId(
+                                  e.target.value === "__other"
+                                    ? ""
+                                    : e.target.value
+                                )
+                              }
+                            >
+                              <option
+                                value=""
+                                style={{
+                                  color: "#0f172a",
+                                  backgroundColor: "#ffffff",
+                                }}
+                              >
+                                Choose athlete
+                              </option>
+                              {rosterAthletes.map((athlete) => {
+                                const labelParts = [
+                                  athlete.name,
+                                  athlete.jerseyNumber
+                                    ? `#${athlete.jerseyNumber}`
+                                    : null,
+                                  athlete.position ||
+                                    athlete.primaryEvents?.[0] ||
+                                    null,
+                                  athlete.level,
+                                ].filter(Boolean);
+                                return (
+                                  <option
+                                    key={athlete.id}
+                                    value={athlete.id}
+                                    style={{
+                                      color: "#0f172a",
+                                      backgroundColor: "#ffffff",
+                                    }}
+                                  >
+                                    {labelParts.join(" • ")}
+                                  </option>
+                                );
+                              })}
+                              <option
+                                value="__other"
+                                style={{
+                                  color: "#0f172a",
+                                  backgroundColor: "#ffffff",
+                                }}
+                              >
+                                Not listed / other
+                              </option>
+                            </select>
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
+                            Attending?
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <label className="group relative cursor-pointer">
+                              <input
+                                type="radio"
+                                name="attending"
+                                className="peer sr-only"
+                                checked={rsvpAttending === "yes"}
+                                onChange={() => setRsvpAttending("yes")}
+                              />
+                              <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
+                                <div className="mt-0.5">
+                                  <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                    <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                  </div>
+                                </div>
+                                <div className="text-left">
+                                  <div className="font-semibold">
+                                    {isGymnasticsTemplate
+                                      ? "Going"
+                                      : "Joyfully Accept"}
+                                  </div>
+                                  <p className="text-sm opacity-70">
+                                    {isGymnasticsTemplate
+                                      ? "Athlete will attend."
+                                      : "I'll be there."}
+                                  </p>
+                                </div>
+                              </div>
+                            </label>
+                            <label className="group relative cursor-pointer">
+                              <input
+                                type="radio"
+                                name="attending"
+                                className="peer sr-only"
+                                checked={rsvpAttending === "no"}
+                                onChange={() => setRsvpAttending("no")}
+                              />
+                              <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
+                                <div className="mt-0.5">
+                                  <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                    <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                  </div>
+                                </div>
+                                <div className="text-left">
+                                  <div className="font-semibold">
+                                    {isGymnasticsTemplate
+                                      ? "Not Going"
+                                      : "Regretfully Decline"}
+                                  </div>
+                                  <p className="text-sm opacity-70">
+                                    {isGymnasticsTemplate
+                                      ? "Athlete cannot attend."
+                                      : "Sending warm wishes."}
+                                  </p>
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                        {allowGuestAttendanceRsvp && !isSignedIn && (
+                          <div className="text-sm text-center text-emerald-100 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+                            Guest attendance is enabled. Submit your athlete
+                            status directly from this page.
+                          </div>
+                        )}
+                        {rsvpError && (
+                          <div className="text-sm text-red-200 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                            {rsvpError}
+                          </div>
+                        )}
+                        <button
+                          onClick={handleRsvpSubmit}
+                          disabled={rsvpSubmitting}
+                          className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {rsvpSubmitting ? "Submitting..." : "Send RSVP"}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="text-4xl mb-4">🎉</div>
+                        <h3 className="text-2xl font-serif mb-2">Thank you!</h3>
+                        <p className="opacity-70">Your RSVP has been sent.</p>
+                        <button
+                          onClick={() => {
+                            setRsvpSubmitted(false);
+                            setRsvpAttending("yes");
+                          }}
+                          className="text-sm underline mt-6 opacity-50 hover:opacity-100"
+                        >
+                          Send another response
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* Calendar buttons */}
+              <section className="py-6 px-6 md:px-10 border-t border-white/10">
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    <Share2 size={16} />
+                    Share
+                  </button>
+                  <button
+                    onClick={handleGoogleCalendar}
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    <Image
+                      src="/brands/google-white.svg"
+                      alt="Google"
+                      width={16}
+                      height={16}
+                      className="w-4 h-4"
+                    />
+                    Google Calendar
+                  </button>
+                  <button
+                    onClick={handleAppleCalendar}
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    <Image
+                      src="/brands/apple-white.svg"
+                      alt="Apple"
+                      width={16}
+                      height={16}
+                      className="w-4 h-4"
+                    />
+                    Apple Calendar
+                  </button>
+                  <button
+                    onClick={handleOutlookCalendar}
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    <Image
+                      src="/brands/microsoft-white.svg"
+                      alt="Microsoft"
+                      width={16}
+                      height={16}
+                      className="w-4 h-4"
+                    />
+                    Outlook
+                  </button>
                 </div>
               </section>
-            )}
 
-            {/* Footer */}
-            <footer
-              className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}
-            >
-              <a
-                href="https://envitefy.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="space-y-1 inline-block no-underline"
+              {/* Location map preview */}
+              {mapAddress && (
+                <section className="py-8 px-6 md:px-10 border-t border-white/10">
+                  <h2
+                    className={`text-2xl text-center mb-5 ${accentClass}`}
+                    style={headingStyle}
+                  >
+                    Location Map
+                  </h2>
+                  <div className="max-w-3xl mx-auto">
+                    <StaticMap address={mapAddress} height={420} />
+                  </div>
+                </section>
+              )}
+
+              {/* Footer */}
+              <footer
+                className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}
               >
-                <p className="text-sm opacity-60" style={bodyShadow}>
-                  Powered By Envitefy. Create. Share. Enjoy.
-                </p>
-                <p className="text-xs opacity-50" style={bodyShadow}>
-                  Create yours now.
-                </p>
-              </a>
-              <div className="flex items-center justify-center gap-4 mt-4">
                 <a
-                  href="https://www.facebook.com/envitefy"
+                  href="https://envitefy.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                  aria-label="Facebook"
+                  className="space-y-1 inline-block no-underline"
                 >
-                  <Image
-                    src="/email/social-facebook.svg"
-                    alt="Facebook"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6 brightness-0 invert"
-                  />
+                  <p className="text-sm opacity-60" style={bodyShadow}>
+                    Powered By Envitefy. Create. Share. Enjoy.
+                  </p>
+                  <p className="text-xs opacity-50" style={bodyShadow}>
+                    Create yours now.
+                  </p>
                 </a>
-                <a
-                  href="https://www.instagram.com/envitefy/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                  aria-label="Instagram"
-                >
-                  <Image
-                    src="/email/social-instagram.svg"
-                    alt="Instagram"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6 brightness-0 invert"
-                  />
-                </a>
-                <a
-                  href="https://www.tiktok.com/@envitefy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                  aria-label="TikTok"
-                >
-                  <Image
-                    src="/email/social-tiktok.svg"
-                    alt="TikTok"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6 brightness-0 invert"
-                  />
-                </a>
-                <a
-                  href="https://www.youtube.com/@Envitefy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                  aria-label="YouTube"
-                >
-                  <Image
-                    src="/email/social-youtube.svg"
-                    alt="YouTube"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6 brightness-0 invert"
-                  />
-                </a>
-              </div>
-            </footer>
+                <div className="flex items-center justify-center gap-4 mt-4">
+                  <a
+                    href="https://www.facebook.com/envitefy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                    aria-label="Facebook"
+                  >
+                    <Image
+                      src="/email/social-facebook.svg"
+                      alt="Facebook"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 brightness-0 invert"
+                    />
+                  </a>
+                  <a
+                    href="https://www.instagram.com/envitefy/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                    aria-label="Instagram"
+                  >
+                    <Image
+                      src="/email/social-instagram.svg"
+                      alt="Instagram"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 brightness-0 invert"
+                    />
+                  </a>
+                  <a
+                    href="https://www.tiktok.com/@envitefy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                    aria-label="TikTok"
+                  >
+                    <Image
+                      src="/email/social-tiktok.svg"
+                      alt="TikTok"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 brightness-0 invert"
+                    />
+                  </a>
+                  <a
+                    href="https://www.youtube.com/@Envitefy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                    aria-label="YouTube"
+                  >
+                    <Image
+                      src="/email/social-youtube.svg"
+                      alt="YouTube"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 brightness-0 invert"
+                    />
+                  </a>
+                </div>
+              </footer>
+            </div>
           </div>
         </div>
-      </div>
       </div>
       {!isReadOnly && (
         <div className="event-modern-mobile-bar md:hidden">
