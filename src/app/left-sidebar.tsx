@@ -239,6 +239,7 @@ export default function LeftSidebar() {
     useState<EventSidebarMode>("owner");
   const [eventContextSourcePage, setEventContextSourcePage] =
     useState<EventListPage>("myEvents");
+  const [isScrolled, setIsScrolled] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
@@ -350,12 +351,23 @@ export default function LeftSidebar() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
+  const openBarButtonRef = useRef<HTMLButtonElement | null>(null);
   const lastSidebarOpenAtRef = useRef(0);
   const openedFromTouchRef = useRef(false);
   const asideRef = useRef<HTMLDivElement | null>(null);
   const eventSidebarRef = useRef<HTMLDivElement | null>(null);
   const invitedNavigationPendingRef = useRef(false);
   const prevSidebarPageRef = useRef<SidebarPage>("root");
+  const openSidebarFromTrigger = useCallback(
+    (viaTouch: boolean) => {
+      lastSidebarOpenAtRef.current = Date.now();
+      if (viaTouch) {
+        openedFromTouchRef.current = true;
+      }
+      setIsCollapsed(false);
+    },
+    [setIsCollapsed]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -378,6 +390,17 @@ export default function LeftSidebar() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   useEffect(() => {
     if (!isOpen) {
       setMenuOpen(false);
@@ -426,8 +449,10 @@ export default function LeftSidebar() {
       if (openedFromTouchRef.current) return;
       // Ignore clicks originating from the hamburger open button
       if (
-        openButtonRef.current &&
-        openButtonRef.current.contains(target as Node)
+        (openButtonRef.current &&
+          openButtonRef.current.contains(target as Node)) ||
+        (openBarButtonRef.current &&
+          openBarButtonRef.current.contains(target as Node))
       ) {
         return;
       }
@@ -581,6 +606,7 @@ export default function LeftSidebar() {
     (session?.user?.name as string) ||
     (session?.user?.email as string) ||
     "User";
+  const mobileUserInitial = (displayName || "U").trim().charAt(0).toUpperCase();
   const userEmail = session?.user?.email as string | undefined;
   // Deprecated scanCredits removed; use unified credits state
   const [credits, setCredits] = useState<number | null>(null);
@@ -2036,39 +2062,93 @@ export default function LeftSidebar() {
   return (
     <>
       {!isOpen && !isEventPageWithEditSidebar && (
-        <button
-          ref={openButtonRef}
-          type="button"
-          className="fixed top-3 left-3 z-[6500] lg:hidden inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white text-[#4a4170] shadow-md border border-white/70 touch-manipulation cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            lastSidebarOpenAtRef.current = Date.now();
-            setIsCollapsed(false);
-          }}
-          onPointerDown={(e) => {
-            // Fire immediately on pointer down for reliable mobile touch (iOS Safari
-            // often drops click on fixed elements after scroll). Pointer events unify
-            // touch and mouse, so this works across devices.
-            if (e.pointerType === "touch") {
-              e.preventDefault();
-              e.stopPropagation();
-              lastSidebarOpenAtRef.current = Date.now();
-              openedFromTouchRef.current = true;
-              setIsCollapsed(false);
-            }
-          }}
-          onTouchStart={(e) => {
-            // Fallback for browsers/devices that don't consistently emit PointerEvents.
-            e.preventDefault();
-            e.stopPropagation();
-            lastSidebarOpenAtRef.current = Date.now();
-            openedFromTouchRef.current = true;
-            setIsCollapsed(false);
-          }}
-          aria-label="Open navigation"
-        >
-          <Menu size={20} />
-        </button>
+        <>
+          <div
+            className={`fixed top-3 left-3 z-[6500] transform transition-all duration-500 lg:hidden ${
+              isScrolled
+                ? "scale-0 opacity-0 pointer-events-none"
+                : "scale-100 opacity-100"
+            }`}
+          >
+            <button
+              ref={openButtonRef}
+              type="button"
+              className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-md touch-manipulation cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                openSidebarFromTrigger(false);
+              }}
+              onPointerDown={(e) => {
+                // Fire immediately on pointer down for reliable mobile touch (iOS Safari
+                // often drops click on fixed elements after scroll). Pointer events unify
+                // touch and mouse, so this works across devices.
+                if (e.pointerType === "touch") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openSidebarFromTrigger(true);
+                }
+              }}
+              onTouchStart={(e) => {
+                // Fallback for browsers/devices that don't consistently emit PointerEvents.
+                e.preventDefault();
+                e.stopPropagation();
+                openSidebarFromTrigger(true);
+              }}
+              aria-label="Open navigation"
+            >
+              <Menu size={20} />
+            </button>
+          </div>
+
+          <header
+            className={`fixed inset-x-0 top-0 z-[6500] flex items-center justify-between border-b px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
+              isScrolled
+                ? "translate-y-0 opacity-100 pointer-events-auto border-[#e7e2ff] bg-white/80 backdrop-blur-md shadow-sm"
+                : "-translate-y-full opacity-0 pointer-events-none border-transparent bg-transparent"
+            }`}
+          >
+            <button
+              ref={openBarButtonRef}
+              type="button"
+              className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-sm touch-manipulation cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                openSidebarFromTrigger(false);
+              }}
+              onPointerDown={(e) => {
+                if (e.pointerType === "touch") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openSidebarFromTrigger(true);
+                }
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openSidebarFromTrigger(true);
+              }}
+              aria-label="Open navigation"
+            >
+              <Menu size={19} />
+            </button>
+            <Link
+              href="/"
+              onClick={goHomeFromSidebar}
+              className="inline-flex items-center"
+            >
+              <Image
+                src="/navElogo.png"
+                alt="Envitefy logo"
+                width={100}
+                height={32}
+                className="drop-shadow-sm"
+              />
+            </Link>
+            <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-[#ded7ff] bg-white px-2 text-xs font-semibold text-[#5a4d87] shadow-sm">
+              {mobileUserInitial}
+            </span>
+          </header>
+        </>
       )}
       {/* Backdrop overlay */}
       <div

@@ -11,12 +11,15 @@ import {
 } from "lucide-react";
 
 type GymnasticsLauncherProps = {
+  forwardQueryString?: string;
   defaultDateParam?: string;
 };
 
 type DiscoveryInput = { file?: File; url?: string };
+type DiscoveryProgressHandler = (progress: number, status: string) => void;
 
 export default function GymnasticsLauncher({
+  forwardQueryString,
   defaultDateParam,
 }: GymnasticsLauncherProps) {
   const router = useRouter();
@@ -27,6 +30,8 @@ export default function GymnasticsLauncher({
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadFileName, setUploadFileName] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [urlBusy, setUrlBusy] = useState(false);
   const [urlError, setUrlError] = useState("");
   const [meetUrl, setMeetUrl] = useState("");
@@ -38,31 +43,93 @@ export default function GymnasticsLauncher({
     return fallback;
   };
 
-  const startDiscovery = async ({ file, url }: DiscoveryInput) => {
+  const startDiscovery = async ({
+    file,
+    url,
+    onProgress,
+  }: DiscoveryInput & { onProgress?: DiscoveryProgressHandler }) => {
+    const reportProgress = (progress: number, status: string) => {
+      if (!onProgress) return;
+      onProgress(Math.max(0, Math.min(100, Math.round(progress))), status);
+    };
     const formData = new FormData();
     if (file) formData.append("file", file);
     if (url) formData.append("url", url);
 
-    const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
-    const ingestJson = await ingestRes.json().catch(() => ({}));
-    if (!ingestRes.ok || !ingestJson?.eventId) {
-      throw new Error(ingestJson?.error || "Failed to ingest source");
+    let ingestJson: { eventId?: string; error?: string } = {};
+
+    if (file) {
+      reportProgress(4, "Uploading meet file...");
+      ingestJson = await new Promise<{ eventId?: string; error?: string }>(
+        (resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "/api/ingest?mode=meet_discovery", true);
+          xhr.withCredentials = true;
+
+          xhr.upload.onprogress = (event) => {
+            if (!event.lengthComputable) return;
+            const ratio = event.loaded / event.total;
+            reportProgress(5 + ratio * 65, "Uploading meet file...");
+          };
+
+          xhr.onerror = () => {
+            reject(new Error("Network error while uploading file"));
+          };
+
+          xhr.onload = () => {
+            try {
+              const json = JSON.parse(xhr.responseText || "{}") as {
+                eventId?: string;
+                error?: string;
+              };
+              if (xhr.status >= 200 && xhr.status < 300 && json?.eventId) {
+                resolve(json);
+                return;
+              }
+              reject(new Error(json?.error || "Failed to ingest source"));
+            } catch {
+              reject(new Error("Failed to parse ingest response"));
+            }
+          };
+
+          xhr.send(formData);
+        }
+      );
+    } else {
+      reportProgress(20, "Submitting meet URL...");
+      const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      ingestJson = await ingestRes.json().catch(() => ({}));
+      if (!ingestRes.ok || !ingestJson?.eventId) {
+        throw new Error(ingestJson?.error || "Failed to ingest source");
+      }
     }
 
     const eventId = String(ingestJson.eventId);
-    const parseRes = await fetch(`/api/parse/${eventId}`, {
-      method: "POST",
-      credentials: "include",
-    });
-    const parseJson = await parseRes.json().catch(() => ({}));
-    if (!parseRes.ok) {
-      throw new Error(parseJson?.error || "Failed to parse source");
+    reportProgress(72, "Processing meet file...");
+    let parseProgress = 72;
+    const parseProgressTimer = setInterval(() => {
+      parseProgress = Math.min(parseProgress + 3, 96);
+      reportProgress(parseProgress, "Processing meet file...");
+    }, 700);
+
+    try {
+      const parseRes = await fetch(`/api/parse/${eventId}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const parseJson = await parseRes.json().catch(() => ({}));
+      if (!parseRes.ok) {
+        throw new Error(parseJson?.error || "Failed to parse source");
+      }
+    } finally {
+      clearInterval(parseProgressTimer);
     }
 
+    reportProgress(100, "Opening meet builder...");
     router.push(
       `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`
     );
@@ -75,10 +142,19 @@ export default function GymnasticsLauncher({
     setUploadError("");
     setUploadBusy(true);
     setUploadFileName(pickedFile.name);
+    setUploadProgress(0);
+    setUploadStatus("Uploading meet file...");
     try {
-      await startDiscovery({ file: pickedFile });
+      await startDiscovery({
+        file: pickedFile,
+        onProgress: (progress, status) => {
+          setUploadProgress(progress);
+          setUploadStatus(status);
+        },
+      });
     } catch (err: unknown) {
       setUploadError(toErrorMessage(err, "Failed to parse file"));
+      setUploadStatus("");
     } finally {
       setUploadBusy(false);
     }
@@ -113,8 +189,10 @@ export default function GymnasticsLauncher({
 
   const openTemplateBuilder = () => {
     setSelectedPath("scratch");
-    const params = new URLSearchParams();
-    if (defaultDateParam) params.set("d", defaultDateParam);
+    const params = new URLSearchParams(forwardQueryString || "");
+    if (!forwardQueryString && defaultDateParam) {
+      params.set("d", defaultDateParam);
+    }
     const qs = params.toString();
     router.push(`/event/gymnastics/customize${qs ? `?${qs}` : ""}`);
   };
@@ -198,6 +276,20 @@ export default function GymnasticsLauncher({
                 <p className="mt-2 truncate text-xs text-[#6a6782]">
                   Selected: {uploadFileName}
                 </p>
+              ) : null}
+              {uploadBusy ? (
+                <div className="mt-3">
+                  <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-[#6a6782]">
+                    <span>{uploadStatus || "Processing meet file..."}</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#ebe7f8]">
+                    <div
+                      className="h-full rounded-full bg-[#6d35f5] transition-[width] duration-300 ease-out"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
               ) : null}
               {uploadError ? (
                 <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">

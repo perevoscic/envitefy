@@ -28,7 +28,7 @@ import {
   ShoppingBag,
   Droplets,
   Dog,
-  Ban,
+  ShieldAlert,
   PhoneCall,
   User,
   Users,
@@ -95,6 +95,34 @@ type SimpleTemplateViewProps = {
     suppressTextShadows?: boolean;
   };
 };
+
+type IconSvgProps = React.SVGProps<SVGSVGElement> & {
+  size?: number;
+};
+
+const VenueDetailsIcon = ({
+  size = 16,
+  className,
+  ...props
+}: IconSvgProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    className={className}
+    {...props}
+  >
+    <path
+      d="M15 21H13M13 21H9M13 21V18C13 16.8954 12.1046 16 11 16C9.89543 16 9 16.8954 9 18V21M9 21H5V4.6C5 4.03995 5 3.75992 5.10899 3.54601C5.20487 3.35785 5.35785 3.20487 5.54601 3.10899C5.75992 3 6.03995 3 6.6 3H15.4C15.9601 3 16.2401 3 16.454 3.10899C16.6422 3.20487 16.7951 3.35785 16.891 3.54601C17 3.75992 17 4.03995 17 4.6V11.5M8 7H9M8 10H9M13 10H14M13 13H14M8 13H9M13 7H14M19 15V18M19 21H19.01"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 type NormalizedRosterAthlete = {
   id: string;
@@ -236,11 +264,14 @@ export default function SimpleTemplateView({
   const [eventDataState, setEventDataState] = useState(eventData);
   const [discoveryActiveTab, setDiscoveryActiveTab] = useState("meet-details");
   const discoveryTabRailRef = useRef<HTMLDivElement | null>(null);
-  const discoveryTabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>(
-    {}
-  );
+  const discoveryTabButtonRefs = useRef<
+    Record<string, HTMLButtonElement | null>
+  >({});
   const [showDiscoveryLeftFade, setShowDiscoveryLeftFade] = useState(false);
   const [showDiscoveryRightFade, setShowDiscoveryRightFade] = useState(false);
+  const [discoveryRailBounceOffset, setDiscoveryRailBounceOffset] = useState(0);
+  const discoveryPrevScrollLeftRef = useRef(0);
+  const discoveryBounceTimeoutRef = useRef<number | null>(null);
   const [rsvpNameInput, setRsvpNameInput] = useState("");
   const [rsvpGuestEmailInput, setRsvpGuestEmailInput] = useState("");
   const [rsvpGuestPhoneInput, setRsvpGuestPhoneInput] = useState("");
@@ -264,10 +295,10 @@ export default function SimpleTemplateView({
   const discoveryTabs = useMemo(
     () => [
       { id: "meet-details", label: "Meet Details", icon: Info },
+      { id: "facility", label: "Venue Details", icon: VenueDetailsIcon },
       { id: "spectator", label: "Admission & Sales", icon: Ticket },
       { id: "parking", label: "Traffic & Arrival", icon: Car },
-      { id: "facility", label: "Venue Details", icon: Navigation },
-      { id: "rules", label: "Safety & Policy", icon: Ban },
+      { id: "rules", label: "Safety & Policy", icon: ShieldAlert },
     ],
     []
   );
@@ -309,6 +340,23 @@ export default function SimpleTemplateView({
         inline: "center",
         block: "nearest",
       });
+    },
+    []
+  );
+
+  const triggerDiscoveryRailBounce = useCallback(
+    (direction: "left" | "right") => {
+      if (typeof window === "undefined") return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const offset = direction === "left" ? 10 : -10;
+      setDiscoveryRailBounceOffset(offset);
+      if (discoveryBounceTimeoutRef.current != null) {
+        window.clearTimeout(discoveryBounceTimeoutRef.current);
+      }
+      discoveryBounceTimeoutRef.current = window.setTimeout(() => {
+        setDiscoveryRailBounceOffset(0);
+        discoveryBounceTimeoutRef.current = null;
+      }, 170);
     },
     []
   );
@@ -395,36 +443,64 @@ export default function SimpleTemplateView({
     if (!isDynamicGymnasticsLayout) {
       setShowDiscoveryLeftFade(false);
       setShowDiscoveryRightFade(false);
+      setDiscoveryRailBounceOffset(0);
       return;
     }
     if (typeof window === "undefined") return;
 
-    const frame = window.requestAnimationFrame(() => {
+    const rafId = window.requestAnimationFrame(() => {
       updateDiscoveryTabEdgeHints();
+      const rail = discoveryTabRailRef.current;
+      discoveryPrevScrollLeftRef.current = rail?.scrollLeft || 0;
     });
     const rail = discoveryTabRailRef.current;
-    const handleRailScroll = () => updateDiscoveryTabEdgeHints();
+    const handleRailScroll = () => {
+      const activeRail = discoveryTabRailRef.current;
+      if (activeRail) {
+        const { scrollLeft, scrollWidth, clientWidth } = activeRail;
+        const maxScroll = Math.max(scrollWidth - clientWidth, 0);
+        const epsilon = 2;
+        const prev = discoveryPrevScrollLeftRef.current;
+        if (maxScroll > 2) {
+          if (scrollLeft <= epsilon && prev > epsilon) {
+            triggerDiscoveryRailBounce("left");
+          } else if (scrollLeft >= maxScroll - epsilon && prev < maxScroll - epsilon) {
+            triggerDiscoveryRailBounce("right");
+          }
+        }
+        discoveryPrevScrollLeftRef.current = scrollLeft;
+      }
+      updateDiscoveryTabEdgeHints();
+    };
     const handleResize = () => updateDiscoveryTabEdgeHints();
 
     rail?.addEventListener("scroll", handleRailScroll, { passive: true });
     window.addEventListener("resize", handleResize);
 
     return () => {
-      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(rafId);
+      if (discoveryBounceTimeoutRef.current != null) {
+        window.clearTimeout(discoveryBounceTimeoutRef.current);
+        discoveryBounceTimeoutRef.current = null;
+      }
       rail?.removeEventListener("scroll", handleRailScroll);
       window.removeEventListener("resize", handleResize);
     };
-  }, [isDynamicGymnasticsLayout, updateDiscoveryTabEdgeHints]);
+  }, [
+    isDynamicGymnasticsLayout,
+    triggerDiscoveryRailBounce,
+    updateDiscoveryTabEdgeHints,
+  ]);
 
   useEffect(() => {
     if (!isDynamicGymnasticsLayout) return;
     if (typeof window === "undefined") return;
 
     centerDiscoveryTab(discoveryActiveTab, getDiscoveryScrollBehavior());
-    const frame = window.requestAnimationFrame(() => {
+    const rafId = window.requestAnimationFrame(() => {
       updateDiscoveryTabEdgeHints();
     });
-    return () => window.cancelAnimationFrame(frame);
+    return () => window.cancelAnimationFrame(rafId);
   }, [
     centerDiscoveryTab,
     discoveryActiveTab,
@@ -432,6 +508,52 @@ export default function SimpleTemplateView({
     isDynamicGymnasticsLayout,
     updateDiscoveryTabEdgeHints,
   ]);
+
+  useEffect(() => {
+    if (!isDynamicGymnasticsLayout) return;
+    if (typeof window === "undefined") return;
+
+    const rail = discoveryTabRailRef.current;
+    if (!rail) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const sessionKey = "envitefy:discovery-tab-peeked";
+    if (window.sessionStorage.getItem(sessionKey) === "1") return;
+
+    let backTimer: number | null = null;
+    const rafId = window.requestAnimationFrame(() => {
+      const activeRail = discoveryTabRailRef.current;
+      if (!activeRail) return;
+      const maxScroll = Math.max(
+        activeRail.scrollWidth - activeRail.clientWidth,
+        0
+      );
+      if (maxScroll <= 6) return;
+
+      window.sessionStorage.setItem(sessionKey, "1");
+      const startLeft = activeRail.scrollLeft;
+      const peekDistance = Math.min(40, maxScroll);
+      const peekTarget = Math.min(startLeft + peekDistance, maxScroll);
+
+      activeRail.scrollTo({
+        left: peekTarget,
+        behavior: "smooth",
+      });
+      backTimer = window.setTimeout(() => {
+        activeRail.scrollTo({
+          left: startLeft,
+          behavior: "smooth",
+        });
+      }, 260);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      if (backTimer != null) {
+        window.clearTimeout(backTimer);
+      }
+    };
+  }, [isDynamicGymnasticsLayout]);
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -3026,6 +3148,26 @@ export default function SimpleTemplateView({
       customFields?.meetDateRangeLabel ||
       currentData?.discoverySource?.parseResult?.dates ||
       (date ? formatDate(date) : "");
+    const sessionHeroLabel = safeString(
+      meet?.sessionNumber ||
+        meet?.session ||
+        parseResult?.athlete?.session ||
+        ""
+    );
+    const rosterLevelValues = Array.from(
+      new Set(
+        rosterAthletes
+          .map((athlete) => safeString(athlete?.level))
+          .filter(Boolean)
+      )
+    );
+    const teamLevelHeroLabel = (() => {
+      if (rosterLevelValues.length > 0) {
+        if (rosterLevelValues.length <= 2) return rosterLevelValues.join(" / ");
+        return `${rosterLevelValues[0]} +${rosterLevelValues.length - 1} more`;
+      }
+      return safeString(parseResult?.athlete?.level || "");
+    })();
     const warmupTimeLabel = formatTime(meet?.warmUpTime);
     const scheduleHint = warmupTimeLabel
       ? `First warmup: ${warmupTimeLabel}`
@@ -3039,6 +3181,17 @@ export default function SimpleTemplateView({
       advancedSections?.logistics?.gymLayoutImage ||
         currentData?.discoverySource?.extractionMeta?.gymLayoutImageDataUrl
     );
+    const assignedGymRaw = safeString(
+      advancedSections?.meet?.assignedGym || parseResult?.athlete?.assignedGym
+    );
+    const gymLayoutLabel = safeString(
+      advancedSections?.logistics?.gymLayoutLabel ||
+        (assignedGymRaw ? `Assigned gym location: ${assignedGymRaw}` : "")
+    );
+    const gymLayoutLabelValue = gymLayoutLabel
+      ? gymLayoutLabel.replace(/^assigned gym location:\s*/i, "").trim() ||
+        gymLayoutLabel
+      : "";
     const extractedDiscoveryText = safeString(
       currentData?.discoverySource?.extractedText
     );
@@ -3231,6 +3384,32 @@ export default function SimpleTemplateView({
         );
       })
       .slice(0, 12);
+    const normalizeCompareText = (value: string) =>
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    const isVenueDetailLine = (line: string) =>
+      /(east|west|central|hall|registration|guest services|entrance|coffee bar|admission tickets|competition area|awards area|gym\s*[a-f]|2nd floor|second floor|3rd floor|third floor|check-?in|drop-?off|ride ?share|parking|address|venue)/i.test(
+        line
+      );
+    const meetsAnyLine = (line: string, candidates: string[]) => {
+      const normalized = normalizeCompareText(line);
+      if (!normalized) return false;
+      return candidates.some((candidate) => {
+        const normalizedCandidate = normalizeCompareText(candidate);
+        if (!normalizedCandidate) return false;
+        if (normalizedCandidate === normalized) return true;
+        if (
+          normalizedCandidate.length > 18 &&
+          normalized.includes(normalizedCandidate)
+        )
+          return true;
+        if (normalized.length > 18 && normalizedCandidate.includes(normalized))
+          return true;
+        return false;
+      });
+    };
     const meetDetailsFallbackLines = uniqueTextLines(
       [
         eventDatesLabel ? `Meet dates: ${eventDatesLabel}` : "",
@@ -3262,10 +3441,13 @@ export default function SimpleTemplateView({
         .filter(Boolean),
       8
     ).filter((line) => line.length > 10);
-    const meetDetailsLines = uniqueTextLines(
-      [...descriptionLines, ...meetDetailsFallbackLines, ...primaryMeetDetailsLines],
-      16
-    ).filter((line) => line.length > 10);
+    const meetDetailsRawLines =
+      descriptionLines.length > 0
+        ? descriptionLines
+        : uniqueTextLines(
+            [...meetDetailsFallbackLines, ...primaryMeetDetailsLines],
+            16
+          ).filter((line) => line.length > 10);
     const rideShareNote =
       sourceLines.find((line) => rideSharePattern.test(line)) || "";
     const facilityLinesFromSource = primaryMeetDetailsLines.filter(
@@ -3287,10 +3469,21 @@ export default function SimpleTemplateView({
       ),
       14
     );
-    const facilityLines = uniqueTextLines(
+    const facilityLinesRaw = uniqueTextLines(
       [...facilityLinesFromSource, ...facilityLinesFromFacts],
       14
-    );
+    ).filter((line) => line.length > 10);
+    const meetDetailsLines = uniqueTextLines(
+      meetDetailsRawLines.filter((line) => {
+        if (!isVenueDetailLine(line)) return true;
+        return !meetsAnyLine(line, facilityLinesRaw);
+      }),
+      16
+    ).filter((line) => line.length > 10);
+    const facilityLines = uniqueTextLines(
+      facilityLinesRaw.filter((line) => !meetsAnyLine(line, meetDetailsLines)),
+      14
+    ).filter((line) => line.length > 10);
     const registrationDeskNote =
       facilityLines.find((line) =>
         /(registration|guest services|2nd floor|second floor)/i.test(line)
@@ -3311,11 +3504,6 @@ export default function SimpleTemplateView({
       (safeString(parseResult?.athlete?.awards)
         ? `Awards area: ${safeString(parseResult?.athlete?.awards)}.`
         : "");
-    const normalizeCompareText = (value: string) =>
-      value
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim();
     const venueDetailContains = (note: string) => {
       const normalizedNote = normalizeCompareText(note);
       if (!normalizedNote) return false;
@@ -3374,6 +3562,7 @@ export default function SimpleTemplateView({
       Boolean(safeString(contactLink?.url)) ||
       Boolean(safeString(visitorLink?.url)) ||
       hasSourceFileDownload;
+    const showDiscoveryRightRail = hasHostSupport;
     const hasParkingContent =
       Boolean(trafficText) ||
       Boolean(safeString(logistics?.parking)) ||
@@ -3382,6 +3571,7 @@ export default function SimpleTemplateView({
       Boolean(facilityMapAddress);
     const hasFacilityContent =
       Boolean(gymLayoutImageUrl) ||
+      Boolean(gymLayoutLabel) ||
       facilityLines.length > 0 ||
       showRegistrationDeskNote ||
       showAwardsAreaNote;
@@ -3403,6 +3593,38 @@ export default function SimpleTemplateView({
         .trim();
       return { textWithoutUrl, href };
     };
+    const toStructuredListItems = (
+      text: string,
+      stripPrefixPattern?: RegExp
+    ): string[] => {
+      let cleaned = safeString(text).replace(/\r/g, "\n");
+      if (!cleaned) return [];
+      if (stripPrefixPattern) cleaned = cleaned.replace(stripPrefixPattern, "");
+
+      const items = cleaned
+        .split(/\n+/)
+        .flatMap((line) => line.split(/\s*;\s*/))
+        .map((part) =>
+          part
+            .replace(/^[-*•\u2022]\s+/, "")
+            .replace(/^\d+[.)]\s+/, "")
+            .trim()
+        )
+        .filter(Boolean);
+
+      return items.filter(
+        (item, idx, arr) =>
+          arr.findIndex(
+            (candidate) =>
+              candidate.toLowerCase().replace(/\s+/g, " ").trim() ===
+              item.toLowerCase().replace(/\s+/g, " ").trim()
+          ) === idx
+      );
+    };
+    const awardsAreaItems = toStructuredListItems(
+      awardsAreaNote,
+      /^awards?\s*area\s*:\s*/i
+    );
 
     // Use token variables with safe fallbacks so the dynamic template always stays synced.
     const discoveryBg = "bg-[color:var(--bg,#FFFFFF)]";
@@ -3442,11 +3664,13 @@ export default function SimpleTemplateView({
           };
     const hasHeaderVisual = hasHeaderHero || !headerHeroSrc;
     const headerTitleClass = hasHeaderVisual ? "text-white" : discoveryHeading;
-    const headerMetaClass = hasHeaderVisual ? "text-white/90" : discoveryNavText;
+    const headerMetaClass = hasHeaderVisual
+      ? "text-white/90"
+      : discoveryNavText;
     const headerIconClass = hasHeaderVisual ? "text-white/90" : discoveryIcon;
     const headerDateChipClass = hasHeaderVisual
-      ? "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/35 text-white backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest mb-6"
-      : "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[color:var(--chip-bg,#F8FAFC)] border border-[color:var(--chip-border,#D7DCE6)] text-[color:var(--chip-text,#2D1B4E)] text-[10px] font-bold uppercase tracking-widest mb-6";
+      ? "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/35 text-white backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest"
+      : "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[color:var(--chip-bg,#F8FAFC)] border border-[color:var(--chip-border,#D7DCE6)] text-[color:var(--chip-text,#2D1B4E)] text-[10px] font-bold uppercase tracking-widest";
     const headerTitleStyle = hasHeaderVisual
       ? { color: "#F8FAFC", textShadow: "0 2px 10px rgba(0,0,0,0.6)" }
       : undefined;
@@ -3494,10 +3718,26 @@ export default function SimpleTemplateView({
             </div>
           )}
           <div className="max-w-6xl mx-auto relative z-10">
-            {eventDatesLabel && (
-              <div className={headerDateChipClass}>
-                <CalendarIcon size={12} className="opacity-80" />{" "}
-                {eventDatesLabel}
+            {(eventDatesLabel || sessionHeroLabel || teamLevelHeroLabel) && (
+              <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
+                {eventDatesLabel && (
+                  <div className={headerDateChipClass}>
+                    <CalendarIcon size={12} className="opacity-80" />{" "}
+                    {eventDatesLabel}
+                  </div>
+                )}
+                {sessionHeroLabel && (
+                  <div className={headerDateChipClass}>
+                    <ClipboardList size={12} className="opacity-80" /> Session:{" "}
+                    {sessionHeroLabel}
+                  </div>
+                )}
+                {teamLevelHeroLabel && (
+                  <div className={headerDateChipClass}>
+                    <Users size={12} className="opacity-80" /> Team Level:{" "}
+                    {teamLevelHeroLabel}
+                  </div>
+                )}
               </div>
             )}
             <h2
@@ -3512,7 +3752,8 @@ export default function SimpleTemplateView({
             >
               {hostGymLabel && (
                 <span className="flex items-center gap-1.5">
-                  <Trophy size={16} className={headerIconClass} /> {hostGymLabel}
+                  <Trophy size={16} className={headerIconClass} />{" "}
+                  {hostGymLabel}
                 </span>
               )}
               {venueLabel && (
@@ -3582,40 +3823,50 @@ export default function SimpleTemplateView({
           <div className="relative mb-8 md:mb-10">
             <div className="sticky top-0 z-30 -mx-1 rounded-[24px] border border-[color:var(--border,#E2E8F0)] bg-[color:var(--surface,#FFFFFF)]/96 px-1.5 py-2 shadow-sm backdrop-blur-md md:static md:mx-0 md:border md:border-[color:var(--border,#E2E8F0)] md:bg-[color:var(--surface,#FFFFFF)] md:px-1.5 md:py-2 md:backdrop-blur-0">
               <div
-                ref={discoveryTabRailRef}
-                className="flex items-stretch gap-1.5 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-px-6 px-1 py-1 md:px-1 md:py-1 md:snap-none md:overflow-visible"
+                className="transition-transform duration-200 ease-out will-change-transform"
+                style={{
+                  transform: `translateX(${discoveryRailBounceOffset}px)`,
+                }}
               >
-                {discoveryTabs.map((tab) => {
-                  const isActive = discoveryActiveTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      ref={(node) => {
-                        discoveryTabButtonRefs.current[tab.id] = node;
-                      }}
-                      onClick={() => {
-                        setDiscoveryActiveTab(tab.id);
-                        centerDiscoveryTab(tab.id, getDiscoveryScrollBehavior());
-                      }}
-                      className={`${discoveryFocusRing} shrink-0 snap-center min-w-[160px] sm:min-w-[176px] md:min-w-[136px] md:flex-1 inline-flex min-h-[46px] md:min-h-0 items-center justify-center gap-1.5 rounded-full border px-3 py-2.5 md:rounded-[18px] md:py-2.5 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.08em] md:tracking-[0.09em] whitespace-nowrap transition-all ${
-                        isActive
-                          ? "bg-[color:var(--button-bg,#2D1B4E)] text-[color:var(--button-text,#FFFFFF)] border-[color:var(--button-bg,#2D1B4E)] shadow-[0_10px_20px_rgba(15,23,42,0.2)] md:bg-[color:var(--color-nav-active-bg,#F8FAFC)] md:text-[color:var(--color-nav-active,#2D1B4E)] md:border-[color:var(--accent,#D4AF37)] md:shadow-none"
-                          : "bg-transparent text-[color:var(--color-nav-text,#334155)] border-transparent hover:border-[color:var(--color-border-hover,#D4AF37)] hover:bg-[color:var(--chip-bg,#F8FAFC)]"
-                      }`}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      <tab.icon
-                        size={16}
-                        className={
+                <div
+                  ref={discoveryTabRailRef}
+                  className="flex items-stretch gap-1.5 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-px-6 px-1 py-1 md:px-1 md:py-1 md:snap-none md:overflow-visible"
+                >
+                  {discoveryTabs.map((tab) => {
+                    const isActive = discoveryActiveTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        ref={(node) => {
+                          discoveryTabButtonRefs.current[tab.id] = node;
+                        }}
+                        onClick={() => {
+                          setDiscoveryActiveTab(tab.id);
+                          centerDiscoveryTab(
+                            tab.id,
+                            getDiscoveryScrollBehavior()
+                          );
+                        }}
+                        className={`${discoveryFocusRing} shrink-0 snap-center min-w-[160px] sm:min-w-[176px] md:min-w-[136px] md:flex-1 inline-flex min-h-[46px] md:min-h-0 items-center justify-center gap-1.5 rounded-full border px-3 py-2.5 md:rounded-[18px] md:py-2.5 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.08em] md:tracking-[0.09em] whitespace-nowrap transition-all ${
                           isActive
-                            ? "text-[color:var(--button-text,#FFFFFF)] md:text-[color:var(--accent,#D4AF37)]"
-                            : discoveryIcon
-                        }
-                      />
-                      {tab.label}
-                    </button>
-                  );
-                })}
+                            ? "bg-[color:var(--button-bg,#2D1B4E)] text-[color:var(--button-text,#FFFFFF)] border-[color:var(--button-bg,#2D1B4E)] shadow-[0_10px_20px_rgba(15,23,42,0.2)] md:bg-[color:var(--color-nav-active-bg,#F8FAFC)] md:text-[color:var(--color-nav-active,#2D1B4E)] md:border-[color:var(--accent,#D4AF37)] md:shadow-none"
+                            : "bg-transparent text-[color:var(--color-nav-text,#334155)] border-transparent hover:border-[color:var(--color-border-hover,#D4AF37)] hover:bg-[color:var(--chip-bg,#F8FAFC)]"
+                        }`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        <tab.icon
+                          size={16}
+                          className={
+                            isActive
+                              ? "text-[color:var(--button-text,#FFFFFF)] md:text-[color:var(--accent,#D4AF37)]"
+                              : discoveryIcon
+                          }
+                        />
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div
@@ -3642,7 +3893,7 @@ export default function SimpleTemplateView({
           <div className="grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-3 lg:gap-10">
             <div
               className={`space-y-6 md:space-y-8 ${
-                hasHostSupport ? "lg:col-span-2" : "lg:col-span-3"
+                showDiscoveryRightRail ? "lg:col-span-2" : "lg:col-span-3"
               }`}
             >
               {discoveryActiveTab === "meet-details" && (
@@ -3939,41 +4190,10 @@ export default function SimpleTemplateView({
                       </div>
                     )}
                   </div>
-
                   {facilityMapAddress && (
-                    <section className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
-                      <h3 className={discoverySectionHeading}>
-                        Venue location
-                      </h3>
-                      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:gap-6 items-stretch">
-                        <div className="rounded-3xl overflow-hidden border border-[color:var(--border,#E2E8F0)]">
-                          <StaticMap
-                            address={facilityMapAddress}
-                            height={340}
-                          />
-                        </div>
-                        <div className="rounded-3xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 p-6 flex flex-col justify-between gap-4">
-                          <div>
-                            <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
-                              Address
-                            </h4>
-                            <p className="text-sm text-slate-700 leading-relaxed">
-                              {facilityMapAddress}
-                            </p>
-                          </div>
-                          {directionsUrl && (
-                            <a
-                              href={directionsUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`inline-flex items-center justify-center gap-2 rounded-xl bg-[color:var(--button-bg,#2D1B4E)] text-[color:var(--button-text,#FFFFFF)] px-4 py-3 text-[10px] font-black uppercase tracking-wider hover:opacity-90 ${discoveryFocusRing}`}
-                            >
-                              Get Directions <ExternalLink size={12} />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </section>
+                    <div className={`${discoveryCard} overflow-hidden p-0`}>
+                      <StaticMap address={facilityMapAddress} height={360} />
+                    </div>
                   )}
 
                   {!hasParkingContent && (
@@ -3993,7 +4213,17 @@ export default function SimpleTemplateView({
               {discoveryActiveTab === "facility" && (
                 <div className="space-y-6 md:space-y-10">
                   <section className={`${discoveryCard} p-4 sm:p-5 md:p-10`}>
-                    <h3 className={discoverySectionHeading}>Venue Details</h3>
+                    <h3 className={discoverySectionHeading}>Awards Area</h3>
+                    {gymLayoutLabel && (
+                      <div className="mb-6 rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-[color:var(--chip-bg,#F8FAFC)] p-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                          Assigned gym location
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-800">
+                          {gymLayoutLabelValue}
+                        </p>
+                      </div>
+                    )}
                     {gymLayoutImageUrl && (
                       <div className="mb-6">
                         <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
@@ -4010,15 +4240,16 @@ export default function SimpleTemplateView({
                     )}
 
                     {facilityLines.length > 0 && (
-                      <div>
-                        <ul className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 divide-y divide-[color:var(--border,#E2E8F0)]">
-                          {facilityLines.map((line) => {
-                            const parsedLine = extractInlineUrl(line);
-                            return (
-                              <li
-                                key={`facility-line-${line}`}
-                                className="px-4 py-3 space-y-2"
-                              >
+                      <ul className="space-y-4">
+                        {facilityLines.map((line) => {
+                          const parsedLine = extractInlineUrl(line);
+                          return (
+                            <li
+                              key={`facility-line-${line}`}
+                              className="flex items-start gap-3"
+                            >
+                              <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-slate-400/70" />
+                              <div className="space-y-2">
                                 <p className="text-sm text-slate-700 leading-relaxed">
                                   {parsedLine.textWithoutUrl ||
                                     "Reference link"}
@@ -4033,11 +4264,11 @@ export default function SimpleTemplateView({
                                     Open Link <ExternalLink size={12} />
                                   </a>
                                 )}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     )}
                     {(showRegistrationDeskNote || showAwardsAreaNote) && (
                       <ul className="mt-6 space-y-4">
@@ -4062,12 +4293,19 @@ export default function SimpleTemplateView({
                               3F
                             </span>
                             <div>
-                              <h4 className="font-black text-xs uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)] mb-1">
-                                Awards Area
-                              </h4>
-                              <p className="text-sm text-slate-500 leading-relaxed">
-                                {awardsAreaNote}
-                              </p>
+                              {awardsAreaItems.length > 1 ? (
+                                <ul className="list-disc pl-5 space-y-1 text-sm text-slate-500 leading-relaxed">
+                                  {awardsAreaItems.map((item) => (
+                                    <li key={`awards-area-item-${item}`}>
+                                      {item}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-sm text-slate-500 leading-relaxed">
+                                  {awardsAreaItems[0] || awardsAreaNote}
+                                </p>
+                              )}
                             </div>
                           </li>
                         )}
@@ -4130,7 +4368,7 @@ export default function SimpleTemplateView({
                   )}
                   {policyNotes[3] && (
                     <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
-                      <Ban className="text-red-500 mb-4" size={28} />
+                      <ShieldAlert className="text-red-500 mb-4" size={28} />
                       <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
                         Safety Policy
                       </h4>
@@ -4156,7 +4394,7 @@ export default function SimpleTemplateView({
               )}
             </div>
 
-            {hasHostSupport && (
+            {showDiscoveryRightRail && (
               <div className="space-y-6 md:space-y-8">
                 <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                   <h4 className="font-black text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)] border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">

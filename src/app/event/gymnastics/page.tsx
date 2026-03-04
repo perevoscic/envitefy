@@ -1,14 +1,19 @@
 import { redirect } from "next/navigation";
 import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
 
+type SearchParams = Record<string, string | string[] | undefined>;
+
 type GymnasticsPageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<SearchParams> | SearchParams;
 };
 
-export default function GymnasticsPage({ searchParams }: GymnasticsPageProps) {
+export default async function GymnasticsPage({
+  searchParams,
+}: GymnasticsPageProps) {
   const technicalKeys = new Set(["edit", "embed", "updated", "t"]);
   const params = new URLSearchParams();
-  const entries = Object.entries(searchParams || {});
+  const awaitedSearchParams = (await searchParams) ?? {};
+  const entries = Object.entries(awaitedSearchParams);
   let hasTechnicalParam = false;
 
   for (const [key, value] of entries) {
@@ -27,6 +32,5 @@ export default function GymnasticsPage({ searchParams }: GymnasticsPageProps) {
     redirect(`/event/gymnastics/customize${qs ? `?${qs}` : ""}`);
   }
 
-  const defaultDateParam = params.get("d") || undefined;
-  return <GymnasticsLauncher defaultDateParam={defaultDateParam} />;
+  return <GymnasticsLauncher forwardQueryString={qs || undefined} />;
 }

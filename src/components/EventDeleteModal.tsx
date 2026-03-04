@@ -1,7 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 
 interface EventDeleteModalProps {
   eventId: string;
@@ -14,8 +15,13 @@ export default function EventDeleteModal({
 }: EventDeleteModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleDelete = async () => {
     if (!session) return;
@@ -78,68 +84,73 @@ export default function EventDeleteModal({
         <span className="hidden sm:inline">Delete</span>
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[400]">
-          <div className="bg-background border border-border rounded-lg max-w-md w-full">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-red-600">
-                  Delete Event
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="text-foreground/50 hover:text-foreground"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-5 w-5"
+      {isMounted &&
+        isOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[13000] flex items-center justify-center overflow-y-auto bg-black/50 p-3 sm:p-4">
+            <div className="w-[min(92vw,24rem)] rounded-lg border border-border bg-background">
+              <div className="p-4 sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-red-600">
+                    Delete Event
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="text-foreground/50 hover:text-foreground"
                   >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <p className="text-foreground/80 mb-2">
-                  Are you sure you want to delete this event?
-                </p>
-                <div className="bg-surface border border-border rounded-md p-3">
-                  <p className="font-medium text-foreground">{eventTitle}</p>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-5 w-5"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
                 </div>
-                <p className="text-sm text-red-600 mt-2">
-                  This action cannot be undone.
-                </p>
-              </div>
 
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 text-sm text-foreground/70 hover:text-foreground border border-border rounded-md hover:bg-surface transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isLoading}
-                  className="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isLoading ? "Deleting..." : "Delete Event"}
-                </button>
+                <div className="mb-6">
+                  <p className="mb-2 text-foreground/80">
+                    Are you sure you want to delete this event?
+                  </p>
+                  <div className="rounded-md border border-border bg-surface p-3">
+                    <p className="break-words font-medium text-foreground">
+                      {eventTitle}
+                    </p>
+                  </div>
+                  <p className="mt-2 text-sm text-red-600">
+                    This action cannot be undone.
+                  </p>
+                </div>
+
+                <div className="flex flex-row justify-end gap-2 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-md border border-border px-3 sm:px-4 py-2 text-sm text-foreground/70 transition-colors hover:bg-surface hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isLoading}
+                    className="rounded-md bg-red-600 px-3 sm:px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isLoading ? "Deleting..." : "Delete Event"}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }

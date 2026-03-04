@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 
 type SearchParams = { [key: string]: string | string[] | undefined };
+type SnapRedirectProps = {
+  searchParams?: Promise<SearchParams> | SearchParams;
+};
 
-export default function SnapRedirect({
-  searchParams = {},
-}: {
-  searchParams?: SearchParams;
-}) {
+export default async function SnapRedirect({ searchParams }: SnapRedirectProps) {
+  const awaitedSearchParams = (await searchParams) ?? {};
   const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(searchParams)) {
+  for (const [key, value] of Object.entries(awaitedSearchParams)) {
     if (Array.isArray(value)) {
       value.forEach((v) => {
         if (v != null) params.append(key, v);

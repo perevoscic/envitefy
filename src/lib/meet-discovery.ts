@@ -129,6 +129,15 @@ type TextQualitySignals = {
   looksLikePdfInternals: boolean;
 };
 
+type GymLayoutZone = {
+  label: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  confidence: number;
+};
+
 type ExtractionResult = {
   extractedText: string;
   extractionMeta: {
@@ -138,6 +147,7 @@ type ExtractionResult = {
     pageTitle?: string | null;
     gymLayoutImageDataUrl?: string | null;
     gymLayoutFacts?: string[];
+    gymLayoutZones?: GymLayoutZone[];
     gymLayoutPage?: number | null;
     textQuality?: TextQuality | null;
     qualitySignals?: TextQualitySignals | null;
@@ -181,6 +191,13 @@ const MAX_LINKED_ASSETS = 4;
 const MAX_FETCH_BYTES = 7 * 1024 * 1024;
 const LOW_TEXT_THRESHOLD = 200;
 const execFileAsync = promisify(execFile);
+let pdfRenderDepsPromise: Promise<
+  | {
+      pdfjs: any;
+      createCanvas: (width: number, height: number) => any;
+    }
+  | null
+> | null = null;
 
 type DateRangeInfo = {
   label: string | null;
@@ -191,6 +208,7 @@ type DateRangeInfo = {
 type GymLayoutExtraction = {
   dataUrl: string | null;
   facts: string[];
+  zones: GymLayoutZone[];
   page: number | null;
 };
 
@@ -555,6 +573,53 @@ function cleanExtractedText(text: string): string {
     .trim();
 }
 
+async function getPdfRenderDeps() {
+  if (!pdfRenderDepsPromise) {
+    pdfRenderDepsPromise = Promise.all([
+      import("pdfjs-dist/legacy/build/pdf.mjs"),
+      import("@napi-rs/canvas"),
+    ])
+      .then(([pdfjs, canvasMod]) => ({
+        pdfjs,
+        createCanvas: (canvasMod as any).createCanvas,
+      }))
+      .catch(() => null);
+  }
+  return pdfRenderDepsPromise;
+}
+
+async function renderPdfPageToPng(
+  pdfBuffer: Buffer,
+  pageIndex: number,
+  scale = 1.75
+): Promise<Buffer | null> {
+  const deps = await getPdfRenderDeps();
+  if (!deps) return null;
+  try {
+    const loadingTask = deps.pdfjs.getDocument({
+      data: new Uint8Array(pdfBuffer),
+      useSystemFonts: true,
+      isEvalSupported: false,
+      disableFontFace: true,
+    });
+    const doc = await loadingTask.promise;
+    const page = await doc.getPage(pageIndex + 1);
+    const viewport = page.getViewport({ scale });
+    const width = Math.max(1, Math.ceil(viewport.width));
+    const height = Math.max(1, Math.ceil(viewport.height));
+    const canvas = deps.createCanvas(width, height);
+    const context = canvas.getContext("2d");
+    await page.render({ canvasContext: context, viewport }).promise;
+    const png = canvas.toBuffer("image/png");
+    if (typeof page.cleanup === "function") page.cleanup();
+    if (typeof doc.cleanup === "function") doc.cleanup();
+    if (typeof doc.destroy === "function") await doc.destroy();
+    return Buffer.isBuffer(png) ? png : Buffer.from(png);
+  } catch {
+    return null;
+  }
+}
+
 function looksLikePdfInternals(text: string): boolean {
   const sample = cleanExtractedText(text).slice(0, 24000);
   if (!sample) return false;
@@ -863,13 +928,14 @@ async function extractTextFromPdf(buffer: Buffer): Promise<{
   try {
     const ocrPages: string[] = [];
     for (let page = 0; page < 5; page += 1) {
-      try {
-        const pageImage = await sharp(buffer, { density: 220, page }).png().toBuffer();
-        const text = cleanExtractedText(await extractTextFromImage(pageImage));
-        if (text) ocrPages.push(text);
-      } catch {
-        break;
-      }
+      const sharpPageImage = await sharp(buffer, { density: 220, page })
+        .png()
+        .toBuffer()
+        .catch(() => null);
+      const pageImage = sharpPageImage || (await renderPdfPageToPng(buffer, page));
+      if (!pageImage) break;
+      const text = cleanExtractedText(await extractTextFromImage(pageImage));
+      if (text) ocrPages.push(text);
     }
     if (ocrPages.length > 0) {
       ocrCandidate = toCandidate(ocrPages.join("\n\n"), true);
@@ -973,6 +1039,166 @@ function scoreGymLayoutSignals(text: string): number {
   return signals.reduce((count, re) => (re.test(normalized) ? count + 1 : count), 0);
 }
 
+function extractGymTokens(value: string): string[] {
+  const text = safeString(value);
+  if (!text) return [];
+  const matches = Array.from(text.matchAll(/\bgym\s*([a-z0-9]{1,2})\b/gi));
+  if (!matches.length) return [];
+  const tokens = matches
+    .map((match) => safeString(match?.[1] || "").toUpperCase())
+    .filter(Boolean)
+    .map((suffix) => `Gym ${suffix}`);
+  return uniqueLines(tokens, 8);
+}
+
+function normalizeZoneNumber(value: unknown): number | null {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  if (num >= 0 && num <= 1) return num;
+  if (num > 1 && num <= 100) return num / 100;
+  return null;
+}
+
+function normalizeGymLayoutZones(raw: unknown): GymLayoutZone[] {
+  return uniqueBy(
+    pickArray(raw)
+      .map((item) => {
+        const label = safeString(item?.label || item?.name || item?.zone);
+        const x = normalizeZoneNumber(item?.x ?? item?.left);
+        const y = normalizeZoneNumber(item?.y ?? item?.top);
+        const w = normalizeZoneNumber(item?.w ?? item?.width);
+        const h = normalizeZoneNumber(item?.h ?? item?.height);
+        const confidenceRaw = Number(item?.confidence);
+        const confidence = Number.isFinite(confidenceRaw)
+          ? Math.max(0, Math.min(1, confidenceRaw))
+          : 0;
+        if (!label || x === null || y === null || w === null || h === null) return null;
+        if (w <= 0 || h <= 0) return null;
+        if (x + w > 1.02 || y + h > 1.02) return null;
+        return {
+          label,
+          x: Math.max(0, Math.min(1, x)),
+          y: Math.max(0, Math.min(1, y)),
+          w: Math.max(0.01, Math.min(1, w)),
+          h: Math.max(0.01, Math.min(1, h)),
+          confidence,
+        } as GymLayoutZone;
+      })
+      .filter((item): item is GymLayoutZone => Boolean(item)),
+    (item) =>
+      `${item.label.toLowerCase()}|${item.x.toFixed(3)}|${item.y.toFixed(3)}|${item.w.toFixed(
+        3
+      )}|${item.h.toFixed(3)}`
+  ).slice(0, 24);
+}
+
+async function openAiExtractGymLayoutZones(
+  buffer: Buffer,
+  mimeType = "image/png"
+): Promise<GymLayoutZone[]> {
+  const apiKey = safeString(process.env.OPENAI_API_KEY || "");
+  if (!apiKey) return [];
+  const model =
+    safeString(process.env.OPENAI_OCR_FAST_MODEL) ||
+    safeString(process.env.OPENAI_OCR_MODEL) ||
+    safeString(process.env.LLM_MODEL) ||
+    "gpt-5.1-mini";
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "Extract gymnastics venue map regions from the image. Return strict JSON only.",
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text:
+                  'Return JSON with key "zones" where zones is an array of objects: {label:string, x:number, y:number, w:number, h:number, confidence:number}. Coordinates must be normalized 0..1 relative to the full image. Include only visible map regions such as gym labels, hall names, registration, guest services, entrances, competition area, and awards area. If unsure, return an empty array.',
+              },
+              {
+                type: "input_image",
+                image_url: { url: `data:${mimeType};base64,${buffer.toString("base64")}` },
+              },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!response.ok) return [];
+    const payload = await response.json();
+    const raw = safeString(payload?.choices?.[0]?.message?.content || "");
+    const parsed = extractJsonObject(raw);
+    if (!parsed || typeof parsed !== "object") return [];
+    return normalizeGymLayoutZones(parsed?.zones);
+  } catch {
+    return [];
+  }
+}
+
+async function cropGymLayoutImageToAssignedGym(
+  imageDataUrl: string,
+  zones: GymLayoutZone[],
+  assignedGym: string
+): Promise<string | null> {
+  const parsed = parseDataUrl(imageDataUrl);
+  if (!parsed || !zones.length) return null;
+  const target = safeString(assignedGym);
+  if (!target) return null;
+  const targetTokens = extractGymTokens(target);
+  if (!targetTokens.length) return null;
+  const targetSet = new Set(targetTokens.map((item) => item.toLowerCase()));
+  const matchingZones = zones.filter((zone) => {
+    const zoneTokens = extractGymTokens(zone.label);
+    return zoneTokens.some((token) => targetSet.has(token.toLowerCase()));
+  });
+  if (!matchingZones.length) return null;
+  const chosen = [...matchingZones].sort((a, b) => {
+    const confidenceDelta = b.confidence - a.confidence;
+    if (confidenceDelta !== 0) return confidenceDelta;
+    return a.w * a.h - b.w * b.h;
+  })[0];
+  try {
+    const metadata = await sharp(parsed.buffer).metadata();
+    const width = Number(metadata.width || 0);
+    const height = Number(metadata.height || 0);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width < 20 || height < 20) {
+      return null;
+    }
+    const padX = Math.max(12, Math.round(width * 0.035));
+    const padY = Math.max(12, Math.round(height * 0.035));
+    const left = Math.max(0, Math.floor(chosen.x * width) - padX);
+    const top = Math.max(0, Math.floor(chosen.y * height) - padY);
+    const cropWidth = Math.min(
+      width - left,
+      Math.max(32, Math.ceil(chosen.w * width) + padX * 2)
+    );
+    const cropHeight = Math.min(
+      height - top,
+      Math.max(32, Math.ceil(chosen.h * height) + padY * 2)
+    );
+    if (cropWidth < 24 || cropHeight < 24) return null;
+    const cropped = await sharp(parsed.buffer)
+      .extract({ left, top, width: cropWidth, height: cropHeight })
+      .toBuffer();
+    return await toOptimizedImageDataUrl(cropped);
+  } catch {
+    return null;
+  }
+}
+
 async function toOptimizedImageDataUrl(
   buffer: Buffer
 ): Promise<string | null> {
@@ -1006,22 +1232,54 @@ async function toOptimizedImageDataUrl(
   }
 }
 
+async function scoreGymLayoutVisualSignal(buffer: Buffer): Promise<number> {
+  try {
+    const stats = await sharp(buffer).stats();
+    const channels = pickArray(stats?.channels);
+    if (!channels.length) return 0;
+    const mean =
+      channels.reduce((sum, channel) => sum + Number(channel?.mean || 0), 0) /
+      channels.length;
+    const stdev =
+      channels.reduce((sum, channel) => sum + Number(channel?.stdev || 0), 0) /
+      channels.length;
+    const darknessScore = Math.max(0, (245 - mean) / 120);
+    const textureScore = Math.max(0, stdev / 70);
+    return Math.max(0, Math.min(1.5, darknessScore * 0.8 + textureScore * 0.7));
+  } catch {
+    return 0;
+  }
+}
+
 async function extractGymLayoutImageFromPdf(buffer: Buffer): Promise<GymLayoutExtraction> {
-  const candidatePages: Array<{ page: number; image: Buffer; text: string; score: number }> = [];
+  const candidatePages: Array<{
+    page: number;
+    image: Buffer;
+    text: string;
+    score: number;
+    visualScore: number;
+  }> = [];
   for (let page = 0; page < 20; page += 1) {
     try {
-      const pageImage = await sharp(buffer, { density: 220, page }).png().toBuffer();
+      const sharpPageImage = await sharp(buffer, { density: 220, page })
+        .png()
+        .toBuffer()
+        .catch(() => null);
+      const pageImage = sharpPageImage || (await renderPdfPageToPng(buffer, page));
+      if (!pageImage) continue;
       const pageText = await extractTextFromImage(pageImage);
       const score = scoreGymLayoutSignals(pageText);
+      const visualScore = await scoreGymLayoutVisualSignal(pageImage);
       if (looksLikeGymLayoutText(pageText) || score >= 2) {
         const dataUrl = await toOptimizedImageDataUrl(pageImage);
         if (dataUrl) {
           const facts = extractHallFactsFromText(pageText);
-          return { dataUrl, facts, page };
+          const zones = await openAiExtractGymLayoutZones(pageImage, "image/png");
+          return { dataUrl, facts, zones, page };
         }
       }
       if (page < 8) {
-        candidatePages.push({ page, image: pageImage, text: pageText, score });
+        candidatePages.push({ page, image: pageImage, text: pageText, score, visualScore });
       }
     } catch {
       // Continue scanning remaining pages; some PDFs can fail intermittently by page.
@@ -1033,7 +1291,8 @@ async function extractGymLayoutImageFromPdf(buffer: Buffer): Promise<GymLayoutEx
   for (const candidate of candidatePages) {
     const ai = await openAiAnalyzeGymLayoutPage(candidate.image, "image/png");
     if (!ai) continue;
-    const confidence = ai.confidence + Math.min(candidate.score, 4) * 0.05;
+    const confidence =
+      ai.confidence + Math.min(candidate.score, 4) * 0.05 + Math.min(candidate.visualScore, 1) * 0.08;
     if (!ai.isLayout && confidence < 0.45) continue;
     if (!bestAi || confidence > bestAi.confidence) {
       bestAi = {
@@ -1048,10 +1307,35 @@ async function extractGymLayoutImageFromPdf(buffer: Buffer): Promise<GymLayoutEx
   if (bestAi) {
     const dataUrl = await toOptimizedImageDataUrl(bestAi.image);
     if (dataUrl) {
-      return { dataUrl, facts: bestAi.facts, page: bestAi.page };
+      const zones = await openAiExtractGymLayoutZones(bestAi.image, "image/png");
+      return { dataUrl, facts: bestAi.facts, zones, page: bestAi.page };
     }
   }
-  return { dataUrl: null, facts: [], page: null };
+
+  const heuristicFallback =
+    [...candidatePages]
+      .filter((candidate) => candidate.score >= 1)
+      .sort((a, b) => {
+        const scoreDelta = b.score - a.score;
+        if (scoreDelta !== 0) return scoreDelta;
+        return b.visualScore - a.visualScore;
+      })[0] ||
+    [...candidatePages]
+      .sort((a, b) => b.visualScore - a.visualScore)
+      .find((candidate) => candidate.visualScore >= 0.3);
+  if (heuristicFallback) {
+    const dataUrl = await toOptimizedImageDataUrl(heuristicFallback.image);
+    if (dataUrl) {
+      return {
+        dataUrl,
+        facts: extractHallFactsFromText(heuristicFallback.text),
+        zones: [],
+        page: heuristicFallback.page,
+      };
+    }
+  }
+
+  return { dataUrl: null, facts: [], zones: [], page: null };
 }
 
 function stripHtml(input: string): string {
@@ -1190,6 +1474,7 @@ export function buildDefaultGymMeetData() {
         sessionNumber: "",
         warmUpTime: "",
         marchInTime: "",
+        assignedGym: "",
         startApparatus: "",
         rotationOrder: [],
         judgingNotes: "",
@@ -1211,6 +1496,7 @@ export function buildDefaultGymMeetData() {
         showMeals: true,
         showAdditionalDocuments: true,
         gymLayoutImage: "",
+        gymLayoutLabel: "",
         travelMode: "",
         callTime: "",
         pickupWindow: "",
@@ -1269,6 +1555,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
           linkedAssets: [],
           gymLayoutImageDataUrl: gymLayout.dataUrl || null,
           gymLayoutFacts: combinedLayoutFacts,
+          gymLayoutZones: gymLayout.zones,
           gymLayoutPage: gymLayout.page,
           textQuality,
           qualitySignals,
@@ -1281,6 +1568,9 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
       const gymLayoutImageDataUrl = looksLikeGymLayoutText(text)
         ? await toOptimizedImageDataUrl(parsed.buffer)
         : null;
+      const gymLayoutZones = gymLayoutImageDataUrl
+        ? await openAiExtractGymLayoutZones(parsed.buffer, parsed.mimeType || "image/png")
+        : [];
       const gymLayoutFacts = extractHallFactsFromText(text);
       return {
         extractedText: quality.cleanedText,
@@ -1290,6 +1580,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
           linkedAssets: [],
           gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
           gymLayoutFacts,
+          gymLayoutZones,
           gymLayoutPage: null,
           textQuality: quality.quality,
           qualitySignals: quality.signals,
@@ -1311,6 +1602,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
   let gymLayoutImageDataUrl: string | null = null;
   let gymLayoutPage: number | null = null;
   let gymLayoutFacts: string[] = [];
+  let gymLayoutZones: GymLayoutZone[] = [];
 
   for (const asset of linkedAssets) {
     try {
@@ -1325,6 +1617,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
           gymLayoutImageDataUrl = layout.dataUrl;
           gymLayoutPage = layout.page;
           gymLayoutFacts = uniqueLines([...gymLayoutFacts, ...layout.facts], 14);
+          gymLayoutZones = normalizeGymLayoutZones(layout.zones);
         }
         continue;
       }
@@ -1337,6 +1630,10 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
         usedOcr = true;
         if (!gymLayoutImageDataUrl && looksLikeGymLayoutText(imageText)) {
           gymLayoutImageDataUrl = await toOptimizedImageDataUrl(fetched.buffer);
+          gymLayoutZones = await openAiExtractGymLayoutZones(
+            fetched.buffer,
+            fetched.contentType || "image/png"
+          );
         }
         gymLayoutFacts = uniqueLines([...gymLayoutFacts, ...extractHallFactsFromText(imageText)], 14);
       }
@@ -1364,6 +1661,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
       pageTitle: safeString(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ""),
       gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
       gymLayoutFacts: mergedLayoutFacts,
+      gymLayoutZones,
       gymLayoutPage,
       textQuality: quality.quality,
       qualitySignals: quality.signals,
@@ -1888,6 +2186,36 @@ function isDateWithinRange(
   return target >= lower && target <= upper;
 }
 
+function resolveAssignedGymFromParsedData(
+  parseResult: ParseResult,
+  extractionMeta?: ExtractionResult["extractionMeta"]
+): string {
+  const explicit = extractGymTokens(parseResult.athlete.assignedGym || "")[0] || "";
+  if (explicit) return explicit;
+
+  const weighted = new Map<string, number>();
+  const scoreToken = (source: string, weight: number) => {
+    for (const token of extractGymTokens(source)) {
+      weighted.set(token, (weighted.get(token) || 0) + weight);
+    }
+  };
+
+  scoreToken(parseResult.meetDetails.facilityLayout || "", 3);
+  for (const note of parseResult.meetDetails.operationalNotes || []) {
+    scoreToken(note, 2);
+  }
+  for (const fact of pickArray(extractionMeta?.gymLayoutFacts)) {
+    scoreToken(safeString(fact), 1);
+  }
+
+  const ranked = [...weighted.entries()].sort((a, b) => {
+    const scoreDelta = b[1] - a[1];
+    if (scoreDelta !== 0) return scoreDelta;
+    return a[0].localeCompare(b[0]);
+  });
+  return ranked[0]?.[0] || "";
+}
+
 export async function mapParseResultToGymData(
   parseResult: ParseResult,
   baseData: any = {},
@@ -1902,12 +2230,32 @@ export async function mapParseResultToGymData(
   const authoritativeDate = hasDateConflictWithRange
     ? derivedRange.startDate || ""
     : date;
+  const existingAdvanced = (baseData?.advancedSections as Record<string, any>) || {};
   const layoutFacts = uniqueLines(
     pickArray(extractionMeta?.gymLayoutFacts)
       .map((item) => safeString(item))
       .filter(Boolean),
     14
   );
+  const assignedGym = resolveAssignedGymFromParsedData(parseResult, extractionMeta);
+  const extractionLayoutImage = safeString(extractionMeta?.gymLayoutImageDataUrl);
+  const extractionLayoutZones = normalizeGymLayoutZones(extractionMeta?.gymLayoutZones);
+  const assignedGymLayoutImage =
+    assignedGym && extractionLayoutImage
+      ? await cropGymLayoutImageToAssignedGym(
+          extractionLayoutImage,
+          extractionLayoutZones,
+          assignedGym
+        )
+      : null;
+  const resolvedGymLayoutImage =
+    safeString(assignedGymLayoutImage) ||
+    extractionLayoutImage ||
+    safeString(existingAdvanced.logistics?.gymLayoutImage) ||
+    "";
+  const resolvedGymLayoutLabel = assignedGym
+    ? `Assigned gym location: ${assignedGym}`
+    : safeString(existingAdvanced.logistics?.gymLayoutLabel);
   const rotationSource = safeString(parseResult.meetDetails.rotationOrder);
   const hasRotationNarrative = /(rotation sheets?|hard cop(y|ies)|download|website|refresh)/i.test(
     rotationSource
@@ -1973,7 +2321,6 @@ export async function mapParseResultToGymData(
   );
 
   const athlete = parseResult.athlete;
-  const existingAdvanced = (baseData?.advancedSections as Record<string, any>) || {};
   const existingDocuments = pickArray(existingAdvanced.logistics?.additionalDocuments)
     .map((item) => ({
       id: safeString(item?.id),
@@ -2094,6 +2441,7 @@ export async function mapParseResultToGymData(
       sessionNumber: athlete.session || "",
       warmUpTime: parseResult.meetDetails.warmup || athlete.stretchTime || "",
       marchInTime: parseResult.meetDetails.marchIn || athlete.marchIn || "",
+      assignedGym: assignedGym || safeString(existingAdvanced.meet?.assignedGym) || "",
       rotationOrder,
       judgingNotes: [parseResult.meetDetails.judgingNotes, rotationNarrative]
         .filter(Boolean)
@@ -2121,10 +2469,8 @@ export async function mapParseResultToGymData(
       policyHydration: parseResult.policies.hydration || "",
       policySafety: parseResult.policies.safety || "",
       policyAnimals: parseResult.policies.animals || "",
-      gymLayoutImage:
-        safeString(extractionMeta?.gymLayoutImageDataUrl) ||
-        safeString(existingAdvanced.logistics?.gymLayoutImage) ||
-        "",
+      gymLayoutImage: resolvedGymLayoutImage,
+      gymLayoutLabel: resolvedGymLayoutLabel,
     },
     gear: {
       ...(existingAdvanced.gear || {}),

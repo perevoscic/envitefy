@@ -1842,16 +1842,18 @@ export default function Dashboard({
             }`}
           >
             {showWelcomeMessage && (
-              <div className="min-w-0 flex flex-col items-start text-left">
+              <div className="mt-6 min-w-0 pl-14 sm:pl-0 flex flex-col items-start text-left md:mt-0">
                 <div
-                  className="truncate text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
+                  className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
                   style={{
                     fontFamily:
                       '"Venturis ADF", "Venturis ADF Fallback", serif',
                   }}
                 >
-                  <span className="text-[#1b1540]">Welcome Back,</span>
-                  <span className="ml-2 text-[#7F8CFF] italic">
+                  <span className="block text-[#1b1540] sm:inline">
+                    Welcome Back,
+                  </span>
+                  <span className="mt-0.5 block text-[#7F8CFF] italic sm:ml-2 sm:mt-0 sm:inline">
                     {(session?.user?.name as string) ||
                       (session?.user?.email as string)?.split("@")[0] ||
                       "there"}

@@ -264,14 +264,17 @@ curl -X POST \
   - Extraction metadata also stores hall-layout artifacts when detected:
     - `gymLayoutImageDataUrl` (optimized screenshot data URL from PDF/image),
     - `gymLayoutFacts` (OCR-extracted hall/registration/awards/location lines),
+    - `gymLayoutZones` (LLM-detected map regions with normalized boxes and confidence),
     - `gymLayoutPage` (0-based PDF page index when applicable).
+  - PDF hall-layout image capture now uses a renderer fallback path (PDF.js + Canvas) when direct PDF page rasterization is unavailable, so venue map screenshots can still be generated from uploaded PDFs.
   - If extracted text quality is `poor`, the route skips model calls and returns a safe null-heavy parse payload (`modelUsed: "quality-gate"`) instead of hallucinating fields from corrupted text.
   - AI parsing is **OpenAI primary** with strict JSON schema validation.
   - If OpenAI returns invalid JSON, retries once with JSON-fix instruction.
   - If still invalid or OpenAI errors, falls back to Gemini once.
   - Parse schema is now dynamic-file oriented and includes `documentProfile` plus expanded sections for operations/policies/contacts/deadlines/unmapped facts to improve recall across varied meet packets.
   - Mapping now safeguards meet dates by preferring parsed date ranges (for example `March 6-8, 2026`) when a conflicting single `startAt` value is out of range.
-  - Maps parse result into gymnastics builder fields (`title/date/time/timezone/hostGym`, `advancedSections`, communications/passcode, links) and stores source audit info (`extractedText`, `parseResult`, `rawModelOutput`, `modelUsed`, timestamps, extraction quality metadata).
+  - Mapping now resolves an assigned gym location (`athlete.assignedGym` first, then strongest gym mention) and attempts a focused crop from the detected gym layout zones. If crop confidence is insufficient or no matching zone is found, it safely falls back to the full layout image.
+  - Maps parse result into gymnastics builder fields (`title/date/time/timezone/hostGym`, `advancedSections`, communications/passcode, links) and stores source audit info (`extractedText`, `parseResult`, `rawModelOutput`, `modelUsed`, timestamps, extraction quality metadata). Advanced logistics now includes `gymLayoutLabel` (for Venue Details copy) and meet details include `assignedGym` when detected.
 - **Output**: `{ ok, eventId, repaired, modelUsed, parseResult, statuses }` where `modelUsed` is `"openai"`, `"gemini"`, or `"quality-gate"` when parsing is skipped due to low extraction quality.
 - **Env**: `OPENAI_API_KEY` required for primary parse; Gemini fallback needs `GEMINI_API_KEY` (or `GOOGLE_AI_API_KEY`). Optional model overrides: `OPENAI_OCR_MODEL`, `GEMINI_MODEL`.
 
