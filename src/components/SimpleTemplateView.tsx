@@ -235,6 +235,12 @@ export default function SimpleTemplateView({
   const [carpoolSignupSubmitting, setCarpoolSignupSubmitting] = useState(false);
   const [eventDataState, setEventDataState] = useState(eventData);
   const [discoveryActiveTab, setDiscoveryActiveTab] = useState("meet-details");
+  const discoveryTabRailRef = useRef<HTMLDivElement | null>(null);
+  const discoveryTabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>(
+    {}
+  );
+  const [showDiscoveryLeftFade, setShowDiscoveryLeftFade] = useState(false);
+  const [showDiscoveryRightFade, setShowDiscoveryRightFade] = useState(false);
   const [rsvpNameInput, setRsvpNameInput] = useState("");
   const [rsvpGuestEmailInput, setRsvpGuestEmailInput] = useState("");
   const [rsvpGuestPhoneInput, setRsvpGuestPhoneInput] = useState("");
@@ -255,6 +261,57 @@ export default function SimpleTemplateView({
   const protectedSectionFlags = protectedSectionFlagsProp || {};
   const isLocked = false;
   const templateRootRef = useRef<HTMLDivElement | null>(null);
+  const discoveryTabs = useMemo(
+    () => [
+      { id: "meet-details", label: "Meet Details", icon: Info },
+      { id: "spectator", label: "Admission & Sales", icon: Ticket },
+      { id: "parking", label: "Traffic & Arrival", icon: Car },
+      { id: "facility", label: "Venue Details", icon: Navigation },
+      { id: "rules", label: "Safety & Policy", icon: Ban },
+    ],
+    []
+  );
+
+  const getDiscoveryScrollBehavior = useCallback((): ScrollBehavior => {
+    if (typeof window === "undefined") return "auto";
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "auto"
+      : "smooth";
+  }, []);
+
+  const updateDiscoveryTabEdgeHints = useCallback(() => {
+    const rail = discoveryTabRailRef.current;
+    if (!rail) {
+      setShowDiscoveryLeftFade(false);
+      setShowDiscoveryRightFade(false);
+      return;
+    }
+    const { scrollLeft, scrollWidth, clientWidth } = rail;
+    const maxScroll = Math.max(scrollWidth - clientWidth, 0);
+    const hasOverflow = maxScroll > 2;
+    if (!hasOverflow) {
+      setShowDiscoveryLeftFade(false);
+      setShowDiscoveryRightFade(false);
+      return;
+    }
+    const epsilon = 2;
+    setShowDiscoveryLeftFade(scrollLeft > epsilon);
+    setShowDiscoveryRightFade(scrollLeft < maxScroll - epsilon);
+  }, []);
+
+  const centerDiscoveryTab = useCallback(
+    (tabId: string, behavior: ScrollBehavior = "smooth") => {
+      const rail = discoveryTabRailRef.current;
+      const tabButton = discoveryTabButtonRefs.current[tabId];
+      if (!rail || !tabButton) return;
+      tabButton.scrollIntoView({
+        behavior,
+        inline: "center",
+        block: "nearest",
+      });
+    },
+    []
+  );
 
   // Keep readonly previews in sync with upstream builder changes.
   useEffect(() => {
@@ -333,6 +390,48 @@ export default function SimpleTemplateView({
     return () => window.removeEventListener("message", handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, isDynamicGymnasticsLayout]);
+
+  useEffect(() => {
+    if (!isDynamicGymnasticsLayout) {
+      setShowDiscoveryLeftFade(false);
+      setShowDiscoveryRightFade(false);
+      return;
+    }
+    if (typeof window === "undefined") return;
+
+    const frame = window.requestAnimationFrame(() => {
+      updateDiscoveryTabEdgeHints();
+    });
+    const rail = discoveryTabRailRef.current;
+    const handleRailScroll = () => updateDiscoveryTabEdgeHints();
+    const handleResize = () => updateDiscoveryTabEdgeHints();
+
+    rail?.addEventListener("scroll", handleRailScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      rail?.removeEventListener("scroll", handleRailScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isDynamicGymnasticsLayout, updateDiscoveryTabEdgeHints]);
+
+  useEffect(() => {
+    if (!isDynamicGymnasticsLayout) return;
+    if (typeof window === "undefined") return;
+
+    centerDiscoveryTab(discoveryActiveTab, getDiscoveryScrollBehavior());
+    const frame = window.requestAnimationFrame(() => {
+      updateDiscoveryTabEdgeHints();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [
+    centerDiscoveryTab,
+    discoveryActiveTab,
+    getDiscoveryScrollBehavior,
+    isDynamicGymnasticsLayout,
+    updateDiscoveryTabEdgeHints,
+  ]);
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -3156,10 +3255,17 @@ export default function SimpleTemplateView({
       ],
       12
     ).filter((line) => line.length > 10);
-    const meetDetailsLines =
-      primaryMeetDetailsLines.length > 0
-        ? primaryMeetDetailsLines
-        : meetDetailsFallbackLines;
+    const descriptionLines = uniqueTextLines(
+      safeString(description)
+        .split(/\n+/)
+        .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+        .filter(Boolean),
+      8
+    ).filter((line) => line.length > 10);
+    const meetDetailsLines = uniqueTextLines(
+      [...descriptionLines, ...meetDetailsFallbackLines, ...primaryMeetDetailsLines],
+      16
+    ).filter((line) => line.length > 10);
     const rideShareNote =
       sourceLines.find((line) => rideSharePattern.test(line)) || "";
     const facilityLinesFromSource = primaryMeetDetailsLines.filter(
@@ -3308,7 +3414,7 @@ export default function SimpleTemplateView({
     const discoveryCard =
       "discovery-panel bg-[color:var(--surface,#FFFFFF)] rounded-[2.5rem] border border-[color:var(--border,#E2E8F0)] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors duration-200 hover:border-[color:var(--color-border-hover,#D4AF37)]";
     const discoverySectionHeading =
-      "text-xl font-bold mb-6 flex items-center gap-2 border-l-2 border-[color:var(--accent,#D4AF37)] pl-3 text-[color:var(--color-heading,#2D1B4E)]";
+      "text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center gap-2 border-l-2 border-[color:var(--accent,#D4AF37)] pl-3 text-[color:var(--color-heading,#2D1B4E)]";
     const discoveryFocusRing =
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-focus,#D4AF37)] focus-visible:ring-offset-2";
     const headerHeroSrc = heroImage?.trim() || "";
@@ -3348,7 +3454,7 @@ export default function SimpleTemplateView({
     return (
       <div
         ref={templateRootRef}
-        className={`mobile-flat-template min-h-screen font-sans pb-24 ${discoveryBg} ${discoveryText}`}
+        className={`min-h-screen font-sans pb-24 ${discoveryBg} ${discoveryText}`}
       >
         <header
           className={`pt-16 md:pt-20 pb-16 px-6 relative overflow-hidden border-b ${
@@ -3473,48 +3579,75 @@ export default function SimpleTemplateView({
             </div>
           )}
 
-          <div className="flex gap-2 bg-[color:var(--surface,#FFFFFF)] backdrop-blur-md p-1.5 rounded-[22px] shadow-sm border border-[color:var(--border,#E2E8F0)] mb-10 overflow-x-auto no-scrollbar">
-            {[
-              { id: "meet-details", label: "Meet Details", icon: Info },
-              { id: "spectator", label: "Admission & Sales", icon: Ticket },
-              { id: "parking", label: "Traffic & Arrival", icon: Car },
-              { id: "facility", label: "Venue Details", icon: Navigation },
-              { id: "rules", label: "Safety & Policy", icon: Ban },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setDiscoveryActiveTab(tab.id)}
-                className={`${discoveryFocusRing} flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3.5 rounded-[18px] border text-xs font-bold uppercase tracking-wider transition-all ${
-                  discoveryActiveTab === tab.id
-                    ? "bg-[color:var(--color-nav-active-bg,#F8FAFC)] text-[color:var(--color-nav-active,#2D1B4E)] border-[color:var(--accent,#D4AF37)]"
-                    : "bg-transparent text-[color:var(--color-nav-text,#334155)] border-transparent hover:border-[color:var(--color-border-hover,#D4AF37)] hover:bg-[color:var(--chip-bg,#F8FAFC)]"
-                }`}
-                aria-current={
-                  discoveryActiveTab === tab.id ? "page" : undefined
-                }
+          <div className="relative mb-8 md:mb-10">
+            <div className="sticky top-0 z-30 -mx-1 rounded-[24px] border border-[color:var(--border,#E2E8F0)] bg-[color:var(--surface,#FFFFFF)]/96 px-1.5 py-2 shadow-sm backdrop-blur-md md:static md:mx-0 md:border md:border-[color:var(--border,#E2E8F0)] md:bg-[color:var(--surface,#FFFFFF)] md:px-1.5 md:py-2 md:backdrop-blur-0">
+              <div
+                ref={discoveryTabRailRef}
+                className="flex items-stretch gap-1.5 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-px-6 px-1 py-1 md:px-1 md:py-1 md:snap-none md:overflow-visible"
               >
-                <tab.icon
-                  size={16}
-                  className={
-                    discoveryActiveTab === tab.id
-                      ? "text-[color:var(--accent,#D4AF37)]"
-                      : discoveryIcon
-                  }
-                />
-                {tab.label}
-              </button>
-            ))}
+                {discoveryTabs.map((tab) => {
+                  const isActive = discoveryActiveTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      ref={(node) => {
+                        discoveryTabButtonRefs.current[tab.id] = node;
+                      }}
+                      onClick={() => {
+                        setDiscoveryActiveTab(tab.id);
+                        centerDiscoveryTab(tab.id, getDiscoveryScrollBehavior());
+                      }}
+                      className={`${discoveryFocusRing} shrink-0 snap-center min-w-[160px] sm:min-w-[176px] md:min-w-[136px] md:flex-1 inline-flex min-h-[46px] md:min-h-0 items-center justify-center gap-1.5 rounded-full border px-3 py-2.5 md:rounded-[18px] md:py-2.5 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.08em] md:tracking-[0.09em] whitespace-nowrap transition-all ${
+                        isActive
+                          ? "bg-[color:var(--button-bg,#2D1B4E)] text-[color:var(--button-text,#FFFFFF)] border-[color:var(--button-bg,#2D1B4E)] shadow-[0_10px_20px_rgba(15,23,42,0.2)] md:bg-[color:var(--color-nav-active-bg,#F8FAFC)] md:text-[color:var(--color-nav-active,#2D1B4E)] md:border-[color:var(--accent,#D4AF37)] md:shadow-none"
+                          : "bg-transparent text-[color:var(--color-nav-text,#334155)] border-transparent hover:border-[color:var(--color-border-hover,#D4AF37)] hover:bg-[color:var(--chip-bg,#F8FAFC)]"
+                      }`}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      <tab.icon
+                        size={16}
+                        className={
+                          isActive
+                            ? "text-[color:var(--button-text,#FFFFFF)] md:text-[color:var(--accent,#D4AF37)]"
+                            : discoveryIcon
+                        }
+                      />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                className={`pointer-events-none absolute bottom-2 left-1 top-2 w-10 rounded-l-[22px] transition-opacity duration-200 md:hidden ${
+                  showDiscoveryLeftFade ? "opacity-60" : "opacity-0"
+                }`}
+                style={{
+                  background:
+                    "linear-gradient(to right, var(--surface,#FFFFFF), rgba(255,255,255,0))",
+                }}
+              />
+              <div
+                className={`pointer-events-none absolute bottom-2 right-1 top-2 w-10 rounded-r-[22px] transition-opacity duration-200 md:hidden ${
+                  showDiscoveryRightFade ? "opacity-60" : "opacity-0"
+                }`}
+                style={{
+                  background:
+                    "linear-gradient(to left, var(--surface,#FFFFFF), rgba(255,255,255,0))",
+                }}
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-3 lg:gap-10">
             <div
-              className={`space-y-8 ${
+              className={`space-y-6 md:space-y-8 ${
                 hasHostSupport ? "lg:col-span-2" : "lg:col-span-3"
               }`}
             >
               {discoveryActiveTab === "meet-details" && (
-                <div className="space-y-10">
-                  <section className={`${discoveryCard} p-10`}>
+                <div className="space-y-6 md:space-y-10">
+                  <section className={`${discoveryCard} p-5 sm:p-6 md:p-10`}>
                     <h3 className={discoverySectionHeading}>
                       <Info className={discoveryIcon} size={24} /> Meet Details
                     </h3>
@@ -3562,12 +3695,12 @@ export default function SimpleTemplateView({
               )}
 
               {discoveryActiveTab === "spectator" && (
-                <div className="space-y-10">
+                <div className="space-y-6 md:space-y-10">
                   {hasAdmissionContent && (
                     <section
-                      className={`${discoveryCard} p-10 relative overflow-hidden`}
+                      className={`${discoveryCard} p-5 sm:p-6 md:p-10 relative overflow-hidden`}
                     >
-                      <div className="absolute top-0 right-0 p-8 opacity-5">
+                      <div className="absolute top-0 right-0 p-4 sm:p-6 md:p-8 opacity-5">
                         <Ticket size={120} />
                       </div>
                       <h3 className={discoverySectionHeading}>
@@ -3612,9 +3745,9 @@ export default function SimpleTemplateView({
                   )}
 
                   {hasSpectatorCards && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                       {(merchandiseText || merchandiseLink?.url) && (
-                        <div className={`${discoveryCard} p-8`}>
+                        <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                           <ShoppingBag
                             className="text-[color:var(--accent,#D4AF37)] mb-4"
                             size={28}
@@ -3646,7 +3779,7 @@ export default function SimpleTemplateView({
                         </div>
                       )}
                       {hasRotationLink && (
-                        <div className={`${discoveryCard} p-8`}>
+                        <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                           <ClipboardList
                             className="text-[color:var(--accent,#D4AF37)] mb-4"
                             size={28}
@@ -3677,7 +3810,7 @@ export default function SimpleTemplateView({
                   )}
 
                   {!hasAdmissionContent && !hasSpectatorCards && (
-                    <section className={`${discoveryCard} p-8`}>
+                    <section className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                       <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
                         Admission & Sales
                       </h4>
@@ -3691,10 +3824,10 @@ export default function SimpleTemplateView({
               )}
 
               {discoveryActiveTab === "parking" && (
-                <div className="space-y-10">
+                <div className="space-y-6 md:space-y-10">
                   {trafficText && (
-                    <section className="bg-red-50 border-2 border-red-100 rounded-[2.5rem] p-10">
-                      <div className="flex items-start gap-6">
+                    <section className="bg-red-50 border-2 border-red-100 rounded-[2.5rem] p-5 sm:p-6 md:p-10">
+                      <div className="flex items-start gap-4 md:gap-6">
                         <div className="p-4 bg-red-500 text-white rounded-2xl shadow-lg shadow-red-200">
                           <AlertTriangle size={32} />
                         </div>
@@ -3727,9 +3860,9 @@ export default function SimpleTemplateView({
                     </section>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                     {safeString(logistics?.parking) && (
-                      <div className={`${discoveryCard} p-8`}>
+                      <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                         <div className="flex items-center gap-3 mb-6">
                           <div className="p-2 rounded-xl bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--color-icon,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
                             <Car size={20} />
@@ -3775,7 +3908,7 @@ export default function SimpleTemplateView({
                       safeString(
                         logistics?.hotelInfo || parseLogistics?.hotel
                       )) && (
-                      <div className={`${discoveryCard} p-8`}>
+                      <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                         <div className="flex items-center gap-3 mb-6">
                           <div className="p-2 rounded-xl bg-[color:var(--chip-bg,#F8FAFC)] text-[color:var(--color-icon,#2D1B4E)] border border-[color:var(--chip-border,#D7DCE6)]">
                             <Navigation size={20} />
@@ -3808,11 +3941,11 @@ export default function SimpleTemplateView({
                   </div>
 
                   {facilityMapAddress && (
-                    <section className={`${discoveryCard} p-8`}>
+                    <section className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                       <h3 className={discoverySectionHeading}>
                         Venue location
                       </h3>
-                      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6 items-stretch">
+                      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:gap-6 items-stretch">
                         <div className="rounded-3xl overflow-hidden border border-[color:var(--border,#E2E8F0)]">
                           <StaticMap
                             address={facilityMapAddress}
@@ -3844,7 +3977,7 @@ export default function SimpleTemplateView({
                   )}
 
                   {!hasParkingContent && (
-                    <section className={`${discoveryCard} p-8`}>
+                    <section className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                       <h3 className={discoverySectionHeading}>
                         Traffic & Arrival
                       </h3>
@@ -3858,8 +3991,8 @@ export default function SimpleTemplateView({
               )}
 
               {discoveryActiveTab === "facility" && (
-                <div className="space-y-10">
-                  <section className={`${discoveryCard} p-6 md:p-10`}>
+                <div className="space-y-6 md:space-y-10">
+                  <section className={`${discoveryCard} p-4 sm:p-5 md:p-10`}>
                     <h3 className={discoverySectionHeading}>Venue Details</h3>
                     {gymLayoutImageUrl && (
                       <div className="mb-6">
@@ -3952,9 +4085,9 @@ export default function SimpleTemplateView({
               )}
 
               {discoveryActiveTab === "rules" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                   {policyNotes[0] && (
-                    <div className={`${discoveryCard} p-8`}>
+                    <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                       <Coffee
                         className="text-[color:var(--accent,#D4AF37)] mb-4"
                         size={28}
@@ -3968,7 +4101,7 @@ export default function SimpleTemplateView({
                     </div>
                   )}
                   {policyNotes[1] && (
-                    <div className={`${discoveryCard} p-8`}>
+                    <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                       <Droplets
                         className="text-[color:var(--accent,#D4AF37)] mb-4"
                         size={28}
@@ -3982,7 +4115,7 @@ export default function SimpleTemplateView({
                     </div>
                   )}
                   {policyNotes[2] && (
-                    <div className={`${discoveryCard} p-8`}>
+                    <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                       <Dog
                         className="text-[color:var(--accent,#D4AF37)] mb-4"
                         size={28}
@@ -3996,7 +4129,7 @@ export default function SimpleTemplateView({
                     </div>
                   )}
                   {policyNotes[3] && (
-                    <div className={`${discoveryCard} p-8`}>
+                    <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                       <Ban className="text-red-500 mb-4" size={28} />
                       <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
                         Safety Policy
@@ -4007,7 +4140,9 @@ export default function SimpleTemplateView({
                     </div>
                   )}
                   {!hasPolicyCards && (
-                    <div className={`${discoveryCard} p-8 md:col-span-2`}>
+                    <div
+                      className={`${discoveryCard} p-4 sm:p-5 md:p-8 md:col-span-2`}
+                    >
                       <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
                         Safety & Policy
                       </h4>
@@ -4022,8 +4157,8 @@ export default function SimpleTemplateView({
             </div>
 
             {hasHostSupport && (
-              <div className="space-y-8">
-                <div className={`${discoveryCard} p-8`}>
+              <div className="space-y-6 md:space-y-8">
+                <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                   <h4 className="font-black text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)] border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">
                     Useful Links
                   </h4>
@@ -4110,32 +4245,6 @@ export default function SimpleTemplateView({
             )}
           </div>
         </main>
-        <style jsx>{`
-          @media (max-width: 768px) {
-            .mobile-flat-template :global(.discovery-panel) {
-              border-radius: 1.25rem !important;
-              padding: 1rem !important;
-            }
-
-            .mobile-flat-template :global(.discovery-panel .rounded-3xl.border),
-            .mobile-flat-template :global(.discovery-panel .rounded-2xl.border),
-            .mobile-flat-template :global(.discovery-panel .rounded-xl.border) {
-              border-radius: 0.875rem !important;
-              padding: 0.75rem !important;
-              box-shadow: none !important;
-            }
-
-            .mobile-flat-template :global(.discovery-panel .grid) {
-              gap: 0.75rem !important;
-            }
-
-            .mobile-flat-template :global(.discovery-panel .p-10),
-            .mobile-flat-template :global(.discovery-panel .p-8),
-            .mobile-flat-template :global(.discovery-panel .p-6) {
-              padding: 0.75rem !important;
-            }
-          }
-        `}</style>
       </div>
     );
   }

@@ -432,6 +432,52 @@ const asTrimmedString = (value: unknown): string =>
 const hasAnyText = (...values: unknown[]): boolean =>
   values.some((value) => asTrimmedString(value).length > 0);
 
+const uniqueLines = (items: unknown[], limit = 16): string[] => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of items) {
+    const line = asTrimmedString(item);
+    if (!line) continue;
+    const key = line.toLowerCase().replace(/\s+/g, " ").trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(line);
+    if (out.length >= limit) break;
+  }
+  return out;
+};
+
+const buildDiscoveryMeetDetailsDescription = (parseResult: any): string => {
+  const parseMeetDetails = parseResult?.meetDetails || {};
+  const lines = uniqueLines(
+    [
+      asTrimmedString(parseResult?.dates)
+        ? `Meet dates: ${asTrimmedString(parseResult.dates)}`
+        : "",
+      asTrimmedString(parseMeetDetails?.doorsOpen)
+        ? `Doors open: ${asTrimmedString(parseMeetDetails.doorsOpen)}`
+        : "",
+      asTrimmedString(parseMeetDetails?.arrivalGuidance)
+        ? `Arrival guidance: ${asTrimmedString(parseMeetDetails.arrivalGuidance)}`
+        : "",
+      asTrimmedString(parseMeetDetails?.registrationInfo)
+        ? `Registration: ${asTrimmedString(parseMeetDetails.registrationInfo)}`
+        : "",
+      asTrimmedString(parseMeetDetails?.facilityLayout)
+        ? `Facility layout: ${asTrimmedString(parseMeetDetails.facilityLayout)}`
+        : "",
+      asTrimmedString(parseMeetDetails?.scoringInfo)
+        ? `Scoring: ${asTrimmedString(parseMeetDetails.scoringInfo)}`
+        : "",
+      ...(Array.isArray(parseMeetDetails?.operationalNotes)
+        ? parseMeetDetails.operationalNotes
+        : []),
+    ],
+    16
+  );
+  return lines.join("\n");
+};
+
 const normalizeIsoDate = (value: unknown): string => {
   const text = asTrimmedString(value);
   if (!text) return "";
@@ -947,6 +993,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
     const useParseDrivenSections = Boolean(
       editEventId && (isDiscoveryEdit || hasDiscoveryParsePayload)
+    );
+    const syncedMeetDetailsDescription = useMemo(
+      () =>
+        useParseDrivenSections
+          ? buildDiscoveryMeetDetailsDescription(parseResult)
+          : "",
+      [parseResult, useParseDrivenSections]
     );
     const visibleAdvancedSections = useMemo(() => {
       const allSections = config.advancedSections || [];
@@ -1472,6 +1525,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
       return () => observer.disconnect();
     }, [navItems]);
+
+    useEffect(() => {
+      if (!useParseDrivenSections) return;
+      if (!syncedMeetDetailsDescription) return;
+      setData((prev) =>
+        prev.details === syncedMeetDetailsDescription
+          ? prev
+          : { ...prev, details: syncedMeetDetailsDescription }
+      );
+    }, [syncedMeetDetailsDescription, useParseDrivenSections]);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -2348,10 +2411,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               rows={config.detailsDescriptionRows || 6}
               value={data.details}
               onChange={(e) => updateData("details", e.target.value)}
+              readOnly={useParseDrivenSections}
               placeholder="Session notes, arrival instructions, spectator info, and what athletes should prepare."
             />
             <p className="mt-1 text-xs text-slate-400">
-              Tip: press Shift+Enter for line breaks.
+              {useParseDrivenSections
+                ? "Auto-synced from Meet Details."
+                : "Tip: press Shift+Enter for line breaks."}
             </p>
           </div>
 
