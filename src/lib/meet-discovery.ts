@@ -138,6 +138,28 @@ type GymLayoutZone = {
   confidence: number;
 };
 
+type GymLayoutSelectionCandidate = {
+  page: number;
+  preScore: number;
+  finalScore: number;
+  textScore: number;
+  visualScore: number;
+  gymLabelCount: number;
+  hallLabelCount: number;
+  mapHeading: boolean;
+  paragraphPenalty: boolean;
+  aiIsLayout: boolean | null;
+  aiConfidence: number | null;
+  accepted: boolean;
+};
+
+type GymLayoutSelectionDiagnostics = {
+  selectedPage: number | null;
+  reason: string;
+  confidence: number | null;
+  candidates: GymLayoutSelectionCandidate[];
+};
+
 type ExtractionResult = {
   extractedText: string;
   extractionMeta: {
@@ -149,6 +171,7 @@ type ExtractionResult = {
     gymLayoutFacts?: string[];
     gymLayoutZones?: GymLayoutZone[];
     gymLayoutPage?: number | null;
+    gymLayoutSelection?: GymLayoutSelectionDiagnostics;
     textQuality?: TextQuality | null;
     qualitySignals?: TextQualitySignals | null;
   };
@@ -210,6 +233,7 @@ type GymLayoutExtraction = {
   facts: string[];
   zones: GymLayoutZone[];
   page: number | null;
+  selection?: GymLayoutSelectionDiagnostics;
 };
 
 function safeString(value: unknown): string {
@@ -992,39 +1016,79 @@ async function extractTextFromImage(buffer: Buffer): Promise<string> {
   return cleanExtractedText(fallbackText);
 }
 
-function looksLikeGymLayoutText(text: string): boolean {
+function countPatternMatches(text: string, pattern: RegExp): number {
+  return Array.from(text.matchAll(pattern)).length;
+}
+
+function summarizeGymLayoutText(text: string): {
+  mapHeading: boolean;
+  gymLabelCount: number;
+  hallLabelCount: number;
+  strongSignalCount: number;
+  paragraphPenalty: boolean;
+} {
   const normalized = safeString(text).toLowerCase();
-  if (!normalized) return false;
-  if (
-    /(hall\s*layout|facility\s*map|floor\s*plan|venue\s*map|convention\s*center\s*map)/i.test(
-      normalized
-    )
-  ) {
-    return true;
+  if (!normalized) {
+    return {
+      mapHeading: false,
+      gymLabelCount: 0,
+      hallLabelCount: 0,
+      strongSignalCount: 0,
+      paragraphPenalty: false,
+    };
   }
-  const signals = [
-    /central hall/,
-    /east hall/,
-    /west hall/,
-    /south hall|north hall/,
-    /gym\s*[a-f]/,
-    /awards area/,
-    /registration/,
-    /competition area/,
-    /guest services/,
-    /coffee bar/,
-    /wayfinding|way finding/,
-    /entrance/,
-  ];
-  const score = signals.reduce((count, pattern) => (pattern.test(normalized) ? count + 1 : count), 0);
-  return score >= 2 || /(hall|registration|competition area)/i.test(normalized);
+
+  const mapHeading = /(gym\s*layout|facility\s*map|floor\s*plan|venue\s*map|convention\s*center\s*map)/i.test(
+    normalized
+  );
+  const gymLabelCount = countPatternMatches(normalized, /\bgym\s*[a-f]\b/gi);
+  const hallLabelCount = countPatternMatches(
+    normalized,
+    /\b(?:east|west|central|north|south)\s*hall\b/gi
+  );
+  const textScore = scoreGymLayoutSignals(normalized);
+  const lines = normalized
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const longLineCount = lines.filter((line) => line.length >= 85).length;
+  const weakAnchorCount =
+    gymLabelCount +
+    hallLabelCount +
+    countPatternMatches(
+      normalized,
+      /\b(registration|awards area|competition area|guest services|entrance|coffee bar)\b/gi
+    );
+  const paragraphPenalty =
+    normalized.length >= 800 &&
+    longLineCount >= 4 &&
+    textScore <= 2 &&
+    weakAnchorCount <= 2;
+
+  return {
+    mapHeading,
+    gymLabelCount,
+    hallLabelCount,
+    strongSignalCount: textScore,
+    paragraphPenalty,
+  };
+}
+
+function looksLikeGymLayoutText(text: string): boolean {
+  const summary = summarizeGymLayoutText(text);
+  const hasAnchor = summary.gymLabelCount >= 1 || summary.hallLabelCount >= 1;
+  if (summary.mapHeading && hasAnchor) return true;
+  return (
+    summary.strongSignalCount >= 3 &&
+    (summary.gymLabelCount >= 1 || summary.hallLabelCount >= 2)
+  );
 }
 
 function scoreGymLayoutSignals(text: string): number {
   const normalized = safeString(text).toLowerCase();
   if (!normalized) return 0;
   const signals = [
-    /hall\s*layout|facility\s*map|floor\s*plan|venue\s*map/,
+    /hall\s*layout|facility\s*map|floor\s*plan|venue\s*map|convention\s*center\s*map/,
     /east hall/,
     /west hall/,
     /central hall/,
@@ -1256,8 +1320,20 @@ async function extractGymLayoutImageFromPdf(buffer: Buffer): Promise<GymLayoutEx
     page: number;
     image: Buffer;
     text: string;
-    score: number;
+    textScore: number;
     visualScore: number;
+    gymLabelCount: number;
+    hallLabelCount: number;
+    mapHeading: boolean;
+    paragraphPenalty: boolean;
+    preScore: number;
+    aiIsLayout: boolean | null;
+    aiConfidence: number | null;
+    aiFacts: string[];
+    aiText: string;
+    accepted: boolean;
+    acceptReason: "ai" | "deterministic" | null;
+    finalScore: number;
   }> = [];
   for (let page = 0; page < 20; page += 1) {
     try {
@@ -1268,74 +1344,174 @@ async function extractGymLayoutImageFromPdf(buffer: Buffer): Promise<GymLayoutEx
       const pageImage = sharpPageImage || (await renderPdfPageToPng(buffer, page));
       if (!pageImage) continue;
       const pageText = await extractTextFromImage(pageImage);
-      const score = scoreGymLayoutSignals(pageText);
+      const summary = summarizeGymLayoutText(pageText);
+      const textScore = scoreGymLayoutSignals(pageText);
       const visualScore = await scoreGymLayoutVisualSignal(pageImage);
-      if (looksLikeGymLayoutText(pageText) || score >= 2) {
-        const dataUrl = await toOptimizedImageDataUrl(pageImage);
-        if (dataUrl) {
-          const facts = extractHallFactsFromText(pageText);
-          const zones = await openAiExtractGymLayoutZones(pageImage, "image/png");
-          return { dataUrl, facts, zones, page };
-        }
-      }
-      if (page < 8) {
-        candidatePages.push({ page, image: pageImage, text: pageText, score, visualScore });
-      }
+      const preScore =
+        textScore +
+        Math.min(visualScore, 1) * 0.5 +
+        summary.gymLabelCount * 2 +
+        summary.hallLabelCount * 0.75 +
+        (summary.mapHeading ? 1 : 0) -
+        (summary.paragraphPenalty ? 1 : 0);
+      candidatePages.push({
+        page,
+        image: pageImage,
+        text: pageText,
+        textScore,
+        visualScore,
+        gymLabelCount: summary.gymLabelCount,
+        hallLabelCount: summary.hallLabelCount,
+        mapHeading: summary.mapHeading,
+        paragraphPenalty: summary.paragraphPenalty,
+        preScore,
+        aiIsLayout: null,
+        aiConfidence: null,
+        aiFacts: [],
+        aiText: "",
+        accepted: false,
+        acceptReason: null,
+        finalScore: preScore,
+      });
     } catch {
       // Continue scanning remaining pages; some PDFs can fail intermittently by page.
       continue;
     }
   }
 
-  let bestAi: { page: number; confidence: number; facts: string[]; text: string; image: Buffer } | null = null;
-  for (const candidate of candidatePages) {
+  if (!candidatePages.length) {
+    return {
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+      selection: {
+        selectedPage: null,
+        reason: "no_pdf_pages_scanned",
+        confidence: null,
+        candidates: [],
+      },
+    };
+  }
+
+  const rankedCandidates = [...candidatePages].sort((a, b) => {
+    const preScoreDelta = b.preScore - a.preScore;
+    if (preScoreDelta !== 0) return preScoreDelta;
+    return a.page - b.page;
+  });
+  const topForAi = rankedCandidates.slice(0, 6);
+  for (const candidate of topForAi) {
     const ai = await openAiAnalyzeGymLayoutPage(candidate.image, "image/png");
     if (!ai) continue;
-    const confidence =
-      ai.confidence + Math.min(candidate.score, 4) * 0.05 + Math.min(candidate.visualScore, 1) * 0.08;
-    if (!ai.isLayout && confidence < 0.45) continue;
-    if (!bestAi || confidence > bestAi.confidence) {
-      bestAi = {
-        page: candidate.page,
-        confidence,
-        facts: uniqueLines([...ai.facts, ...extractHallFactsFromText(ai.text || candidate.text)], 14),
-        text: ai.text || candidate.text,
-        image: candidate.image,
-      };
-    }
-  }
-  if (bestAi) {
-    const dataUrl = await toOptimizedImageDataUrl(bestAi.image);
-    if (dataUrl) {
-      const zones = await openAiExtractGymLayoutZones(bestAi.image, "image/png");
-      return { dataUrl, facts: bestAi.facts, zones, page: bestAi.page };
-    }
+    candidate.aiIsLayout = ai.isLayout;
+    candidate.aiConfidence = ai.confidence;
+    candidate.aiFacts = ai.facts;
+    candidate.aiText = ai.text;
   }
 
-  const heuristicFallback =
-    [...candidatePages]
-      .filter((candidate) => candidate.score >= 1)
-      .sort((a, b) => {
-        const scoreDelta = b.score - a.score;
-        if (scoreDelta !== 0) return scoreDelta;
-        return b.visualScore - a.visualScore;
-      })[0] ||
-    [...candidatePages]
-      .sort((a, b) => b.visualScore - a.visualScore)
-      .find((candidate) => candidate.visualScore >= 0.3);
-  if (heuristicFallback) {
-    const dataUrl = await toOptimizedImageDataUrl(heuristicFallback.image);
-    if (dataUrl) {
-      return {
-        dataUrl,
-        facts: extractHallFactsFromText(heuristicFallback.text),
-        zones: [],
-        page: heuristicFallback.page,
-      };
-    }
+  for (const candidate of candidatePages) {
+    const aiScore =
+      (candidate.aiIsLayout === true ? 1.5 : candidate.aiIsLayout === false ? -1 : 0) +
+      (candidate.aiConfidence || 0) * 2;
+    candidate.finalScore = candidate.preScore + aiScore;
+
+    const aiAccepted =
+      candidate.aiIsLayout === true &&
+      (candidate.aiConfidence || 0) >= 0.62 &&
+      (candidate.gymLabelCount >= 1 || candidate.hallLabelCount >= 2);
+    const deterministicAccepted =
+      candidate.gymLabelCount >= 2 && candidate.hallLabelCount >= 1;
+    candidate.accepted = aiAccepted || deterministicAccepted;
+    candidate.acceptReason = aiAccepted ? "ai" : deterministicAccepted ? "deterministic" : null;
   }
 
-  return { dataUrl: null, facts: [], zones: [], page: null };
+  const acceptedCandidates = [...candidatePages]
+    .filter((candidate) => candidate.accepted)
+    .sort((a, b) => {
+      const finalScoreDelta = b.finalScore - a.finalScore;
+      if (finalScoreDelta !== 0) return finalScoreDelta;
+      const preScoreDelta = b.preScore - a.preScore;
+      if (preScoreDelta !== 0) return preScoreDelta;
+      return a.page - b.page;
+    });
+
+  const diagnosticsCandidates: GymLayoutSelectionCandidate[] = [...candidatePages]
+    .sort((a, b) => {
+      const preScoreDelta = b.preScore - a.preScore;
+      if (preScoreDelta !== 0) return preScoreDelta;
+      return a.page - b.page;
+    })
+    .map((candidate) => ({
+      page: candidate.page,
+      preScore: candidate.preScore,
+      finalScore: candidate.finalScore,
+      textScore: candidate.textScore,
+      visualScore: candidate.visualScore,
+      gymLabelCount: candidate.gymLabelCount,
+      hallLabelCount: candidate.hallLabelCount,
+      mapHeading: candidate.mapHeading,
+      paragraphPenalty: candidate.paragraphPenalty,
+      aiIsLayout: candidate.aiIsLayout,
+      aiConfidence: candidate.aiConfidence,
+      accepted: candidate.accepted,
+    }));
+
+  if (!acceptedCandidates.length) {
+    return {
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+      selection: {
+        selectedPage: null,
+        reason: "no_candidate_passed_strict_gate",
+        confidence: null,
+        candidates: diagnosticsCandidates,
+      },
+    };
+  }
+
+  const selected = acceptedCandidates[0];
+  const dataUrl = await toOptimizedImageDataUrl(selected.image);
+  if (!dataUrl) {
+    return {
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+      selection: {
+        selectedPage: null,
+        reason: "selected_page_image_encode_failed",
+        confidence: null,
+        candidates: diagnosticsCandidates,
+      },
+    };
+  }
+
+  const zones = await openAiExtractGymLayoutZones(selected.image, "image/png");
+  const facts = uniqueLines(
+    [
+      ...selected.aiFacts,
+      ...extractHallFactsFromText(selected.aiText || selected.text),
+      ...extractHallFactsFromText(selected.text),
+    ],
+    14
+  );
+  return {
+    dataUrl,
+    facts,
+    zones,
+    page: selected.page,
+    selection: {
+      selectedPage: selected.page,
+      reason:
+        selected.acceptReason === "ai"
+          ? "accepted_ai_layout"
+          : "accepted_deterministic_strong_map",
+      confidence: selected.aiConfidence,
+      candidates: diagnosticsCandidates,
+    },
+  };
 }
 
 function stripHtml(input: string): string {
@@ -1557,6 +1733,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
           gymLayoutFacts: combinedLayoutFacts,
           gymLayoutZones: gymLayout.zones,
           gymLayoutPage: gymLayout.page,
+          gymLayoutSelection: gymLayout.selection,
           textQuality,
           qualitySignals,
         },
@@ -1603,6 +1780,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
   let gymLayoutPage: number | null = null;
   let gymLayoutFacts: string[] = [];
   let gymLayoutZones: GymLayoutZone[] = [];
+  let gymLayoutSelection: GymLayoutSelectionDiagnostics | undefined = undefined;
 
   for (const asset of linkedAssets) {
     try {
@@ -1618,6 +1796,9 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
           gymLayoutPage = layout.page;
           gymLayoutFacts = uniqueLines([...gymLayoutFacts, ...layout.facts], 14);
           gymLayoutZones = normalizeGymLayoutZones(layout.zones);
+          if (layout.selection) {
+            gymLayoutSelection = layout.selection;
+          }
         }
         continue;
       }
@@ -1663,6 +1844,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
       gymLayoutFacts: mergedLayoutFacts,
       gymLayoutZones,
       gymLayoutPage,
+      gymLayoutSelection,
       textQuality: quality.quality,
       qualitySignals: quality.signals,
     },

@@ -265,8 +265,10 @@ curl -X POST \
     - `gymLayoutImageDataUrl` (optimized screenshot data URL from PDF/image),
     - `gymLayoutFacts` (OCR-extracted hall/registration/awards/location lines),
     - `gymLayoutZones` (LLM-detected map regions with normalized boxes and confidence),
-    - `gymLayoutPage` (0-based PDF page index when applicable).
+    - `gymLayoutPage` (0-based PDF page index when applicable),
+    - `gymLayoutSelection` (optional diagnostics payload with selected page, confidence, reason, and scored candidates).
   - PDF hall-layout image capture now uses a renderer fallback path (PDF.js + Canvas) when direct PDF page rasterization is unavailable, so venue map screenshots can still be generated from uploaded PDFs.
+  - PDF hall-layout page selection is strict map-only: text/prose pages are rejected even if they contain generic hall terms. If no page passes strict gates, `gymLayoutImageDataUrl` is stored as `null` (no text-page fallback image).
   - If extracted text quality is `poor`, the route skips model calls and returns a safe null-heavy parse payload (`modelUsed: "quality-gate"`) instead of hallucinating fields from corrupted text.
   - AI parsing is **OpenAI primary** with strict JSON schema validation.
   - If OpenAI returns invalid JSON, retries once with JSON-fix instruction.

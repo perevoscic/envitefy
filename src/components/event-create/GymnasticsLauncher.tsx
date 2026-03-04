@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -8,6 +8,7 @@ import {
   Globe,
   Sparkles,
   Upload,
+  X,
 } from "lucide-react";
 
 type GymnasticsLauncherProps = {
@@ -36,12 +37,69 @@ export default function GymnasticsLauncher({
   const [urlError, setUrlError] = useState("");
   const [meetUrl, setMeetUrl] = useState("");
   const discoveryBusy = uploadBusy || urlBusy;
+  const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
+  const ingestAbortRef = useRef<AbortController | null>(null);
+  const parseAbortRef = useRef<AbortController | null>(null);
+  const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
+  const cancelRequestedRef = useRef(false);
 
   const toErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
     if (typeof err === "string" && err.trim()) return err;
     return fallback;
   };
+
+  const isAbortError = (err: unknown) => {
+    if (err instanceof DOMException && err.name === "AbortError") return true;
+    if (err instanceof Error && err.name === "AbortError") return true;
+    const message = toErrorMessage(err, "").toLowerCase();
+    return message.includes("cancel") || message.includes("abort");
+  };
+
+  const abortError = () => {
+    const err = new Error("Discovery cancelled");
+    (err as Error & { name: string }).name = "AbortError";
+    return err;
+  };
+
+  const clearDiscoveryHandles = () => {
+    if (uploadXhrRef.current) {
+      uploadXhrRef.current.abort();
+      uploadXhrRef.current = null;
+    }
+    if (ingestAbortRef.current) {
+      ingestAbortRef.current.abort();
+      ingestAbortRef.current = null;
+    }
+    if (parseAbortRef.current) {
+      parseAbortRef.current.abort();
+      parseAbortRef.current = null;
+    }
+    if (parseProgressTimerRef.current) {
+      clearInterval(parseProgressTimerRef.current);
+      parseProgressTimerRef.current = null;
+    }
+  };
+
+  const cancelDiscovery = () => {
+    cancelRequestedRef.current = true;
+    clearDiscoveryHandles();
+    setUploadBusy(false);
+    setUrlBusy(false);
+    setUploadProgress(0);
+    setUploadStatus("");
+    setUploadError("");
+    setUrlError("");
+  };
+
+  useEffect(() => {
+    return () => {
+      cancelRequestedRef.current = true;
+      clearDiscoveryHandles();
+    };
+  }, []);
 
   const startDiscovery = async ({
     file,
@@ -52,17 +110,22 @@ export default function GymnasticsLauncher({
       if (!onProgress) return;
       onProgress(Math.max(0, Math.min(100, Math.round(progress))), status);
     };
+    const throwIfCancelled = () => {
+      if (cancelRequestedRef.current) throw abortError();
+    };
     const formData = new FormData();
     if (file) formData.append("file", file);
     if (url) formData.append("url", url);
 
     let ingestJson: { eventId?: string; error?: string } = {};
+    cancelRequestedRef.current = false;
 
     if (file) {
       reportProgress(4, "Uploading meet file...");
       ingestJson = await new Promise<{ eventId?: string; error?: string }>(
         (resolve, reject) => {
           const xhr = new XMLHttpRequest();
+          uploadXhrRef.current = xhr;
           xhr.open("POST", "/api/ingest?mode=meet_discovery", true);
           xhr.withCredentials = true;
 
@@ -72,11 +135,16 @@ export default function GymnasticsLauncher({
             reportProgress(5 + ratio * 65, "Uploading meet file...");
           };
 
+          xhr.onabort = () => {
+            reject(abortError());
+          };
+
           xhr.onerror = () => {
             reject(new Error("Network error while uploading file"));
           };
 
           xhr.onload = () => {
+            uploadXhrRef.current = null;
             try {
               const json = JSON.parse(xhr.responseText || "{}") as {
                 eventId?: string;
@@ -95,42 +163,57 @@ export default function GymnasticsLauncher({
           xhr.send(formData);
         }
       );
+      throwIfCancelled();
     } else {
       reportProgress(20, "Submitting meet URL...");
+      ingestAbortRef.current = new AbortController();
       const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
         method: "POST",
         body: formData,
         credentials: "include",
+        signal: ingestAbortRef.current.signal,
+      }).finally(() => {
+        ingestAbortRef.current = null;
       });
       ingestJson = await ingestRes.json().catch(() => ({}));
       if (!ingestRes.ok || !ingestJson?.eventId) {
         throw new Error(ingestJson?.error || "Failed to ingest source");
       }
+      throwIfCancelled();
     }
 
     const eventId = String(ingestJson.eventId);
     reportProgress(72, "Processing meet file...");
     let parseProgress = 72;
-    const parseProgressTimer = setInterval(() => {
+    parseProgressTimerRef.current = setInterval(() => {
       parseProgress = Math.min(parseProgress + 3, 96);
       reportProgress(parseProgress, "Processing meet file...");
     }, 700);
 
     try {
+      parseAbortRef.current = new AbortController();
       const parseRes = await fetch(`/api/parse/${eventId}`, {
         method: "POST",
         credentials: "include",
+        signal: parseAbortRef.current.signal,
+      }).finally(() => {
+        parseAbortRef.current = null;
       });
       const parseJson = await parseRes.json().catch(() => ({}));
       if (!parseRes.ok) {
         throw new Error(parseJson?.error || "Failed to parse source");
       }
+      throwIfCancelled();
     } finally {
-      clearInterval(parseProgressTimer);
+      if (parseProgressTimerRef.current) {
+        clearInterval(parseProgressTimerRef.current);
+        parseProgressTimerRef.current = null;
+      }
     }
 
     reportProgress(100, "Opening meet builder...");
     await new Promise((resolve) => setTimeout(resolve, 350));
+    throwIfCancelled();
     router.push(
       `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`
     );
@@ -154,6 +237,11 @@ export default function GymnasticsLauncher({
         },
       });
     } catch (err: unknown) {
+      if (isAbortError(err)) {
+        setUploadStatus("");
+        setUploadProgress(0);
+        return;
+      }
       setUploadError(toErrorMessage(err, "Failed to parse file"));
       setUploadStatus("");
     } finally {
@@ -182,6 +270,7 @@ export default function GymnasticsLauncher({
     try {
       await startDiscovery({ url: trimmed });
     } catch (err: unknown) {
+      if (isAbortError(err)) return;
       setUrlError(toErrorMessage(err, "Failed to sync URL"));
     } finally {
       setUrlBusy(false);
@@ -242,31 +331,45 @@ export default function GymnasticsLauncher({
             </p>
 
             <div className="mt-7">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedPath("upload");
-                  fileInputRef.current?.click();
-                }}
-                disabled={discoveryBusy}
-                className="w-full rounded-2xl border-2 border-dashed border-[#d7d4e5] bg-[#f8f8fc] px-4 py-5 text-left transition hover:border-[#6d35f5] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {!uploadBusy ? (
-                  <>
-                    <div className="flex items-center justify-center gap-2 text-sm font-semibold text-[#5530a8]">
-                      <Upload className="h-4 w-4" />
-                      Click to Upload File
-                    </div>
-                    <p className="mt-1 text-center text-xs font-medium text-[#7d7a92]">
-                      PDF, JPG, PNG
-                    </p>
-                  </>
-                ) : (
+              {!uploadBusy ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPath("upload");
+                    fileInputRef.current?.click();
+                  }}
+                  disabled={discoveryBusy}
+                  className="w-full rounded-2xl border-2 border-dashed border-[#d7d4e5] bg-[#f8f8fc] px-4 py-5 text-left transition hover:border-[#6d35f5] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <div className="flex items-center justify-center gap-2 text-sm font-semibold text-[#5530a8]">
+                    <Upload className="h-4 w-4" />
+                    Click to Upload File
+                  </div>
+                  <p className="mt-1 text-center text-xs font-medium text-[#7d7a92]">
+                    PDF, JPG, PNG
+                  </p>
+                </button>
+              ) : (
+                <div className="w-full rounded-2xl border-2 border-dashed border-[#d7d4e5] bg-[#f8f8fc] px-4 py-4">
                   <div className="mx-auto w-full max-w-sm">
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#5530a8]">
                       <span>{uploadStatus || "Processing meet file..."}</span>
-                      <span>{uploadProgress}%</span>
+                      <div className="flex items-center gap-2">
+                        <span>{uploadProgress}%</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cancelDiscovery();
+                          }}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d9cdfc] bg-white text-[#6d35f5] hover:bg-[#f3ebff]"
+                          aria-label="Cancel upload"
+                          title="Cancel"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#e6defa]">
                       <div
@@ -275,8 +378,8 @@ export default function GymnasticsLauncher({
                       />
                     </div>
                   </div>
-                )}
-              </button>
+                </div>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -346,6 +449,19 @@ export default function GymnasticsLauncher({
               >
                 {urlBusy ? "Syncing..." : "Sync URL"}
               </button>
+              {urlBusy ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cancelDiscovery();
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d7d9e5] bg-white px-4 py-2.5 text-xs font-semibold text-[#4c5370] hover:bg-slate-50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancel Sync
+                </button>
+              ) : null}
               {urlError ? (
                 <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
                   {urlError}

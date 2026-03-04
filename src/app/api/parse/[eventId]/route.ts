@@ -66,7 +66,13 @@ export async function POST(
       extraction.extractionMeta
     );
     const detectedGymLayoutImage = extraction.extractionMeta?.gymLayoutImageDataUrl || null;
-    if (
+    if (repairMode && !detectedGymLayoutImage) {
+      mapped.advancedSections = mapped.advancedSections || {};
+      mapped.advancedSections.logistics = mapped.advancedSections.logistics || {};
+      mapped.advancedSections.logistics.gymLayoutImage = "";
+      mapped.customFields = mapped.customFields || {};
+      mapped.customFields.advancedSections = mapped.advancedSections;
+    } else if (
       detectedGymLayoutImage &&
       !mapped?.advancedSections?.logistics?.gymLayoutImage
     ) {

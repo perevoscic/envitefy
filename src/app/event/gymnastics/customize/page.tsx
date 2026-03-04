@@ -2797,6 +2797,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       selectedFont?.css,
       selectedSize?.className,
     ]);
+    const previewEventId = editEventId || `preview-${config.slug}`;
 
     const sidebarPanel = (
       <div
@@ -2939,24 +2940,37 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               id="guide-preview-root"
               className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0"
             >
-              <SimpleTemplateView
-                key={`preview-${themeId}-${data.fontId}-${data.fontSize}`}
-                eventId={editEventId || "gymnastics-preview"}
-                eventData={previewEventData}
-                eventTitle={data.title || config.displayName}
-                isOwner={false}
-                isReadOnly={true}
-                viewerKind="readonly"
-                shareUrl=""
-                sessionEmail={null}
-                disableProtectedSectionLocks={true}
-                disableThemeBackground={true}
-                neutralPreview={{
-                  surface: "light-gradient",
-                  paletteDriven: true,
-                  suppressTextShadows: true,
-                }}
-              />
+              {editEventId && loadingExisting ? (
+                <div className="flex min-h-[780px] items-center justify-center bg-white text-center">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">
+                      Loading event preview...
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Replacing previous event data.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <SimpleTemplateView
+                  key={`preview-${previewEventId}-${themeId}-${data.fontId}-${data.fontSize}`}
+                  eventId={previewEventId}
+                  eventData={previewEventData}
+                  eventTitle={data.title || config.displayName}
+                  isOwner={false}
+                  isReadOnly={true}
+                  viewerKind="readonly"
+                  shareUrl=""
+                  sessionEmail={null}
+                  disableProtectedSectionLocks={true}
+                  disableThemeBackground={true}
+                  neutralPreview={{
+                    surface: "light-gradient",
+                    paletteDriven: true,
+                    suppressTextShadows: true,
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
