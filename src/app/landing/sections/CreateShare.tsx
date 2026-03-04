@@ -178,7 +178,7 @@ export default function CreateShare() {
           <ul className="mt-8 space-y-4 pb-4 text-foreground/85 text-base sm:text-lg leading-relaxed">
             {points.map((point, index) => (
               <li key={point} className="flex items-start gap-4 text-left">
-                <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-[#f6dcc7] via-[#e8c2a4] to-[#c8916a] text-[0.65rem] font-semibold text-white tracking-[0.25em] shadow-md">
+                <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[#f6dcc7] via-[#e8c2a4] to-[#c8916a] text-[0.65rem] font-semibold text-white tracking-[0.25em] shadow-md">
                   {(index + 1).toString().padStart(2, "0")}
                 </span>
                 <span className="flex-1">{point}</span>

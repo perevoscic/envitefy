@@ -130,6 +130,7 @@ export default function GymnasticsLauncher({
     }
 
     reportProgress(100, "Opening meet builder...");
+    await new Promise((resolve) => setTimeout(resolve, 350));
     router.push(
       `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`
     );
@@ -251,15 +252,30 @@ export default function GymnasticsLauncher({
                 disabled={discoveryBusy}
                 className="w-full rounded-2xl border-2 border-dashed border-[#d7d4e5] bg-[#f8f8fc] px-4 py-5 text-left transition hover:border-[#6d35f5] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <div className="flex items-center justify-center gap-2 text-sm font-semibold text-[#5530a8]">
-                  <Upload className="h-4 w-4" />
-                  {uploadBusy
-                    ? "Uploading and parsing..."
-                    : "Click to Upload File"}
-                </div>
-                <p className="mt-1 text-center text-xs font-medium text-[#7d7a92]">
-                  PDF, JPG, PNG
-                </p>
+                {!uploadBusy ? (
+                  <>
+                    <div className="flex items-center justify-center gap-2 text-sm font-semibold text-[#5530a8]">
+                      <Upload className="h-4 w-4" />
+                      Click to Upload File
+                    </div>
+                    <p className="mt-1 text-center text-xs font-medium text-[#7d7a92]">
+                      PDF, JPG, PNG
+                    </p>
+                  </>
+                ) : (
+                  <div className="mx-auto w-full max-w-sm">
+                    <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#5530a8]">
+                      <span>{uploadStatus || "Processing meet file..."}</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#e6defa]">
+                      <div
+                        className="h-full rounded-full bg-[#6d35f5] transition-[width] duration-300 ease-out"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </button>
               <input
                 ref={fileInputRef}
@@ -276,20 +292,6 @@ export default function GymnasticsLauncher({
                 <p className="mt-2 truncate text-xs text-[#6a6782]">
                   Selected: {uploadFileName}
                 </p>
-              ) : null}
-              {uploadBusy ? (
-                <div className="mt-3">
-                  <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-[#6a6782]">
-                    <span>{uploadStatus || "Processing meet file..."}</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#ebe7f8]">
-                    <div
-                      className="h-full rounded-full bg-[#6d35f5] transition-[width] duration-300 ease-out"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                </div>
               ) : null}
               {uploadError ? (
                 <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -386,7 +388,7 @@ export default function GymnasticsLauncher({
                   openTemplateBuilder();
                 }}
                 disabled={discoveryBusy}
-                className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${
                   selectedPath === "scratch"
                     ? "bg-[#6d35f5] hover:bg-[#5f2ed7]"
                     : "bg-[#0f1935] hover:bg-[#0b1430]"

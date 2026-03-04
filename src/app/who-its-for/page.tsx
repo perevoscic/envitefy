@@ -57,7 +57,7 @@ export default function WhoItsForPage() {
         <div className="mt-6 flex justify-center">
           <Link
             href="/open"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7F8CFF] to-[#6d7af5] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#7F8CFF]/30 transition hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6d7af5]"
+            className="inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-[#7F8CFF] to-[#6d7af5] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#7F8CFF]/30 transition hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6d7af5]"
           >
             Open the app
           </Link>

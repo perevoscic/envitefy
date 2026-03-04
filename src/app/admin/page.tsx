@@ -434,7 +434,7 @@ export default function AdminPage() {
                 <button
                   onClick={handleSearch}
                   disabled={usersLoading || !!activeStatView}
-                  className="px-6 py-3 text-sm font-semibold rounded-2xl bg-gradient-to-r from-[#8b70de] to-[#6f57c8] hover:from-[#7f63d8] hover:to-[#5f49bb] text-white shadow-lg shadow-[#8b70de]/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
+                  className="px-6 py-3 text-sm font-semibold overflow-hidden rounded-2xl bg-gradient-to-r from-[#8b70de] to-[#6f57c8] hover:from-[#7f63d8] hover:to-[#5f49bb] text-white shadow-lg shadow-[#8b70de]/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   {usersLoading ? (
                     <>

@@ -901,7 +901,7 @@ export default function CalendarPage() {
   const defaultEventTextClass = "text-[#2F1D47]";
   const defaultEventMutedTextClass = "text-[#5A4F78]";
   const secondaryButtonClass = `inline-flex items-center justify-center rounded-full border border-[#D8CBFF] bg-white/90 text-[#4A3E72] shadow-sm shadow-[#D8CBFF]/40 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#B8A4FF] hover:bg-[#F9F5FF] hover:shadow-md hover:shadow-[#D8CBFF]/50 ${focusRingClass}`;
-  const primaryButtonClass = `inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7F8CFF] to-[#A06BFF] text-white shadow-lg shadow-[#7F8CFF]/35 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 hover:shadow-xl hover:shadow-[#7F8CFF]/45 ${focusRingClass}`;
+  const primaryButtonClass = `inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-[#7F8CFF] to-[#A06BFF] text-white shadow-lg shadow-[#7F8CFF]/35 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 hover:shadow-xl hover:shadow-[#7F8CFF]/45 ${focusRingClass}`;
   const panelClass =
     "rounded-[36px] border border-[#F1ECFF] bg-gradient-to-bl from-[#F4EEFF] via-white to-[#FEE8F0] shadow-xl shadow-[#E8DFFF]/60";
   const closeButtonClass = `inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#D8CBFF] bg-white/90 text-[#6A5A9C] shadow-sm shadow-[#D8CBFF]/35 transition-colors hover:border-[#B8A4FF] hover:text-[#2F1D47] ${focusRingClass}`;
@@ -1140,11 +1140,11 @@ export default function CalendarPage() {
         <div className="mt-3 flex justify-start">
           {/* Elastic Tabs Toggle */}
           <nav
-            className="tabs-elastic relative flex w-[280px] rounded-full border border-[#D8CBFF] bg-white/85 px-1 py-1 shadow-sm shadow-[#D8CBFF]/35"
+            className="tabs-elastic relative flex w-[280px] overflow-hidden rounded-full border border-[#D8CBFF] bg-white/85 px-1 py-1 shadow-sm shadow-[#D8CBFF]/35"
             suppressHydrationWarning
           >
             <div
-              className="absolute left-0 top-0 z-0 h-full rounded-full bg-gradient-to-r from-[#7f8cff] to-[#a855f7] transition-all duration-500 ease-elastic"
+              className="absolute left-0 top-0 z-0 h-full overflow-hidden rounded-full bg-gradient-to-r from-[#7f8cff] to-[#a855f7] transition-all duration-500 ease-elastic"
               style={{
                 width: "50%",
                 transform:

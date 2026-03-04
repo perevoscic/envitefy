@@ -3847,22 +3847,35 @@ export default function SimpleTemplateView({
                             getDiscoveryScrollBehavior()
                           );
                         }}
-                        className={`${discoveryFocusRing} shrink-0 snap-center min-w-[160px] sm:min-w-[176px] md:min-w-[136px] md:flex-1 inline-flex min-h-[46px] md:min-h-0 items-center justify-center gap-1.5 rounded-full border px-3 py-2.5 md:rounded-[18px] md:py-2.5 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.08em] md:tracking-[0.09em] whitespace-nowrap transition-all ${
+                        className={`${discoveryFocusRing} shrink-0 snap-center min-w-[160px] sm:min-w-[176px] md:min-w-[136px] md:flex-1 relative inline-flex min-h-[46px] md:min-h-0 items-center justify-center gap-1.5 overflow-hidden rounded-full border px-3 py-2.5 md:rounded-[18px] md:py-2.5 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.08em] md:tracking-[0.09em] whitespace-nowrap transition-all ${
                           isActive
-                            ? "bg-[color:var(--button-bg,#2D1B4E)] text-[color:var(--button-text,#FFFFFF)] border-[color:var(--button-bg,#2D1B4E)] shadow-[0_10px_20px_rgba(15,23,42,0.2)] md:bg-[color:var(--color-nav-active-bg,#F8FAFC)] md:text-[color:var(--color-nav-active,#2D1B4E)] md:border-[color:var(--accent,#D4AF37)] md:shadow-none"
+                            ? "text-[color:var(--button-text,#FFFFFF)] border-[color:var(--button-bg,#2D1B4E)] shadow-[0_10px_20px_rgba(15,23,42,0.2)] md:bg-[color:var(--color-nav-active-bg,#F8FAFC)] md:text-[color:var(--color-nav-active,#2D1B4E)] md:border-[color:var(--accent,#D4AF37)] md:shadow-none"
                             : "bg-transparent text-[color:var(--color-nav-text,#334155)] border-transparent hover:border-[color:var(--color-border-hover,#D4AF37)] hover:bg-[color:var(--chip-bg,#F8FAFC)]"
                         }`}
                         aria-current={isActive ? "page" : undefined}
                       >
-                        <tab.icon
-                          size={16}
-                          className={
-                            isActive
-                              ? "text-[color:var(--button-text,#FFFFFF)] md:text-[color:var(--accent,#D4AF37)]"
-                              : discoveryIcon
-                          }
-                        />
-                        {tab.label}
+                        {/* Background layer: separate element clips cleanly to rounded corners (avoids corner bleed) */}
+                        {isActive && (
+                          <span
+                            className="absolute inset-0 md:hidden"
+                            aria-hidden
+                            style={{
+                              background: "var(--button-bg, #2D1B4E)",
+                              borderRadius: "inherit",
+                            }}
+                          />
+                        )}
+                        <span className="relative z-10 flex items-center justify-center gap-1.5">
+                          <tab.icon
+                            size={16}
+                            className={
+                              isActive
+                                ? "text-[color:var(--button-text,#FFFFFF)] md:text-[color:var(--accent,#D4AF37)]"
+                                : discoveryIcon
+                            }
+                          />
+                          {tab.label}
+                        </span>
                       </button>
                     );
                   })}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { X } from "lucide-react";
 
 type Props = {
   eventId: string;
@@ -54,19 +54,19 @@ export default function DiscoveryEventEditLayout({ eventId, children }: Props) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  useEffect(() => {
+    const openFromTopBar = () => setMobileEditorOpen(true);
+    window.addEventListener("envitefy:open-discovery-editor", openFromTopBar);
+    return () =>
+      window.removeEventListener(
+        "envitefy:open-discovery-editor",
+        openFromTopBar
+      );
+  }, []);
+
   return (
     <div className="relative flex min-h-screen w-full flex-col md:flex-row">
       <div className="min-w-0 flex-1">{children}</div>
-
-      <button
-        type="button"
-        onClick={() => setMobileEditorOpen(true)}
-        className="fixed right-[calc(1rem+env(safe-area-inset-right))] top-[calc(0.9rem+env(safe-area-inset-top))] z-[70] inline-flex items-center gap-2 rounded-full border border-[#d8d1f3] bg-white/96 px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-[#2f2550] shadow-[0_12px_26px_rgba(76,55,134,0.22)] backdrop-blur-sm md:hidden"
-        aria-label="Customize your meet"
-      >
-        <Menu size={16} />
-        Customize
-      </button>
 
       {mobileEditorOpen && (
         <div className="fixed inset-0 z-[75] md:hidden" aria-hidden="true">

@@ -708,9 +708,12 @@ export default function TopNav() {
   const [calendarsOpen, setCalendarsOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileScrolled, setMobileScrolled] = useState(false);
   const [isInitialMount, setIsInitialMount] = useState(true);
   const isDashboardView = pathname === "/";
   const navIsScrolled = isDashboardView ? isScrolled : true;
+  const showMobileStickyBar = mobileScrolled;
+  const showMobileFloatingMenu = !mobileScrolled;
   const createMenuTop = navIsScrolled ? 72 : 90;
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -748,6 +751,15 @@ export default function TopNav() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isDashboardView]);
+
+  useEffect(() => {
+    const handleMobileScroll = () => {
+      setMobileScrolled(window.scrollY > 40);
+    };
+    handleMobileScroll();
+    window.addEventListener("scroll", handleMobileScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleMobileScroll);
+  }, []);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -818,22 +830,8 @@ export default function TopNav() {
   return (
     <>
       {/* Mobile/Tablet Header with Hamburger */}
-      <div
-        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] lg:hidden bg-[#F8F5FF] ${
-          !isInitialMount ? "transition-all duration-300" : ""
-        } ${
-          navIsScrolled
-            ? "border-b border-white/60 backdrop-blur-md shadow-sm"
-            : ""
-        }`}
-        suppressHydrationWarning
-      >
-        <div
-          className={`flex items-center justify-between px-4 ${
-            navIsScrolled ? "py-3" : "py-5"
-          }`}
-          suppressHydrationWarning
-        >
+      {showMobileFloatingMenu && (
+        <div className="fixed top-3 left-3 z-40 transform transition-all duration-500 lg:hidden scale-100 opacity-100">
           <button
             type="button"
             aria-label="Open sidebar"
@@ -842,7 +840,7 @@ export default function TopNav() {
               event.stopPropagation();
               setIsCollapsed(false);
             }}
-            className="inline-flex h-10 w-10 items-center justify-center"
+            className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-md touch-manipulation cursor-pointer"
           >
             <span className="flex h-5 w-6 flex-col justify-between">
               <span className="block h-0.5 w-full rounded-full bg-current" />
@@ -850,24 +848,47 @@ export default function TopNav() {
               <span className="block h-0.5 w-full rounded-full bg-current" />
             </span>
           </button>
-          <Link
-            href="/"
-            className={`inline-flex items-center gap-2 text-[#7f8cff] transition-opacity duration-300 ${
-              navIsScrolled ? "opacity-100" : "opacity-0"
-            }`}
-            suppressHydrationWarning
-          >
-            <Image
-              src="/navElogo.png"
-              alt="Envitefy logo"
-              width={112}
-              height={46}
-              priority
-            />
-          </Link>
-          <div className="w-10"></div>
         </div>
-      </div>
+      )}
+      <header
+        className={`fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
+          showMobileStickyBar
+            ? "translate-y-0 opacity-100 pointer-events-auto border-white/60 bg-[#F8F5FF]/95 backdrop-blur-md shadow-sm"
+            : "-translate-y-full opacity-0 pointer-events-none"
+        }`}
+        suppressHydrationWarning
+      >
+        <button
+          type="button"
+          aria-label="Open sidebar"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setIsCollapsed(false);
+          }}
+          className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-sm touch-manipulation cursor-pointer"
+        >
+          <span className="flex h-5 w-6 flex-col justify-between">
+            <span className="block h-0.5 w-full rounded-full bg-current" />
+            <span className="block h-0.5 w-full rounded-full bg-current" />
+            <span className="block h-0.5 w-full rounded-full bg-current" />
+          </span>
+        </button>
+        <Link
+          href="/"
+          className="inline-flex items-center"
+          suppressHydrationWarning
+        >
+          <Image
+            src="/navElogo.png"
+            alt="Envitefy logo"
+            width={100}
+            height={32}
+            priority
+          />
+        </Link>
+        <div className="h-10 w-10" aria-hidden="true"></div>
+      </header>
 
       {/* Desktop TopNav */}
       <div
