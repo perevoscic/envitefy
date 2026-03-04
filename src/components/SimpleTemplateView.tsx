@@ -19,7 +19,6 @@ import {
   Trophy,
   Ticket,
   Info,
-  Star,
   Download,
   CreditCard,
   AlertTriangle,
@@ -236,7 +235,6 @@ export default function SimpleTemplateView({
   const [carpoolSignupSubmitting, setCarpoolSignupSubmitting] = useState(false);
   const [eventDataState, setEventDataState] = useState(eventData);
   const [discoveryActiveTab, setDiscoveryActiveTab] = useState("meet-details");
-  const [discoveryScrolled, setDiscoveryScrolled] = useState(false);
   const [rsvpNameInput, setRsvpNameInput] = useState("");
   const [rsvpGuestEmailInput, setRsvpGuestEmailInput] = useState("");
   const [rsvpGuestPhoneInput, setRsvpGuestPhoneInput] = useState("");
@@ -335,14 +333,6 @@ export default function SimpleTemplateView({
     return () => window.removeEventListener("message", handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, isDynamicGymnasticsLayout]);
-
-  useEffect(() => {
-    if (!isDynamicGymnasticsLayout) return;
-    const onScroll = () => setDiscoveryScrolled(window.scrollY > 20);
-    onScroll();
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isDynamicGymnasticsLayout]);
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -2923,10 +2913,6 @@ export default function SimpleTemplateView({
     const eventDatesLabel =
       currentData?.discoverySource?.parseResult?.dates ||
       (date ? formatDate(date) : "");
-    const hostName =
-      currentData?.hostGym || customFields?.team || "Host Committee";
-    const navTitle =
-      safeString(currentData?.eventTitle || eventTitle) || hostName;
     const warmupTimeLabel = formatTime(meet?.warmUpTime);
     const scheduleHint = warmupTimeLabel
       ? `First warmup: ${warmupTimeLabel}`
@@ -3266,63 +3252,71 @@ export default function SimpleTemplateView({
       "text-xl font-bold mb-6 flex items-center gap-2 border-l-2 border-[color:var(--accent,#D4AF37)] pl-3 text-[color:var(--color-heading,#2D1B4E)]";
     const discoveryFocusRing =
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-focus,#D4AF37)] focus-visible:ring-offset-2";
+    const headerHeroSrc = heroImage?.trim() || "";
+    const hasHeaderHero = Boolean(headerHeroSrc);
+    const headerTitleClass = hasHeaderHero ? "text-white" : discoveryHeading;
+    const headerMetaClass = hasHeaderHero ? "text-white/90" : discoveryNavText;
+    const headerIconClass = hasHeaderHero ? "text-white/90" : discoveryIcon;
+    const headerDateChipClass = hasHeaderHero
+      ? "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/35 text-white backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest mb-6"
+      : "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[color:var(--chip-bg,#F8FAFC)] border border-[color:var(--chip-border,#D7DCE6)] text-[color:var(--chip-text,#2D1B4E)] text-[10px] font-bold uppercase tracking-widest mb-6";
 
     return (
       <div
         ref={templateRootRef}
         className={`min-h-screen font-sans pb-24 ${discoveryBg} ${discoveryText}`}
       >
-        <nav
-          className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-            discoveryScrolled
-              ? `${discoveryBg} backdrop-blur-md shadow-lg py-3 ${discoveryText}`
-              : "bg-transparent py-6"
+        <header
+          className={`pt-16 md:pt-20 pb-16 px-6 relative overflow-hidden border-b ${
+            hasHeaderHero
+              ? "bg-slate-900 border-white/20"
+              : "bg-[color:var(--bg,#FFFFFF)] border-[color:var(--border,#E2E8F0)]"
           }`}
         >
-          <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[color:var(--chip-bg,#F8FAFC)] shadow-lg rotate-3 border border-[color:var(--chip-border,#D7DCE6)]">
-                <Star size={20} fill="currentColor" className={discoveryIcon} />
-              </div>
-              <div>
-                <h1
-                  data-role="page-title"
-                  className={`text-sm font-black tracking-tight uppercase leading-none ${
-                    discoveryScrolled ? discoveryHeading : discoveryHeading
-                  }`}
-                >
-                  {navTitle}
-                </h1>
-              </div>
+          {hasHeaderHero && (
+            <div className="absolute inset-0">
+              {headerHeroSrc.startsWith("http") ? (
+                <Image
+                  src={headerHeroSrc}
+                  alt="Header background"
+                  fill
+                  className="object-cover"
+                  sizes="100vw"
+                />
+              ) : (
+                <img
+                  src={headerHeroSrc}
+                  alt="Header background"
+                  className="h-full w-full object-cover"
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/65" />
             </div>
-          </div>
-        </nav>
-
-        <header className="pt-32 pb-16 px-6 bg-[color:var(--bg,#FFFFFF)] border-b border-[color:var(--border,#E2E8F0)] relative overflow-hidden">
+          )}
           <div className="max-w-6xl mx-auto relative z-10">
             {eventDatesLabel && (
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[color:var(--chip-bg,#F8FAFC)] border border-[color:var(--chip-border,#D7DCE6)] text-[color:var(--chip-text,#2D1B4E)] text-[10px] font-bold uppercase tracking-widest mb-6">
+              <div className={headerDateChipClass}>
                 <CalendarIcon size={12} className="opacity-80" />{" "}
                 {eventDatesLabel}
               </div>
             )}
             <h2
               data-role="page-title"
-              className={`text-4xl md:text-6xl font-black ${discoveryHeading} leading-[1.0] tracking-tight mb-6`}
+              className={`text-4xl md:text-6xl font-black ${headerTitleClass} leading-[1.0] tracking-tight mb-6`}
             >
               {currentData?.eventTitle || eventTitle || "Gymnastics Meet"}
             </h2>
             <div
-              className={`flex flex-wrap gap-4 text-sm font-bold ${discoveryNavText}`}
+              className={`flex flex-wrap gap-4 text-sm font-bold ${headerMetaClass}`}
             >
               {venueLabel && (
                 <span className="flex items-center gap-1.5">
-                  <MapPin size={16} className={discoveryIcon} /> {venueLabel}
+                  <MapPin size={16} className={headerIconClass} /> {venueLabel}
                 </span>
               )}
               {scheduleHint && (
                 <span className="flex items-center gap-1.5">
-                  <Clock size={16} className={discoveryIcon} /> {scheduleHint}
+                  <Clock size={16} className={headerIconClass} /> {scheduleHint}
                 </span>
               )}
             </div>
