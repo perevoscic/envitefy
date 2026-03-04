@@ -16,9 +16,8 @@ import {
   useRef,
   useState,
 } from "react";
-import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
+import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { useTheme } from "./providers";
 import { useSidebar, type EventContextTab } from "./sidebar-context";
 import { signOut, useSession } from "next-auth/react";
 import {
@@ -60,24 +59,6 @@ import {
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 import EventSidebar from "@/components/navigation/EventSidebar";
 
-declare global {
-  interface Window {
-    adsbygoogle?: unknown[];
-  }
-}
-
-const ADSENSE_CLIENT_ID = "ca-pub-8853590530457369";
-const ADSENSE_SLOT_SIDEBAR = "8155405384";
-const ADS_DISABLED_BY_ENV =
-  process.env.NEXT_PUBLIC_DISABLE_ADS === "1" ||
-  process.env.NODE_ENV !== "production";
-const LOCAL_AD_HOST_PATTERN =
-  /(^|\.)localhost$|(^|\.)127\.0\.0\.1$|^0\.0\.0\.0$|(^|\.)::1$|\.local$/i;
-
-type SidebarAdUnitProps = {
-  className?: string;
-};
-
 type CalendarProviderKey = "google" | "microsoft" | "apple";
 type SidebarPage =
   | "root"
@@ -87,6 +68,7 @@ type SidebarPage =
   | "eventContext";
 type EventSidebarMode = "owner" | "guest";
 type EventListPage = "myEvents" | "invitedEvents";
+type SubscriptionPlan = "freemium" | "free" | "monthly" | "yearly" | "FF" | null;
 type HistoryRow = {
   id: string;
   title: string;
@@ -131,114 +113,6 @@ const CALENDAR_TARGETS: Array<{
   { key: "apple", label: "Apple", Icon: CalendarIconApple },
   { key: "microsoft", label: "Outlook", Icon: CalendarIconOutlook },
 ];
-
-function SidebarAdUnit({ className }: SidebarAdUnitProps) {
-  const adRef = useRef<HTMLModElement | null>(null);
-  const [hasContent, setHasContent] = useState(false);
-  const [hidden, setHidden] = useState(false);
-
-  if (
-    ADS_DISABLED_BY_ENV ||
-    (typeof window !== "undefined" &&
-      LOCAL_AD_HOST_PATTERN.test(window.location.hostname))
-  ) {
-    return null;
-  }
-
-  useEffect(() => {
-    const node = adRef.current;
-    if (!node) return;
-
-    let hideTimer: number | null = null;
-    let cancelled = false;
-    let observer: MutationObserver | null = null;
-
-    const detectContent = () => {
-      const el = adRef.current;
-      if (!el) return false;
-      const populated =
-        el.childElementCount > 0 ||
-        !!el.querySelector("iframe") ||
-        el.getAttribute("data-ad-status") === "filled";
-      if (!cancelled) {
-        setHasContent(populated);
-      }
-      if (populated && hideTimer !== null) {
-        window.clearTimeout(hideTimer);
-        hideTimer = null;
-      }
-      return populated;
-    };
-
-    try {
-      const queue = (window.adsbygoogle = window.adsbygoogle || []);
-      queue.push({});
-    } catch (error) {
-      console.debug("[adsense] failed to enqueue ad", error);
-    }
-
-    detectContent();
-
-    if (typeof MutationObserver !== "undefined") {
-      observer = new MutationObserver(() => {
-        if (detectContent() && observer) {
-          observer.disconnect();
-          observer = null;
-        }
-      });
-      observer.observe(node, { childList: true, subtree: true });
-    }
-
-    hideTimer = window.setTimeout(() => {
-      if (!detectContent() && !cancelled) {
-        if (observer) {
-          observer.disconnect();
-          observer = null;
-        }
-        setHidden(true);
-      }
-    }, 4000);
-
-    return () => {
-      if (hideTimer !== null) {
-        window.clearTimeout(hideTimer);
-      }
-      if (observer) observer.disconnect();
-      cancelled = true;
-    };
-  }, []);
-
-  if (hidden) return null;
-
-  const containerClass = ["px-2", hasContent ? "py-2" : "py-0", className || ""]
-    .filter(Boolean)
-    .join(" ");
-
-  return (
-    <div className={containerClass}>
-      <ins
-        ref={adRef}
-        className="adsbygoogle"
-        style={{ display: "block" }}
-        data-ad-format="fluid"
-        data-ad-layout-key="-gw-3+1f-3d+2z"
-        data-ad-client={ADSENSE_CLIENT_ID}
-        data-ad-slot={ADSENSE_SLOT_SIDEBAR}
-      />
-    </div>
-  );
-}
-
-const CATEGORY_OPTIONS = [
-  "Birthdays",
-  "Weddings",
-  "Baby Showers",
-  "DR Appointments",
-  "Appointments",
-  "Sport Events",
-  "General Events",
-  "Car Pool",
-] as const;
 
 const CATEGORY_DEFAULT_COLOR_MAP: Record<string, string> = {
   Birthdays: "pink",
@@ -321,192 +195,6 @@ const ICON_LOOKUP: Record<string, any> = {
   "Special Events": Music,
 };
 
-type DraftsSectionProps = {
-  drafts: { id: string; title: string; created_at?: string; data?: any }[];
-  draftsCount: number;
-  collapseSidebarOnTouch: () => void;
-  onDeleteDraft: (id: string, title?: string) => void;
-  embedded?: boolean;
-};
-
-function DraftsSection({
-  drafts,
-  draftsCount,
-  collapseSidebarOnTouch,
-  onDeleteDraft,
-  embedded = false,
-}: DraftsSectionProps) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-
-  if (draftsCount === 0) {
-    return null;
-  }
-
-  const getDraftLabel = (row: {
-    id: string;
-    title: string;
-    created_at?: string;
-    data?: any;
-  }): string => {
-    const data: any = row.data || {};
-    const category = String(data.category || "")
-      .trim()
-      .toLowerCase();
-    const templateId: string =
-      (data.templateId as string | undefined) ||
-      (data.theme?.themeId as string | undefined) ||
-      "";
-
-    if (category.includes("wedding")) {
-      const templateNameMap: Record<string, string> = {
-        "ethereal-classic": "Ethereal Classic",
-        "modern-editorial": "Modern Editorial",
-        "rustic-boho": "Rustic Boho",
-        "cinematic-wedding": "Cinematic",
-        "celestial-wedding": "Celestial",
-        "gilded-wedding": "Gilded",
-        "museum-wedding": "Museum",
-        "ethereal-wedding": "Ethereal",
-        "noir-luxury": "Noir Luxury",
-        "retro-70s": "Retro 70s",
-      };
-      const templateName = templateNameMap[templateId] || "Wedding";
-      const names =
-        (data.partner1 && data.partner2
-          ? `${data.partner1} & ${data.partner2}`
-          : data.partner1 || data.partner2) || "";
-      if (names) {
-        return `${templateName} — ${names}`;
-      }
-      return `${templateName} (draft)`;
-    }
-
-    return (row.title || "Event") + " (draft)";
-  };
-
-  return (
-    <div
-      className={
-        embedded
-          ? "flex flex-col"
-          : `${SIDEBAR_ITEM_CARD_CLASS} flex flex-col px-4 py-3`
-      }
-    >
-      <button
-        type="button"
-        onClick={(event) => {
-          event.preventDefault();
-          setOpen((prev) => !prev);
-        }}
-        className={
-          embedded
-            ? "w-full flex items-center justify-between gap-2 px-2.5 py-2.5 text-left text-sm font-medium text-[#3e315c] bg-[#f1f3f5] hover:bg-[#e9edf2] transition-all duration-150"
-            : "flex items-center justify-between gap-3 text-sm md:text-base font-semibold text-[#2f1d47]"
-        }
-      >
-        <span>Drafts</span>
-        <div className="flex items-center gap-2">
-          <span
-            className={
-              embedded
-                ? "inline-flex items-center px-1.5 py-0.5 text-[10px] rounded-full border border-border bg-surface/60 text-foreground/80"
-                : SIDEBAR_BADGE_CLASS
-            }
-          >
-            {draftsCount}
-          </span>
-          {embedded && (
-            <span
-              className="inline-flex items-center justify-center h-5 w-5 rounded-[4px] border border-[#d1d5db] bg-[#e5e7eb]"
-              aria-hidden="true"
-              title="Draft color"
-            />
-          )}
-        </div>
-      </button>
-      {open && (
-        <div
-          className={embedded ? "border-t border-[#eee7ff]" : "mt-2 space-y-1"}
-        >
-          {drafts.map((row) => {
-            const href = resolveEditHref(
-              row.id,
-              row.data,
-              row.title || "Event"
-            );
-            const dateStr =
-              (row.data && (row.data.startISO || row.data.start)) ||
-              row.created_at ||
-              null;
-            const formattedDate = dateStr
-              ? new Date(dateStr).toLocaleDateString()
-              : "";
-            return (
-              <div
-                key={row.id}
-                onClick={(event) => {
-                  event.preventDefault();
-                  collapseSidebarOnTouch();
-                  router.push(href);
-                }}
-                className={
-                  embedded
-                    ? "w-full flex items-center justify-between gap-2 px-2.5 py-2 text-sm text-[#3e315c] bg-[#f1f3f5] hover:bg-[#e9edf2] cursor-pointer border-b border-[#e5e7eb] last:border-b-0"
-                    : "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-xs md:text-sm text-foreground/80 bg-[#f1f3f5] hover:bg-[#e9edf2] cursor-pointer"
-                }
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="truncate">{getDraftLabel(row)}</div>
-                  {formattedDate && (
-                    <div
-                      className={
-                        embedded
-                          ? "text-[11px] text-foreground/50"
-                          : "text-[10px] text-foreground/50"
-                      }
-                    >
-                      {formattedDate}
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  aria-label="Delete draft"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onDeleteDraft(row.id, row.title);
-                  }}
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-foreground/60 hover:bg-red-50 hover:text-red-500"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-3.5 w-3.5"
-                    aria-hidden="true"
-                  >
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14H6L5 6" />
-                    <path d="M10 11v6" />
-                    <path d="M14 11v6" />
-                    <path d="M9 6V4h6v2" />
-                  </svg>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // TEMPLATE_LINKS now imported from TopNav.tsx (shared menu)
 
 const SIDEBAR_GRADIENT =
@@ -515,12 +203,6 @@ const SIDEBAR_CARD_CLASS =
   "rounded-3xl border border-white/60 bg-white/80 shadow-[0_25px_60px_rgba(101,67,145,0.18)] backdrop-blur-2xl";
 const SIDEBAR_ITEM_CARD_CLASS =
   "rounded-2xl border border-white/60 bg-white/80 shadow-[0_18px_40px_rgba(81,54,123,0.15)] backdrop-blur-xl transition hover:shadow-[0_22px_55px_rgba(81,54,123,0.25)] hover:-translate-y-0.5";
-const SIDEBAR_TAG_CLASS =
-  "inline-flex items-center justify-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[10px] md:text-xs md:text-sm font-semibold tracking-[0.4em] text-[#a08ac6]";
-const SIDEBAR_PRIMARY_PILL_CLASS =
-  "inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#8468ff] via-[#a66cff] to-[#ff9ad5] px-4 py-2 text-sm md:text-base font-semibold text-white shadow-[0_18px_38px_rgba(132,104,255,0.55)] transition hover:shadow-[0_22px_48px_rgba(132,104,255,0.65)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80";
-const SIDEBAR_SECONDARY_PILL_CLASS =
-  "inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/70 bg-white/85 px-4 py-2 text-sm md:text-base font-semibold text-[#5b3d73] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6c5ff]";
 const SIDEBAR_BADGE_CLASS =
   "inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner";
 const SIDEBAR_WIDTH_REM = "20rem";
@@ -541,7 +223,6 @@ export default function LeftSidebar() {
       profileEmailRef.current = profileEmail;
     }
   }, [profileEmail]);
-  const { theme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -549,17 +230,6 @@ export default function LeftSidebar() {
   const isEventPageWithEditSidebar = Boolean(
     pathname?.startsWith("/event/") && searchParams?.get("edit")
   );
-  // When building a Smart sign-up, hide Rename/Change actions to avoid confusing edits
-  const hideRenameAndChange = (() => {
-    try {
-      const p = String(pathname || "");
-      return (
-        p.startsWith("/smart-signup-form") || p.startsWith("/templates/signup")
-      );
-    } catch {
-      return false;
-    }
-  })();
   const [menuOpen, setMenuOpen] = useState(false);
   const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
@@ -640,24 +310,12 @@ export default function LeftSidebar() {
     },
     [fetchConnectedCalendars]
   );
-  const [itemMenuId, setItemMenuId] = useState<string | null>(null);
-  const [itemMenuPos, setItemMenuPos] = useState<{
-    left: number;
-    top: number;
-  } | null>(null);
-  const [itemMenuOpensUpward, setItemMenuOpensUpward] = useState(false);
-  const [itemMenuCategoryOpenFor, setItemMenuCategoryOpenFor] = useState<
-    string | null
-  >(null);
-  const [itemMenuScope, setItemMenuScope] = useState<string | null>(null);
 
   const {
     isCollapsed,
     setIsCollapsed,
-    toggleSidebar,
     selectedEventId,
     setSelectedEventId,
-    selectedEventTitle,
     setSelectedEventTitle,
     selectedEventHref,
     setSelectedEventHref,
@@ -688,20 +346,13 @@ export default function LeftSidebar() {
     ? "pointer-events-auto"
     : "pointer-events-none";
   const isEventMenuActive = Boolean(selectedEventId);
-  const overflowClass = isCompact
-    ? "overflow-hidden"
-    : isEventMenuActive
-    ? "overflow-hidden"
-    : isDesktop || isOpen
-    ? "overflow-visible"
-    : "overflow-hidden";
+  const overflowClass = "overflow-hidden";
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const lastSidebarOpenAtRef = useRef(0);
   const openedFromTouchRef = useRef(false);
   const asideRef = useRef<HTMLDivElement | null>(null);
-  const categoriesRef = useRef<HTMLDivElement | null>(null);
   const eventSidebarRef = useRef<HTMLDivElement | null>(null);
   const invitedNavigationPendingRef = useRef(false);
   const prevSidebarPageRef = useRef<SidebarPage>("root");
@@ -836,48 +487,9 @@ export default function LeftSidebar() {
     };
   }, [menuOpen]);
 
-  useEffect(() => {
-    const onDocClick = (e: Event) => {
-      try {
-        const target = e.target as Element | null;
-        // If click is inside the open item's container OR the menu popover itself, ignore
-        const itemEl = target?.closest(
-          "[data-history-item]"
-        ) as HTMLElement | null;
-        const inSameItem =
-          itemEl && itemEl.getAttribute("data-history-item") === itemMenuId;
-        const inMenuPopover = (target as HTMLElement | null)?.closest(
-          "[data-popover=item-menu]"
-        );
-        if (inSameItem || inMenuPopover) return;
-      } catch {}
-      setItemMenuId(null);
-      setItemMenuOpensUpward(false);
-      setItemMenuPos(null);
-      setItemMenuCategoryOpenFor(null);
-    };
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setItemMenuId(null);
-        setItemMenuOpensUpward(false);
-        setItemMenuPos(null);
-        setItemMenuCategoryOpenFor(null);
-      }
-    };
-    document.addEventListener("click", onDocClick);
-    document.addEventListener("keydown", onEsc);
-    return () => {
-      document.removeEventListener("click", onDocClick);
-      document.removeEventListener("keydown", onEsc);
-    };
-  }, [itemMenuId]);
-
   // Always close menus on route change so navigation from a menu item hides the dropdowns.
   useEffect(() => {
     setMenuOpen(false);
-    setItemMenuId(null);
-    setItemMenuPos(null);
-    setItemMenuCategoryOpenFor(null);
     // On small screens, auto-collapse the sidebar after navigation, unless the
     // user just selected an event and is in Event Menu context.
     try {
@@ -971,27 +583,16 @@ export default function LeftSidebar() {
     "User";
   const userEmail = session?.user?.email as string | undefined;
   // Deprecated scanCredits removed; use unified credits state
-  const [subscriptionPlan, setSubscriptionPlan] = useState<
-    "freemium" | "free" | "monthly" | "yearly" | "FF" | null
-  >(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(
     Boolean((session?.user as any)?.isAdmin)
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
-  const [isClientLoaded, setIsClientLoaded] = useState(false);
-  useEffect(() => {
-    setIsClientLoaded(true);
-  }, []);
 
   useEffect(() => {
     let ignore = false;
 
-    const applyProfile = (
-      plan: typeof subscriptionPlan,
-      creditsValue: number | null
-    ) => {
-      setSubscriptionPlan(plan);
+    const applyProfile = (plan: SubscriptionPlan, creditsValue: number | null) => {
       setCredits(plan === "FF" ? Infinity : creditsValue);
     };
 
@@ -1066,7 +667,6 @@ export default function LeftSidebar() {
       clearProfileCache(profileEmailRef.current || profileEmail);
       profileEmailRef.current = null;
       setProfileLoaded(true);
-      setSubscriptionPlan(null);
       setCredits(null);
     }
     return () => {
@@ -1084,8 +684,7 @@ export default function LeftSidebar() {
     profileLoaded && typeof credits === "number" && credits >= 0;
   const creditsValue =
     typeof credits === "number" && credits >= 0 ? credits : 0;
-  const shouldBlockNewSnap = () => false;
-  const collapseSidebarOnTouch = () => {
+  const collapseSidebarOnTouch = useCallback(() => {
     try {
       const isTouch =
         typeof window !== "undefined" &&
@@ -1093,7 +692,7 @@ export default function LeftSidebar() {
         window.matchMedia("(hover: none), (pointer: coarse)").matches;
       if (isTouch) setIsCollapsed(true);
     } catch {}
-  };
+  }, [setIsCollapsed]);
   const triggerCreateEvent = () => {
     collapseSidebarOnTouch();
     try {
@@ -1107,22 +706,6 @@ export default function LeftSidebar() {
       return;
     } catch {}
     triggerCreateEvent();
-  };
-  const handleSnapShortcutClick = (
-    event: ReactMouseEvent<HTMLElement>,
-    mode: "camera" | "upload"
-  ) => {
-    const win = window as any;
-    const fn = mode === "camera" ? win.__openSnapCamera : win.__openSnapUpload;
-    event.preventDefault();
-    collapseSidebarOnTouch();
-    try {
-      if (typeof fn === "function") {
-        fn();
-        return;
-      }
-    } catch {}
-    openSnapFromSidebar(mode);
   };
 
   const launchSnapFromMenu = (mode: "camera" | "upload") => {
@@ -1191,38 +774,7 @@ export default function LeftSidebar() {
     [createMenuItems]
   );
 
-  const profileMenuItemClass =
-    "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-foreground/90 transition duration-150 ease-out transform hover:text-foreground hover:bg-surface/80 active:bg-surface/60 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30";
-  const isDark = theme === "dark";
-  const initials = (() => {
-    const base =
-      (session?.user?.name as string) ||
-      (session?.user?.email as string) ||
-      "User";
-    const parts = base.trim().split(/\s+/).filter(Boolean);
-    const first = parts[0]?.[0] || base[0] || "U";
-    const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-    return (first + last).toUpperCase();
-  })();
-
   const [history, setHistory] = useState<HistoryRow[]>([]);
-  const drafts = useMemo(() => {
-    const byId = new Map<
-      string,
-      { id: string; title: string; created_at?: string; data?: any }
-    >();
-    for (const row of history) {
-      if (!row || typeof row !== "object") continue;
-      const data: any = row.data || {};
-      const status = String(data.status || "").toLowerCase();
-      if (status !== "draft" || isInvitedHistoryEvent(data)) continue;
-      if (!byId.has(row.id)) {
-        byId.set(row.id, row);
-      }
-    }
-    return Array.from(byId.values());
-  }, [history]);
-  const draftsCount = drafts.length;
   const isActiveEventRow = useCallback((row: HistoryRow) => {
     if (!row || typeof row !== "object") return false;
     const data: any = row?.data;
@@ -1457,17 +1009,6 @@ export default function LeftSidebar() {
     return null;
   };
 
-  const predefinedCategories = [
-    "Birthdays",
-    "Doctor Appointments",
-    "Appointments",
-    "Weddings",
-    "Baby Showers",
-    "Sport Events",
-    "Play Days",
-    "Car Pool",
-  ];
-
   useEffect(() => {
     // Load stored colors once
     try {
@@ -1549,35 +1090,6 @@ export default function LeftSidebar() {
       });
     } catch {}
   }, [history]);
-
-  const cycleCategoryColor = (category: string) => {
-    const palette = [
-      // 16 distinct hues
-      "red",
-      "orange",
-      "amber",
-      "yellow",
-      "lime",
-      "green",
-      "emerald",
-      "teal",
-      "cyan",
-      "sky",
-      "blue",
-      "indigo",
-      "violet",
-      "purple",
-      "fuchsia",
-      "pink",
-    ];
-    setCategoryColors((prev) => {
-      const current = prev[category] || defaultCategoryColor(category);
-      const idx = palette.indexOf(current);
-      const nextColor = palette[(idx + 1) % palette.length];
-      const next = { ...prev, [category]: nextColor };
-      return next;
-    });
-  };
 
   const colorClasses = (
     color: string
@@ -1938,32 +1450,6 @@ export default function LeftSidebar() {
   const myEventsGrouped = groupedEventLists.myEvents;
   const invitedEventsGrouped = groupedEventLists.invitedEvents;
 
-  const recentAdIndex = useMemo<number | null>(() => {
-    if (!history || history.length <= 1) return null;
-    const choice = Math.random() < 0.5 ? 1 : 2;
-    return Math.min(history.length - 1, choice);
-  }, [history.length]);
-
-  const categoryAdPositions = useMemo<Map<string, number | null>>(() => {
-    const counts = new Map<string, number>();
-    for (const row of history) {
-      const category = (row as any)?.data?.category as string | null;
-      if (!category) continue;
-      if (category.trim().toLowerCase() === "shared events") continue;
-      counts.set(category, (counts.get(category) ?? 0) + 1);
-    }
-    const map = new Map<string, number | null>();
-    counts.forEach((count, category) => {
-      if (count <= 1) {
-        map.set(category, null);
-        return;
-      }
-      const choice = Math.random() < 0.5 ? 1 : 2;
-      map.set(category, Math.min(count - 1, choice));
-    });
-    return map;
-  }, [history]);
-
   // Shared Events gradient palette (8 options)
   const SHARED_GRADIENTS: {
     id: string;
@@ -2027,20 +1513,6 @@ export default function LeftSidebar() {
     return exists ? (val as string) : "shared-g1";
   };
 
-  const sharedGradientRowClass = (): string => {
-    const id = getSharedGradientId();
-    const found = SHARED_GRADIENTS.find((g) => g.id === id);
-    if (!found) {
-      return theme === "dark"
-        ? SHARED_GRADIENTS[0].darkRow
-        : SHARED_GRADIENTS[0].lightRow;
-    }
-    return theme === "dark" ? found.darkRow : found.lightRow;
-  };
-
-  const sharedTextClass = "text-neutral-900 dark:text-foreground";
-  const sharedMutedTextClass = "text-neutral-600 dark:text-foreground/70";
-
   // Smart sign-up gradient palette — reuse Shared Events palette to keep it simple
   const SIGNUP_GRADIENTS: {
     id: string;
@@ -2055,43 +1527,11 @@ export default function LeftSidebar() {
     return exists ? (val as string) : "shared-g1";
   };
 
-  const signupGradientRowClass = (): string => {
-    const id = getSignupGradientId();
-    const found = SIGNUP_GRADIENTS.find((g) => g.id === id);
-    if (!found) {
-      return theme === "dark"
-        ? SIGNUP_GRADIENTS[0].darkRow
-        : SIGNUP_GRADIENTS[0].lightRow;
-    }
-    return theme === "dark" ? found.darkRow : found.lightRow;
-  };
-
-  const signupGradientSwatchClass = (): string => {
-    const id = getSignupGradientId();
-    const found = SIGNUP_GRADIENTS.find((g) => g.id === id);
-    return found?.swatch || SIGNUP_GRADIENTS[0].swatch;
-  };
-
   // Item-specific Smart sign-up color helpers
   const getSignupItemGradientId = (historyId: string): string => {
     const val = signupItemColors[historyId];
     const exists = SIGNUP_GRADIENTS.some((g) => g.id === val);
     return exists ? (val as string) : getSignupGradientId();
-  };
-  const signupItemGradientRowClass = (historyId: string): string => {
-    const id = getSignupItemGradientId(historyId);
-    const found = SIGNUP_GRADIENTS.find((g) => g.id === id);
-    if (!found) {
-      return theme === "dark"
-        ? SIGNUP_GRADIENTS[0].darkRow
-        : SIGNUP_GRADIENTS[0].lightRow;
-    }
-    return theme === "dark" ? found.darkRow : found.lightRow;
-  };
-  const signupItemGradientSwatchClass = (historyId: string): string => {
-    const id = getSignupItemGradientId(historyId);
-    const found = SIGNUP_GRADIENTS.find((g) => g.id === id);
-    return found?.swatch || SIGNUP_GRADIENTS[0].swatch;
   };
 
   const setSignupItemColor = (historyId: string, color: string) => {
@@ -2099,12 +1539,6 @@ export default function LeftSidebar() {
     setSignupItemColors((prev) => ({ ...prev, [historyId]: color }));
     setColorMenuFor(null);
     setColorMenuPos(null);
-  };
-
-  const sharedGradientSwatchClass = (): string => {
-    const id = getSharedGradientId();
-    const found = SHARED_GRADIENTS.find((g) => g.id === id);
-    return found?.swatch || SHARED_GRADIENTS[0].swatch;
   };
 
   const persistCategoryColors = async (map: Record<string, string>) => {
@@ -2412,18 +1846,6 @@ export default function LeftSidebar() {
     };
   }, [clearEventContext, selectedEventId, status]);
 
-  const shareHistoryItem = useCallback(async (prettyHref: string) => {
-    try {
-      const url = new URL(prettyHref, window.location.origin).toString();
-      if ((navigator as any).share) {
-        await (navigator as any).share({ title: "Envitefy", url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        alert("Link copied to clipboard");
-      }
-    } catch {}
-  }, []);
-
   const buildEventOwnerHref = useCallback(
     (
       baseHref: string | null | undefined,
@@ -2578,337 +2000,12 @@ export default function LeftSidebar() {
     setSidebarPage(eventContextSourcePage);
   }, [clearEventContext, eventContextSourcePage]);
 
-  const renameHistoryItem = async (id: string, currentTitle: string) => {
-    const next = prompt("Rename event", currentTitle || "");
-    if (next == null) return; // cancelled
-    const title = next.trim();
-    if (!title) return;
-    try {
-      await fetch(`/api/history/${id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-      setHistory((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, title } : r))
-      );
-    } catch {}
-  };
-
-  const deleteHistoryItem = async (id: string, title?: string) => {
-    const ok = confirm(
-      `Are you sure you want to delete this event?\n\n${
-        title || "Untitled event"
-      }`
-    );
-    if (!ok) return;
-    try {
-      const response = await fetch(`/api/history/${id}`, { method: "DELETE" });
-      if (!response.ok) {
-        throw new Error("Failed to delete event");
-      }
-      setHistory((prev) => prev.filter((r) => r.id !== id));
-      if (selectedEventId === id) {
-        clearEventContext();
-      }
-      // Notify other views (e.g., calendar) to remove events for this history id
-      try {
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("history:deleted", { detail: { id } })
-          );
-        }
-      } catch {}
-      // If the user is currently viewing this event, navigate back to home
-      try {
-        const currentPath =
-          typeof window !== "undefined" ? window.location.pathname : pathname;
-        if (
-          currentPath &&
-          (currentPath === `/event/${id}` ||
-            currentPath.startsWith(`/event/${id}/`) ||
-            currentPath === `/smart-signup-form/${id}` ||
-            currentPath.startsWith(`/smart-signup-form/${id}/`) ||
-            currentPath.endsWith(`-${id}`))
-        ) {
-          router.replace("/");
-          router.refresh();
-        }
-      } catch {}
-    } catch {}
-  };
-
-  const MenuItems = (props: { onCloseMenu: () => void; isAdmin: boolean }) => {
-    const { onCloseMenu, isAdmin } = props;
-    return (
-      <div className="p-2">
-        <Link
-          href="/settings"
-          onClick={onCloseMenu}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="7" r="4" />
-            <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-          </svg>
-          <span className="text-sm md:text-base">Profile</span>
-        </Link>
-
-        <Link
-          href="/calendar"
-          onClick={onCloseMenu}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          <span className="text-sm md:text-base">Calendar</span>
-        </Link>
-
-        <Link
-          href="/about"
-          onClick={onCloseMenu}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-          </svg>
-          <span className="text-sm md:text-base">About us</span>
-        </Link>
-
-        <Link
-          href="/contact"
-          onClick={onCloseMenu}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-        >
-          <svg
-            fill="currentColor"
-            viewBox="0 0 492.014 492.014"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <path d="M339.277,459.566H34.922V32.446h304.354v105.873l32.446-32.447V16.223C371.723,7.264,364.458,0,355.5,0 H18.699C9.739,0,2.473,7.264,2.473,16.223v459.568c0,8.959,7.265,16.223,16.226,16.223H355.5c8.958,0,16.223-7.264,16.223-16.223 V297.268l-32.446,32.447V459.566z" />
-            <path d="M291.446,71.359H82.751c-6.843,0-12.396,5.553-12.396,12.398c0,6.844,5.553,12.397,12.396,12.397h208.694 c6.845,0,12.397-5.553,12.397-12.397C303.843,76.912,298.29,71.359,291.446,71.359z" />
-            <path d="M303.843,149.876c0-6.844-5.553-12.398-12.397-12.398H82.751c-6.843,0-12.396,5.554-12.396,12.398 c0,6.845,5.553,12.398,12.396,12.398h208.694C298.29,162.274,303.843,156.722,303.843,149.876z" />
-            <path d="M274.004,203.6H82.751c-6.843,0-12.396,5.554-12.396,12.398c0,6.845,5.553,12.397,12.396,12.397h166.457 L274.004,203.6z" />
-            <path d="M204.655,285.79c1.678-5.618,4.076-11.001,6.997-16.07h-128.9c-6.843,0-12.396,5.553-12.396,12.398 c0,6.844,5.553,12.398,12.396,12.398h119.304L204.655,285.79z" />
-            <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
-            <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
-          </svg>
-          <span className="text-sm md:text-base">Contact us</span>
-        </Link>
-
-        <div className="mt-1 relative">
-          <button
-            type="button"
-            onClick={() => {
-              setCalendarsOpenFloating((v) => !v);
-            }}
-            className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-          >
-            <div className="flex items-center gap-3">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              <span className="text-sm md:text-base">Calendars</span>
-            </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`h-4 w-4 transition-transform ${
-                calendarsOpenFloating ? "rotate-0" : "rotate-90"
-              }`}
-              aria-hidden="true"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-          {calendarsOpenFloating && (
-            <div className="mt-2 px-3 pb-2 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
-                  Connection status
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                {CALENDAR_TARGETS.map(({ key, label, Icon }) => {
-                  const active = connectedCalendars[key];
-                  return (
-                    <div
-                      key={key}
-                      className={`flex flex-col items-center gap-1 text-[11px] ${
-                        active ? "text-[#4b3f72]" : "text-[#8f86b3]"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        aria-pressed={active}
-                        title={
-                          active
-                            ? `${label} calendar connected`
-                            : `Connect ${label} calendar`
-                        }
-                        className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
-                          active
-                            ? "border-[#b9a7ea] bg-[#f7f3ff] hover:border-[#a892e3] shadow-[0_6px_16px_rgba(119,92,191,0.22)] ring-1 ring-[#d8ccf6]"
-                            : "border-[#ddd3f5] bg-white hover:border-[#c7b7ee] hover:bg-[#f8f5ff]"
-                        }`}
-                        onClick={() => handleCalendarConnect(key)}
-                      >
-                        <Icon
-                          className={`h-4 w-4 ${
-                            active ? "text-[#5a4699]" : "text-[#8677b4]"
-                          }`}
-                        />
-                        {active && (
-                          <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#7c67be] flex items-center justify-center border-2 border-white shadow-sm">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 12 12"
-                              fill="none"
-                              className="h-2.5 w-2.5 text-white"
-                            >
-                              <path
-                                d="M10 3L4.5 8.5L2 6"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                      <span>{label}</span>
-                      {active ? (
-                        <span className="rounded-full bg-[#efe9ff] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#5a4699]">
-                          Connected
-                        </span>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-              {!connectedCalendars.google &&
-                !connectedCalendars.apple &&
-                !connectedCalendars.microsoft && (
-                  <p className="text-[11px] text-[#8f86b3]">
-                    Connect calendars from Settings to sync events in one tap.
-                  </p>
-                )}
-            </div>
-          )}
-        </div>
-
-        {isAdmin && (
-          <>
-            <Link
-              href="/admin"
-              onClick={onCloseMenu}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground/90 hover:text-foreground hover:bg-surface"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              <span className="text-sm md:text-base">Admin</span>
-            </Link>
-          </>
-        )}
-
-        <button
-          onClick={() => signOut({ callbackUrl: "/" })}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          <span className="text-sm md:text-base">Log out</span>
-        </button>
-      </div>
-    );
-  };
-
   if (status !== "authenticated") return null;
   // Avoid SSR/client mismatch by rendering sidebar only after hydration
   if (!isHydrated) return null;
 
   const panelTransitionStyle: CSSProperties = {
-    transition: "transform 240ms ease-in-out",
+    transition: "transform 240ms ease-in-out, opacity 180ms ease-in-out",
   };
   const rootPanelTransform =
     sidebarPage === "root" ? "translateX(0%)" : "translateX(-100%)";
@@ -2929,6 +2026,12 @@ export default function LeftSidebar() {
       : "translateX(100%)";
   const eventPanelTransform =
     sidebarPage === "eventContext" ? "translateX(0%)" : "translateX(100%)";
+  const panelStyle = (transform: string, isActive: boolean): CSSProperties => ({
+    ...panelTransitionStyle,
+    transform,
+    pointerEvents: isActive ? "auto" : "none",
+    opacity: isActive ? 1 : 0,
+  });
 
   return (
     <>
@@ -3200,11 +2303,7 @@ export default function LeftSidebar() {
                 <div className="relative mt-3 min-h-0 flex-1 overflow-hidden">
                   <div
                     className="absolute inset-0 z-[5] overflow-y-auto no-scrollbar px-4 pb-5"
-                    style={{
-                      ...panelTransitionStyle,
-                      transform: rootPanelTransform,
-                      pointerEvents: sidebarPage === "root" ? "auto" : "none",
-                    }}
+                    style={panelStyle(rootPanelTransform, sidebarPage === "root")}
                     aria-hidden={sidebarPage !== "root"}
                   >
                     <div className="space-y-3">
@@ -3277,12 +2376,10 @@ export default function LeftSidebar() {
 
                   <div
                     className="absolute inset-0 z-[10] overflow-y-auto no-scrollbar px-4 pb-5"
-                    style={{
-                      ...panelTransitionStyle,
-                      transform: createEventPanelTransform,
-                      pointerEvents:
-                        sidebarPage === "createEvent" ? "auto" : "none",
-                    }}
+                    style={panelStyle(
+                      createEventPanelTransform,
+                      sidebarPage === "createEvent"
+                    )}
                     aria-hidden={sidebarPage !== "createEvent"}
                   >
                     <div className="space-y-3">
@@ -3337,12 +2434,10 @@ export default function LeftSidebar() {
 
                   <div
                     className="absolute inset-0 z-[15] overflow-y-auto no-scrollbar px-4 pb-5"
-                    style={{
-                      ...panelTransitionStyle,
-                      transform: myEventsPanelTransform,
-                      pointerEvents:
-                        sidebarPage === "myEvents" ? "auto" : "none",
-                    }}
+                    style={panelStyle(
+                      myEventsPanelTransform,
+                      sidebarPage === "myEvents"
+                    )}
                     aria-hidden={sidebarPage !== "myEvents"}
                   >
                     <div className="space-y-3">
@@ -3507,12 +2602,10 @@ export default function LeftSidebar() {
 
                   <div
                     className="absolute inset-0 z-[20] overflow-y-auto no-scrollbar px-4 pb-5 bg-[#f6f3ff]"
-                    style={{
-                      ...panelTransitionStyle,
-                      transform: invitedEventsPanelTransform,
-                      pointerEvents:
-                        sidebarPage === "invitedEvents" ? "auto" : "none",
-                    }}
+                    style={panelStyle(
+                      invitedEventsPanelTransform,
+                      sidebarPage === "invitedEvents"
+                    )}
                     aria-hidden={sidebarPage !== "invitedEvents"}
                   >
                     <div className="space-y-3">
@@ -3685,12 +2778,10 @@ export default function LeftSidebar() {
 
                   <div
                     className="absolute inset-0 z-[30] overflow-hidden bg-[#f6f3ff]"
-                    style={{
-                      ...panelTransitionStyle,
-                      transform: eventPanelTransform,
-                      pointerEvents:
-                        sidebarPage === "eventContext" ? "auto" : "none",
-                    }}
+                    style={panelStyle(
+                      eventPanelTransform,
+                      sidebarPage === "eventContext"
+                    )}
                     aria-hidden={sidebarPage !== "eventContext"}
                   >
                     <EventSidebar

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import React, { useEffect, useReducer, useRef, useState } from "react";
 import { MoreOptions } from "./MoreOptions";
 import { PalettePickerGrid } from "./PalettePickerGrid";
 import { TitleFontSelect } from "./TitleFontSelect";
@@ -138,16 +138,6 @@ export default function DesignPanelSimple({
     onTitleFontChangeRef.current?.(state.history.present.titleFont);
   }, [state.history.present, previewRootSelector]);
 
-  const swatches = useMemo(
-    () => [
-      { label: "Background", value: state.history.present.bg },
-      { label: "Primary", value: state.history.present.primary },
-      { label: "Accent", value: state.history.present.accent },
-      { label: "Button", value: state.history.present.buttonBg },
-    ],
-    [state.history.present]
-  );
-
   return (
     <div className={`space-y-3 ${className || ""}`}>
       <section className="rounded-xl border border-slate-200 bg-white p-4">
@@ -202,36 +192,6 @@ export default function DesignPanelSimple({
           />
           <p className="text-[11px] text-slate-400">Only affects page title.</p>
         </div>
-
-        <div className="mt-4">
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Live Swatches</p>
-          <div className="grid grid-cols-4 gap-2">
-            {swatches.map((swatch) => (
-              <div key={swatch.label} className="space-y-1">
-                <div
-                  className="h-8 rounded-md border border-slate-200"
-                  style={{ background: swatch.value }}
-                />
-                <p className="text-[10px] text-slate-500">{swatch.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            const name = window.prompt("Preset name", "My quick style")?.trim();
-            if (!name) return;
-            window.localStorage.setItem(
-              `design-preset:${name}`,
-              exportThemeJson(state.history.present)
-            );
-          }}
-          className="mt-4 text-xs font-semibold text-slate-600 underline underline-offset-2"
-        >
-          Create preset from current
-        </button>
 
         {state.adjustedHint ? (
           <p className="mt-2 text-xs text-slate-500">Adjusted for readability.</p>

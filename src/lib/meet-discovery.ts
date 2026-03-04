@@ -321,18 +321,45 @@ function cleanExtractedText(text: string): string {
     .trim();
 }
 
+function looksLikePdfInternals(text: string): boolean {
+  const sample = cleanExtractedText(text).slice(0, 24000);
+  if (!sample) return false;
+  if (/%PDF-\d\.\d/i.test(sample)) return true;
+  const pdfKeywords =
+    sample.match(
+      /\b(?:obj|endobj|stream|endstream|xref|trailer|startxref|catalog|mediabox|fontdescriptor|flatedecode)\b/gi
+    ) || [];
+  const slashDirectives = sample.match(/\/[A-Za-z][A-Za-z0-9]+/g) || [];
+  return pdfKeywords.length >= 8 || slashDirectives.length >= 60;
+}
+
 function isLikelyReadableText(text: string): boolean {
   const candidate = cleanExtractedText(text);
   if (!candidate || candidate.length < 120) return false;
+  if (looksLikePdfInternals(candidate)) return false;
   const sample = candidate.slice(0, 5000);
   const controlChars = (sample.match(/[\u0000-\u001F\u007F-\u009F]/g) || []).length;
   const tokens = candidate.split(/\s+/).filter(Boolean);
   const englishLikeTokens = tokens.filter((token) =>
     /^[A-Za-z][A-Za-z'’-]{1,24}$/.test(token)
   ).length;
+  const longTokens = tokens.filter((token) => token.length > 35).length;
+  const nonTextChars = (sample.match(/[^A-Za-z0-9\s.,:;!?()'"&@#%/\-]/g) || []).length;
+  const readableLines = candidate
+    .split(/\n+/)
+    .filter((line) => (line.match(/[A-Za-z]{3,}/g) || []).length >= 3).length;
   const controlRatio = controlChars / Math.max(sample.length, 1);
   const englishLikeRatio = englishLikeTokens / Math.max(tokens.length, 1);
-  return controlRatio < 0.02 && englishLikeRatio > 0.25 && tokens.length > 30;
+  const longTokenRatio = longTokens / Math.max(tokens.length, 1);
+  const nonTextRatio = nonTextChars / Math.max(sample.length, 1);
+  return (
+    controlRatio < 0.02 &&
+    englishLikeRatio > 0.25 &&
+    longTokenRatio < 0.08 &&
+    nonTextRatio < 0.12 &&
+    readableLines >= 4 &&
+    tokens.length > 30
+  );
 }
 
 async function extractPdfTextWithNodeWorker(buffer: Buffer): Promise<string> {
@@ -360,7 +387,33 @@ const { PDFParse } = require("pdf-parse");
     });
     const payload = JSON.parse(stdout || "{}");
     return cleanExtractedText(String(payload?.text || ""));
-  } catch {
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : typeof err === "string" ? err : String(err || "");
+    console.warn("[meet-discovery] pdf-parse worker failed", {
+      message,
+    });
+    try {
+      const mod = await import("pdf-parse");
+      const PDFParseCtor =
+        typeof mod?.PDFParse === "function" ? mod.PDFParse : null;
+      if (PDFParseCtor) {
+        const parser = new PDFParseCtor({ data: buffer });
+        const result = await parser.getText();
+        if (typeof parser.destroy === "function") await parser.destroy();
+        return cleanExtractedText(String(result?.text || ""));
+      }
+    } catch (fallbackErr: unknown) {
+      const fallbackMessage =
+        fallbackErr instanceof Error
+          ? fallbackErr.message
+          : typeof fallbackErr === "string"
+          ? fallbackErr
+          : String(fallbackErr || "");
+      console.warn("[meet-discovery] pdf-parse fallback failed", {
+        message: fallbackMessage,
+      });
+    }
     return "";
   } finally {
     if (tempDir) {
@@ -411,12 +464,22 @@ async function extractTextFromPdf(buffer: Buffer): Promise<{ text: string; usedO
   } catch {
     // final fallback below
   }
-  const ocrText = cleanExtractedText(await ocrBuffer(buffer));
-  if (ocrText.length > 0) {
-    return { text: ocrText, usedOcr: true };
+  try {
+    const ocrText = cleanExtractedText(await ocrBuffer(buffer));
+    if (ocrText.length > 0) {
+      return { text: ocrText, usedOcr: true };
+    }
+  } catch {
+    // Continue to safe fallback below.
   }
-  // Keep best-effort heuristic output rather than hard failing with empty text.
-  return { text: heuristicText, usedOcr: false };
+
+  // Final fallback: only return non-OCR text when quality checks pass.
+  const bestEffortText =
+    workerText.length >= heuristicText.length ? workerText : heuristicText;
+  if (bestEffortText.length >= LOW_TEXT_THRESHOLD && isLikelyReadableText(bestEffortText)) {
+    return { text: bestEffortText, usedOcr: false };
+  }
+  return { text: "", usedOcr: false };
 }
 
 async function extractTextFromImage(buffer: Buffer): Promise<string> {

@@ -21,7 +21,7 @@ const SPORTS_CARDS: SportsCard[] = [
     label: "Gymnastics Schedule",
     icon: "🤸",
     copy: "Detailed class times, location maps, and coach notes.",
-    href: "/event/gymnastics/customize",
+    href: "/event/gymnastics",
   },
   {
     label: "General Sports Event",
@@ -77,7 +77,7 @@ export function SportsPracticeHero({
         <div className="space-y-5 lg:max-w-3xl">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-[#0EA5E9] shadow-sm shadow-[#7DD3FC]">
             <Trophy className="h-3.5 w-3.5" />
-            Sports Season '25-'26
+            Sports Season 25-26
           </span>
         </div>
 

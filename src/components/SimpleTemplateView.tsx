@@ -3260,6 +3260,9 @@ export default function SimpleTemplateView({
     const headerDateChipClass = hasHeaderHero
       ? "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/35 text-white backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest mb-6"
       : "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[color:var(--chip-bg,#F8FAFC)] border border-[color:var(--chip-border,#D7DCE6)] text-[color:var(--chip-text,#2D1B4E)] text-[10px] font-bold uppercase tracking-widest mb-6";
+    const headerTitleStyle = hasHeaderHero
+      ? { color: "#F8FAFC", textShadow: "0 2px 10px rgba(0,0,0,0.6)" }
+      : undefined;
 
     return (
       <div
@@ -3303,6 +3306,7 @@ export default function SimpleTemplateView({
             <h2
               data-role="page-title"
               className={`text-4xl md:text-6xl font-black ${headerTitleClass} leading-[1.0] tracking-tight mb-6`}
+              style={headerTitleStyle}
             >
               {currentData?.eventTitle || eventTitle || "Gymnastics Meet"}
             </h2>

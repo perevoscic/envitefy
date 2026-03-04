@@ -1,5 +1,9 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
+import type { NextConfig } from "next";
+
+const nextConfig = (phase: string): NextConfig => ({
+  // Keep dev artifacts out of `.next` so `next build` doesn't race with `next dev`.
+  distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
   devIndicators: false,
   eslint: {
     ignoreDuringBuilds: true,
@@ -30,6 +34,6 @@ const nextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
     ],
   },
-};
+});
 
 export default nextConfig;
