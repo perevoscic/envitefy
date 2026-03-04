@@ -2993,26 +2993,24 @@ const config = {
     details:
       "Level 4-7 compulsory and optional competition. Athletes should arrive 90 minutes before session start for team warm-up. Parents are welcome to watch from the stands. Concessions available.",
     extra: {
-      team: "Northern Illinois Gymnastics",
-      season: "2025 Season",
-      coach: "Coach Maria Rivera",
-      assistantCoach: "Coach Jessica Thompson",
-      coachPhone: "(815) 555-0142",
+      team: "",
+      season: "",
+      coach: "",
+      assistantCoach: "",
+      coachPhone: "",
     },
   },
   detailFields: [
-    { key: "team", label: "Team", placeholder: "NIU Gymnastics" },
-    { key: "season", label: "Season", placeholder: "2025 Season" },
-    { key: "coach", label: "Head Coach", placeholder: "Coach Rivera" },
+    { key: "team", label: "Competing Team" },
+    { key: "season", label: "Season" },
+    { key: "coach", label: "Head Coach" },
     {
       key: "assistantCoach",
       label: "Assistant Coach",
-      placeholder: "Coach Thompson",
     },
     {
       key: "coachPhone",
       label: "Coach Contact",
-      placeholder: "(555) 123-4567",
     },
   ],
   themes: [

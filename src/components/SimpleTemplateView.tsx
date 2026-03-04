@@ -703,6 +703,19 @@ export default function SimpleTemplateView({
             "linear-gradient(165deg, #f8fafc 0%, #ffffff 52%, #eef2ff 100%)",
         }
     : undefined;
+  const heroGradientFallbackStyle =
+    paletteBackgroundStyle ||
+    (hasSimpleDesignTokens
+      ? {
+          backgroundColor: "var(--bg,#0b1220)",
+          backgroundImage:
+            "linear-gradient(115deg, var(--primary,#1f3a8a) 0%, #0b1220 52%, var(--accent,#7f1d1d) 100%)",
+        }
+      : {
+          backgroundColor: "#0b1220",
+          backgroundImage:
+            "linear-gradient(115deg, #1f3a8a 0%, #0b1220 52%, #7f1d1d 100%)",
+        });
   const headingFontFamily =
     simpleDesignTokens?.titleFont ||
     currentData?.fontFamily ||
@@ -2911,6 +2924,7 @@ export default function SimpleTemplateView({
     const isSourcePdf =
       /pdf/i.test(sourceMime) || /\.pdf$/i.test(sourceFileName);
     const eventDatesLabel =
+      customFields?.meetDateRangeLabel ||
       currentData?.discoverySource?.parseResult?.dates ||
       (date ? formatDate(date) : "");
     const warmupTimeLabel = formatTime(meet?.warmUpTime);
@@ -2935,6 +2949,29 @@ export default function SimpleTemplateView({
           .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
           .filter(Boolean)
       : [];
+    const extractionLayoutFacts = (
+      Array.isArray(
+        currentData?.discoverySource?.extractionMeta?.gymLayoutFacts
+      )
+        ? currentData.discoverySource.extractionMeta.gymLayoutFacts
+        : []
+    )
+      .map((line: any) => safeString(line))
+      .filter(Boolean);
+    const uniqueTextLines = (items: string[], limit = 20) => {
+      const seen = new Set<string>();
+      const out: string[] = [];
+      for (const item of items) {
+        const line = safeString(item);
+        if (!line) continue;
+        const key = line.toLowerCase().replace(/\s+/g, " ").trim();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(line);
+        if (out.length >= limit) break;
+      }
+      return out;
+    };
     const trafficText = safeString(
       logistics?.trafficAlerts || parseLogistics?.trafficAlerts
     );
@@ -3075,7 +3112,7 @@ export default function SimpleTemplateView({
       },
       []
     );
-    const meetDetailsLines = stitchedMeetDetails
+    const primaryMeetDetailsLines = stitchedMeetDetails
       .map((line) => line.trim())
       .filter((line) => line.length > 20)
       .filter((line) => {
@@ -3095,24 +3132,76 @@ export default function SimpleTemplateView({
         );
       })
       .slice(0, 12);
+    const meetDetailsFallbackLines = uniqueTextLines(
+      [
+        eventDatesLabel ? `Meet dates: ${eventDatesLabel}` : "",
+        safeString(parseMeetDetails?.doorsOpen)
+          ? `Doors open: ${safeString(parseMeetDetails.doorsOpen)}`
+          : "",
+        safeString(parseMeetDetails?.arrivalGuidance)
+          ? `Arrival guidance: ${safeString(parseMeetDetails.arrivalGuidance)}`
+          : "",
+        safeString(parseMeetDetails?.registrationInfo)
+          ? `Registration: ${safeString(parseMeetDetails.registrationInfo)}`
+          : "",
+        safeString(parseMeetDetails?.facilityLayout)
+          ? `Facility layout: ${safeString(parseMeetDetails.facilityLayout)}`
+          : "",
+        safeString(parseMeetDetails?.scoringInfo)
+          ? `Scoring: ${safeString(parseMeetDetails.scoringInfo)}`
+          : "",
+        ...(Array.isArray(parseMeetDetails?.operationalNotes)
+          ? parseMeetDetails.operationalNotes
+          : []),
+      ],
+      12
+    ).filter((line) => line.length > 10);
+    const meetDetailsLines =
+      primaryMeetDetailsLines.length > 0
+        ? primaryMeetDetailsLines
+        : meetDetailsFallbackLines;
     const rideShareNote =
       sourceLines.find((line) => rideSharePattern.test(line)) || "";
-    const facilityLinesFromSource = meetDetailsLines.filter(
+    const facilityLinesFromSource = primaryMeetDetailsLines.filter(
       (line) =>
         /(east|west|central|hall|registration|guest services|entrance|coffee bar|admission tickets|competition area)/i.test(
           line
         ) && !rideSharePattern.test(line)
     );
+    const facilityLinesFromFacts = uniqueTextLines(
+      [
+        ...extractionLayoutFacts,
+        ...(Array.isArray(parseMeetDetails?.operationalNotes)
+          ? parseMeetDetails.operationalNotes
+          : []),
+      ].filter((line) =>
+        /(east|west|central|hall|registration|guest services|entrance|coffee bar|competition area|awards area|gym\s*[a-f]|2nd floor|second floor|3rd floor|third floor|check-?in)/i.test(
+          safeString(line)
+        )
+      ),
+      14
+    );
+    const facilityLines = uniqueTextLines(
+      [...facilityLinesFromSource, ...facilityLinesFromFacts],
+      14
+    );
     const registrationDeskNote =
-      facilityLinesFromSource.find((line) =>
+      facilityLines.find((line) =>
         /(registration|guest services|2nd floor|second floor)/i.test(line)
       ) ||
       sourceLines.find((line) =>
         /(registration|guest services|2nd floor|second floor)/i.test(line)
       ) ||
+      extractionLayoutFacts.find((line) =>
+        /(registration|guest services|2nd floor|second floor)/i.test(line)
+      ) ||
       "";
     const awardsAreaNote =
+      facilityLines.find((line) => /(awards area|north side)/i.test(line)) ||
       sourceLines.find((line) => /(awards area|north side)/i.test(line)) ||
+      extractionLayoutFacts.find((line) =>
+        /(awards area|north side)/i.test(line)
+      ) ||
       (safeString(parseResult?.athlete?.awards)
         ? `Awards area: ${safeString(parseResult?.athlete?.awards)}.`
         : "");
@@ -3124,7 +3213,7 @@ export default function SimpleTemplateView({
     const venueDetailContains = (note: string) => {
       const normalizedNote = normalizeCompareText(note);
       if (!normalizedNote) return false;
-      return facilityLinesFromSource.some((line) => {
+      return facilityLines.some((line) => {
         const normalizedLine = normalizeCompareText(line);
         return (
           normalizedLine === normalizedNote ||
@@ -3159,44 +3248,14 @@ export default function SimpleTemplateView({
         ),
     ];
     const hasPolicyCards = policyNotes.some(Boolean);
-    const detailPairs = [
-      {
-        label: "Host Gym",
-        value: safeString(
-          currentData?.hostGym || parseResult?.hostGym || currentData?.venue
-        ),
-      },
-      {
-        label: "Team Level",
-        value: [
-          safeString(parseResult?.athlete?.team),
-          safeString(parseResult?.athlete?.level),
-        ]
-          .filter(Boolean)
-          .join(" • "),
-      },
-      {
-        label: "Session",
-        value: safeString(parseResult?.athlete?.session || meet?.sessionNumber),
-      },
-      {
-        label: "Stretch",
-        value:
-          safeString(parseResult?.athlete?.stretchTime) ||
-          formatTime(meet?.warmUpTime || ""),
-      },
-      {
-        label: "Assigned Gym",
-        value: safeString(parseResult?.athlete?.assignedGym),
-      },
-      { label: "Awards", value: safeString(parseResult?.athlete?.awards) },
-      { label: "Uniform", value: safeString(parseResult?.gear?.uniform) },
-      {
-        label: "Volunteer Notes",
-        value: safeString(parseResult?.volunteers?.notes),
-      },
-      { label: "Waivers", value: safeString(parseLogistics?.waivers) },
-    ].filter((item) => item.value);
+    const hostGymLabel = safeString(
+      currentData?.hostGym || parseResult?.hostGym || ""
+    );
+    const venueAddressLabel =
+      addressLabel &&
+      normalizeCompareText(addressLabel) !== normalizeCompareText(venueLabel)
+        ? addressLabel
+        : "";
     const contactLink = contactLinkCandidate;
     const visitorLink = visitorLinkCandidate;
     const directionsUrl = facilityMapAddress
@@ -3217,7 +3276,7 @@ export default function SimpleTemplateView({
       Boolean(facilityMapAddress);
     const hasFacilityContent =
       Boolean(gymLayoutImageUrl) ||
-      facilityLinesFromSource.length > 0 ||
+      facilityLines.length > 0 ||
       showRegistrationDeskNote ||
       showAwardsAreaNote;
     const hasMeetDetailsContent = meetDetailsLines.length > 0;
@@ -3247,53 +3306,85 @@ export default function SimpleTemplateView({
     const discoveryNavText = "text-[color:var(--color-nav-text,#2D1B4E)]";
     const discoveryIcon = "text-[color:var(--color-icon,#2D1B4E)]";
     const discoveryCard =
-      "bg-[color:var(--surface,#FFFFFF)] rounded-[2.5rem] border border-[color:var(--border,#E2E8F0)] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors duration-200 hover:border-[color:var(--color-border-hover,#D4AF37)]";
+      "discovery-panel bg-[color:var(--surface,#FFFFFF)] rounded-[2.5rem] border border-[color:var(--border,#E2E8F0)] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors duration-200 hover:border-[color:var(--color-border-hover,#D4AF37)]";
     const discoverySectionHeading =
       "text-xl font-bold mb-6 flex items-center gap-2 border-l-2 border-[color:var(--accent,#D4AF37)] pl-3 text-[color:var(--color-heading,#2D1B4E)]";
     const discoveryFocusRing =
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-focus,#D4AF37)] focus-visible:ring-offset-2";
     const headerHeroSrc = heroImage?.trim() || "";
     const hasHeaderHero = Boolean(headerHeroSrc);
-    const headerTitleClass = hasHeaderHero ? "text-white" : discoveryHeading;
-    const headerMetaClass = hasHeaderHero ? "text-white/90" : discoveryNavText;
-    const headerIconClass = hasHeaderHero ? "text-white/90" : discoveryIcon;
-    const headerDateChipClass = hasHeaderHero
+    const headerGradientStyle =
+      paletteColors.length >= 3
+        ? {
+            backgroundColor: "#0b1220",
+            backgroundImage: `linear-gradient(115deg, ${paletteColors[0]} 0%, ${paletteColors[1]} 52%, ${paletteColors[2]} 100%)`,
+          }
+        : paletteColors.length === 2
+        ? {
+            backgroundColor: "#0b1220",
+            backgroundImage: `linear-gradient(115deg, ${paletteColors[0]} 0%, #0b1220 50%, ${paletteColors[1]} 100%)`,
+          }
+        : paletteColors.length === 1
+        ? {
+            backgroundColor: "#0b1220",
+            backgroundImage: `linear-gradient(115deg, ${paletteColors[0]} 0%, #0b1220 100%)`,
+          }
+        : {
+            backgroundColor: "#0b1220",
+            backgroundImage:
+              "linear-gradient(115deg, var(--primary,#1f3a8a) 0%, #0b1220 52%, var(--accent,#7f1d1d) 100%)",
+          };
+    const hasHeaderVisual = hasHeaderHero || !headerHeroSrc;
+    const headerTitleClass = hasHeaderVisual ? "text-white" : discoveryHeading;
+    const headerMetaClass = hasHeaderVisual ? "text-white/90" : discoveryNavText;
+    const headerIconClass = hasHeaderVisual ? "text-white/90" : discoveryIcon;
+    const headerDateChipClass = hasHeaderVisual
       ? "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/35 text-white backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest mb-6"
       : "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[color:var(--chip-bg,#F8FAFC)] border border-[color:var(--chip-border,#D7DCE6)] text-[color:var(--chip-text,#2D1B4E)] text-[10px] font-bold uppercase tracking-widest mb-6";
-    const headerTitleStyle = hasHeaderHero
+    const headerTitleStyle = hasHeaderVisual
       ? { color: "#F8FAFC", textShadow: "0 2px 10px rgba(0,0,0,0.6)" }
       : undefined;
 
     return (
       <div
         ref={templateRootRef}
-        className={`min-h-screen font-sans pb-24 ${discoveryBg} ${discoveryText}`}
+        className={`mobile-flat-template min-h-screen font-sans pb-24 ${discoveryBg} ${discoveryText}`}
       >
         <header
           className={`pt-16 md:pt-20 pb-16 px-6 relative overflow-hidden border-b ${
-            hasHeaderHero
+            hasHeaderVisual
               ? "bg-slate-900 border-white/20"
               : "bg-[color:var(--bg,#FFFFFF)] border-[color:var(--border,#E2E8F0)]"
           }`}
         >
-          {hasHeaderHero && (
+          {hasHeaderVisual && (
             <div className="absolute inset-0">
-              {headerHeroSrc.startsWith("http") ? (
-                <Image
-                  src={headerHeroSrc}
-                  alt="Header background"
-                  fill
-                  className="object-cover"
-                  sizes="100vw"
-                />
+              {hasHeaderHero ? (
+                headerHeroSrc.startsWith("http") ? (
+                  <Image
+                    src={headerHeroSrc}
+                    alt="Header background"
+                    fill
+                    className="object-cover"
+                    sizes="100vw"
+                  />
+                ) : (
+                  <img
+                    src={headerHeroSrc}
+                    alt="Header background"
+                    className="h-full w-full object-cover"
+                  />
+                )
               ) : (
-                <img
-                  src={headerHeroSrc}
-                  alt="Header background"
-                  className="h-full w-full object-cover"
-                />
+                <div className="h-full w-full" style={headerGradientStyle} />
               )}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/65" />
+              <div
+                className={`absolute inset-0 ${
+                  hasHeaderHero
+                    ? "bg-gradient-to-b from-black/55 via-black/45 to-black/65"
+                    : "bg-gradient-to-b from-black/30 via-black/20 to-black/45"
+                }`}
+              />
             </div>
           )}
           <div className="max-w-6xl mx-auto relative z-10">
@@ -3313,9 +3404,20 @@ export default function SimpleTemplateView({
             <div
               className={`flex flex-wrap gap-4 text-sm font-bold ${headerMetaClass}`}
             >
+              {hostGymLabel && (
+                <span className="flex items-center gap-1.5">
+                  <Trophy size={16} className={headerIconClass} /> {hostGymLabel}
+                </span>
+              )}
               {venueLabel && (
                 <span className="flex items-center gap-1.5">
                   <MapPin size={16} className={headerIconClass} /> {venueLabel}
+                </span>
+              )}
+              {venueAddressLabel && (
+                <span className="flex items-center gap-1.5">
+                  <Navigation size={16} className={headerIconClass} />{" "}
+                  {venueAddressLabel}
                 </span>
               )}
               {scheduleHint && (
@@ -3376,7 +3478,7 @@ export default function SimpleTemplateView({
               { id: "meet-details", label: "Meet Details", icon: Info },
               { id: "spectator", label: "Admission & Sales", icon: Ticket },
               { id: "parking", label: "Traffic & Arrival", icon: Car },
-              { id: "facility", label: "Hall Layout", icon: Navigation },
+              { id: "facility", label: "Venue Details", icon: Navigation },
               { id: "rules", label: "Safety & Policy", icon: Ban },
             ].map((tab) => (
               <button
@@ -3405,51 +3507,59 @@ export default function SimpleTemplateView({
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            <div className="lg:col-span-2 space-y-8">
-              {discoveryActiveTab === "meet-details" &&
-                hasMeetDetailsContent && (
-                  <div className="space-y-10">
-                    <section className={`${discoveryCard} p-10`}>
-                      <h3 className={discoverySectionHeading}>
-                        <Info className={discoveryIcon} size={24} /> Meet
-                        Details
-                      </h3>
-                      <div className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 p-6">
-                        <ul className="space-y-4">
-                          {meetDetailsLines.map((line) =>
-                            (() => {
-                              const parsedLine = extractInlineUrl(line);
-                              return (
-                                <li
-                                  key={`meet-details-line-${line}`}
-                                  className="flex items-start gap-3"
-                                >
-                                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-slate-400/70" />
-                                  <div className="space-y-2">
-                                    <p className="text-sm text-slate-700 leading-relaxed">
-                                      {parsedLine.textWithoutUrl ||
-                                        "Reference link"}
-                                    </p>
-                                    {parsedLine.href && (
-                                      <a
-                                        href={parsedLine.href}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={`inline-flex items-center gap-2 rounded-full border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] hover:border-[color:var(--color-border-hover,#D4AF37)] ${discoveryFocusRing}`}
-                                      >
-                                        Open Link <ExternalLink size={12} />
-                                      </a>
-                                    )}
-                                  </div>
-                                </li>
-                              );
-                            })()
-                          )}
-                        </ul>
-                      </div>
-                    </section>
-                  </div>
-                )}
+            <div
+              className={`space-y-8 ${
+                hasHostSupport ? "lg:col-span-2" : "lg:col-span-3"
+              }`}
+            >
+              {discoveryActiveTab === "meet-details" && (
+                <div className="space-y-10">
+                  <section className={`${discoveryCard} p-10`}>
+                    <h3 className={discoverySectionHeading}>
+                      <Info className={discoveryIcon} size={24} /> Meet Details
+                    </h3>
+                    {hasMeetDetailsContent ? (
+                      <ul className="space-y-4">
+                        {meetDetailsLines.map((line) =>
+                          (() => {
+                            const parsedLine = extractInlineUrl(line);
+                            return (
+                              <li
+                                key={`meet-details-line-${line}`}
+                                className="flex items-start gap-3"
+                              >
+                                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-slate-400/70" />
+                                <div className="space-y-2">
+                                  <p className="text-sm text-slate-700 leading-relaxed">
+                                    {parsedLine.textWithoutUrl ||
+                                      "Reference link"}
+                                  </p>
+                                  {parsedLine.href && (
+                                    <a
+                                      href={parsedLine.href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`inline-flex items-center gap-2 rounded-full border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] hover:border-[color:var(--color-border-hover,#D4AF37)] ${discoveryFocusRing}`}
+                                    >
+                                      Open Link <ExternalLink size={12} />
+                                    </a>
+                                  )}
+                                </div>
+                              </li>
+                            );
+                          })()
+                        )}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Meet details are still being mapped from the source
+                        packet. Re-open parsing in the builder to refresh this
+                        section.
+                      </p>
+                    )}
+                  </section>
+                </div>
+              )}
 
               {discoveryActiveTab === "spectator" && (
                 <div className="space-y-10">
@@ -3565,10 +3675,22 @@ export default function SimpleTemplateView({
                       )}
                     </div>
                   )}
+
+                  {!hasAdmissionContent && !hasSpectatorCards && (
+                    <section className={`${discoveryCard} p-8`}>
+                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                        Admission & Sales
+                      </h4>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Admission pricing and merchandise details were not found
+                        in mapped fields yet.
+                      </p>
+                    </section>
+                  )}
                 </div>
               )}
 
-              {discoveryActiveTab === "parking" && hasParkingContent && (
+              {discoveryActiveTab === "parking" && (
                 <div className="space-y-10">
                   {trafficText && (
                     <section className="bg-red-50 border-2 border-red-100 rounded-[2.5rem] p-10">
@@ -3720,15 +3842,27 @@ export default function SimpleTemplateView({
                       </div>
                     </section>
                   )}
+
+                  {!hasParkingContent && (
+                    <section className={`${discoveryCard} p-8`}>
+                      <h3 className={discoverySectionHeading}>
+                        Traffic & Arrival
+                      </h3>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Parking and traffic guidance was not mapped into fields
+                        yet. Re-run parsing after upload to refresh this tab.
+                      </p>
+                    </section>
+                  )}
                 </div>
               )}
 
-              {discoveryActiveTab === "facility" && hasFacilityContent && (
+              {discoveryActiveTab === "facility" && (
                 <div className="space-y-10">
-                  <section className={`${discoveryCard} p-10`}>
-                    <h3 className={discoverySectionHeading}>Hall Layout</h3>
+                  <section className={`${discoveryCard} p-6 md:p-10`}>
+                    <h3 className={discoverySectionHeading}>Venue Details</h3>
                     {gymLayoutImageUrl && (
-                      <div className="mb-8">
+                      <div className="mb-6">
                         <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
                           Gym Layout
                         </h4>
@@ -3742,18 +3876,15 @@ export default function SimpleTemplateView({
                       </div>
                     )}
 
-                    {facilityLinesFromSource.length > 0 && (
-                      <div className="rounded-3xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 p-6">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
-                          Venue Details
-                        </h4>
-                        <div className="space-y-2">
-                          {facilityLinesFromSource.map((line) => {
+                    {facilityLines.length > 0 && (
+                      <div>
+                        <ul className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 divide-y divide-[color:var(--border,#E2E8F0)]">
+                          {facilityLines.map((line) => {
                             const parsedLine = extractInlineUrl(line);
                             return (
-                              <div
+                              <li
                                 key={`facility-line-${line}`}
-                                className="space-y-2 rounded-xl border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-2"
+                                className="px-4 py-3 space-y-2"
                               >
                                 <p className="text-sm text-slate-700 leading-relaxed">
                                   {parsedLine.textWithoutUrl ||
@@ -3769,19 +3900,19 @@ export default function SimpleTemplateView({
                                     Open Link <ExternalLink size={12} />
                                   </a>
                                 )}
-                              </div>
+                              </li>
                             );
                           })}
-                        </div>
+                        </ul>
                       </div>
                     )}
                     {(showRegistrationDeskNote || showAwardsAreaNote) && (
-                      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <ul className="mt-6 space-y-4">
                         {showRegistrationDeskNote && (
-                          <div className="flex gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-[color:var(--primary,#2D1B4E)] text-white flex items-center justify-center shrink-0">
+                          <li className="flex items-start gap-3">
+                            <span className="w-10 h-10 rounded-xl bg-[color:var(--primary,#2D1B4E)] text-white inline-flex items-center justify-center shrink-0 text-xs font-black">
                               2F
-                            </div>
+                            </span>
                             <div>
                               <h4 className="font-black text-xs uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)] mb-1">
                                 Registration Desk
@@ -3790,13 +3921,13 @@ export default function SimpleTemplateView({
                                 {registrationDeskNote}
                               </p>
                             </div>
-                          </div>
+                          </li>
                         )}
                         {showAwardsAreaNote && (
-                          <div className="flex gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-[color:var(--accent,#D4AF37)] text-[color:var(--text,#0F172A)] flex items-center justify-center shrink-0">
+                          <li className="flex items-start gap-3">
+                            <span className="w-10 h-10 rounded-xl bg-[color:var(--accent,#D4AF37)] text-[color:var(--text,#0F172A)] inline-flex items-center justify-center shrink-0 text-xs font-black">
                               3F
-                            </div>
+                            </span>
                             <div>
                               <h4 className="font-black text-xs uppercase tracking-widest text-[color:var(--color-heading,#2D1B4E)] mb-1">
                                 Awards Area
@@ -3805,15 +3936,22 @@ export default function SimpleTemplateView({
                                 {awardsAreaNote}
                               </p>
                             </div>
-                          </div>
+                          </li>
                         )}
-                      </div>
+                      </ul>
+                    )}
+
+                    {!hasFacilityContent && (
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Venue details are still being extracted. Upload or
+                        re-parse the packet/image to populate this area.
+                      </p>
                     )}
                   </section>
                 </div>
               )}
 
-              {discoveryActiveTab === "rules" && hasPolicyCards && (
+              {discoveryActiveTab === "rules" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {policyNotes[0] && (
                     <div className={`${discoveryCard} p-8`}>
@@ -3868,44 +4006,32 @@ export default function SimpleTemplateView({
                       </p>
                     </div>
                   )}
+                  {!hasPolicyCards && (
+                    <div className={`${discoveryCard} p-8 md:col-span-2`}>
+                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                        Safety & Policy
+                      </h4>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Policy details were not mapped from the current source
+                        text yet.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
-            <div className="space-y-8">
-              {detailPairs.length > 0 && (
-                <div className={`${discoveryCard} p-8`}>
-                  <h4 className="text-[10px] font-black text-[color:var(--color-heading,#2D1B4E)] uppercase tracking-[0.2em] mb-6 border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">
-                    Meet Essentials
-                  </h4>
-                  <div className="space-y-6">
-                    {detailPairs.map((item) => (
-                      <div
-                        key={`meet-essential-${item.label}-${item.value}`}
-                        className="rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-slate-50 px-4 py-3"
-                      >
-                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                          {item.label}
-                        </p>
-                        <p className="mt-1 text-xs whitespace-pre-wrap text-slate-700">
-                          {item.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {hasHostSupport && (
+            {hasHostSupport && (
+              <div className="space-y-8">
                 <div className={`${discoveryCard} p-8`}>
                   <h4 className="font-black text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)] border-l-2 border-[color:var(--accent,#D4AF37)] pl-3">
                     Useful Links
                   </h4>
-                  <p className="text-xs text-[color:var(--muted-text,#64748B)] mb-6 leading-relaxed">
-                    {safeString(parseCommunications?.passcode)
-                      ? `Passcode: ${parseCommunications.passcode}`
-                      : "Support and reference links are provided below."}
-                  </p>
+                  {safeString(parseCommunications?.passcode) && (
+                    <p className="text-xs text-[color:var(--muted-text,#64748B)] mb-6 leading-relaxed">
+                      {`Passcode: ${parseCommunications.passcode}`}
+                    </p>
+                  )}
                   <div className="space-y-2">
                     {safeString(contactLink?.url) && (
                       <a
@@ -3980,10 +4106,36 @@ export default function SimpleTemplateView({
                     )}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </main>
+        <style jsx>{`
+          @media (max-width: 768px) {
+            .mobile-flat-template :global(.discovery-panel) {
+              border-radius: 1.25rem !important;
+              padding: 1rem !important;
+            }
+
+            .mobile-flat-template :global(.discovery-panel .rounded-3xl.border),
+            .mobile-flat-template :global(.discovery-panel .rounded-2xl.border),
+            .mobile-flat-template :global(.discovery-panel .rounded-xl.border) {
+              border-radius: 0.875rem !important;
+              padding: 0.75rem !important;
+              box-shadow: none !important;
+            }
+
+            .mobile-flat-template :global(.discovery-panel .grid) {
+              gap: 0.75rem !important;
+            }
+
+            .mobile-flat-template :global(.discovery-panel .p-10),
+            .mobile-flat-template :global(.discovery-panel .p-8),
+            .mobile-flat-template :global(.discovery-panel .p-6) {
+              padding: 0.75rem !important;
+            }
+          }
+        `}</style>
       </div>
     );
   }
@@ -4173,8 +4325,11 @@ export default function SimpleTemplateView({
                     />
                   )
                 ) : (
-                  <div className="w-full h-full bg-white/5 flex items-center justify-center">
-                    <span className="text-white/30 text-sm">No image</span>
+                  <div
+                    className="relative w-full h-full overflow-hidden"
+                    style={heroGradientFallbackStyle}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/45" />
                   </div>
                 )}
               </div>
@@ -4208,33 +4363,30 @@ export default function SimpleTemplateView({
 
                 {/* Custom Fields Grid */}
                 {detailFields.length > 0 && (
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ul className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {detailFields.map((field: any) => {
                       const val =
                         customFields[field.key] ??
                         currentData?.extra?.[field.key];
                       if (!val) return null;
                       return (
-                        <div
-                          key={field.key}
-                          className="bg-white/5 border border-white/10 rounded-lg p-4"
-                        >
-                          <div
+                        <li key={field.key} className="list-none space-y-1">
+                          <p
                             className={`text-xs uppercase tracking-wide opacity-80 ${textClass}`}
                             style={bodyShadow}
                           >
                             {field.label}
-                          </div>
-                          <div
-                            className={`mt-2 text-base font-semibold opacity-90 ${textClass}`}
+                          </p>
+                          <p
+                            className={`text-base font-semibold opacity-90 ${textClass}`}
                             style={bodyShadow}
                           >
                             {val}
-                          </div>
-                        </div>
+                          </p>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 )}
               </section>
 

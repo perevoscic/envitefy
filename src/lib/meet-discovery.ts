@@ -24,6 +24,12 @@ export type DiscoverySourceInput =
 
 export type ParseResult = {
   eventType: "gymnastics_meet" | "unknown";
+  documentProfile:
+    | "athlete_session"
+    | "parent_packet"
+    | "registration_packet"
+    | "meet_overview"
+    | "unknown";
   title: string;
   dates: string;
   startAt: string | null;
@@ -49,6 +55,18 @@ export type ParseResult = {
     marchIn: string | null;
     rotationOrder: string | null;
     judgingNotes: string | null;
+    doorsOpen: string | null;
+    arrivalGuidance: string | null;
+    registrationInfo: string | null;
+    facilityLayout: string | null;
+    scoringInfo: string | null;
+    sessionWindows: Array<{
+      date: string | null;
+      start: string | null;
+      end: string | null;
+      note: string | null;
+    }>;
+    operationalNotes: string[];
   };
   logistics: {
     parking: string | null;
@@ -57,7 +75,28 @@ export type ParseResult = {
     meals: string | null;
     fees: string | null;
     waivers: string | null;
+    rideShare: string | null;
+    accessibility: string | null;
+    parkingLinks: Array<{ label: string; url: string }>;
   };
+  policies: {
+    food: string | null;
+    hydration: string | null;
+    safety: string | null;
+    animals: string | null;
+    misc: string[];
+  };
+  contacts: Array<{
+    role: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+  }>;
+  deadlines: Array<{
+    label: string;
+    date: string | null;
+    note: string | null;
+  }>;
   gear: {
     uniform: string | null;
     checklist: string[];
@@ -71,6 +110,23 @@ export type ParseResult = {
     passcode: string | null;
   };
   links: Array<{ label: string; url: string }>;
+  unmappedFacts: Array<{
+    category: string;
+    detail: string;
+    confidence: "high" | "medium" | "low";
+  }>;
+};
+
+type TextQuality = "good" | "suspect" | "poor";
+type TextQualitySignals = {
+  controlRatio: number;
+  englishLikeRatio: number;
+  longTokenRatio: number;
+  nonTextRatio: number;
+  readableLines: number;
+  tokenCount: number;
+  nonAsciiRatio: number;
+  looksLikePdfInternals: boolean;
 };
 
 type ExtractionResult = {
@@ -81,6 +137,10 @@ type ExtractionResult = {
     linkedAssets: Array<{ url: string; contentType: string }>;
     pageTitle?: string | null;
     gymLayoutImageDataUrl?: string | null;
+    gymLayoutFacts?: string[];
+    gymLayoutPage?: number | null;
+    textQuality?: TextQuality | null;
+    qualitySignals?: TextQualitySignals | null;
   };
 };
 
@@ -91,6 +151,8 @@ export type DiscoveryEvidence = {
     pageTitle: string | null;
     linkedAssetCount: number;
     extractedChars: number;
+    textQuality: TextQuality | null;
+    qualitySignals: TextQualitySignals | null;
   };
   candidates: {
     titleHints: string[];
@@ -120,6 +182,18 @@ const MAX_FETCH_BYTES = 7 * 1024 * 1024;
 const LOW_TEXT_THRESHOLD = 200;
 const execFileAsync = promisify(execFile);
 
+type DateRangeInfo = {
+  label: string | null;
+  startDate: string | null;
+  endDate: string | null; // Inclusive end date.
+};
+
+type GymLayoutExtraction = {
+  dataUrl: string | null;
+  facts: string[];
+  page: number | null;
+};
+
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -136,6 +210,32 @@ function pickArray(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
 }
 
+function normalizeUrl(value: unknown): string {
+  const raw = safeString(value).replace(/[)\],.;!?]+$/, "");
+  if (!raw) return "";
+  const withProtocol = /^www\./i.test(raw) ? `https://${raw}` : raw;
+  if (!/^https?:\/\//i.test(withProtocol)) return "";
+  try {
+    const parsed = new URL(withProtocol);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+}
+
+function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {
+  const out: T[] = [];
+  const seen = new Set<string>();
+  for (const item of items) {
+    const key = safeString(getKey(item)).toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
 function uniqueLines(lines: string[], limit = 12): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
@@ -147,6 +247,138 @@ function uniqueLines(lines: string[], limit = 12): string[] {
     if (out.length >= limit) break;
   }
   return out;
+}
+
+function toIsoDate(year: number, monthIndex: number, day: number): string | null {
+  if (!Number.isFinite(year) || !Number.isFinite(monthIndex) || !Number.isFinite(day)) return null;
+  const y = Math.trunc(year);
+  const m = Math.trunc(monthIndex);
+  const d = Math.trunc(day);
+  if (y < 1900 || y > 2200) return null;
+  if (m < 0 || m > 11) return null;
+  if (d < 1 || d > 31) return null;
+  const dt = new Date(Date.UTC(y, m, d));
+  if (Number.isNaN(dt.getTime())) return null;
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m || dt.getUTCDate() !== d) return null;
+  return dt.toISOString().slice(0, 10);
+}
+
+function monthNameToIndex(value: string): number {
+  const normalized = safeString(value).toLowerCase();
+  const map: Record<string, number> = {
+    january: 0,
+    jan: 0,
+    february: 1,
+    feb: 1,
+    march: 2,
+    mar: 2,
+    april: 3,
+    apr: 3,
+    may: 4,
+    june: 5,
+    jun: 5,
+    july: 6,
+    jul: 6,
+    august: 7,
+    aug: 7,
+    september: 8,
+    sep: 8,
+    sept: 8,
+    october: 9,
+    oct: 9,
+    november: 10,
+    nov: 10,
+    december: 11,
+    dec: 11,
+  };
+  return typeof map[normalized] === "number" ? map[normalized] : -1;
+}
+
+function deriveDateRangeFromText(value: string): DateRangeInfo {
+  const text = safeString(value);
+  if (!text) return { label: null, startDate: null, endDate: null };
+
+  const monthRange =
+    text.match(
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*[–-]\s*(\d{1,2}),?\s*(\d{4})\b/i
+    ) || null;
+  if (monthRange) {
+    const monthIdx = monthNameToIndex(monthRange[1]);
+    const dayStart = Number.parseInt(monthRange[2], 10);
+    const dayEnd = Number.parseInt(monthRange[3], 10);
+    const year = Number.parseInt(monthRange[4], 10);
+    const startDate = toIsoDate(year, monthIdx, dayStart);
+    const endDate = toIsoDate(year, monthIdx, dayEnd);
+    return {
+      label: text,
+      startDate,
+      endDate,
+    };
+  }
+
+  const monthSingle =
+    text.match(
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2}),?\s*(\d{4})\b/i
+    ) || null;
+  if (monthSingle) {
+    const monthIdx = monthNameToIndex(monthSingle[1]);
+    const day = Number.parseInt(monthSingle[2], 10);
+    const year = Number.parseInt(monthSingle[3], 10);
+    const date = toIsoDate(year, monthIdx, day);
+    return {
+      label: text,
+      startDate: date,
+      endDate: date,
+    };
+  }
+
+  const slashRange =
+    text.match(
+      /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[–-]\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\b/
+    ) || null;
+  if (slashRange) {
+    const m1 = Number.parseInt(slashRange[1], 10) - 1;
+    const d1 = Number.parseInt(slashRange[2], 10);
+    const y1 = Number.parseInt(slashRange[3], 10);
+    const m2 = Number.parseInt(slashRange[4], 10) - 1;
+    const d2 = Number.parseInt(slashRange[5], 10);
+    const y2 = Number.parseInt(slashRange[6], 10);
+    return {
+      label: text,
+      startDate: toIsoDate(y1, m1, d1),
+      endDate: toIsoDate(y2, m2, d2),
+    };
+  }
+
+  const slashSingle = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/) || null;
+  if (slashSingle) {
+    const m = Number.parseInt(slashSingle[1], 10) - 1;
+    const d = Number.parseInt(slashSingle[2], 10);
+    const y = Number.parseInt(slashSingle[3], 10);
+    const date = toIsoDate(y, m, d);
+    return {
+      label: text,
+      startDate: date,
+      endDate: date,
+    };
+  }
+
+  return { label: text || null, startDate: null, endDate: null };
+}
+
+function extractHallFactsFromText(text: string): string[] {
+  const normalizedLines = safeString(text)
+    .split(/\n+/)
+    .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+    .filter(Boolean);
+
+  const hallFacts = normalizedLines.filter((line) =>
+    /(east hall|west hall|central hall|north hall|south hall|registration|guest services|competition area|entrance|coffee bar|awards area|gym\s*[a-f]|check[- ]?in|2nd floor|second floor|3rd floor|third floor)/i.test(
+      line
+    )
+  );
+
+  return uniqueLines(hallFacts, 14);
 }
 
 export function buildDiscoveryEvidence(
@@ -233,6 +465,8 @@ export function buildDiscoveryEvidence(
         ? extractionMeta.linkedAssets.length
         : 0,
       extractedChars: text.length,
+      textQuality: extractionMeta.textQuality || null,
+      qualitySignals: extractionMeta.qualitySignals || null,
     },
     candidates: {
       titleHints,
@@ -333,33 +567,78 @@ function looksLikePdfInternals(text: string): boolean {
   return pdfKeywords.length >= 8 || slashDirectives.length >= 60;
 }
 
-function isLikelyReadableText(text: string): boolean {
-  const candidate = cleanExtractedText(text);
-  if (!candidate || candidate.length < 120) return false;
-  if (looksLikePdfInternals(candidate)) return false;
-  const sample = candidate.slice(0, 5000);
+function analyzeTextQuality(text: string): {
+  cleanedText: string;
+  quality: TextQuality;
+  signals: TextQualitySignals;
+} {
+  const cleanedText = cleanExtractedText(text);
+  if (!cleanedText) {
+    return {
+      cleanedText,
+      quality: "poor",
+      signals: {
+        controlRatio: 0,
+        englishLikeRatio: 0,
+        longTokenRatio: 0,
+        nonTextRatio: 1,
+        readableLines: 0,
+        tokenCount: 0,
+        nonAsciiRatio: 0,
+        looksLikePdfInternals: false,
+      },
+    };
+  }
+
+  const sample = cleanedText.slice(0, 5000);
+  const tokens = cleanedText.split(/\s+/).filter(Boolean);
   const controlChars = (sample.match(/[\u0000-\u001F\u007F-\u009F]/g) || []).length;
-  const tokens = candidate.split(/\s+/).filter(Boolean);
-  const englishLikeTokens = tokens.filter((token) =>
-    /^[A-Za-z][A-Za-z'’-]{1,24}$/.test(token)
-  ).length;
+  const englishLikeTokens = tokens.filter((token) => /^[A-Za-z][A-Za-z'’-]{1,24}$/.test(token)).length;
   const longTokens = tokens.filter((token) => token.length > 35).length;
   const nonTextChars = (sample.match(/[^A-Za-z0-9\s.,:;!?()'"&@#%/\-]/g) || []).length;
-  const readableLines = candidate
+  const readableLines = cleanedText
     .split(/\n+/)
     .filter((line) => (line.match(/[A-Za-z]{3,}/g) || []).length >= 3).length;
-  const controlRatio = controlChars / Math.max(sample.length, 1);
-  const englishLikeRatio = englishLikeTokens / Math.max(tokens.length, 1);
-  const longTokenRatio = longTokens / Math.max(tokens.length, 1);
-  const nonTextRatio = nonTextChars / Math.max(sample.length, 1);
-  return (
-    controlRatio < 0.02 &&
-    englishLikeRatio > 0.25 &&
-    longTokenRatio < 0.08 &&
-    nonTextRatio < 0.12 &&
-    readableLines >= 4 &&
-    tokens.length > 30
-  );
+  const nonAsciiChars = (sample.match(/[^\x00-\x7F]/g) || []).length;
+  const internals = looksLikePdfInternals(cleanedText);
+
+  const signals: TextQualitySignals = {
+    controlRatio: controlChars / Math.max(sample.length, 1),
+    englishLikeRatio: englishLikeTokens / Math.max(tokens.length, 1),
+    longTokenRatio: longTokens / Math.max(tokens.length, 1),
+    nonTextRatio: nonTextChars / Math.max(sample.length, 1),
+    readableLines,
+    tokenCount: tokens.length,
+    nonAsciiRatio: nonAsciiChars / Math.max(sample.length, 1),
+    looksLikePdfInternals: internals,
+  };
+
+  const isPoor =
+    internals ||
+    signals.tokenCount < 25 ||
+    signals.controlRatio >= 0.08 ||
+    signals.nonTextRatio >= 0.35 ||
+    signals.nonAsciiRatio >= 0.25 ||
+    signals.englishLikeRatio < 0.08 ||
+    signals.readableLines < 2;
+  if (isPoor) {
+    return { cleanedText, quality: "poor", signals };
+  }
+
+  const isGood =
+    cleanedText.length >= LOW_TEXT_THRESHOLD &&
+    signals.controlRatio < 0.02 &&
+    signals.englishLikeRatio > 0.25 &&
+    signals.longTokenRatio < 0.08 &&
+    signals.nonTextRatio < 0.12 &&
+    signals.readableLines >= 4 &&
+    signals.tokenCount > 30 &&
+    signals.nonAsciiRatio < 0.08;
+  if (isGood) {
+    return { cleanedText, quality: "good", signals };
+  }
+
+  return { cleanedText, quality: "suspect", signals };
 }
 
 async function extractPdfTextWithNodeWorker(buffer: Buffer): Promise<string> {
@@ -435,56 +714,216 @@ async function ocrBuffer(buffer: Buffer): Promise<string> {
   ).trim();
 }
 
-async function extractTextFromPdf(buffer: Buffer): Promise<{ text: string; usedOcr: boolean }> {
-  const workerText = await extractPdfTextWithNodeWorker(buffer);
-  if (workerText.length >= LOW_TEXT_THRESHOLD && isLikelyReadableText(workerText)) {
-    return { text: workerText, usedOcr: false };
+async function openAiOcrTextFromImage(
+  buffer: Buffer,
+  mimeType = "image/png"
+): Promise<string> {
+  const apiKey = safeString(process.env.OPENAI_API_KEY || "");
+  if (!apiKey) return "";
+  const model =
+    safeString(process.env.OPENAI_OCR_FAST_MODEL) ||
+    safeString(process.env.OPENAI_OCR_MODEL) ||
+    safeString(process.env.LLM_MODEL) ||
+    "gpt-5.1-mini";
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an OCR engine. Return strict JSON {\"text\": string}. Extract only visible text and labels from the image.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extract all visible text." },
+              { type: "input_image", image_url: { url: `data:${mimeType};base64,${buffer.toString("base64")}` } },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!response.ok) return "";
+    const payload = await response.json();
+    const raw = safeString(payload?.choices?.[0]?.message?.content || "");
+    const parsed = extractJsonObject(raw);
+    return cleanExtractedText(safeString(parsed?.text || raw));
+  } catch {
+    return "";
+  }
+}
+
+async function openAiAnalyzeGymLayoutPage(
+  buffer: Buffer,
+  mimeType = "image/png"
+): Promise<{ isLayout: boolean; confidence: number; facts: string[]; text: string } | null> {
+  const apiKey = safeString(process.env.OPENAI_API_KEY || "");
+  if (!apiKey) return null;
+  const model =
+    safeString(process.env.OPENAI_OCR_FAST_MODEL) ||
+    safeString(process.env.OPENAI_OCR_MODEL) ||
+    safeString(process.env.LLM_MODEL) ||
+    "gpt-5.1-mini";
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "Classify gymnastics venue map pages and extract hall-layout facts. Return strict JSON only.",
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text:
+                  'Return JSON with keys: isLayout (boolean), confidence (number 0-1), text (string), facts (string[]). Facts must be short factual hall/map labels like halls, registration, entrances, awards area, assigned gyms.',
+              },
+              { type: "input_image", image_url: { url: `data:${mimeType};base64,${buffer.toString("base64")}` } },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const raw = safeString(payload?.choices?.[0]?.message?.content || "");
+    const parsed = extractJsonObject(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const confidenceRaw = Number(parsed?.confidence);
+    const confidence = Number.isFinite(confidenceRaw)
+      ? Math.max(0, Math.min(1, confidenceRaw))
+      : 0;
+    return {
+      isLayout: Boolean(parsed?.isLayout),
+      confidence,
+      text: cleanExtractedText(safeString(parsed?.text || "")),
+      facts: uniqueLines(
+        pickArray(parsed?.facts)
+          .map((item) => safeString(item))
+          .filter(Boolean),
+        14
+      ),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function extractTextFromPdf(buffer: Buffer): Promise<{
+  text: string;
+  usedOcr: boolean;
+  textQuality: TextQuality;
+  qualitySignals: TextQualitySignals;
+}> {
+  const rank: Record<TextQuality, number> = { good: 2, suspect: 1, poor: 0 };
+  const toCandidate = (raw: string, usedOcr: boolean) => {
+    const analyzed = analyzeTextQuality(raw);
+    return {
+      text: analyzed.cleanedText,
+      usedOcr,
+      textQuality: analyzed.quality,
+      qualitySignals: analyzed.signals,
+    };
+  };
+
+  const workerCandidate = toCandidate(await extractPdfTextWithNodeWorker(buffer), false);
+  if (workerCandidate.text.length >= LOW_TEXT_THRESHOLD && workerCandidate.textQuality === "good") {
+    return workerCandidate;
   }
 
-  const heuristicText = cleanExtractedText(extractPdfTextHeuristic(buffer));
-  if (heuristicText.length >= LOW_TEXT_THRESHOLD && isLikelyReadableText(heuristicText)) {
-    return { text: heuristicText, usedOcr: false };
+  const heuristicCandidate = toCandidate(extractPdfTextHeuristic(buffer), false);
+  if (
+    heuristicCandidate.text.length >= LOW_TEXT_THRESHOLD &&
+    heuristicCandidate.textQuality === "good"
+  ) {
+    return heuristicCandidate;
   }
 
+  let ocrCandidate: ReturnType<typeof toCandidate> | null = null;
   try {
     const ocrPages: string[] = [];
     for (let page = 0; page < 5; page += 1) {
       try {
         const pageImage = await sharp(buffer, { density: 220, page }).png().toBuffer();
-        const text = cleanExtractedText(await ocrBuffer(pageImage));
+        const text = cleanExtractedText(await extractTextFromImage(pageImage));
         if (text) ocrPages.push(text);
       } catch {
         break;
       }
     }
-    const ocrText = cleanExtractedText(ocrPages.join("\n\n"));
-    if (ocrText.length > 0) {
-      return { text: ocrText, usedOcr: true };
+    if (ocrPages.length > 0) {
+      ocrCandidate = toCandidate(ocrPages.join("\n\n"), true);
+      if (ocrCandidate.textQuality === "good" && ocrCandidate.text.length > 0) {
+        return ocrCandidate;
+      }
     }
   } catch {
-    // final fallback below
+    // Continue to final fallbacks.
   }
-  try {
-    const ocrText = cleanExtractedText(await ocrBuffer(buffer));
-    if (ocrText.length > 0) {
-      return { text: ocrText, usedOcr: true };
+  if (!ocrCandidate) {
+    try {
+      ocrCandidate = toCandidate(await extractTextFromImage(buffer), true);
+      if (ocrCandidate.textQuality === "good" && ocrCandidate.text.length > 0) {
+        return ocrCandidate;
+      }
+    } catch {
+      // Continue to best-candidate selection.
     }
-  } catch {
-    // Continue to safe fallback below.
   }
 
-  // Final fallback: only return non-OCR text when quality checks pass.
-  const bestEffortText =
-    workerText.length >= heuristicText.length ? workerText : heuristicText;
-  if (bestEffortText.length >= LOW_TEXT_THRESHOLD && isLikelyReadableText(bestEffortText)) {
-    return { text: bestEffortText, usedOcr: false };
+  const candidates = [workerCandidate, heuristicCandidate, ocrCandidate]
+    .filter((item): item is ReturnType<typeof toCandidate> => Boolean(item))
+    .filter((item) => item.text.length > 0)
+    .sort((a, b) => {
+      const qualityDelta = rank[b.textQuality] - rank[a.textQuality];
+      if (qualityDelta !== 0) return qualityDelta;
+      return b.text.length - a.text.length;
+    });
+
+  const best = candidates[0];
+  if (best && best.textQuality !== "poor") {
+    return best;
   }
-  return { text: "", usedOcr: false };
+
+  const emptyQuality = analyzeTextQuality("");
+  return {
+    text: "",
+    usedOcr: false,
+    textQuality: "poor",
+    qualitySignals: emptyQuality.signals,
+  };
 }
 
 async function extractTextFromImage(buffer: Buffer): Promise<string> {
   const prepared = await sharp(buffer).resize(2200).grayscale().normalize().toBuffer();
-  return ocrBuffer(prepared);
+  try {
+    const text = await ocrBuffer(prepared);
+    if (safeString(text)) return cleanExtractedText(text);
+  } catch {
+    // Fall through to OpenAI OCR.
+  }
+  const fallbackText = await openAiOcrTextFromImage(prepared, "image/png");
+  return cleanExtractedText(fallbackText);
 }
 
 function looksLikeGymLayoutText(text: string): boolean {
@@ -513,6 +952,25 @@ function looksLikeGymLayoutText(text: string): boolean {
   ];
   const score = signals.reduce((count, pattern) => (pattern.test(normalized) ? count + 1 : count), 0);
   return score >= 2 || /(hall|registration|competition area)/i.test(normalized);
+}
+
+function scoreGymLayoutSignals(text: string): number {
+  const normalized = safeString(text).toLowerCase();
+  if (!normalized) return 0;
+  const signals = [
+    /hall\s*layout|facility\s*map|floor\s*plan|venue\s*map/,
+    /east hall/,
+    /west hall/,
+    /central hall/,
+    /gym\s*[a-f]/,
+    /awards area/,
+    /registration/,
+    /guest services/,
+    /competition area/,
+    /entrance/,
+    /coffee bar/,
+  ];
+  return signals.reduce((count, re) => (re.test(normalized) ? count + 1 : count), 0);
 }
 
 async function toOptimizedImageDataUrl(
@@ -548,21 +1006,52 @@ async function toOptimizedImageDataUrl(
   }
 }
 
-async function extractGymLayoutImageFromPdf(buffer: Buffer): Promise<string | null> {
+async function extractGymLayoutImageFromPdf(buffer: Buffer): Promise<GymLayoutExtraction> {
+  const candidatePages: Array<{ page: number; image: Buffer; text: string; score: number }> = [];
   for (let page = 0; page < 20; page += 1) {
     try {
       const pageImage = await sharp(buffer, { density: 220, page }).png().toBuffer();
       const pageText = await extractTextFromImage(pageImage);
-      if (looksLikeGymLayoutText(pageText)) {
+      const score = scoreGymLayoutSignals(pageText);
+      if (looksLikeGymLayoutText(pageText) || score >= 2) {
         const dataUrl = await toOptimizedImageDataUrl(pageImage);
-        if (dataUrl) return dataUrl;
+        if (dataUrl) {
+          const facts = extractHallFactsFromText(pageText);
+          return { dataUrl, facts, page };
+        }
+      }
+      if (page < 8) {
+        candidatePages.push({ page, image: pageImage, text: pageText, score });
       }
     } catch {
       // Continue scanning remaining pages; some PDFs can fail intermittently by page.
       continue;
     }
   }
-  return null;
+
+  let bestAi: { page: number; confidence: number; facts: string[]; text: string; image: Buffer } | null = null;
+  for (const candidate of candidatePages) {
+    const ai = await openAiAnalyzeGymLayoutPage(candidate.image, "image/png");
+    if (!ai) continue;
+    const confidence = ai.confidence + Math.min(candidate.score, 4) * 0.05;
+    if (!ai.isLayout && confidence < 0.45) continue;
+    if (!bestAi || confidence > bestAi.confidence) {
+      bestAi = {
+        page: candidate.page,
+        confidence,
+        facts: uniqueLines([...ai.facts, ...extractHallFactsFromText(ai.text || candidate.text)], 14),
+        text: ai.text || candidate.text,
+        image: candidate.image,
+      };
+    }
+  }
+  if (bestAi) {
+    const dataUrl = await toOptimizedImageDataUrl(bestAi.image);
+    if (dataUrl) {
+      return { dataUrl, facts: bestAi.facts, page: bestAi.page };
+    }
+  }
+  return { dataUrl: null, facts: [], page: null };
 }
 
 function stripHtml(input: string): string {
@@ -655,7 +1144,7 @@ async function fetchWithLimit(url: string): Promise<{ contentType: string; buffe
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } | null {
-  const match = dataUrl.match(/^data:([^;,]+);base64,(.*)$/s);
+  const match = dataUrl.match(/^data:([^;,]+);base64,([\s\S]*)$/);
   if (!match) return null;
   try {
     return {
@@ -705,6 +1194,13 @@ export function buildDefaultGymMeetData() {
         rotationOrder: [],
         judgingNotes: "",
         scoresLink: "",
+        doorsOpen: "",
+        arrivalGuidance: "",
+        registrationInfo: "",
+        facilityLayout: "",
+        scoringInfo: "",
+        sessionWindows: [],
+        operationalNotes: [],
       },
       practice: { enabled: true, blocks: [], excusedAthletes: [], modifiedTraining: [] },
       logistics: {
@@ -724,6 +1220,12 @@ export function buildDefaultGymMeetData() {
         mealPlan: "",
         feeDueDate: "",
         feeAmount: "",
+        rideShare: "",
+        accessibility: "",
+        policyFood: "",
+        policyHydration: "",
+        policySafety: "",
+        policyAnimals: "",
         additionalDocuments: [],
       },
       gear: {
@@ -753,30 +1255,44 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
     if (!parsed) throw new Error("Invalid file payload");
     const mime = (parsed.mimeType || input.mimeType || "").toLowerCase();
     if (/pdf/.test(mime)) {
-      const { text, usedOcr } = await extractTextFromPdf(parsed.buffer);
-      const gymLayoutImageDataUrl = await extractGymLayoutImageFromPdf(parsed.buffer);
+      const { text, usedOcr, textQuality, qualitySignals } = await extractTextFromPdf(parsed.buffer);
+      const gymLayout = await extractGymLayoutImageFromPdf(parsed.buffer);
+      const combinedLayoutFacts = uniqueLines(
+        [...gymLayout.facts, ...extractHallFactsFromText(text)],
+        14
+      );
       return {
         extractedText: text,
         extractionMeta: {
           sourceType: "file",
           usedOcr,
           linkedAssets: [],
-          gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
+          gymLayoutImageDataUrl: gymLayout.dataUrl || null,
+          gymLayoutFacts: combinedLayoutFacts,
+          gymLayoutPage: gymLayout.page,
+          textQuality,
+          qualitySignals,
         },
       };
     }
     if (/image\/(png|jpe?g|webp)/.test(mime)) {
       const text = await extractTextFromImage(parsed.buffer);
+      const quality = analyzeTextQuality(text);
       const gymLayoutImageDataUrl = looksLikeGymLayoutText(text)
         ? await toOptimizedImageDataUrl(parsed.buffer)
         : null;
+      const gymLayoutFacts = extractHallFactsFromText(text);
       return {
-        extractedText: text,
+        extractedText: quality.cleanedText,
         extractionMeta: {
           sourceType: "file",
           usedOcr: true,
           linkedAssets: [],
           gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
+          gymLayoutFacts,
+          gymLayoutPage: null,
+          textQuality: quality.quality,
+          qualitySignals: quality.signals,
         },
       };
     }
@@ -793,6 +1309,8 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
   const linkedMeta: Array<{ url: string; contentType: string }> = [];
   let usedOcr = false;
   let gymLayoutImageDataUrl: string | null = null;
+  let gymLayoutPage: number | null = null;
+  let gymLayoutFacts: string[] = [];
 
   for (const asset of linkedAssets) {
     try {
@@ -803,7 +1321,10 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
         linkedChunks.push(parsed.text);
         usedOcr = usedOcr || parsed.usedOcr;
         if (!gymLayoutImageDataUrl) {
-          gymLayoutImageDataUrl = await extractGymLayoutImageFromPdf(fetched.buffer);
+          const layout = await extractGymLayoutImageFromPdf(fetched.buffer);
+          gymLayoutImageDataUrl = layout.dataUrl;
+          gymLayoutPage = layout.page;
+          gymLayoutFacts = uniqueLines([...gymLayoutFacts, ...layout.facts], 14);
         }
         continue;
       }
@@ -817,6 +1338,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
         if (!gymLayoutImageDataUrl && looksLikeGymLayoutText(imageText)) {
           gymLayoutImageDataUrl = await toOptimizedImageDataUrl(fetched.buffer);
         }
+        gymLayoutFacts = uniqueLines([...gymLayoutFacts, ...extractHallFactsFromText(imageText)], 14);
       }
     } catch {
       // Best-effort linked assets.
@@ -827,15 +1349,24 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
     .filter(Boolean)
     .join("\n\n---\n\n")
     .trim();
+  const quality = analyzeTextQuality(fullText);
+  const mergedLayoutFacts = uniqueLines(
+    [...gymLayoutFacts, ...extractHallFactsFromText(fullText)],
+    14
+  );
 
   return {
-    extractedText: fullText,
+    extractedText: quality.cleanedText,
     extractionMeta: {
       sourceType: "url",
       usedOcr,
       linkedAssets: linkedMeta,
       pageTitle: safeString(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ""),
       gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
+      gymLayoutFacts: mergedLayoutFacts,
+      gymLayoutPage,
+      textQuality: quality.quality,
+      qualitySignals: quality.signals,
     },
   };
 }
@@ -843,6 +1374,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
 const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. Follow this exact shape and key names:
 {
   "eventType": "gymnastics_meet" | "unknown",
+  "documentProfile": "athlete_session" | "parent_packet" | "registration_packet" | "meet_overview" | "unknown",
   "title": string,
   "dates": string,
   "startAt": string|null,
@@ -858,19 +1390,31 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
     "assignedGym": string|null, "awards": string|null
   },
   "meetDetails": {
-    "warmup": string|null, "marchIn": string|null, "rotationOrder": string|null, "judgingNotes": string|null
+    "warmup": string|null, "marchIn": string|null, "rotationOrder": string|null, "judgingNotes": string|null,
+    "doorsOpen": string|null, "arrivalGuidance": string|null, "registrationInfo": string|null,
+    "facilityLayout": string|null, "scoringInfo": string|null,
+    "sessionWindows": [{ "date": string|null, "start": string|null, "end": string|null, "note": string|null }],
+    "operationalNotes": [string]
   },
   "logistics": {
     "parking": string|null, "trafficAlerts": string|null, "hotel": string|null,
-    "meals": string|null, "fees": string|null, "waivers": string|null
+    "meals": string|null, "fees": string|null, "waivers": string|null,
+    "rideShare": string|null, "accessibility": string|null,
+    "parkingLinks": [{ "label": string, "url": string }]
   },
+  "policies": {
+    "food": string|null, "hydration": string|null, "safety": string|null, "animals": string|null, "misc": [string]
+  },
+  "contacts": [{ "role": string, "name": string|null, "email": string|null, "phone": string|null }],
+  "deadlines": [{ "label": string, "date": string|null, "note": string|null }],
   "gear": { "uniform": string|null, "checklist": [string] },
   "volunteers": { "signupLink": string|null, "notes": string|null },
   "communications": {
     "announcements": [{ "title": string, "body": string }],
     "passcode": string|null
   },
-  "links": [{ "label": string, "url": string }]
+  "links": [{ "label": string, "url": string }],
+  "unmappedFacts": [{ "category": string, "detail": string, "confidence": "high"|"medium"|"low" }]
 }`;
 
 function buildProfessionalParsePrompt(
@@ -883,14 +1427,42 @@ function buildProfessionalParsePrompt(
   return [
     OPENAI_SCHEMA_INSTRUCTIONS,
     "",
-    "You are a senior event-data extraction specialist. Extract only what is supported by the provided input.",
-    "Extraction policy:",
-    "1) Prefer values grounded in Evidence JSON candidates/snippets.",
-    "2) Use Source text to resolve ambiguity and fill fields not explicitly present in candidates.",
-    "3) Never invent details. If not present, set null (or [] for arrays).",
-    "4) If multiple candidates conflict, choose the most specific and internally consistent value.",
-    "5) Keep URLs absolute (https://...) whenever possible.",
-    "6) Do not output explanatory text. Output JSON only.",
+    "You are a senior event-data extraction specialist for gymnastics meet documents.",
+    "",
+    "## Task",
+    "Extract all relevant data into one JSON object that matches the required schema.",
+    "Use two internal steps before producing output:",
+    "- Step A: classify `documentProfile`.",
+    "- Step B: populate all other fields with maximum factual recall.",
+    "",
+    "## Source Priority (resolve conflicts in this order)",
+    "1) Evidence JSON candidates/snippets (primary grounding source).",
+    "2) Source text (resolve ambiguity and fill gaps not covered by candidates).",
+    "3) If absent from both, use null for scalars or [] for arrays. Never invent.",
+    "",
+    "## Conflict Resolution",
+    "When candidates conflict, prefer the most specific and internally consistent value. Source text is the tiebreaker.",
+    "",
+    "## Document-Type Extraction Focus",
+    "- `parent_packet`: doors/arrival, facility layout, parking/traffic, visitor policies.",
+    "- `registration_packet`: entry fees, qualification criteria, deadlines, refund/late-fee rules, organizer contacts.",
+    "- `athlete_session`: warmup schedule, march-in, session windows, rotation order/apparatus, awards, assigned gym.",
+    "",
+    "## Field-Level Rules",
+    "- `rotationOrder`: populate ONLY when the source explicitly lists an apparatus/rotation sequence.",
+    "- Narrative references to rotation sheets are NOT a sequence; set `rotationOrder` to null and keep narrative in operational notes.",
+    "- For `dates`, preserve meet ranges exactly when present (example: `March 6-8, 2026`).",
+    "- Never use update/revision stamps (e.g., `Updated February 23, 2026`) as meet date values.",
+    "- Never use traffic windows or unrelated schedule snippets as primary meet dates.",
+    "- URLs must be absolute (https://...) whenever possible.",
+    "- Strings must be short and factual. No meta commentary.",
+    "",
+    "## No Fact Left Behind",
+    "Any fact that does not map to a primary field must be placed in one of:",
+    "`meetDetails.operationalNotes` | `policies.misc` | `deadlines` | `contacts` | `unmappedFacts`.",
+    "",
+    "## Output Format",
+    "Return JSON only. No preamble, explanation, or markdown wrapping.",
     "",
     "Evidence JSON:",
     evidenceJson,
@@ -907,10 +1479,18 @@ function buildProfessionalParsePrompt(
 function normalizeParseResult(value: any): ParseResult | null {
   if (!value || typeof value !== "object") return null;
   const eventType = value.eventType === "gymnastics_meet" ? "gymnastics_meet" : "unknown";
+  const documentProfile =
+    value.documentProfile === "athlete_session" ||
+    value.documentProfile === "parent_packet" ||
+    value.documentProfile === "registration_packet" ||
+    value.documentProfile === "meet_overview"
+      ? value.documentProfile
+      : "unknown";
   const title = safeString(value.title);
   const dates = safeString(value.dates);
   return {
     eventType,
+    documentProfile,
     title,
     dates,
     startAt: toIsoOrNull(value.startAt),
@@ -940,6 +1520,22 @@ function normalizeParseResult(value: any): ParseResult | null {
       marchIn: safeString(value.meetDetails?.marchIn) || null,
       rotationOrder: safeString(value.meetDetails?.rotationOrder) || null,
       judgingNotes: safeString(value.meetDetails?.judgingNotes) || null,
+      doorsOpen: safeString(value.meetDetails?.doorsOpen) || null,
+      arrivalGuidance: safeString(value.meetDetails?.arrivalGuidance) || null,
+      registrationInfo: safeString(value.meetDetails?.registrationInfo) || null,
+      facilityLayout: safeString(value.meetDetails?.facilityLayout) || null,
+      scoringInfo: safeString(value.meetDetails?.scoringInfo) || null,
+      sessionWindows: pickArray(value.meetDetails?.sessionWindows)
+        .map((item) => ({
+          date: safeString(item?.date) || null,
+          start: safeString(item?.start) || null,
+          end: safeString(item?.end) || null,
+          note: safeString(item?.note) || null,
+        }))
+        .filter((item) => item.date || item.start || item.end || item.note),
+      operationalNotes: pickArray(value.meetDetails?.operationalNotes)
+        .map((item) => safeString(item))
+        .filter(Boolean),
     },
     logistics: {
       parking: safeString(value.logistics?.parking) || null,
@@ -948,10 +1544,71 @@ function normalizeParseResult(value: any): ParseResult | null {
       meals: safeString(value.logistics?.meals) || null,
       fees: safeString(value.logistics?.fees) || null,
       waivers: safeString(value.logistics?.waivers) || null,
+      rideShare: safeString(value.logistics?.rideShare) || null,
+      accessibility: safeString(value.logistics?.accessibility) || null,
+      parkingLinks: uniqueBy(
+        pickArray(value.logistics?.parkingLinks)
+          .map((item) => ({
+            label: safeString(item?.label) || "Parking link",
+            url: normalizeUrl(item?.url),
+          }))
+          .filter((item) => item.url),
+        (item) => item.url
+      ),
     },
+    policies: {
+      food: safeString(value.policies?.food) || null,
+      hydration: safeString(value.policies?.hydration) || null,
+      safety: safeString(value.policies?.safety) || null,
+      animals: safeString(value.policies?.animals) || null,
+      misc: pickArray(value.policies?.misc).map((item) => safeString(item)).filter(Boolean),
+    },
+    contacts: uniqueBy(
+      pickArray(value.contacts)
+        .map((item) => ({
+          role: safeString(item?.role) || "Contact",
+          name: safeString(item?.name) || null,
+          email: safeString(item?.email) || null,
+          phone: safeString(item?.phone) || null,
+        }))
+        .filter((item) => item.name || item.email || item.phone),
+      (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+    ),
+    deadlines: uniqueBy(
+      pickArray(value.deadlines)
+        .map((item) => ({
+          label: safeString(item?.label) || "Deadline",
+          date: safeString(item?.date) || null,
+          note: safeString(item?.note) || null,
+        }))
+        .filter((item) => item.label || item.date || item.note),
+      (item) => [item.label, item.date || "", item.note || ""].join("|")
+    ),
+    unmappedFacts: pickArray(value.unmappedFacts)
+      .map((item) => ({
+        category: safeString(item?.category) || "general",
+        detail: safeString(item?.detail),
+        confidence:
+          item?.confidence === "high" || item?.confidence === "medium" || item?.confidence === "low"
+            ? item.confidence
+            : ("medium" as const),
+      }))
+      .filter((item) => item.detail),
+    links: uniqueBy(
+      pickArray(value.links)
+        .map((item) => ({
+          label: safeString(item?.label) || "Reference link",
+          url: normalizeUrl(item?.url),
+        }))
+        .filter((item) => item.url),
+      (item) => item.url
+    ),
     gear: {
       uniform: safeString(value.gear?.uniform) || null,
-      checklist: pickArray(value.gear?.checklist).map((item) => safeString(item)).filter(Boolean),
+      checklist: uniqueBy(
+        pickArray(value.gear?.checklist).map((item) => safeString(item)).filter(Boolean),
+        (item) => item
+      ),
     },
     volunteers: {
       signupLink: safeString(value.volunteers?.signupLink) || null,
@@ -963,9 +1620,6 @@ function normalizeParseResult(value: any): ParseResult | null {
         .filter((item) => item.title || item.body),
       passcode: safeString(value.communications?.passcode) || null,
     },
-    links: pickArray(value.links)
-      .map((item) => ({ label: safeString(item?.label), url: safeString(item?.url) }))
-      .filter((item) => item.url),
   };
 }
 
@@ -998,6 +1652,80 @@ function extractJsonObject(text: string): any | null {
     }
     return parseWithRepairs(text);
   }
+}
+
+function buildEmptyParseResult(): ParseResult {
+  return {
+    eventType: "unknown",
+    documentProfile: "unknown",
+    title: "",
+    dates: "",
+    startAt: null,
+    endAt: null,
+    timezone: null,
+    venue: null,
+    address: null,
+    hostGym: null,
+    admission: [],
+    athlete: {
+      name: null,
+      level: null,
+      team: null,
+      session: null,
+      competitionDate: null,
+      stretchTime: null,
+      marchIn: null,
+      assignedGym: null,
+      awards: null,
+    },
+    meetDetails: {
+      warmup: null,
+      marchIn: null,
+      rotationOrder: null,
+      judgingNotes: null,
+      doorsOpen: null,
+      arrivalGuidance: null,
+      registrationInfo: null,
+      facilityLayout: null,
+      scoringInfo: null,
+      sessionWindows: [],
+      operationalNotes: [],
+    },
+    logistics: {
+      parking: null,
+      trafficAlerts: null,
+      hotel: null,
+      meals: null,
+      fees: null,
+      waivers: null,
+      rideShare: null,
+      accessibility: null,
+      parkingLinks: [],
+    },
+    policies: {
+      food: null,
+      hydration: null,
+      safety: null,
+      animals: null,
+      misc: [],
+    },
+    contacts: [],
+    deadlines: [],
+    gear: {
+      uniform: null,
+      checklist: [],
+    },
+    volunteers: {
+      signupLink: null,
+      notes: null,
+    },
+    communications: {
+      announcements: [],
+      passcode: null,
+    },
+    links: [],
+    unmappedFacts: [],
+  };
 }
 
 async function callOpenAiParse(
@@ -1069,11 +1797,23 @@ export async function parseMeetFromExtractedText(
   extractionMeta: ExtractionResult["extractionMeta"]
 ): Promise<{
   parseResult: ParseResult;
-  modelUsed: "openai" | "gemini";
+  modelUsed: "openai" | "gemini" | "quality-gate";
   rawModelOutput: string;
   evidence: DiscoveryEvidence;
 }> {
   const evidence = buildDiscoveryEvidence(extractedText, extractionMeta);
+  if (extractionMeta.textQuality === "poor") {
+    return {
+      parseResult: buildEmptyParseResult(),
+      modelUsed: "quality-gate",
+      rawModelOutput: JSON.stringify({
+        skipped: true,
+        reason: "poor_extraction_quality",
+        qualitySignals: extractionMeta.qualitySignals || null,
+      }),
+      evidence,
+    };
+  }
   let openAiRaw = "";
   let openAiErrorMessage = "";
   try {
@@ -1136,21 +1876,195 @@ function splitDateTime(iso: string | null): { date: string; time: string } {
   };
 }
 
-export async function mapParseResultToGymData(parseResult: ParseResult, baseData: any = {}) {
+function isDateWithinRange(
+  value: string,
+  start: string | null,
+  end: string | null
+): boolean {
+  const target = safeString(value);
+  const lower = safeString(start);
+  const upper = safeString(end || start);
+  if (!target || !lower || !upper) return false;
+  return target >= lower && target <= upper;
+}
+
+export async function mapParseResultToGymData(
+  parseResult: ParseResult,
+  baseData: any = {},
+  extractionMeta?: ExtractionResult["extractionMeta"]
+) {
   const { date, time } = splitDateTime(parseResult.startAt);
-  const rotationOrder = safeString(parseResult.meetDetails.rotationOrder)
-    .split(/[>,|/\-]+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const derivedRange = deriveDateRangeFromText(parseResult.dates);
+  const hasDateConflictWithRange =
+    Boolean(date) &&
+    Boolean(derivedRange.startDate) &&
+    !isDateWithinRange(date, derivedRange.startDate, derivedRange.endDate);
+  const authoritativeDate = hasDateConflictWithRange
+    ? derivedRange.startDate || ""
+    : date;
+  const layoutFacts = uniqueLines(
+    pickArray(extractionMeta?.gymLayoutFacts)
+      .map((item) => safeString(item))
+      .filter(Boolean),
+    14
+  );
+  const rotationSource = safeString(parseResult.meetDetails.rotationOrder);
+  const hasRotationNarrative = /(rotation sheets?|hard cop(y|ies)|download|website|refresh)/i.test(
+    rotationSource
+  );
+  const hasApparatusSignal =
+    /(vault|bars|beam|floor|pommel|rings|parallel|high bar|p[-\s]?bars|fx)/i.test(rotationSource);
+  const parsedRotationOrder = hasRotationNarrative
+    ? []
+    : rotationSource
+        .split(/[>,|/]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+  const rotationOrder = hasApparatusSignal ? parsedRotationOrder : [];
+  const rotationNarrative = rotationOrder.length === 0 ? rotationSource : "";
+  const operationalNotes = uniqueBy(
+    [
+      ...parseResult.meetDetails.operationalNotes,
+      rotationNarrative,
+      safeString(parseResult.meetDetails.doorsOpen),
+      safeString(parseResult.meetDetails.arrivalGuidance),
+      safeString(parseResult.meetDetails.registrationInfo),
+      safeString(parseResult.meetDetails.facilityLayout),
+      safeString(parseResult.meetDetails.scoringInfo),
+      ...layoutFacts,
+    ].filter(Boolean),
+    (item) => item
+  );
   const admissionText = parseResult.admission
     .map((item) =>
       [item.label, item.price, item.note].filter(Boolean).join(": ").trim()
     )
     .filter(Boolean)
     .join("\n");
+  const policyLines = uniqueBy(
+    [
+      parseResult.policies.food ? `Food policy: ${parseResult.policies.food}` : "",
+      parseResult.policies.hydration ? `Hydration: ${parseResult.policies.hydration}` : "",
+      parseResult.policies.safety ? `Safety: ${parseResult.policies.safety}` : "",
+      parseResult.policies.animals ? `Animals: ${parseResult.policies.animals}` : "",
+      ...parseResult.policies.misc,
+    ].filter(Boolean),
+    (item) => item
+  );
+  const detailBlocks = uniqueBy(
+    [
+      parseResult.dates,
+      admissionText,
+      parseResult.meetDetails.doorsOpen ? `Doors open: ${parseResult.meetDetails.doorsOpen}` : "",
+      parseResult.meetDetails.arrivalGuidance
+        ? `Arrival guidance: ${parseResult.meetDetails.arrivalGuidance}`
+        : "",
+      parseResult.meetDetails.registrationInfo
+        ? `Registration: ${parseResult.meetDetails.registrationInfo}`
+        : "",
+      parseResult.meetDetails.facilityLayout
+        ? `Facility layout: ${parseResult.meetDetails.facilityLayout}`
+        : "",
+      parseResult.meetDetails.scoringInfo ? `Scoring: ${parseResult.meetDetails.scoringInfo}` : "",
+      ...layoutFacts.map((item) => `Hall layout: ${item}`),
+      ...policyLines,
+    ].filter(Boolean),
+    (item) => item
+  );
 
   const athlete = parseResult.athlete;
   const existingAdvanced = (baseData?.advancedSections as Record<string, any>) || {};
+  const existingDocuments = pickArray(existingAdvanced.logistics?.additionalDocuments)
+    .map((item) => ({
+      id: safeString(item?.id),
+      name: safeString(item?.name),
+      url: normalizeUrl(item?.url),
+    }))
+    .filter((item) => item.url);
+  const incomingDocuments = [
+    parseResult.logistics.waivers
+      ? { id: "waiver-1", name: "Waiver", url: normalizeUrl(parseResult.logistics.waivers) }
+      : null,
+    ...parseResult.logistics.parkingLinks.map((item, idx) => ({
+      id: `parking-link-${idx + 1}`,
+      name: item.label || `Parking Link ${idx + 1}`,
+      url: item.url,
+    })),
+  ]
+    .filter((item): item is { id: string; name: string; url: string } => Boolean(item?.url));
+  const additionalDocuments = uniqueBy([...incomingDocuments, ...existingDocuments], (item) => item.url).map(
+    (item, idx) => ({
+      id: item.id || `doc-${idx + 1}`,
+      name: item.name || `Document ${idx + 1}`,
+      url: item.url,
+    })
+  );
+
+  const generatedAnnouncements: Array<{ title: string; body: string }> = [];
+  const existingAnnouncementEntries: Array<{ title: string; body: string }> = pickArray(
+    existingAdvanced.announcements?.announcements
+  )
+    .map((item) => ({
+      title: "",
+      body: safeString(item?.text || item?.body || item?.title),
+    }))
+    .filter((item) => item.body);
+  if (parseResult.meetDetails.doorsOpen) {
+    generatedAnnouncements.push({ title: "Doors Open", body: parseResult.meetDetails.doorsOpen });
+  }
+  if (parseResult.meetDetails.arrivalGuidance) {
+    generatedAnnouncements.push({
+      title: "Arrival Guidance",
+      body: parseResult.meetDetails.arrivalGuidance,
+    });
+  }
+  if (parseResult.meetDetails.registrationInfo) {
+    generatedAnnouncements.push({
+      title: "Registration",
+      body: parseResult.meetDetails.registrationInfo,
+    });
+  }
+  if (parseResult.meetDetails.scoringInfo) {
+    generatedAnnouncements.push({
+      title: "Scoring Information",
+      body: parseResult.meetDetails.scoringInfo,
+    });
+  }
+  for (const item of parseResult.deadlines) {
+    generatedAnnouncements.push({
+      title: item.label || "Deadline",
+      body: [item.date, item.note].filter(Boolean).join(" — "),
+    });
+  }
+  for (const item of parseResult.contacts) {
+    generatedAnnouncements.push({
+      title: item.role || "Contact",
+      body: [item.name, item.email, item.phone].filter(Boolean).join(" • "),
+    });
+  }
+  for (const item of parseResult.unmappedFacts.filter((fact) => fact.confidence !== "low")) {
+    generatedAnnouncements.push({
+      title: item.category || "Additional details",
+      body: item.detail,
+    });
+  }
+  for (const line of policyLines) {
+    generatedAnnouncements.push({
+      title: "Policy",
+      body: line,
+    });
+  }
+  const mergedAnnouncements = uniqueBy(
+    [
+      ...parseResult.communications.announcements,
+      ...generatedAnnouncements,
+      ...existingAnnouncementEntries,
+    ].filter(
+      (item) => safeString(item.title) || safeString(item.body)
+    ),
+    (item) => `${safeString(item.title)}|${safeString(item.body)}`
+  );
+
   const nextAdvanced = {
     ...existingAdvanced,
     roster: {
@@ -1181,19 +2095,36 @@ export async function mapParseResultToGymData(parseResult: ParseResult, baseData
       warmUpTime: parseResult.meetDetails.warmup || athlete.stretchTime || "",
       marchInTime: parseResult.meetDetails.marchIn || athlete.marchIn || "",
       rotationOrder,
-      judgingNotes: parseResult.meetDetails.judgingNotes || "",
+      judgingNotes: [parseResult.meetDetails.judgingNotes, rotationNarrative]
+        .filter(Boolean)
+        .join("\n\n"),
       startApparatus: rotationOrder[0] || "",
+      doorsOpen: parseResult.meetDetails.doorsOpen || "",
+      arrivalGuidance: parseResult.meetDetails.arrivalGuidance || "",
+      registrationInfo: parseResult.meetDetails.registrationInfo || "",
+      facilityLayout: parseResult.meetDetails.facilityLayout || "",
+      scoringInfo: parseResult.meetDetails.scoringInfo || "",
+      sessionWindows: parseResult.meetDetails.sessionWindows || [],
+      operationalNotes,
     },
     logistics: {
       ...(existingAdvanced.logistics || {}),
       hotelName: parseResult.logistics.hotel || "",
       mealPlan: parseResult.logistics.meals || "",
       feeAmount: parseResult.logistics.fees || "",
-      additionalDocuments: parseResult.logistics.waivers
-        ? [{ id: "waiver-1", name: "Waiver", url: parseResult.logistics.waivers }]
-        : existingAdvanced.logistics?.additionalDocuments || [],
+      additionalDocuments,
       parking: parseResult.logistics.parking || "",
       trafficAlerts: parseResult.logistics.trafficAlerts || "",
+      rideShare: parseResult.logistics.rideShare || "",
+      accessibility: parseResult.logistics.accessibility || "",
+      policyFood: parseResult.policies.food || "",
+      policyHydration: parseResult.policies.hydration || "",
+      policySafety: parseResult.policies.safety || "",
+      policyAnimals: parseResult.policies.animals || "",
+      gymLayoutImage:
+        safeString(extractionMeta?.gymLayoutImageDataUrl) ||
+        safeString(existingAdvanced.logistics?.gymLayoutImage) ||
+        "",
     },
     gear: {
       ...(existingAdvanced.gear || {}),
@@ -1213,7 +2144,7 @@ export async function mapParseResultToGymData(parseResult: ParseResult, baseData
     },
     announcements: {
       ...(existingAdvanced.announcements || {}),
-      announcements: parseResult.communications.announcements.map((item, idx) => ({
+      announcements: mergedAnnouncements.map((item, idx) => ({
         id: `announcement-${idx + 1}`,
         text: [item.title, item.body].filter(Boolean).join("\n\n").trim(),
         priority: "normal",
@@ -1233,14 +2164,42 @@ export async function mapParseResultToGymData(parseResult: ParseResult, baseData
         requirePasscode: false,
       });
 
+  const mappedDate =
+    authoritativeDate ||
+    derivedRange.startDate ||
+    safeString(baseData?.date) ||
+    "";
+  const mappedTime = (() => {
+    if (authoritativeDate) return time || safeString(baseData?.time) || "";
+    if (parseResult.startAt) return time || "";
+    if (safeString(baseData?.date) === mappedDate) return safeString(baseData?.time) || "";
+    return "";
+  })();
+  const mappedStartISO = (() => {
+    if (parseResult.startAt && !hasDateConflictWithRange) return parseResult.startAt;
+    const existingStart = safeString(baseData?.startISO);
+    if (existingStart && mappedDate && existingStart.startsWith(mappedDate)) {
+      return existingStart;
+    }
+    return null;
+  })();
+  const mappedEndISO = (() => {
+    if (parseResult.endAt && !hasDateConflictWithRange) return parseResult.endAt;
+    const existingEnd = safeString(baseData?.endISO);
+    if (existingEnd && mappedDate && existingEnd.startsWith(mappedDate)) {
+      return existingEnd;
+    }
+    return null;
+  })();
+
   return {
     ...baseData,
     title: parseResult.title || baseData?.title || "",
-    details: [baseData?.details, parseResult.dates, admissionText].filter(Boolean).join("\n\n"),
-    date: date || baseData?.date || "",
-    time: time || baseData?.time || "",
-    startISO: parseResult.startAt || baseData?.startISO || null,
-    endISO: parseResult.endAt || baseData?.endISO || null,
+    details: uniqueBy([baseData?.details, ...detailBlocks].filter(Boolean), (item) => item).join("\n\n"),
+    date: mappedDate,
+    time: mappedTime,
+    startISO: mappedStartISO,
+    endISO: mappedEndISO,
     timezone: parseResult.timezone || baseData?.timezone || "America/Chicago",
     venue: parseResult.venue || baseData?.venue || "",
     address: parseResult.address || baseData?.address || "",
@@ -1254,9 +2213,16 @@ export async function mapParseResultToGymData(parseResult: ParseResult, baseData
       assistantCoach: baseData?.customFields?.assistantCoach || "",
       coachPhone: baseData?.customFields?.coachPhone || "",
       admission: admissionText,
+      discoveryDocumentProfile: parseResult.documentProfile,
+      meetDateRangeLabel: derivedRange.label || "",
+      meetDateRangeStart: derivedRange.startDate,
+      meetDateRangeEnd: derivedRange.endDate,
       advancedSections: nextAdvanced,
     },
-    links: parseResult.links,
+    links: uniqueBy(
+      [...parseResult.links, ...parseResult.logistics.parkingLinks].filter((item) => item.url),
+      (item) => item.url
+    ),
     advancedSections: nextAdvanced,
     accessControl: nextAccessControl || baseData?.accessControl || null,
     templateKey: "gymnastics",
@@ -1296,7 +2262,18 @@ export function computeGymBuilderStatuses(data: any) {
       ]),
       details: getStatusFromFlags([
         Boolean(safeString(data?.details)),
-        Boolean(safeString(meet?.warmUpTime || meet?.judgingNotes || meet?.sessionNumber)),
+        Boolean(
+          safeString(
+            meet?.warmUpTime ||
+              meet?.judgingNotes ||
+              meet?.sessionNumber ||
+              meet?.doorsOpen ||
+              meet?.arrivalGuidance ||
+              meet?.registrationInfo ||
+              meet?.facilityLayout ||
+              meet?.scoringInfo
+          )
+        ),
       ]),
       design: "ready" as Status,
       images: data?.heroImage ? ("ready" as Status) : ("not-started" as Status),
@@ -1307,9 +2284,19 @@ export function computeGymBuilderStatuses(data: any) {
           ? ("ready" as Status)
           : ("not-started" as Status),
       meetDetails: getStatusFromFlags([
-        Boolean(safeString(meet?.warmUpTime)),
-        Boolean(safeString(meet?.marchInTime)),
-        Array.isArray(meet?.rotationOrder) && meet.rotationOrder.length > 0,
+        Boolean(
+          safeString(
+            meet?.warmUpTime ||
+              meet?.marchInTime ||
+              meet?.doorsOpen ||
+              meet?.arrivalGuidance ||
+              meet?.registrationInfo
+          )
+        ),
+        Boolean(safeString(meet?.facilityLayout || meet?.scoringInfo || meet?.judgingNotes)),
+        (Array.isArray(meet?.rotationOrder) && meet.rotationOrder.length > 0) ||
+          (Array.isArray(meet?.sessionWindows) && meet.sessionWindows.length > 0) ||
+          (Array.isArray(meet?.operationalNotes) && meet.operationalNotes.length > 0),
       ]),
       practicePlanner:
         Array.isArray(practice?.blocks) && practice.blocks.length > 0
@@ -1317,8 +2304,16 @@ export function computeGymBuilderStatuses(data: any) {
           : ("not-started" as Status),
       logisticsTravel: getStatusFromFlags([
         Boolean(safeString(logistics?.hotelName || logistics?.hotelAddress)),
-        Boolean(safeString(logistics?.mealPlan)),
-        Boolean(safeString(logistics?.feeAmount)),
+        Boolean(safeString(logistics?.mealPlan || logistics?.policyFood)),
+        Boolean(
+          safeString(
+            logistics?.feeAmount ||
+              logistics?.parking ||
+              logistics?.trafficAlerts ||
+              logistics?.rideShare ||
+              logistics?.accessibility
+          )
+        ),
       ]),
       gearUniform: getStatusFromFlags([
         Boolean(safeString(gear?.leotardOfDay)),

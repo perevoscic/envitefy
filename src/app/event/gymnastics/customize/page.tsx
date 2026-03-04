@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -222,9 +222,9 @@ const FONT_SIZE_OPTIONS = [
 ];
 
 const baseInputClass =
-  "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow";
+  "w-full p-3 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow";
 const baseTextareaClass =
-  "w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
+  "w-full p-3 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]";
 
 const InputGroup = ({
   label,
@@ -233,6 +233,7 @@ const InputGroup = ({
   placeholder,
   type = "text",
   readOnly = false,
+  mutedValue = false,
 }: {
   label: string;
   value: string;
@@ -240,8 +241,12 @@ const InputGroup = ({
   placeholder?: string;
   type?: string;
   readOnly?: boolean;
+  mutedValue?: boolean;
 }) => {
   const [localValue, setLocalValue] = useState(value);
+  const toneClass = mutedValue
+    ? "text-slate-500 focus:text-slate-900"
+    : "text-slate-900";
 
   // Sync local state when value prop changes (from external updates)
   useEffect(() => {
@@ -261,7 +266,7 @@ const InputGroup = ({
       </label>
       {type === "textarea" ? (
         <textarea
-          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow min-h-[90px]"
+          className={`${baseTextareaClass} ${toneClass}`}
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           onBlur={handleBlur}
@@ -271,7 +276,7 @@ const InputGroup = ({
       ) : (
         <input
           type={type}
-          className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow"
+          className={`${baseInputClass} ${toneClass}`}
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           onBlur={handleBlur}
@@ -427,6 +432,135 @@ const asTrimmedString = (value: unknown): string =>
 const hasAnyText = (...values: unknown[]): boolean =>
   values.some((value) => asTrimmedString(value).length > 0);
 
+const normalizeIsoDate = (value: unknown): string => {
+  const text = asTrimmedString(value);
+  if (!text) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const d = new Date(text);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+};
+
+const monthToIndex = (value: string): number => {
+  const normalized = asTrimmedString(value).toLowerCase();
+  const map: Record<string, number> = {
+    january: 0,
+    jan: 0,
+    february: 1,
+    feb: 1,
+    march: 2,
+    mar: 2,
+    april: 3,
+    apr: 3,
+    may: 4,
+    june: 5,
+    jun: 5,
+    july: 6,
+    jul: 6,
+    august: 7,
+    aug: 7,
+    september: 8,
+    sep: 8,
+    sept: 8,
+    october: 9,
+    oct: 9,
+    november: 10,
+    nov: 10,
+    december: 11,
+    dec: 11,
+  };
+  return typeof map[normalized] === "number" ? map[normalized] : -1;
+};
+
+const toIsoDate = (year: number, monthIndex: number, day: number): string => {
+  if (!Number.isFinite(year) || !Number.isFinite(monthIndex) || !Number.isFinite(day)) {
+    return "";
+  }
+  const y = Math.trunc(year);
+  const m = Math.trunc(monthIndex);
+  const d = Math.trunc(day);
+  if (y < 1900 || y > 2200 || m < 0 || m > 11 || d < 1 || d > 31) return "";
+  const dt = new Date(Date.UTC(y, m, d));
+  if (Number.isNaN(dt.getTime())) return "";
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m || dt.getUTCDate() !== d) return "";
+  return dt.toISOString().slice(0, 10);
+};
+
+const parseDiscoveryDateRange = (
+  value: unknown
+): { start: string; end: string; label: string } => {
+  const label = asTrimmedString(value);
+  if (!label) return { start: "", end: "", label: "" };
+
+  const monthRange =
+    label.match(
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*[–-]\s*(\d{1,2}),?\s*(\d{4})\b/i
+    ) || null;
+  if (monthRange) {
+    const monthIdx = monthToIndex(monthRange[1]);
+    const start = toIsoDate(
+      Number.parseInt(monthRange[4], 10),
+      monthIdx,
+      Number.parseInt(monthRange[2], 10)
+    );
+    const end = toIsoDate(
+      Number.parseInt(monthRange[4], 10),
+      monthIdx,
+      Number.parseInt(monthRange[3], 10)
+    );
+    return { start, end: end || start, label };
+  }
+
+  const monthSingle =
+    label.match(
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2}),?\s*(\d{4})\b/i
+    ) || null;
+  if (monthSingle) {
+    const monthIdx = monthToIndex(monthSingle[1]);
+    const day = Number.parseInt(monthSingle[2], 10);
+    const year = Number.parseInt(monthSingle[3], 10);
+    const date = toIsoDate(year, monthIdx, day);
+    return { start: date, end: date, label };
+  }
+
+  const slashRange =
+    label.match(
+      /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[–-]\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\b/
+    ) || null;
+  if (slashRange) {
+    const start = toIsoDate(
+      Number.parseInt(slashRange[3], 10),
+      Number.parseInt(slashRange[1], 10) - 1,
+      Number.parseInt(slashRange[2], 10)
+    );
+    const end = toIsoDate(
+      Number.parseInt(slashRange[6], 10),
+      Number.parseInt(slashRange[4], 10) - 1,
+      Number.parseInt(slashRange[5], 10)
+    );
+    return { start, end: end || start, label };
+  }
+
+  const slashSingle = label.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+  if (slashSingle) {
+    const date = toIsoDate(
+      Number.parseInt(slashSingle[3], 10),
+      Number.parseInt(slashSingle[1], 10) - 1,
+      Number.parseInt(slashSingle[2], 10)
+    );
+    return { start: date, end: date, label };
+  }
+
+  return { start: "", end: "", label };
+};
+
+const isDateWithinRange = (value: string, start: string, end: string) => {
+  const normalized = normalizeIsoDate(value);
+  if (!normalized || !start) return false;
+  const upper = end || start;
+  return normalized >= start && normalized <= upper;
+};
+
 /** Stable layout for section editors so inputs (e.g. Details description) don't remount and lose focus on re-render. */
 function GymnasticsEditorLayout({
   isEmbed,
@@ -576,6 +710,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [activeView, setActiveView] = useState<string>("main");
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
+    const [dismissedSuggestedExtraFields, setDismissedSuggestedExtraFields] =
+      useState<Record<string, boolean>>({});
     const [submitting, setSubmitting] = useState(false);
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
@@ -588,11 +724,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     >(null);
     const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(false);
     const [isInIframe, setIsInIframe] = useState(false);
+    const [loadVersion, setLoadVersion] = useState(0);
+    const repairAttemptedRef = useRef(false);
     useEffect(() => {
       if (typeof window !== "undefined") {
         setIsInIframe(window.self !== window.top);
       }
     }, []);
+
+    useEffect(() => {
+      setDismissedSuggestedExtraFields({});
+    }, [editEventId]);
+
+    useEffect(() => {
+      repairAttemptedRef.current = false;
+    }, [editEventId]);
 
     // When embedded next to the live event page, broadcast theme previews to parent
     useEffect(() => {
@@ -793,6 +939,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const parseHasGymLayoutImage = hasAnyText(
       loadedDiscoverySource?.extractionMeta?.gymLayoutImageDataUrl
     );
+    const parseHasGymLayoutFacts =
+      Array.isArray(loadedDiscoverySource?.extractionMeta?.gymLayoutFacts) &&
+      loadedDiscoverySource.extractionMeta.gymLayoutFacts.length > 0;
     const hasDiscoveryParsePayload = Boolean(
       loadedDiscoverySource?.input || loadedDiscoverySource?.parseResult
     );
@@ -811,7 +960,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           case "practice":
             return hasPractice;
           case "logistics":
-            return hasLogistics || parseHasLogistics || parseHasGymLayoutImage;
+            return (
+              hasLogistics ||
+              parseHasLogistics ||
+              parseHasGymLayoutImage ||
+              parseHasGymLayoutFacts
+            );
           case "gear":
             return hasGear || parseHasGear;
           case "volunteers":
@@ -834,6 +988,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       parseHasAnnouncements,
       parseHasGear,
       parseHasGymLayoutImage,
+      parseHasGymLayoutFacts,
       parseHasLogistics,
       parseHasMeet,
       parseHasRoster,
@@ -1002,13 +1157,43 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existing.start || existing.startISO || existing.startIso;
           let loadedDate: string | undefined = undefined;
           let loadedTime: string | undefined = undefined;
-          if (startIso) {
-            const d = new Date(startIso);
-            if (!Number.isNaN(d.getTime())) {
-              loadedDate = d.toISOString().split("T")[0];
-              loadedTime = d.toISOString().slice(11, 16);
+          if (typeof startIso === "string") {
+            const isoMatch = startIso.match(
+              /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/
+            );
+            if (isoMatch) {
+              loadedDate = isoMatch[1];
+              loadedTime = isoMatch[2];
+            } else {
+              const d = new Date(startIso);
+              if (!Number.isNaN(d.getTime())) {
+                loadedDate = d.toISOString().split("T")[0];
+                loadedTime = d.toISOString().slice(11, 16);
+              }
             }
           }
+          const parseDatesLabel =
+            existingDiscoverySource?.parseResult?.dates ||
+            existing?.customFields?.meetDateRangeLabel;
+          const parsedRange = parseDiscoveryDateRange(parseDatesLabel);
+          const existingDateCandidate = normalizeIsoDate(
+            existing.date || loadedDate
+          );
+          const resolvedDate =
+            parsedRange.start &&
+            (!existingDateCandidate ||
+              !isDateWithinRange(
+                existingDateCandidate,
+                parsedRange.start,
+                parsedRange.end
+              ))
+              ? parsedRange.start
+              : existingDateCandidate || "";
+          const isExistingDiscoveryEvent =
+            existingCreatedVia === "meet-discovery" ||
+            Boolean(existingDiscoverySource?.input);
+          const resolvedTime =
+            asTrimmedString(existing.time) || asTrimmedString(loadedTime);
 
           // Load all data fields, prioritizing existing values
           const accessControl = existing.accessControl || {};
@@ -1019,8 +1204,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           setData((prev) => ({
             ...prev,
             title: json?.title || existing.title || prev.title,
-            date: existing.date || loadedDate || prev.date,
-            time: existing.time || loadedTime || prev.time,
+            date: resolvedDate || (isExistingDiscoveryEvent ? "" : prev.date),
+            time: resolvedTime || (isExistingDiscoveryEvent ? "" : prev.time),
             timezone: existing.timezone || prev.timezone,
             hostGym:
               existing.hostGym ||
@@ -1062,7 +1247,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ...(existing.extra || {}),
               ...(existing.customFields || {}),
               team:
-                existing.hostGym ||
                 existing.team ||
                 existing.customFields?.team ||
                 prev.extra?.team ||
@@ -1154,7 +1338,105 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       };
       loadExisting();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editEventId]);
+    }, [editEventId, loadVersion]);
+
+    useEffect(() => {
+      if (!editEventId || !isDiscoveryEdit || loadingExisting) return;
+      if (repairAttemptedRef.current) return;
+      if (!loadedDiscoverySource?.input) return;
+
+      const parseResult = loadedDiscoverySource?.parseResult || {};
+      const parseMeetDetails = parseResult?.meetDetails || {};
+      const parsedRange = parseDiscoveryDateRange(parseResult?.dates);
+      const normalizedDataDate = normalizeIsoDate(data.date);
+      const dateMismatch =
+        Boolean(parsedRange.start) &&
+        Boolean(normalizedDataDate) &&
+        !isDateWithinRange(normalizedDataDate, parsedRange.start, parsedRange.end);
+      const missingDateWithKnownRange =
+        Boolean(parsedRange.start) && !normalizedDataDate;
+
+      const extractionMeta = loadedDiscoverySource?.extractionMeta || {};
+      const parseHasMeetCore =
+        hasAnyText(
+          parseMeetDetails?.doorsOpen,
+          parseMeetDetails?.arrivalGuidance,
+          parseMeetDetails?.registrationInfo,
+          parseMeetDetails?.facilityLayout,
+          parseMeetDetails?.scoringInfo
+        ) ||
+        (Array.isArray(parseMeetDetails?.operationalNotes) &&
+          parseMeetDetails.operationalNotes.length > 0);
+
+      const mappedOperationalNotes = Array.isArray(advancedState?.meet?.operationalNotes)
+        ? advancedState.meet.operationalNotes
+        : [];
+      const hasMappedMeetCore =
+        hasAnyText(
+          advancedState?.meet?.doorsOpen,
+          advancedState?.meet?.arrivalGuidance,
+          advancedState?.meet?.registrationInfo,
+          advancedState?.meet?.facilityLayout,
+          advancedState?.meet?.scoringInfo
+        ) || mappedOperationalNotes.length > 0;
+
+      const hasLayoutEvidence =
+        hasAnyText(extractionMeta?.gymLayoutImageDataUrl) ||
+        (Array.isArray(extractionMeta?.gymLayoutFacts) &&
+          extractionMeta.gymLayoutFacts.length > 0);
+      const hasMappedLayoutEvidence =
+        hasAnyText(advancedState?.logistics?.gymLayoutImage) ||
+        mappedOperationalNotes.some((line: string) =>
+          /(hall|registration|awards area|competition area|guest services|gym\s*[a-f]|coffee bar)/i.test(
+            asTrimmedString(line)
+          )
+        );
+
+      const needsRepair =
+        dateMismatch ||
+        missingDateWithKnownRange ||
+        (parseHasMeetCore && !hasMappedMeetCore) ||
+        (hasLayoutEvidence && !hasMappedLayoutEvidence);
+
+      if (!needsRepair) return;
+
+      repairAttemptedRef.current = true;
+      let cancelled = false;
+      (async () => {
+        try {
+          const repairRes = await fetch(`/api/parse/${editEventId}?repair=1`, {
+            method: "POST",
+            credentials: "include",
+          });
+          if (!repairRes.ok) {
+            const repairJson = await repairRes.json().catch(() => ({}));
+            throw new Error(repairJson?.error || "Failed discovery repair parse");
+          }
+          if (!cancelled) {
+            setLoadVersion((prev) => prev + 1);
+          }
+        } catch (err) {
+          console.error("[Edit] Discovery repair parse failed", err);
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [
+      advancedState?.logistics?.gymLayoutImage,
+      advancedState?.meet?.arrivalGuidance,
+      advancedState?.meet?.doorsOpen,
+      advancedState?.meet?.facilityLayout,
+      advancedState?.meet?.operationalNotes,
+      advancedState?.meet?.registrationInfo,
+      advancedState?.meet?.scoringInfo,
+      data.date,
+      editEventId,
+      isDiscoveryEdit,
+      loadedDiscoverySource,
+      loadingExisting,
+    ]);
 
     useEffect(() => {
       if (!navItems.length) return;
@@ -1200,6 +1482,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
     const updateExtra = useCallback((key: string, value: string) => {
+      setDismissedSuggestedExtraFields((prev) =>
+        prev[key] ? prev : { ...prev, [key]: true }
+      );
       setData((prev) => ({
         ...prev,
         extra: { ...prev.extra, [key]: value },
@@ -1212,7 +1497,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       try {
         let startISO: string | null = null;
         let endISO: string | null = null;
-        if (data.date) {
+        if (data.date && data.time) {
           const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
           const end = new Date(start);
           end.setHours(end.getHours() + 2);
@@ -1221,7 +1506,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
 
         // Convert blob URLs to data URLs for saving
-        let heroToSave = config.defaultHero;
+        let heroToSave = "";
         if (data.hero) {
           if (/^blob:/i.test(data.hero)) {
             // Convert blob URL to data URL
@@ -1232,14 +1517,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               heroToSave = await new Promise<string>((resolve, reject) => {
                 reader.onloadend = () => {
                   const result = reader.result as string;
-                  resolve(result || config.defaultHero);
+                  resolve(result || "");
                 };
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
               });
             } catch (err) {
               console.error("Failed to convert blob URL:", err);
-              heroToSave = config.defaultHero;
+              heroToSave = "";
             }
           } else if (/^data:/i.test(data.hero)) {
             // Already a data URL, use as-is
@@ -1324,7 +1609,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             },
             customFields: {
               ...data.extra,
-              team: data.hostGym || data.extra?.team || "",
+              team: data.extra?.team || "",
               ...(data.simpleDesignTokens
                 ? { designTokens: data.simpleDesignTokens }
                 : {}),
@@ -1923,9 +2208,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 onChange={(v) => updateData("time", v)}
               />
             </div>
+            <InputGroup
+              label="Display Date"
+              value={data.extra?.meetDateRangeLabel || ""}
+              onChange={(v) => updateExtra("meetDateRangeLabel", v)}
+              placeholder="e.g. March 6-8, 2026"
+            />
             <p className="text-xs text-slate-500 -mt-2">
-              Set the exact event start here. You can edit session-specific
-              timing in <strong>Operations → Meet Details</strong>.
+              Set the exact event start above. For multi-day meets, use Display
+              Date to show a range (e.g. March 6-8, 2026) in the header. Leave
+              blank to use the single date. Session timing:{" "}
+              <strong>Operations → Meet Details</strong>.
             </p>
             <InputGroup
               label="Timezone"
@@ -1958,6 +2251,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         data.title,
         data.date,
         data.time,
+        data.extra?.meetDateRangeLabel,
         data.timezone,
         data.hostGym,
         advancedState?.meet?.sessionNumber,
@@ -1967,6 +2261,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         data.city,
         data.state,
         handleBackToMain,
+        updateExtra,
         config.displayName,
       ]
     );
@@ -2045,7 +2340,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               Description
             </label>
             <textarea
-              className={`w-full p-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow ${
+              className={`w-full p-3 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow ${
                 config.detailsDescriptionPopup
                   ? "min-h-[160px]"
                   : "min-h-[130px]"
@@ -2078,6 +2373,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 value={data.extra[field.key] || ""}
                 onChange={(v) => updateExtra(field.key, v)}
                 placeholder={field.placeholder}
+                mutedValue={Boolean(
+                  useParseDrivenSections &&
+                    data.extra[field.key] &&
+                    !dismissedSuggestedExtraFields[field.key]
+                )}
               />
             ))}
           </div>
@@ -2308,8 +2608,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const previewEventData = useMemo(() => {
       let startISO: string | null = null;
       let endISO: string | null = null;
-      if (data.date) {
-        const start = new Date(`${data.date}T${data.time || "18:00"}:00`);
+      if (data.date && data.time) {
+        const start = new Date(`${data.date}T${data.time}:00`);
         if (!Number.isNaN(start.getTime())) {
           const end = new Date(start);
           end.setHours(end.getHours() + 2);
@@ -2327,6 +2627,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         category: config.category,
         createdVia: isDiscoveryPreview ? "meet-discovery" : "simple-template",
         createdManually: !isDiscoveryPreview,
+        ...(loadedDiscoverySource
+          ? {
+              discoverySource: loadedDiscoverySource,
+            }
+          : {}),
         startISO,
         endISO,
         location: locationParts || undefined,
@@ -2350,14 +2655,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         },
         customFields: {
           ...data.extra,
-          team: data.hostGym || data.extra?.team || "",
+          team: data.extra?.team || "",
           ...(data.simpleDesignTokens
             ? { designTokens: data.simpleDesignTokens }
             : {}),
           advancedSections: advancedState,
         },
         advancedSections: advancedState,
-        heroImage: data.hero || config.defaultHero,
+        heroImage: data.hero || undefined,
         ...(data.simpleDesignTokens
           ? { designTokens: data.simpleDesignTokens }
           : {}),

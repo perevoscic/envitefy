@@ -30,10 +30,12 @@ async function getSessionUserId() {
 }
 
 export async function POST(
-  _req: Request,
+  req: Request,
   context: { params: Promise<{ eventId: string }> }
 ) {
   try {
+    const url = new URL(req.url);
+    const repairMode = url.searchParams.get("repair") === "1";
     const { eventId } = await context.params;
     const row = await getEventHistoryById(eventId);
     if (!row) return NextResponse.json({ error: "Event not found" }, { status: 404 });
@@ -58,7 +60,11 @@ export async function POST(
       extraction.extractedText,
       extraction.extractionMeta
     );
-    const mapped = await mapParseResultToGymData(parsed.parseResult, currentData);
+    const mapped = await mapParseResultToGymData(
+      parsed.parseResult,
+      currentData,
+      extraction.extractionMeta
+    );
     const detectedGymLayoutImage = extraction.extractionMeta?.gymLayoutImageDataUrl || null;
     if (
       detectedGymLayoutImage &&
@@ -97,6 +103,7 @@ export async function POST(
     return NextResponse.json({
       ok: true,
       eventId,
+      repaired: repairMode,
       modelUsed: parsed.modelUsed,
       parseResult: parsed.parseResult,
       statuses: computeGymBuilderStatuses(nextData),
