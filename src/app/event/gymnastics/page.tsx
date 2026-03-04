@@ -1,49 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import type { ChangeEvent, KeyboardEvent, MouseEvent } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Upload,
-  Link as LinkIcon,
-  Layout,
-  ChevronRight,
-  Globe,
-  MousePointer2,
-  CheckCircle2,
-  FileText,
-} from "lucide-react";
+import { Upload, Globe, PenTool, Check, ArrowRight, X, Loader2 } from "lucide-react";
+
+type PathId = "upload" | "url" | "scratch";
 
 export default function GymnasticsEntryPage() {
   const router = useRouter();
-  const [activeSource, setActiveSource] = useState<"upload" | "url" | null>(null);
+  const [selectedPath, setSelectedPath] = useState<PathId>("upload");
   const [discoverUrl, setDiscoverUrl] = useState("");
   const [discoverFile, setDiscoverFile] = useState<File | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleParse = async () => {
+  const handleParse = async (source?: { file?: File | null; url?: string }) => {
     if (busy) return;
+
     setError("");
-    const trimmedUrl = discoverUrl.trim();
-    if (!discoverFile && !trimmedUrl) {
+    const selectedFile = source?.file ?? discoverFile;
+    const trimmedUrl = (source?.url ?? discoverUrl ?? "").trim();
+
+    if (!selectedFile && !trimmedUrl) {
       setError("Upload a file or paste a URL.");
       return;
     }
-    if (discoverFile && trimmedUrl) {
+    if (selectedFile && trimmedUrl) {
       setError("Use one source at a time (file or URL).");
       return;
     }
 
+    const controller = new AbortController();
+    abortRef.current = controller;
     setBusy(true);
+    setStatusMessage("Analyzing source...");
+
     try {
       const formData = new FormData();
-      if (discoverFile) formData.append("file", discoverFile);
+      if (selectedFile) formData.append("file", selectedFile);
       else formData.append("url", trimmedUrl);
 
       const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
         method: "POST",
         body: formData,
         credentials: "include",
+        signal: controller.signal,
       });
       const ingestJson = await ingestRes.json().catch(() => ({}));
       if (!ingestRes.ok || !ingestJson?.eventId) {
@@ -51,9 +57,12 @@ export default function GymnasticsEntryPage() {
       }
 
       const eventId = String(ingestJson.eventId);
+      setStatusMessage("Building event...");
+
       const parseRes = await fetch(`/api/parse/${eventId}`, {
         method: "POST",
         credentials: "include",
+        signal: controller.signal,
       });
       const parseJson = await parseRes.json().catch(() => ({}));
       if (!parseRes.ok) {
@@ -61,209 +70,328 @@ export default function GymnasticsEntryPage() {
       }
 
       router.push(`/event/${eventId}`);
-    } catch (err: any) {
-      setError(String(err?.message || err || "Failed to create event"));
+    } catch (err: unknown) {
+      if (
+        (typeof err === "object" &&
+          err !== null &&
+          "name" in err &&
+          (err as { name?: string }).name === "AbortError") ||
+        controller.signal.aborted
+      ) {
+        setError("Upload canceled by user.");
+        return;
+      }
+
+      const message =
+        typeof err === "object" &&
+        err !== null &&
+        "message" in err &&
+        typeof (err as { message?: unknown }).message === "string"
+          ? (err as { message: string }).message
+          : String(err || "Failed to create event");
+      setError(message);
     } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+      }
       setBusy(false);
+      setStatusMessage("");
     }
   };
 
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setDiscoverFile(file);
+      setFileName(file.name);
+      setDiscoverUrl("");
+      setSelectedPath("upload");
+      void handleParse({ file, url: "" });
+    }
+    e.currentTarget.value = "";
+  };
+
+  const triggerFileSelect = () => {
+    if (busy) return;
+    fileInputRef.current?.click();
+  };
+
+  const clearFile = (e: MouseEvent<SVGSVGElement>) => {
+    e.stopPropagation();
+    if (busy) return;
+    setDiscoverFile(null);
+    setFileName(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const cancelParse = () => {
+    abortRef.current?.abort();
+  };
+
+  const handleUrlKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    void handleParse({ url: discoverUrl, file: null });
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900 md:p-8">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-10 text-center md:text-left">
-          <h1 className="mb-3 text-4xl font-bold tracking-tight text-slate-900">
-            Create Gymnastics Event
+    <div className="min-h-screen overflow-x-hidden bg-[#F8FAFC] font-sans">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-12 pt-16 md:pb-24 md:pt-24">
+        <div className="mb-16 max-w-4xl">
+          <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 md:text-6xl">
+            How would you like to <br />
+            <span className="text-violet-600">build your gymnast event?</span>
           </h1>
-          <p className="max-w-2xl text-lg text-slate-600">
-            Launch your meet in minutes. Choose your starting point to begin
-            building your professional event page.
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-12">
-          <div className="flex flex-col gap-6 lg:col-span-7">
-            <div
-              className={`group relative cursor-pointer rounded-2xl border-2 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                activeSource === "upload"
-                  ? "border-indigo-600 ring-4 ring-indigo-50"
-                  : "border-slate-100 hover:border-indigo-200"
-              }`}
-              onClick={() => document.getElementById("gym-file-upload")?.click()}
-            >
-              <div className="flex items-start gap-4">
-                <div
-                  className={`rounded-xl p-3 transition-colors ${
-                    activeSource === "upload"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100"
-                  }`}
-                >
-                  <Upload size={24} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="mb-1 text-xl font-semibold">Upload Result/Schedule</h3>
-                  <p className="mb-4 text-sm text-slate-500">
-                    Supports PDF, JPG/JPEG, and PNG source files.
-                  </p>
+        <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-3">
+          <div
+            onClick={() => setSelectedPath("upload")}
+            className={`relative flex cursor-pointer flex-col rounded-[2.5rem] border-2 p-8 transition-all duration-300 ${
+              selectedPath === "upload"
+                ? "z-10 scale-[1.01] border-violet-600 bg-white shadow-2xl"
+                : "border-slate-100 bg-white/50 hover:border-slate-300"
+            }`}
+          >
+            <div className="absolute -top-3 left-8 rounded-full bg-violet-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg">
+              Recommended
+            </div>
 
-                  <div className="flex items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 transition-colors group-hover:border-indigo-300 group-hover:bg-white">
-                    <FileText size={16} className="text-slate-400" />
-                    <span className="truncate text-sm italic text-slate-500">
-                      {discoverFile
-                        ? discoverFile.name
-                        : "Click to browse your source file..."}
-                    </span>
-                    {discoverFile && (
-                      <CheckCircle2 size={16} className="ml-auto text-green-500" />
-                    )}
-                  </div>
-                </div>
+            <div className="mb-6 flex items-center justify-between">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-colors ${
+                  selectedPath === "upload"
+                    ? "bg-violet-600 text-white"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                <Upload className="h-6 w-6" />
               </div>
+              {selectedPath === "upload" && (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-600">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+              )}
+            </div>
 
+            <div className="flex-1">
+              <p
+                className={`mb-1 text-[10px] font-black uppercase tracking-widest ${
+                  selectedPath === "upload" ? "text-violet-600" : "text-slate-400"
+                }`}
+              >
+                Fastest Setup
+              </p>
+              <h3 className="mb-3 text-2xl font-bold text-slate-900">
+                Upload your meet info.
+              </h3>
+              <p className="text-sm leading-relaxed text-slate-500">
+                Upload your meet packet (PDF/JPG) and let us extract the schedule
+                and rosters.
+              </p>
+            </div>
+
+            <div className="mt-6 space-y-3">
               <input
-                id="gym-file-upload"
                 type="file"
-                accept=".pdf,image/png,image/jpeg,image/jpg"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
                 className="hidden"
-                onChange={(e) => {
-                  const picked = e.target.files?.[0] || null;
-                  setDiscoverFile(picked);
-                  if (picked) {
-                    setDiscoverUrl("");
-                    setActiveSource("upload");
-                  }
-                }}
+                accept=".pdf,.jpg,.jpeg,.png"
               />
-            </div>
-
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                <div className="w-full border-t border-slate-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm uppercase">
-                <span className="bg-slate-50 px-4 font-bold tracking-widest text-slate-400">
-                  OR
-                </span>
-              </div>
-            </div>
-
-            <div
-              className={`group rounded-2xl border-2 bg-white p-6 transition-all duration-300 ${
-                activeSource === "url"
-                  ? "border-indigo-600 ring-4 ring-indigo-50"
-                  : "border-slate-100 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl"
-              }`}
-            >
-              <div className="mb-4 flex items-start gap-4">
-                <div
-                  className={`rounded-xl p-3 transition-colors ${
-                    activeSource === "url"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100"
-                  }`}
-                >
-                  <Globe size={24} />
+              <button
+                onClick={triggerFileSelect}
+                disabled={busy}
+                className={`group/upload relative flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 transition-all ${
+                  fileName
+                    ? "border-green-200 bg-green-50"
+                    : "border-violet-200 bg-violet-50/50 hover:border-violet-400 hover:bg-violet-50"
+                } ${busy ? "cursor-not-allowed opacity-70" : ""}`}
+              >
+                <div className="mb-1 flex items-center gap-3">
+                  {fileName ? (
+                    <Check className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Upload className="h-5 w-5 text-violet-600" />
+                  )}
+                  <span
+                    className={`max-w-[180px] truncate text-sm font-bold ${
+                      fileName ? "text-green-900" : "text-violet-900"
+                    }`}
+                  >
+                    {fileName ? fileName : "Click to Upload File"}
+                  </span>
+                  {fileName && !busy && (
+                    <X
+                      onClick={clearFile}
+                      className="ml-1 h-4 w-4 text-slate-400 transition-colors hover:text-red-500"
+                    />
+                  )}
                 </div>
-                <div>
-                  <h3 className="mb-1 text-xl font-semibold">Import via URL</h3>
-                  <p className="text-sm text-slate-500">
-                    Paste a link to an existing meet page or results portal.
+                {!fileName && (
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-violet-500">
+                    PDF, JPG, PNG
                   </p>
-                </div>
-              </div>
+                )}
+                {fileName && !busy && (
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-green-600">
+                    Ready to process
+                  </p>
+                )}
+                {busy && (
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-violet-600">
+                    {statusMessage || "Analyzing source..."}
+                  </p>
+                )}
+              </button>
 
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <LinkIcon className="h-5 w-5 text-slate-400" />
+              {busy && (
+                <button
+                  type="button"
+                  onClick={cancelParse}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 p-4 text-sm font-bold text-white shadow-lg transition-all hover:bg-slate-700"
+                >
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Cancel</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div
+            onClick={() => setSelectedPath("url")}
+            className={`relative flex cursor-pointer flex-col rounded-[2.5rem] border-2 p-8 transition-all duration-300 ${
+              selectedPath === "url"
+                ? "z-10 scale-[1.01] border-violet-600 bg-white shadow-2xl"
+                : "border-slate-100 bg-white/50 hover:border-slate-300"
+            }`}
+          >
+            <div className="mb-6 flex items-center justify-between">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-colors ${
+                  selectedPath === "url"
+                    ? "bg-violet-600 text-white"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                <Globe className="h-6 w-6" />
+              </div>
+              {selectedPath === "url" && (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-600">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1">
+              <p
+                className={`mb-1 text-[10px] font-black uppercase tracking-widest ${
+                  selectedPath === "url" ? "text-violet-600" : "text-slate-400"
+                }`}
+              >
+                External Integration
+              </p>
+              <h3 className="mb-3 text-2xl font-bold text-slate-900">Live URL Sync</h3>
+              <p className="text-sm leading-relaxed text-slate-500">
+                Paste a link to an existing meet page to sync data.
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <div className="group relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                  <Globe className="h-4 w-4 text-slate-400 transition-colors group-focus-within:text-violet-500" />
                 </div>
                 <input
-                  type="url"
+                  type="text"
                   value={discoverUrl}
+                  disabled={busy}
+                  placeholder="https://gym-results.com/meet/123"
+                  onFocus={() => setSelectedPath("url")}
                   onChange={(e) => {
                     const value = e.target.value;
                     setDiscoverUrl(value);
                     if (value.trim()) {
                       setDiscoverFile(null);
-                      setActiveSource("url");
+                      setFileName(null);
+                      setSelectedPath("url");
                     }
                   }}
-                  onFocus={() => setActiveSource("url")}
-                  placeholder="https://example.com/meet-results"
-                  className="block w-full rounded-xl border border-slate-200 bg-white py-4 pl-10 pr-3 text-sm leading-5 placeholder-slate-400 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  onKeyDown={handleUrlKeyDown}
+                  className="block w-full rounded-2xl border-2 border-slate-100 bg-slate-50 py-4 pl-11 pr-4 text-sm outline-none transition-all focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10"
                 />
               </div>
             </div>
-
-            {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={handleParse}
-              disabled={busy || (!discoverFile && !discoverUrl.trim())}
-              className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-lg font-bold shadow-lg transition-all ${
-                discoverFile || discoverUrl.trim()
-                  ? "bg-slate-900 text-white active:scale-[0.98] hover:bg-slate-800"
-                  : "cursor-not-allowed bg-slate-200 text-slate-400"
-              }`}
-            >
-              {busy ? "Initializing..." : "Initialize Event Creation"}
-              <ChevronRight size={20} />
-            </button>
           </div>
 
-          <div className="lg:col-span-5">
-            <div className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-indigo-100 bg-indigo-50 p-8">
-              <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-indigo-100 opacity-60 blur-3xl transition-colors group-hover:bg-indigo-200"></div>
-
-              <div className="relative z-10 flex h-full flex-col">
-                <div className="mb-6 w-fit rounded-2xl bg-white p-4 shadow-sm">
-                  <Layout className="text-indigo-600" size={32} />
-                </div>
-
-                <h3 className="mb-4 text-2xl font-bold text-slate-900">
-                  Start from Scratch
-                </h3>
-                <p className="mb-8 leading-relaxed text-slate-600">
-                  Prefer more control? Use our visual builder to design your
-                  meet page block-by-block with a live preview.
-                </p>
-
-                <ul className="mb-10 space-y-4">
-                  {[
-                    "Visual Page Editor",
-                    "Live Theme Customization",
-                    "Real-time Preview",
-                  ].map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-slate-700">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600">
-                        <CheckCircle2 size={12} className="text-white" />
-                      </div>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  type="button"
-                  onClick={() => router.push("/event/gymnastics/customize")}
-                  className="group/btn mt-auto flex items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-6 py-4 text-lg font-bold text-indigo-600 shadow-md transition-all hover:bg-indigo-600 hover:text-white"
-                >
-                  Open Template Builder
-                  <MousePointer2
-                    size={18}
-                    className="transition-transform group-hover/btn:-translate-y-1 group-hover/btn:translate-x-1"
-                  />
-                </button>
+          <div
+            onClick={() => setSelectedPath("scratch")}
+            className={`relative flex cursor-pointer flex-col rounded-[2.5rem] border-2 p-8 transition-all duration-300 ${
+              selectedPath === "scratch"
+                ? "z-10 scale-[1.01] border-violet-600 bg-white shadow-2xl"
+                : "border-slate-100 bg-white/50 hover:border-slate-300"
+            }`}
+          >
+            <div className="mb-6 flex items-center justify-between">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-colors ${
+                  selectedPath === "scratch"
+                    ? "bg-violet-600 text-white"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                <PenTool className="h-6 w-6" />
               </div>
+              {selectedPath === "scratch" && (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-600">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1">
+              <p
+                className={`mb-1 text-[10px] font-black uppercase tracking-widest ${
+                  selectedPath === "scratch" ? "text-violet-600" : "text-slate-400"
+                }`}
+              >
+                Custom Design
+              </p>
+              <h3 className="mb-3 text-2xl font-bold text-slate-900">Visual Builder</h3>
+              <p className="text-sm leading-relaxed text-slate-500">
+                The ultimate control. Design your meet page block-by-block using
+                our template gallery.
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push("/event/gymnastics/customize");
+                }}
+                className={`group flex w-full items-center justify-center gap-2 rounded-2xl p-4 text-sm font-bold text-white shadow-lg transition-all ${
+                  selectedPath === "scratch"
+                    ? "bg-violet-600 shadow-violet-200 hover:bg-violet-500"
+                    : "bg-slate-800 shadow-slate-200 hover:bg-slate-700"
+                }`}
+              >
+                <span>Open Template Builder</span>
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </button>
             </div>
           </div>
         </div>
-      </div>
+
+        {error && (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
