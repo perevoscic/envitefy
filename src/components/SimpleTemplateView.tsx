@@ -3181,9 +3181,7 @@ export default function SimpleTemplateView({
       advancedSections?.logistics?.gymLayoutImage ||
         currentData?.discoverySource?.extractionMeta?.gymLayoutImageDataUrl
     );
-    const assignedGymRaw = safeString(
-      advancedSections?.meet?.assignedGym || parseResult?.athlete?.assignedGym
-    );
+    const assignedGymRaw = safeString(advancedSections?.meet?.assignedGym);
     const gymLayoutLabel = safeString(
       advancedSections?.logistics?.gymLayoutLabel ||
         (assignedGymRaw ? `Assigned gym location: ${assignedGymRaw}` : "")
@@ -3201,15 +3199,6 @@ export default function SimpleTemplateView({
           .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
           .filter(Boolean)
       : [];
-    const extractionLayoutFacts = (
-      Array.isArray(
-        currentData?.discoverySource?.extractionMeta?.gymLayoutFacts
-      )
-        ? currentData.discoverySource.extractionMeta.gymLayoutFacts
-        : []
-    )
-      .map((line: any) => safeString(line))
-      .filter(Boolean);
     const uniqueTextLines = (items: string[], limit = 20) => {
       const seen = new Set<string>();
       const out: string[] = [];
@@ -3224,6 +3213,40 @@ export default function SimpleTemplateView({
       }
       return out;
     };
+    const stitchSentenceFragments = (items: string[]) => {
+      return items.reduce((acc: string[], rawLine: string) => {
+        const line = safeString(rawLine).replace(/\s+/g, " ");
+        if (!line) return acc;
+        if (!acc.length) {
+          acc.push(line);
+          return acc;
+        }
+        const previous = acc[acc.length - 1];
+        const prevEndsSentence = /[.!?:]$/.test(previous);
+        const startsLowercase = /^[a-z]/.test(line);
+        const startsContinuation =
+          /^(and|or|but|to|for|with|in|on|at|near|by|of|the|a|an|available|entrance|registration|convention center|guest services|competition area|awards area)\b/i.test(
+            line
+          );
+        if (!prevEndsSentence && (startsLowercase || startsContinuation)) {
+          acc[acc.length - 1] = `${previous} ${line}`.replace(/\s+/g, " ").trim();
+          return acc;
+        }
+        acc.push(line);
+        return acc;
+      }, []);
+    };
+    const extractionLayoutFacts = stitchSentenceFragments(
+      (
+        Array.isArray(
+          currentData?.discoverySource?.extractionMeta?.gymLayoutFacts
+        )
+          ? currentData.discoverySource.extractionMeta.gymLayoutFacts
+          : []
+      )
+        .map((line: any) => safeString(line))
+        .filter(Boolean)
+    );
     const trafficText = safeString(
       logistics?.trafficAlerts || parseLogistics?.trafficAlerts
     );
@@ -3450,27 +3473,31 @@ export default function SimpleTemplateView({
           ).filter((line) => line.length > 10);
     const rideShareNote =
       sourceLines.find((line) => rideSharePattern.test(line)) || "";
-    const facilityLinesFromSource = primaryMeetDetailsLines.filter(
-      (line) =>
-        /(east|west|central|hall|registration|guest services|entrance|coffee bar|admission tickets|competition area)/i.test(
-          line
-        ) && !rideSharePattern.test(line)
+    const facilityLinesFromSource = stitchSentenceFragments(
+      primaryMeetDetailsLines.filter(
+        (line) =>
+          /(east|west|central|hall|registration|guest services|entrance|coffee bar|admission tickets|competition area)/i.test(
+            line
+          ) && !rideSharePattern.test(line)
+      )
     );
-    const facilityLinesFromFacts = uniqueTextLines(
-      [
-        ...extractionLayoutFacts,
-        ...(Array.isArray(parseMeetDetails?.operationalNotes)
-          ? parseMeetDetails.operationalNotes
-          : []),
-      ].filter((line) =>
-        /(east|west|central|hall|registration|guest services|entrance|coffee bar|competition area|awards area|gym\s*[a-f]|2nd floor|second floor|3rd floor|third floor|check-?in)/i.test(
-          safeString(line)
-        )
-      ),
-      14
+    const facilityLinesFromFacts = stitchSentenceFragments(
+      uniqueTextLines(
+        [
+          ...extractionLayoutFacts,
+          ...(Array.isArray(parseMeetDetails?.operationalNotes)
+            ? parseMeetDetails.operationalNotes
+            : []),
+        ].filter((line) =>
+          /(east|west|central|hall|registration|guest services|entrance|coffee bar|competition area|awards area|gym\s*[a-f]|2nd floor|second floor|3rd floor|third floor|check-?in)/i.test(
+            safeString(line)
+          )
+        ),
+        14
+      )
     );
     const facilityLinesRaw = uniqueTextLines(
-      [...facilityLinesFromSource, ...facilityLinesFromFacts],
+      stitchSentenceFragments([...facilityLinesFromSource, ...facilityLinesFromFacts]),
       14
     ).filter((line) => line.length > 10);
     const meetDetailsLines = uniqueTextLines(
@@ -4227,31 +4254,6 @@ export default function SimpleTemplateView({
                 <div className="space-y-6 md:space-y-10">
                   <section className={`${discoveryCard} p-4 sm:p-5 md:p-10`}>
                     <h3 className={discoverySectionHeading}>Awards Area</h3>
-                    {gymLayoutLabel && (
-                      <div className="mb-6 rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-[color:var(--chip-bg,#F8FAFC)] p-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                          Assigned gym location
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-800">
-                          {gymLayoutLabelValue}
-                        </p>
-                      </div>
-                    )}
-                    {gymLayoutImageUrl && (
-                      <div className="mb-6">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
-                          Gym Layout
-                        </h4>
-                        <div className="rounded-3xl border border-[color:var(--border,#E2E8F0)] overflow-hidden">
-                          <img
-                            src={gymLayoutImageUrl}
-                            alt="Gym layout"
-                            className="w-full h-auto object-cover"
-                          />
-                        </div>
-                      </div>
-                    )}
-
                     {facilityLines.length > 0 && (
                       <ul className="space-y-4">
                         {facilityLines.map((line) => {
@@ -4323,6 +4325,34 @@ export default function SimpleTemplateView({
                           </li>
                         )}
                       </ul>
+                    )}
+                    {(gymLayoutLabel || gymLayoutImageUrl) && (
+                      <div className="mt-8 border-t border-[color:var(--border,#E2E8F0)] pt-6">
+                        {gymLayoutLabel && (
+                          <div className="mb-4 rounded-2xl border border-[color:var(--border,#E2E8F0)] bg-[color:var(--chip-bg,#F8FAFC)] p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                              Assigned gym location
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-slate-800">
+                              {gymLayoutLabelValue}
+                            </p>
+                          </div>
+                        )}
+                        {gymLayoutImageUrl && (
+                          <div>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
+                              Gym Layout
+                            </h4>
+                            <div className="rounded-3xl border border-[color:var(--border,#E2E8F0)] overflow-hidden">
+                              <img
+                                src={gymLayoutImageUrl}
+                                alt="Gym layout"
+                                className="w-full h-auto object-cover"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
 
                     {!hasFacilityContent && (

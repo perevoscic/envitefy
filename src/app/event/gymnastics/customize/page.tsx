@@ -2400,6 +2400,42 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
+              Assigned Gym (Manual)
+            </label>
+            <select
+              className={baseInputClass}
+              value={advancedState?.meet?.assignedGym || ""}
+              onChange={(e) =>
+                setAdvancedState((prev: Record<string, any>) => ({
+                  ...prev,
+                  meet: {
+                    ...(prev?.meet || {}),
+                    assignedGym: e.target.value,
+                  },
+                }))
+              }
+            >
+              <option value="">Not selected</option>
+              <option value="Gym A">Gym A</option>
+              <option value="Gym B">Gym B</option>
+              <option value="Gym C">Gym C</option>
+              <option value="Gym D">Gym D</option>
+              <option value="Gym E">Gym E</option>
+              <option value="Gym F">Gym F</option>
+              <option value="Gym 1">Gym 1</option>
+              <option value="Gym 2">Gym 2</option>
+              <option value="Gym 3">Gym 3</option>
+              <option value="Gym 4">Gym 4</option>
+              <option value="Gym 5">Gym 5</option>
+              <option value="Gym 6">Gym 6</option>
+            </select>
+            <p className="mt-1 text-xs text-slate-400">
+              Choose the gym manually. We no longer auto-assign gym letters/numbers.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
               Description
             </label>
             <textarea

@@ -413,8 +413,29 @@ function extractHallFactsFromText(text: string): string[] {
     .split(/\n+/)
     .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
     .filter(Boolean);
+  const stitchedLines = normalizedLines.reduce((acc: string[], rawLine: string) => {
+    const line = safeString(rawLine).replace(/\s+/g, " ");
+    if (!line) return acc;
+    if (!acc.length) {
+      acc.push(line);
+      return acc;
+    }
+    const previous = acc[acc.length - 1];
+    const prevEndsSentence = /[.!?:]$/.test(previous);
+    const startsLowercase = /^[a-z]/.test(line);
+    const startsContinuation =
+      /^(and|or|but|to|for|with|in|on|at|near|by|of|the|a|an|available|entrance|registration|convention center|guest services|competition area|awards area)\b/i.test(
+        line
+      );
+    if (!prevEndsSentence && (startsLowercase || startsContinuation)) {
+      acc[acc.length - 1] = `${previous} ${line}`.replace(/\s+/g, " ").trim();
+      return acc;
+    }
+    acc.push(line);
+    return acc;
+  }, []);
 
-  const hallFacts = normalizedLines.filter((line) =>
+  const hallFacts = stitchedLines.filter((line) =>
     /(east hall|west hall|central hall|north hall|south hall|registration|guest services|competition area|entrance|coffee bar|awards area|gym\s*[a-f]|check[- ]?in|2nd floor|second floor|3rd floor|third floor)/i.test(
       line
     )
@@ -885,7 +906,7 @@ async function openAiAnalyzeGymLayoutPage(
               {
                 type: "text",
                 text:
-                  'Return JSON with keys: isLayout (boolean), confidence (number 0-1), text (string), facts (string[]). Facts must be short factual hall/map labels like halls, registration, entrances, awards area, assigned gyms.',
+                  'Return JSON with keys: isLayout (boolean), confidence (number 0-1), text (string), facts (string[]). Facts must be complete, readable sentences or complete map labels. Never return broken fragments or mid-sentence splits (for example avoid outputs like "Convention Center." or "Entrance into").',
               },
               { type: "input_image", image_url: { url: `data:${mimeType};base64,${buffer.toString("base64")}` } },
             ],
@@ -1936,6 +1957,8 @@ function buildProfessionalParsePrompt(
     "- Never use traffic windows or unrelated schedule snippets as primary meet dates.",
     "- URLs must be absolute (https://...) whenever possible.",
     "- Strings must be short and factual. No meta commentary.",
+    "- For `meetDetails.operationalNotes`, each item must be a complete sentence or complete standalone label.",
+    "- Do not output fragmented line-wrap artifacts (for example avoid splitting one sentence into multiple array items).",
     "",
     "## No Fact Left Behind",
     "Any fact that does not map to a primary field must be placed in one of:",
@@ -2368,36 +2391,6 @@ function isDateWithinRange(
   return target >= lower && target <= upper;
 }
 
-function resolveAssignedGymFromParsedData(
-  parseResult: ParseResult,
-  extractionMeta?: ExtractionResult["extractionMeta"]
-): string {
-  const explicit = extractGymTokens(parseResult.athlete.assignedGym || "")[0] || "";
-  if (explicit) return explicit;
-
-  const weighted = new Map<string, number>();
-  const scoreToken = (source: string, weight: number) => {
-    for (const token of extractGymTokens(source)) {
-      weighted.set(token, (weighted.get(token) || 0) + weight);
-    }
-  };
-
-  scoreToken(parseResult.meetDetails.facilityLayout || "", 3);
-  for (const note of parseResult.meetDetails.operationalNotes || []) {
-    scoreToken(note, 2);
-  }
-  for (const fact of pickArray(extractionMeta?.gymLayoutFacts)) {
-    scoreToken(safeString(fact), 1);
-  }
-
-  const ranked = [...weighted.entries()].sort((a, b) => {
-    const scoreDelta = b[1] - a[1];
-    if (scoreDelta !== 0) return scoreDelta;
-    return a[0].localeCompare(b[0]);
-  });
-  return ranked[0]?.[0] || "";
-}
-
 export async function mapParseResultToGymData(
   parseResult: ParseResult,
   baseData: any = {},
@@ -2419,7 +2412,7 @@ export async function mapParseResultToGymData(
       .filter(Boolean),
     14
   );
-  const assignedGym = resolveAssignedGymFromParsedData(parseResult, extractionMeta);
+  const assignedGym = safeString(existingAdvanced.meet?.assignedGym || "");
   const extractionLayoutImage = safeString(extractionMeta?.gymLayoutImageDataUrl);
   const extractionLayoutZones = normalizeGymLayoutZones(extractionMeta?.gymLayoutZones);
   const assignedGymLayoutImage =
@@ -2437,7 +2430,7 @@ export async function mapParseResultToGymData(
     "";
   const resolvedGymLayoutLabel = assignedGym
     ? `Assigned gym location: ${assignedGym}`
-    : safeString(existingAdvanced.logistics?.gymLayoutLabel);
+    : "";
   const rotationSource = safeString(parseResult.meetDetails.rotationOrder);
   const hasRotationNarrative = /(rotation sheets?|hard cop(y|ies)|download|website|refresh)/i.test(
     rotationSource
