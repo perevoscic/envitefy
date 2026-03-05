@@ -3394,6 +3394,20 @@ export default function SimpleTemplateView({
       sourceLines.find((line) => isHydrationLine(line)) || "";
     const sourceMerchandiseLine =
       sourceLines.find((line) => isMerchandiseLine(line)) || "";
+    const sourceDoorsOpenLine =
+      sourceLines.find((line) => /^doors\s+open\b/i.test(safeString(line))) || "";
+    const sourceArrivalGuidanceLine =
+      sourceLines.find((line) =>
+        /^(arrival guidance\b|arrive\s+one\s+hour\s+before\b|arrive\s+45\s+minutes\s+before\b|arrive\s+forty[-\s]?five\s+minutes\s+before\b)/i.test(
+          safeString(line)
+        )
+      ) || "";
+    const sourceRegistrationLine =
+      sourceLines.find((line) =>
+        /^(registration\b|the registration area will be\b)/i.test(
+          safeString(line)
+        )
+      ) || "";
     const sourceSafetyObjectsLine =
       sourceLines.find((line) => isSafetyObjectsLine(line)) || "";
     const sourceResultsLines = uniqueTextLines(
@@ -3461,9 +3475,39 @@ export default function SimpleTemplateView({
       (/(official results|live scoring|meetscoresonline)/i.test(announcementBody)
         ? announcementBody
         : "");
+    const stripKnownLabelPrefix = (value: string, labelPattern: RegExp) =>
+      safeString(value).replace(labelPattern, "").trim();
+    const spectatorLogisticsItems = [
+      {
+        key: "doors-open",
+        label: "Doors Open",
+        value:
+          safeString(parseMeetDetails?.doorsOpen) ||
+          stripKnownLabelPrefix(sourceDoorsOpenLine, /^doors\s+open:\s*/i),
+      },
+      {
+        key: "arrival-guidance",
+        label: "Arrival Guidance",
+        value:
+          safeString(parseMeetDetails?.arrivalGuidance) ||
+          stripKnownLabelPrefix(
+            sourceArrivalGuidanceLine,
+            /^arrival guidance:\s*/i
+          ),
+      },
+      {
+        key: "registration",
+        label: "Registration",
+        value:
+          safeString(parseMeetDetails?.registrationInfo) ||
+          stripKnownLabelPrefix(sourceRegistrationLine, /^registration:\s*/i),
+      },
+    ].filter((item) => Boolean(safeString(item.value)));
+    const hasSpectatorLogistics = spectatorLogisticsItems.length > 0;
     const hasRotationLink = Boolean(safeString(rotationLink?.url));
     const hasAdmissionContent =
       admissionCards.length > 0 || Boolean(admissionPrimaryNote);
+    const hasAdmissionSection = hasAdmissionContent || hasSpectatorLogistics;
     const hasSpectatorCards =
       Boolean(merchandiseText) || hasRotationLink || Boolean(resultsInfoText);
     const rulesUpdateText =
@@ -3547,6 +3591,35 @@ export default function SimpleTemplateView({
       /(east hall|west hall|central hall|north hall|south hall|registration|guest services|entrance|coffee bar|competition area|awards area|gym\s*[a-z0-9]{1,2}|2nd floor|second floor|3rd floor|third floor|check-?in|freight door|right door)/i.test(
         line
       );
+    const eventDatesLabelNormalized = normalizeCompareText(eventDatesLabel);
+    const isAdmissionLine = (line: string) =>
+      /(spectator admission|door fees?|weekend passes?|cash\b|adults?\b.*\$\d|children\s*\(?\d{1,2}\s*[-–]?\s*\d{0,2}\)?\b.*\$\d|\$\d+\s*per\s*day)/i.test(
+        safeString(line)
+      );
+    const isSpectatorLogisticsLine = (line: string) =>
+      /^(doors open|arrival guidance|registration):/i.test(safeString(line));
+    const isMeetDateLine = (line: string) => {
+      const text = safeString(line);
+      if (!text) return false;
+      const normalized = normalizeCompareText(
+        text.replace(/^meet dates?:\s*/i, "")
+      );
+      if (/^meet dates?:/i.test(text)) return true;
+      if (!eventDatesLabelNormalized || !normalized) return false;
+      return (
+        normalized === eventDatesLabelNormalized ||
+        normalized.includes(eventDatesLabelNormalized) ||
+        eventDatesLabelNormalized.includes(normalized)
+      );
+    };
+    const isMeetDetailsExcludedLine = (line: string) =>
+      isAdmissionLine(line) ||
+      isSpectatorLogisticsLine(line) ||
+      isHydrationLine(line) ||
+      isMerchandiseLine(line) ||
+      isResultsLine(line) ||
+      isDaylightLine(line) ||
+      isSafetyObjectsLine(line);
     const meetsAnyLine = (line: string, candidates: string[]) => {
       const normalized = normalizeCompareText(line);
       if (!normalized) return false;
@@ -3567,15 +3640,6 @@ export default function SimpleTemplateView({
     const meetDetailsFallbackLines = uniqueTextLines(
       [
         eventDatesLabel ? `Meet dates: ${eventDatesLabel}` : "",
-        safeString(parseMeetDetails?.doorsOpen)
-          ? `Doors open: ${safeString(parseMeetDetails.doorsOpen)}`
-          : "",
-        safeString(parseMeetDetails?.arrivalGuidance)
-          ? `Arrival guidance: ${safeString(parseMeetDetails.arrivalGuidance)}`
-          : "",
-        safeString(parseMeetDetails?.registrationInfo)
-          ? `Registration: ${safeString(parseMeetDetails.registrationInfo)}`
-          : "",
         safeString(parseMeetDetails?.facilityLayout)
           ? `Facility layout: ${safeString(parseMeetDetails.facilityLayout)}`
           : "",
@@ -3594,11 +3658,39 @@ export default function SimpleTemplateView({
         .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
         .filter(Boolean),
       8
-    ).filter((line) => line.length > 10);
-    const meetDetailsRawLines = uniqueTextLines(
-      [...descriptionLines, ...meetDetailsFallbackLines, ...primaryMeetDetailsLines],
-      16
-    ).filter((line) => line.length > 10);
+    ).filter((line) => line.length > 10 && !isMeetDetailsExcludedLine(line));
+    const meetDetailsRawLines = (() => {
+      const out: string[] = [];
+      const seen = new Set<string>();
+      let keptMeetDate = false;
+      for (const rawLine of [
+        ...descriptionLines,
+        ...meetDetailsFallbackLines,
+        ...primaryMeetDetailsLines,
+      ]) {
+        const line = safeString(rawLine);
+        if (!line || line.length <= 10) continue;
+        if (isMeetDetailsExcludedLine(line)) continue;
+        if (isMeetDateLine(line)) {
+          if (keptMeetDate) continue;
+          keptMeetDate = true;
+          const canonicalLine = eventDatesLabel
+            ? `Meet dates: ${eventDatesLabel}`
+            : line;
+          const canonicalKey = normalizeCompareText(canonicalLine);
+          if (!canonicalKey || seen.has(canonicalKey)) continue;
+          seen.add(canonicalKey);
+          out.push(canonicalLine);
+          continue;
+        }
+        const key = normalizeCompareText(line);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(line);
+        if (out.length >= 16) break;
+      }
+      return out;
+    })();
     const rideShareNote =
       sourceLines.find((line) => rideSharePattern.test(line)) || "";
     const facilityLinesFromFacts = sanitizeVenueFactLines(
@@ -4149,7 +4241,7 @@ export default function SimpleTemplateView({
 
               {discoveryActiveTab === "spectator" && (
                 <div className="space-y-6 md:space-y-10">
-                  {hasAdmissionContent && (
+                  {hasAdmissionSection && (
                     <section
                       className={`${discoveryCard} p-5 sm:p-6 md:p-10 relative overflow-hidden`}
                     >
@@ -4192,6 +4284,28 @@ export default function SimpleTemplateView({
                             </span>
                             {admissionPrimaryNote}
                           </p>
+                        </div>
+                      )}
+                      {hasSpectatorLogistics && (
+                        <div className="mt-8">
+                          <h4 className="font-bold text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)]">
+                            Arrival & Registration
+                          </h4>
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            {spectatorLogisticsItems.map((item) => (
+                              <div
+                                key={item.key}
+                                className="bg-slate-50 p-5 rounded-3xl border border-[color:var(--border,#E2E8F0)]"
+                              >
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                                  {item.label}
+                                </p>
+                                <p className="text-sm text-slate-700 leading-relaxed">
+                                  {item.value}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </section>
@@ -4293,7 +4407,7 @@ export default function SimpleTemplateView({
                     </div>
                   )}
 
-                  {!hasAdmissionContent && !hasSpectatorCards && (
+                  {!hasAdmissionSection && !hasSpectatorCards && (
                     <section className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
                       <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
                         Admission & Sales
