@@ -134,6 +134,16 @@ const CALENDAR_TARGETS: Array<{
   { key: "apple", label: "Apple", Icon: CalendarIconApple },
   { key: "microsoft", label: "Outlook", Icon: CalendarIconOutlook },
 ];
+const CALENDAR_DEFAULT_STORAGE_KEY = "envitefy:event-actions:calendar-default:v1";
+
+function normalizeCalendarProvider(value: unknown): CalendarProviderKey | null {
+  if (typeof value !== "string") return null;
+  const provider = value.trim().toLowerCase();
+  if (provider === "google" || provider === "microsoft" || provider === "apple") {
+    return provider;
+  }
+  return null;
+}
 
 const CATEGORY_DEFAULT_COLOR_MAP: Record<string, string> = {
   Birthdays: "pink",
@@ -253,7 +263,10 @@ export default function LeftSidebar() {
     pathname?.startsWith("/event/") && searchParams?.get("edit")
   );
   const [menuOpen, setMenuOpen] = useState(false);
-  const [calendarsOpenFloating, setCalendarsOpenFloating] = useState(false);
+  const [menuFloatingView, setMenuFloatingView] = useState<"main" | "calendar">(
+    "main"
+  );
+  const [menuMainHeight, setMenuMainHeight] = useState<number | null>(null);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
   const [showPastMyEvents, setShowPastMyEvents] = useState(false);
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
@@ -272,6 +285,37 @@ export default function LeftSidebar() {
     microsoft: false,
     apple: false,
   });
+  const [defaultCalendarProvider, setDefaultCalendarProvider] =
+    useState<CalendarProviderKey | null>(null);
+
+  const mirrorLocalCalendarDefault = useCallback(
+    (provider: CalendarProviderKey | null) => {
+      if (typeof window === "undefined") return;
+      try {
+        if (!provider) {
+          window.localStorage.removeItem(CALENDAR_DEFAULT_STORAGE_KEY);
+          return;
+        }
+        window.localStorage.setItem(CALENDAR_DEFAULT_STORAGE_KEY, provider);
+      } catch {}
+    },
+    []
+  );
+
+  const saveCalendarDefault = useCallback(
+    async (provider: CalendarProviderKey | null) => {
+      if (status !== "authenticated") return;
+      try {
+        await fetch("/api/user/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ preferredProvider: provider }),
+        });
+      } catch {}
+    },
+    [status]
+  );
 
   const fetchConnectedCalendars = useCallback(async () => {
     try {
@@ -334,6 +378,30 @@ export default function LeftSidebar() {
     [fetchConnectedCalendars]
   );
 
+  const toggleCalendarDefault = useCallback(
+    async (provider: CalendarProviderKey) => {
+      const requiresConnection =
+        provider === "google" || provider === "microsoft";
+      const isConnected = connectedCalendars[provider];
+      if (requiresConnection && !isConnected) {
+        handleCalendarConnect(provider);
+        return;
+      }
+      const nextProvider =
+        defaultCalendarProvider === provider ? null : provider;
+      setDefaultCalendarProvider(nextProvider);
+      mirrorLocalCalendarDefault(nextProvider);
+      void saveCalendarDefault(nextProvider);
+    },
+    [
+      connectedCalendars,
+      defaultCalendarProvider,
+      handleCalendarConnect,
+      mirrorLocalCalendarDefault,
+      saveCalendarDefault,
+    ]
+  );
+
   const {
     isCollapsed,
     setIsCollapsed,
@@ -371,6 +439,7 @@ export default function LeftSidebar() {
   const isEventMenuActive = Boolean(selectedEventId);
   const overflowClass = "overflow-hidden";
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuMainContentRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const openBarButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -540,6 +609,26 @@ export default function LeftSidebar() {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!menuOpen) setMenuFloatingView("main");
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen || menuFloatingView !== "main") return;
+    const node = menuMainContentRef.current;
+    if (!node) return;
+    const measure = () => {
+      setMenuMainHeight(node.offsetHeight || null);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => measure());
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
+  }, [menuFloatingView, menuOpen]);
+
   // Always close menus on route change so navigation from a menu item hides the dropdowns.
   useEffect(() => {
     setMenuOpen(false);
@@ -692,6 +781,9 @@ export default function LeftSidebar() {
               ...(json.categoryColors as Record<string, string>),
             }));
           }
+          setDefaultCalendarProvider(
+            normalizeCalendarProvider(json.preferredProvider)
+          );
         }
       } catch {
       } finally {
@@ -726,6 +818,44 @@ export default function LeftSidebar() {
       ignore = true;
     };
   }, [status, profileEmail, session?.user]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(CALENDAR_DEFAULT_STORAGE_KEY);
+      const provider = normalizeCalendarProvider(raw);
+      if (provider) setDefaultCalendarProvider(provider);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    if (!defaultCalendarProvider) return;
+    if (
+      defaultCalendarProvider === "google" &&
+      !connectedCalendars.google
+    ) {
+      setDefaultCalendarProvider(null);
+      mirrorLocalCalendarDefault(null);
+      void saveCalendarDefault(null);
+      return;
+    }
+    if (
+      defaultCalendarProvider === "microsoft" &&
+      !connectedCalendars.microsoft
+    ) {
+      setDefaultCalendarProvider(null);
+      mirrorLocalCalendarDefault(null);
+      void saveCalendarDefault(null);
+    }
+  }, [
+    connectedCalendars.google,
+    connectedCalendars.microsoft,
+    defaultCalendarProvider,
+    mirrorLocalCalendarDefault,
+    saveCalendarDefault,
+    status,
+  ]);
 
   useEffect(() => {
     setIsAdmin(Boolean((session?.user as any)?.isAdmin));
@@ -2997,42 +3127,50 @@ export default function LeftSidebar() {
                         onPointerDown={(e) => e.stopPropagation()}
                         className="pointer-events-auto w-56 rounded-2xl border border-[#d9d3f3] bg-[linear-gradient(180deg,#ffffff_0%,#f3efff_100%)] shadow-[0_20px_44px_rgba(92,67,156,0.18)] overflow-visible"
                       >
-                        <div className="p-2">
-                          <Link
-                            href="/settings"
-                            onClick={() => {
-                              setMenuOpen(false);
-                            }}
-                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                          >
-                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-3.5 w-3.5"
-                                aria-hidden="true"
-                              >
-                                <circle cx="12" cy="7" r="4" />
-                                <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-                              </svg>
-                            </span>
-                            <span className="text-sm md:text-base">
-                              Profile
-                            </span>
-                          </Link>
+                        <div
+                          ref={menuMainContentRef}
+                          className="p-2"
+                          style={
+                            menuMainHeight
+                              ? { minHeight: `${menuMainHeight}px` }
+                              : undefined
+                          }
+                        >
+                          {menuFloatingView === "main" && (
+                            <Link
+                              href="/settings"
+                              onClick={() => {
+                                setMenuOpen(false);
+                              }}
+                              className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
+                            >
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-3.5 w-3.5"
+                                  aria-hidden="true"
+                                >
+                                  <circle cx="12" cy="7" r="4" />
+                                  <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
+                                </svg>
+                              </span>
+                              <span className="text-sm md:text-base">
+                                Profile
+                              </span>
+                            </Link>
+                          )}
 
-                          <div className="mt-1 relative">
+                          {menuFloatingView === "main" ? (
                             <button
                               type="button"
-                              onClick={() => {
-                                setCalendarsOpenFloating((v) => !v);
-                              }}
-                              className="group w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
+                              onClick={() => setMenuFloatingView("calendar")}
+                              className="group mt-1 w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
                             >
                               <div className="flex items-center gap-3">
                                 <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
@@ -3064,102 +3202,102 @@ export default function LeftSidebar() {
                                   Calendar
                                 </span>
                               </div>
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
-                                  calendarsOpenFloating
-                                    ? "rotate-0"
-                                    : "rotate-90"
-                                }`}
+                              <ChevronRight
+                                size={16}
+                                className="text-[#8a7ec0]"
                                 aria-hidden="true"
-                              >
-                                <polyline points="9 18 15 12 9 6" />
-                              </svg>
+                              />
                             </button>
-                            {calendarsOpenFloating && (
-                              <div className="mt-2 px-3 pb-2 space-y-3">
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-foreground/70">
-                                    Connection status
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  {CALENDAR_TARGETS.map(
-                                    ({ key, label, Icon }) => {
-                                      const active = connectedCalendars[key];
-                                      return (
+                          ) : (
+                            <div className="mt-1 min-w-full">
+                              <div className="flex items-center gap-2 p-3 border-b border-[#ece7fb]">
+                                <button
+                                  type="button"
+                                  onClick={() => setMenuFloatingView("main")}
+                                  className="p-1 rounded-full hover:bg-[#f1edff] transition-colors"
+                                  aria-label="Back to menu"
+                                >
+                                  <ChevronLeft
+                                    size={18}
+                                    className="text-[#6f629d]"
+                                  />
+                                </button>
+                                <span className="font-semibold text-sm text-[#3f335f]">
+                                  Calendar Settings
+                                </span>
+                              </div>
+                              <div className="p-4">
+                                <h4 className="text-[10px] font-bold text-[#9589b7] uppercase tracking-wider mb-2">
+                                  Connection Status
+                                </h4>
+                                <p className="text-[12px] text-[#7d6fa5] mb-4 leading-snug">
+                                  Tap a provider to set default.
+                                </p>
+                                <div className="flex justify-between items-center px-1">
+                                  {CALENDAR_TARGETS.map(({ key, label, Icon }) => {
+                                    const isDefault = defaultCalendarProvider === key;
+                                    const isConnected = connectedCalendars[key];
+                                    return (
+                                      <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => void toggleCalendarDefault(key)}
+                                        className="flex flex-col items-center gap-1.5 group"
+                                        title={
+                                          isDefault
+                                            ? `Default is ${label}. Click to clear default`
+                                            : isConnected || key === "apple"
+                                            ? `Set ${label} as default calendar`
+                                            : `Connect ${label} calendar`
+                                        }
+                                      >
                                         <div
-                                          key={key}
-                                          className={`flex flex-col items-center gap-1 text-[11px] ${
-                                            active
-                                              ? "text-[#4b3f72]"
-                                              : "text-[#8f86b3]"
+                                          className={`relative w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all ${
+                                            isDefault
+                                              ? "bg-[#6962c8] border-[#6962c8] text-white shadow-md scale-105"
+                                              : "bg-white border-[#e4dcf8] text-[#6f629d] hover:border-[#cfc2f1] hover:bg-[#f8f5ff] shadow-sm"
                                           }`}
                                         >
-                                          <button
-                                            type="button"
-                                            aria-pressed={active}
-                                            title={
-                                              active
-                                                ? `${label} calendar connected`
-                                                : `Connect ${label} calendar`
-                                            }
-                                            className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
-                                              active
-                                                ? "border-[#b9a7ea] bg-[#f7f3ff] hover:border-[#a892e3] shadow-[0_6px_16px_rgba(119,92,191,0.22)] ring-1 ring-[#d8ccf6]"
-                                                : "border-[#ddd3f5] bg-white hover:border-[#c7b7ee] hover:bg-[#f8f5ff]"
-                                            }`}
-                                            onClick={() =>
-                                              handleCalendarConnect(key)
-                                            }
-                                          >
-                                            <Icon
-                                              className={`h-4 w-4 ${
-                                                active
-                                                  ? "text-[#5a4699]"
-                                                  : "text-[#8677b4]"
-                                              }`}
-                                            />
-                                            {active && (
-                                              <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#7c67be] flex items-center justify-center border-2 border-white shadow-sm">
-                                                <svg
-                                                  xmlns="http://www.w3.org/2000/svg"
-                                                  viewBox="0 0 12 12"
-                                                  fill="none"
-                                                  className="h-2.5 w-2.5 text-white"
-                                                >
-                                                  <path
-                                                    d="M10 3L4.5 8.5L2 6"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                  />
-                                                </svg>
-                                              </div>
-                                            )}
-                                          </button>
-                                          <span>{label}</span>
-                                          {active ? (
-                                            <span className="rounded-full bg-[#efe9ff] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#5a4699]">
-                                              Connected
+                                          <Icon className="h-4 w-4" />
+                                          {isDefault && (
+                                            <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#7c67be] text-white border-2 border-white flex items-center justify-center">
+                                              <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 12 12"
+                                                fill="none"
+                                                className="h-2.5 w-2.5"
+                                                aria-hidden="true"
+                                              >
+                                                <path
+                                                  d="M10 3L4.5 8.5L2 6"
+                                                  stroke="currentColor"
+                                                  strokeWidth="2"
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                />
+                                              </svg>
                                             </span>
-                                          ) : null}
+                                          )}
                                         </div>
-                                      );
-                                    }
-                                  )}
+                                        <span
+                                          className={`text-[10px] font-medium ${
+                                            isDefault
+                                              ? "text-[#645bc1]"
+                                              : "text-[#8b80af]"
+                                          }`}
+                                        >
+                                          {label}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
 
+                          {menuFloatingView === "main" && (
+                            <>
                           <Link
                             href="/about"
                             onClick={() => {
@@ -3270,6 +3408,8 @@ export default function LeftSidebar() {
                               Log out
                             </span>
                           </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
