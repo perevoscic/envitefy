@@ -8,6 +8,7 @@ import { normalizeAccessControlPayload } from "@/lib/event-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const HISTORY_DEBUG = process.env.HISTORY_DEBUG === "1";
 
 export async function GET(req: Request) {
   try {
@@ -15,8 +16,10 @@ export async function GET(req: Request) {
     const limitRaw = url.searchParams.get("limit");
     const viewRaw = (url.searchParams.get("view") || "summary").toLowerCase();
     const limit = Math.max(1, Math.min(200, Number.parseInt(limitRaw || "40", 10)));
-    const view: "summary" | "calendar" | "full" =
-      viewRaw === "full" || viewRaw === "calendar" ? (viewRaw as any) : "summary";
+    const view: "summary" | "calendar" | "sidebar" | "full" =
+      viewRaw === "full" || viewRaw === "calendar" || viewRaw === "sidebar"
+        ? (viewRaw as any)
+        : "summary";
 
     const session: any = await getServerSession(authOptions as any);
     const sessionUser: any = (session && (session as any).user) || null;
@@ -25,12 +28,12 @@ export async function GET(req: Request) {
       userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
     }
     if (!userId) {
-      try {
+      if (HISTORY_DEBUG) {
         console.log("[history] GET: no userId resolved", {
           hasSession: Boolean(sessionUser),
           sessionEmail: sessionUser?.email || null,
         });
-      } catch {}
+      }
       return NextResponse.json({ items: [] });
     }
 
@@ -46,12 +49,12 @@ export async function GET(req: Request) {
           try {
             return await listAcceptedSharedEventsForUser(userId);
           } catch (e: any) {
-            try {
+            if (HISTORY_DEBUG) {
               console.warn(
                 "[history] GET: shared events unavailable (likely no event_shares table yet)",
                 String(e?.message || e)
               );
-            } catch {}
+            }
             return [];
           }
         })(),
@@ -106,6 +109,38 @@ export async function GET(req: Request) {
           sharedOut: out.sharedOut ?? false,
         };
       }
+      if (view === "sidebar") {
+        const responses = Array.isArray(out?.signupForm?.responses)
+          ? out.signupForm.responses.map((row: any) => ({
+              userId:
+                typeof row?.userId === "string" ? row.userId : undefined,
+              email: typeof row?.email === "string" ? row.email : undefined,
+              status:
+                typeof row?.status === "string" ? row.status : undefined,
+              name: typeof row?.name === "string" ? row.name : undefined,
+            }))
+          : null;
+        return {
+          category: out.category ?? null,
+          shared: out.shared ?? false,
+          sharedOut: out.sharedOut ?? false,
+          status: out.status ?? null,
+          description:
+            typeof out.description === "string" ? out.description : null,
+          startISO: out.startISO ?? null,
+          start: out.start ?? null,
+          createdVia: out.createdVia ?? null,
+          color: out.color ?? null,
+          event:
+            out.event && typeof out.event === "object"
+              ? {
+                  start: out.event.start ?? null,
+                  color: out.event.color ?? null,
+                }
+              : null,
+          signupForm: responses ? { responses } : undefined,
+        };
+      }
       return out;
     };
 
@@ -140,7 +175,7 @@ export async function GET(req: Request) {
       return new Response(null, { status: 304, headers });
     }
 
-    try {
+    if (HISTORY_DEBUG) {
       console.log("[history] GET: returning items", {
         userId,
         count: Array.isArray(light) ? light.length : 0,
@@ -148,13 +183,13 @@ export async function GET(req: Request) {
         view,
         limit,
       });
-    } catch {}
+    }
 
     return NextResponse.json({ items: light }, { headers });
   } catch (err: any) {
-    try {
+    if (HISTORY_DEBUG) {
       console.error("[history] GET error", err);
-    } catch {}
+    }
     return NextResponse.json(
       { error: String(err?.message || err || "unknown error") },
       { status: 500 }
@@ -182,7 +217,7 @@ export async function POST(req: Request) {
       );
       if (!data.accessControl) delete data.accessControl;
     }
-    try {
+    if (HISTORY_DEBUG) {
       console.log(
         "[history] POST: inserting",
         {
@@ -193,7 +228,7 @@ export async function POST(req: Request) {
           payloadBytes: dataPayloadBytes,
         }
       );
-    } catch {}
+    }
     const row = await insertEventHistory({ userId, title, data });
     
     // Invalidate cache for this user since we just added a new event
@@ -213,7 +248,7 @@ export async function POST(req: Request) {
         await upsertSignupForm(row.id, sf);
       }
     } catch {}
-    try {
+    if (HISTORY_DEBUG) {
       console.log(
         "[history] POST: inserted",
         {
@@ -222,12 +257,12 @@ export async function POST(req: Request) {
           created_at: row?.created_at || null,
         }
       );
-    } catch {}
+    }
     return NextResponse.json(row, { status: 201 });
   } catch (err: any) {
-    try {
+    if (HISTORY_DEBUG) {
       console.error("[history] POST error", err);
-    } catch {}
+    }
     return NextResponse.json(
       { error: String(err?.message || err || "unknown error") },
       { status: 500 }

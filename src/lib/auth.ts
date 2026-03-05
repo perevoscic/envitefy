@@ -14,6 +14,7 @@ function isTransientDbError(err: unknown): boolean {
 }
 
 export function getAuthOptions(): NextAuthOptions {
+  const authDebugEnabled = process.env.AUTH_DEBUG === "1";
   const secret =
     process.env.AUTH_SECRET ??
     process.env.NEXTAUTH_SECRET ??
@@ -31,7 +32,7 @@ export function getAuthOptions(): NextAuthOptions {
   }
 
   return {
-    debug: true,              // TEMP: leave on while debugging
+    debug: authDebugEnabled,
     secret,
     // Secure cookies only in production/HTTPS; localhost (http) must be non-secure
     useSecureCookies: process.env.NODE_ENV === "production",
@@ -58,7 +59,9 @@ async authorize(credentials) {
   const email = (credentials?.email || "").toLowerCase();
   const password = credentials?.password || "";
   try {
-    console.log("[auth] credentials sign-in start", { email });
+    if (authDebugEnabled) {
+      console.log("[auth] credentials sign-in start", { email });
+    }
 
     if (!email || !password) {
       console.warn("[auth] missing email/password");
@@ -66,7 +69,9 @@ async authorize(credentials) {
     }
 
     const user = await getUserByEmail(email);
-    console.log("[auth] getUserByEmail result", { found: !!user });
+    if (authDebugEnabled) {
+      console.log("[auth] getUserByEmail result", { found: !!user });
+    }
 
     if (!user) {
       console.warn("[auth] user not found");
@@ -74,7 +79,9 @@ async authorize(credentials) {
     }
 
     const ok = await verifyPassword(password, user.password_hash);
-    console.log("[auth] password check", { ok });
+    if (authDebugEnabled) {
+      console.log("[auth] password check", { ok });
+    }
 
     if (!ok) {
       console.warn("[auth] bad password");
@@ -102,7 +109,9 @@ async authorize(credentials) {
         try {
           // Handle OAuth sign-ins (Google, etc.)
           if (account?.provider === "google" && user?.email) {
-            console.log("[auth] Google sign-in", { email: user.email });
+            if (authDebugEnabled) {
+              console.log("[auth] Google sign-in", { email: user.email });
+            }
             
             // Create or update user in database
             const firstName = (profile as any)?.given_name || user.name?.split(" ")[0] || null;
@@ -132,7 +141,8 @@ async authorize(credentials) {
           // Keep admin claims in sync with DB changes (e.g. user promoted while still logged in).
           // We refresh periodically instead of only once to avoid stale JWT claims.
           const now = Date.now();
-          const ADMIN_CLAIM_REFRESH_MS = 5 * 60 * 1000;
+          const ADMIN_CLAIM_REFRESH_MS = 15 * 60 * 1000;
+          const PROVIDER_TOKEN_REFRESH_MS = 60 * 60 * 1000;
           const lastAdminCheckAt =
             typeof tokenAny?.isAdminCheckedAt === "number"
               ? tokenAny.isAdminCheckedAt
@@ -194,9 +204,24 @@ async authorize(credentials) {
             }
           }
           
-          // Load stored provider tokens from database if not already in JWT
-          // This ensures connection status syncs across devices (credentials sign-in or token refresh)
-          if (email && (!tokenAny.providers?.google?.refreshToken || !tokenAny.providers?.microsoft?.refreshToken)) {
+          // Periodically refresh provider token presence from DB so every request
+          // does not issue two extra token lookups in hot paths.
+          const lastProviderTokenCheckAt =
+            typeof tokenAny?.providerTokensCheckedAt === "number"
+              ? tokenAny.providerTokensCheckedAt
+              : 0;
+          const shouldRefreshProviderTokens =
+            Boolean(email) &&
+            (account?.provider != null ||
+              tokenAny.providerTokensCheckedAt === undefined ||
+              now - lastProviderTokenCheckAt > PROVIDER_TOKEN_REFRESH_MS);
+
+          if (
+            email &&
+            shouldRefreshProviderTokens &&
+            (!tokenAny.providers?.google?.refreshToken ||
+              !tokenAny.providers?.microsoft?.refreshToken)
+          ) {
             try {
               if (!tokenAny.providers?.google?.refreshToken) {
                 const googleRefresh = await getGoogleRefreshToken(email);
@@ -221,6 +246,8 @@ async authorize(credentials) {
                 console.error("[auth] failed to load stored provider tokens", message);
               }
               // Continue even if loading fails - database lookup in /api/calendars will handle it
+            } finally {
+              tokenAny.providerTokensCheckedAt = now;
             }
           }
         } catch (err) {

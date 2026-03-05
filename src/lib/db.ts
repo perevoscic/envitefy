@@ -148,6 +148,26 @@ export async function query<T extends QueryResultRow = QueryResultRow>(text: str
   return withClient((client) => client.query<T>(text, params));
 }
 
+const ensureReadyKeys = new Set<string>();
+const ensureInflight = new Map<string, Promise<void>>();
+
+async function ensureOnce(key: string, work: () => Promise<void>): Promise<void> {
+  if (ensureReadyKeys.has(key)) return;
+  const inFlight = ensureInflight.get(key);
+  if (inFlight) {
+    await inFlight;
+    return;
+  }
+  const promise = (async () => {
+    await work();
+    ensureReadyKeys.add(key);
+  })().finally(() => {
+    ensureInflight.delete(key);
+  });
+  ensureInflight.set(key, promise);
+  await promise;
+}
+
 const USER_SELECT_COLUMNS = `
   id, email, first_name, last_name, preferred_provider,
   subscription_plan, subscription_expires_at,
@@ -224,30 +244,32 @@ export async function getUserById(id: string): Promise<AppUserRow | null> {
 
 // Ensure admin/metrics columns exist for compatibility with older DBs
 async function ensureUsersHasAdminAndMetricsColumns(): Promise<void> {
-  await query(`
-    alter table users add column if not exists is_admin boolean;
-    alter table users alter column is_admin set default false;
-    alter table users add column if not exists scans_total integer;
-    alter table users alter column scans_total set default 0;
-    alter table users add column if not exists scans_birthdays integer;
-    alter table users alter column scans_birthdays set default 0;
-    alter table users add column if not exists scans_weddings integer;
-    alter table users alter column scans_weddings set default 0;
-    alter table users add column if not exists shares_sent integer;
-    alter table users alter column shares_sent set default 0;
-    alter table users add column if not exists scans_sport_events integer;
-    alter table users alter column scans_sport_events set default 0;
-    alter table users add column if not exists scans_appointments integer;
-    alter table users alter column scans_appointments set default 0;
-    alter table users add column if not exists scans_doctor_appointments integer;
-    alter table users alter column scans_doctor_appointments set default 0;
-    alter table users add column if not exists scans_play_days integer;
-    alter table users alter column scans_play_days set default 0;
-    alter table users add column if not exists scans_general_events integer;
-    alter table users alter column scans_general_events set default 0;
-    alter table users add column if not exists scans_car_pool integer;
-    alter table users alter column scans_car_pool set default 0;
-  `);
+  await ensureOnce("users_admin_metrics_columns", async () => {
+    await query(`
+      alter table users add column if not exists is_admin boolean;
+      alter table users alter column is_admin set default false;
+      alter table users add column if not exists scans_total integer;
+      alter table users alter column scans_total set default 0;
+      alter table users add column if not exists scans_birthdays integer;
+      alter table users alter column scans_birthdays set default 0;
+      alter table users add column if not exists scans_weddings integer;
+      alter table users alter column scans_weddings set default 0;
+      alter table users add column if not exists shares_sent integer;
+      alter table users alter column shares_sent set default 0;
+      alter table users add column if not exists scans_sport_events integer;
+      alter table users alter column scans_sport_events set default 0;
+      alter table users add column if not exists scans_appointments integer;
+      alter table users alter column scans_appointments set default 0;
+      alter table users add column if not exists scans_doctor_appointments integer;
+      alter table users alter column scans_doctor_appointments set default 0;
+      alter table users add column if not exists scans_play_days integer;
+      alter table users alter column scans_play_days set default 0;
+      alter table users add column if not exists scans_general_events integer;
+      alter table users alter column scans_general_events set default 0;
+      alter table users add column if not exists scans_car_pool integer;
+      alter table users alter column scans_car_pool set default 0;
+    `);
+  });
 }
 
 export async function setUserAdminByEmail(email: string, isAdmin: boolean): Promise<void> {
@@ -446,18 +468,22 @@ export async function incrementUserSharesSent(params: { userId?: string | null; 
 
 // Category colors (per-user UI preferences)
 async function ensureUsersHasCategoryColorsColumn(): Promise<void> {
-  await query(`alter table users add column if not exists category_colors jsonb`);
+  await ensureOnce("users_category_colors_column", async () => {
+    await query(`alter table users add column if not exists category_colors jsonb`);
+  });
 }
 
 async function ensureUsersHasOnboardingColumns(): Promise<void> {
-  await query(`
-    alter table users add column if not exists onboarding_required boolean;
-    alter table users alter column onboarding_required set default false;
-    alter table users add column if not exists onboarding_persona varchar(32);
-    alter table users add column if not exists onboarding_completed_at timestamptz(6);
-    alter table users add column if not exists onboarding_prompt_dismissed_at timestamptz(6);
-    alter table users add column if not exists feature_visibility jsonb;
-  `);
+  await ensureOnce("users_onboarding_columns", async () => {
+    await query(`
+      alter table users add column if not exists onboarding_required boolean;
+      alter table users alter column onboarding_required set default false;
+      alter table users add column if not exists onboarding_persona varchar(32);
+      alter table users add column if not exists onboarding_completed_at timestamptz(6);
+      alter table users add column if not exists onboarding_prompt_dismissed_at timestamptz(6);
+      alter table users add column if not exists feature_visibility jsonb;
+    `);
+  });
 }
 
 type OnboardingProfileRow = {
@@ -801,19 +827,23 @@ export async function setPasswordByEmail(params: { email: string; newPassword: s
 }
 
 async function ensureUsersHasSubscriptionPlanColumn(): Promise<void> {
-  await query(`alter table users add column if not exists subscription_plan varchar(32)`);
+  await ensureOnce("users_subscription_plan_column", async () => {
+    await query(`alter table users add column if not exists subscription_plan varchar(32)`);
+  });
 }
 
 async function ensureUsersHasStripeBillingColumns(): Promise<void> {
-  await query(`
-    alter table users add column if not exists stripe_customer_id varchar(255);
-    alter table users add column if not exists stripe_subscription_id varchar(255);
-    alter table users add column if not exists stripe_subscription_status varchar(64);
-    alter table users add column if not exists stripe_price_id varchar(255);
-    alter table users add column if not exists stripe_current_period_end timestamptz(6);
-    alter table users add column if not exists stripe_cancel_at_period_end boolean;
-    alter table users alter column stripe_cancel_at_period_end set default false;
-  `);
+  await ensureOnce("users_stripe_billing_columns", async () => {
+    await query(`
+      alter table users add column if not exists stripe_customer_id varchar(255);
+      alter table users add column if not exists stripe_subscription_id varchar(255);
+      alter table users add column if not exists stripe_subscription_status varchar(64);
+      alter table users add column if not exists stripe_price_id varchar(255);
+      alter table users add column if not exists stripe_current_period_end timestamptz(6);
+      alter table users add column if not exists stripe_cancel_at_period_end boolean;
+      alter table users alter column stripe_cancel_at_period_end set default false;
+    `);
+  });
 }
 
 export type SubscriptionPlan = "freemium" | "free" | "monthly" | "yearly" | "FF";
@@ -993,7 +1023,9 @@ export async function initFreeCreditsIfMissing(email: string, amount: number = 3
 
 // Credits helpers
 async function ensureUsersHasCreditsColumn(): Promise<void> {
-  await query(`alter table users add column if not exists credits integer`);
+  await ensureOnce("users_credits_column", async () => {
+    await query(`alter table users add column if not exists credits integer`);
+  });
 }
 
 export async function getCreditsByEmail(email: string): Promise<number | null> {
@@ -1404,7 +1436,9 @@ export async function recordStripeWebhookEvent(params: {
 
 // Subscription expiration helpers
 async function ensureUsersHasSubscriptionExpiresColumn(): Promise<void> {
-  await query(`alter table users add column if not exists subscription_expires_at timestamptz(6)`);
+  await ensureOnce("users_subscription_expires_column", async () => {
+    await query(`alter table users add column if not exists subscription_expires_at timestamptz(6)`);
+  });
 }
 
 export async function extendUserSubscriptionByMonths(email: string, months: number): Promise<{ expiresAt: string | null }> {
@@ -1609,7 +1643,7 @@ export async function getEventHistoryBySlugOrId(params: {
 
 export async function listEventHistoryByUser(userId: string, limit: number = 50): Promise<EventHistoryRow[]> {
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, created_at
+    `select id, user_id, title, (data - 'attachment' - 'ocrText') as data, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
@@ -1646,9 +1680,11 @@ export type EventShareRow = {
 };
 
 async function ensureEventSharesHasRecipientNameColumns(): Promise<void> {
-  // Best-effort: add optional display name fields for recipients so owners can see names
-  await query(`alter table event_shares add column if not exists recipient_first_name text`);
-  await query(`alter table event_shares add column if not exists recipient_last_name text`);
+  await ensureOnce("event_shares_recipient_name_columns", async () => {
+    // Best-effort: add optional display name fields for recipients so owners can see names
+    await query(`alter table event_shares add column if not exists recipient_first_name text`);
+    await query(`alter table event_shares add column if not exists recipient_last_name text`);
+  });
 }
 
 export async function createOrUpdateEventShare(params: {
@@ -1737,7 +1773,7 @@ export async function revokeEventShare(params: {
 
 export async function listAcceptedSharedEventsForUser(userId: string): Promise<EventHistoryRow[]> {
   const res = await query<EventHistoryRow>(
-    `select eh.id, eh.user_id, eh.title, eh.data, eh.created_at
+    `select eh.id, eh.user_id, eh.title, (eh.data - 'attachment' - 'ocrText') as data, eh.created_at
      from event_shares es
      join event_history eh on eh.id = es.event_id
      where es.recipient_user_id = $1
@@ -1906,15 +1942,17 @@ export type SignupFormRow = {
 };
 
 async function ensureSignupFormsTable(): Promise<void> {
-  // Create table if it does not exist; keep it minimal and reference event_history
-  await query(`
-    create table if not exists signup_forms (
-      event_id uuid primary key references event_history(id) on delete cascade,
-      form jsonb not null,
-      created_at timestamptz(6) default now(),
-      updated_at timestamptz(6) default now()
-    );
-  `);
+  await ensureOnce("signup_forms_table", async () => {
+    // Create table if it does not exist; keep it minimal and reference event_history
+    await query(`
+      create table if not exists signup_forms (
+        event_id uuid primary key references event_history(id) on delete cascade,
+        form jsonb not null,
+        created_at timestamptz(6) default now(),
+        updated_at timestamptz(6) default now()
+      );
+    `);
+  });
 }
 
 export async function getSignupFormByEventId(eventId: string): Promise<SignupFormRow | null> {
@@ -1980,42 +2018,44 @@ export type RegistryClaimRow = {
 };
 
 async function ensureRegistryTables(): Promise<void> {
-  // Keep tables minimal and loosely coupled (event_id is a string so it can
-  // reference either event_history.id or a dedicated events table id).
-  await query(`
-    create table if not exists registry_items (
-      id uuid primary key default gen_random_uuid(),
-      event_id text not null,
-      title text not null,
-      affiliate_url text not null,
-      image_url text not null,
-      price text,
-      quantity integer not null default 1,
-      claimed integer not null default 0,
-      category text,
-      notes text,
-      created_at timestamptz(6) default now(),
-      updated_at timestamptz(6) default now()
-    );
-  `);
-  await query(`
-    create table if not exists registry_claims (
-      id uuid primary key default gen_random_uuid(),
-      item_id uuid not null,
-      guest_name text,
-      quantity integer not null default 1,
-      message text,
-      created_at timestamptz(6) default now()
-    );
-  `);
-  await query(`
-    create index if not exists idx_registry_items_event_id
-      on registry_items(event_id);
-  `);
-  await query(`
-    create index if not exists idx_registry_claims_item_id
-      on registry_claims(item_id);
-  `);
+  await ensureOnce("registry_tables", async () => {
+    // Keep tables minimal and loosely coupled (event_id is a string so it can
+    // reference either event_history.id or a dedicated events table id).
+    await query(`
+      create table if not exists registry_items (
+        id uuid primary key default gen_random_uuid(),
+        event_id text not null,
+        title text not null,
+        affiliate_url text not null,
+        image_url text not null,
+        price text,
+        quantity integer not null default 1,
+        claimed integer not null default 0,
+        category text,
+        notes text,
+        created_at timestamptz(6) default now(),
+        updated_at timestamptz(6) default now()
+      );
+    `);
+    await query(`
+      create table if not exists registry_claims (
+        id uuid primary key default gen_random_uuid(),
+        item_id uuid not null,
+        guest_name text,
+        quantity integer not null default 1,
+        message text,
+        created_at timestamptz(6) default now()
+      );
+    `);
+    await query(`
+      create index if not exists idx_registry_items_event_id
+        on registry_items(event_id);
+    `);
+    await query(`
+      create index if not exists idx_registry_claims_item_id
+        on registry_claims(item_id);
+    `);
+  });
 }
 
 export async function listRegistryItemsByEventId(

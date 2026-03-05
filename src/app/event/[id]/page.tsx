@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createHash } from "crypto";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import nextDynamic from "next/dynamic";
 import EventActions from "@/components/EventActions";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import EventDeleteModal from "@/components/EventDeleteModal";
@@ -40,7 +41,6 @@ import type { CSSProperties } from "react";
 import type { ImageColors } from "@/utils/image-colors";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
-import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import { absoluteUrl } from "@/lib/absolute-url";
 import type { SignupForm } from "@/types/signup";
 import { sanitizeSignupForm } from "@/utils/signup";
@@ -50,21 +50,47 @@ import {
   CalendarIconOutlook,
   CalendarIconApple,
 } from "@/components/CalendarIcons";
-import BirthdayTemplateView from "@/components/BirthdayTemplateView";
-import WeddingTemplateView from "@/components/WeddingTemplateView";
-import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
-import BabyShowerTemplateView from "@/components/BabyShowerTemplateView";
-import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
-import EventOwnerWorkspace from "@/components/EventOwnerWorkspace";
-import DiscoveryEventEditLayout from "@/components/DiscoveryEventEditLayout";
 import {
   getEventAccessCookieName,
   verifyEventAccessCookieValue,
 } from "@/lib/event-access";
+
+const SignupViewer = nextDynamic(
+  () => import("@/components/smart-signup-form/SignupViewer"),
+  { loading: () => null }
+);
+const BirthdayTemplateView = nextDynamic(
+  () => import("@/components/BirthdayTemplateView"),
+  { loading: () => null }
+);
+const WeddingTemplateView = nextDynamic(
+  () => import("@/components/WeddingTemplateView"),
+  { loading: () => null }
+);
+const SimpleTemplateView = nextDynamic(
+  () => import("@/components/SimpleTemplateView"),
+  { loading: () => null }
+);
+const BabyShowerTemplateView = nextDynamic(
+  () => import("@/components/BabyShowerTemplateView"),
+  { loading: () => null }
+);
+const BirthdayRenderer = nextDynamic(
+  () => import("@/components/birthdays/BirthdayRenderer"),
+  { loading: () => null }
+);
+const EventOwnerWorkspace = nextDynamic(
+  () => import("@/components/EventOwnerWorkspace"),
+  { loading: () => null }
+);
+const DiscoveryEventEditLayout = nextDynamic(
+  () => import("@/components/DiscoveryEventEditLayout"),
+  { loading: () => null }
+);
 
 export const dynamic = "force-dynamic";
 

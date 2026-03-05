@@ -518,11 +518,19 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - Read single (GET `/api/history/[id]`) is public.
   - Update title (PATCH) and Delete (DELETE) require session and ownership.
 - **Input**:
+  - GET `/api/history` query params:
+    - `limit` (optional, `1-200`, default `40`).
+    - `view` (optional): `"summary" | "calendar" | "sidebar" | "full"` (default `"summary"`).
   - POST `/api/history`: `{ title?: string, data?: any }`.
   - PATCH `/api/history/[id]`: Either `{ title: string }` or `{ category: string }` or `{ data: object }` to shallow-merge into the JSON `data` (e.g., to fix the saved `category`).
 - **Output**:
   - GET list: `{ items: Array<HistoryRow> }`.
     - Includes accepted shared events for the user (annotated with `data.shared=true` and default category `Shared events`).
+    - Response payload is view-dependent:
+      - `view=summary`: only lightweight `category/shared/sharedOut` flags.
+      - `view=sidebar`: compact fields used by the left sidebar (`status`, `description`, `start/startISO`, compact `event`, compact `signupForm.responses`).
+      - `view=calendar`: same as standard lightweight mode with heavy blobs removed.
+      - `view=full`: full `data` JSON (includes heavy fields when present).
   - GET single: `HistoryRow` or `{ error }` with 404.
   - POST: created `HistoryRow` `{ status: 201 }`.
   - PATCH: updated `HistoryRow`.

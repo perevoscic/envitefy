@@ -1688,7 +1688,7 @@ export default function LeftSidebar() {
     if (status !== "authenticated") return;
     (async () => {
       try {
-        const res = await fetch("/api/history?view=full&limit=40", {
+        const res = await fetch("/api/history?view=sidebar&limit=40", {
           cache: "no-cache",
           credentials: "include",
         });
@@ -1771,7 +1771,7 @@ export default function LeftSidebar() {
             try {
               // Add cache-busting query param to force fresh fetch (slim view)
               const res = await fetch(
-                `/api/history?view=full&limit=40&t=${Date.now()}`,
+                `/api/history?view=sidebar&limit=40&t=${Date.now()}`,
                 {
                   cache: "no-cache",
                   credentials: "include",
@@ -1805,7 +1805,7 @@ export default function LeftSidebar() {
           pendingTimeouts.add(refetchTimeout as any);
         } else {
           // Fallback: slim refetch
-          const res = await fetch("/api/history?view=summary&limit=40", {
+          const res = await fetch("/api/history?view=sidebar&limit=40", {
             cache: "no-cache",
             credentials: "include",
           });
@@ -1863,7 +1863,7 @@ export default function LeftSidebar() {
           if (cancelled || status !== "authenticated") return;
           try {
             const res = await fetch(
-              `/api/history?view=full&limit=40&t=${Date.now()}`,
+              `/api/history?view=sidebar&limit=40&t=${Date.now()}`,
               {
                 cache: "no-cache",
                 credentials: "include",

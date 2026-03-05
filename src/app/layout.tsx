@@ -2,22 +2,14 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Providers from "./providers";
-import type { Session } from "next-auth";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import LeftSidebar from "./left-sidebar";
-import { MenuProvider } from "@/contexts/MenuContext";
-import ConditionalFooter from "@/components/ConditionalFooter";
-import { MainContentWrapper } from "@/components/MainContentWrapper";
+import AppShell from "./AppShell";
 import "./globals.css";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
-import { Suspense, type CSSProperties } from "react";
+import { Suspense } from "react";
+import type { CSSProperties } from "react";
 
 // Minimal font footprint: rely on system stacks set in globals.css (.font-vars).
 const fontVarsClass = "font-vars";
-
-// Root layout uses getServerSession (headers) — opt out of static generation.
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   // Title must match Google OAuth consent screen app name exactly: "Envitefy"
@@ -174,18 +166,11 @@ export const viewport: Viewport = {
   ],
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let session: Session | null = null;
-  try {
-    session = await getServerSession(authOptions);
-  } catch (error) {
-    console.error("[layout] getServerSession failed", error);
-  }
-  const isAuthenticated = Boolean(session);
   const themeKey: ThemeKey = "general";
   const htmlVariant: ThemeVariant = "light";
   const cssVariables = resolveThemeCssVariables(themeKey, htmlVariant);
@@ -272,17 +257,11 @@ export default async function RootLayout({
           gtag('js', new Date());
           gtag('config', 'G-3X25SZMRFY');
         `}</Script>
-        <Suspense fallback={null}>
-          <Providers session={session}>
-            <MenuProvider>
-              {isAuthenticated ? <LeftSidebar /> : null}
-            </MenuProvider>
-            <MainContentWrapper isAuthenticated={isAuthenticated}>
-              <div className="flex-1 min-w-0">{children}</div>
-              <ConditionalFooter serverSession={session} />
-            </MainContentWrapper>
-          </Providers>
-        </Suspense>
+        <Providers>
+          <Suspense fallback={null}>
+            <AppShell>{children}</AppShell>
+          </Suspense>
+        </Providers>
         <SpeedInsights />
       </body>
     </html>

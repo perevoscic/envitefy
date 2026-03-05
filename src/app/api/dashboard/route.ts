@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 const WEATHER_FORECAST_WINDOW_HOURS = 24 * 3; // WeatherAPI free-tier 3-day forecast window.
 const WEATHERAPI_KEY =
   process.env.WEATHERAPI_KEY || process.env.WEATHERAPI_API_KEY || null;
+const DASHBOARD_CACHE_TTL_MS = 15_000;
 
 type DashboardMetricsCache = {
   eventId: string;
@@ -26,6 +27,10 @@ type DashboardMetricsCache = {
 };
 
 let metricsCacheTableExists: boolean | null = null;
+const dashboardResponseCache = new Map<
+  string,
+  { at: number; payload: Record<string, unknown> }
+>();
 
 function hoursUntil(iso: string): number {
   return (new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60);
@@ -108,12 +113,17 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const cached = dashboardResponseCache.get(userId);
+    if (cached && Date.now() - cached.at < DASHBOARD_CACHE_TTL_MS) {
+      return NextResponse.json(cached.payload);
+    }
+
     const rows = await query<{ id: string; title: string; data: any; created_at: string | null }>(
-      `select id, title, (data - 'attachment') as data, created_at
+      `select id, title, (data - 'attachment' - 'ocrText') as data, created_at
        from event_history
        where user_id = $1
        order by created_at desc nulls last, id desc
-       limit 500`,
+       limit 200`,
       [userId]
     );
 
@@ -238,7 +248,7 @@ export async function GET() {
     const metricsCache = nextEvent ? await getCachedMetrics(nextEvent.id) : null;
     const nextEventHours = nextEvent ? hoursUntil(nextEvent.startAt) : null;
 
-    return NextResponse.json({
+    const payload = {
       ok: true,
       nextEvent,
       snapshot: {
@@ -277,7 +287,9 @@ export async function GET() {
         ),
         travelWindowEligible: Boolean(nextEvent && nextEventHours != null && nextEventHours <= 72),
       },
-    });
+    };
+    dashboardResponseCache.set(userId, { at: Date.now(), payload });
+    return NextResponse.json(payload);
   } catch (err: any) {
     return NextResponse.json(
       { error: String(err?.message || err || "Failed to load dashboard") },

@@ -58,6 +58,11 @@ const isAllowedForUnauth = (pathname: string) => {
   return false;
 };
 
+const getSessionCookie = (req: NextRequest) =>
+  req.cookies.get("__Secure-next-auth.session-token") ??
+  req.cookies.get("__Host-next-auth.session-token") ??
+  req.cookies.get("next-auth.session-token");
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -118,44 +123,65 @@ export async function middleware(req: NextRequest) {
     return ok();
   }
 
-  const secret =
-    process.env.AUTH_SECRET ??
-    process.env.NEXTAUTH_SECRET ??
-    (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
-  const token = await getToken({ req: req as any, secret });
-  let hasSession = Boolean(token);
-
-  if (!hasSession) {
-    // Fallback: some browsers omit the JWT when the secret mismatches or during race conditions.
-    // Checking for the session cookie prevents flashing the public landing page for signed-in users.
-    const sessionCookie =
-      req.cookies.get("__Secure-next-auth.session-token") ??
-      req.cookies.get("__Host-next-auth.session-token") ??
-      req.cookies.get("next-auth.session-token");
-    hasSession = Boolean(sessionCookie?.value);
-  }
-
-  if (!hasSession) {
-    if (!isAllowedForUnauth(pathname)) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      return redirectWithMarker(url, 302);
-    }
-  }
-
-  // Allow direct access to /landing without redirecting back to /
-  if (pathname === "/landing") {
-    return ok();
-  }
-
-  if (pathname === "/verify-request") {
-    return ok();
-  }
-
   if (pathname === "/snap" || pathname.startsWith("/snap/")) {
     const url = req.nextUrl.clone();
     url.pathname = "/";
     return redirectWithMarker(url, 308);
+  }
+
+  // Optional: redirect legacy /signup to the public homepage
+  if (pathname === "/signup") {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    return redirectWithMarker(url, 308);
+  }
+
+  const resolveHasSession = async () => {
+    const sessionCookie = getSessionCookie(req);
+    if (!sessionCookie?.value) return false;
+
+    const secret =
+      process.env.AUTH_SECRET ??
+      process.env.NEXTAUTH_SECRET ??
+      (process.env.NODE_ENV === "production"
+        ? undefined
+        : "dev-build-secret");
+
+    try {
+      const token = await getToken({ req: req as any, secret });
+      if (token) return true;
+    } catch {
+      // fall through to cookie fallback
+    }
+
+    // Fallback: some browsers omit the JWT when the secret mismatches or during races.
+    return Boolean(sessionCookie.value);
+  };
+
+  if (pathname === "/") {
+    const hasSession = await resolveHasSession();
+    if (!hasSession) {
+      // Render landing content at "/" without changing the URL
+      const url = req.nextUrl.clone();
+      url.pathname = "/landing";
+      const res = NextResponse.rewrite(url);
+      res.headers.set("x-mw-version", "v2");
+      return res;
+    }
+    // Signed-in users stay on "/" without a redirect
+    return ok();
+  }
+
+  // Public unauth routes bypass token parsing entirely.
+  if (isAllowedForUnauth(pathname)) {
+    return ok();
+  }
+
+  const hasSession = await resolveHasSession();
+  if (!hasSession) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    return redirectWithMarker(url, 302);
   }
 
   // Protect calendar/subscription pages when not signed in
@@ -169,29 +195,6 @@ export async function middleware(req: NextRequest) {
       }
       break;
     }
-  }
-
-  // Public homepage at "/":
-  // - authenticated users stay on "/"
-  // - unauthenticated users see landing content (rewrite)
-  if (pathname === "/") {
-    if (!hasSession) {
-      // Render landing content at "/" without changing the URL
-      const url = req.nextUrl.clone();
-      url.pathname = "/landing";
-      const res = NextResponse.rewrite(url);
-      res.headers.set("x-mw-version", "v2");
-      return res;
-    }
-    // Signed-in users stay on "/" without a redirect
-    return ok();
-  }
-
-  // Optional: redirect legacy /signup to the public homepage
-  if (pathname === "/signup") {
-    const url = req.nextUrl.clone();
-    url.pathname = "/";
-    return redirectWithMarker(url, 308);
   }
 
   return ok();

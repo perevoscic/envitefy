@@ -199,11 +199,11 @@ function isCacheFresh(updatedAtIso: string | null, ttlMs: number): boolean {
 
 async function getNextEventForOwner(userId: string): Promise<DashboardEvent | null> {
   const rows = await query<{ id: string; title: string; data: any; created_at: string | null }>(
-    `select id, title, (data - 'attachment') as data, created_at
+    `select id, title, (data - 'attachment' - 'ocrText') as data, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
-     limit 500`,
+     limit 200`,
     [userId]
   );
   const now = Date.now();
