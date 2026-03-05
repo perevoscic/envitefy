@@ -55,6 +55,11 @@ import StaticMap from "@/components/StaticMap";
 import { applyTheme } from "@/components/design-panel";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
+import {
+  normalizeVenueFactForCompare,
+  sanitizeVenueFactLines,
+  stitchVenueContinuationLines,
+} from "@/lib/venue-facts";
 
 type ThemeSpec = {
   id: string;
@@ -3070,24 +3075,51 @@ export default function SimpleTemplateView({
     )
       ? currentData.discoverySource.parseResult.admission
       : [];
-    const stripRepeatedAdmissionFromPrice = (value: string) =>
-      safeString(value)
+    const stripRepeatedAdmissionFromPrice = (value: string) => {
+      const cleaned = safeString(value)
         .replace(
           /\bcash\s*only\s*;?\s*per\s*day\s*;?\s*no\s*weekend\s*passes\.?/gi,
           ""
         )
+        .replace(/\bdoor fees?\s+are\s+daily\.?/gi, "")
+        .replace(/\bthere\s+are\s+no\s+weekend\s+passes\.?/gi, "")
+        .replace(/\bno\s+weekend\s+passes\.?/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .replace(/\s+([,.;:!?])/g, "$1")
+        .replace(/[:;,\-]\s*$/g, "")
         .trim();
-    const admissionCards =
+      return cleaned;
+    };
+    const rawAdmissionCards =
       parseResultAdmission.length > 0
         ? parseResultAdmission.map((item: any) => ({
             label: item?.label || "Admission",
-            price: stripRepeatedAdmissionFromPrice(item?.price || ""),
+            price: safeString(item?.price || ""),
             note: item?.note || "",
           }))
         : parseAdmissionsFromText(customFields?.admission).map((item) => ({
             ...item,
-            price: stripRepeatedAdmissionFromPrice(item.price),
           }));
+    const admissionCards = rawAdmissionCards
+      .map((item) => ({
+        ...item,
+        label: safeString(item.label) || "Admission",
+        price: stripRepeatedAdmissionFromPrice(item.price),
+        note: safeString(item.note),
+      }))
+      .filter((item) => Boolean(item.label || item.price || item.note))
+      .filter((item, idx, arr) => {
+        const key = normalizeVenueFactForCompare(`${item.label} ${item.price}`);
+        return arr.findIndex((candidate) => {
+          const candidateKey = normalizeVenueFactForCompare(
+            `${safeString(candidate.label)} ${safeString(candidate.price)}`
+          );
+          return candidateKey === key;
+        }) === idx;
+      });
+    const baseAdmissionNoteCandidates = rawAdmissionCards
+      .flatMap((item) => [safeString(item.note), safeString(item.price)])
+      .filter(Boolean);
 
     const meet = advancedSections?.meet || {};
     const logistics = advancedSections?.logistics || {};
@@ -3181,7 +3213,11 @@ export default function SimpleTemplateView({
       advancedSections?.logistics?.gymLayoutImage ||
         currentData?.discoverySource?.extractionMeta?.gymLayoutImageDataUrl
     );
-    const assignedGymRaw = safeString(advancedSections?.meet?.assignedGym);
+    const assignedGymRaw = safeString(
+      advancedSections?.meet?.assignedGym ||
+        parseResult?.athlete?.assignedGym ||
+        ""
+    );
     const gymLayoutLabel = safeString(
       advancedSections?.logistics?.gymLayoutLabel ||
         (assignedGymRaw ? `Assigned gym location: ${assignedGymRaw}` : "")
@@ -3190,6 +3226,7 @@ export default function SimpleTemplateView({
       ? gymLayoutLabel.replace(/^assigned gym location:\s*/i, "").trim() ||
         gymLayoutLabel
       : "";
+    const gymHeroLabel = safeString(assignedGymRaw || gymLayoutLabelValue || "");
     const extractedDiscoveryText = safeString(
       currentData?.discoverySource?.extractedText
     );
@@ -3199,6 +3236,58 @@ export default function SimpleTemplateView({
           .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
           .filter(Boolean)
       : [];
+    const isVenueHeaderNoiseLine = (line: string) =>
+      /^(spectator admission\b|updated\s+[a-z]+\s+\d{1,2},\s+\d{4}\b|page\s+\d+\s+of\s+\d+\b)/i.test(
+        safeString(line)
+      );
+    const isHydrationLine = (line: string) =>
+      /(water bottles?|bottle filling|filling stations?|hydration|bring water)/i.test(
+        safeString(line)
+      );
+    const isMerchandiseLine = (line: string) =>
+      /(event merchandise|merchandise|leotards?|gymnastics apparel|accessories)/i.test(
+        safeString(line)
+      );
+    const isResultsLine = (line: string) =>
+      /(official results|live scoring|meetscoresonline|results will be posted)/i.test(
+        safeString(line)
+      );
+    const isDaylightLine = (line: string) =>
+      /daylight savings/i.test(safeString(line));
+    const isSafetyObjectsLine = (line: string) =>
+      /(keep an eye on your children|footballs?|baseballs?|objects?\s+for\s+throwing|safety of all the gymnasts|not competing for their safety)/i.test(
+        safeString(line)
+      );
+    const extractVenueParagraphSentences = (lines: string[]) => {
+      const startIdx = lines.findIndex((line) =>
+        /competition will take place in the east,\s*central and west halls/i.test(
+          line
+        )
+      );
+      if (startIdx < 0) return [] as string[];
+      const chunk: string[] = [];
+      for (let i = startIdx; i < Math.min(lines.length, startIdx + 8); i += 1) {
+        const line = safeString(lines[i]);
+        if (!line) break;
+        if (isVenueHeaderNoiseLine(line)) continue;
+        if (/^--\s*\d+\s+of\s+\d+\s*--$/i.test(line)) break;
+        if (/^parents\/spectators/i.test(line) && chunk.length > 0) break;
+        chunk.push(line);
+        if (
+          /\bentrance to the competition area\.?$/i.test(line) ||
+          /\bcompetition area\.?$/i.test(line)
+        ) {
+          break;
+        }
+      }
+      const paragraph = chunk.join(" ").replace(/\s+/g, " ").trim();
+      if (!paragraph) return [] as string[];
+      return paragraph
+        .split(/(?<=[.!?])\s+/)
+        .map((sentence) => safeString(sentence))
+        .filter((sentence) => sentence.length > 18)
+        .filter((sentence) => !isVenueHeaderNoiseLine(sentence));
+    };
     const uniqueTextLines = (items: string[], limit = 20) => {
       const seen = new Set<string>();
       const out: string[] = [];
@@ -3213,30 +3302,15 @@ export default function SimpleTemplateView({
       }
       return out;
     };
-    const stitchSentenceFragments = (items: string[]) => {
-      return items.reduce((acc: string[], rawLine: string) => {
-        const line = safeString(rawLine).replace(/\s+/g, " ");
-        if (!line) return acc;
-        if (!acc.length) {
-          acc.push(line);
-          return acc;
-        }
-        const previous = acc[acc.length - 1];
-        const prevEndsSentence = /[.!?:]$/.test(previous);
-        const startsLowercase = /^[a-z]/.test(line);
-        const startsContinuation =
-          /^(and|or|but|to|for|with|in|on|at|near|by|of|the|a|an|available|entrance|registration|convention center|guest services|competition area|awards area)\b/i.test(
-            line
-          );
-        if (!prevEndsSentence && (startsLowercase || startsContinuation)) {
-          acc[acc.length - 1] = `${previous} ${line}`.replace(/\s+/g, " ").trim();
-          return acc;
-        }
-        acc.push(line);
-        return acc;
-      }, []);
-    };
-    const extractionLayoutFacts = stitchSentenceFragments(
+    const stitchSentenceFragments = (items: string[]) =>
+      stitchVenueContinuationLines(
+        items.map((line) => safeString(line)).filter(Boolean)
+      );
+    const venueExcludePatterns = [
+      /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
+      /official results|live scoring|daylight savings/i,
+    ];
+    const extractionLayoutFacts = sanitizeVenueFactLines(
       (
         Array.isArray(
           currentData?.discoverySource?.extractionMeta?.gymLayoutFacts
@@ -3245,16 +3319,19 @@ export default function SimpleTemplateView({
           : []
       )
         .map((line: any) => safeString(line))
-        .filter(Boolean)
+        .filter(Boolean),
+      {
+        mode: "strict",
+        maxLines: 14,
+        requireAnchor: true,
+        excludePatterns: venueExcludePatterns,
+      }
     );
     const trafficText = safeString(
       logistics?.trafficAlerts || parseLogistics?.trafficAlerts
     );
     const normalizeForCompare = (value: string) =>
-      value
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim();
+      normalizeVenueFactForCompare(value);
     const trafficEntriesRaw = trafficText
       ? trafficText
           .split(/\n+/)
@@ -3311,15 +3388,66 @@ export default function SimpleTemplateView({
             date: `Traffic Window ${idx + 1}`,
             times: entry,
           }));
+    const sourceDaylightLine =
+      sourceLines.find((line) => isDaylightLine(line)) || "";
+    const sourceHydrationLine =
+      sourceLines.find((line) => isHydrationLine(line)) || "";
+    const sourceMerchandiseLine =
+      sourceLines.find((line) => isMerchandiseLine(line)) || "";
+    const sourceSafetyObjectsLine =
+      sourceLines.find((line) => isSafetyObjectsLine(line)) || "";
+    const sourceResultsLines = uniqueTextLines(
+      sourceLines.filter((line) => isResultsLine(line)),
+      4
+    );
+    const sourceResultsText = sourceResultsLines.join(" ");
+    const venueParagraphSentences = uniqueTextLines(
+      extractVenueParagraphSentences(sourceLines),
+      8
+    );
     const firstAnnouncement = Array.isArray(parseCommunications?.announcements)
       ? parseCommunications.announcements.find((item: any) =>
           safeString(item?.body)
         )
       : null;
-    const admissionPrimaryNote =
-      admissionCards.find((item) => safeString(item.note))?.note || "";
+    const admissionNoteCandidates = uniqueTextLines(
+      [
+        ...baseAdmissionNoteCandidates,
+        ...sourceLines.filter((line) =>
+          /(door fees?|weekend passes?)/i.test(line)
+        ),
+      ],
+      8
+    );
+    const admissionPrimaryNote = (() => {
+      const hasDoorFees = admissionNoteCandidates.some((line) =>
+        /\bdoor fees?\b/i.test(line)
+      );
+      const hasWeekendPass = admissionNoteCandidates.some((line) =>
+        /\bweekend passes?\b/i.test(line)
+      );
+      if (hasDoorFees || hasWeekendPass) {
+        return [
+          hasDoorFees ? "Door fees are daily." : "",
+          hasWeekendPass ? "No weekend passes." : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+      }
+      return admissionNoteCandidates[0] || "";
+    })();
     const merchandiseLink = pickLink(
       /(merch|shop|store|vendor|apparel|souvenir|leotard)/i
+    );
+    const resultsLinks = uniqueTextLines(
+      normalizedLinks
+        .filter((item) =>
+          /(result|score|meetscoresonline|lightningcity)/i.test(
+            `${item.label} ${item.url}`
+          )
+        )
+        .map((item) => item.url),
+      3
     );
     const announcementBody = safeString(firstAnnouncement?.body);
     const merchandiseText =
@@ -3327,11 +3455,17 @@ export default function SimpleTemplateView({
         announcementBody
       )
         ? announcementBody
-        : "";
+        : sourceMerchandiseLine;
+    const resultsInfoText =
+      sourceResultsText ||
+      (/(official results|live scoring|meetscoresonline)/i.test(announcementBody)
+        ? announcementBody
+        : "");
     const hasRotationLink = Boolean(safeString(rotationLink?.url));
     const hasAdmissionContent =
       admissionCards.length > 0 || Boolean(admissionPrimaryNote);
-    const hasSpectatorCards = Boolean(merchandiseText) || hasRotationLink;
+    const hasSpectatorCards =
+      Boolean(merchandiseText) || hasRotationLink || Boolean(resultsInfoText);
     const rulesUpdateText =
       safeString(firstAnnouncement?.body) || safeString(description);
     const eventCity = (() => {
@@ -3378,7 +3512,7 @@ export default function SimpleTemplateView({
         const startsContinuation =
           /^[a-z(]/.test(line) ||
           /^(and|or|but|because|which|that|to|for|with|on|in|at)\b/i.test(line);
-        if (!prevEndsSentence || startsContinuation) {
+        if (!prevEndsSentence && startsContinuation) {
           acc[acc.length - 1] = `${prev} ${line}`.replace(/\s+/g, " ").trim();
         } else {
           acc.push(line);
@@ -3408,12 +3542,9 @@ export default function SimpleTemplateView({
       })
       .slice(0, 12);
     const normalizeCompareText = (value: string) =>
-      value
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim();
+      normalizeVenueFactForCompare(value);
     const isVenueDetailLine = (line: string) =>
-      /(east|west|central|hall|registration|guest services|entrance|coffee bar|admission tickets|competition area|awards area|gym\s*[a-f]|2nd floor|second floor|3rd floor|third floor|check-?in|drop-?off|ride ?share|parking|address|venue)/i.test(
+      /(east hall|west hall|central hall|north hall|south hall|registration|guest services|entrance|coffee bar|competition area|awards area|gym\s*[a-z0-9]{1,2}|2nd floor|second floor|3rd floor|third floor|check-?in|freight door|right door)/i.test(
         line
       );
     const meetsAnyLine = (line: string, candidates: string[]) => {
@@ -3464,40 +3595,42 @@ export default function SimpleTemplateView({
         .filter(Boolean),
       8
     ).filter((line) => line.length > 10);
-    const meetDetailsRawLines =
-      descriptionLines.length > 0
-        ? descriptionLines
-        : uniqueTextLines(
-            [...meetDetailsFallbackLines, ...primaryMeetDetailsLines],
-            16
-          ).filter((line) => line.length > 10);
+    const meetDetailsRawLines = uniqueTextLines(
+      [...descriptionLines, ...meetDetailsFallbackLines, ...primaryMeetDetailsLines],
+      16
+    ).filter((line) => line.length > 10);
     const rideShareNote =
       sourceLines.find((line) => rideSharePattern.test(line)) || "";
-    const facilityLinesFromSource = stitchSentenceFragments(
-      primaryMeetDetailsLines.filter(
-        (line) =>
-          /(east|west|central|hall|registration|guest services|entrance|coffee bar|admission tickets|competition area)/i.test(
-            line
-          ) && !rideSharePattern.test(line)
-      )
+    const facilityLinesFromFacts = sanitizeVenueFactLines(
+      [
+        ...extractionLayoutFacts,
+        ...(Array.isArray(parseMeetDetails?.operationalNotes)
+          ? parseMeetDetails.operationalNotes
+          : []),
+        safeString(parseMeetDetails?.facilityLayout),
+        safeString(parseMeetDetails?.registrationInfo),
+      ].filter(Boolean),
+      {
+        mode: "strict",
+        maxLines: 14,
+        requireAnchor: true,
+        excludePatterns: venueExcludePatterns,
+      }
     );
-    const facilityLinesFromFacts = stitchSentenceFragments(
-      uniqueTextLines(
-        [
-          ...extractionLayoutFacts,
-          ...(Array.isArray(parseMeetDetails?.operationalNotes)
-            ? parseMeetDetails.operationalNotes
-            : []),
-        ].filter((line) =>
-          /(east|west|central|hall|registration|guest services|entrance|coffee bar|competition area|awards area|gym\s*[a-f]|2nd floor|second floor|3rd floor|third floor|check-?in)/i.test(
-            safeString(line)
-          )
-        ),
-        14
-      )
-    );
+    const facilityLinesFromSource =
+      facilityLinesFromFacts.length > 0
+        ? []
+        : sanitizeVenueFactLines(
+            primaryMeetDetailsLines.filter((line) => !rideSharePattern.test(line)),
+            {
+              mode: "strict",
+              maxLines: 10,
+              requireAnchor: true,
+              excludePatterns: venueExcludePatterns,
+            }
+          );
     const facilityLinesRaw = uniqueTextLines(
-      stitchSentenceFragments([...facilityLinesFromSource, ...facilityLinesFromFacts]),
+      stitchSentenceFragments([...facilityLinesFromFacts, ...facilityLinesFromSource]),
       14
     ).filter((line) => line.length > 10);
     const meetDetailsLines = uniqueTextLines(
@@ -3511,11 +3644,31 @@ export default function SimpleTemplateView({
       facilityLinesRaw.filter((line) => !meetsAnyLine(line, meetDetailsLines)),
       14
     ).filter((line) => line.length > 10);
+    const isSentenceLikeVenueLine = (line: string) => {
+      const text = safeString(line);
+      if (!text) return false;
+      if (isHydrationLine(text) || isMerchandiseLine(text) || isResultsLine(text)) {
+        return false;
+      }
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      if (/[.!?]$/.test(text)) return wordCount >= 5;
+      return wordCount >= 9;
+    };
+    const venueListLinesRaw =
+      venueParagraphSentences.length > 0 ? venueParagraphSentences : facilityLines;
+    const venueListLines = uniqueTextLines(
+      venueListLinesRaw.filter((line) => isSentenceLikeVenueLine(line)),
+      12
+    );
+    const parsedAwardsFallback =
+      sanitizeVenueFactLines([safeString(parseResult?.athlete?.awards)], {
+        mode: "strict",
+        maxLines: 1,
+        requireAnchor: true,
+        excludePatterns: venueExcludePatterns,
+      })[0] || "";
     const registrationDeskNote =
       facilityLines.find((line) =>
-        /(registration|guest services|2nd floor|second floor)/i.test(line)
-      ) ||
-      sourceLines.find((line) =>
         /(registration|guest services|2nd floor|second floor)/i.test(line)
       ) ||
       extractionLayoutFacts.find((line) =>
@@ -3524,17 +3677,14 @@ export default function SimpleTemplateView({
       "";
     const awardsAreaNote =
       facilityLines.find((line) => /(awards area|north side)/i.test(line)) ||
-      sourceLines.find((line) => /(awards area|north side)/i.test(line)) ||
       extractionLayoutFacts.find((line) =>
         /(awards area|north side)/i.test(line)
       ) ||
-      (safeString(parseResult?.athlete?.awards)
-        ? `Awards area: ${safeString(parseResult?.athlete?.awards)}.`
-        : "");
+      parsedAwardsFallback;
     const venueDetailContains = (note: string) => {
       const normalizedNote = normalizeCompareText(note);
       if (!normalizedNote) return false;
-      return facilityLines.some((line) => {
+      return venueListLines.some((line) => {
         const normalizedLine = normalizeCompareText(line);
         return (
           normalizedLine === normalizedNote ||
@@ -3545,9 +3695,12 @@ export default function SimpleTemplateView({
     };
     const showRegistrationDeskNote =
       Boolean(registrationDeskNote) &&
+      isSentenceLikeVenueLine(registrationDeskNote) &&
       !venueDetailContains(registrationDeskNote);
     const showAwardsAreaNote =
-      Boolean(awardsAreaNote) && !venueDetailContains(awardsAreaNote);
+      Boolean(awardsAreaNote) &&
+      isSentenceLikeVenueLine(awardsAreaNote) &&
+      !venueDetailContains(awardsAreaNote);
     const sourcePolicyLine = (pattern: RegExp) =>
       sourceLines.find((line) => pattern.test(line)) || "";
     const policyNotes = [
@@ -3555,15 +3708,14 @@ export default function SimpleTemplateView({
         sourcePolicyLine(
           /(food|beverage|coffee|starbucks|kahwa|outside food)/i
         ),
-      sourcePolicyLine(
-        /(hydration|water bottles|filling stations|fill stations|bring water)/i
-      ) ||
+      sourceHydrationLine ||
         (safeString(parseResult?.athlete?.stretchTime)
           ? `Athlete stretch begins at ${parseResult.athlete.stretchTime}. Bring water and arrive prepared.`
           : ""),
       safeString(logistics?.waivers || parseLogistics?.waivers) ||
         sourcePolicyLine(/(service animal|service dog|certified service)/i),
       safeString(parseMeetDetails?.judgingNotes) ||
+        sourceSafetyObjectsLine ||
         sourcePolicyLine(
           /(safety policy|throwing objects|baseballs|footballs|safety)/i
         ),
@@ -3592,6 +3744,7 @@ export default function SimpleTemplateView({
     const showDiscoveryRightRail = hasHostSupport;
     const hasParkingContent =
       Boolean(trafficText) ||
+      Boolean(sourceDaylightLine) ||
       Boolean(safeString(logistics?.parking)) ||
       Boolean(addressLabel) ||
       Boolean(safeString(logistics?.hotelInfo || parseLogistics?.hotel)) ||
@@ -3599,7 +3752,7 @@ export default function SimpleTemplateView({
     const hasFacilityContent =
       Boolean(gymLayoutImageUrl) ||
       Boolean(gymLayoutLabel) ||
-      facilityLines.length > 0 ||
+      venueListLines.length > 0 ||
       showRegistrationDeskNote ||
       showAwardsAreaNote;
     const hasMeetDetailsContent = meetDetailsLines.length > 0;
@@ -3745,7 +3898,10 @@ export default function SimpleTemplateView({
             </div>
           )}
           <div className="max-w-6xl mx-auto relative z-10">
-            {(eventDatesLabel || sessionHeroLabel || teamLevelHeroLabel) && (
+            {(eventDatesLabel ||
+              sessionHeroLabel ||
+              teamLevelHeroLabel ||
+              gymHeroLabel) && (
               <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
                 {eventDatesLabel && (
                   <div className={headerDateChipClass}>
@@ -3763,6 +3919,12 @@ export default function SimpleTemplateView({
                   <div className={headerDateChipClass}>
                     <Users size={12} className="opacity-80" /> Team Level:{" "}
                     {teamLevelHeroLabel}
+                  </div>
+                )}
+                {gymHeroLabel && (
+                  <div className={headerDateChipClass}>
+                    <VenueDetailsIcon size={12} className="opacity-80" /> Gym:{" "}
+                    {gymHeroLabel}
                   </div>
                 )}
               </div>
@@ -4097,6 +4259,37 @@ export default function SimpleTemplateView({
                           </a>
                         </div>
                       )}
+                      {(resultsInfoText || resultsLinks.length > 0) && (
+                        <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
+                          <ClipboardList
+                            className="text-[color:var(--accent,#D4AF37)] mb-4"
+                            size={28}
+                          />
+                          <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                            Results & Live Scoring
+                          </h4>
+                          {resultsInfoText && (
+                            <p className="text-sm text-slate-500 leading-relaxed">
+                              {resultsInfoText}
+                            </p>
+                          )}
+                          {resultsLinks.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                              {resultsLinks.map((url) => (
+                                <a
+                                  key={`results-link-${url}`}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`inline-flex items-center gap-2 text-xs font-black uppercase text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
+                                >
+                                  Open Link <ExternalLink size={14} />
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -4148,6 +4341,16 @@ export default function SimpleTemplateView({
                           )}
                         </div>
                       </div>
+                    </section>
+                  )}
+                  {sourceDaylightLine && (
+                    <section className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
+                      <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
+                        Daylight Savings Reminder
+                      </h4>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        {sourceDaylightLine}
+                      </p>
                     </section>
                   )}
 
@@ -4253,10 +4456,10 @@ export default function SimpleTemplateView({
               {discoveryActiveTab === "facility" && (
                 <div className="space-y-6 md:space-y-10">
                   <section className={`${discoveryCard} p-4 sm:p-5 md:p-10`}>
-                    <h3 className={discoverySectionHeading}>Awards Area</h3>
-                    {facilityLines.length > 0 && (
+                    <h3 className={discoverySectionHeading}>Venue Details</h3>
+                    {venueListLines.length > 0 && (
                       <ul className="space-y-4">
-                        {facilityLines.map((line) => {
+                        {venueListLines.map((line) => {
                           const parsedLine = extractInlineUrl(line);
                           return (
                             <li

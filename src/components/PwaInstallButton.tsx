@@ -300,6 +300,23 @@ const DEBUG_STORE_KEY = "__snapInstallDebugLog";
 const INSTALLED_FLAG_KEY = "snapmydate:pwa-installed";
 const MAX_DEBUG_ENTRIES = 50;
 
+const shouldHideInstallUi = (): boolean => {
+  if (typeof window === "undefined") return false;
+  let inIframe = false;
+  try {
+    inIframe = window.self !== window.top;
+  } catch {
+    inIframe = true;
+  }
+  let isEmbedQuery = false;
+  try {
+    isEmbedQuery = new URLSearchParams(window.location.search).get("embed") === "1";
+  } catch {
+    isEmbedQuery = false;
+  }
+  return inIframe || isEmbedQuery;
+};
+
 const appendDebugEntry = (
   target: Record<string, any>,
   entry: { message: string; meta?: Record<string, unknown> | null; ts: number }
@@ -826,6 +843,8 @@ export default function PwaInstallButton({
     const timer = window.setTimeout(() => setGuidePulse(false), 1400);
     return () => window.clearTimeout(timer);
   }, [guidePulse]);
+
+  if (shouldHideInstallUi()) return null;
 
   // Additional safety check: hide if running in standalone mode
   // This check runs synchronously on every render to ensure we never show when installed

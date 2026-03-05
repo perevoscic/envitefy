@@ -2,22 +2,20 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
+import { signOut } from "next-auth/react";
 import { useSidebar } from "@/app/sidebar-context";
 import {
   CalendarIconGoogle,
   CalendarIconOutlook,
   CalendarIconApple,
 } from "@/components/CalendarIcons";
-import { useEventCategories } from "@/hooks/useEventCategories";
+import type { CategoryData } from "@/hooks/useEventCategories";
 import { useMenu } from "@/contexts/MenuContext";
 import {
   getCreateEventSections,
   getTemplateLinks,
 } from "@/config/navigation-config";
-import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
 
@@ -77,147 +75,17 @@ function formatRelative(date?: string) {
 
 // Shared menu hook that both TopNav and Sidebar use
 export function useUnifiedMenu() {
-  const { data: session, status } = useSession();
-  const pathname = usePathname();
-  const { categories, history } = useEventCategories();
-
-  const [openRecent, setOpenRecent] = useState(false);
-  const [myEventsOpen, setMyEventsOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [calendarsOpen, setCalendarsOpen] = useState(false);
-  const [connectedCalendars, setConnectedCalendars] = useState<{
-    google: boolean;
-    microsoft: boolean;
-    apple: boolean;
-  }>({
-    google: false,
-    microsoft: false,
-    apple: false,
-  });
-  const { visibleTemplateKeys } = useFeatureVisibility();
-
-  const isAdmin = Boolean((session?.user as any)?.isAdmin);
-
-  const displayName =
-    (session?.user?.name as string) ||
-    (session?.user?.email as string) ||
-    "User";
-
-  const initials = useMemo(() => {
-    if (!displayName) return "?";
-    const parts = displayName.split(" ").filter(Boolean);
-    if (parts.length === 0) return "?";
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    const first = parts[0][0];
-    const last = parts[parts.length - 1][0];
-    return (first + last).toUpperCase();
-  }, [displayName]);
-
-  const fetchConnectedCalendars = useCallback(async () => {
-    try {
-      const res = await fetch("/api/calendars", { credentials: "include" });
-      if (!res.ok) {
-        console.warn(`[topnav] /api/calendars returned status ${res.status}`);
-        setConnectedCalendars({
-          google: false,
-          microsoft: false,
-          apple: false,
-        });
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      setConnectedCalendars({
-        google: Boolean(data?.google),
-        microsoft: Boolean(data?.microsoft),
-        apple: Boolean(data?.apple),
-      });
-    } catch (err) {
-      console.error(
-        "Failed to fetch connected calendars:",
-        err instanceof Error ? err.message : String(err),
-      );
-    }
-  }, []);
-
-  const handleCalendarConnect = useCallback(
-    (provider: CalendarProviderKey) => {
-      if (typeof window === "undefined") return;
-      try {
-        if (provider === "google") {
-          window.open(
-            "/api/google/auth?source=menu",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        } else if (provider === "microsoft") {
-          window.open(
-            "/api/outlook/auth?source=menu",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        } else {
-          window.open(
-            "https://support.apple.com/guide/calendar/welcome/mac",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        }
-        window.setTimeout(() => {
-          fetchConnectedCalendars();
-        }, 4000);
-      } catch (err) {
-        console.error("Failed to initiate calendar connection:", err);
-      }
-    },
-    [fetchConnectedCalendars]
-  );
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchConnectedCalendars();
-    }
-  }, [status, fetchConnectedCalendars]);
-
-  useEffect(() => {
-    if (calendarsOpen && status === "authenticated") {
-      fetchConnectedCalendars();
-    }
-  }, [calendarsOpen, status, fetchConnectedCalendars]);
-
-  return {
-    session,
-    status,
-    pathname,
-    categories,
-    history,
-    openRecent,
-    setOpenRecent,
-    myEventsOpen,
-    setMyEventsOpen,
-    profileOpen,
-    setProfileOpen,
-    calendarsOpen,
-    setCalendarsOpen,
-    connectedCalendars,
-    handleCalendarConnect,
-    isAdmin,
-    initials,
-    displayName,
-    formatRelative,
-    visibleTemplateKeys,
-  };
+  return useMenu();
 }
 
 // Shared menu components
 export function MyEventsDropdown({
   categories,
-  history,
   isOpen,
   onClose,
   variant = "topnav",
 }: {
-  categories: ReturnType<typeof useEventCategories>["categories"];
-  history: ReturnType<typeof useEventCategories>["history"];
+  categories: CategoryData[];
   isOpen: boolean;
   onClose: () => void;
   variant?: "topnav" | "sidebar";
@@ -350,7 +218,6 @@ export function ProfileMenu({
   isOpen,
   onClose,
   isAdmin,
-  initials,
   connectedCalendars,
   calendarsOpen,
   setCalendarsOpen,
@@ -360,7 +227,6 @@ export function ProfileMenu({
   isOpen: boolean;
   onClose: () => void;
   isAdmin: boolean;
-  initials: string;
   connectedCalendars: {
     google: boolean;
     microsoft: boolean;
@@ -999,7 +865,6 @@ export default function TopNav() {
               </button>
               <MyEventsDropdown
                 categories={categories}
-                history={history}
                 isOpen={myEventsOpen}
                 onClose={() => setMyEventsOpen(false)}
                 variant="topnav"
@@ -1063,7 +928,6 @@ export default function TopNav() {
                   setCalendarsOpen(false);
                 }}
                 isAdmin={isAdmin}
-                initials={initials}
                 connectedCalendars={connectedCalendars}
                 calendarsOpen={calendarsOpen}
                 setCalendarsOpen={setCalendarsOpen}

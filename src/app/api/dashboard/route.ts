@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUserIdByEmail, query } from "@/lib/db";
+import { isDraftStatus, type DashboardEvent } from "@/lib/dashboard-data";
 import {
-  isArchivedOrCanceled,
-  isDraftStatus,
-  toDashboardEvent,
-  type DashboardEvent,
-} from "@/lib/dashboard-data";
+  buildDashboardCollections,
+  listDashboardEventsForOwner,
+} from "@/lib/dashboard-query";
+import {
+  createServerTimingTracker,
+  isTimingRequested,
+  type ServerTimingTracker,
+} from "@/lib/server-timing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +19,7 @@ const WEATHER_FORECAST_WINDOW_HOURS = 24 * 3; // WeatherAPI free-tier 3-day fore
 const WEATHERAPI_KEY =
   process.env.WEATHERAPI_KEY || process.env.WEATHERAPI_API_KEY || null;
 const DASHBOARD_CACHE_TTL_MS = 15_000;
+const DASHBOARD_STALE_TTL_MS = 60_000;
 
 type DashboardMetricsCache = {
   eventId: string;
@@ -26,18 +31,36 @@ type DashboardMetricsCache = {
   weatherUpdatedAt: string | null;
 };
 
+type DashboardPayload = Record<string, unknown>;
+type SessionLike = {
+  user?: {
+    email?: string | null;
+    id?: string | null;
+  } | null;
+} | null;
+
 let metricsCacheTableExists: boolean | null = null;
 const dashboardResponseCache = new Map<
   string,
-  { at: number; payload: Record<string, unknown> }
+  { at: number; payload: DashboardPayload }
 >();
+const dashboardRefreshInflight = new Map<string, Promise<DashboardPayload>>();
 
 function hoursUntil(iso: string): number {
   return (new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60);
 }
 
-async function getCachedMetrics(eventId: string): Promise<DashboardMetricsCache | null> {
-  try {
+function errorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string" && err.trim()) return err;
+  return fallback;
+}
+
+async function getCachedMetrics(
+  eventId: string,
+  timing?: ServerTimingTracker
+): Promise<DashboardMetricsCache | null> {
+  const read = async () => {
     if (metricsCacheTableExists == null) {
       const exists = await query<{ exists: string | null }>(
         `select to_regclass('public.event_metrics_cache')::text as exists`
@@ -71,6 +94,9 @@ async function getCachedMetrics(eventId: string): Promise<DashboardMetricsCache 
       weatherTemp: row.weather_temp,
       weatherUpdatedAt: row.weather_updated_at,
     };
+  };
+  try {
+    return timing ? await timing.time("metrics_cache", read) : await read();
   } catch {
     return null;
   }
@@ -101,71 +127,39 @@ function buildSetupHealth(nextEvent: DashboardEvent | null, rsvpTotalForEvent: n
   return flags;
 }
 
-export async function GET() {
-  try {
-    const session: any = await getServerSession(authOptions as any);
-    const email = session?.user?.email as string | undefined;
-    if (!email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userId = session?.user?.id || (await getUserIdByEmail(email));
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+async function computeDashboardPayload(
+  userId: string,
+  timing?: ServerTimingTracker
+): Promise<DashboardPayload> {
+  const events = timing
+    ? await timing.time("events", () => listDashboardEventsForOwner(userId, 200))
+    : await listDashboardEventsForOwner(userId, 200);
+  const now = Date.now();
+  const {
+    allDrafts,
+    drafts,
+    upcoming,
+    nextEvent,
+    upcomingIn30DaysCount,
+    upcomingIn7DaysCount,
+    nextEventInDays,
+  } = buildDashboardCollections(events, now);
 
-    const cached = dashboardResponseCache.get(userId);
-    if (cached && Date.now() - cached.at < DASHBOARD_CACHE_TTL_MS) {
-      return NextResponse.json(cached.payload);
-    }
+  const rsvp = {
+    going: 0,
+    maybe: 0,
+    declined: 0,
+    pending: Math.max(0, nextEvent?.numberOfGuests || 0),
+    recent: [] as Array<{
+      id: string;
+      name: string;
+      status: "going" | "maybe" | "declined" | "pending";
+      updatedAt: string | null;
+    }>,
+  };
 
-    const rows = await query<{ id: string; title: string; data: any; created_at: string | null }>(
-      `select id, title, (data - 'attachment' - 'ocrText') as data, created_at
-       from event_history
-       where user_id = $1
-       order by created_at desc nulls last, id desc
-       limit 200`,
-      [userId]
-    );
-
-    const now = Date.now();
-    const parsed = (rows.rows || [])
-      .map((row) => toDashboardEvent(row))
-      .filter((item): item is DashboardEvent => Boolean(item));
-
-    const allDrafts = parsed
-      .filter((event) => isDraftStatus(event.status))
-      .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
-    const drafts = allDrafts.slice(0, 3);
-
-    const upcoming = parsed
-      .filter((event) => {
-        const startMs = new Date(event.startAt).getTime();
-        return startMs > now && !isArchivedOrCanceled(event.status);
-      })
-      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-
-    const nextEvent = upcoming[0] || null;
-    const upcomingIn30DaysCount = upcoming.filter((event) => {
-      const diff = new Date(event.startAt).getTime() - now;
-      return diff <= 30 * 24 * 60 * 60 * 1000;
-    }).length;
-    const upcomingIn7DaysCount = upcoming.filter((event) => {
-      const diff = new Date(event.startAt).getTime() - now;
-      return diff <= 7 * 24 * 60 * 60 * 1000;
-    }).length;
-    const nextEventInDays = nextEvent
-      ? Math.max(0, Math.ceil((new Date(nextEvent.startAt).getTime() - now) / (24 * 60 * 60 * 1000)))
-      : null;
-
-    const rsvp = {
-      going: 0,
-      maybe: 0,
-      declined: 0,
-      pending: Math.max(0, nextEvent?.numberOfGuests || 0),
-      recent: [] as Array<{ id: string; name: string; status: "going" | "maybe" | "declined" | "pending"; updatedAt: string | null }>,
-    };
-
-    if (nextEvent) {
+  if (nextEvent) {
+    const loadRsvp = async () => {
       try {
         const [grouped, recentRows] = await Promise.all([
           query<{ response: string; count: string }>(
@@ -192,6 +186,7 @@ export async function GET() {
             [nextEvent.id]
           ),
         ]);
+
         for (const row of grouped.rows || []) {
           const key = String(row.response || "").toLowerCase();
           const count = Number(row.count || 0);
@@ -202,9 +197,15 @@ export async function GET() {
         const filled = rsvp.going + rsvp.maybe + rsvp.declined;
         rsvp.pending = Math.max(0, (nextEvent.numberOfGuests || 0) - filled);
         rsvp.recent = (recentRows.rows || []).map((row) => {
-          const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ").trim();
+          const fullName = [row.first_name, row.last_name]
+            .filter(Boolean)
+            .join(" ")
+            .trim();
           const displayName =
-            fullName || String(row.name || "").trim() || String(row.email || "").trim() || "Guest";
+            fullName ||
+            String(row.name || "").trim() ||
+            String(row.email || "").trim() ||
+            "Guest";
           const responseKey = String(row.response || "").toLowerCase();
           const status: "going" | "maybe" | "declined" | "pending" =
             responseKey === "yes"
@@ -224,76 +225,196 @@ export async function GET() {
       } catch {
         // RSVP table may not exist in some environments.
       }
+    };
+    if (timing) {
+      await timing.time("rsvp", loadRsvp);
+    } else {
+      await loadRsvp();
+    }
+  }
+
+  const setupHealthFlags = buildSetupHealth(
+    nextEvent,
+    rsvp.going + rsvp.maybe + rsvp.declined
+  );
+  const derivedChecklist = nextEvent
+    ? setupHealthFlags.map((flag) => ({
+        id: `derived-${flag.key}`,
+        title:
+          flag.key === "location"
+            ? "Resolve event location coordinates"
+            : flag.key === "cover"
+            ? "Upload a cover image"
+            : flag.key === "guests"
+            ? "Add guests or send invites"
+            : flag.key === "reminders"
+            ? "Set at least one reminder"
+            : "Publish draft event",
+        done: false,
+        dueAt: nextEvent.startAt,
+      }))
+    : [];
+
+  const metricsCache = nextEvent
+    ? await getCachedMetrics(nextEvent.id, timing)
+    : null;
+  const nextEventHours = nextEvent ? hoursUntil(nextEvent.startAt) : null;
+
+  return {
+    ok: true,
+    nextEvent,
+    snapshot: {
+      upcomingCount30Days: upcomingIn30DaysCount,
+      upcomingCount7Days: upcomingIn7DaysCount,
+      nextEventInDays,
+    },
+    upcoming: upcoming.slice(0, 12),
+    rsvp: nextEvent ? rsvp : null,
+    setupHealth: {
+      flags: setupHealthFlags,
+    },
+    checklist: {
+      source: "derived",
+      items: derivedChecklist,
+    },
+    drafts: {
+      count: allDrafts.length,
+      items: drafts.map((event) => ({
+        id: event.id,
+        title: event.title,
+        updatedAt: event.updatedAt,
+        startAt: event.startAt,
+      })),
+    },
+    metricsCache,
+    metricsEligibility: {
+      weatherEligible: Boolean(
+        nextEvent &&
+          (nextEvent.locationLat != null && nextEvent.locationLng != null
+            ? true
+            : Boolean(nextEvent.locationText)) &&
+          nextEventHours != null &&
+          nextEventHours <= WEATHER_FORECAST_WINDOW_HOURS &&
+          WEATHERAPI_KEY
+      ),
+      travelWindowEligible: Boolean(
+        nextEvent && nextEventHours != null && nextEventHours <= 72
+      ),
+    },
+  };
+}
+
+function getOrCreateRefresh(userId: string): Promise<DashboardPayload> {
+  const existing = dashboardRefreshInflight.get(userId);
+  if (existing) return existing;
+  const promise = (async () => {
+    const payload = await computeDashboardPayload(userId);
+    dashboardResponseCache.set(userId, { at: Date.now(), payload });
+    return payload;
+  })().finally(() => {
+    dashboardRefreshInflight.delete(userId);
+  });
+  dashboardRefreshInflight.set(userId, promise);
+  return promise;
+}
+
+function withTiming(
+  timing: ServerTimingTracker,
+  body: Record<string, unknown>,
+  init?: ResponseInit
+) {
+  const response = NextResponse.json(body, init);
+  timing.applyHeader(response);
+  return response;
+}
+
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const timing = createServerTimingTracker(isTimingRequested(url));
+  try {
+    const session = (await timing.time("session", () =>
+      getServerSession(authOptions))) as SessionLike;
+    const email = session?.user?.email || undefined;
+    if (!email) {
+      const body = timing.enabled
+        ? {
+            error: "Unauthorized",
+            timings: timing.toObject(),
+          }
+        : { error: "Unauthorized" };
+      return withTiming(timing, body, { status: 401 });
     }
 
-    const setupHealthFlags = buildSetupHealth(nextEvent, rsvp.going + rsvp.maybe + rsvp.declined);
-    const derivedChecklist = nextEvent
-      ? setupHealthFlags.map((flag) => ({
-          id: `derived-${flag.key}`,
-          title:
-            flag.key === "location"
-              ? "Resolve event location coordinates"
-              : flag.key === "cover"
-              ? "Upload a cover image"
-              : flag.key === "guests"
-              ? "Add guests or send invites"
-              : flag.key === "reminders"
-              ? "Set at least one reminder"
-              : "Publish draft event",
-          done: false,
-          dueAt: nextEvent.startAt,
-        }))
-      : [];
+    const userId = session?.user?.id
+      ? String(session.user.id)
+      : await timing.time("user_lookup", () => getUserIdByEmail(email));
+    if (!userId) {
+      const body = timing.enabled
+        ? {
+            error: "Unauthorized",
+            timings: timing.toObject(),
+          }
+        : { error: "Unauthorized" };
+      return withTiming(timing, body, { status: 401 });
+    }
 
-    const metricsCache = nextEvent ? await getCachedMetrics(nextEvent.id) : null;
-    const nextEventHours = nextEvent ? hoursUntil(nextEvent.startAt) : null;
+    const cached = dashboardResponseCache.get(userId);
+    const cacheAgeMs = cached ? Date.now() - cached.at : null;
 
-    const payload = {
-      ok: true,
-      nextEvent,
-      snapshot: {
-        upcomingCount30Days: upcomingIn30DaysCount,
-        upcomingCount7Days: upcomingIn7DaysCount,
-        nextEventInDays,
-      },
-      upcoming: upcoming.slice(0, 12),
-      rsvp: nextEvent ? rsvp : null,
-      setupHealth: {
-        flags: setupHealthFlags,
-      },
-      checklist: {
-        source: "derived",
-        items: derivedChecklist,
-      },
-      drafts: {
-        count: allDrafts.length,
-        items: drafts.map((event) => ({
-          id: event.id,
-          title: event.title,
-          updatedAt: event.updatedAt,
-          startAt: event.startAt,
-        })),
-      },
-      metricsCache,
-      metricsEligibility: {
-        weatherEligible: Boolean(
-          nextEvent &&
-            (nextEvent.locationLat != null && nextEvent.locationLng != null
-              ? true
-              : Boolean(nextEvent.locationText)) &&
-            nextEventHours != null &&
-            nextEventHours <= WEATHER_FORECAST_WINDOW_HOURS &&
-            WEATHERAPI_KEY
-        ),
-        travelWindowEligible: Boolean(nextEvent && nextEventHours != null && nextEventHours <= 72),
-      },
-    };
-    dashboardResponseCache.set(userId, { at: Date.now(), payload });
-    return NextResponse.json(payload);
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: String(err?.message || err || "Failed to load dashboard") },
-      { status: 500 }
+    if (cached && cacheAgeMs != null && cacheAgeMs < DASHBOARD_CACHE_TTL_MS) {
+      const body = timing.enabled
+        ? {
+            ...cached.payload,
+            timings: timing.toObject({
+              cache: { state: "fresh", ageMs: cacheAgeMs },
+            }),
+          }
+        : cached.payload;
+      return withTiming(timing, body);
+    }
+
+    if (cached && cacheAgeMs != null && cacheAgeMs < DASHBOARD_STALE_TTL_MS) {
+      // Serve stale immediately, refresh in background, and avoid duplicate refresh calls.
+      void getOrCreateRefresh(userId).catch(() => undefined);
+      const body = timing.enabled
+        ? {
+            ...cached.payload,
+            timings: timing.toObject({
+              cache: { state: "stale", ageMs: cacheAgeMs, refreshStarted: true },
+            }),
+          }
+        : cached.payload;
+      return withTiming(timing, body);
+    }
+
+    if (dashboardRefreshInflight.has(userId)) {
+      timing.addStep("coalesced_wait", 0);
+    }
+    const payload = await timing.time("dashboard_compute", () =>
+      getOrCreateRefresh(userId)
     );
+
+    const body = timing.enabled
+      ? {
+          ...payload,
+          timings: timing.toObject({
+            cache: {
+              state: "miss",
+              ageMs: cacheAgeMs,
+            },
+          }),
+        }
+      : payload;
+
+    return withTiming(timing, body);
+  } catch (err: unknown) {
+    const message = errorMessage(err, "Failed to load dashboard");
+    const body = timing.enabled
+      ? {
+          error: message,
+          timings: timing.toObject(),
+        }
+      : { error: message };
+    return withTiming(timing, body, { status: 500 });
   }
 }

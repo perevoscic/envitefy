@@ -54,10 +54,14 @@ import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
+import { cache } from "react";
 import {
   getEventAccessCookieName,
   verifyEventAccessCookieValue,
 } from "@/lib/event-access";
+import {
+  createServerTimingTracker,
+} from "@/lib/server-timing";
 
 const SignupViewer = nextDynamic(
   () => import("@/components/smart-signup-form/SignupViewer"),
@@ -93,6 +97,15 @@ const DiscoveryEventEditLayout = nextDynamic(
 );
 
 export const dynamic = "force-dynamic";
+const EVENT_PAGE_TIMING_ENV = process.env.EVENT_PAGE_TIMING === "1";
+
+const getCachedEventHistoryBySlugOrId = cache(
+  async (value: string, userId?: string | null) =>
+    getEventHistoryBySlugOrId({
+      value,
+      userId: userId || undefined,
+    })
+);
 
 const FLOATING_ISO_REGEX =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
@@ -125,8 +138,11 @@ const parseDatePreserveFloating = (
 export async function generateMetadata(props: {
   params: Promise<{ id: string }> | { id: string };
 }): Promise<Metadata> {
+  const timing = createServerTimingTracker(EVENT_PAGE_TIMING_ENV);
   const awaitedParams = await (props as any).params;
-  const row = await getEventHistoryBySlugOrId({ value: awaitedParams.id });
+  const row = await timing.time("metadata_event_lookup", () =>
+    getCachedEventHistoryBySlugOrId(awaitedParams.id, null)
+  );
   const data: any = row?.data || {};
   const title =
     (typeof data?.title === "string" && data.title) || row?.title || "Event";
@@ -143,6 +159,13 @@ export async function generateMetadata(props: {
   const url = await absoluteUrl(
     `/event/${encodeURIComponent(awaitedParams.id)}`
   );
+
+  if (timing.enabled) {
+    console.info("[event-page][metadata]", {
+      id: awaitedParams.id,
+      timings: timing.toObject(),
+    });
+  }
 
   return {
     title: `${title} — Envitefy`,
@@ -502,8 +525,20 @@ export default async function EventPage({
     | Promise<Record<string, string | string[] | undefined>>
     | Record<string, string | string[] | undefined>;
 }) {
+  const baseTiming = createServerTimingTracker(EVENT_PAGE_TIMING_ENV);
   const awaitedParams = await params;
   const awaitedSearchParams = await (searchParams as any);
+  const timingRequestedRaw = String(
+    ((awaitedSearchParams as any)?.timing ?? "") as string
+  )
+    .trim()
+    .toLowerCase();
+  const timingRequested =
+    timingRequestedRaw === "1" || timingRequestedRaw === "true";
+  const timing =
+    timingRequested && !baseTiming.enabled
+      ? createServerTimingTracker(true)
+      : baseTiming;
   const acceptRaw = String(
     ((awaitedSearchParams as any)?.accept ?? "") as string
   )
@@ -517,17 +552,22 @@ export default async function EventPage({
   const createdParam = createdFlag === "1" || createdFlag === "true";
   const autoAccept = acceptRaw === "1" || acceptRaw === "true";
   // Try to resolve by slug, slug-id, or id; prefer user context for slug-only matches
-  const session: any = await getServerSession(authOptions as any);
+  const session: any = await timing.time("session", () =>
+    getServerSession(authOptions as any)
+  );
   const sessionEmail = (session?.user?.email as string | undefined) || null;
-  const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
-  const row = await getEventHistoryBySlugOrId({
-    value: awaitedParams.id,
-    userId,
-  });
+  const userId = sessionEmail
+    ? await timing.time("user_lookup", () => getUserIdByEmail(sessionEmail))
+    : null;
+  const row = await timing.time("event_lookup", () =>
+    getCachedEventHistoryBySlugOrId(awaitedParams.id, userId)
+  );
   if (!row) return notFound();
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
   const ownerUser =
-    !isOwner && row.user_id ? await getUserById(row.user_id) : null;
+    !isOwner && row.user_id
+      ? await timing.time("owner_lookup", () => getUserById(row.user_id))
+      : null;
   const ownerDisplayName = (() => {
     if (!ownerUser) return "Unknown";
     const full = [ownerUser.first_name || "", ownerUser.last_name || ""]
@@ -545,12 +585,16 @@ export default async function EventPage({
       // Allow viewing in read-only mode for non-authenticated users
       isReadOnly = true;
     } else {
-      const access = await isEventSharedWithUser(row.id, userId);
+      const access = await timing.time("share_access_lookup", () =>
+        isEventSharedWithUser(row.id, userId)
+      );
       if (access === true) {
         // ok
         recipientAccepted = true;
       } else if (access === false) {
-        const pending = await isEventSharePendingForUser(row.id, userId);
+        const pending = await timing.time("share_pending_lookup", () =>
+          isEventSharePendingForUser(row.id, userId)
+        );
         if (pending) {
           recipientPending = true;
           if (autoAccept) {
@@ -892,6 +936,14 @@ export default async function EventPage({
   const canonicalSegment = buildEventSlugSegment(row.id, title);
   const canonical = buildEventPath(row.id, title);
   const shareUrl = await absoluteUrl(canonical);
+
+  if (timing.enabled) {
+    console.info("[event-page][render]", {
+      id: awaitedParams.id,
+      tab: requestedTab || null,
+      timings: timing.toObject(),
+    });
+  }
   const editHref = buildEditLink(row.id, data, title);
 
   // Redirect to canonical slug-id URL if needed, preserving key query params

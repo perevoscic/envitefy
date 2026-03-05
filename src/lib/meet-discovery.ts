@@ -8,6 +8,10 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { getVisionClient } from "@/lib/gcp";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
+import {
+  normalizeVenueFactForCompare,
+  sanitizeVenueFactLines,
+} from "@/lib/venue-facts";
 
 export type DiscoverySourceInput =
   | {
@@ -413,35 +417,15 @@ function extractHallFactsFromText(text: string): string[] {
     .split(/\n+/)
     .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
     .filter(Boolean);
-  const stitchedLines = normalizedLines.reduce((acc: string[], rawLine: string) => {
-    const line = safeString(rawLine).replace(/\s+/g, " ");
-    if (!line) return acc;
-    if (!acc.length) {
-      acc.push(line);
-      return acc;
-    }
-    const previous = acc[acc.length - 1];
-    const prevEndsSentence = /[.!?:]$/.test(previous);
-    const startsLowercase = /^[a-z]/.test(line);
-    const startsContinuation =
-      /^(and|or|but|to|for|with|in|on|at|near|by|of|the|a|an|available|entrance|registration|convention center|guest services|competition area|awards area)\b/i.test(
-        line
-      );
-    if (!prevEndsSentence && (startsLowercase || startsContinuation)) {
-      acc[acc.length - 1] = `${previous} ${line}`.replace(/\s+/g, " ").trim();
-      return acc;
-    }
-    acc.push(line);
-    return acc;
-  }, []);
-
-  const hallFacts = stitchedLines.filter((line) =>
-    /(east hall|west hall|central hall|north hall|south hall|registration|guest services|competition area|entrance|coffee bar|awards area|gym\s*[a-f]|check[- ]?in|2nd floor|second floor|3rd floor|third floor)/i.test(
-      line
-    )
-  );
-
-  return uniqueLines(hallFacts, 14);
+  return sanitizeVenueFactLines(normalizedLines, {
+    mode: "strict",
+    maxLines: 14,
+    requireAnchor: true,
+    excludePatterns: [
+      /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
+      /official results|live scoring|daylight savings/i,
+    ],
+  });
 }
 
 export function buildDiscoveryEvidence(
@@ -906,7 +890,7 @@ async function openAiAnalyzeGymLayoutPage(
               {
                 type: "text",
                 text:
-                  'Return JSON with keys: isLayout (boolean), confidence (number 0-1), text (string), facts (string[]). Facts must be complete, readable sentences or complete map labels. Never return broken fragments or mid-sentence splits (for example avoid outputs like "Convention Center." or "Entrance into").',
+                  'Return JSON with keys: isLayout (boolean), confidence (number 0-1), text (string), facts (string[]). Facts must be verbatim visible map labels/text only (no paraphrase, no inference, no reconstruction). Each fact must be a complete, readable sentence or complete standalone label. Never return broken fragments or mid-sentence splits. If uncertain, return an empty facts array.',
               },
               { type: "input_image", image_url: { url: `data:${mimeType};base64,${buffer.toString("base64")}` } },
             ],
@@ -927,11 +911,19 @@ async function openAiAnalyzeGymLayoutPage(
       isLayout: Boolean(parsed?.isLayout),
       confidence,
       text: cleanExtractedText(safeString(parsed?.text || "")),
-      facts: uniqueLines(
+      facts: sanitizeVenueFactLines(
         pickArray(parsed?.facts)
           .map((item) => safeString(item))
           .filter(Boolean),
-        14
+        {
+          mode: "strict",
+          maxLines: 14,
+          requireAnchor: true,
+          excludePatterns: [
+            /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
+            /official results|live scoring|daylight savings/i,
+          ],
+        }
       ),
     };
   } catch {
@@ -1510,13 +1502,17 @@ async function extractGymLayoutImageFromPdf(buffer: Buffer): Promise<GymLayoutEx
   }
 
   const zones = await openAiExtractGymLayoutZones(selected.image, "image/png");
-  const facts = uniqueLines(
-    [
-      ...selected.aiFacts,
-      ...extractHallFactsFromText(selected.aiText || selected.text),
-      ...extractHallFactsFromText(selected.text),
-    ],
-    14
+  const facts = sanitizeVenueFactLines(
+    [...selected.aiFacts, ...extractHallFactsFromText(selected.text)],
+    {
+      mode: "strict",
+      maxLines: 14,
+      requireAnchor: true,
+      excludePatterns: [
+        /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
+        /official results|live scoring|daylight savings/i,
+      ],
+    }
   );
   return {
     dataUrl,
@@ -1740,9 +1736,17 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
     if (/pdf/.test(mime)) {
       const { text, usedOcr, textQuality, qualitySignals } = await extractTextFromPdf(parsed.buffer);
       const gymLayout = await extractGymLayoutImageFromPdf(parsed.buffer);
-      const combinedLayoutFacts = uniqueLines(
+      const combinedLayoutFacts = sanitizeVenueFactLines(
         [...gymLayout.facts, ...extractHallFactsFromText(text)],
-        14
+        {
+          mode: "strict",
+          maxLines: 14,
+          requireAnchor: true,
+          excludePatterns: [
+            /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
+            /official results|live scoring|daylight savings/i,
+          ],
+        }
       );
       return {
         extractedText: text,
@@ -1849,9 +1853,17 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
     .join("\n\n---\n\n")
     .trim();
   const quality = analyzeTextQuality(fullText);
-  const mergedLayoutFacts = uniqueLines(
+  const mergedLayoutFacts = sanitizeVenueFactLines(
     [...gymLayoutFacts, ...extractHallFactsFromText(fullText)],
-    14
+    {
+      mode: "strict",
+      maxLines: 14,
+      requireAnchor: true,
+      excludePatterns: [
+        /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
+        /official results|live scoring|daylight savings/i,
+      ],
+    }
   );
 
   return {
@@ -1957,7 +1969,11 @@ function buildProfessionalParsePrompt(
     "- Never use traffic windows or unrelated schedule snippets as primary meet dates.",
     "- URLs must be absolute (https://...) whenever possible.",
     "- Strings must be short and factual. No meta commentary.",
+    "- Use only explicitly visible/source-grounded facts. No paraphrase or inferred venue details.",
     "- For `meetDetails.operationalNotes`, each item must be a complete sentence or complete standalone label.",
+    "- `meetDetails.operationalNotes`: maximum 6 items, deduplicated, concise, readable, and non-overlapping with dedicated fields.",
+    "- `athlete.awards`: only explicit awards location/time when shown; otherwise null.",
+    "- Keep traffic/parking/general travel guidance in logistics fields, not awards/facility-specific fields.",
     "- Do not output fragmented line-wrap artifacts (for example avoid splitting one sentence into multiple array items).",
     "",
     "## No Fact Left Behind",
@@ -2407,9 +2423,20 @@ export async function mapParseResultToGymData(
     : date;
   const existingAdvanced = (baseData?.advancedSections as Record<string, any>) || {};
   const layoutFacts = uniqueLines(
-    pickArray(extractionMeta?.gymLayoutFacts)
-      .map((item) => safeString(item))
-      .filter(Boolean),
+    sanitizeVenueFactLines(
+      pickArray(extractionMeta?.gymLayoutFacts)
+        .map((item) => safeString(item))
+        .filter(Boolean),
+      {
+        mode: "strict",
+        maxLines: 14,
+        requireAnchor: true,
+        excludePatterns: [
+          /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
+          /official results|live scoring|daylight savings/i,
+        ],
+      }
+    ),
     14
   );
   const assignedGym = safeString(existingAdvanced.meet?.assignedGym || "");
@@ -2445,19 +2472,34 @@ export async function mapParseResultToGymData(
         .filter(Boolean);
   const rotationOrder = hasApparatusSignal ? parsedRotationOrder : [];
   const rotationNarrative = rotationOrder.length === 0 ? rotationSource : "";
-  const operationalNotes = uniqueBy(
+  const dedicatedFieldValues = [
+    safeString(parseResult.meetDetails.doorsOpen),
+    safeString(parseResult.meetDetails.arrivalGuidance),
+    safeString(parseResult.meetDetails.registrationInfo),
+    safeString(parseResult.meetDetails.facilityLayout),
+    safeString(parseResult.meetDetails.scoringInfo),
+  ].filter(Boolean);
+  const dedicatedFieldKeys = new Set(
+    dedicatedFieldValues
+      .map((item) => normalizeVenueFactForCompare(item))
+      .filter(Boolean)
+  );
+  const operationalNotesRaw = uniqueBy(
     [
       ...parseResult.meetDetails.operationalNotes,
       rotationNarrative,
-      safeString(parseResult.meetDetails.doorsOpen),
-      safeString(parseResult.meetDetails.arrivalGuidance),
-      safeString(parseResult.meetDetails.registrationInfo),
-      safeString(parseResult.meetDetails.facilityLayout),
-      safeString(parseResult.meetDetails.scoringInfo),
       ...layoutFacts,
     ].filter(Boolean),
-    (item) => item
+    (item) => normalizeVenueFactForCompare(item)
   );
+  const operationalNotes = operationalNotesRaw
+    .filter((item) => {
+      const key = normalizeVenueFactForCompare(item);
+      if (!key) return false;
+      if (dedicatedFieldKeys.has(key)) return false;
+      return true;
+    })
+    .slice(0, 16);
   const admissionText = parseResult.admission
     .map((item) =>
       [item.label, item.price, item.note].filter(Boolean).join(": ").trim()
@@ -2779,7 +2821,6 @@ export function computeGymBuilderStatuses(data: any) {
         Boolean(safeString(data?.timezone)),
         Boolean(safeString(data?.venue)),
         Boolean(safeString(data?.address)),
-        Boolean(safeString(data?.hostGym || data?.customFields?.team)),
       ]),
       details: getStatusFromFlags([
         Boolean(safeString(data?.details)),

@@ -16,6 +16,11 @@ import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 import type { TemplateKey } from "@/config/feature-visibility";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
+type SessionUserWithAdmin = {
+  isAdmin?: boolean;
+  name?: string | null;
+  email?: string | null;
+};
 
 interface MenuContextValue {
   session: ReturnType<typeof useSession>["data"];
@@ -28,11 +33,13 @@ interface MenuContextValue {
     microsoft: boolean;
     apple: boolean;
   };
+  refreshConnectedCalendars: () => Promise<void>;
   handleCalendarConnect: (provider: CalendarProviderKey) => void;
   isAdmin: boolean;
   initials: string;
   displayName: string;
   visibleTemplateKeys: TemplateKey[];
+  featureVisibility: ReturnType<typeof useFeatureVisibility>;
 }
 
 const MenuContext = createContext<MenuContextValue | null>(null);
@@ -41,7 +48,8 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const { categories, history } = useEventCategories();
-  const { visibleTemplateKeys } = useFeatureVisibility();
+  const featureVisibility = useFeatureVisibility();
+  const { visibleTemplateKeys } = featureVisibility;
 
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
@@ -53,12 +61,10 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     apple: false,
   });
 
-  const isAdmin = Boolean((session?.user as any)?.isAdmin);
+  const sessionUser = (session?.user || null) as SessionUserWithAdmin | null;
+  const isAdmin = Boolean(sessionUser?.isAdmin);
 
-  const displayName =
-    (session?.user?.name as string) ||
-    (session?.user?.email as string) ||
-    "User";
+  const displayName = sessionUser?.name || sessionUser?.email || "User";
 
   const initials = useMemo(() => {
     if (!displayName) return "?";
@@ -143,11 +149,13 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       categories,
       history,
       connectedCalendars,
+      refreshConnectedCalendars: fetchConnectedCalendars,
       handleCalendarConnect,
       isAdmin,
       initials,
       displayName,
       visibleTemplateKeys,
+      featureVisibility,
     }),
     [
       session,
@@ -156,11 +164,13 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       categories,
       history,
       connectedCalendars,
+      fetchConnectedCalendars,
       handleCalendarConnect,
       isAdmin,
       initials,
       displayName,
       visibleTemplateKeys,
+      featureVisibility,
     ]
   );
 
@@ -173,4 +183,8 @@ export function useMenu() {
     throw new Error("useMenu must be used within MenuProvider");
   }
   return context;
+}
+
+export function useMenuOptional() {
+  return useContext(MenuContext);
 }

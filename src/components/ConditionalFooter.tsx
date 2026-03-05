@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 
@@ -32,6 +32,7 @@ export default function ConditionalFooter({
   serverSession,
 }: ConditionalFooterProps = {}) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: clientSession, status } = useSession();
 
   // Use server session if available (more reliable), otherwise fall back to client session
@@ -45,6 +46,21 @@ export default function ConditionalFooter({
   // 2. AND there's no session (server session is null/undefined, or client confirms unauthenticated)
   const hasNoSession =
     serverSession === null || (!serverSession && status === "unauthenticated");
+
+  let isInIframe = false;
+  if (typeof window !== "undefined") {
+    try {
+      isInIframe = window.self !== window.top;
+    } catch {
+      isInIframe = true;
+    }
+  }
+  const isEmbedMode = searchParams?.get("embed") === "1";
+
+  // Hide footer inside embedded/iframe editors to avoid duplicate global shell UI.
+  if (isInIframe || isEmbedMode) {
+    return null;
+  }
 
   if (isEventShare && hasNoSession) {
     return null;

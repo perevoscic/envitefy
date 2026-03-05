@@ -13,6 +13,23 @@ interface SnapWindow extends Window {
 
 const BRIDGE_EVENT_NAME = "envitefy:beforeinstallprompt";
 
+const shouldHideInstallUi = (): boolean => {
+  if (typeof window === "undefined") return false;
+  let inIframe = false;
+  try {
+    inIframe = window.self !== window.top;
+  } catch {
+    inIframe = true;
+  }
+  let isEmbedQuery = false;
+  try {
+    isEmbedQuery = new URLSearchParams(window.location.search).get("embed") === "1";
+  } catch {
+    isEmbedQuery = false;
+  }
+  return inIframe || isEmbedQuery;
+};
+
 // Helper function to check if app is installed
 const isAppInstalled = (): boolean => {
   if (typeof window === "undefined") return false;
@@ -222,6 +239,8 @@ export default function PwaInstallToast() {
       // ignore
     }
   }, []);
+
+  if (shouldHideInstallUi()) return null;
 
   // Don't show if installed, dismissed, no prompt, or not visible
   if (isInstalled || !isVisible || isDismissed || !deferred) {

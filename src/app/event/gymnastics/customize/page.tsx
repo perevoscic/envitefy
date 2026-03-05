@@ -447,6 +447,75 @@ const uniqueLines = (items: unknown[], limit = 16): string[] => {
   return out;
 };
 
+const normalizeHostGymName = (value: unknown): string => {
+  const raw = asTrimmedString(value).replace(/\s+/g, " ");
+  if (!raw) return "";
+  const cleaned = raw
+    .replace(/^[\-\u2022*]\s*/, "")
+    .replace(/^host(?:ed)?\s*by[:\-\s]*/i, "")
+    .replace(/^host\s*gym[:\-\s]*/i, "")
+    .replace(/^home\s*gym[:\-\s]*/i, "")
+    .replace(/^host[:\-\s]*/i, "")
+    .replace(/[|•].*$/, "")
+    .replace(
+      /\b(meet director|registration|session|date|time|location|address|phone|email)\b.*$/i,
+      ""
+    )
+    .trim();
+  if (!cleaned || cleaned.length < 3) return "";
+  if (/^(host|hosted by|gymnastics|meet|competition)$/i.test(cleaned)) return "";
+  return cleaned;
+};
+
+const inferHostGymFromDiscovery = (
+  discoverySource: Record<string, any> | null
+): string => {
+  if (!discoverySource || typeof discoverySource !== "object") return "";
+  const parseResult = discoverySource?.parseResult || {};
+
+  const directCandidates = [
+    parseResult?.hostGym,
+    parseResult?.athlete?.team,
+    parseResult?.team,
+  ];
+  for (const candidate of directCandidates) {
+    const normalized = normalizeHostGymName(candidate);
+    if (normalized) return normalized;
+  }
+
+  const evidenceHostHints = Array.isArray(
+    discoverySource?.evidence?.candidates?.hostGymHints
+  )
+    ? discoverySource.evidence.candidates.hostGymHints
+    : [];
+  const evidenceTitleHints = Array.isArray(
+    discoverySource?.evidence?.candidates?.titleHints
+  )
+    ? discoverySource.evidence.candidates.titleHints
+    : [];
+  const evidenceFirstLines = Array.isArray(discoverySource?.evidence?.snippets?.firstLines)
+    ? discoverySource.evidence.snippets.firstLines
+    : [];
+
+  const hostHintLine = [...evidenceHostHints, ...evidenceTitleHints, ...evidenceFirstLines].find(
+    (line) => /(host(ed)? by|host gym|home gym)/i.test(asTrimmedString(line))
+  );
+  const normalizedHostHint = normalizeHostGymName(hostHintLine);
+  if (normalizedHostHint) return normalizedHostHint;
+
+  const gymNameLine = [...evidenceHostHints, ...evidenceTitleHints, ...evidenceFirstLines].find(
+    (line) => {
+      const text = asTrimmedString(line);
+      if (!text) return false;
+      if (!/(gymnastics|gym club|academy|gym\b)/i.test(text)) return false;
+      return !/(session|schedule|championship|classic|invitational|meet|competition)/i.test(
+        text
+      );
+    }
+  );
+  return normalizeHostGymName(gymNameLine);
+};
+
 const buildDiscoveryMeetDetailsDescription = (parseResult: any): string => {
   const parseMeetDetails = parseResult?.meetDetails || {};
   const lines = uniqueLines(
@@ -1060,10 +1129,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         Boolean(data.timezone?.trim()),
         Boolean(data.time),
         Boolean(data.venue?.trim() || data.address?.trim()),
-        Boolean(data.hostGym?.trim()),
       ].filter(Boolean).length;
       if (filled === 0) return "not-started";
-      return filled >= 6 ? "ready" : "in-progress";
+      return filled >= 5 ? "ready" : "in-progress";
     })();
 
     const detailsStatus: "not-started" | "in-progress" | "ready" = (() => {
@@ -1090,12 +1158,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const missingEssentials = [
       !data.title?.trim() ? "Event title" : null,
       !data.date ? "Date" : null,
-      !data.time ? "Start time" : null,
+      !data.time ? "Start time in Details" : null,
       !data.timezone?.trim() ? "Timezone" : null,
       !data.venue?.trim() && !data.address?.trim()
         ? "Venue or address"
         : null,
-      !data.hostGym?.trim() ? "Host gym" : null,
       !(data.details || "").trim() ? "Description" : null,
     ].filter(Boolean) as string[];
     const navItems = useMemo(
@@ -1188,6 +1255,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             typeof existing.discoverySource === "object"
               ? (existing.discoverySource as Record<string, any>)
               : null;
+          const inferredHostGym = inferHostGymFromDiscovery(existingDiscoverySource);
           setLoadedDiscoverySource(existingDiscoverySource);
           setIsDiscoveryEdit(
             existingCreatedVia === "meet-discovery" ||
@@ -1264,6 +1332,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               existing.hostGym ||
               existing.team ||
               existing.customFields?.team ||
+              inferredHostGym ||
               prev.hostGym,
             city: existing.city || prev.city,
             state: existing.state || prev.state,
@@ -1302,6 +1371,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               team:
                 existing.team ||
                 existing.customFields?.team ||
+                inferredHostGym ||
                 prev.extra?.team ||
                 "",
             },

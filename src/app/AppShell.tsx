@@ -19,14 +19,21 @@ export default function AppShell({
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
 
+  if (isAuthenticated) {
+    return (
+      <MenuProvider>
+        <LeftSidebar />
+        <MainContentWrapper isAuthenticated={true}>
+          <div className="flex-1 min-w-0">{children}</div>
+          <ConditionalFooter />
+        </MainContentWrapper>
+      </MenuProvider>
+    );
+  }
+
   return (
     <>
-      {isAuthenticated ? (
-        <MenuProvider>
-          <LeftSidebar />
-        </MenuProvider>
-      ) : null}
-      <MainContentWrapper isAuthenticated={isAuthenticated}>
+      <MainContentWrapper isAuthenticated={false}>
         <div className="flex-1 min-w-0">{children}</div>
         <ConditionalFooter />
       </MainContentWrapper>

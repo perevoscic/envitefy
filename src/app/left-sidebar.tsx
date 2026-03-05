@@ -56,7 +56,7 @@ import {
   Users,
   LogOut,
 } from "lucide-react";
-import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
+import { useMenu } from "@/contexts/MenuContext";
 import EventSidebar from "@/components/navigation/EventSidebar";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
@@ -247,6 +247,12 @@ const INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY =
 
 export default function LeftSidebar() {
   const { data: session, status } = useSession();
+  const {
+    connectedCalendars,
+    handleCalendarConnect,
+    refreshConnectedCalendars,
+    featureVisibility,
+  } = useMenu();
   const profileEmail = (session?.user as any)?.email?.toLowerCase?.() ?? null;
   const profileEmailRef = useRef<string | null>(null);
   useEffect(() => {
@@ -276,15 +282,6 @@ export default function LeftSidebar() {
     useState<EventListPage>("myEvents");
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  const [connectedCalendars, setConnectedCalendars] = useState<{
-    google: boolean;
-    microsoft: boolean;
-    apple: boolean;
-  }>({
-    google: false,
-    microsoft: false,
-    apple: false,
-  });
   const [defaultCalendarProvider, setDefaultCalendarProvider] =
     useState<CalendarProviderKey | null>(null);
 
@@ -315,67 +312,6 @@ export default function LeftSidebar() {
       } catch {}
     },
     [status]
-  );
-
-  const fetchConnectedCalendars = useCallback(async () => {
-    try {
-      const res = await fetch("/api/calendars", { credentials: "include" });
-      if (!res.ok) {
-        console.warn(
-          `[left-sidebar] /api/calendars returned status ${res.status}`
-        );
-        setConnectedCalendars({
-          google: false,
-          microsoft: false,
-          apple: false,
-        });
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      setConnectedCalendars({
-        google: Boolean(data?.google),
-        microsoft: Boolean(data?.microsoft),
-        apple: Boolean(data?.apple),
-      });
-    } catch (err) {
-      console.error(
-        "Failed to fetch connected calendars:",
-        err instanceof Error ? err.message : String(err)
-      );
-    }
-  }, []);
-
-  const handleCalendarConnect = useCallback(
-    (provider: CalendarProviderKey) => {
-      if (typeof window === "undefined") return;
-      try {
-        if (provider === "google") {
-          window.open(
-            "/api/google/auth?source=sidebar",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        } else if (provider === "microsoft") {
-          window.open(
-            "/api/outlook/auth?source=sidebar",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        } else {
-          window.open(
-            "https://support.apple.com/guide/calendar/welcome/mac",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        }
-        window.setTimeout(() => {
-          fetchConnectedCalendars();
-        }, 4000);
-      } catch (err) {
-        console.error("Failed to initiate calendar connection:", err);
-      }
-    },
-    [fetchConnectedCalendars]
   );
 
   const toggleCalendarDefault = useCallback(
@@ -517,12 +453,12 @@ export default function LeftSidebar() {
     return () => window.clearTimeout(timeout);
   }, [isOpen]);
 
-  // Fetch connected calendars status
+  // Refresh shared calendar status when auth state changes.
   useEffect(() => {
     if (status === "authenticated") {
-      fetchConnectedCalendars();
+      void refreshConnectedCalendars();
     }
-  }, [status, fetchConnectedCalendars]);
+  }, [status, refreshConnectedCalendars]);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -909,7 +845,7 @@ export default function LeftSidebar() {
     setSidebarPage("root");
     collapseSidebarOnTouch();
   }, [clearEventContext, setSidebarPage, collapseSidebarOnTouch]);
-  const { visibleTemplateKeys } = useFeatureVisibility();
+  const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
   const visibleTemplateLinks = useMemo(
     () => getTemplateLinks(visibleTemplateKeys),
     [visibleTemplateKeys]

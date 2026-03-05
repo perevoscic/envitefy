@@ -61,8 +61,8 @@ import {
   TEMPLATE_KEYS,
   type TemplateKey,
 } from "@/config/feature-visibility";
-import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 import { useSidebar, type EventContextTab } from "@/app/sidebar-context";
+import { useMenuOptional } from "@/contexts/MenuContext";
 
 type EventFields = {
   title: string;
@@ -283,6 +283,8 @@ export default function Dashboard({
   initialEventContext?: DashboardInitialEventContext | null;
 }) {
   const { data: session } = useSession();
+  const menu = useMenuOptional();
+  const featureVisibility = menu?.featureVisibility || null;
   const pathname = usePathname();
   const {
     selectedEventId: sidebarSelectedEventId,
@@ -303,14 +305,15 @@ export default function Dashboard({
   const activeEventTab =
     initialEventContext?.activeEventTab ?? sidebarActiveEventTab;
   const isSignedIn = Boolean(session?.user);
-  const {
-    loading: visibilityLoading,
-    required: onboardingRequired,
-    completed: onboardingCompleted,
-    promptDismissedAt,
-    visibleTemplateKeys,
-    refresh: refreshVisibility,
-  } = useFeatureVisibility();
+  const fallbackRefreshVisibility = useCallback(async () => {}, []);
+  const visibilityLoading = featureVisibility?.loading ?? false;
+  const onboardingRequired = featureVisibility?.required ?? false;
+  const onboardingCompleted = featureVisibility?.completed ?? false;
+  const promptDismissedAt = featureVisibility?.promptDismissedAt ?? null;
+  const visibleTemplateKeys =
+    featureVisibility?.visibleTemplateKeys ?? [...TEMPLATE_KEYS];
+  const refreshVisibility =
+    featureVisibility?.refresh ?? fallbackRefreshVisibility;
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [event, setEvent] = useState<EventFields | null>(null);
@@ -533,29 +536,10 @@ export default function Dashboard({
     []
   );
 
-  const [connected, setConnected] = useState<{
-    google: boolean;
-    microsoft: boolean;
-  }>({
-    google: false,
-    microsoft: false,
-  });
-
-  useEffect(() => {
-    const fetchConnected = async () => {
-      try {
-        const res = await fetch("/api/calendars", { credentials: "include" });
-        const data = await res.json();
-        setConnected({
-          google: Boolean(data?.google),
-          microsoft: Boolean(data?.microsoft),
-        });
-      } catch (err) {
-        console.error("Failed to fetch connected calendars:", err);
-      }
-    };
-    fetchConnected();
-  }, [session]);
+  const connected = {
+    google: Boolean(menu?.connectedCalendars.google),
+    microsoft: Boolean(menu?.connectedCalendars.microsoft),
+  };
 
   useEffect(() => {
     if (!isSignedIn) return;

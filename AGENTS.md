@@ -269,6 +269,7 @@ curl -X POST \
     - `gymLayoutSelection` (optional diagnostics payload with selected page, confidence, reason, and scored candidates).
   - PDF hall-layout image capture now uses a renderer fallback path (PDF.js + Canvas) when direct PDF page rasterization is unavailable, so venue map screenshots can still be generated from uploaded PDFs.
   - PDF hall-layout page selection is strict map-only: text/prose pages are rejected even if they contain generic hall terms. If no page passes strict gates, `gymLayoutImageDataUrl` is stored as `null` (no text-page fallback image).
+  - Hall-layout fact lines are now strictly sanitized before mapping/rendering (readability + venue-anchor checks + near-duplicate collapse). Fragmented/paraphrased snippets are dropped so Venue Details may be intentionally sparse when source confidence is low.
   - If extracted text quality is `poor`, the route skips model calls and returns a safe null-heavy parse payload (`modelUsed: "quality-gate"`) instead of hallucinating fields from corrupted text.
   - AI parsing is **OpenAI primary** with strict JSON schema validation.
   - If OpenAI returns invalid JSON, retries once with JSON-fix instruction.
@@ -456,7 +457,9 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Return DB-only home dashboard payload for the signed-in owner (no external API calls).
 - **Auth**: NextAuth session required; only the caller's own `event_history` rows are queried.
-- **Behavior**: Resolves `nextEvent` (earliest future event excluding archived/canceled), upcoming list (up to 12), schedule snapshot counts (30 days + 7 days), RSVP snapshot (going/maybe/declined/pending + last 3 updates), setup-health flags, derived checklist items (from setup-health warnings), and drafts summary. The query reads a lightweight `event_history.data` shape (excluding `attachment`) to reduce payload size. If `event_metrics_cache` exists, cached travel/weather metrics are returned but never recomputed here.
+- **Behavior**: Resolves `nextEvent` (earliest future event excluding archived/canceled), upcoming list (up to 12), schedule snapshot counts (30 days + 7 days), RSVP snapshot (going/maybe/declined/pending + last 3 updates), setup-health flags, derived checklist items (from setup-health warnings), and drafts summary. Uses a lightweight scalar projection from `event_history.data` (instead of returning full JSON payloads) to reduce transfer and parse cost. If `event_metrics_cache` exists, cached travel/weather metrics are returned but never recomputed here.
+- **Caching**: In-memory TTL cache (`15s`) with stale-while-refresh behavior up to `60s`, plus in-flight request coalescing per user to avoid duplicate recomputation under concurrent calls.
+- **Diagnostics**: Optional `?timing=1` adds a `timings` object to JSON and a `Server-Timing` response header.
 - **Output**: `{ ok, nextEvent, snapshot, upcoming, rsvp, setupHealth, checklist, drafts, metricsCache, metricsEligibility }`.
 - **Env**: `DATABASE_URL`.
 
@@ -468,9 +471,30 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Origin override**: Clients may pass `originLat`/`originLng` (for example, browser geolocation) when a saved home origin is missing. The route prioritizes this request origin over stored profile origin.
 - **Travel rules**: Uses Mapbox Directions API for ETA/distance. Calls only when origin + destination are available and either event starts within 72 hours or `forceTravel=true`; normal requests use a 1-hour cache, while `forceTravel=true` bypasses travel cache. When event/home coordinates are missing, the route attempts Mapbox Geocoding from location text before routing.
 - **Weather rules**: Uses WeatherAPI forecast (`/v1/forecast.json`) and picks the hourly forecast point nearest the event start. Calls only when destination is available, event starts within 3 days, and cache is stale; cache TTL is 3 hours.
+- **Latency behavior**: Reuses the same lightweight next-event selector as `/api/dashboard`, parallelizes travel/weather external calls when both are eligible, and applies network timeouts for geocoding/directions/weather fetches.
 - **Cache**: Persists/reads `event_metrics_cache(event_id, travel_minutes, travel_distance_km, travel_updated_at, weather_summary, weather_temp, weather_updated_at)`.
+- **Diagnostics**: Optional `?timing=1` adds a `timings` object to JSON and a `Server-Timing` response header.
 - **Output**: `{ ok, eventId, metrics, meta }` where `metrics` contains cached/refreshed next-event values.
 - **Env**: `DATABASE_URL`, `MAPBOX_ACCESS_TOKEN` (or `MAPBOX_API_KEY`), `WEATHERAPI_KEY` (or `WEATHERAPI_API_KEY`).
+
+### Event RSVP Responses — `/api/events/[id]/rsvp`
+
+- **Purpose**: Manage RSVP submissions and owner-side RSVP moderation for a single event.
+- **Auth**:
+  - `GET`: public stats for guests; includes detailed `responses` only for event owner.
+  - `POST`: optional auth (guests and signed-in users can submit).
+  - `PATCH` / `DELETE`: NextAuth session required and caller must own the event.
+- **Input**:
+  - `POST`: `{ response: "yes"|"no"|"maybe", name?: string, email?: string, firstName?: string, lastName?: string, phone?: string, message?: string }`.
+  - `PATCH`: `{ response: "yes"|"no"|"maybe", target: { userId?: string, email?: string, name?: string } }`.
+  - `DELETE`: `{ target: { userId?: string, email?: string, name?: string } }`.
+- **Behavior**: Upserts RSVP rows by `(event_id,user_id)` when signed in, otherwise `(event_id,email)` or anonymous `(event_id,lower(name))` fallback. Owner `GET` includes full response rows ordered by `created_at desc`.
+- **Output**:
+  - `GET`: `{ ok, stats, numberOfGuests, remaining, filled }` (+ `responses` for owners).
+  - `POST` / `PATCH`: `{ ok: true }`.
+  - `DELETE`: `{ ok: true, deleted: number }`.
+- **Diagnostics**: Optional `?timing=1` on any method adds a `timings` object and `Server-Timing` header.
+- **Schema note**: Runtime schema creation was removed from request path; table/index bootstrap is handled by manual SQL migration `prisma/manual_sql/20260305_rsvp_bootstrap.sql`.
 
 ### Registry Add — POST `/api/registry/add`
 

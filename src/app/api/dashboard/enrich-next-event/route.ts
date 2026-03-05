@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUserIdByEmail, query } from "@/lib/db";
+import { extractHomeOrigin } from "@/lib/dashboard-data";
 import {
-  extractHomeOrigin,
-  isArchivedOrCanceled,
-  toDashboardEvent,
-  type DashboardEvent,
-} from "@/lib/dashboard-data";
+  buildDashboardCollections,
+  listDashboardEventsForOwner,
+} from "@/lib/dashboard-query";
+import {
+  createServerTimingTracker,
+  isTimingRequested,
+  type ServerTimingTracker,
+} from "@/lib/server-timing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +19,7 @@ export const dynamic = "force-dynamic";
 const TRAVEL_TTL_MS = 1 * 60 * 60 * 1000;
 const WEATHER_TTL_MS = 3 * 60 * 60 * 1000;
 const WEATHER_FORECAST_WINDOW_HOURS = 24 * 3; // WeatherAPI free-tier 3-day forecast window.
+const EXTERNAL_FETCH_TIMEOUT_MS = 4_500;
 let metricsCacheTableEnsured = false;
 const MAPBOX_ACCESS_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_API_KEY || null;
@@ -30,6 +35,30 @@ type MetricsRow = {
   weather_temp: number | null;
   weather_updated_at: string | null;
 };
+type SessionLike = {
+  user?: {
+    email?: string | null;
+    id?: string | null;
+  } | null;
+} | null;
+type OriginPayload = {
+  originLat?: unknown;
+  originLng?: unknown;
+  originLabel?: unknown;
+  forceTravel?: unknown;
+  eventId?: unknown;
+};
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string" && err.trim()) return err;
+  return fallback;
+}
 
 function parseFinite(value: unknown): number | null {
   const n = Number(value);
@@ -37,8 +66,8 @@ function parseFinite(value: unknown): number | null {
 }
 
 function extractLocationLabel(value: unknown): string | null {
-  if (!value || typeof value !== "object") return null;
-  const source = value as Record<string, any>;
+  const source = asRecord(value);
+  if (!source) return null;
   const candidates = [
     source.label,
     source.name,
@@ -54,17 +83,19 @@ function extractLocationLabel(value: unknown): string | null {
 }
 
 function resolveHomeLabel(featureVisibility: unknown): string | null {
-  if (!featureVisibility || typeof featureVisibility !== "object") return null;
-  const source = featureVisibility as Record<string, any>;
+  const source = asRecord(featureVisibility);
+  if (!source) return null;
+  const settings = asRecord(source.settings);
+  const profile = asRecord(source.profile);
   const candidates = [
-    source?.home,
-    source?.homeLocation,
-    source?.origin,
-    source?.settings?.homeLocation,
-    source?.settings?.origin,
-    source?.profile?.homeLocation,
-    source?.homeAddress,
-    source?.settings?.homeAddress,
+    source.home,
+    source.homeLocation,
+    source.origin,
+    settings?.homeLocation,
+    settings?.origin,
+    profile?.homeLocation,
+    source.homeAddress,
+    settings?.homeAddress,
   ];
   for (const candidate of candidates) {
     if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
@@ -86,15 +117,15 @@ function parseInlineLatLng(text: string): { lat: number; lng: number } | null {
   return { lat, lng };
 }
 
-function parseBodyOrigin(body: any):
+function parseBodyOrigin(body: OriginPayload | null):
   | {
       lat: number;
       lng: number;
       label: string | null;
     }
   | null {
-  const lat = parseFinite(body?.originLat);
-  const lng = parseFinite(body?.originLng);
+  const lat = parseFinite(body?.originLat ?? null);
+  const lng = parseFinite(body?.originLng ?? null);
   if (lat == null || lng == null) return null;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
   const label =
@@ -141,29 +172,30 @@ async function upsertMetrics(
     weatherSummary?: string | null;
     weatherTemp?: number | null;
     weatherUpdatedAt?: string | null;
-  }
+  },
+  existing?: MetricsRow | null
 ) {
-  const existing = await getMetrics(eventId);
+  const base = existing === undefined ? await getMetrics(eventId) : existing;
   const travelMinutes =
-    patch.travelMinutes !== undefined ? patch.travelMinutes : existing?.travel_minutes ?? null;
+    patch.travelMinutes !== undefined ? patch.travelMinutes : base?.travel_minutes ?? null;
   const travelDistanceKm =
     patch.travelDistanceKm !== undefined
       ? patch.travelDistanceKm
-      : existing?.travel_distance_km ?? null;
+      : base?.travel_distance_km ?? null;
   const travelUpdatedAt =
     patch.travelUpdatedAt !== undefined
       ? patch.travelUpdatedAt
-      : existing?.travel_updated_at ?? null;
+      : base?.travel_updated_at ?? null;
   const weatherSummary =
     patch.weatherSummary !== undefined
       ? patch.weatherSummary
-      : existing?.weather_summary ?? null;
+      : base?.weather_summary ?? null;
   const weatherTemp =
-    patch.weatherTemp !== undefined ? patch.weatherTemp : existing?.weather_temp ?? null;
+    patch.weatherTemp !== undefined ? patch.weatherTemp : base?.weather_temp ?? null;
   const weatherUpdatedAt =
     patch.weatherUpdatedAt !== undefined
       ? patch.weatherUpdatedAt
-      : existing?.weather_updated_at ?? null;
+      : base?.weather_updated_at ?? null;
 
   await query(
     `insert into event_metrics_cache (
@@ -197,22 +229,21 @@ function isCacheFresh(updatedAtIso: string | null, ttlMs: number): boolean {
   return Date.now() - ms < ttlMs;
 }
 
-async function getNextEventForOwner(userId: string): Promise<DashboardEvent | null> {
-  const rows = await query<{ id: string; title: string; data: any; created_at: string | null }>(
-    `select id, title, (data - 'attachment' - 'ocrText') as data, created_at
-     from event_history
-     where user_id = $1
-     order by created_at desc nulls last, id desc
-     limit 200`,
-    [userId]
-  );
-  const now = Date.now();
-  const upcoming = (rows.rows || [])
-    .map((row) => toDashboardEvent(row))
-    .filter((row): row is DashboardEvent => Boolean(row))
-    .filter((row) => new Date(row.startAt).getTime() > now && !isArchivedOrCanceled(row.status))
-    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-  return upcoming[0] || null;
+async function fetchWithTimeout(
+  input: URL | string,
+  init: RequestInit = {},
+  timeoutMs = EXTERNAL_FETCH_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort("timeout"), timeoutMs);
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function geocodeWithMapbox(queryText: string): Promise<{ lat: number; lng: number } | null> {
@@ -241,8 +272,8 @@ async function geocodeWithMapbox(queryText: string): Promise<{ lat: number; lng:
     url.searchParams.set("access_token", MAPBOX_ACCESS_TOKEN);
     url.searchParams.set("limit", "1");
     url.searchParams.set("types", "address,poi,place,postcode,neighborhood,locality");
-    const res = await fetch(url.toString(), { cache: "no-store" });
-    if (!res.ok) continue;
+    const res = await fetchWithTimeout(url.toString(), { cache: "no-store" }).catch(() => null);
+    if (!res?.ok) continue;
     const payload = await res.json().catch(() => null);
     const center = payload?.features?.[0]?.center;
     if (!Array.isArray(center) || center.length < 2) continue;
@@ -267,8 +298,8 @@ async function fetchTravelMinutesAndDistance(params: {
   url.searchParams.set("overview", "false");
   url.searchParams.set("alternatives", "false");
   url.searchParams.set("access_token", MAPBOX_ACCESS_TOKEN);
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return { minutes: null, distanceKm: null };
+  const res = await fetchWithTimeout(url, { cache: "no-store" }).catch(() => null);
+  if (!res?.ok) return { minutes: null, distanceKm: null };
   const payload = await res.json().catch(() => null);
   const route = payload?.routes?.[0];
   const durationSeconds = Number(route?.duration);
@@ -294,91 +325,144 @@ async function fetchWeatherAtEvent(params: {
   url.searchParams.set("days", "3");
   url.searchParams.set("aqi", "no");
   url.searchParams.set("alerts", "no");
-  const res = await fetch(url.toString(), { cache: "no-store" });
-  if (!res.ok) return { summary: null, temp: null };
+  const res = await fetchWithTimeout(url.toString(), { cache: "no-store" }).catch(() => null);
+  if (!res?.ok) return { summary: null, temp: null };
   const payload = await res.json().catch(() => null);
-  const days: Array<any> = Array.isArray(payload?.forecast?.forecastday)
-    ? payload.forecast.forecastday
+  const forecast = asRecord(payload)?.forecast;
+  const forecastDays = asRecord(forecast)?.forecastday;
+  const days = Array.isArray(forecastDays)
+    ? forecastDays
     : [];
-  const hourly: Array<any> = [];
+  const hourly: unknown[] = [];
   for (const day of days) {
-    if (!Array.isArray(day?.hour)) continue;
-    for (const hour of day.hour) hourly.push(hour);
+    const dayHour = asRecord(day)?.hour;
+    if (!Array.isArray(dayHour)) continue;
+    for (const hour of dayHour) hourly.push(hour);
   }
   if (!hourly.length) return { summary: null, temp: null };
   const targetMs = new Date(params.eventIso).getTime();
-  let bestHour: any = null;
+  let bestHour: Record<string, unknown> | null = null;
   let bestDelta = Number.POSITIVE_INFINITY;
   for (const hour of hourly) {
-    const epoch = parseFinite(hour?.time_epoch);
+    const hourRecord = asRecord(hour);
+    if (!hourRecord) continue;
+    const epoch = parseFinite(hourRecord.time_epoch);
     const ts = epoch != null ? epoch * 1000 : Number.NaN;
     if (!Number.isFinite(ts)) continue;
     const delta = Math.abs(ts - targetMs);
     if (delta < bestDelta) {
       bestDelta = delta;
-      bestHour = hour;
+      bestHour = hourRecord;
     }
   }
   if (!bestHour) return { summary: null, temp: null };
-  const temp = parseFinite(bestHour?.temp_f);
-  const summaryRaw = bestHour?.condition?.text;
+  const temp = parseFinite(bestHour.temp_f);
+  const summaryRaw = asRecord(bestHour.condition)?.text;
   const summary =
     typeof summaryRaw === "string" && summaryRaw.trim() ? summaryRaw.trim() : null;
   return { summary, temp };
 }
 
+function respondWithTiming(
+  timing: ServerTimingTracker,
+  body: Record<string, unknown>,
+  init?: ResponseInit
+) {
+  const response = NextResponse.json(body, init);
+  timing.applyHeader(response);
+  return response;
+}
+
 export async function POST(req: Request) {
+  const timing = createServerTimingTracker(isTimingRequested(req));
   try {
-    const session: any = await getServerSession(authOptions as any);
-    const email = session?.user?.email as string | undefined;
+    const session = (await timing.time("session", () =>
+      getServerSession(authOptions))) as SessionLike;
+    const email = session?.user?.email || undefined;
     if (!email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      const body = timing.enabled
+        ? { error: "Unauthorized", timings: timing.toObject() }
+        : { error: "Unauthorized" };
+      return respondWithTiming(timing, body, { status: 401 });
     }
-    const userId = session?.user?.id || (await getUserIdByEmail(email));
+    const userId = session?.user?.id
+      ? String(session.user.id)
+      : await timing.time("user_lookup", () => getUserIdByEmail(email));
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      const body = timing.enabled
+        ? { error: "Unauthorized", timings: timing.toObject() }
+        : { error: "Unauthorized" };
+      return respondWithTiming(timing, body, { status: 401 });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const forceTravel = Boolean(body?.forceTravel);
+    const rawBody = await timing.time("body_parse", () => req.json().catch(() => ({})));
+    const body = (asRecord(rawBody) || {}) as OriginPayload;
+    const forceTravel = Boolean(body.forceTravel);
     const requestOrigin = parseBodyOrigin(body);
     const requestedEventId =
-      typeof body?.eventId === "string" && body.eventId.trim() ? body.eventId.trim() : null;
+      typeof body.eventId === "string" && body.eventId.trim() ? body.eventId.trim() : null;
 
-    const nextEvent = await getNextEventForOwner(userId);
+    const events = await timing.time("events", () => listDashboardEventsForOwner(userId, 200));
+    const { nextEvent } = buildDashboardCollections(events);
+
     if (!nextEvent) {
-      return NextResponse.json({ ok: true, metrics: null, reason: "no-next-event" });
+      const payload: Record<string, unknown> = {
+        ok: true,
+        metrics: null,
+        reason: "no-next-event",
+      };
+      if (timing.enabled) payload.timings = timing.toObject();
+      return respondWithTiming(timing, payload);
     }
     if (requestedEventId && requestedEventId !== nextEvent.id) {
-      return NextResponse.json({ ok: true, metrics: null, reason: "event-not-next" });
+      const payload: Record<string, unknown> = {
+        ok: true,
+        metrics: null,
+        reason: "event-not-next",
+      };
+      if (timing.enabled) payload.timings = timing.toObject();
+      return respondWithTiming(timing, payload);
     }
 
-    await ensureMetricsCacheTable();
-    const [userRes, cached] = await Promise.all([
-      query<{ feature_visibility: any }>(
-        `select feature_visibility from users where id = $1 limit 1`,
-        [userId]
-      ),
-      getMetrics(nextEvent.id),
-    ]);
+    await timing.time("metrics_table", () => ensureMetricsCacheTable());
+    const [userRes, cached] = await timing.time("metrics_load", () =>
+      Promise.all([
+        query<{ feature_visibility: unknown }>(
+          `select feature_visibility from users where id = $1 limit 1`,
+          [userId]
+        ),
+        getMetrics(nextEvent.id),
+      ])
+    );
+
     const featureVisibility = userRes.rows[0]?.feature_visibility;
     const homeOrigin = extractHomeOrigin(featureVisibility);
     const homeLabel = resolveHomeLabel(featureVisibility);
-    const geocodedOrigin =
-      !homeOrigin && homeLabel ? await geocodeWithMapbox(homeLabel).catch(() => null) : null;
+
+    const originGeocodePromise =
+      !homeOrigin && homeLabel
+        ? geocodeWithMapbox(homeLabel).catch(() => null)
+        : Promise.resolve(null);
+    const destinationPromise =
+      nextEvent.locationLat != null && nextEvent.locationLng != null
+        ? Promise.resolve({ lat: nextEvent.locationLat, lng: nextEvent.locationLng })
+        : nextEvent.locationText
+        ? geocodeWithMapbox(nextEvent.locationText).catch(() => null)
+        : Promise.resolve(null);
+
+    const [geocodedOrigin, destinationCoords] = await timing.time(
+      "geocode",
+      () => Promise.all([originGeocodePromise, destinationPromise])
+    );
+
     const origin =
       requestOrigin ||
       homeOrigin ||
       (geocodedOrigin ? { ...geocodedOrigin, label: homeLabel } : null);
+
     const startMs = new Date(nextEvent.startAt).getTime();
     const nowMs = Date.now();
     const hoursToStart = (startMs - nowMs) / (1000 * 60 * 60);
-    const destinationCoords =
-      nextEvent.locationLat != null && nextEvent.locationLng != null
-        ? { lat: nextEvent.locationLat, lng: nextEvent.locationLng }
-        : nextEvent.locationText
-        ? await geocodeWithMapbox(nextEvent.locationText).catch(() => null)
-        : null;
     const hasDestination = Boolean(destinationCoords);
 
     const travelFresh = isCacheFresh(cached?.travel_updated_at || null, TRAVEL_TTL_MS);
@@ -403,44 +487,69 @@ export async function POST(req: Request) {
     let weatherTemp = cached?.weather_temp ?? null;
     let weatherUpdatedAt = cached?.weather_updated_at ?? null;
 
-    if (canCallTravel && origin && destinationCoords) {
-      const travel = await fetchTravelMinutesAndDistance({
-        originLat: origin.lat,
-        originLng: origin.lng,
-        destLat: destinationCoords.lat,
-        destLng: destinationCoords.lng,
-      });
-      if (travel.minutes != null || travel.distanceKm != null) {
-        travelMinutes = travel.minutes;
-        travelDistanceKm = travel.distanceKm;
-        travelUpdatedAt = new Date().toISOString();
-        await upsertMetrics(nextEvent.id, {
-          travelMinutes,
-          travelDistanceKm,
-          travelUpdatedAt,
-        });
-      }
+    const [travelResult, weatherResult] = await timing.time("external", async () => {
+      const travelPromise =
+        canCallTravel && origin && destinationCoords
+          ? fetchTravelMinutesAndDistance({
+              originLat: origin.lat,
+              originLng: origin.lng,
+              destLat: destinationCoords.lat,
+              destLng: destinationCoords.lng,
+            })
+          : Promise.resolve<{ minutes: number | null; distanceKm: number | null }>({
+              minutes: null,
+              distanceKm: null,
+            });
+
+      const weatherPromise =
+        canCallWeather && destinationCoords
+          ? fetchWeatherAtEvent({
+              lat: destinationCoords.lat,
+              lng: destinationCoords.lng,
+              eventIso: nextEvent.startAt,
+            })
+          : Promise.resolve<{ summary: string | null; temp: number | null }>({
+              summary: null,
+              temp: null,
+            });
+
+      return Promise.all([travelPromise, weatherPromise]);
+    });
+
+    const metricsPatch: {
+      travelMinutes?: number | null;
+      travelDistanceKm?: number | null;
+      travelUpdatedAt?: string | null;
+      weatherSummary?: string | null;
+      weatherTemp?: number | null;
+      weatherUpdatedAt?: string | null;
+    } = {};
+
+    if (travelResult.minutes != null || travelResult.distanceKm != null) {
+      travelMinutes = travelResult.minutes;
+      travelDistanceKm = travelResult.distanceKm;
+      travelUpdatedAt = new Date().toISOString();
+      metricsPatch.travelMinutes = travelMinutes;
+      metricsPatch.travelDistanceKm = travelDistanceKm;
+      metricsPatch.travelUpdatedAt = travelUpdatedAt;
     }
 
-    if (canCallWeather && destinationCoords) {
-      const weather = await fetchWeatherAtEvent({
-        lat: destinationCoords.lat,
-        lng: destinationCoords.lng,
-        eventIso: nextEvent.startAt,
-      });
-      if (weather.summary != null || weather.temp != null) {
-        weatherSummary = weather.summary;
-        weatherTemp = weather.temp;
-        weatherUpdatedAt = new Date().toISOString();
-        await upsertMetrics(nextEvent.id, {
-          weatherSummary,
-          weatherTemp,
-          weatherUpdatedAt,
-        });
-      }
+    if (weatherResult.summary != null || weatherResult.temp != null) {
+      weatherSummary = weatherResult.summary;
+      weatherTemp = weatherResult.temp;
+      weatherUpdatedAt = new Date().toISOString();
+      metricsPatch.weatherSummary = weatherSummary;
+      metricsPatch.weatherTemp = weatherTemp;
+      metricsPatch.weatherUpdatedAt = weatherUpdatedAt;
     }
 
-    return NextResponse.json({
+    if (Object.keys(metricsPatch).length > 0) {
+      await timing.time("metrics_upsert", () =>
+        upsertMetrics(nextEvent.id, metricsPatch, cached)
+      );
+    }
+
+    const payload: Record<string, unknown> = {
       ok: true,
       eventId: nextEvent.id,
       metrics: {
@@ -467,11 +576,20 @@ export async function POST(req: Request) {
         travelUsedCache: travelFresh,
         weatherUsedCache: weatherFresh,
       },
-    });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: String(err?.message || err || "Failed to enrich next event metrics") },
-      { status: 500 }
-    );
+    };
+
+    if (timing.enabled) {
+      payload.timings = timing.toObject();
+    }
+    return respondWithTiming(timing, payload);
+  } catch (err: unknown) {
+    const message = errorMessage(err, "Failed to enrich next event metrics");
+    const body = timing.enabled
+      ? {
+          error: message,
+          timings: timing.toObject(),
+        }
+      : { error: message };
+    return respondWithTiming(timing, body, { status: 500 });
   }
 }
