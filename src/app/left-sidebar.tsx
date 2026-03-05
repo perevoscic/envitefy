@@ -247,6 +247,7 @@ export default function LeftSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isEmbeddedEditMode = searchParams?.get("embed") === "1";
   // Event page with inline edit sidebar (discovery gymnastics)
   const isEventPageWithEditSidebar = Boolean(
     pathname?.startsWith("/event/") && searchParams?.get("edit")
@@ -2084,6 +2085,8 @@ export default function LeftSidebar() {
     pointerEvents: isActive ? "auto" : "none",
     opacity: isActive ? 1 : 0,
   });
+
+  if (isEmbeddedEditMode) return null;
 
   return (
     <>

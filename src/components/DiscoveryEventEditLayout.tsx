@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 type Props = {
   eventId: string;
@@ -45,6 +45,12 @@ export default function DiscoveryEventEditLayout({ eventId, children }: Props) {
   }, [mobileEditorOpen]);
 
   useEffect(() => {
+    if (window.innerWidth < 768) {
+      setMobileEditorOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
         setMobileEditorOpen(false);
@@ -69,7 +75,7 @@ export default function DiscoveryEventEditLayout({ eventId, children }: Props) {
       <div className="min-w-0 flex-1">{children}</div>
 
       {mobileEditorOpen && (
-        <div className="fixed inset-0 z-[75] md:hidden" aria-hidden="true">
+        <div className="fixed inset-0 z-[7600] md:hidden" aria-hidden="true">
           <button
             type="button"
             className="absolute inset-0 h-full w-full bg-slate-900/55 backdrop-blur-[1px]"
@@ -80,28 +86,26 @@ export default function DiscoveryEventEditLayout({ eventId, children }: Props) {
       )}
 
       <aside
-        className={`fixed inset-y-0 right-0 z-[80] w-[min(92vw,420px)] border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 md:hidden ${
+        className={`fixed inset-y-0 right-0 z-[7700] h-dvh w-screen border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 md:hidden ${
           mobileEditorOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        } flex flex-col`}
         aria-label="Edit sidebar mobile"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-4 py-3">
-          <span className="text-sm font-semibold text-slate-800">
-            Customize your meet
-          </span>
+        <div className="border-b border-slate-100 bg-white px-3 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))]">
           <button
             type="button"
             onClick={() => setMobileEditorOpen(false)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-700"
-            aria-label="Close edit panel"
+            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
+            aria-label="Back to event"
           >
-            <X size={16} />
+            <ChevronLeft size={16} />
+            Back to event
           </button>
         </div>
         <iframe
           src={customizeUrl}
           title="Edit event"
-          className="block h-[calc(100dvh-58px)] w-full"
+          className="block min-h-0 flex-1 w-full"
         />
       </aside>
 

@@ -72,10 +72,8 @@ export default function ScrollHandoffContainer({
       const deltaY = event.deltaY;
 
       if (canScrollInDirection(el, deltaY)) {
-        // Keep scroll inside panel and prevent the preview/page from moving.
-        event.preventDefault();
+        // Let native wheel/trackpad scrolling handle momentum inside the panel.
         event.stopPropagation();
-        el.scrollTop += deltaY;
       }
 
       if (onWheel) {
@@ -101,14 +99,16 @@ export default function ScrollHandoffContainer({
     (event: TouchEvent<HTMLDivElement>) => {
       const el = event.currentTarget;
       const touch = event.touches[0];
+      const lastY = touchStartYRef.current;
 
-      if (!touch || touchStartYRef.current == null) {
+      if (!touch || lastY == null) {
         if (onTouchMove) onTouchMove(event);
         return;
       }
 
       const currentY = touch.clientY;
-      const deltaY = touchStartYRef.current - currentY;
+      // Use incremental delta between touchmove frames to avoid accumulated jumps.
+      const deltaY = lastY - currentY;
       const absDeltaY = Math.abs(deltaY);
 
       // Keep tap behavior for buttons/links, but treat a real vertical swipe as scroll.
@@ -125,10 +125,10 @@ export default function ScrollHandoffContainer({
         event.preventDefault();
         event.stopPropagation();
         el.scrollTop += deltaY;
-      } else {
-        // At boundary → allow pass-through scroll.
-        touchStartYRef.current = currentY;
       }
+
+      // Always advance the touch anchor to keep delta incremental and smooth.
+      touchStartYRef.current = currentY;
 
       if (onTouchMove) {
         onTouchMove(event);
