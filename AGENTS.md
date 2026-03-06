@@ -241,16 +241,19 @@ curl -X POST \
 - **Auth**: None.
 - **Input (default mode)**: `multipart/form-data` `file`.
 - **Output (default mode)**: JSON `{ ocrText, event: { title, start, end, location, description, timezone }, schedule, events, category }` (schedule/events are empty; football schedule detection removed).
-- **Discovery mode**: `POST /api/ingest?mode=meet_discovery` accepts either:
+- **Discovery mode (gymnastics)**: `POST /api/ingest?mode=meet_discovery` accepts either:
   - `multipart/form-data` `file` (`pdf`, `jpg/jpeg`, `png`), or
   - `multipart/form-data` `url` (event/meet page URL).
+- **Discovery mode (football)**: `POST /api/ingest?mode=football_discovery` accepts either:
+  - `multipart/form-data` `file` (`pdf`, `jpg/jpeg`, `png`), or
+  - `multipart/form-data` `url` (schedule/packet page URL).
 - **Discovery mode output**: `{ eventId }`.
-- **Discovery mode behavior**: Creates a gymnastics event scaffold in `event_history` and stores discovery source input metadata for follow-up parsing.
+- **Discovery mode behavior**: Creates either a gymnastics or football discovery scaffold in `event_history` and stores `discoverySource.workflow` plus source input metadata for follow-up parsing.
 - **Env**: Same GCP Vision credentials as above. No LLM usage here.
 
-### Meet Discovery Parse — POST `/api/parse/[eventId]`
+### Discovery Parse — POST `/api/parse/[eventId]`
 
-- **Purpose**: Run discovery extraction + AI parse for an ingested gymnastics source and persist mapped builder data.
+- **Purpose**: Run discovery extraction + AI parse for an ingested gymnastics or football source and persist mapped builder data.
 - **Auth**: Optional; enforces ownership when event has `user_id`.
 - **Query params**:
   - `repair=1` (optional): forces a re-parse/re-map pass for an existing discovery event to repair stale or mis-mapped fields (same output shape, response includes `repaired: true`).
@@ -274,10 +277,11 @@ curl -X POST \
   - AI parsing is **OpenAI primary** with strict JSON schema validation.
   - If OpenAI returns invalid JSON, retries once with JSON-fix instruction.
   - If still invalid or OpenAI errors, falls back to Gemini once.
-  - Parse schema is now dynamic-file oriented and includes `documentProfile` plus expanded sections for operations/policies/contacts/deadlines/unmapped facts to improve recall across varied meet packets.
-  - Mapping now safeguards meet dates by preferring parsed date ranges (for example `March 6-8, 2026`) when a conflicting single `startAt` value is out of range.
-  - Mapping now resolves an assigned gym location (`athlete.assignedGym` first, then strongest gym mention) and attempts a focused crop from the detected gym layout zones. If crop confidence is insufficient or no matching zone is found, it safely falls back to the full layout image.
-  - Maps parse result into gymnastics builder fields (`title/date/time/timezone/hostGym`, `advancedSections`, communications/passcode, links) and stores source audit info (`extractedText`, `parseResult`, `rawModelOutput`, `modelUsed`, timestamps, extraction quality metadata). Advanced logistics now includes `gymLayoutLabel` (for Venue Details copy) and meet details include `assignedGym` when detected.
+  - Gymnastics parse schema is dynamic-file oriented and includes `documentProfile` plus expanded sections for operations/policies/contacts/deadlines/unmapped facts to improve recall across varied meet packets.
+  - Gymnastics mapping safeguards meet dates by preferring parsed date ranges (for example `March 6-8, 2026`) when a conflicting single `startAt` value is out of range.
+  - Gymnastics mapping resolves an assigned gym location (`athlete.assignedGym` first, then strongest gym mention) and attempts a focused crop from the detected gym layout zones. If crop confidence is insufficient or no matching zone is found, it safely falls back to the full layout image.
+  - Football uses a separate football-oriented schema/prompt that classifies `football_game_packet` vs `football_season_schedule` and maps results into football builder fields (`games`, `practice`, `roster`, `logistics`, `gear`, `volunteers`, `announcements`, team/stadium metadata).
+  - Stores source audit info (`extractedText`, `parseResult`, `rawModelOutput`, `modelUsed`, timestamps, extraction quality metadata`) under `discoverySource`.
 - **Output**: `{ ok, eventId, repaired, modelUsed, parseResult, statuses }` where `modelUsed` is `"openai"`, `"gemini"`, or `"quality-gate"` when parsing is skipped due to low extraction quality.
 - **Env**: `OPENAI_API_KEY` required for primary parse; Gemini fallback needs `GEMINI_API_KEY` (or `GOOGLE_AI_API_KEY`). Optional model overrides: `OPENAI_OCR_MODEL`, `GEMINI_MODEL`.
 

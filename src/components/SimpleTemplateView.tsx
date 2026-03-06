@@ -53,13 +53,10 @@ import EventDeleteModal from "@/components/EventDeleteModal";
 import EventActions from "@/components/EventActions";
 import StaticMap from "@/components/StaticMap";
 import { applyTheme } from "@/components/design-panel";
+import GymMeetTemplateRenderer from "@/components/gym-meet-templates/GymMeetTemplateRenderer";
+import { normalizeGymMeetEventData } from "@/components/gym-meet-templates/normalizeGymMeetEventData";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
-import {
-  normalizeVenueFactForCompare,
-  sanitizeVenueFactLines,
-  stitchVenueContinuationLines,
-} from "@/lib/venue-facts";
 
 type ThemeSpec = {
   id: string;
@@ -267,16 +264,6 @@ export default function SimpleTemplateView({
   const [carpoolSubmitting, setCarpoolSubmitting] = useState(false);
   const [carpoolSignupSubmitting, setCarpoolSignupSubmitting] = useState(false);
   const [eventDataState, setEventDataState] = useState(eventData);
-  const [discoveryActiveTab, setDiscoveryActiveTab] = useState("meet-details");
-  const discoveryTabRailRef = useRef<HTMLDivElement | null>(null);
-  const discoveryTabButtonRefs = useRef<
-    Record<string, HTMLButtonElement | null>
-  >({});
-  const [showDiscoveryLeftFade, setShowDiscoveryLeftFade] = useState(false);
-  const [showDiscoveryRightFade, setShowDiscoveryRightFade] = useState(false);
-  const [discoveryRailBounceOffset, setDiscoveryRailBounceOffset] = useState(0);
-  const discoveryPrevScrollLeftRef = useRef(0);
-  const discoveryBounceTimeoutRef = useRef<number | null>(null);
   const [rsvpNameInput, setRsvpNameInput] = useState("");
   const [rsvpGuestEmailInput, setRsvpGuestEmailInput] = useState("");
   const [rsvpGuestPhoneInput, setRsvpGuestPhoneInput] = useState("");
@@ -297,74 +284,6 @@ export default function SimpleTemplateView({
   const protectedSectionFlags = protectedSectionFlagsProp || {};
   const isLocked = false;
   const templateRootRef = useRef<HTMLDivElement | null>(null);
-  const discoveryTabs = useMemo(
-    () => [
-      { id: "meet-details", label: "Meet Details", icon: Info },
-      { id: "facility", label: "Venue Details", icon: VenueDetailsIcon },
-      { id: "spectator", label: "Admission & Sales", icon: Ticket },
-      { id: "parking", label: "Traffic & Arrival", icon: Car },
-      { id: "rules", label: "Safety & Policy", icon: ShieldAlert },
-    ],
-    []
-  );
-
-  const getDiscoveryScrollBehavior = useCallback((): ScrollBehavior => {
-    if (typeof window === "undefined") return "auto";
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ? "auto"
-      : "smooth";
-  }, []);
-
-  const updateDiscoveryTabEdgeHints = useCallback(() => {
-    const rail = discoveryTabRailRef.current;
-    if (!rail) {
-      setShowDiscoveryLeftFade(false);
-      setShowDiscoveryRightFade(false);
-      return;
-    }
-    const { scrollLeft, scrollWidth, clientWidth } = rail;
-    const maxScroll = Math.max(scrollWidth - clientWidth, 0);
-    const hasOverflow = maxScroll > 2;
-    if (!hasOverflow) {
-      setShowDiscoveryLeftFade(false);
-      setShowDiscoveryRightFade(false);
-      return;
-    }
-    const epsilon = 2;
-    setShowDiscoveryLeftFade(scrollLeft > epsilon);
-    setShowDiscoveryRightFade(scrollLeft < maxScroll - epsilon);
-  }, []);
-
-  const centerDiscoveryTab = useCallback(
-    (tabId: string, behavior: ScrollBehavior = "smooth") => {
-      const rail = discoveryTabRailRef.current;
-      const tabButton = discoveryTabButtonRefs.current[tabId];
-      if (!rail || !tabButton) return;
-      tabButton.scrollIntoView({
-        behavior,
-        inline: "center",
-        block: "nearest",
-      });
-    },
-    []
-  );
-
-  const triggerDiscoveryRailBounce = useCallback(
-    (direction: "left" | "right") => {
-      if (typeof window === "undefined") return;
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      const offset = direction === "left" ? 10 : -10;
-      setDiscoveryRailBounceOffset(offset);
-      if (discoveryBounceTimeoutRef.current != null) {
-        window.clearTimeout(discoveryBounceTimeoutRef.current);
-      }
-      discoveryBounceTimeoutRef.current = window.setTimeout(() => {
-        setDiscoveryRailBounceOffset(0);
-        discoveryBounceTimeoutRef.current = null;
-      }, 170);
-    },
-    []
-  );
 
   // Keep readonly previews in sync with upstream builder changes.
   useEffect(() => {
@@ -407,35 +326,56 @@ export default function SimpleTemplateView({
   const isDynamicGymnasticsLayout = isGymnasticsTemplate;
   const allowGuestAttendanceRsvp = isGymnasticsTemplate;
 
-  // Live theme preview from embedded gymnastics customize editor
+  // Live preview patches from embedded discovery editors.
   useEffect(() => {
-    if (!isDynamicGymnasticsLayout) return;
     if (typeof window === "undefined") return;
 
     const handleMessage = (e: MessageEvent) => {
+      if (!e.data || typeof e.data !== "object") return;
+      if (e.data.eventId !== eventId) return;
+
       if (
-        !e.data ||
-        typeof e.data !== "object" ||
-        e.data.type !== "envitefy:discovery-theme-preview"
+        isDynamicGymnasticsLayout &&
+        e.data.type === "envitefy:discovery-theme-preview" &&
+        e.data.pageTemplateId
       ) {
+        setEventDataState((prev) => {
+          const base = prev || eventData || {};
+          if (e.data.pageTemplateId === base.pageTemplateId) {
+            return base;
+          }
+          return {
+            ...base,
+            pageTemplateId: e.data.pageTemplateId || base.pageTemplateId,
+          };
+        });
         return;
       }
-      if (e.data.eventId !== eventId) return;
-      if (!e.data.theme) return;
+
+      if (e.data.type !== "envitefy:discovery-preview-patch" || !e.data.patch) {
+        return;
+      }
+
       setEventDataState((prev) => {
         const base = prev || eventData || {};
-        return {
+        const patch = e.data.patch;
+        const next = {
           ...base,
-          themeId: e.data.themeId || base.themeId,
-          theme: e.data.theme || base.theme,
-          designTokens: e.data.designTokens || base.designTokens,
-          customFields: {
-            ...(base.customFields || {}),
-            ...(e.data.designTokens
-              ? { designTokens: e.data.designTokens }
-              : {}),
-          },
+          ...patch,
         };
+        if (patch.customFields || patch.advancedSections) {
+          next.customFields = {
+            ...(base.customFields || {}),
+            ...(patch.customFields || {}),
+          };
+        }
+        if (patch.advancedSections) {
+          next.advancedSections = {
+            ...(base.advancedSections || {}),
+            ...patch.advancedSections,
+          };
+        }
+        return next;
       });
     };
 
@@ -443,122 +383,6 @@ export default function SimpleTemplateView({
     return () => window.removeEventListener("message", handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, isDynamicGymnasticsLayout]);
-
-  useEffect(() => {
-    if (!isDynamicGymnasticsLayout) {
-      setShowDiscoveryLeftFade(false);
-      setShowDiscoveryRightFade(false);
-      setDiscoveryRailBounceOffset(0);
-      return;
-    }
-    if (typeof window === "undefined") return;
-
-    const rafId = window.requestAnimationFrame(() => {
-      updateDiscoveryTabEdgeHints();
-      const rail = discoveryTabRailRef.current;
-      discoveryPrevScrollLeftRef.current = rail?.scrollLeft || 0;
-    });
-    const rail = discoveryTabRailRef.current;
-    const handleRailScroll = () => {
-      const activeRail = discoveryTabRailRef.current;
-      if (activeRail) {
-        const { scrollLeft, scrollWidth, clientWidth } = activeRail;
-        const maxScroll = Math.max(scrollWidth - clientWidth, 0);
-        const epsilon = 2;
-        const prev = discoveryPrevScrollLeftRef.current;
-        if (maxScroll > 2) {
-          if (scrollLeft <= epsilon && prev > epsilon) {
-            triggerDiscoveryRailBounce("left");
-          } else if (scrollLeft >= maxScroll - epsilon && prev < maxScroll - epsilon) {
-            triggerDiscoveryRailBounce("right");
-          }
-        }
-        discoveryPrevScrollLeftRef.current = scrollLeft;
-      }
-      updateDiscoveryTabEdgeHints();
-    };
-    const handleResize = () => updateDiscoveryTabEdgeHints();
-
-    rail?.addEventListener("scroll", handleRailScroll, { passive: true });
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.cancelAnimationFrame(rafId);
-      if (discoveryBounceTimeoutRef.current != null) {
-        window.clearTimeout(discoveryBounceTimeoutRef.current);
-        discoveryBounceTimeoutRef.current = null;
-      }
-      rail?.removeEventListener("scroll", handleRailScroll);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [
-    isDynamicGymnasticsLayout,
-    triggerDiscoveryRailBounce,
-    updateDiscoveryTabEdgeHints,
-  ]);
-
-  useEffect(() => {
-    if (!isDynamicGymnasticsLayout) return;
-    if (typeof window === "undefined") return;
-
-    centerDiscoveryTab(discoveryActiveTab, getDiscoveryScrollBehavior());
-    const rafId = window.requestAnimationFrame(() => {
-      updateDiscoveryTabEdgeHints();
-    });
-    return () => window.cancelAnimationFrame(rafId);
-  }, [
-    centerDiscoveryTab,
-    discoveryActiveTab,
-    getDiscoveryScrollBehavior,
-    isDynamicGymnasticsLayout,
-    updateDiscoveryTabEdgeHints,
-  ]);
-
-  useEffect(() => {
-    if (!isDynamicGymnasticsLayout) return;
-    if (typeof window === "undefined") return;
-
-    const rail = discoveryTabRailRef.current;
-    if (!rail) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const sessionKey = "envitefy:discovery-tab-peeked";
-    if (window.sessionStorage.getItem(sessionKey) === "1") return;
-
-    let backTimer: number | null = null;
-    const rafId = window.requestAnimationFrame(() => {
-      const activeRail = discoveryTabRailRef.current;
-      if (!activeRail) return;
-      const maxScroll = Math.max(
-        activeRail.scrollWidth - activeRail.clientWidth,
-        0
-      );
-      if (maxScroll <= 6) return;
-
-      window.sessionStorage.setItem(sessionKey, "1");
-      const startLeft = activeRail.scrollLeft;
-      const peekDistance = Math.min(40, maxScroll);
-      const peekTarget = Math.min(startLeft + peekDistance, maxScroll);
-
-      activeRail.scrollTo({
-        left: peekTarget,
-        behavior: "smooth",
-      });
-      backTimer = window.setTimeout(() => {
-        activeRail.scrollTo({
-          left: startLeft,
-          behavior: "smooth",
-        });
-      }, 260);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(rafId);
-      if (backTimer != null) {
-        window.clearTimeout(backTimer);
-      }
-    };
-  }, [isDynamicGymnasticsLayout]);
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -3047,7 +2871,175 @@ export default function SimpleTemplateView({
     </div>
   );
 
+  const ownerToolbar = !isLocked && !isReadOnly && !hideOwnerActions ? (
+    <div className="flex justify-end">
+      <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white/95 px-2 py-1.5 text-sm font-medium shadow-lg backdrop-blur">
+        {isOwner && (
+          <>
+            <Link
+              href={resolveEditHref(eventId, eventData, eventTitle)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+              title="Edit event"
+            >
+              Edit
+            </Link>
+            <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
+          </>
+        )}
+        <EventActions
+          shareUrl={shareUrl}
+          event={eventData}
+          historyId={eventId}
+          className=""
+          variant="compact"
+          tone="default"
+        />
+      </div>
+    </div>
+  ) : null;
+
+  const gymMeetModel = useMemo(
+    () =>
+      normalizeGymMeetEventData({
+        eventData: currentData,
+        eventTitle,
+        navItems,
+        rosterAthletes,
+        mapAddress,
+        headerLocation,
+      }),
+    [currentData, eventTitle, navItems, rosterAthletes, mapAddress, headerLocation]
+  );
+
   if (isDynamicGymnasticsLayout) {
+    return (
+      <>
+        <GymMeetTemplateRenderer
+          model={gymMeetModel}
+          ownerToolbar={ownerToolbar}
+          rsvpProps={{
+            enabled: hasRsvpSection,
+            submitted: rsvpSubmitted,
+            attending: rsvpAttending,
+            setAttending: setRsvpAttending,
+            rosterAthletes,
+            selectedAthleteId,
+            setSelectedAthleteId,
+            nameInput: rsvpNameInput,
+            setNameInput: setRsvpNameInput,
+            guestEmailInput: rsvpGuestEmailInput,
+            setGuestEmailInput: setRsvpGuestEmailInput,
+            guestPhoneInput: rsvpGuestPhoneInput,
+            setGuestPhoneInput: setRsvpGuestPhoneInput,
+            isSignedIn,
+            allowGuestAttendanceRsvp,
+            submitting: rsvpSubmitting,
+            error: rsvpError,
+            onSubmit: handleRsvpSubmit,
+            onReset: () => {
+              setRsvpSubmitted(false);
+              setRsvpAttending("yes");
+            },
+          }}
+          isOwner={isOwner}
+          isReadOnly={isReadOnly}
+          hideOwnerActions={hideOwnerActions}
+          onShare={handleShare}
+          onGoogleCalendar={handleGoogleCalendar}
+          onAppleCalendar={handleAppleCalendar}
+          onOutlookCalendar={handleOutlookCalendar}
+        />
+
+        {volunteerSignupModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+              <button
+                onClick={() =>
+                  setVolunteerSignupModal({
+                    open: false,
+                    slotId: null,
+                    slotRole: null,
+                  })
+                }
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
+              <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                Sign Up for {volunteerSignupModal.slotRole}
+              </h3>
+              <p className="text-sm text-slate-600 mb-6">
+                Fill out the form below to volunteer for this position.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={volunteerSignupForm.name}
+                    onChange={(e) =>
+                      setVolunteerSignupForm({
+                        ...volunteerSignupForm,
+                        name: e.target.value,
+                      })
+                    }
+                    className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    placeholder="Your name"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Email (optional)
+                  </label>
+                  <input
+                    type="email"
+                    value={volunteerSignupForm.email}
+                    onChange={(e) =>
+                      setVolunteerSignupForm({
+                        ...volunteerSignupForm,
+                        email: e.target.value,
+                      })
+                    }
+                    className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    placeholder="your@email.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Phone (optional)
+                  </label>
+                  <input
+                    type="tel"
+                    value={volunteerSignupForm.phone}
+                    onChange={(e) =>
+                      setVolunteerSignupForm({
+                        ...volunteerSignupForm,
+                        phone: e.target.value,
+                      })
+                    }
+                    className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    placeholder="(555) 555-5555"
+                  />
+                </div>
+                <button
+                  onClick={handleVolunteerSignup}
+                  disabled={volunteerSubmitting || !volunteerSignupForm.name.trim()}
+                  className="w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {volunteerSubmitting ? "Submitting..." : "Confirm Signup"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  if (false && isDynamicGymnasticsLayout) {
     const parseAdmissionsFromText = (value: any) => {
       const lines = String(value || "")
         .split(/\n+/)

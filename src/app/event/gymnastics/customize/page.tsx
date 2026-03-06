@@ -40,11 +40,14 @@ import {
   ExternalLink,
   GripVertical,
 } from "lucide-react";
-import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
-import { DesignPanel } from "@/components/design-panel";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
+import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
+import {
+  DEFAULT_GYM_MEET_TEMPLATE_ID,
+  resolveGymMeetTemplateId,
+} from "@/components/gym-meet-templates/registry";
 
 type FieldSpec = {
   key: string;
@@ -691,7 +694,7 @@ function GymnasticsEditorLayout({
   showBack?: boolean;
 }) {
   return (
-    <div className="animate-fade-in-right" style={{ pointerEvents: "auto" }} data-no-scroll-capture>
+    <div className="animate-fade-in-right min-h-0" style={{ pointerEvents: "auto" }}>
       <div className="mb-6 pb-4 border-b border-slate-100 relative z-10" style={{ pointerEvents: "auto" }}>
         {!isEmbed && (
           <div className="flex items-center">
@@ -806,6 +809,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               return d.toISOString().split("T")[0];
             })()
           : "",
+      pageTemplateId: editEventId ? undefined : DEFAULT_GYM_MEET_TEMPLATE_ID,
       fontId: (config as any)?.prefill?.fontId || GYM_FONTS[0]?.id || "inter",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
       passcodeRequired: false,
@@ -855,28 +859,38 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       repairAttemptedRef.current = false;
     }, [editEventId]);
 
-    // When embedded next to the live event page, broadcast theme previews to parent
+    useEffect(() => {
+      if (!isEmbed || typeof document === "undefined") return;
+      const html = document.documentElement;
+      const body = document.body;
+      html.classList.add("embedded-editor");
+      body.classList.add("embedded-editor");
+      return () => {
+        html.classList.remove("embedded-editor");
+        body.classList.remove("embedded-editor");
+      };
+    }, [isEmbed]);
+
+    // When embedded next to the live event page, broadcast template previews to parent
     useEffect(() => {
       if (!isEmbed || !editEventId) return;
+      if (loadingExisting) return;
+      const resolvedPreviewTemplateId = resolveGymMeetTemplateId(data);
+      if (!resolvedPreviewTemplateId) return;
       if (typeof window === "undefined") return;
-      const themePayload =
-        config.themes.find((t) => t.id === themeId) || config.themes[0];
-      if (!themePayload) return;
       try {
         window.parent?.postMessage(
           {
             type: "envitefy:discovery-theme-preview",
             eventId: editEventId,
-            themeId,
-            theme: themePayload,
-            designTokens: data.simpleDesignTokens || null,
+            pageTemplateId: resolvedPreviewTemplateId,
           },
           "*"
         );
       } catch {
         // ignore cross-origin errors in preview mode
       }
-    }, [themeId, isEmbed, editEventId, config.themes, data.simpleDesignTokens]);
+    }, [data, editEventId, isEmbed, loadingExisting]);
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -1264,6 +1278,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           console.log("[Edit] Loaded event data:", {
             title: json?.title,
+            pageTemplateId: existing.pageTemplateId,
             heroImage: existing.heroImage,
             themeId: existing.themeId,
             theme: existing.theme,
@@ -1340,6 +1355,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             venue: existing.venue || existing.location || prev.venue,
             details: existing.details || existing.description || prev.details,
             hero: existing.heroImage || existing.hero || prev.hero,
+            pageTemplateId: resolveGymMeetTemplateId(existing),
             rsvpEnabled:
               typeof existing.rsvpEnabled === "boolean"
                 ? existing.rsvpEnabled
@@ -1624,10 +1640,44 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }));
     }, []);
 
+    const handleTemplateSelection = useCallback(
+      async (pageTemplateId: string) => {
+        setData((prev) => ({ ...prev, pageTemplateId }));
+        if (!editEventId) return;
+
+        try {
+          const res = await fetch(`/api/history/${editEventId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              data: { pageTemplateId },
+            }),
+          });
+          if (!res.ok) {
+            const errorText = await res.text().catch(() => "");
+            throw new Error(errorText || "Failed to save template selection");
+          }
+        } catch (err) {
+          console.error("[Design] Failed to persist meet page template", {
+            editEventId,
+            pageTemplateId,
+            err,
+          });
+        }
+      },
+      [editEventId]
+    );
+
     const handlePublish = useCallback(async () => {
       if (submitting) return;
       setSubmitting(true);
       try {
+        const {
+          advancedSections: _ignoredAdvancedSections,
+          designTokens: _ignoredDesignTokens,
+          ...extraFieldsForSave
+        } = (data.extra || {}) as Record<string, any>;
         let startISO: string | null = null;
         let endISO: string | null = null;
         if (data.date && data.time) {
@@ -1668,39 +1718,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }
         }
 
-        // Get current font and size for saving
-        const currentSelectedFont =
-          GYM_FONTS.find((f) => f.id === data.fontId) || GYM_FONTS[0];
-        const currentSelectedSize =
-          FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
-          FONT_SIZE_OPTIONS[1];
+        const resolvedPageTemplateId =
+          data.pageTemplateId ||
+          resolveGymMeetTemplateId(data) ||
+          DEFAULT_GYM_MEET_TEMPLATE_ID;
 
-        // Ensure themeId is valid and find matching theme
-        const validThemeId =
-          themeId && config.themes.find((t) => t.id === themeId)
-            ? themeId
-            : config.themes[0]?.id || "default-theme";
-        const themeToSave =
-          config.themes.find((t) => t.id === validThemeId) || config.themes[0];
-
-        // Ensure fontId and fontSize are valid
-        const validFontId =
-          data.fontId && GYM_FONTS.find((f) => f.id === data.fontId)
-            ? data.fontId
-            : GYM_FONTS[0]?.id || "inter";
-        const validFontSize =
-          data.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize)
-            ? data.fontSize
-            : "medium";
-
-        console.log("[Publish] Saving theme and font:", {
-          themeId: validThemeId,
-          theme: themeToSave?.name,
-          fontId: validFontId,
-          fontSize: validFontSize,
-          currentThemeId: themeId,
-          currentFontId: data.fontId,
-          currentFontSize: data.fontSize,
+        console.log("[Publish] Saving meet page template:", {
+          pageTemplateId: resolvedPageTemplateId,
           editEventId,
         });
 
@@ -1734,6 +1758,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             rsvpDeadline: data.rsvpDeadline || undefined,
             numberOfGuests: 0,
             templateId: config.slug,
+            pageTemplateId: resolvedPageTemplateId,
             templateConfig: {
               displayName: config.displayName,
               categoryLabel: config.categoryLabel || config.displayName,
@@ -1741,24 +1766,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               rsvpCopy: config.rsvpCopy,
             },
             customFields: {
-              ...data.extra,
-              team: data.extra?.team || "",
-              ...(data.simpleDesignTokens
-                ? { designTokens: data.simpleDesignTokens }
-                : {}),
+              ...extraFieldsForSave,
+              team: extraFieldsForSave?.team || "",
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
             heroImage: heroToSave,
-            ...(data.simpleDesignTokens
-              ? { designTokens: data.simpleDesignTokens }
-              : {}),
-            themeId: validThemeId,
-            theme: themeToSave,
-            fontId: validFontId,
-            fontSize: validFontSize,
-            fontFamily: currentSelectedFont?.css,
-            fontSizeClass: currentSelectedSize?.className,
             time: data.time,
             date: data.date,
             ...(data.passcodeRequired && data.passcode
@@ -1790,11 +1803,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           };
 
           console.log("[Publish] Sending update payload:", {
-            themeId: payload.data.themeId,
-            theme: payload.data.theme?.name,
-            fontId: payload.data.fontId,
-            fontSize: payload.data.fontSize,
-            hasTheme: !!payload.data.theme,
+            pageTemplateId: payload.data.pageTemplateId,
             hasAdvancedSections: !!payload.data.advancedSections,
           });
 
@@ -1813,10 +1822,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           const result = await res.json().catch(() => ({}));
           console.log("[Publish] Update successful, response:", {
-            themeId: result?.data?.themeId,
-            theme: result?.data?.theme?.name,
-            fontId: result?.data?.fontId,
-            fontSize: result?.data?.fontSize,
+            pageTemplateId: result?.data?.pageTemplateId,
           });
 
           const redirectUrl = buildEventPath(editEventId, payload.title, {
@@ -1869,6 +1875,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.city,
       data.state,
       data.hero,
+      data.pageTemplateId,
       data.fontId,
       data.fontSize,
       data.rsvpEnabled,
@@ -2100,9 +2107,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           />
           <MenuCard
             title="Design"
-            desc="Theme presets and typography."
+            desc="Choose a page template."
             icon={<Palette size={18} />}
-            status={themeId ? "ready" : "not-started"}
+            status={data.pageTemplateId ? "ready" : "not-started"}
             onClick={() => setActiveView("design")}
             showsOnEvent={SECTION_SHOWS_ON_EVENT.design}
           />
@@ -2218,6 +2225,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setData((prev) => ({
         ...prev,
         title: config.prefill?.title ?? `${config.displayName}`,
+        pageTemplateId: prev.pageTemplateId || DEFAULT_GYM_MEET_TEMPLATE_ID,
         hostGym: config.prefill?.extra?.team || prev.hostGym,
         city: config.prefill?.city || prev.city,
         state: config.prefill?.state || prev.state,
@@ -2251,6 +2259,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setData((prev) => ({
         ...prev,
         title: "",
+        pageTemplateId: DEFAULT_GYM_MEET_TEMPLATE_ID,
         hostGym: "",
         city: "",
         state: "",
@@ -2454,9 +2463,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         onBack={() => setActiveView("main")}
         showBack
       >
-        <DesignPanel
-          previewRootSelector="#guide-preview-root"
-          onTokensChange={handleDesignTokensChange}
+        <TemplateSelector
+          value={resolveGymMeetTemplateId(data)}
+          onChange={handleTemplateSelection}
         />
       </GymnasticsEditorLayout>
     );
@@ -2778,6 +2787,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const previewEventData = useMemo(() => {
+      const {
+        advancedSections: _ignoredAdvancedSections,
+        designTokens: _ignoredDesignTokens,
+        ...extraFieldsForPreview
+      } = (data.extra || {}) as Record<string, any>;
       let startISO: string | null = null;
       let endISO: string | null = null;
       if (data.date && data.time) {
@@ -2819,6 +2833,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         rsvpDeadline: data.rsvpDeadline || undefined,
         numberOfGuests: 0,
         templateId: config.slug,
+        pageTemplateId: data.pageTemplateId,
         templateConfig: {
           displayName: config.displayName,
           categoryLabel: config.categoryLabel || config.displayName,
@@ -2826,24 +2841,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           rsvpCopy: config.rsvpCopy,
         },
         customFields: {
-          ...data.extra,
-          team: data.extra?.team || "",
-          ...(data.simpleDesignTokens
-            ? { designTokens: data.simpleDesignTokens }
-            : {}),
+          ...extraFieldsForPreview,
+          team: extraFieldsForPreview?.team || "",
           advancedSections: advancedState,
         },
         advancedSections: advancedState,
         heroImage: data.hero || undefined,
-        ...(data.simpleDesignTokens
-          ? { designTokens: data.simpleDesignTokens }
-          : {}),
-        themeId: currentTheme?.id,
-        theme: currentTheme,
-        fontId: data.fontId,
-        fontSize: data.fontSize,
-        fontFamily: selectedFont?.css,
-        fontSizeClass: selectedSize?.className,
         time: data.time,
         date: data.date,
         ...(data.passcodeRequired && data.passcode
@@ -2874,99 +2877,128 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.displayName,
       config.rsvpCopy,
       config.slug,
-      currentTheme,
       editEventId,
       isDiscoveryEdit,
       loadedDiscoverySource,
       useParseDrivenSections,
-      themeId,
       data.address,
       data.city,
       data.date,
       data.details,
       data.extra,
-      data.fontId,
-      data.fontSize,
       data.hero,
+      data.pageTemplateId,
       data.passcode,
       data.passcodeHint,
       data.passcodeRequired,
       data.rsvpDeadline,
       data.rsvpEnabled,
-      data.simpleDesignTokens,
       data.state,
       data.time,
       data.timezone,
       data.hostGym,
       data.venue,
       locationParts,
-      selectedFont?.css,
-      selectedSize?.className,
     ]);
     const previewEventId = editEventId || `preview-${config.slug}`;
 
+    useEffect(() => {
+      if (!isEmbed || !editEventId) return;
+      if (loadingExisting) return;
+      if (typeof window === "undefined") return;
+
+      const liveTitle = data.title || config.displayName;
+      try {
+        window.parent?.postMessage(
+          {
+            type: "envitefy:discovery-preview-patch",
+            eventId: editEventId,
+            patch: {
+              ...previewEventData,
+              title: liveTitle,
+              eventTitle: liveTitle,
+            },
+          },
+          "*"
+        );
+      } catch {
+        // Best effort only for live preview.
+      }
+    }, [
+      config.displayName,
+      editEventId,
+      isEmbed,
+      loadingExisting,
+      previewEventData,
+      data.title,
+    ]);
+
     const sidebarPanel = (
       <div
+        {...drawerTouchHandlers}
         className={
           isEmbed
-            ? "flex h-full min-h-0 w-full flex-col bg-white flex-1 min-h-0"
+            ? "flex h-dvh min-h-0 w-full flex-1 flex-col overflow-hidden bg-white"
             : `w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
                 mobileMenuOpen ? "translate-x-0" : "translate-x-full"
               }`
         }
       >
-          <ScrollHandoffContainer
-            className={`flex-1 min-h-0 ${isEmbed ? "overflow-y-auto" : ""}`}
-            {...drawerTouchHandlers}
-          >
-            {!isEmbed && (
-              <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-                <button
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-                >
-                  <ChevronLeft size={14} />
-                  Back to preview
-                </button>
-                <span className="text-sm font-semibold text-slate-700">
-                  Customize
-                </span>
-              </div>
-            )}
-
-            <div
-              className="p-6 pt-4 pb-8 md:pt-6 md:pb-10"
-              style={{ pointerEvents: "auto" }}
-            >
-              {activeView === "main" &&
-                (editEventId && loadingExisting ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <p className="text-sm font-medium text-slate-600">
-                      Loading event…
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      Preparing edit sidebar
-                    </p>
-                  </div>
-                ) : (
-                  renderMainMenu()
-                ))}
-              {activeView === "headline" && renderHeadlineEditor}
-              {activeView === "images" && renderImagesEditor()}
-              {activeView === "design" && renderDesignEditor()}
-              {activeView === "details" && renderDetailsEditor()}
-              {activeView === "discover" && renderDiscoverEditor()}
-              {activeView === "rsvp" && renderRsvpEditor()}
-              {activeView === "passcode" && renderPasscodeEditor()}
-              {visibleAdvancedSections.map((section) =>
-                activeView === section.id ? (
-                  <React.Fragment key={section.id}>
-                    {renderAdvancedEditor(section)}
-                  </React.Fragment>
-                ) : null
-              )}
+        <div
+          className="flex-1 min-h-0 overflow-y-auto"
+          style={{
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+          }}
+        >
+          {!isEmbed && (
+            <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+              <button
+                onClick={closeMobileMenu}
+                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+              >
+                <ChevronLeft size={14} />
+                Back to preview
+              </button>
+              <span className="text-sm font-semibold text-slate-700">
+                Customize
+              </span>
             </div>
-          </ScrollHandoffContainer>
+          )}
+
+          <div
+            className="p-6 pt-4 pb-8 md:pt-6 md:pb-10"
+            style={{ pointerEvents: "auto" }}
+          >
+            {activeView === "main" &&
+              (editEventId && loadingExisting ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <p className="text-sm font-medium text-slate-600">
+                    Loading event…
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Preparing edit sidebar
+                  </p>
+                </div>
+              ) : (
+                renderMainMenu()
+              ))}
+            {activeView === "headline" && renderHeadlineEditor}
+            {activeView === "images" && renderImagesEditor()}
+            {activeView === "design" && renderDesignEditor()}
+            {activeView === "details" && renderDetailsEditor()}
+            {activeView === "discover" && renderDiscoverEditor()}
+            {activeView === "rsvp" && renderRsvpEditor()}
+            {activeView === "passcode" && renderPasscodeEditor()}
+            {visibleAdvancedSections.map((section) =>
+              activeView === section.id ? (
+                <React.Fragment key={section.id}>
+                  {renderAdvancedEditor(section)}
+                </React.Fragment>
+              ) : null
+            )}
+          </div>
+        </div>
 
           <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50">
             <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
@@ -3025,7 +3057,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     if (isEmbed) {
       return (
-        <div className="h-dvh min-h-screen w-full bg-white flex flex-col overflow-hidden">
+        <div className="h-dvh min-h-0 w-full bg-white flex flex-col overflow-hidden">
           {sidebarPanel}
         </div>
       );
@@ -3059,7 +3091,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 </div>
               ) : (
                 <SimpleTemplateView
-                  key={`preview-${previewEventId}-${themeId}-${data.fontId}-${data.fontSize}`}
+                  key={`preview-${previewEventId}`}
                   eventId={previewEventId}
                   eventData={previewEventData}
                   eventTitle={data.title || config.displayName}
@@ -3072,7 +3104,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   disableThemeBackground={true}
                   neutralPreview={{
                     surface: "light-gradient",
-                    paletteDriven: true,
                     suppressTextShadows: true,
                   }}
                 />

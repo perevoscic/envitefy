@@ -11,6 +11,7 @@ import {
 } from "@/lib/db";
 import { corsJson, corsPreflight } from "@/lib/cors";
 import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
+import { buildDefaultFootballDiscoveryData } from "@/lib/football-discovery";
 
 export const runtime = "nodejs";
 
@@ -28,7 +29,14 @@ async function getSessionUserId() {
   return userId;
 }
 
-async function handleMeetDiscoveryIngest(request: Request) {
+async function handleDiscoveryIngest(
+  request: Request,
+  options: {
+    workflow: "gymnastics" | "football";
+    defaultTitle: string;
+    buildBaseData: () => Record<string, any>;
+  }
+) {
   const formData = await request.formData();
   const file = formData.get("file");
   const rawUrl = String(formData.get("url") || "").trim();
@@ -50,10 +58,10 @@ async function handleMeetDiscoveryIngest(request: Request) {
   }
 
   const userId = await getSessionUserId();
-  const baseData = buildDefaultGymMeetData();
+  const baseData = options.buildBaseData();
   const now = new Date().toISOString();
   let discoveryInput: any = null;
-  let title = "Gymnastics Meet";
+  let title = options.defaultTitle;
 
   if (hasFile) {
     const fileValue = file as File;
@@ -86,7 +94,9 @@ async function handleMeetDiscoveryIngest(request: Request) {
     try {
       const parsed = new URL(rawUrl);
       normalizedUrl = parsed.toString();
-      title = parsed.hostname.replace(/^www\./i, "") + " Meet";
+      title =
+        parsed.hostname.replace(/^www\./i, "") +
+        (options.workflow === "football" ? " Football" : " Meet");
     } catch {
       return corsJson(request, { error: "Invalid URL" }, { status: 400 });
     }
@@ -101,6 +111,7 @@ async function handleMeetDiscoveryIngest(request: Request) {
       title,
       discoverySource: {
         status: "ingested",
+        workflow: options.workflow,
         input: discoveryInput,
         extractedText: null,
         parseResult: null,
@@ -111,6 +122,22 @@ async function handleMeetDiscoveryIngest(request: Request) {
     },
   });
   return corsJson(request, { eventId: row.id });
+}
+
+async function handleMeetDiscoveryIngest(request: Request) {
+  return handleDiscoveryIngest(request, {
+    workflow: "gymnastics",
+    defaultTitle: "Gymnastics Meet",
+    buildBaseData: buildDefaultGymMeetData,
+  });
+}
+
+async function handleFootballDiscoveryIngest(request: Request) {
+  return handleDiscoveryIngest(request, {
+    workflow: "football",
+    defaultTitle: "Football Event",
+    buildBaseData: buildDefaultFootballDiscoveryData,
+  });
 }
 
 async function handleLegacyIngest(request: Request) {
@@ -234,6 +261,9 @@ export async function POST(request: Request) {
     const mode = (url.searchParams.get("mode") || "").toLowerCase();
     if (mode === "meet_discovery") {
       return await handleMeetDiscoveryIngest(request);
+    }
+    if (mode === "football_discovery") {
+      return await handleFootballDiscoveryIngest(request);
     }
     return await handleLegacyIngest(request);
   } catch (err: unknown) {

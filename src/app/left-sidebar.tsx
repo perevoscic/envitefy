@@ -25,7 +25,9 @@ import {
   CalendarIconOutlook,
   CalendarIconApple,
 } from "@/components/CalendarIcons";
+import { buildEventPath } from "@/utils/event-url";
 import { resolveEditHref } from "@/utils/event-edit-route";
+import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
 import {
   getCreateEventSections,
   getTemplateLinks,
@@ -78,6 +80,7 @@ type HistoryRow = {
 type GroupedEventItem = {
   row: HistoryRow;
   href: string;
+  openMode: "dashboard" | "preview";
   title: string;
   dateLabel: string;
   dateMs: number;
@@ -1493,11 +1496,10 @@ export default function LeftSidebar() {
         ? Number.POSITIVE_INFINITY
         : parsedDateMs;
       const dateLabel = formatDate(dateRaw);
-      const slug = String(row.title || "event")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-      const href = `/event/${slug || "event"}-${row.id}`;
+      const href = buildEventPath(row.id, row.title);
+      const openMode = isSportsPreviewFirstEvent(data)
+        ? "preview"
+        : "dashboard";
 
       const categoryColor =
         categoryColors[category] || defaultCategoryColor(category);
@@ -1515,6 +1517,7 @@ export default function LeftSidebar() {
       const entry = {
         row,
         href,
+        openMode,
         title: row.title || "Untitled event",
         dateLabel,
         dateMs,
@@ -2013,8 +2016,22 @@ export default function LeftSidebar() {
   }, []);
 
   const openOwnerEventContext = useCallback(
-    (row: HistoryRow, href: string) => {
+    (item: GroupedEventItem) => {
+      const { row, href, openMode } = item;
       const title = row.title || "Untitled event";
+
+      blurActiveElement();
+
+      if (openMode === "preview") {
+        clearEventContext();
+        setSidebarPage("myEvents");
+        try {
+          router.prefetch(href);
+        } catch {}
+        router.push(href);
+        return;
+      }
+
       setSelectedEventId(row.id);
       setSelectedEventTitle(title);
       setSelectedEventHref(href);
@@ -2022,13 +2039,13 @@ export default function LeftSidebar() {
       setActiveEventTab("dashboard");
       setEventSidebarMode("owner");
       setEventContextSourcePage("myEvents");
-      blurActiveElement();
       setSidebarPage("eventContext");
       router.push(buildEventOwnerHref(href, row.id, "dashboard"));
     },
     [
       blurActiveElement,
       buildEventOwnerHref,
+      clearEventContext,
       router,
       setEventContextSourcePage,
       setEventSidebarMode,
@@ -2688,13 +2705,12 @@ export default function LeftSidebar() {
                                     <button
                                       key={item.row.id}
                                       type="button"
-                                      onClick={() =>
-                                        openOwnerEventContext(
-                                          item.row,
-                                          item.href
-                                        )
-                                      }
-                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
+                                      onClick={() => openOwnerEventContext(item)}
+                                      className={`${SIDEBAR_ITEM_CARD_CLASS} ${
+                                        isHistoryRowActive(item.row.id)
+                                          ? `${item.activeCardClass} ${item.activeTintClass} ring-2 ring-[#d9ccff]`
+                                          : `${item.tintClass} ${item.hoverTintClass}`
+                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
                                       style={item.style}
                                     >
                                       <span
@@ -2766,12 +2782,13 @@ export default function LeftSidebar() {
                                           key={item.row.id}
                                           type="button"
                                           onClick={() =>
-                                            openOwnerEventContext(
-                                              item.row,
-                                              item.href
-                                            )
+                                            openOwnerEventContext(item)
                                           }
-                                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${item.tintClass} ${item.hoverTintClass} w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-75 saturate-75`}
+                                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${
+                                            isHistoryRowActive(item.row.id)
+                                              ? `${item.activeCardClass} ${item.activeTintClass} ring-2 ring-[#d9ccff]`
+                                              : `${item.tintClass} ${item.hoverTintClass}`
+                                          } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-75 saturate-75`}
                                           style={item.style}
                                         >
                                           <span

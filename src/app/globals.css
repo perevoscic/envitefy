@@ -233,6 +233,13 @@ html {
   -webkit-overflow-scrolling: touch;
 }
 
+html.embedded-editor,
+body.embedded-editor {
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
 body {
   background-color: #F8F5FF;
   color: var(--foreground);

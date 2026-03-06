@@ -15,9 +15,22 @@ import {
   parseMeetFromExtractedText,
   type DiscoverySourceInput,
 } from "@/lib/meet-discovery";
+import {
+  computeFootballBuilderStatuses,
+  mapParseResultToFootballData,
+  parseFootballFromExtractedText,
+} from "@/lib/football-discovery";
+import {
+  DEFAULT_GYM_MEET_TEMPLATE_ID,
+  resolveGymMeetTemplateId,
+} from "@/components/gym-meet-templates/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function safeString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 async function getSessionUserId() {
   const session: any = await getServerSession(authOptions as any);
@@ -47,6 +60,10 @@ export async function POST(
 
     const currentData = (row.data || {}) as Record<string, any>;
     const sourceInput = currentData?.discoverySource?.input as DiscoverySourceInput | undefined;
+    const workflow =
+      safeString(currentData?.discoverySource?.workflow) === "football"
+        ? "football"
+        : "gymnastics";
     if (!sourceInput || !sourceInput.type) {
       return NextResponse.json({ error: "No discovery source input found" }, { status: 400 });
     }
@@ -56,41 +73,63 @@ export async function POST(
       return NextResponse.json({ error: "Not enough text extracted to parse" }, { status: 422 });
     }
 
-    const parsed = await parseMeetFromExtractedText(
-      extraction.extractedText,
-      extraction.extractionMeta
-    );
-    const mapped = await mapParseResultToGymData(
-      parsed.parseResult,
-      currentData,
-      extraction.extractionMeta
-    );
+    const parsed =
+      workflow === "football"
+        ? await parseFootballFromExtractedText(
+            extraction.extractedText,
+            extraction.extractionMeta
+          )
+        : await parseMeetFromExtractedText(
+            extraction.extractedText,
+            extraction.extractionMeta
+          );
+    const mapped =
+      workflow === "football"
+        ? await mapParseResultToFootballData(parsed.parseResult, currentData)
+        : await mapParseResultToGymData(
+            parsed.parseResult,
+            currentData,
+            extraction.extractionMeta
+          );
+    const nextGymPageTemplateId =
+      workflow === "gymnastics"
+        ? resolveGymMeetTemplateId({ ...currentData, ...mapped }) ||
+          DEFAULT_GYM_MEET_TEMPLATE_ID
+        : null;
     const detectedGymLayoutImage = extraction.extractionMeta?.gymLayoutImageDataUrl || null;
-    if (repairMode && !detectedGymLayoutImage) {
-      mapped.advancedSections = mapped.advancedSections || {};
-      mapped.advancedSections.logistics = mapped.advancedSections.logistics || {};
-      mapped.advancedSections.logistics.gymLayoutImage = "";
-      mapped.customFields = mapped.customFields || {};
-      mapped.customFields.advancedSections = mapped.advancedSections;
-    } else if (
-      detectedGymLayoutImage &&
-      !mapped?.advancedSections?.logistics?.gymLayoutImage
-    ) {
-      mapped.advancedSections = mapped.advancedSections || {};
-      mapped.advancedSections.logistics = mapped.advancedSections.logistics || {};
-      mapped.advancedSections.logistics.gymLayoutImage = detectedGymLayoutImage;
-      mapped.customFields = mapped.customFields || {};
-      mapped.customFields.advancedSections = mapped.advancedSections;
+    if (workflow === "gymnastics") {
+      if (repairMode && !detectedGymLayoutImage) {
+        mapped.advancedSections = mapped.advancedSections || {};
+        mapped.advancedSections.logistics = mapped.advancedSections.logistics || {};
+        mapped.advancedSections.logistics.gymLayoutImage = "";
+        mapped.customFields = mapped.customFields || {};
+        mapped.customFields.advancedSections = mapped.advancedSections;
+      } else if (
+        detectedGymLayoutImage &&
+        !mapped?.advancedSections?.logistics?.gymLayoutImage
+      ) {
+        mapped.advancedSections = mapped.advancedSections || {};
+        mapped.advancedSections.logistics = mapped.advancedSections.logistics || {};
+        mapped.advancedSections.logistics.gymLayoutImage = detectedGymLayoutImage;
+        mapped.customFields = mapped.customFields || {};
+        mapped.customFields.advancedSections = mapped.advancedSections;
+      }
     }
     const nextData = {
       ...mapped,
+      ...(workflow === "gymnastics"
+        ? { pageTemplateId: nextGymPageTemplateId }
+        : {}),
       discoverySource: {
         ...(currentData.discoverySource || {}),
         status: "parsed",
+        workflow,
         input: sourceInput,
         extractedText: extraction.extractedText,
         extractionMeta: extraction.extractionMeta,
-        evidence: parsed.evidence,
+        ...(workflow === "gymnastics" && "evidence" in parsed
+          ? { evidence: parsed.evidence }
+          : {}),
         parseResult: parsed.parseResult,
         rawModelOutput: parsed.rawModelOutput,
         modelUsed: parsed.modelUsed,
@@ -112,7 +151,10 @@ export async function POST(
       repaired: repairMode,
       modelUsed: parsed.modelUsed,
       parseResult: parsed.parseResult,
-      statuses: computeGymBuilderStatuses(nextData),
+      statuses:
+        workflow === "football"
+          ? computeFootballBuilderStatuses(nextData)
+          : computeGymBuilderStatuses(nextData),
     });
   } catch (err: any) {
     console.error("[meet-parse] parse failed", {

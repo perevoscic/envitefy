@@ -77,6 +77,7 @@ export async function PATCH(
       processedData &&
       typeof processedData === "object" &&
       (processedData.themeId != null ||
+        processedData.pageTemplateId != null ||
         processedData.theme != null ||
         processedData.fontId != null ||
         processedData.fontSize != null ||
@@ -91,6 +92,8 @@ export async function PATCH(
         ...processedData,
         // Explicitly ensure theme and font are replaced (not merged)
         themeId: processedData.themeId ?? existingData.themeId,
+        pageTemplateId:
+          processedData.pageTemplateId ?? existingData.pageTemplateId,
         theme: processedData.theme ?? existingData.theme,
         fontId: processedData.fontId ?? existingData.fontId,
         fontSize: processedData.fontSize ?? existingData.fontSize,
@@ -103,7 +106,8 @@ export async function PATCH(
         mergedData.category = String(incomingCategory);
       }
       
-      console.log("[API] Full update with theme/font:", {
+      console.log("[API] Full update with meet design fields:", {
+        pageTemplateId: mergedData.pageTemplateId,
         themeId: mergedData.themeId,
         theme: mergedData.theme?.name,
         fontId: mergedData.fontId,

@@ -649,24 +649,55 @@ export default async function EventPage({
   const editParam = String(
     ((awaitedSearchParams as any)?.edit ?? "") as string
   ).trim();
-  const isDiscoveryGymnasticsEdit =
-    editParam &&
-    isOwner &&
-    (() => {
-      const createdVia = (data as any)?.createdVia;
-      const category = String((data as any)?.category || "").toLowerCase();
-      const tid = (data as any)?.templateId;
-      return (
-        (createdVia === "meet-discovery" ||
-          Boolean((data as any)?.discoverySource?.input)) &&
-        (category === "sport_gymnastics_schedule" ||
-          category === "sport_gymnastics" ||
-          category === "gymnastics" ||
-          tid === "gymnastics-schedule" ||
-          tid === "gymnastics")
-      );
-    })();
-  if (editParam && isOwner && !isDiscoveryGymnasticsEdit) {
+  const discoveryCreatedVia = String((data as any)?.createdVia || "").toLowerCase();
+  const discoveryWorkflow = String(
+    (data as any)?.discoverySource?.workflow || ""
+  ).toLowerCase();
+  const discoveryCategory = String((data as any)?.category || "").toLowerCase();
+  const discoveryTemplateId = String((data as any)?.templateId || "").toLowerCase();
+  const hasDiscoveryInput = Boolean((data as any)?.discoverySource?.input);
+  const isGymnasticsDiscoveryTemplate =
+    (discoveryCreatedVia === "meet-discovery" ||
+      discoveryWorkflow === "gymnastics" ||
+      hasDiscoveryInput) &&
+    (discoveryCategory === "sport_gymnastics_schedule" ||
+      discoveryCategory === "sport_gymnastics" ||
+      discoveryCategory === "gymnastics" ||
+      discoveryTemplateId === "gymnastics-schedule" ||
+      discoveryTemplateId === "gymnastics");
+  const isFootballDiscoveryTemplate =
+    (discoveryCreatedVia === "football-discovery" ||
+      discoveryWorkflow === "football" ||
+      hasDiscoveryInput) &&
+    (discoveryCategory === "sport_football_season" ||
+      discoveryTemplateId === "football-season" ||
+      discoveryTemplateId === "football");
+  const discoveryEditConfig:
+    | { customizeUrl: string; workflow: "gymnastics" | "football" }
+    | null = editParam && isOwner
+    ? (() => {
+      if (isGymnasticsDiscoveryTemplate) {
+        return {
+          customizeUrl: `/event/gymnastics/customize?edit=${encodeURIComponent(
+            row.id
+          )}&embed=1`,
+          workflow: "gymnastics",
+        } as const;
+      }
+
+      if (isFootballDiscoveryTemplate) {
+        return {
+          customizeUrl: `/event/football/customize?edit=${encodeURIComponent(
+            row.id
+          )}&embed=1`,
+          workflow: "football",
+        } as const;
+      }
+
+      return null;
+    })()
+    : null;
+  if (editParam && isOwner && !discoveryEditConfig) {
     const editUrl = resolveEditHref(row.id, data, title);
     redirect(editUrl);
   }
@@ -1229,18 +1260,12 @@ export default async function EventPage({
     createdVia !== "simple-template";
   const isWeddingTemplate =
     templateId && variationId && categoryNormalized === "weddings";
-  const isDiscoveryGymnasticsTemplate =
-    (createdVia === "meet-discovery" ||
-      Boolean((data as any)?.discoverySource?.input)) &&
-    (categoryNormalized === "sport_gymnastics_schedule" ||
-      categoryNormalized === "sport_gymnastics" ||
-      categoryNormalized === "gymnastics" ||
-      templateId === "gymnastics-schedule" ||
-      templateId === "gymnastics");
+  const isDiscoverySimpleTemplate =
+    isGymnasticsDiscoveryTemplate || isFootballDiscoveryTemplate;
   const isSimpleTemplate =
     (createdVia === "simple-template" ||
       createdVia === "template" ||
-      isDiscoveryGymnasticsTemplate) &&
+      isDiscoverySimpleTemplate) &&
     templateId &&
     !isBirthdayTemplate &&
     !isWeddingTemplate;
@@ -1375,13 +1400,16 @@ export default async function EventPage({
         viewerKind={viewerKind}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
-        hideOwnerActions={isDiscoveryGymnasticsEdit}
-        disableThemeBackground={isDiscoveryGymnasticsEdit}
+        hideOwnerActions={Boolean(discoveryEditConfig)}
+        disableThemeBackground={Boolean(discoveryEditConfig)}
       />
     );
-    if (isDiscoveryGymnasticsEdit) {
+    if (discoveryEditConfig) {
       return (
-        <DiscoveryEventEditLayout eventId={row.id}>
+        <DiscoveryEventEditLayout
+          eventId={row.id}
+          customizeUrl={discoveryEditConfig.customizeUrl}
+        >
           {eventView}
         </DiscoveryEventEditLayout>
       );

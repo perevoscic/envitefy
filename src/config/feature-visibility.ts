@@ -86,7 +86,7 @@ export const TEMPLATE_DEFINITIONS: TemplateDef[] = [
   {
     key: "football_season",
     label: "Football Season",
-    href: "/event/football-season/customize",
+    href: "/event/football",
     icon: "🏈",
     section: "sports",
   },

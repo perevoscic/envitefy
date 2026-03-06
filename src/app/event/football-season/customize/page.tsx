@@ -310,6 +310,9 @@ const cloneState = <T,>(value: T): T => {
   }
 };
 
+const safeString = (value: unknown): string =>
+  typeof value === "string" ? value.trim() : "";
+
 const InputGroup = ({
   label,
   value,
@@ -416,6 +419,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const search = useSearchParams();
     const router = useRouter();
     const editEventId = search?.get("edit") ?? undefined;
+    const isEmbed = search?.get("embed") === "1";
     const defaultDate = search?.get("d") ?? undefined;
     const initialDate = useMemo(() => {
       if (!defaultDate) {
@@ -483,6 +487,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [initializingEdit, setInitializingEdit] = useState(
       Boolean(editEventId)
     );
+    const [discoverFile, setDiscoverFile] = useState<File | null>(null);
+    const [discoverBusy, setDiscoverBusy] = useState(false);
+    const [discoverError, setDiscoverError] = useState("");
+    const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<
+      Record<string, any> | null
+    >(null);
+    const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(false);
     const {
       mobileMenuOpen,
       openMobileMenu,
@@ -527,6 +538,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           if (!res.ok) return;
           const json = await res.json();
           const existing = json?.data || {};
+          const existingCreatedVia = String(existing?.createdVia || "")
+            .toLowerCase()
+            .trim();
+          const existingDiscoverySource =
+            existing?.discoverySource &&
+            typeof existing.discoverySource === "object"
+              ? (existing.discoverySource as Record<string, any>)
+              : null;
+          setLoadedDiscoverySource(existingDiscoverySource);
+          setIsDiscoveryEdit(
+            existingCreatedVia === "football-discovery" ||
+              safeString(existingDiscoverySource?.workflow) === "football"
+          );
 
           const startIso =
             existing.start || existing.startISO || existing.startIso;
@@ -668,6 +692,69 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const selectedSize =
       FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
       FONT_SIZE_OPTIONS[1];
+
+    useEffect(() => {
+      if (!isEmbed || !editEventId) return;
+      if (typeof window === "undefined") return;
+
+      const normalizedAdvanced =
+        normalizeAdvancedSectionsForStorage(advancedState) || advancedState;
+      try {
+        window.parent?.postMessage(
+          {
+            type: "envitefy:discovery-preview-patch",
+            eventId: editEventId,
+            patch: {
+              title: data.title,
+              description: data.details,
+              details: data.details,
+              heroImage: data.hero || undefined,
+              hero: data.hero || undefined,
+              venue:
+                data.venue || data.extra?.stadium || data.extra?.stadiumAddress,
+              date: data.date,
+              time: data.time,
+              rsvpEnabled: data.rsvpEnabled,
+              rsvpDeadline: data.rsvpDeadline,
+              themeId,
+              theme: currentTheme,
+              fontId: data.fontId,
+              fontSize: data.fontSize,
+              fontFamily: selectedFont?.css,
+              fontSizeClass: selectedSize?.className,
+              advancedSections: normalizedAdvanced,
+              customFields: {
+                ...(data.extra || {}),
+                advancedSections: normalizedAdvanced,
+              },
+              extra: data.extra,
+            },
+          },
+          "*"
+        );
+      } catch {
+        // Best effort only for live preview.
+      }
+    }, [
+      isEmbed,
+      editEventId,
+      advancedState,
+      data.date,
+      data.details,
+      data.extra,
+      data.fontId,
+      data.fontSize,
+      data.hero,
+      data.rsvpDeadline,
+      data.rsvpEnabled,
+      data.time,
+      data.title,
+      data.venue,
+      currentTheme,
+      selectedFont,
+      selectedSize,
+      themeId,
+    ]);
 
     const isDarkBackground = useMemo(() => {
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -945,16 +1032,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           fontHref: FOOTBALL_GOOGLE_FONTS_URL,
         };
 
-        const advancedSectionsToSave =
+        const normalizedAdvancedSections =
           normalizeAdvancedSectionsForStorage(advancedState) || advancedState;
-
+        const isDiscoveryUpdate = Boolean(editEventId && isDiscoveryEdit);
         const payload: any = {
           title: data.title || config.displayName,
           data: {
             category: config.category,
             displayName: config.displayName,
-            createdVia: "template",
-            createdManually: true,
+            createdVia: isDiscoveryUpdate ? "football-discovery" : "template",
+            createdManually: !isDiscoveryUpdate,
             startISO,
             endISO,
             date: data.date,
@@ -977,11 +1064,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             fontFamily: currentSelectedFont?.css,
             fontSizeClass: currentSelectedSize?.className,
             fontHref: FOOTBALL_GOOGLE_FONTS_URL,
+            ...(loadedDiscoverySource && {
+              discoverySource: {
+                ...loadedDiscoverySource,
+                workflow: "football",
+                updatedAt: new Date().toISOString(),
+              },
+            }),
             customFields: {
               ...data.extra,
-              advancedSections: advancedSectionsToSave,
+              advancedSections: normalizedAdvancedSections,
             },
-            advancedSections: advancedSectionsToSave,
+            advancedSections: normalizedAdvancedSections,
             heroImage: heroToSave,
             extra: data.extra,
             address: addressToSave,
@@ -1012,9 +1106,28 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             body: JSON.stringify({ title: payload.title, data: payload.data }),
           });
           if (!res.ok) throw new Error("Failed to update event");
-          router.push(
-            buildEventPath(editEventId, payload.title, { updated: true })
-          );
+          const redirectUrl = buildEventPath(editEventId, payload.title, {
+            updated: true,
+            t: Date.now(),
+          });
+          if (
+            isEmbed &&
+            typeof window !== "undefined" &&
+            (window as any).parent !== window
+          ) {
+            try {
+              (window as any).parent.postMessage(
+                {
+                  type: "envitefy:discovery-edit-saved",
+                  eventId: editEventId,
+                  redirectUrl,
+                },
+                window.location.origin
+              );
+            } catch {}
+            return;
+          }
+          router.push(redirectUrl);
         } else {
           const res = await fetch("/api/history", {
             method: "POST",
@@ -1058,6 +1171,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.defaultHero,
       rsvpCopy,
       editEventId,
+      isDiscoveryEdit,
+      loadedDiscoverySource,
+      isEmbed,
       router,
     ]);
 
@@ -1188,15 +1304,44 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
         <div className="mb-2 w-full max-w-sm text-center">
           <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            Add your details
+            {isDiscoveryEdit ? "Edit your football page" : "Build your football page"}
           </h2>
           <p className="text-slate-500 text-sm">
-            Customize every aspect of your {config.displayName.toLowerCase()}{" "}
-            site.
+            {isDiscoveryEdit
+              ? "Update the prefilled sections from your uploaded football source."
+              : `Customize every aspect of your ${config.displayName.toLowerCase()} site.`}
           </p>
         </div>
 
+        {!isDiscoveryEdit && (
+          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+              Starter Mode
+            </div>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setActiveView("discover")}
+                className="w-full rounded-lg border border-[#d44f19] bg-[#d44f19] px-3 py-2 text-xs font-semibold text-white hover:bg-[#ba4313] flex items-center justify-center gap-2"
+              >
+                Upload & Prefill
+                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                  Recommended
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
+          {!isDiscoveryEdit && (
+            <MenuCard
+              title="Upload"
+              desc="Prefill from a football packet, schedule, or roster file."
+              icon={<Upload size={18} />}
+              onClick={() => setActiveView("discover")}
+            />
+          )}
           <MenuCard
             title="Headline"
             desc="Title, date, location."
@@ -1496,6 +1641,94 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </EditorLayout>
     );
 
+    const handleDiscoverParse = useCallback(async () => {
+      if (discoverBusy) return;
+      setDiscoverError("");
+      if (!discoverFile) {
+        setDiscoverError("Upload a file to continue.");
+        return;
+      }
+      setDiscoverBusy(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", discoverFile);
+
+        const ingestRes = await fetch("/api/ingest?mode=football_discovery", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+        const ingestJson = await ingestRes.json().catch(() => ({}));
+        if (!ingestRes.ok || !ingestJson?.eventId) {
+          throw new Error(ingestJson?.error || "Failed to ingest source");
+        }
+
+        const eventId = String(ingestJson.eventId);
+        const parseRes = await fetch(`/api/parse/${eventId}`, {
+          method: "POST",
+          credentials: "include",
+        });
+        const parseJson = await parseRes.json().catch(() => ({}));
+        if (!parseRes.ok) {
+          throw new Error(parseJson?.error || "Failed to parse source");
+        }
+        router.push(`/event/football/customize?edit=${eventId}`);
+      } catch (err: any) {
+        setDiscoverError(
+          String(err?.message || err || "Failed to parse source")
+        );
+      } finally {
+        setDiscoverBusy(false);
+      }
+    }, [discoverBusy, discoverFile, router]);
+
+    const renderDiscoverEditor = () => (
+      <EditorLayout
+        title="Upload to Prefill"
+        onBack={() => setActiveView("main")}
+        showBack
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
+            Upload a football packet, season schedule, roster sheet, or parent
+            memo. We will parse and prefill the football page builder.
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+              Upload File
+            </label>
+            <input
+              type="file"
+              accept=".pdf,image/png,image/jpeg,image/jpg"
+              onChange={(e) => {
+                const picked = e.target.files?.[0] || null;
+                setDiscoverFile(picked);
+              }}
+              className={baseInputClass}
+            />
+            {discoverFile ? (
+              <p className="text-xs text-slate-500">
+                Selected: {discoverFile.name}
+              </p>
+            ) : null}
+          </div>
+          {discoverError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {discoverError}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={handleDiscoverParse}
+            disabled={discoverBusy}
+            className="w-full py-3 rounded-lg bg-slate-900 text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {discoverBusy ? "Parsing..." : "Parse and Build Football Page"}
+          </button>
+        </div>
+      </EditorLayout>
+    );
+
     const renderRsvpEditor = () => (
       <EditorLayout
         title={rsvpCopy.editorTitle}
@@ -1642,15 +1875,22 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }
 
     return (
-      <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
-        <div
-          {...previewTouchHandlers}
-          className="flex-1 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            overscrollBehavior: "contain",
-          }}
-        >
+      <div
+        className={`relative flex w-full bg-slate-100 font-sans text-slate-900 ${
+          isEmbed
+            ? "min-h-screen flex-col"
+            : "min-h-screen h-[100dvh] overflow-hidden"
+        }`}
+      >
+        {!isEmbed && (
+          <div
+            {...previewTouchHandlers}
+            className="flex-1 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+            style={{
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
+            }}
+          >
           <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
             <div
               className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
@@ -1995,9 +2235,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        )}
 
-        {mobileMenuOpen && (
+        {!isEmbed && mobileMenuOpen && (
           <div
             className="md:hidden fixed inset-0 bg-slate-900/50 z-10"
             onClick={closeMobileMenu}
@@ -2006,13 +2247,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         )}
 
         <div
-          className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
-            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          className={`w-full bg-white flex flex-col ${
+            isEmbed
+              ? "min-h-screen"
+              : `md:w-[400px] border-l border-slate-200 shadow-2xl z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+                  mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+                }`
           }`}
           {...drawerTouchHandlers}
         >
           <ScrollHandoffContainer className="flex-1">
-            <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+            {!isEmbed && (
+              <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
               <button
                 onClick={closeMobileMenu}
                 className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
@@ -2023,7 +2269,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <span className="text-sm font-semibold text-slate-700">
                 Customize
               </span>
-            </div>
+              </div>
+            )}
 
             <div className="p-6 pt-4 md:pt-6">
               {activeView === "main" && renderMainMenu()}
@@ -2031,6 +2278,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {activeView === "images" && renderImagesEditor()}
               {activeView === "design" && renderDesignEditor()}
               {activeView === "details" && renderDetailsEditor()}
+              {activeView === "discover" && renderDiscoverEditor()}
               {activeView === "rsvp" && renderRsvpEditor()}
               {activeView === "passcode" && renderPasscodeEditor()}
               {config.advancedSections?.map((section) =>
@@ -2047,7 +2295,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <div className="flex gap-3">
               {editEventId && (
                 <button
-                  onClick={() => router.push(`/event/${editEventId}`)}
+                  onClick={() => {
+                    if (
+                      isEmbed &&
+                      typeof window !== "undefined" &&
+                      (window as any).parent !== window
+                    ) {
+                      try {
+                        (window as any).parent.location.assign(
+                          `/event/${editEventId}`
+                        );
+                        return;
+                      } catch {}
+                    }
+                    router.push(`/event/${editEventId}`);
+                  }}
                   className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
                 >
                   Cancel
@@ -2072,7 +2334,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </div>
         </div>
 
-        {!mobileMenuOpen && (
+        {!isEmbed && !mobileMenuOpen && (
           <div className="md:hidden fixed bottom-4 right-4 z-30">
             <button
               type="button"

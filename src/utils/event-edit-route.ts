@@ -133,7 +133,7 @@ export const resolveEditHref = (
 
     // Sports & activity templates
     const templateSlugById: Record<string, string> = {
-      "football-season": "football-season",
+      "football-season": "football",
       "football-practice": "football-practice",
       soccer: "soccer",
       "sport-event": "sport-events",
@@ -142,7 +142,7 @@ export const resolveEditHref = (
       "gymnastics-schedule": "gymnastics",
     };
     const templateSlugByCategory: Record<string, string> = {
-      sport_football_season: "football-season",
+      sport_football_season: "football",
       sport_football_practice: "football-practice",
       sport_soccer: "soccer",
       sport_event: "sport-events",

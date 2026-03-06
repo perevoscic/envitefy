@@ -15,7 +15,7 @@ const SPORTS_CARDS: SportsCard[] = [
     label: "Football Season '25-'26",
     icon: "🏈",
     copy: "Publish the full 2025-2026 season slate with home/away games, travel, and roster updates in one place.",
-    href: "/event/football-season/customize",
+    href: "/event/football",
   },
   {
     label: "Gymnastics Schedule",

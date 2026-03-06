@@ -5,14 +5,19 @@ import { ChevronLeft } from "lucide-react";
 
 type Props = {
   eventId: string;
+  customizeUrl?: string;
   children: React.ReactNode;
 };
 
-export default function DiscoveryEventEditLayout({ eventId, children }: Props) {
+export default function DiscoveryEventEditLayout({
+  eventId,
+  customizeUrl,
+  children,
+}: Props) {
   const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
-  const customizeUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(
-    eventId
-  )}&embed=1`;
+  const resolvedCustomizeUrl =
+    customizeUrl ||
+    `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}&embed=1`;
 
   const handleMessage = useCallback((e: MessageEvent) => {
     if (e.data?.type === "envitefy:discovery-edit-saved" && e.data?.eventId === eventId) {
@@ -45,6 +50,30 @@ export default function DiscoveryEventEditLayout({ eventId, children }: Props) {
   }, [mobileEditorOpen]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const html = document.documentElement;
+    const body = document.body;
+    const originalHtmlOverflow = html.style.overflow;
+    const originalBodyOverflow = body.style.overflow;
+
+    const syncDesktopOverflow = () => {
+      const isDesktop = window.innerWidth >= 768;
+      html.style.overflow = isDesktop ? "hidden" : originalHtmlOverflow;
+      body.style.overflow = isDesktop ? "hidden" : originalBodyOverflow;
+    };
+
+    syncDesktopOverflow();
+    window.addEventListener("resize", syncDesktopOverflow);
+
+    return () => {
+      window.removeEventListener("resize", syncDesktopOverflow);
+      html.style.overflow = originalHtmlOverflow;
+      body.style.overflow = originalBodyOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
     if (window.innerWidth < 768) {
       setMobileEditorOpen(true);
     }
@@ -71,8 +100,8 @@ export default function DiscoveryEventEditLayout({ eventId, children }: Props) {
   }, []);
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col md:flex-row">
-      <div className="min-w-0 flex-1">{children}</div>
+    <div className="relative flex min-h-screen w-full flex-col md:h-[100dvh] md:min-h-0 md:flex-row md:overflow-hidden">
+      <div className="min-w-0 flex-1 md:min-h-0 md:overflow-y-auto">{children}</div>
 
       {mobileEditorOpen && (
         <div className="fixed inset-0 z-[7600] md:hidden" aria-hidden="true">
@@ -103,20 +132,20 @@ export default function DiscoveryEventEditLayout({ eventId, children }: Props) {
           </button>
         </div>
         <iframe
-          src={customizeUrl}
+          src={resolvedCustomizeUrl}
           title="Edit event"
           className="block min-h-0 flex-1 w-full"
         />
       </aside>
 
       <aside
-        className="hidden w-full border-t border-slate-200 bg-white md:block md:border-t-0 md:border-l md:max-w-[420px] md:flex-shrink-0 md:relative md:z-[60]"
+        className="hidden w-full overflow-hidden border-t border-slate-200 bg-white md:sticky md:top-0 md:z-[60] md:flex md:h-[100dvh] md:max-w-[420px] md:flex-shrink-0 md:self-start md:flex-col md:border-t-0 md:border-l"
         aria-label="Edit sidebar"
       >
         <iframe
-          src={customizeUrl}
+          src={resolvedCustomizeUrl}
           title="Edit event"
-          className="block w-full h-[80vh] min-h-[480px] md:h-full md:min-h-[100vh]"
+          className="block h-full min-h-0 w-full flex-1"
         />
       </aside>
     </div>

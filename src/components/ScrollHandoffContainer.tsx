@@ -41,9 +41,18 @@ export default function ScrollHandoffContainer({
   const touchStartYRef = useRef<number | null>(null);
   const touchTargetRef = useRef<EventTarget | null>(null);
 
+  const shouldInterceptWheel = useCallback((): boolean => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return false;
+    }
+    return window.matchMedia("(pointer: coarse)").matches;
+  }, []);
+
   const isInteractiveTarget = useCallback((target: EventTarget | null): boolean => {
     if (!target || !(target instanceof HTMLElement)) return false;
-    const el = target.closest?.("button, a, [role='button'], [data-no-scroll-capture]");
+    const el = target.closest?.(
+      "button, a, input, select, textarea, [role='button']"
+    );
     return Boolean(el);
   }, []);
 
@@ -68,6 +77,13 @@ export default function ScrollHandoffContainer({
 
   const handleWheel = useCallback(
     (event: WheelEvent<HTMLDivElement>) => {
+      if (!shouldInterceptWheel()) {
+        if (onWheel) {
+          onWheel(event);
+        }
+        return;
+      }
+
       const el = event.currentTarget;
       const deltaY = event.deltaY;
 
@@ -80,7 +96,7 @@ export default function ScrollHandoffContainer({
         onWheel(event);
       }
     },
-    [canScrollInDirection, onWheel]
+    [canScrollInDirection, onWheel, shouldInterceptWheel]
   );
 
   const handleTouchStart = useCallback(

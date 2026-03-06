@@ -12,6 +12,10 @@ import {
   normalizeVenueFactForCompare,
   sanitizeVenueFactLines,
 } from "@/lib/venue-facts";
+import {
+  DEFAULT_GYM_MEET_TEMPLATE_ID,
+  resolveGymMeetTemplateId,
+} from "@/components/gym-meet-templates/registry";
 
 export type DiscoverySourceInput =
   | {
@@ -1640,6 +1644,7 @@ export function buildDefaultGymMeetData() {
     createdManually: false,
     templateId: "gymnastics-schedule",
     templateKey: "gymnastics",
+    pageTemplateId: DEFAULT_GYM_MEET_TEMPLATE_ID,
     date: "",
     time: "",
     timezone: "America/Chicago",
@@ -2412,6 +2417,8 @@ export async function mapParseResultToGymData(
   baseData: any = {},
   extractionMeta?: ExtractionResult["extractionMeta"]
 ) {
+  const resolvedPageTemplateId =
+    resolveGymMeetTemplateId(baseData) || DEFAULT_GYM_MEET_TEMPLATE_ID;
   const { date, time } = splitDateTime(parseResult.startAt);
   const derivedRange = deriveDateRangeFromText(parseResult.dates);
   const hasDateConflictWithRange =
@@ -2790,6 +2797,7 @@ export async function mapParseResultToGymData(
     accessControl: nextAccessControl || baseData?.accessControl || null,
     templateKey: "gymnastics",
     templateId: "gymnastics-schedule",
+    pageTemplateId: resolvedPageTemplateId,
     category: "sport_gymnastics_schedule",
   };
 }
