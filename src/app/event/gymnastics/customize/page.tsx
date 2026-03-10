@@ -1641,34 +1641,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }));
     }, []);
 
-    const handleTemplateSelection = useCallback(
-      async (pageTemplateId: string) => {
-        setData((prev) => ({ ...prev, pageTemplateId }));
-        if (!editEventId) return;
-
-        try {
-          const res = await fetch(`/api/history/${editEventId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              data: { pageTemplateId },
-            }),
-          });
-          if (!res.ok) {
-            const errorText = await res.text().catch(() => "");
-            throw new Error(errorText || "Failed to save template selection");
-          }
-        } catch (err) {
-          console.error("[Design] Failed to persist meet page template", {
-            editEventId,
-            pageTemplateId,
-            err,
-          });
-        }
-      },
-      [editEventId]
-    );
+    const handleTemplateSelection = useCallback((pageTemplateId: string) => {
+      setData((prev) => ({ ...prev, pageTemplateId }));
+    }, []);
 
     const handlePublish = useCallback(async () => {
       if (submitting) return;
@@ -1950,10 +1925,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return `/api/ics?${params.toString()}`;
     };
 
-    const openWithAppFallback = (appUrl: string, webUrl: string) => {
+    const openWithFallback = (
+      primaryUrl: string,
+      onFallback: () => void
+    ) => {
       if (typeof window === "undefined") return;
       const timer = setTimeout(() => {
-        window.open(webUrl, "_blank", "noopener,noreferrer");
+        onFallback();
       }, 700);
       const clear = () => {
         clearTimeout(timer);
@@ -1963,11 +1941,25 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (document.visibilityState === "hidden") clear();
       });
       try {
-        window.location.href = appUrl;
+        window.location.href = primaryUrl;
       } catch {
         clearTimeout(timer);
-        window.open(webUrl, "_blank", "noopener,noreferrer");
+        onFallback();
       }
+    };
+
+    const buildAbsoluteIcsUrl = (
+      details: ReturnType<typeof buildEventDetails>
+    ) => {
+      const icsPath = buildIcsUrl(details);
+      return typeof window !== "undefined"
+        ? `${window.location.origin}${icsPath}`
+        : icsPath;
+    };
+
+    const buildWebcalUrl = (details: ReturnType<typeof buildEventDetails>) => {
+      const absoluteIcs = buildAbsoluteIcsUrl(details);
+      return absoluteIcs.replace(/^https?/i, "webcal");
     };
 
     const handleShare = () => {
@@ -2004,7 +1996,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       )}&details=${encodeURIComponent(details.description || "")}`;
       const webUrl = `https://calendar.google.com/calendar/render?${query}`;
       const appUrl = `comgooglecalendar://?${query}`;
-      openWithAppFallback(appUrl, webUrl);
+      openWithFallback(appUrl, () => {
+        window.open(webUrl, "_blank", "noopener,noreferrer");
+      });
     };
 
     const handleOutlookCalendar = () => {
@@ -2027,17 +2021,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       )}&startdt=${encodeURIComponent(
         details.start.toISOString()
       )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-      openWithAppFallback(appUrl, webUrl);
+      openWithFallback(appUrl, () => {
+        window.open(webUrl, "_blank", "noopener,noreferrer");
+      });
     };
 
     const handleAppleCalendar = () => {
       const details = buildEventDetails();
-      const icsPath = buildIcsUrl(details);
-      const absoluteIcs =
-        typeof window !== "undefined"
-          ? `${window.location.origin}${icsPath}`
-          : icsPath;
-      window.location.href = absoluteIcs;
+      const absoluteIcs = buildAbsoluteIcsUrl(details);
+      const webcalUrl = buildWebcalUrl(details);
+      openWithFallback(webcalUrl, () => {
+        window.location.href = absoluteIcs;
+      });
     };
 
     const renderMainMenu = () => (
@@ -3063,6 +3058,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <button
                   onClick={() => {
                     if (isEmbed && typeof window !== "undefined") {
+                      try {
+                        window.parent?.postMessage(
+                          {
+                            type: "envitefy:discovery-preview-reset",
+                            eventId: editEventId,
+                          },
+                          "*"
+                        );
+                      } catch {
+                        // Best effort only for live preview reset.
+                      }
                       const href = `${window.location.origin}${buildEventPath(editEventId, data.title || "Event")}`;
                       try {
                         (window as any).parent.location.href = href;

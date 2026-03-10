@@ -334,6 +334,11 @@ export default function SimpleTemplateView({
       if (!e.data || typeof e.data !== "object") return;
       if (e.data.eventId !== eventId) return;
 
+      if (e.data.type === "envitefy:discovery-preview-reset") {
+        setEventDataState(eventData);
+        return;
+      }
+
       if (
         isDynamicGymnasticsLayout &&
         e.data.type === "envitefy:discovery-theme-preview" &&
@@ -381,8 +386,7 @@ export default function SimpleTemplateView({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId, isDynamicGymnasticsLayout]);
+  }, [eventData, eventId, isDynamicGymnasticsLayout]);
 
   // Default theme fallback
   const DEFAULT_THEME: ThemeSpec = {
@@ -851,10 +855,13 @@ export default function SimpleTemplateView({
     return `/api/ics?${params.toString()}`;
   };
 
-  const openWithAppFallback = (appUrl: string, webUrl: string) => {
+  const openWithFallback = (
+    primaryUrl: string,
+    onFallback: () => void
+  ) => {
     if (typeof window === "undefined") return;
     const timer = setTimeout(() => {
-      window.open(webUrl, "_blank", "noopener,noreferrer");
+      onFallback();
     }, 700);
     const clear = () => {
       clearTimeout(timer);
@@ -864,11 +871,23 @@ export default function SimpleTemplateView({
       if (document.visibilityState === "hidden") clear();
     });
     try {
-      window.location.href = appUrl;
+      window.location.href = primaryUrl;
     } catch {
       clearTimeout(timer);
-      window.open(webUrl, "_blank", "noopener,noreferrer");
+      onFallback();
     }
+  };
+
+  const buildAbsoluteIcsUrl = (details: ReturnType<typeof buildEventDetails>) => {
+    const icsPath = buildIcsUrl(details);
+    return typeof window !== "undefined"
+      ? `${window.location.origin}${icsPath}`
+      : icsPath;
+  };
+
+  const buildWebcalUrl = (details: ReturnType<typeof buildEventDetails>) => {
+    const absoluteIcs = buildAbsoluteIcsUrl(details);
+    return absoluteIcs.replace(/^https?/i, "webcal");
   };
 
   const handleShare = () => {
@@ -903,7 +922,9 @@ export default function SimpleTemplateView({
     )}&details=${encodeURIComponent(details.description || "")}`;
     const webUrl = `https://calendar.google.com/calendar/render?${query}`;
     const appUrl = `comgooglecalendar://?${query}`;
-    openWithAppFallback(appUrl, webUrl);
+    openWithFallback(appUrl, () => {
+      window.open(webUrl, "_blank", "noopener,noreferrer");
+    });
   };
 
   const handleOutlookCalendar = () => {
@@ -926,17 +947,57 @@ export default function SimpleTemplateView({
     )}&startdt=${encodeURIComponent(
       details.start.toISOString()
     )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-    openWithAppFallback(appUrl, webUrl);
+    openWithFallback(appUrl, () => {
+      window.open(webUrl, "_blank", "noopener,noreferrer");
+    });
   };
 
   const handleAppleCalendar = () => {
     const details = buildEventDetails();
-    const icsPath = buildIcsUrl(details);
-    const absoluteIcs =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${icsPath}`
-        : icsPath;
-    window.location.href = absoluteIcs;
+    const absoluteIcs = buildAbsoluteIcsUrl(details);
+    const webcalUrl = buildWebcalUrl(details);
+    openWithFallback(webcalUrl, () => {
+      window.location.href = absoluteIcs;
+    });
+  };
+
+  const handleCalendar = () => {
+    if (typeof navigator === "undefined") {
+      handleAppleCalendar();
+      return;
+    }
+
+    const platform =
+      (navigator as Navigator & {
+        userAgentData?: { platform?: string };
+      }).userAgentData?.platform ||
+      navigator.platform ||
+      "";
+    const userAgent = navigator.userAgent || "";
+    const isWindows = /win/i.test(platform) || /windows/i.test(userAgent);
+    const isAndroid = /android/i.test(userAgent);
+    const isIOS =
+      /iphone|ipad|ipod/i.test(userAgent) ||
+      (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isMac =
+      /mac/i.test(platform) || /macintosh|mac os x/i.test(userAgent);
+
+    if (isWindows) {
+      const details = buildEventDetails();
+      const webcalUrl = buildWebcalUrl(details);
+      openWithFallback(webcalUrl, handleOutlookCalendar);
+      return;
+    }
+    if (isAndroid) {
+      handleGoogleCalendar();
+      return;
+    }
+    if (isIOS || isMac) {
+      handleAppleCalendar();
+      return;
+    }
+
+    handleOutlookCalendar();
   };
 
   const rosterAthletes = useMemo<NormalizedRosterAthlete[]>(
@@ -2945,6 +3006,7 @@ export default function SimpleTemplateView({
           isReadOnly={isReadOnly}
           hideOwnerActions={hideOwnerActions}
           onShare={handleShare}
+          onCalendar={handleCalendar}
           onGoogleCalendar={handleGoogleCalendar}
           onAppleCalendar={handleAppleCalendar}
           onOutlookCalendar={handleOutlookCalendar}

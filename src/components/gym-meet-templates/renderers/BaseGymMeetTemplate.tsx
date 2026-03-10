@@ -61,6 +61,7 @@ export default function BaseGymMeetTemplate({
   isReadOnly,
   hideOwnerActions = false,
   onShare,
+  onCalendar,
   onGoogleCalendar,
   onAppleCalendar,
   onOutlookCalendar,
@@ -176,7 +177,7 @@ export default function BaseGymMeetTemplate({
             <FloatingActionStrip
               buttonClass={variant.secondaryButtonClass}
               onShare={onShare}
-              onCalendar={onAppleCalendar}
+              onCalendar={onCalendar}
             />
           </div>
 

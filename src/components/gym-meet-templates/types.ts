@@ -263,6 +263,7 @@ export type GymMeetTemplateRendererProps = {
   isReadOnly: boolean;
   hideOwnerActions?: boolean;
   onShare: () => void;
+  onCalendar: () => void;
   onGoogleCalendar: () => void;
   onAppleCalendar: () => void;
   onOutlookCalendar: () => void;

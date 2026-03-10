@@ -55,6 +55,7 @@ export default function DashboardGymMeetTemplate({
   isReadOnly,
   hideOwnerActions = false,
   onShare,
+  onCalendar,
   onGoogleCalendar,
   onAppleCalendar,
   onOutlookCalendar,
@@ -98,6 +99,18 @@ export default function DashboardGymMeetTemplate({
     : Array.isArray(model.gear)
     ? model.gear
     : [];
+  const hasRosterOrPractice =
+    model.rosterAthletes.length > 0 || practiceBlocks.length > 0;
+  const hasOperationsSection =
+    gearItems.length > 0 ||
+    Boolean(model.gear?.uniform) ||
+    volunteerSlots.length > 0 ||
+    carpools.length > 0;
+  const hasSidebarSections =
+    Boolean(model.hostGym || model.team || model.venue || model.headerLocation || model.address || model.mapAddress || model.coach || model.assistantCoach) ||
+    rsvpProps.enabled ||
+    model.quickLinks.length > 0 ||
+    Boolean(model.coachPhone);
   const heroStyle = model.heroImage
     ? {
         backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.2), rgba(2,6,23,0.56)), url(${model.heroImage})`,
@@ -146,11 +159,6 @@ export default function DashboardGymMeetTemplate({
                     ) : null}
                     {model.headerLocation ? <span>{model.headerLocation}</span> : null}
                   </div>
-                  {model.description ? (
-                    <p className={`mt-5 max-w-3xl text-sm leading-7 sm:text-base ${variant.mutedClass}`}>
-                      {model.description}
-                    </p>
-                  ) : null}
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
@@ -171,16 +179,17 @@ export default function DashboardGymMeetTemplate({
             <FloatingActionStrip
               buttonClass={variant.secondaryButtonClass}
               onShare={onShare}
-              onCalendar={onAppleCalendar}
+              onCalendar={onCalendar}
             />
           </div>
 
           <main className="px-3 pb-5 pt-6 sm:px-5 sm:pb-6 sm:pt-7">
-            <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-              <div className="space-y-5">
-                <GymMeetDiscoveryContent model={model} variant={variant} />
+            <GymMeetDiscoveryContent model={model} variant={variant} />
 
-                {(model.rosterAthletes.length > 0 || practiceBlocks.length > 0) ? (
+            {(hasRosterOrPractice || hasOperationsSection || hasSidebarSections) ? (
+              <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+                <div className="space-y-5">
+                  {hasRosterOrPractice ? (
                   <div className="grid gap-4 xl:grid-cols-2">
                     {model.rosterAthletes.length > 0 ? (
                       <Section title="Active Roster" eyebrow="Attendance" className={variant.sectionClass}>
@@ -242,10 +251,7 @@ export default function DashboardGymMeetTemplate({
                   </div>
                 ) : null}
 
-                {(gearItems.length > 0 ||
-                  model.gear?.uniform ||
-                  volunteerSlots.length > 0 ||
-                  carpools.length > 0) ? (
+                  {hasOperationsSection ? (
                   <Section title="Operations Grid" eyebrow="Support" className={variant.sectionClass}>
                     <div className="grid gap-3 md:grid-cols-2">
                       {model.gear?.uniform ? (
@@ -284,150 +290,149 @@ export default function DashboardGymMeetTemplate({
                     </div>
                   </Section>
                 ) : null}
+                </div>
 
-              </div>
-
-              <div className={`space-y-4 ${variant.stickyRailClass}`}>
-                <Section title="Meet Snapshot" eyebrow="Overview" className={variant.sidebarCardClass}>
-                  <div className="grid gap-3">
-                    {[
-                      { label: "Host Gym", value: model.hostGym || model.team },
-                      { label: "Venue", value: model.venue || model.headerLocation },
-                      { label: "Address", value: model.address || model.mapAddress },
-                      { label: "Coach", value: model.coach },
-                      { label: "Assistant Coach", value: model.assistantCoach },
-                    ]
-                      .filter((item) => item.value)
-                      .map((item) => (
-                        <div key={item.label} className={variant.summaryCardClass}>
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                            {item.label}
-                          </p>
-                          <p className="mt-2 text-sm leading-relaxed">{item.value}</p>
-                        </div>
-                      ))}
-                  </div>
-                </Section>
-
-                {rsvpProps.enabled ? (
-                  <Section title="RSVP" eyebrow="Attendance" className={variant.sidebarCardClass}>
-                    {!rsvpProps.submitted ? (
-                      <div className="space-y-4">
-                        <input
-                          className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                          placeholder="Parent or athlete name"
-                          value={rsvpProps.nameInput}
-                          onChange={(e) => rsvpProps.setNameInput(e.target.value)}
-                        />
-                        {!rsvpProps.isSignedIn && rsvpProps.allowGuestAttendanceRsvp ? (
-                          <div className="grid gap-3">
-                            <input
-                              className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                              placeholder="Email"
-                              value={rsvpProps.guestEmailInput}
-                              onChange={(e) => rsvpProps.setGuestEmailInput(e.target.value)}
-                            />
-                            <input
-                              className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                              placeholder="Phone"
-                              value={rsvpProps.guestPhoneInput}
-                              onChange={(e) => rsvpProps.setGuestPhoneInput(e.target.value)}
-                            />
+                <div className={`space-y-4 ${variant.stickyRailClass}`}>
+                  <Section title="Meet Snapshot" eyebrow="Overview" className={variant.sidebarCardClass}>
+                    <div className="grid gap-3">
+                      {[
+                        { label: "Host Gym", value: model.hostGym || model.team },
+                        { label: "Venue", value: model.venue || model.headerLocation },
+                        { label: "Address", value: model.address || model.mapAddress },
+                        { label: "Coach", value: model.coach },
+                        { label: "Assistant Coach", value: model.assistantCoach },
+                      ]
+                        .filter((item) => item.value)
+                        .map((item) => (
+                          <div key={item.label} className={variant.summaryCardClass}>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                              {item.label}
+                            </p>
+                            <p className="mt-2 text-sm leading-relaxed">{item.value}</p>
                           </div>
-                        ) : null}
-                        {rsvpProps.rosterAthletes.length > 0 ? (
-                          <select
-                            className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                            value={rsvpProps.selectedAthleteId}
-                            onChange={(e) => rsvpProps.setSelectedAthleteId(e.target.value)}
-                          >
-                            <option value="">Choose athlete</option>
-                            {rsvpProps.rosterAthletes.map((athlete: any) => (
-                              <option key={athlete.id} value={athlete.id}>
-                                {[athlete.name, athlete.level].filter(Boolean).join(" • ")}
-                              </option>
-                            ))}
-                          </select>
-                        ) : null}
-                        <div className="grid gap-3">
-                          <button
-                            type="button"
-                            onClick={() => rsvpProps.setAttending("yes")}
-                            className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
-                              rsvpProps.attending === "yes"
-                                ? "border-slate-900 bg-slate-900 text-white"
-                                : "border-black/10 bg-white hover:border-slate-300"
-                            }`}
-                          >
-                            <div className="font-black uppercase tracking-[0.14em]">Going</div>
-                            <div className="mt-1 opacity-75">Athlete will attend this meet.</div>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => rsvpProps.setAttending("no")}
-                            className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
-                              rsvpProps.attending === "no"
-                                ? "border-slate-900 bg-slate-900 text-white"
-                                : "border-black/10 bg-white hover:border-slate-300"
-                            }`}
-                          >
-                            <div className="font-black uppercase tracking-[0.14em]">Not Going</div>
-                            <div className="mt-1 opacity-75">Athlete cannot attend.</div>
-                          </button>
-                        </div>
-                        {rsvpProps.error ? (
-                          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {rsvpProps.error}
-                          </div>
-                        ) : null}
-                        <button
-                          onClick={rsvpProps.onSubmit}
-                          disabled={rsvpProps.submitting}
-                          className={`w-full ${variant.primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
-                        >
-                          {rsvpProps.submitting ? "Submitting..." : "Send RSVP"}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-6 text-emerald-900">
-                        <p className="text-lg font-black">Attendance updated.</p>
-                        <button
-                          onClick={rsvpProps.onReset}
-                          className="mt-3 text-sm font-semibold underline underline-offset-4"
-                        >
-                          Send another response
-                        </button>
-                      </div>
-                    )}
-                  </Section>
-                ) : null}
-
-                {(model.quickLinks.length > 0 || model.coachPhone) ? (
-                  <Section title="Quick Access" eyebrow="Links" className={variant.sidebarCardClass}>
-                    <div className="grid gap-2">
-                      {model.quickLinks.map((link) => (
-                        <a
-                          key={link.url}
-                          href={link.url}
-                          target={/^data:/i.test(link.url) ? undefined : "_blank"}
-                          rel={/^data:/i.test(link.url) ? undefined : "noopener noreferrer"}
-                          download={/^data:/i.test(link.url) ? "source-file" : undefined}
-                          className={variant.secondaryButtonClass}
-                        >
-                          {link.label || "Open Link"}
-                        </a>
-                      ))}
-                      {model.coachPhone ? (
-                        <a href={`tel:${model.coachPhone}`} className={variant.secondaryButtonClass}>
-                          <Phone size={14} /> Contact Coach
-                        </a>
-                      ) : null}
+                        ))}
                     </div>
                   </Section>
-                ) : null}
 
+                  {rsvpProps.enabled ? (
+                    <Section title="RSVP" eyebrow="Attendance" className={variant.sidebarCardClass}>
+                      {!rsvpProps.submitted ? (
+                        <div className="space-y-4">
+                          <input
+                            className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                            placeholder="Parent or athlete name"
+                            value={rsvpProps.nameInput}
+                            onChange={(e) => rsvpProps.setNameInput(e.target.value)}
+                          />
+                          {!rsvpProps.isSignedIn && rsvpProps.allowGuestAttendanceRsvp ? (
+                            <div className="grid gap-3">
+                              <input
+                                className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                                placeholder="Email"
+                                value={rsvpProps.guestEmailInput}
+                                onChange={(e) => rsvpProps.setGuestEmailInput(e.target.value)}
+                              />
+                              <input
+                                className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                                placeholder="Phone"
+                                value={rsvpProps.guestPhoneInput}
+                                onChange={(e) => rsvpProps.setGuestPhoneInput(e.target.value)}
+                              />
+                            </div>
+                          ) : null}
+                          {rsvpProps.rosterAthletes.length > 0 ? (
+                            <select
+                              className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                              value={rsvpProps.selectedAthleteId}
+                              onChange={(e) => rsvpProps.setSelectedAthleteId(e.target.value)}
+                            >
+                              <option value="">Choose athlete</option>
+                              {rsvpProps.rosterAthletes.map((athlete: any) => (
+                                <option key={athlete.id} value={athlete.id}>
+                                  {[athlete.name, athlete.level].filter(Boolean).join(" • ")}
+                                </option>
+                              ))}
+                            </select>
+                          ) : null}
+                          <div className="grid gap-3">
+                            <button
+                              type="button"
+                              onClick={() => rsvpProps.setAttending("yes")}
+                              className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
+                                rsvpProps.attending === "yes"
+                                  ? "border-slate-900 bg-slate-900 text-white"
+                                  : "border-black/10 bg-white hover:border-slate-300"
+                              }`}
+                            >
+                              <div className="font-black uppercase tracking-[0.14em]">Going</div>
+                              <div className="mt-1 opacity-75">Athlete will attend this meet.</div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => rsvpProps.setAttending("no")}
+                              className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
+                                rsvpProps.attending === "no"
+                                  ? "border-slate-900 bg-slate-900 text-white"
+                                  : "border-black/10 bg-white hover:border-slate-300"
+                              }`}
+                            >
+                              <div className="font-black uppercase tracking-[0.14em]">Not Going</div>
+                              <div className="mt-1 opacity-75">Athlete cannot attend.</div>
+                            </button>
+                          </div>
+                          {rsvpProps.error ? (
+                            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                              {rsvpProps.error}
+                            </div>
+                          ) : null}
+                          <button
+                            onClick={rsvpProps.onSubmit}
+                            disabled={rsvpProps.submitting}
+                            className={`w-full ${variant.primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                          >
+                            {rsvpProps.submitting ? "Submitting..." : "Send RSVP"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-6 text-emerald-900">
+                          <p className="text-lg font-black">Attendance updated.</p>
+                          <button
+                            onClick={rsvpProps.onReset}
+                            className="mt-3 text-sm font-semibold underline underline-offset-4"
+                          >
+                            Send another response
+                          </button>
+                        </div>
+                      )}
+                    </Section>
+                  ) : null}
+
+                  {(model.quickLinks.length > 0 || model.coachPhone) ? (
+                    <Section title="Quick Access" eyebrow="Links" className={variant.sidebarCardClass}>
+                      <div className="grid gap-2">
+                        {model.quickLinks.map((link) => (
+                          <a
+                            key={link.url}
+                            href={link.url}
+                            target={/^data:/i.test(link.url) ? undefined : "_blank"}
+                            rel={/^data:/i.test(link.url) ? undefined : "noopener noreferrer"}
+                            download={/^data:/i.test(link.url) ? "source-file" : undefined}
+                            className={variant.secondaryButtonClass}
+                          >
+                            {link.label || "Open Link"}
+                          </a>
+                        ))}
+                        {model.coachPhone ? (
+                          <a href={`tel:${model.coachPhone}`} className={variant.secondaryButtonClass}>
+                            <Phone size={14} /> Contact Coach
+                          </a>
+                        ) : null}
+                      </div>
+                    </Section>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <footer className="px-2 py-6 text-center text-xs font-semibold uppercase tracking-[0.22em] opacity-50">
               Envitefy Gymnastics Meet Page

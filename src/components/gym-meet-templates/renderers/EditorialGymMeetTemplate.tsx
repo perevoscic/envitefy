@@ -55,6 +55,7 @@ export default function EditorialGymMeetTemplate({
   isReadOnly,
   hideOwnerActions = false,
   onShare,
+  onCalendar,
   onGoogleCalendar,
   onAppleCalendar,
   onOutlookCalendar,
@@ -144,11 +145,6 @@ export default function EditorialGymMeetTemplate({
                     ) : null}
                     {model.headerLocation ? <span>{model.headerLocation}</span> : null}
                   </div>
-                  {model.description ? (
-                    <p className={`mt-6 max-w-3xl text-base leading-7 sm:text-lg ${variant.ledeClass}`}>
-                      {model.description}
-                    </p>
-                  ) : null}
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
@@ -169,7 +165,7 @@ export default function EditorialGymMeetTemplate({
             <FloatingActionStrip
               buttonClass={variant.secondaryButtonClass}
               onShare={onShare}
-              onCalendar={onAppleCalendar}
+              onCalendar={onCalendar}
             />
           </div>
 
