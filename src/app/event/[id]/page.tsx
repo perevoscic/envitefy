@@ -136,10 +136,10 @@ const parseDatePreserveFloating = (
 };
 
 export async function generateMetadata(props: {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const timing = createServerTimingTracker(EVENT_PAGE_TIMING_ENV);
-  const awaitedParams = await (props as any).params;
+  const awaitedParams = await props.params;
   const row = await timing.time("metadata_event_lookup", () =>
     getCachedEventHistoryBySlugOrId(awaitedParams.id, null)
   );
@@ -520,14 +520,12 @@ export default async function EventPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }> | { id: string };
-  searchParams?:
-    | Promise<Record<string, string | string[] | undefined>>
-    | Record<string, string | string[] | undefined>;
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const baseTiming = createServerTimingTracker(EVENT_PAGE_TIMING_ENV);
   const awaitedParams = await params;
-  const awaitedSearchParams = await (searchParams as any);
+  const awaitedSearchParams = await searchParams;
   const timingRequestedRaw = String(
     ((awaitedSearchParams as any)?.timing ?? "") as string
   )
@@ -564,9 +562,10 @@ export default async function EventPage({
   );
   if (!row) return notFound();
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
+  const ownerUserId = typeof row.user_id === "string" ? row.user_id : null;
   const ownerUser =
-    !isOwner && row.user_id
-      ? await timing.time("owner_lookup", () => getUserById(row.user_id))
+    !isOwner && ownerUserId
+      ? await timing.time("owner_lookup", () => getUserById(ownerUserId))
       : null;
   const ownerDisplayName = (() => {
     if (!ownerUser) return "Unknown";

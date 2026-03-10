@@ -6,11 +6,12 @@ import { notFound } from "next/navigation";
 export default async function WeddingCustomizePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const awaitedParams = await params;
   const prismaClient = getPrismaClient();
   const event = await prismaClient.event.findUnique({
-    where: { id: params.id },
+    where: { id: awaitedParams.id },
   });
 
   if (!event) {

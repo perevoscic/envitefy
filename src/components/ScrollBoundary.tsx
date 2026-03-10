@@ -15,7 +15,7 @@ const ScrollBoundary = ({
 }: ScrollBoundaryProps) => {
   const touchStartY = useRef<number | null>(null);
   const [interacting, setInteracting] = useState(false);
-  const originalBodyOverflow = useRef<string>();
+  const originalBodyOverflow = useRef<string | undefined>(undefined);
 
   const isAtBoundary = useCallback((target: HTMLDivElement, deltaY: number) => {
     const scrollTop = target.scrollTop;

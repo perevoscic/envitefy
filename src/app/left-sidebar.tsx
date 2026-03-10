@@ -198,10 +198,10 @@ const CATEGORY_FALLBACK_COLORS = [
 ];
 
 const CREATE_SECTION_COLORS = [
-  "bg-blue-100 text-blue-600",
-  "bg-pink-100 text-pink-600",
-  "bg-orange-100 text-orange-600",
-  "bg-purple-100 text-purple-600",
+  "border border-indigo-100 bg-indigo-50 text-indigo-600",
+  "border border-sky-100 bg-sky-50 text-sky-600",
+  "border border-emerald-100 bg-emerald-50 text-emerald-600",
+  "border border-amber-100 bg-amber-50 text-amber-600",
 ];
 
 const ICON_LOOKUP: Record<string, any> = {
@@ -231,19 +231,35 @@ const ICON_LOOKUP: Record<string, any> = {
 
 // TEMPLATE_LINKS now imported from TopNav.tsx (shared menu)
 
-const SIDEBAR_GRADIENT =
-  "linear-gradient(180deg, rgba(252,248,255,0.98) 0%, rgba(242,244,255,0.95) 50%, rgba(236,248,255,0.92) 100%)";
 const SIDEBAR_CARD_CLASS =
-  "rounded-3xl border border-white/60 bg-white/80 shadow-[0_25px_60px_rgba(101,67,145,0.18)] backdrop-blur-2xl";
+  "rounded-none bg-transparent shadow-none";
 const SIDEBAR_ITEM_CARD_CLASS =
-  "rounded-2xl border border-white/60 bg-white/80 shadow-[0_18px_40px_rgba(81,54,123,0.15)] backdrop-blur-xl transition hover:shadow-[0_22px_55px_rgba(81,54,123,0.25)] hover:-translate-y-0.5";
+  "rounded-xl border border-transparent bg-transparent shadow-none transition-[background-color,color,transform] duration-150 hover:bg-[#e8e8e8]";
 const SIDEBAR_BADGE_CLASS =
-  "inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner";
+  "inline-flex min-w-6 items-center justify-center rounded-full bg-[#dcdcdc] px-2 py-0.5 text-[11px] font-semibold text-slate-600";
 const SIDEBAR_WIDTH_REM = "20rem";
 const SIDEBAR_COLLAPSED_REM = "4.5rem";
-const SIDEBAR_LOGO_SRC = "/E.png";
+const SIDEBAR_WORDMARK_SRC = "/navElogo.png";
 const SUBPAGE_STICKY_HEADER_CLASS =
-  "sticky top-0 z-20 -mx-4 bg-[rgba(246,243,255,0.86)] px-4 pb-2 pt-1 backdrop-blur-xl";
+  "sticky top-0 z-20 -mx-4 bg-[#efefef] px-4 pb-3 pt-2";
+const SIDEBAR_SECTION_LABEL_CLASS =
+  "px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500";
+const SIDEBAR_DIVIDER_CLASS = "h-px w-full bg-transparent";
+const SIDEBAR_MENU_ROW_CLASS =
+  "flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-slate-700";
+const SIDEBAR_BACK_ROW_CLASS =
+  "flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-700";
+const SIDEBAR_ICON_CHIP_CLASS =
+  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-transparent bg-transparent text-slate-500";
+const SIDEBAR_ICON_CHIP_ACCENT_CLASS =
+  "border-transparent bg-transparent text-slate-500";
+const SIDEBAR_PANEL_CLASS =
+  "absolute inset-0 overflow-y-auto no-scrollbar px-4 pb-5";
+const SIDEBAR_EVENT_PANEL_CLASS = "absolute inset-0 overflow-hidden bg-[#efefef]";
+const SIDEBAR_TOGGLE_CLASS =
+  "inline-flex items-center justify-center rounded-full border border-transparent bg-[#e6e6e6] p-2 text-slate-500 shadow-none transition hover:bg-[#dddddd] hover:text-slate-700";
+const SIDEBAR_FOOTER_TRIGGER_CLASS =
+  "w-full inline-flex items-center justify-between gap-3 rounded-xl border border-transparent px-3 py-2 text-slate-700 transition-colors duration-150 hover:bg-[#e8e8e8] focus:outline-none focus:ring-2 focus:ring-slate-300";
 const MY_EVENTS_PAST_EXPANDED_STORAGE_KEY = "sidebar:my-events:past-expanded";
 const INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY =
   "sidebar:invited-events:past-expanded";
@@ -663,6 +679,13 @@ export default function LeftSidebar() {
     (session?.user?.email as string) ||
     "User";
   const userEmail = session?.user?.email as string | undefined;
+  const profileInitials = useMemo(() => {
+    const source = String(displayName || userEmail || "U").trim();
+    if (!source) return "U";
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+  }, [displayName, userEmail]);
   // Deprecated scanCredits removed; use unified credits state
   const [credits, setCredits] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(
@@ -887,9 +910,9 @@ export default function LeftSidebar() {
   };
 
   const createMenuItems = useMemo(() => {
-    return getCreateEventSections(visibleTemplateKeys)
-      .filter((section) => section.title.toLowerCase() !== "quick access")
-      .flatMap((section) => section.items);
+    return getCreateEventSections(visibleTemplateKeys).flatMap(
+      (section) => section.items
+    );
   }, [visibleTemplateKeys]);
   const createMenuOptionCount = useMemo(
     () => createMenuItems.length,
@@ -1219,164 +1242,164 @@ export default function LeftSidebar() {
     switch (color) {
       case "lime":
         return {
-          swatch: "bg-lime-500 border-lime-400",
-          badge: "bg-lime-500/30 text-lime-300 border-lime-400/40",
-          tint: "bg-lime-500/20",
-          hoverTint: "hover:bg-lime-500/30",
+          swatch: "bg-lime-500 border-lime-200",
+          badge: "border-lime-200 bg-lime-50 text-lime-700",
+          tint: "border-lime-100 bg-lime-50/80",
+          hoverTint: "hover:border-lime-200 hover:bg-lime-100/80",
         };
       case "zinc":
         return {
-          swatch: "bg-zinc-500 border-zinc-400",
-          badge: "bg-zinc-500/30 text-zinc-300 border-zinc-400/40",
-          tint: "bg-zinc-500/20",
-          hoverTint: "hover:bg-zinc-500/30",
+          swatch: "bg-zinc-500 border-zinc-200",
+          badge: "border-zinc-200 bg-zinc-50 text-zinc-700",
+          tint: "border-zinc-100 bg-zinc-50/80",
+          hoverTint: "hover:border-zinc-200 hover:bg-zinc-100/80",
         };
       case "neutral":
         return {
-          swatch: "bg-neutral-500 border-neutral-400",
-          badge: "bg-neutral-500/30 text-neutral-300 border-neutral-400/40",
-          tint: "bg-neutral-500/20",
-          hoverTint: "hover:bg-neutral-500/30",
+          swatch: "bg-neutral-500 border-neutral-200",
+          badge: "border-neutral-200 bg-neutral-50 text-neutral-700",
+          tint: "border-neutral-100 bg-neutral-50/80",
+          hoverTint: "hover:border-neutral-200 hover:bg-neutral-100/80",
         };
       case "stone":
         return {
-          swatch: "bg-stone-500 border-stone-400",
-          badge: "bg-stone-500/30 text-stone-300 border-stone-400/40",
-          tint: "bg-stone-500/20",
-          hoverTint: "hover:bg-stone-500/30",
+          swatch: "bg-stone-500 border-stone-200",
+          badge: "border-stone-200 bg-stone-50 text-stone-700",
+          tint: "border-stone-100 bg-stone-50/80",
+          hoverTint: "hover:border-stone-200 hover:bg-stone-100/80",
         };
       case "gray":
         return {
-          swatch: "bg-gray-500 border-gray-400",
-          badge: "bg-gray-500/30 text-gray-300 border-gray-400/40",
-          tint: "bg-gray-500/20",
-          hoverTint: "hover:bg-gray-500/30",
+          swatch: "bg-gray-500 border-gray-200",
+          badge: "border-gray-200 bg-gray-50 text-gray-700",
+          tint: "border-gray-100 bg-gray-50/80",
+          hoverTint: "hover:border-gray-200 hover:bg-gray-100/80",
         };
       case "red":
         return {
-          swatch: "bg-red-500 border-red-400",
-          badge: "bg-red-500/30 text-red-300 border-red-400/40",
-          tint: "bg-red-500/20",
-          hoverTint: "hover:bg-red-500/30",
+          swatch: "bg-red-500 border-red-200",
+          badge: "border-red-200 bg-red-50 text-red-700",
+          tint: "border-red-100 bg-red-50/80",
+          hoverTint: "hover:border-red-200 hover:bg-red-100/80",
         };
       case "pink":
         return {
-          swatch: "bg-pink-500 border-pink-400",
-          badge: "bg-pink-500/30 text-pink-300 border-pink-400/40",
-          tint: "bg-pink-500/20",
-          hoverTint: "hover:bg-pink-500/30",
+          swatch: "bg-pink-500 border-pink-200",
+          badge: "border-pink-200 bg-pink-50 text-pink-700",
+          tint: "border-pink-100 bg-pink-50/80",
+          hoverTint: "hover:border-pink-200 hover:bg-pink-100/80",
         };
       case "rose":
         return {
-          swatch: "bg-rose-500 border-rose-400",
-          badge: "bg-rose-500/30 text-rose-300 border-rose-400/40",
-          tint: "bg-rose-500/20",
-          hoverTint: "hover:bg-rose-500/30",
+          swatch: "bg-rose-500 border-rose-200",
+          badge: "border-rose-200 bg-rose-50 text-rose-700",
+          tint: "border-rose-100 bg-rose-50/80",
+          hoverTint: "hover:border-rose-200 hover:bg-rose-100/80",
         };
       case "fuchsia":
         return {
-          swatch: "bg-fuchsia-500 border-fuchsia-400",
-          badge: "bg-fuchsia-500/30 text-fuchsia-300 border-fuchsia-400/40",
-          tint: "bg-fuchsia-500/20",
-          hoverTint: "hover:bg-fuchsia-500/30",
+          swatch: "bg-fuchsia-500 border-fuchsia-200",
+          badge: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
+          tint: "border-fuchsia-100 bg-fuchsia-50/80",
+          hoverTint: "hover:border-fuchsia-200 hover:bg-fuchsia-100/80",
         };
       case "violet":
         return {
-          swatch: "bg-violet-500 border-violet-400",
-          badge: "bg-violet-500/30 text-violet-300 border-violet-400/40",
-          tint: "bg-violet-500/20",
-          hoverTint: "hover:bg-violet-500/30",
+          swatch: "bg-violet-500 border-violet-200",
+          badge: "border-violet-200 bg-violet-50 text-violet-700",
+          tint: "border-violet-100 bg-violet-50/80",
+          hoverTint: "hover:border-violet-200 hover:bg-violet-100/80",
         };
       case "purple":
         return {
-          swatch: "bg-purple-500 border-purple-400",
-          badge: "bg-purple-500/30 text-purple-300 border-purple-400/40",
-          tint: "bg-purple-500/20",
-          hoverTint: "hover:bg-purple-500/30",
+          swatch: "bg-purple-500 border-purple-200",
+          badge: "border-purple-200 bg-purple-50 text-purple-700",
+          tint: "border-purple-100 bg-purple-50/80",
+          hoverTint: "hover:border-purple-200 hover:bg-purple-100/80",
         };
       case "indigo":
         return {
-          swatch: "bg-indigo-500 border-indigo-400",
-          badge: "bg-indigo-500/30 text-indigo-300 border-indigo-400/40",
-          tint: "bg-indigo-500/20",
-          hoverTint: "hover:bg-indigo-500/30",
+          swatch: "bg-indigo-500 border-indigo-200",
+          badge: "border-indigo-200 bg-indigo-50 text-indigo-700",
+          tint: "border-indigo-100 bg-indigo-50/80",
+          hoverTint: "hover:border-indigo-200 hover:bg-indigo-100/80",
         };
       case "blue":
         return {
-          swatch: "bg-blue-500 border-blue-400",
-          badge: "bg-blue-500/30 text-blue-300 border-blue-400/40",
-          tint: "bg-blue-500/20",
-          hoverTint: "hover:bg-blue-500/30",
+          swatch: "bg-blue-500 border-blue-200",
+          badge: "border-blue-200 bg-blue-50 text-blue-700",
+          tint: "border-blue-100 bg-blue-50/80",
+          hoverTint: "hover:border-blue-200 hover:bg-blue-100/80",
         };
       case "sky":
         return {
-          swatch: "bg-sky-500 border-sky-400",
-          badge: "bg-sky-500/30 text-sky-300 border-sky-400/40",
-          tint: "bg-sky-500/20",
-          hoverTint: "hover:bg-sky-500/30",
+          swatch: "bg-sky-500 border-sky-200",
+          badge: "border-sky-200 bg-sky-50 text-sky-700",
+          tint: "border-sky-100 bg-sky-50/80",
+          hoverTint: "hover:border-sky-200 hover:bg-sky-100/80",
         };
       case "cyan":
         return {
-          swatch: "bg-cyan-500 border-cyan-400",
-          badge: "bg-cyan-500/30 text-cyan-300 border-cyan-400/40",
-          tint: "bg-cyan-500/20",
-          hoverTint: "hover:bg-cyan-500/30",
+          swatch: "bg-cyan-500 border-cyan-200",
+          badge: "border-cyan-200 bg-cyan-50 text-cyan-700",
+          tint: "border-cyan-100 bg-cyan-50/80",
+          hoverTint: "hover:border-cyan-200 hover:bg-cyan-100/80",
         };
       case "teal":
         return {
-          swatch: "bg-teal-500 border-teal-400",
-          badge: "bg-teal-500/30 text-teal-300 border-teal-400/40",
-          tint: "bg-teal-500/20",
-          hoverTint: "hover:bg-teal-500/30",
+          swatch: "bg-teal-500 border-teal-200",
+          badge: "border-teal-200 bg-teal-50 text-teal-700",
+          tint: "border-teal-100 bg-teal-50/80",
+          hoverTint: "hover:border-teal-200 hover:bg-teal-100/80",
         };
       case "emerald":
         return {
-          swatch: "bg-emerald-500 border-emerald-400",
-          badge: "bg-emerald-500/30 text-emerald-300 border-emerald-400/40",
-          tint: "bg-emerald-500/20",
-          hoverTint: "hover:bg-emerald-500/30",
+          swatch: "bg-emerald-500 border-emerald-200",
+          badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
+          tint: "border-emerald-100 bg-emerald-50/80",
+          hoverTint: "hover:border-emerald-200 hover:bg-emerald-100/80",
         };
       case "green":
         return {
-          swatch: "bg-green-500 border-green-400",
-          badge: "bg-green-500/30 text-green-300 border-green-400/40",
-          tint: "bg-green-500/20",
-          hoverTint: "hover:bg-green-500/30",
+          swatch: "bg-green-500 border-green-200",
+          badge: "border-green-200 bg-green-50 text-green-700",
+          tint: "border-green-100 bg-green-50/80",
+          hoverTint: "hover:border-green-200 hover:bg-green-100/80",
         };
       case "yellow":
         return {
-          swatch: "bg-yellow-500 border-yellow-400",
-          badge: "bg-yellow-500/30 text-yellow-300 border-yellow-400/40",
-          tint: "bg-yellow-500/20",
-          hoverTint: "hover:bg-yellow-500/30",
+          swatch: "bg-yellow-500 border-yellow-200",
+          badge: "border-yellow-200 bg-yellow-50 text-yellow-700",
+          tint: "border-yellow-100 bg-yellow-50/80",
+          hoverTint: "hover:border-yellow-200 hover:bg-yellow-100/80",
         };
       case "amber":
         return {
-          swatch: "bg-amber-500 border-amber-400",
-          badge: "bg-amber-500/30 text-amber-300 border-amber-400/40",
-          tint: "bg-amber-500/20",
-          hoverTint: "hover:bg-amber-500/30",
+          swatch: "bg-amber-500 border-amber-200",
+          badge: "border-amber-200 bg-amber-50 text-amber-700",
+          tint: "border-amber-100 bg-amber-50/80",
+          hoverTint: "hover:border-amber-200 hover:bg-amber-100/80",
         };
       case "orange":
         return {
-          swatch: "bg-orange-500 border-orange-400",
-          badge: "bg-orange-500/30 text-orange-300 border-orange-400/40",
-          tint: "bg-orange-500/20",
-          hoverTint: "hover:bg-orange-500/30",
+          swatch: "bg-orange-500 border-orange-200",
+          badge: "border-orange-200 bg-orange-50 text-orange-700",
+          tint: "border-orange-100 bg-orange-50/80",
+          hoverTint: "hover:border-orange-200 hover:bg-orange-100/80",
         };
       case "slate":
         return {
-          swatch: "bg-slate-500 border-slate-400",
-          badge: "bg-slate-500/30 text-slate-300 border-slate-400/40",
-          tint: "bg-slate-500/20",
-          hoverTint: "hover:bg-slate-500/30",
+          swatch: "bg-slate-500 border-slate-200",
+          badge: "border-slate-200 bg-slate-50 text-slate-700",
+          tint: "border-slate-100 bg-slate-50/80",
+          hoverTint: "hover:border-slate-200 hover:bg-slate-100/80",
         };
       default:
         return {
-          swatch: "bg-foreground/40 border-border/60",
-          badge: "bg-surface/75 text-foreground/80 border-border/70",
-          tint: "bg-surface/70",
-          hoverTint: "hover:bg-surface/80",
+          swatch: "bg-slate-400 border-slate-200",
+          badge: "border-slate-200 bg-slate-50 text-slate-700",
+          tint: "border-slate-100 bg-slate-50/80",
+          hoverTint: "hover:border-slate-200 hover:bg-slate-100/80",
         };
     }
   };
@@ -1388,25 +1411,25 @@ export default function LeftSidebar() {
       case "fuchsia":
       case "indigo":
       case "pink":
-        return "!bg-purple-100/80 !border-purple-300/80";
+        return "!bg-purple-100 !border-purple-200";
       case "blue":
       case "sky":
       case "cyan":
-        return "!bg-blue-100/80 !border-blue-300/80";
+        return "!bg-blue-100 !border-blue-200";
       case "teal":
       case "emerald":
       case "green":
       case "lime":
-        return "!bg-emerald-100/80 !border-emerald-300/80";
+        return "!bg-emerald-100 !border-emerald-200";
       case "yellow":
       case "amber":
       case "orange":
-        return "!bg-amber-100/80 !border-amber-300/80";
+        return "!bg-amber-100 !border-amber-200";
       case "red":
       case "rose":
-        return "!bg-rose-100/80 !border-rose-300/80";
+        return "!bg-rose-100 !border-rose-200";
       default:
-        return "!bg-slate-100/80 !border-slate-300/80";
+        return "!bg-slate-100 !border-slate-200";
     }
   };
 
@@ -1497,7 +1520,7 @@ export default function LeftSidebar() {
         : parsedDateMs;
       const dateLabel = formatDate(dateRaw);
       const href = buildEventPath(row.id, row.title);
-      const openMode = isSportsPreviewFirstEvent(data)
+      const openMode: GroupedEventItem["openMode"] = isSportsPreviewFirstEvent(data)
         ? "preview"
         : "dashboard";
 
@@ -2141,7 +2164,8 @@ export default function LeftSidebar() {
   if (!isHydrated) return null;
 
   const panelTransitionStyle: CSSProperties = {
-    transition: "transform 240ms ease-in-out, opacity 180ms ease-in-out",
+    transition:
+      "transform 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms ease-in-out",
   };
   const rootPanelTransform =
     sidebarPage === "root" ? "translateX(0%)" : "translateX(-100%)";
@@ -2180,7 +2204,7 @@ export default function LeftSidebar() {
               <button
                 ref={openButtonRef}
                 type="button"
-                className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-md touch-manipulation cursor-pointer"
+                className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   openSidebarFromTrigger(false);
@@ -2217,7 +2241,7 @@ export default function LeftSidebar() {
                     new CustomEvent("envitefy:open-discovery-editor")
                   );
                 }}
-                className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-md touch-manipulation cursor-pointer"
+                className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
                 aria-label="Customize your meet"
               >
                 <CustomizeIcon size={16} />
@@ -2226,16 +2250,16 @@ export default function LeftSidebar() {
           )}
 
           <header
-            className={`fixed inset-x-0 top-0 z-[6500] flex items-center justify-between border-b px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
+            className={`fixed inset-x-0 top-0 z-[6500] flex items-center justify-between px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
               showMobileTopBar
-                ? "translate-y-0 opacity-100 pointer-events-auto border-white/60 bg-[#F8F5FF]/95 backdrop-blur-md shadow-sm"
+                ? "translate-y-0 opacity-100 pointer-events-auto bg-[#efefef]/95 backdrop-blur-md"
                 : "-translate-y-full opacity-0 pointer-events-none border-transparent bg-transparent"
             }`}
           >
             <button
               ref={openBarButtonRef}
               type="button"
-              className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-sm touch-manipulation cursor-pointer"
+              className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 openSidebarFromTrigger(false);
@@ -2278,7 +2302,7 @@ export default function LeftSidebar() {
                     new CustomEvent("envitefy:open-discovery-editor")
                   );
                 }}
-                className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-sm touch-manipulation cursor-pointer"
+                className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
                 aria-label="Customize your meet"
               >
                 <CustomizeIcon size={14} />
@@ -2305,47 +2329,33 @@ export default function LeftSidebar() {
       />
       <aside
         ref={asideRef}
-        className={`fixed left-0 top-0 h-full z-[6000] border border-white/60 dark:border-white/10 backdrop-blur-2xl flex flex-col rounded-tr-[2.75rem] rounded-br-[2.75rem] shadow-[0_35px_90px_rgba(72,44,116,0.28)] ${overflowClass} transition-[transform,opacity,width] duration-200 ease-out will-change-transform ${pointerClass} lg:flex`}
+        className={`fixed left-0 top-0 z-[6000] flex h-full flex-col bg-[#efefef] ${overflowClass} transition-[transform,opacity,width] duration-200 ease-out will-change-transform ${pointerClass} lg:flex`}
         style={{
           width: sidebarWidth,
           transform: sidebarTransform,
           opacity: isDesktop ? 1 : isOpen ? 1 : 0,
-          backgroundImage: SIDEBAR_GRADIENT,
-          backgroundColor: "rgba(255, 255, 255, 0.78)",
-          boxShadow: "0 30px 90px rgba(84, 56, 125, 0.35)",
+          backgroundColor: "#efefef",
+          boxShadow: "none",
         }}
         aria-label="Sidebar"
       >
         {isCompact && (
-          <div className="flex h-full flex-col items-center gap-4 py-6 px-2">
+          <div className="flex h-full flex-col items-center gap-4 bg-[#efefef] px-2 py-5">
             <button
               type="button"
               aria-label="Expand navigation"
               onClick={() => setIsCollapsed(false)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#7f8cff] shadow-md border border-white/70 hover:bg-white transition"
+              className={SIDEBAR_TOGGLE_CLASS}
             >
               <ChevronRight size={18} />
             </button>
-            <Link
-              href="/"
-              onClick={collapseSidebarOnTouch}
-              className="flex items-center justify-center cursor-pointer hover:opacity-100 transition-opacity"
-            >
-              <Image
-                src={SIDEBAR_LOGO_SRC}
-                alt="Envitefy"
-                width={36}
-                height={36}
-                className="opacity-90 drop-shadow"
-              />
-            </Link>
             <button
               type="button"
               onClick={() => {
                 setIsCollapsed(false);
                 setSidebarPage("createEvent");
               }}
-              className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[0_12px_30px_rgba(109,87,184,0.25)] hover:scale-105 transition"
+              className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-transparent bg-transparent text-slate-600 transition hover:bg-[#e8e8e8]"
               title="Create event"
             >
               <Plus size={18} />
@@ -2374,12 +2384,12 @@ export default function LeftSidebar() {
                         } catch {}
                       }
                     }}
-                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/85 text-[#4a4170] shadow-[0_12px_30px_rgba(109,87,184,0.15)] hover:bg-white hover:-translate-y-0.5 transition"
+                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent bg-transparent text-slate-600 transition hover:bg-[#e8e8e8] hover:text-slate-900"
                     title={item.label}
                   >
                     <Icon size={18} />
                     {badgeCount > 0 && (
-                      <span className="absolute -top-1 -right-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#8468ff] px-1 text-[10px] font-semibold text-white shadow-md">
+                      <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white shadow-sm">
                         {badgeCount}
                       </span>
                     )}
@@ -2390,7 +2400,7 @@ export default function LeftSidebar() {
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-red-500 shadow-md hover:bg-white transition"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-red-500 transition hover:bg-[#e8e8e8]"
               title="Log out"
             >
               <LogOut size={18} />
@@ -2407,18 +2417,17 @@ export default function LeftSidebar() {
           aria-hidden={isCompact}
         >
           <div className="relative h-full w-full overflow-hidden">
-            <div className="absolute inset-0 z-[1] flex h-full flex-col">
+            <div className="absolute inset-0 z-[1] flex h-full flex-col bg-[#efefef]">
               {/* Header with close button */}
-              <div className="relative flex-shrink-0 px-4 pt-5 pb-5">
-                {/* Hero-esque intro */}
-                <div className={`${SIDEBAR_CARD_CLASS} px-4 py-5`}>
+              <div className="relative flex-shrink-0 px-4 pb-2 pt-4">
+                <div className={`${SIDEBAR_CARD_CLASS} px-1 py-1`}>
                   <button
                     type="button"
                     aria-label={
                       isCollapsed ? "Expand navigation" : "Collapse navigation"
                     }
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="absolute top-1.5 right-2 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-[#7f8cff] shadow-md hover:bg-white transition"
+                    className={`absolute right-3 top-3 ${SIDEBAR_TOGGLE_CLASS}`}
                   >
                     {isCollapsed ? (
                       <ChevronRight size={16} />
@@ -2426,196 +2435,157 @@ export default function LeftSidebar() {
                       <ChevronLeft size={16} />
                     )}
                   </button>
-                  <div className="flex flex-col items-center gap-3 text-center">
-                    <Link
-                      href="/"
-                      onClick={goHomeFromSidebar}
-                      className="flex h-12 w-12 items-center justify-center"
-                    >
-                      <Image
-                        src={SIDEBAR_LOGO_SRC}
-                        alt="Envitefy"
-                        width={64}
-                        height={64}
-                        className="opacity-95 drop-shadow-[0_10px_35px_rgba(103,74,150,0.35)]"
-                      />
-                    </Link>
-                    <div className="text-xs md:text-sm font-semibold tracking-widest text-[#7f8cff]">
-                      CREATE | SHARE | ENJOY
-                    </div>
-                  </div>
+                  <Link
+                    href="/"
+                    onClick={goHomeFromSidebar}
+                    className="inline-flex max-w-[120px] pr-10"
+                  >
+                    <Image
+                      src={SIDEBAR_WORDMARK_SRC}
+                      alt="Envitefy"
+                      width={106}
+                      height={28}
+                      className="h-auto w-[106px]"
+                    />
+                  </Link>
                 </div>
               </div>
               {/* Middle: Navigation area */}
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="flex-shrink-0 px-4 pb-3">
-                  <div className="grid grid-cols-4 gap-3">
-                    <Link
-                      href="/"
-                      onClick={goHomeFromSidebar}
-                      className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                    >
-                      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#9e88ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                        <Home size={16} />
-                      </span>
-                      <span>Home</span>
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        launchSnapFromMenu("camera");
-                      }}
-                      className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                    >
-                      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#89c4ff] to-[#7a5ec0] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                        <Camera size={16} />
-                      </span>
-                      <span>Snap</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        launchSnapFromMenu("upload");
-                      }}
-                      className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                    >
-                      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#7cd3ff] to-[#6f8dff] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                        <Upload size={16} />
-                      </span>
-                      <span>Upload</span>
-                    </button>
-
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          collapseSidebarOnTouch();
-                          setSidebarPage("root");
-                          router.push("/smart-signup-form");
-                        }}
-                        className="flex w-full flex-col items-center justify-center gap-1 px-3 py-2 text-[10px] leading-tight font-semibold text-[#2f1d47] rounded-2xl bg-gradient-to-br from-[#eef1ff] via-white to-[#e6f0ff] border border-white/70 shadow-[0_12px_30px_rgba(109,87,184,0.12)] hover:-translate-y-0.5 transition"
-                        title="Sign up"
-                      >
-                        <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#7bdc97] to-[#44bb63] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-                          <FileEdit size={16} />
-                        </span>
-                        <span>Sign up</span>
-                      </button>
-                      {smartSignupCount > 0 && (
-                        <span className="absolute -top-1 -right-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#8468ff] px-1 text-[10px] font-semibold text-white shadow-md">
-                          {smartSignupCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
                 <div className="px-4">
-                  <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d9ccff] to-transparent" />
+                  <div className={SIDEBAR_DIVIDER_CLASS} />
                 </div>
 
-                <div className="relative mt-3 min-h-0 flex-1 overflow-hidden">
+                <div className="relative mt-2 min-h-0 flex-1 overflow-hidden">
                   <div
-                    className="absolute inset-0 z-[5] overflow-y-auto no-scrollbar px-4 pb-5"
+                    className={`${SIDEBAR_PANEL_CLASS} z-[5]`}
                     style={panelStyle(rootPanelTransform, sidebarPage === "root")}
                     aria-hidden={sidebarPage !== "root"}
                   >
-                    <div className="space-y-3">
-                      <button
-                        type="button"
-                        onClick={() => setSidebarPage("createEvent")}
-                        className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                      >
-                        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                          <Plus size={18} />
-                        </span>
-                        <span className="truncate">Create Event</span>
-                        <span className="ml-auto flex items-center gap-2">
-                          <span className={SIDEBAR_BADGE_CLASS}>
-                            {createMenuOptionCount}
+                    <div className="space-y-1.5">
+                      <p className={SIDEBAR_SECTION_LABEL_CLASS}>Main Menu</p>
+                      <div className="-ml-2 mr-2 space-y-0.5">
+                        <Link
+                          href="/"
+                          onClick={goHomeFromSidebar}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
+                        >
+                          <span
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                          >
+                            <Home size={18} />
                           </span>
-                          <ChevronRight size={16} className="text-[#7a5fc0]" />
-                        </span>
-                      </button>
-
-                      <Link
-                        href="/calendar"
-                        onClick={collapseSidebarOnTouch}
-                        className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                      >
-                        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                          <CalendarDays size={18} />
-                        </span>
-                        <span className="truncate">Calendar</span>
-                        <span className="ml-auto inline-flex items-center rounded-full border border-white/70 bg-white/90 px-2 py-0.5 text-[11px] md:text-xs md:text-sm font-semibold text-[#6a4a83] shadow-inner">
-                          {calendarEventsCount}
-                        </span>
-                      </Link>
-
-                      <button
-                        type="button"
-                        onClick={() => setSidebarPage("myEvents")}
-                        className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                      >
-                        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                          <Trophy size={18} />
-                        </span>
-                        <span className="truncate">My Events</span>
-                        <span className="ml-auto flex items-center gap-2">
-                          <span className={SIDEBAR_BADGE_CLASS}>
-                            {createdEventsCount}
+                          <span className="truncate">Home</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setSidebarPage("createEvent")}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
+                        >
+                          <span
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                          >
+                            <Plus size={18} />
                           </span>
-                          <ChevronRight size={16} className="text-[#7a5fc0]" />
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setSidebarPage("invitedEvents")}
-                        className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
-                      >
-                        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                          <Users size={18} />
-                        </span>
-                        <span className="truncate">Invited Events</span>
-                        <span className="ml-auto flex items-center gap-2">
-                          <span className={SIDEBAR_BADGE_CLASS}>
-                            {invitedEventsCount}
+                          <span className="truncate">Create Event</span>
+                          <span className="ml-auto flex items-center gap-2">
+                            <span className={SIDEBAR_BADGE_CLASS}>
+                              {createMenuOptionCount}
+                            </span>
+                            <ChevronRight size={16} className="text-slate-400" />
                           </span>
-                          <ChevronRight size={16} className="text-[#7a5fc0]" />
-                        </span>
-                      </button>
+                        </button>
+
+                        <Link
+                          href="/calendar"
+                          onClick={collapseSidebarOnTouch}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
+                        >
+                          <span
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                          >
+                            <CalendarDays size={18} />
+                          </span>
+                          <span className="truncate">Calendar</span>
+                          <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>
+                            {calendarEventsCount}
+                          </span>
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => setSidebarPage("myEvents")}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
+                        >
+                          <span
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                          >
+                            <Trophy size={18} />
+                          </span>
+                          <span className="truncate">My Events</span>
+                          <span className="ml-auto flex items-center gap-2">
+                            <span className={SIDEBAR_BADGE_CLASS}>
+                              {createdEventsCount}
+                            </span>
+                            <ChevronRight size={16} className="text-slate-400" />
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSidebarPage("invitedEvents")}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
+                        >
+                          <span
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                          >
+                            <Users size={18} />
+                          </span>
+                          <span className="truncate">Invited Events</span>
+                          <span className="ml-auto flex items-center gap-2">
+                            <span className={SIDEBAR_BADGE_CLASS}>
+                              {invitedEventsCount}
+                            </span>
+                            <ChevronRight size={16} className="text-slate-400" />
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
                   <div
-                    className="absolute inset-0 z-[10] overflow-y-auto no-scrollbar px-4 pb-5"
+                    className={`${SIDEBAR_PANEL_CLASS} z-[10]`}
                     style={panelStyle(
                       createEventPanelTransform,
                       sidebarPage === "createEvent"
                     )}
                     aria-hidden={sidebarPage !== "createEvent"}
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-1.5">
                       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
                         <button
                           type="button"
                           onClick={() => setSidebarPage("root")}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_BACK_ROW_CLASS}`}
                         >
-                          <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                          <span
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                          >
                             <ChevronLeft size={16} />
                           </span>
-                          <span className="truncate">Create Event</span>
+                          <span className="min-w-0">
+                            <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                              Back to Menu
+                            </span>
+                            <span className="block truncate text-sm font-semibold text-slate-900">
+                              Create Event
+                            </span>
+                          </span>
                         </button>
                       </div>
 
-                      <div className="space-y-2">
+                      <p className={SIDEBAR_SECTION_LABEL_CLASS}>Create Event</p>
+                      <div className="space-y-1">
                         {createMenuItems.map((item, idx) => {
                           const Icon = ICON_LOOKUP[item.label] || Sparkles;
                           const colorClass =
@@ -2626,23 +2596,20 @@ export default function LeftSidebar() {
                             <button
                               key={item.label}
                               type="button"
-                              className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                              className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS}`}
                               onClick={() =>
-                                handleCreateModalSelect(
-                                  item.label,
-                                  (item as any).href
-                                )
+                                handleCreateModalSelect(item.label, item.href)
                               }
                             >
                               <span
-                                className={`flex h-9 w-9 items-center justify-center rounded-2xl ${colorClass}`}
+                                className={`flex h-10 w-10 items-center justify-center rounded-xl ${colorClass}`}
                               >
                                 <Icon size={16} />
                               </span>
                               <span className="truncate">{item.label}</span>
                               <ChevronRight
                                 size={16}
-                                className="ml-auto text-[#7a5fc0]"
+                                className="ml-auto text-slate-400"
                               />
                             </button>
                           );
@@ -2652,32 +2619,41 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className="absolute inset-0 z-[15] overflow-y-auto no-scrollbar px-4 pb-5"
+                    className={`${SIDEBAR_PANEL_CLASS} z-[15]`}
                     style={panelStyle(
                       myEventsPanelTransform,
                       sidebarPage === "myEvents"
                     )}
                     aria-hidden={sidebarPage !== "myEvents"}
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-1.5">
                       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
                         <button
                           type="button"
                           onClick={() => setSidebarPage("root")}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_BACK_ROW_CLASS}`}
                         >
-                          <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#7d5ec2] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                          <span
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                          >
                             <ChevronLeft size={16} />
                           </span>
-                          <span className="truncate">My Events</span>
+                          <span className="min-w-0">
+                            <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                              Back to Menu
+                            </span>
+                            <span className="block truncate text-sm font-semibold text-slate-900">
+                              My Events
+                            </span>
+                          </span>
                         </button>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-1.5">
                         {myEventsGrouped.upcoming.length === 0 &&
                         myEventsGrouped.past.length === 0 ? (
                           <div
-                            className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}
+                            className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-slate-500`}
                           >
                             No events yet.
                           </div>
@@ -2685,7 +2661,7 @@ export default function LeftSidebar() {
                           <div className="space-y-4">
                             {myEventsGrouped.upcoming.length === 0 ? (
                               <div
-                                className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}
+                                className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-slate-500`}
                               >
                                 No upcoming events.
                               </div>
@@ -2693,13 +2669,13 @@ export default function LeftSidebar() {
                               myEventsGrouped.upcoming.map((group) => (
                                 <section
                                   key={`upcoming-${group.category}`}
-                                  className="space-y-2"
+                                  className="space-y-1"
                                 >
                                   <div className="px-1 pt-1">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                                       {group.category}
                                     </p>
-                                    <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                    <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
                                   </div>
                                   {group.items.map((item) => (
                                     <button
@@ -2708,25 +2684,25 @@ export default function LeftSidebar() {
                                       onClick={() => openOwnerEventContext(item)}
                                       className={`${SIDEBAR_ITEM_CARD_CLASS} ${
                                         isHistoryRowActive(item.row.id)
-                                          ? `${item.activeCardClass} ${item.activeTintClass} ring-2 ring-[#d9ccff]`
+                                          ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                           : `${item.tintClass} ${item.hoverTintClass}`
-                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
+                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-slate-700`}
                                       style={item.style}
                                     >
                                       <span
-                                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-white/70 ${item.swatchClass}`}
+                                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border ${item.swatchClass}`}
                                       />
                                       <span className="min-w-0 flex-1">
                                         <span className="block truncate text-sm md:text-base font-semibold">
                                           {item.title}
                                         </span>
-                                        <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                        <span className="mt-0.5 block truncate text-xs text-slate-500">
                                           {item.dateLabel}
                                         </span>
                                       </span>
                                       <ChevronRight
                                         size={16}
-                                        className="mt-1 shrink-0 text-[#7a5fc0]"
+                                        className="mt-1 shrink-0 text-slate-400"
                                         aria-hidden="true"
                                       />
                                     </button>
@@ -2736,10 +2712,10 @@ export default function LeftSidebar() {
                             )}
 
                             {myEventsGrouped.past.length > 0 && (
-                              <section className="space-y-2">
+                              <section className="space-y-1">
                                 <div className="px-1 pt-2">
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                                       Past Events
                                     </p>
                                     <button
@@ -2747,7 +2723,7 @@ export default function LeftSidebar() {
                                       onClick={() =>
                                         setShowPastMyEvents((prev) => !prev)
                                       }
-                                      className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f62a0] hover:bg-white"
+                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 transition hover:bg-slate-200"
                                     >
                                       <span>
                                         {showPastMyEvents
@@ -2762,20 +2738,20 @@ export default function LeftSidebar() {
                                       />
                                     </button>
                                   </div>
-                                  <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                  <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
                                 </div>
 
                                 {showPastMyEvents &&
                                   myEventsGrouped.past.map((group) => (
                                     <section
                                       key={`past-${group.category}`}
-                                      className="space-y-2"
+                                      className="space-y-1"
                                     >
                                       <div className="px-1 pt-1">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                                           {group.category}
                                         </p>
-                                        <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                        <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
                                       </div>
                                       {group.items.map((item) => (
                                         <button
@@ -2786,25 +2762,25 @@ export default function LeftSidebar() {
                                           }
                                           className={`${SIDEBAR_ITEM_CARD_CLASS} ${
                                             isHistoryRowActive(item.row.id)
-                                              ? `${item.activeCardClass} ${item.activeTintClass} ring-2 ring-[#d9ccff]`
+                                              ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                               : `${item.tintClass} ${item.hoverTintClass}`
-                                          } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-75 saturate-75`}
+                                          } w-full flex items-start gap-3 px-4 py-3 text-left text-slate-700 opacity-75 saturate-75`}
                                           style={item.style}
                                         >
                                           <span
-                                            className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-white/70 ${item.swatchClass}`}
+                                            className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border ${item.swatchClass}`}
                                           />
                                           <span className="min-w-0 flex-1">
                                             <span className="block truncate text-sm md:text-base font-semibold">
                                               {item.title}
                                             </span>
-                                            <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                            <span className="mt-0.5 block truncate text-xs text-slate-500">
                                               {item.dateLabel}
                                             </span>
                                           </span>
                                           <ChevronRight
                                             size={16}
-                                            className="mt-1 shrink-0 text-[#7a5fc0]"
+                                            className="mt-1 shrink-0 text-slate-400"
                                             aria-hidden="true"
                                           />
                                         </button>
@@ -2820,32 +2796,41 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className="absolute inset-0 z-[20] overflow-y-auto no-scrollbar px-4 pb-5 bg-[#f6f3ff]"
+                    className={`${SIDEBAR_PANEL_CLASS} z-[20] bg-[#fcfcfd]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
                       sidebarPage === "invitedEvents"
                     )}
                     aria-hidden={sidebarPage !== "invitedEvents"}
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-1.5">
                       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
                         <button
                           type="button"
                           onClick={() => setSidebarPage("root")}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} w-full flex items-center gap-3 px-4 py-3 text-left text-sm md:text-base font-semibold text-[#2f1d47]`}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_BACK_ROW_CLASS}`}
                         >
-                          <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#f4f4ff] to-white text-[#6f84ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                          <span
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                          >
                             <ChevronLeft size={16} />
                           </span>
-                          <span className="truncate">Invited Events</span>
+                          <span className="min-w-0">
+                            <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                              Back to Menu
+                            </span>
+                            <span className="block truncate text-sm font-semibold text-slate-900">
+                              Invited Events
+                            </span>
+                          </span>
                         </button>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-1.5">
                         {invitedEventsGrouped.upcoming.length === 0 &&
                         invitedEventsGrouped.past.length === 0 ? (
                           <div
-                            className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}
+                            className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-slate-500`}
                           >
                             No invited events yet.
                           </div>
@@ -2853,7 +2838,7 @@ export default function LeftSidebar() {
                           <div className="space-y-4">
                             {invitedEventsGrouped.upcoming.length === 0 ? (
                               <div
-                                className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-[#6b5a92]`}
+                                className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-slate-500`}
                               >
                                 No upcoming events.
                               </div>
@@ -2861,13 +2846,13 @@ export default function LeftSidebar() {
                               invitedEventsGrouped.upcoming.map((group) => (
                                 <section
                                   key={`invited-upcoming-${group.category}`}
-                                  className="space-y-2"
+                                  className="space-y-1"
                                 >
                                   <div className="px-1 pt-1">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                                       {group.category}
                                     </p>
-                                    <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                    <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
                                   </div>
                                   {group.items.map((item) => (
                                     <button
@@ -2881,23 +2866,23 @@ export default function LeftSidebar() {
                                       }
                                       className={`${SIDEBAR_ITEM_CARD_CLASS} ${
                                         isHistoryRowActive(item.row.id)
-                                          ? `${item.activeCardClass} ${item.activeTintClass} ring-2 ring-[#d9ccff]`
+                                          ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                           : `${item.tintClass} ${item.hoverTintClass}`
-                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47]`}
+                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-slate-700`}
                                       style={item.style}
                                     >
-                                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#6f84ff] bg-transparent" />
+                                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
                                       <span className="min-w-0 flex-1">
                                         <span className="block truncate text-sm md:text-base font-semibold">
                                           {item.title}
                                         </span>
-                                        <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                        <span className="mt-0.5 block truncate text-xs text-slate-500">
                                           {item.dateLabel}
                                         </span>
                                       </span>
                                       <ChevronRight
                                         size={16}
-                                        className="mt-1 shrink-0 text-[#6f84ff]"
+                                        className="mt-1 shrink-0 text-slate-400"
                                         aria-hidden="true"
                                       />
                                     </button>
@@ -2907,10 +2892,10 @@ export default function LeftSidebar() {
                             )}
 
                             {invitedEventsGrouped.past.length > 0 && (
-                              <section className="space-y-2">
+                              <section className="space-y-1">
                                 <div className="px-1 pt-2">
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                                       Past Events
                                     </p>
                                     <button
@@ -2920,7 +2905,7 @@ export default function LeftSidebar() {
                                           (prev) => !prev
                                         )
                                       }
-                                      className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f62a0] hover:bg-white"
+                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 transition hover:bg-slate-200"
                                     >
                                       <span>
                                         {showPastInvitedEvents
@@ -2937,20 +2922,20 @@ export default function LeftSidebar() {
                                       />
                                     </button>
                                   </div>
-                                  <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                  <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
                                 </div>
 
                                 {showPastInvitedEvents &&
                                   invitedEventsGrouped.past.map((group) => (
                                     <section
                                       key={`invited-past-${group.category}`}
-                                      className="space-y-2"
+                                      className="space-y-1"
                                     >
                                       <div className="px-1 pt-1">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8c80b3]">
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                                           {group.category}
                                         </p>
-                                        <div className="mt-1 h-px w-full bg-gradient-to-r from-[#e8e0fb] via-[#eee7ff] to-transparent" />
+                                        <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
                                       </div>
                                       {group.items.map((item) => (
                                         <button
@@ -2964,23 +2949,23 @@ export default function LeftSidebar() {
                                           }
                                           className={`${SIDEBAR_ITEM_CARD_CLASS} ${
                                             isHistoryRowActive(item.row.id)
-                                              ? `${item.activeCardClass} ${item.activeTintClass} ring-2 ring-[#d9ccff]`
+                                              ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                               : `${item.tintClass} ${item.hoverTintClass}`
-                                          } w-full flex items-start gap-3 px-4 py-3 text-left text-[#2f1d47] opacity-70 saturate-75`}
+                                          } w-full flex items-start gap-3 px-4 py-3 text-left text-slate-700 opacity-70 saturate-75`}
                                           style={item.style}
                                         >
-                                          <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[#6f84ff] bg-transparent" />
+                                          <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
                                           <span className="min-w-0 flex-1">
                                             <span className="block truncate text-sm md:text-base font-semibold">
                                               {item.title}
                                             </span>
-                                            <span className="mt-0.5 block truncate text-xs text-[#7f72a7]">
+                                            <span className="mt-0.5 block truncate text-xs text-slate-500">
                                               {item.dateLabel}
                                             </span>
                                           </span>
                                           <ChevronRight
                                             size={16}
-                                            className="mt-1 shrink-0 text-[#6f84ff]"
+                                            className="mt-1 shrink-0 text-slate-400"
                                             aria-hidden="true"
                                           />
                                         </button>
@@ -2996,7 +2981,7 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className="absolute inset-0 z-[30] overflow-hidden bg-[#f6f3ff]"
+                    className={`${SIDEBAR_EVENT_PANEL_CLASS} z-[30]`}
                     style={panelStyle(
                       eventPanelTransform,
                       sidebarPage === "eventContext"
@@ -3020,7 +3005,7 @@ export default function LeftSidebar() {
               </div>
 
               {/* Bottom: User button with dropdown */}
-              <div className="border-t border-[#ddd6f5] py-2 px-3">
+              <div className="bg-[#efefef] px-3 py-3">
                 <div className="relative z-[900]">
                   <button
                     ref={buttonRef}
@@ -3035,15 +3020,18 @@ export default function LeftSidebar() {
                     onMouseDown={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     aria-expanded={menuOpen}
-                    className="w-full inline-flex items-center justify-between gap-3 px-3 py-1.5 rounded-md text-[#4b3f72] transition-colors duration-150 hover:text-[#34275c] hover:bg-[#f1edff] active:bg-[#eae3ff] focus:outline-none focus:ring-2 focus:ring-[#b8aae8]/60"
+                    className={SIDEBAR_FOOTER_TRIGGER_CLASS}
                   >
-                    <div className="min-w-0 flex-1 inline-flex items-center gap-2">
+                    <div className="min-w-0 flex-1 inline-flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-sm font-semibold text-indigo-700">
+                        {profileInitials}
+                      </span>
                       <div className="min-w-0 flex-1 text-left">
                         <div className="truncate text-sm font-medium">
                           {displayName}
                         </div>
                         {userEmail && (
-                          <div className="truncate text-xs md:text-sm text-[#8d84b3]">
+                          <div className="truncate text-xs md:text-sm text-slate-500">
                             {userEmail}
                           </div>
                         )}
@@ -3062,7 +3050,7 @@ export default function LeftSidebar() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className={`h-4 w-4 text-[#8a7ec0] transition-transform ${
+                      className={`h-4 w-4 text-slate-400 transition-transform ${
                         menuOpen ? "rotate-180" : "rotate-0"
                       }`}
                       aria-hidden="true"

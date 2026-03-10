@@ -4,7 +4,7 @@ import FootballLauncher from "@/components/event-create/FootballLauncher";
 type SearchParams = Record<string, string | string[] | undefined>;
 
 type FootballPageProps = {
-  searchParams?: Promise<SearchParams> | SearchParams;
+  searchParams?: Promise<SearchParams>;
 };
 
 export default async function FootballPage({

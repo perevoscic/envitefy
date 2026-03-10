@@ -133,7 +133,7 @@ const TEMPLATE_FONT_ASSIGNMENTS: Record<string, TemplateFontTokenId> = {
   "golden-jubilee": "font-mr-de-haviland",
   "carriage-house": "font-parisienne",
   "ethereal-classic": "serif-regal-center",
-  "modern-editorial": "font-geist-sans",
+  "modern-editorial": "geist-bold-center",
   "rustic-boho": "font-kaushan-script",
   "cinematic-wedding": "geist-bold-center",
   "celestial-wedding": "serif-regal-center",
@@ -1868,7 +1868,9 @@ export default function WeddingTemplateGallery({
           appliedVariationId={appliedVariationId}
           previewHeroImageUrl={customHeroImage}
           useTemplateThumbnailOnly
-          onApplyTemplate={onApplyTemplate}
+          onApplyTemplate={(template, variation) =>
+            onApplyTemplate(template as WeddingTemplateDefinition, variation)
+          }
         />
       </div>
     </div>

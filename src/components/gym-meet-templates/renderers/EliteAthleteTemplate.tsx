@@ -12,7 +12,8 @@ export default function EliteAthleteTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/80 shadow-[0_28px_80px_rgba(2,6,23,0.55)] backdrop-blur",
         titleClass:
-          "max-w-4xl text-5xl font-black uppercase italic leading-[0.92] tracking-tight sm:text-6xl lg:text-7xl [font-family:Impact,Haettenschweiler,'Arial_Narrow_Bold',sans-serif]",
+          "max-w-4xl text-5xl font-black uppercase italic leading-[0.92] tracking-tight text-white sm:text-6xl lg:text-7xl [font-family:Impact,Haettenschweiler,'Arial_Narrow_Bold',sans-serif]",
+        titleStyle: { color: "#f8fafc" },
         mutedClass: "text-slate-200",
         heroPanelClass: "bg-slate-950",
         chipClass:
@@ -28,6 +29,8 @@ export default function EliteAthleteTemplate(props: any) {
           "rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur",
         sectionClass:
           "rounded-[28px] border border-white/10 bg-slate-900/80 px-5 py-5 shadow-[0_10px_28px_rgba(2,6,23,0.28)]",
+        sectionTitleClass: "text-slate-50",
+        sectionTitleStyle: { color: "#f8fafc" },
         sectionMutedClass: "bg-blue-500/15 text-blue-100",
         primaryButtonClass:
           "rounded-2xl bg-blue-600 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-blue-500",

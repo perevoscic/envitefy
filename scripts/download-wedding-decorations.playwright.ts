@@ -148,7 +148,8 @@ async function downloadForTheme(plan: ThemeAssetPlan) {
       const targetPath = path.join(targetDir, fileName);
       await download.saveAs(targetPath);
       // Simple safeguard to avoid reusing the same download
-      await download.createReadStream()?.cancel();
+      const stream = await download.createReadStream();
+      stream?.destroy();
     }
   } finally {
     await context.close();

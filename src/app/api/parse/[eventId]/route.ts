@@ -73,24 +73,28 @@ export async function POST(
       return NextResponse.json({ error: "Not enough text extracted to parse" }, { status: 422 });
     }
 
-    const parsed =
-      workflow === "football"
-        ? await parseFootballFromExtractedText(
-            extraction.extractedText,
-            extraction.extractionMeta
-          )
-        : await parseMeetFromExtractedText(
-            extraction.extractedText,
-            extraction.extractionMeta
-          );
-    const mapped =
-      workflow === "football"
-        ? await mapParseResultToFootballData(parsed.parseResult, currentData)
-        : await mapParseResultToGymData(
-            parsed.parseResult,
-            currentData,
-            extraction.extractionMeta
-          );
+    let parsed:
+      | Awaited<ReturnType<typeof parseFootballFromExtractedText>>
+      | Awaited<ReturnType<typeof parseMeetFromExtractedText>>;
+    let mapped: Record<string, any>;
+
+    if (workflow === "football") {
+      parsed = await parseFootballFromExtractedText(
+        extraction.extractedText,
+        extraction.extractionMeta
+      );
+      mapped = await mapParseResultToFootballData(parsed.parseResult, currentData);
+    } else {
+      parsed = await parseMeetFromExtractedText(
+        extraction.extractedText,
+        extraction.extractionMeta
+      );
+      mapped = await mapParseResultToGymData(
+        parsed.parseResult,
+        currentData,
+        extraction.extractionMeta
+      );
+    }
     const nextGymPageTemplateId =
       workflow === "gymnastics"
         ? resolveGymMeetTemplateId({ ...currentData, ...mapped }) ||

@@ -30,18 +30,24 @@ const BaseSection = ({
   title,
   eyebrow,
   className,
+  titleClass,
+  titleStyle,
   children,
 }: {
   title: string;
   eyebrow?: string;
   className: string;
+  titleClass?: string;
+  titleStyle?: React.CSSProperties;
   children: React.ReactNode;
 }) => (
   <section className={className}>
     {eyebrow ? (
       <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-60">{eyebrow}</p>
     ) : null}
-    <h2 className="mt-2 text-2xl font-black leading-tight">{title}</h2>
+    <h2 className={`mt-2 text-2xl font-black leading-tight ${titleClass || ""}`} style={titleStyle}>
+      {title}
+    </h2>
     <div className="mt-5">{children}</div>
   </section>
 );
@@ -62,6 +68,7 @@ export default function BaseGymMeetTemplate({
     pageClass: string;
     shellClass: string;
     titleClass: string;
+    titleStyle?: React.CSSProperties;
     mutedClass: string;
     heroPanelClass: string;
     chipClass: string;
@@ -71,6 +78,8 @@ export default function BaseGymMeetTemplate({
     navFadeClass?: string;
     summaryCardClass: string;
     sectionClass: string;
+    sectionTitleClass?: string;
+    sectionTitleStyle?: React.CSSProperties;
     sectionMutedClass?: string;
     primaryButtonClass: string;
     secondaryButtonClass: string;
@@ -123,7 +132,9 @@ export default function BaseGymMeetTemplate({
 
               <div className="grid gap-6 lg:grid-cols-[1.6fr_0.9fr] lg:items-end">
                 <div>
-                  <h1 className={variant.titleClass}>{model.title}</h1>
+                  <h1 className={variant.titleClass} style={variant.titleStyle}>
+                    {model.title}
+                  </h1>
                   <div className={`mt-4 flex flex-wrap gap-4 text-sm font-semibold ${variant.mutedClass}`}>
                     {model.dateLabel ? (
                       <span className="inline-flex items-center gap-2">
@@ -163,7 +174,13 @@ export default function BaseGymMeetTemplate({
                 }`}
               >
                 {model.rosterAthletes.length > 0 ? (
-                  <BaseSection title="Active Roster" eyebrow="Attendance" className={variant.sectionClass}>
+                  <BaseSection
+                    title="Active Roster"
+                    eyebrow="Attendance"
+                    className={variant.sectionClass}
+                    titleClass={variant.sectionTitleClass}
+                    titleStyle={variant.sectionTitleStyle}
+                  >
                     <div className="grid gap-3">
                       {model.rosterAthletes.map((athlete: any) => (
                         <div key={athlete.id} className={variant.summaryCardClass}>
@@ -191,7 +208,13 @@ export default function BaseGymMeetTemplate({
                 ) : null}
 
                 {practiceBlocks.length > 0 ? (
-                  <BaseSection title="Practice Planner" eyebrow="Prep" className={variant.sectionClass}>
+                  <BaseSection
+                    title="Practice Planner"
+                    eyebrow="Prep"
+                    className={variant.sectionClass}
+                    titleClass={variant.sectionTitleClass}
+                    titleStyle={variant.sectionTitleStyle}
+                  >
                     <div className="space-y-3">
                       {practiceBlocks.map((block: any, idx: number) => (
                         <div key={block.id || idx} className={variant.summaryCardClass}>
@@ -225,7 +248,13 @@ export default function BaseGymMeetTemplate({
               volunteerSlots.length > 0 ||
               carpools.length > 0) ? (
               <div className="grid gap-4 lg:grid-cols-2">
-                <BaseSection title="Gear & Support" eyebrow="Operations" className={variant.sectionClass}>
+                <BaseSection
+                  title="Gear & Support"
+                  eyebrow="Operations"
+                  className={variant.sectionClass}
+                  titleClass={variant.sectionTitleClass}
+                  titleStyle={variant.sectionTitleStyle}
+                >
                   {model.gear?.uniform ? (
                     <div className={variant.summaryCardClass}>
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
@@ -287,7 +316,13 @@ export default function BaseGymMeetTemplate({
             ) : null}
 
             {model.announcements.length > 0 ? (
-              <BaseSection title="Announcements" eyebrow="Communication" className={variant.sectionClass}>
+              <BaseSection
+                title="Announcements"
+                eyebrow="Communication"
+                className={variant.sectionClass}
+                titleClass={variant.sectionTitleClass}
+                titleStyle={variant.sectionTitleStyle}
+              >
                 <div className="space-y-3">
                   {model.announcements.slice(0, 4).map((item) => (
                     <div key={item.id} className={variant.summaryCardClass}>
@@ -306,7 +341,13 @@ export default function BaseGymMeetTemplate({
 
             {rsvpProps.enabled ? (
               <div id="rsvp">
-                <BaseSection title="RSVP" eyebrow="Attendance" className={variant.sectionClass}>
+                <BaseSection
+                  title="RSVP"
+                  eyebrow="Attendance"
+                  className={variant.sectionClass}
+                  titleClass={variant.sectionTitleClass}
+                  titleStyle={variant.sectionTitleStyle}
+                >
                   {!rsvpProps.submitted ? (
                     <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
                       <div className="space-y-4">
@@ -409,7 +450,13 @@ export default function BaseGymMeetTemplate({
             ) : null}
 
             <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-              <BaseSection title="Add to Calendar" eyebrow="Share" className={variant.sectionClass}>
+              <BaseSection
+                title="Add to Calendar"
+                eyebrow="Share"
+                className={variant.sectionClass}
+                titleClass={variant.sectionTitleClass}
+                titleStyle={variant.sectionTitleStyle}
+              >
                 <div className="flex flex-wrap gap-3">
                   <button onClick={onShare} className={variant.secondaryButtonClass}>
                     <Share2 size={14} /> Share
@@ -427,7 +474,13 @@ export default function BaseGymMeetTemplate({
               </BaseSection>
 
               {(model.quickLinks.length > 0 || model.coachPhone) ? (
-                <BaseSection title="Quick Access" eyebrow="Links" className={variant.sectionClass}>
+                <BaseSection
+                  title="Quick Access"
+                  eyebrow="Links"
+                  className={variant.sectionClass}
+                  titleClass={variant.sectionTitleClass}
+                  titleStyle={variant.sectionTitleStyle}
+                >
                   <div className="flex flex-wrap gap-2">
                     {model.quickLinks.map((link) => (
                       <a

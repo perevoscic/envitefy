@@ -5,10 +5,10 @@ export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const awaitedParams = await (params as any);
+    const awaitedParams = await params;
     const row = await getEventHistoryBySlugOrId({ value: awaitedParams.id });
     const data: any = row?.data || {};
     const variant = req.nextUrl.searchParams.get("variant");

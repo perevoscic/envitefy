@@ -23,8 +23,17 @@ import StaticMap from "@/components/StaticMap";
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2";
 
-const TabHeading = ({ title }: { title: string }) => (
-  <h3 className="mb-4 flex items-center gap-2 text-lg font-black tracking-tight sm:text-xl">
+const TabHeading = ({
+  title,
+  style,
+}: {
+  title: string;
+  style?: React.CSSProperties;
+}) => (
+  <h3
+    className="mb-4 flex items-center gap-2 text-lg font-black tracking-tight text-inherit sm:text-xl"
+    style={style}
+  >
     {title}
   </h3>
 );
@@ -59,6 +68,8 @@ export default function GymMeetDiscoveryContent({
   const idleTabClass = variant.navIdleClass;
   const navFadeClass = variant.navFadeClass || "rgba(255,255,255,0.82)";
   const secondaryButtonClass = variant.secondaryButtonClass;
+  const sectionTitleClass = variant.sectionTitleClass || "";
+  const sectionTitleStyle = variant.sectionTitleStyle;
 
   const getScrollBehavior = useCallback((): ScrollBehavior => {
     if (typeof window === "undefined") return "auto";
@@ -239,7 +250,9 @@ export default function GymMeetDiscoveryContent({
       {activeTab === "meet-details" ? (
         discovery.meetDetails.hasContent ? (
           <div className={panelClass}>
-            <TabHeading title="Meet Details" />
+            <div className={sectionTitleClass}>
+              <TabHeading title="Meet Details" style={sectionTitleStyle} />
+            </div>
             {renderLineList(discovery.meetDetails.lines)}
           </div>
         ) : (
@@ -253,7 +266,9 @@ export default function GymMeetDiscoveryContent({
       {activeTab === "venue-details" ? (
         discovery.venueDetails.hasContent ? (
           <div className={panelClass}>
-            <TabHeading title="Venue Details" />
+            <div className={sectionTitleClass}>
+              <TabHeading title="Venue Details" style={sectionTitleStyle} />
+            </div>
             {discovery.venueDetails.lines.length > 0 ? renderLineList(discovery.venueDetails.lines) : null}
 
             {discovery.venueDetails.registrationDeskNote ? (
@@ -328,7 +343,9 @@ export default function GymMeetDiscoveryContent({
         discovery.admissionSales.hasContent ? (
           <div className="space-y-4">
             <div className={panelClass}>
-              <TabHeading title="Admission & Sales" />
+              <div className={sectionTitleClass}>
+                <TabHeading title="Admission & Sales" style={sectionTitleStyle} />
+              </div>
               {discovery.admissionSales.admissionCards.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2">
                   {discovery.admissionSales.admissionCards.map((item: any, index: number) => (
@@ -489,7 +506,9 @@ export default function GymMeetDiscoveryContent({
 
             {discovery.trafficParking.daylightSavingsNote ? (
               <div className={panelClass}>
-                <TabHeading title="Traffic & Parking" />
+                <div className={sectionTitleClass}>
+                  <TabHeading title="Traffic & Parking" style={sectionTitleStyle} />
+                </div>
                 <p className="text-sm leading-relaxed opacity-85">
                   {discovery.trafficParking.daylightSavingsNote}
                 </p>

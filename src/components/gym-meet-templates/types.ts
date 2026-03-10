@@ -8,13 +8,48 @@ export type GymMeetTemplateId =
   | "parent-command"
   | "varsity-classic"
   | "weekend-journey"
-  | "scouting-report";
+  | "scouting-report"
+  | "cyber-athlete"
+  | "paper-proto"
+  | "sunset-arena"
+  | "pop-art"
+  | "swiss-grid"
+  | "art-deco"
+  | "concrete-gym"
+  | "midnight-frost"
+  | "eco-motion"
+  | "holo-elite"
+  | "chalk-strike"
+  | "podium-lights"
+  | "judges-sheet"
+  | "spring-energy"
+  | "club-classic"
+  | "aurora-lift"
+  | "ribbon-editorial"
+  | "medal-poster"
+  | "vault-grid"
+  | "travel-briefing";
+
+export type GymMeetTemplateGroup =
+  | "current"
+  | "showcase"
+  | "bold"
+  | "classic"
+  | "editorial"
+  | "dashboard";
+
+export type GymMeetTemplateLayoutFamily =
+  | "standard"
+  | "editorial"
+  | "dashboard";
 
 export type GymMeetPageTemplateMeta = {
   id: GymMeetTemplateId;
   name: string;
   style: string;
   description: string;
+  group: GymMeetTemplateGroup;
+  layoutFamily: GymMeetTemplateLayoutFamily;
   thumbnailMode: "rendered-card";
   previewTitle: string;
   previewKicker: string;

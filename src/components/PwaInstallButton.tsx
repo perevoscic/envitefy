@@ -567,7 +567,10 @@ export default function PwaInstallButton({
       const isSecure =
         window.isSecureContext || location.hostname === "localhost";
       const hasSW = "serviceWorker" in navigator;
-      const isStandaloneNow = isStandalone();
+      const isStandaloneNow =
+        (window.navigator as any).standalone === true ||
+        (window.matchMedia &&
+          window.matchMedia("(display-mode: standalone)").matches);
       if (hasManifest && isSecure && hasSW && !isStandaloneNow) {
         setMaybeInstallable(true);
         pushDebug("heuristic installable", { hasManifest, isSecure, hasSW });
@@ -718,13 +721,13 @@ export default function PwaInstallButton({
       !("ontouchend" in document) &&
       /Safari\//.test(ua) &&
       !/Chrome|Chromium|Edg|OPR\//.test(ua);
-    const isStandalone =
+    const isStandaloneNow =
       (window.navigator as any).standalone === true ||
       (window.matchMedia &&
         window.matchMedia("(display-mode: standalone)").matches);
     let iosTimeout: number | undefined;
     const isAppleLike = isIOS || isMacSafari;
-    if (isAppleLike && !isStandalone && !w.__snapInstallDeferredPrompt) {
+    if (isAppleLike && !isStandaloneNow && !w.__snapInstallDeferredPrompt) {
       setShowIosTip(true);
       pushDebug("showing iOS fallback", { isIOS, isMacSafari });
       // Guard in case UA parsing runs before iOS paints toolbar

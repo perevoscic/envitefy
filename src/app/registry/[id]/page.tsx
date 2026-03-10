@@ -26,14 +26,15 @@ const buildPurchaseUrl = (rawUrl: string, category: string | null | undefined) =
 };
 
 type PageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export default async function RegistryPage({ params }: PageProps) {
-  const row = await getEventHistoryById(params.id);
+  const awaitedParams = await params;
+  const row = await getEventHistoryById(awaitedParams.id);
   if (!row) return notFound();
 
-  const items = await listRegistryItemsByEventId(params.id);
+  const items = await listRegistryItemsByEventId(awaitedParams.id);
   const eventData = (row.data as any) || {};
   const category = typeof eventData.category === "string" ? eventData.category : "wedding";
   const couple = eventData.couple || {};

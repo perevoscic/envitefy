@@ -597,7 +597,7 @@ export default function EventActions({
       const profileDefault = await hydrateDefaultFromProfile();
       setCalendarPreferenceHydrated(true);
       const status = connectedCalendars || (await fetchConnectedCalendars());
-      if (isProviderValid(profileDefault, status)) {
+      if (profileDefault && isProviderValid(profileDefault, status)) {
         openCalendarProvider(profileDefault);
         return;
       }

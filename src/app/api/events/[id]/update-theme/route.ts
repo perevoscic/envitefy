@@ -6,9 +6,10 @@ import {
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const awaitedParams = await params;
     const { templateId } = await req.json();
     if (!templateId || typeof templateId !== "string") {
       return NextResponse.json(
@@ -17,7 +18,7 @@ export async function POST(
       );
     }
 
-    const existing = await getEventHistoryById(params.id);
+    const existing = await getEventHistoryById(awaitedParams.id);
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -29,7 +30,7 @@ export async function POST(
       theme: nextTheme,
     };
 
-    await updateEventHistoryDataMerge(params.id, patch);
+    await updateEventHistoryDataMerge(awaitedParams.id, patch);
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

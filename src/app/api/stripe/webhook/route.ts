@@ -262,8 +262,13 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  const invoiceWithSubscription = invoice as Stripe.Invoice & {
+    subscription?: string | Stripe.Subscription | null;
+  };
   const subscriptionId =
-    typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id || null;
+    typeof invoiceWithSubscription.subscription === "string"
+      ? invoiceWithSubscription.subscription
+      : invoiceWithSubscription.subscription?.id || null;
   if (!subscriptionId) return;
   const stripe = getStripeClient();
   const subscription = await stripe.subscriptions.retrieve(subscriptionId, {

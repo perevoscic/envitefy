@@ -5,17 +5,18 @@ import { decorateAmazonUrl } from "@/utils/affiliates";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export default async function WeddingRegistryPage({ params }: PageProps) {
-  const row = await getEventHistoryById(params.id);
+  const awaitedParams = await params;
+  const row = await getEventHistoryById(awaitedParams.id);
 
   if (!row) {
     return notFound();
   }
 
-  const items = await listRegistryItemsByEventId(params.id);
+  const items = await listRegistryItemsByEventId(awaitedParams.id);
   const hasItems = items.length > 0;
 
   const eventData = (row.data as any) || {};

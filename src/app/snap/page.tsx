@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 type SnapRedirectProps = {
-  searchParams?: Promise<SearchParams> | SearchParams;
+  searchParams?: Promise<SearchParams>;
 };
 
 export default async function SnapRedirect({ searchParams }: SnapRedirectProps) {

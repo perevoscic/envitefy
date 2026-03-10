@@ -27,9 +27,9 @@ export default function ModernEditorial({ theme, event }: Props) {
 
   const timeline = schedule.length
     ? schedule.map((item) => ({
-        time: item.time || item.label || "",
-        title: item.title || item.label || item.activity || "Event",
-        desc: item.description || item.details || "",
+        time: item.time || "",
+        title: item.title || "Event",
+        desc: item.location || "",
       }))
     : [
         {
@@ -101,7 +101,7 @@ export default function ModernEditorial({ theme, event }: Props) {
 
       <section className="min-h-screen grid grid-cols-1 md:grid-cols-2">
         <div className="relative h-[60vh] md:h-screen bg-neutral-900 overflow-hidden">
-          {theme.decorations.heroImage && (
+          {theme.decorations?.heroImage && (
             <img
               src={theme.decorations.heroImage}
               className="w-full h-full object-cover opacity-80 hover:scale-105 transition-transform duration-[2s]"

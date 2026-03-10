@@ -18,10 +18,8 @@ export default async function SignupPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }> | { id: string };
-  searchParams?:
-    | Promise<Record<string, string | string[] | undefined>>
-    | Record<string, string | string[] | undefined>;
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const awaitedParams = await params;
   const session: any = await getServerSession(authOptions as any);

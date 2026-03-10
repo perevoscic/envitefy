@@ -4,8 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NormalizedEvent } from "@/lib/mappers";
 import { getEventTheme } from "@/lib/event-theme";
+import EventTemplateBase from "@/components/event-templates/EventTemplateBase";
 import type { EditorBindings } from "@/components/event-templates/EventTemplateBase";
-import AppointmentsTemplate from "@/components/event-templates/AppointmentsTemplate";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
@@ -679,7 +679,7 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
             cardBackgroundImage: (imageColors?.cardLight ||
               eventTheme.cardLight) as string | undefined,
           };
-          return <AppointmentsTemplate editor={editor} />;
+          return <EventTemplateBase editor={editor} />;
         })()}
 
         <div className="flex flex-wrap justify-end gap-3 pt-2">

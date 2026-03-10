@@ -8,11 +8,31 @@ import {
   resolveGymMeetTemplateId,
 } from "./registry";
 import BentoBoxTemplate from "./renderers/BentoBoxTemplate";
+import ChalkStrikeTemplate from "./renderers/ChalkStrikeTemplate";
+import ClubClassicTemplate from "./renderers/ClubClassicTemplate";
+import ConcreteGymTemplate from "./renderers/ConcreteGymTemplate";
+import AuroraLiftTemplate from "./renderers/AuroraLiftTemplate";
+import ArtDecoTemplate from "./renderers/ArtDecoTemplate";
+import CyberAthleteTemplate from "./renderers/CyberAthleteTemplate";
+import EcoMotionTemplate from "./renderers/EcoMotionTemplate";
 import EliteAthleteTemplate from "./renderers/EliteAthleteTemplate";
+import HoloEliteTemplate from "./renderers/HoloEliteTemplate";
+import JudgesSheetTemplate from "./renderers/JudgesSheetTemplate";
+import MedalPosterTemplate from "./renderers/MedalPosterTemplate";
+import MidnightFrostTemplate from "./renderers/MidnightFrostTemplate";
 import ParentCommandTemplate from "./renderers/ParentCommandTemplate";
+import PaperProtoTemplate from "./renderers/PaperProtoTemplate";
+import PodiumLightsTemplate from "./renderers/PodiumLightsTemplate";
+import PopArtTemplate from "./renderers/PopArtTemplate";
+import RibbonEditorialTemplate from "./renderers/RibbonEditorialTemplate";
 import ScoutingReportTemplate from "./renderers/ScoutingReportTemplate";
+import SpringEnergyTemplate from "./renderers/SpringEnergyTemplate";
+import SunsetArenaTemplate from "./renderers/SunsetArenaTemplate";
+import TravelBriefingTemplate from "./renderers/TravelBriefingTemplate";
+import VaultGridTemplate from "./renderers/VaultGridTemplate";
 import VarsityClassicTemplate from "./renderers/VarsityClassicTemplate";
 import WeekendJourneyTemplate from "./renderers/WeekendJourneyTemplate";
+import SwissGridTemplate from "./renderers/SwissGridTemplate";
 
 export default function GymMeetTemplateRenderer(props: any) {
   const pageTemplateId =
@@ -23,6 +43,46 @@ export default function GymMeetTemplateRenderer(props: any) {
   switch (pageTemplateId) {
     case "bento-box":
       return <BentoBoxTemplate {...props} />;
+    case "cyber-athlete":
+      return <CyberAthleteTemplate {...props} />;
+    case "paper-proto":
+      return <PaperProtoTemplate {...props} />;
+    case "sunset-arena":
+      return <SunsetArenaTemplate {...props} />;
+    case "pop-art":
+      return <PopArtTemplate {...props} />;
+    case "swiss-grid":
+      return <SwissGridTemplate {...props} />;
+    case "art-deco":
+      return <ArtDecoTemplate {...props} />;
+    case "concrete-gym":
+      return <ConcreteGymTemplate {...props} />;
+    case "midnight-frost":
+      return <MidnightFrostTemplate {...props} />;
+    case "eco-motion":
+      return <EcoMotionTemplate {...props} />;
+    case "holo-elite":
+      return <HoloEliteTemplate {...props} />;
+    case "chalk-strike":
+      return <ChalkStrikeTemplate {...props} />;
+    case "podium-lights":
+      return <PodiumLightsTemplate {...props} />;
+    case "judges-sheet":
+      return <JudgesSheetTemplate {...props} />;
+    case "spring-energy":
+      return <SpringEnergyTemplate {...props} />;
+    case "club-classic":
+      return <ClubClassicTemplate {...props} />;
+    case "aurora-lift":
+      return <AuroraLiftTemplate {...props} />;
+    case "ribbon-editorial":
+      return <RibbonEditorialTemplate {...props} />;
+    case "medal-poster":
+      return <MedalPosterTemplate {...props} />;
+    case "vault-grid":
+      return <VaultGridTemplate {...props} />;
+    case "travel-briefing":
+      return <TravelBriefingTemplate {...props} />;
     case "parent-command":
       return <ParentCommandTemplate {...props} />;
     case "varsity-classic":

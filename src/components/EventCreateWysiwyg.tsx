@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation";
 import type { NormalizedEvent } from "@/lib/mappers";
 import { getEventTheme } from "@/lib/event-theme";
 import EventCategoryTemplateModal from "@/components/EventCategoryTemplateModal";
+import EventTemplateBase from "@/components/event-templates/EventTemplateBase";
 import type { EditorBindings } from "@/components/event-templates/EventTemplateBase";
 import BirthdaysTemplate from "@/components/event-templates/BirthdaysTemplate";
 import WeddingsTemplate from "@/components/event-templates/WeddingsTemplate";
 import BabyShowersTemplate from "@/components/event-templates/BabyShowersTemplate";
-import AppointmentsTemplate from "@/components/event-templates/AppointmentsTemplate";
-import SportEventsTemplate from "@/components/event-templates/SportEventsTemplate";
-import GeneralEventsTemplate from "@/components/event-templates/GeneralEventsTemplate";
 import RegistryLinksEditor, {
   type RegistryFormEntry,
 } from "@/components/RegistryLinksEditor";
@@ -1277,10 +1275,10 @@ export default function EventCreateWysiwyg({
               if (cat === "baby showers")
                 return <BabyShowersTemplate editor={editor} />;
               if (cat === "appointments" || cat === "doctor appointments")
-                return <AppointmentsTemplate editor={editor} />;
+                return <EventTemplateBase editor={editor} />;
               if (cat === "sport events")
-                return <SportEventsTemplate editor={editor} />;
-              return <GeneralEventsTemplate editor={editor} />;
+                return <EventTemplateBase editor={editor} />;
+              return <EventTemplateBase editor={editor} />;
             })()}
 
           {categoryKey && (

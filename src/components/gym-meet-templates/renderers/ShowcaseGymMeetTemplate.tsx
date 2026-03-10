@@ -1,0 +1,553 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
+// @ts-nocheck
+"use client";
+
+import React, { useMemo, useState } from "react";
+import {
+  Calendar,
+  Check,
+  Clock,
+  ExternalLink,
+  Phone,
+  Share2,
+} from "lucide-react";
+import ShowcaseDiscoveryContent, {
+  SHOWCASE_DISCOVERY_TABS,
+} from "../ShowcaseDiscoveryContent";
+import { ShowcaseThemeConfig } from "../showcaseThemes";
+import { GymMeetTemplateRendererProps } from "../types";
+
+const formatTime = (value: string) => {
+  if (!value) return "";
+  try {
+    const [h, m] = value.split(":");
+    const hour = Number(h);
+    const minute = m || "00";
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minute} ${ampm}`;
+  } catch {
+    return value;
+  }
+};
+
+const formatStatus = (value: string) => {
+  const normalized = String(value || "").replace(/_/g, " ").trim();
+  return normalized ? normalized[0].toUpperCase() + normalized.slice(1) : "Pending";
+};
+
+const safeUrl = (value: unknown) => {
+  const text = typeof value === "string" ? value.trim() : "";
+  return /^https?:\/\//i.test(text) ? text : "";
+};
+
+const Section = ({
+  title,
+  eyebrow,
+  theme,
+  children,
+}: {
+  title: string;
+  eyebrow?: string;
+  theme: ShowcaseThemeConfig;
+  children: React.ReactNode;
+}) => (
+  <section className={theme.sectionClass}>
+    {eyebrow ? (
+      <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
+        {eyebrow}
+      </p>
+    ) : null}
+    <h2
+      className={`mt-2 text-2xl font-black leading-tight sm:text-3xl ${theme.sectionTitleClass || ""}`}
+      style={theme.sectionTitleStyle}
+    >
+      {title}
+    </h2>
+    <div className="mt-5">{children}</div>
+  </section>
+);
+
+const HeroDecor = ({ theme }: { theme: ShowcaseThemeConfig }) => {
+  switch (theme.heroDecor) {
+    case "grid":
+      return (
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.08)_1px,transparent_1px)] bg-[size:26px_26px] opacity-70" />
+      );
+    case "paper":
+      return (
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(24,24,27,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(24,24,27,0.05)_1px,transparent_1px)] bg-[size:24px_24px]" />
+      );
+    case "spotlight":
+      return (
+        <div className="absolute inset-0">
+          <div className="absolute left-1/2 top-0 h-56 w-56 -translate-x-1/2 rounded-full bg-amber-200/20 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-48 w-48 rounded-full bg-amber-500/20 blur-3xl" />
+        </div>
+      );
+    case "burst":
+      return (
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.3),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(239,68,68,0.2),transparent_22%),radial-gradient(#ffffff_1.5px,transparent_1.5px)] [background-size:auto,auto,14px_14px]" />
+      );
+    case "swiss":
+      return (
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(220,38,38,0.08)_0,rgba(220,38,38,0.08)_18%,transparent_18%,transparent_100%),linear-gradient(rgba(15,23,42,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.05)_1px,transparent_1px)] bg-[size:100%_100%,28px_28px,28px_28px]" />
+      );
+    case "deco":
+      return (
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0,transparent_48%,rgba(212,175,55,0.12)_48%,rgba(212,175,55,0.12)_52%,transparent_52%,transparent_100%)]" />
+      );
+    case "concrete":
+      return (
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.05)_50%,rgba(255,255,255,0.05)_75%,transparent_75%,transparent)] bg-[size:28px_28px]" />
+      );
+    case "frost":
+      return (
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(191,219,254,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_36%)]" />
+      );
+    case "organic":
+      return (
+        <div className="absolute inset-0">
+          <div className="absolute left-0 top-0 h-56 w-56 rounded-full bg-emerald-200/20 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-48 w-48 rounded-full bg-lime-100/25 blur-3xl" />
+        </div>
+      );
+    case "holo":
+      return (
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.15),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.7),transparent_36%)]" />
+      );
+    default:
+      return null;
+  }
+};
+
+export default function ShowcaseGymMeetTemplate({
+  model,
+  ownerToolbar,
+  rsvpProps,
+  isReadOnly,
+  hideOwnerActions = false,
+  onShare,
+  onGoogleCalendar,
+  onAppleCalendar,
+  onOutlookCalendar,
+  theme,
+}: GymMeetTemplateRendererProps & {
+  theme: ShowcaseThemeConfig;
+}) {
+  const [activeTab, setActiveTab] = useState("meet-details");
+
+  const practiceBlocks = Array.isArray(model.practiceBlocks) ? model.practiceBlocks : [];
+  const volunteerSlots = Array.isArray(model.volunteers?.volunteerSlots)
+    ? model.volunteers.volunteerSlots
+    : Array.isArray(model.volunteers?.slots)
+    ? model.volunteers.slots
+    : [];
+  const carpools = Array.isArray(model.volunteers?.carpoolOffers)
+    ? model.volunteers.carpoolOffers
+    : Array.isArray(model.volunteers?.carpools)
+    ? model.volunteers.carpools
+    : [];
+  const gearItems = Array.isArray(model.gear?.items)
+    ? model.gear.items
+    : Array.isArray(model.gear)
+    ? model.gear
+    : [];
+
+  const topTabs = useMemo(() => {
+    return SHOWCASE_DISCOVERY_TABS.filter((tab) =>
+      (model.discovery?.tabs || []).some((candidate) => candidate.id === tab.id)
+    );
+  }, [model.discovery?.tabs]);
+
+  const activeTabId = topTabs.some((tab) => tab.id === activeTab)
+    ? activeTab
+    : topTabs[0]?.id || "meet-details";
+
+  const heroStyle = model.heroImage
+    ? {
+        backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.18), rgba(2,6,23,0.44)), url(${model.heroImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }
+    : undefined;
+
+  return (
+    <div className={theme.pageClass}>
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+        {!isReadOnly && !hideOwnerActions && ownerToolbar ? <div className="mb-4">{ownerToolbar}</div> : null}
+
+        <div className={theme.shellClass}>
+          <header className={theme.headerClass} style={heroStyle}>
+            <div className={`absolute inset-0 ${theme.headerOverlayClass}`} />
+            <HeroDecor theme={theme} />
+            <div className="relative z-10">
+              {model.heroBadges?.length ? (
+                <div
+                  className={`mb-5 flex flex-wrap gap-2 ${
+                    theme.headerAlign === "center" ? "justify-center" : ""
+                  }`}
+                >
+                  {model.heroBadges.map((badge) => (
+                    <span key={badge} className={theme.heroBadgeClass}>
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
+              <div
+                className={`${
+                  theme.headerAlign === "center" ? "mx-auto max-w-5xl text-center" : "max-w-5xl"
+                }`}
+              >
+                {(model.hostGym || model.team || model.venue) && (
+                  <p className={`text-sm font-black uppercase tracking-[0.34em] ${theme.subtitleClass}`}>
+                    {model.hostGym || model.team || model.venue}
+                  </p>
+                )}
+                <h1 className={theme.titleClass} style={theme.titleStyle}>
+                  {model.title}
+                </h1>
+                <div
+                  className={`mt-5 flex flex-wrap gap-4 text-sm font-semibold ${theme.metaClass} ${
+                    theme.headerAlign === "center" ? "justify-center" : ""
+                  }`}
+                >
+                  {model.dateLabel ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Calendar size={16} /> {model.dateLabel}
+                    </span>
+                  ) : null}
+                  {model.timeLabel ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Clock size={16} /> {model.timeLabel}
+                    </span>
+                  ) : null}
+                  {model.headerLocation ? <span>{model.headerLocation}</span> : null}
+                </div>
+              </div>
+
+              {model.summaryItems?.length ? (
+                <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {model.summaryItems.map((item) => (
+                    <div key={`${item.label}-${item.value}`} className={theme.summaryCardClass}>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                        {item.label}
+                      </p>
+                      <p className="mt-2 text-2xl font-black leading-tight">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </header>
+
+          <main className="space-y-5 px-3 py-5 sm:px-5 sm:py-6">
+            <section className="space-y-4">
+              <div className="sticky top-3 z-20">
+                <div className={theme.navShellClass}>
+                  <div className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 md:grid md:grid-cols-5 md:overflow-visible">
+                    {topTabs.map((tab) => {
+                      const Icon = tab.icon;
+                      const selected = tab.id === activeTabId;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveTab(tab.id)}
+                          className={`${selected ? theme.navActiveClass : theme.navIdleClass} inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap md:w-full`}
+                        >
+                          <Icon size={16} />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <ShowcaseDiscoveryContent
+                model={model}
+                theme={theme}
+                activeTab={activeTabId}
+              />
+            </section>
+
+            {(model.rosterAthletes.length > 0 || practiceBlocks.length > 0) ? (
+              <div className="grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
+                {model.rosterAthletes.length > 0 ? (
+                  <Section title="Active Roster" eyebrow="Attendance" theme={theme}>
+                    <div className="grid gap-3">
+                      {model.rosterAthletes.map((athlete: any) => (
+                        <div key={athlete.id} className={theme.sectionCardClass}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-base font-black">{athlete.name}</p>
+                              <p className="mt-1 text-sm opacity-70">
+                                {[athlete.level, athlete.position || athlete.primaryEvents?.join(", ")]
+                                  .filter(Boolean)
+                                  .join(" • ")}
+                              </p>
+                            </div>
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${theme.sectionMutedClass}`}
+                            >
+                              <Check size={12} /> {formatStatus(athlete.status)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Section>
+                ) : null}
+
+                {practiceBlocks.length > 0 ? (
+                  <Section title="Practice Planner" eyebrow="Prep" theme={theme}>
+                    <div className="space-y-3">
+                      {practiceBlocks.map((block: any, idx: number) => (
+                        <div key={block.id || idx} className={theme.sectionCardClass}>
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-base font-black">{block.day}</p>
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] opacity-60">
+                              {block.time ||
+                                [formatTime(block.startTime), formatTime(block.endTime)]
+                                  .filter(Boolean)
+                                  .join(" - ")}
+                            </p>
+                          </div>
+                          {(Array.isArray(block.focus) ? block.focus.length : block.focus) ? (
+                            <p className="mt-2 text-sm opacity-80">
+                              Focus: {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
+                            </p>
+                          ) : null}
+                          {block.skillGoals || block.description ? (
+                            <p className="mt-2 text-sm opacity-70">
+                              {block.skillGoals || block.description}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </Section>
+                ) : null}
+              </div>
+            ) : null}
+
+            {(gearItems.length > 0 ||
+              model.gear?.uniform ||
+              volunteerSlots.length > 0 ||
+              carpools.length > 0) ? (
+              <Section title="Gear & Support" eyebrow="Operations" theme={theme}>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {model.gear?.uniform ? (
+                    <div className={theme.sectionCardClass}>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                        Uniform
+                      </p>
+                      <p className="mt-2 text-sm">{model.gear.uniform}</p>
+                    </div>
+                  ) : null}
+                  {gearItems.slice(0, 6).map((item: any, idx: number) => {
+                    const label = typeof item === "string" ? item : item?.name || `Gear ${idx + 1}`;
+                    return (
+                      <div key={label} className={theme.sectionCardClass}>
+                        <p className="text-sm font-semibold">{label}</p>
+                      </div>
+                    );
+                  })}
+                  {volunteerSlots.slice(0, 4).map((slot: any, idx: number) => (
+                    <div key={slot.id || idx} className={theme.sectionCardClass}>
+                      <p className="text-sm font-semibold">{slot.role || `Volunteer ${idx + 1}`}</p>
+                      <p className="mt-1 text-xs opacity-70">{slot.name || "Open slot"}</p>
+                    </div>
+                  ))}
+                  {carpools.slice(0, 3).map((carpool: any, idx: number) => (
+                    <div key={carpool.id || idx} className={theme.sectionCardClass}>
+                      <p className="text-sm font-semibold">
+                        {carpool.driverName || `Driver ${idx + 1}`}
+                      </p>
+                      <p className="mt-1 text-xs opacity-70">
+                        {[carpool.departureLocation, carpool.departureTime]
+                          .filter(Boolean)
+                          .join(" • ") || "Trip details TBD"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            ) : null}
+
+            {model.announcements.length > 0 ? (
+              <Section title="Announcements" eyebrow="Communication" theme={theme}>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {model.announcements.slice(0, 4).map((item) => (
+                    <div key={item.id} className={theme.sectionCardClass}>
+                      <p className="text-base font-black">{item.title}</p>
+                      {item.body ? <p className="mt-2 text-sm opacity-75">{item.body}</p> : null}
+                      {item.date ? (
+                        <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
+                          {item.date}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            ) : null}
+
+            {rsvpProps.enabled ? (
+              <Section title="RSVP" eyebrow="Attendance" theme={theme}>
+                {!rsvpProps.submitted ? (
+                  <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                          Your Name
+                        </label>
+                        <input
+                          className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                          placeholder="Parent or athlete name"
+                          value={rsvpProps.nameInput}
+                          onChange={(e) => rsvpProps.setNameInput(e.target.value)}
+                        />
+                      </div>
+                      {!rsvpProps.isSignedIn && rsvpProps.allowGuestAttendanceRsvp ? (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <input
+                            className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                            placeholder="Email"
+                            value={rsvpProps.guestEmailInput}
+                            onChange={(e) => rsvpProps.setGuestEmailInput(e.target.value)}
+                          />
+                          <input
+                            className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                            placeholder="Phone"
+                            value={rsvpProps.guestPhoneInput}
+                            onChange={(e) => rsvpProps.setGuestPhoneInput(e.target.value)}
+                          />
+                        </div>
+                      ) : null}
+                      {rsvpProps.rosterAthletes.length > 0 ? (
+                        <select
+                          className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                          value={rsvpProps.selectedAthleteId}
+                          onChange={(e) => rsvpProps.setSelectedAthleteId(e.target.value)}
+                        >
+                          <option value="">Choose athlete</option>
+                          {rsvpProps.rosterAthletes.map((athlete: any) => (
+                            <option key={athlete.id} value={athlete.id}>
+                              {[athlete.name, athlete.level].filter(Boolean).join(" • ")}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
+                      {rsvpProps.error ? (
+                        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                          {rsvpProps.error}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-3">
+                      <button
+                        type="button"
+                        onClick={() => rsvpProps.setAttending("yes")}
+                        className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
+                          rsvpProps.attending === "yes"
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-black/10 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="font-black uppercase tracking-[0.14em]">Going</div>
+                        <div className="mt-1 opacity-75">Athlete will attend this meet.</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => rsvpProps.setAttending("no")}
+                        className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
+                          rsvpProps.attending === "no"
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-black/10 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="font-black uppercase tracking-[0.14em]">Not Going</div>
+                        <div className="mt-1 opacity-75">Athlete cannot attend.</div>
+                      </button>
+                      <button
+                        onClick={rsvpProps.onSubmit}
+                        disabled={rsvpProps.submitting}
+                        className={`w-full ${theme.ctaPrimaryClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                      >
+                        {rsvpProps.submitting ? "Submitting..." : "Send RSVP"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-6 text-emerald-900">
+                    <p className="text-lg font-black">Attendance updated.</p>
+                    <button
+                      onClick={rsvpProps.onReset}
+                      className="mt-3 text-sm font-semibold underline underline-offset-4"
+                    >
+                      Send another response
+                    </button>
+                  </div>
+                )}
+              </Section>
+            ) : null}
+
+            <div className="grid gap-5 xl:grid-cols-[1fr_0.95fr]">
+              <Section title="Add to Calendar" eyebrow="Share" theme={theme}>
+                <div className="flex flex-wrap gap-3">
+                  <button onClick={onShare} className={theme.ctaSecondaryClass}>
+                    <Share2 size={14} /> Share
+                  </button>
+                  <button onClick={onGoogleCalendar} className={theme.ctaSecondaryClass}>
+                    <Calendar size={14} /> Google
+                  </button>
+                  <button onClick={onAppleCalendar} className={theme.ctaSecondaryClass}>
+                    <Calendar size={14} /> Apple
+                  </button>
+                  <button onClick={onOutlookCalendar} className={theme.ctaSecondaryClass}>
+                    <Calendar size={14} /> Outlook
+                  </button>
+                </div>
+              </Section>
+
+              {(model.quickLinks.length > 0 || model.coachPhone) ? (
+                <Section title="Quick Access" eyebrow="Links" theme={theme}>
+                  <div className="flex flex-wrap gap-2">
+                    {model.quickLinks.map((link) =>
+                      safeUrl(link.url) ? (
+                        <a
+                          key={link.url}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={theme.ctaSecondaryClass}
+                        >
+                          {link.label || "Open Link"}
+                          <ExternalLink size={14} />
+                        </a>
+                      ) : null
+                    )}
+                    {model.coachPhone ? (
+                      <a href={`tel:${model.coachPhone}`} className={theme.ctaSecondaryClass}>
+                        <Phone size={14} /> Contact Coach
+                      </a>
+                    ) : null}
+                  </div>
+                </Section>
+              ) : null}
+            </div>
+
+            <footer className="px-2 py-6 text-center text-xs font-semibold uppercase tracking-[0.22em] opacity-50">
+              Envitefy Gymnastics Meet Page
+            </footer>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}

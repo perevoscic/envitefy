@@ -28,7 +28,8 @@ export default function Retro70s({ theme, event }: Props) {
       title: "When",
       icon: <Sun size={32} />,
       primary: date || "October 12th, 2025",
-      detail: event.time || "Ceremony at 4pm sharp. Don't be a square.",
+      detail:
+        event.schedule?.[0]?.time || "Ceremony at 4pm sharp. Don't be a square.",
       bg: "#E9C46A",
       text: "#386641",
     },
@@ -50,14 +51,17 @@ export default function Retro70s({ theme, event }: Props) {
     },
   ];
 
-  const gallery =
-    event.gallery && event.gallery.length
-      ? event.gallery.slice(0, 3).map((g) => g.url || g.src || g)
-      : [
-          "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?q=80&w=600&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=600&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1542038782534-3675a483aa99?q=80&w=600&auto=format&fit=crop",
-        ];
+  const galleryImages =
+    event.gallery?.slice(0, 3)
+      .map((g) => g.url || g.src || g.preview || "")
+      .filter((src): src is string => Boolean(src)) || [];
+  const gallery = galleryImages.length
+    ? galleryImages
+    : [
+        "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1542038782534-3675a483aa99?q=80&w=600&auto=format&fit=crop",
+      ];
 
   return (
     <div

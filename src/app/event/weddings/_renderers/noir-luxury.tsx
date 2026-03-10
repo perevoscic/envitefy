@@ -16,7 +16,7 @@ const getVenue = (event: EventData) =>
   event.location || event.venue?.name || "The Grand Hall";
 
 const getCity = (event: EventData) =>
-  event.venue?.city || event.city || event.venue?.address || "New York City";
+  event.venue?.address || event.location || "New York City";
 
 export default function NoirLuxury({ theme, event }: Props) {
   const [scrollY, setScrollY] = useState(0);
@@ -31,6 +31,10 @@ export default function NoirLuxury({ theme, event }: Props) {
   const dateLabel = getDate(event);
   const venue = getVenue(event);
   const city = getCity(event);
+  const travelSummary =
+    typeof event.travel === "string" && event.travel.trim().length > 0
+      ? event.travel
+      : null;
 
   const timeline = [
     { time: event.schedule?.[0]?.time || "18:00", title: event.schedule?.[0]?.title || "Ceremony", icon: Star },
@@ -146,19 +150,19 @@ export default function NoirLuxury({ theme, event }: Props) {
           {[
             {
               title: "Dress Code",
-              desc: event.dressCode ||
+              desc: event.tagline ||
                 "Black Tie Strict. Gentlemen in tuxedos, ladies in floor-length gowns. Noir aesthetics encouraged.",
             },
             {
               title: "Accommodations",
               desc:
-                event.travel?.hotels?.[0]?.name ||
+                travelSummary ||
                 "A block of rooms has been reserved at The Plaza. Mention the couple for the preferred rate.",
             },
             {
               title: "Transportation",
               desc:
-                event.travel?.shuttle ||
+                travelSummary ||
                 "Valet parking available. Shuttle service provided from The Plaza.",
             },
           ].map((card, i) => (

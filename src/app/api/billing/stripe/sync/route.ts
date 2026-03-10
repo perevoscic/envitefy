@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
 
     const body = (await req.json().catch(() => ({}))) as {
       sessionId?: string | null;
+      session_id?: string | null;
     };
     const sessionId = body?.sessionId || body?.session_id || null;
     if (!sessionId || typeof sessionId !== "string") {

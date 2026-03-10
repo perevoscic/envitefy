@@ -4,7 +4,7 @@ import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
 type SearchParams = Record<string, string | string[] | undefined>;
 
 type GymnasticsPageProps = {
-  searchParams?: Promise<SearchParams> | SearchParams;
+  searchParams?: Promise<SearchParams>;
 };
 
 export default async function GymnasticsPage({
