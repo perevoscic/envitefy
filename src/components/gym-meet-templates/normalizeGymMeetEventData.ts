@@ -3,6 +3,7 @@
 import { resolveGymMeetTemplateId } from "./registry";
 import { GymMeetRenderModel } from "./types";
 import { buildGymMeetDiscoveryContent } from "./buildGymMeetDiscoveryContent";
+import { normalizeGymMeetTitleSize } from "./titleSizing";
 
 const safeString = (value: unknown): string =>
   typeof value === "string"
@@ -10,6 +11,20 @@ const safeString = (value: unknown): string =>
     : value == null
     ? ""
     : String(value).trim();
+
+const isQuickLinkUrl = (value: unknown): boolean => {
+  const text = safeString(value);
+  return (
+    /^https?:\/\//i.test(text) ||
+    /^data:(application\/pdf|image\/(?:png|jpe?g|webp))/i.test(text)
+  );
+};
+
+const normalizeAnnouncementTitle = (value: unknown): string => {
+  const title = safeString(value);
+  if (!title) return "";
+  return /^announcement$/i.test(title) ? "" : title;
+};
 
 const unique = (items: string[], limit = 12) => {
   const seen = new Set<string>();
@@ -78,6 +93,8 @@ export const normalizeGymMeetEventData = ({
   const logistics = advancedSections?.logistics || {};
   const gear = advancedSections?.gear || {};
   const volunteers = advancedSections?.volunteers || {};
+  const gearEnabled = gear?.enabled !== false;
+  const volunteersEnabled = volunteers?.enabled !== false;
   const announcementsRaw =
     advancedSections?.announcements?.items ||
     advancedSections?.announcements?.announcements ||
@@ -85,7 +102,7 @@ export const normalizeGymMeetEventData = ({
   const announcements = (Array.isArray(announcementsRaw) ? announcementsRaw : [])
     .map((item: any, idx: number) => ({
       id: item?.id || `announcement-${idx + 1}`,
-      title: safeString(item?.title || item?.label || "Announcement"),
+      title: normalizeAnnouncementTitle(item?.title || item?.label),
       body: safeString(item?.body || item?.message || item?.text || ""),
       date: safeString(item?.date || item?.updatedAt || ""),
     }))
@@ -96,15 +113,50 @@ export const normalizeGymMeetEventData = ({
     : Array.isArray(eventData?.discoverySource?.parseResult?.links)
     ? eventData.discoverySource.parseResult.links
     : [];
-  const quickLinks = linksRaw
-    .map((item: any) => ({
-      label: safeString(item?.label || item?.title || "Link"),
-      url: safeString(item?.url),
-    }))
-    .filter((item) => /^https?:\/\//i.test(item.url))
-    .slice(0, 4);
-
   const discoverySource = eventData?.discoverySource || {};
+  const discoveryInput = discoverySource?.input || {};
+  const originalSourceLink = (() => {
+    if (safeString(discoveryInput?.type) === "url") {
+      const url = safeString(discoveryInput?.url);
+      return isQuickLinkUrl(url)
+        ? {
+            label: safeString(discoveryInput?.label || "Original Source"),
+            url,
+          }
+        : null;
+    }
+    if (safeString(discoveryInput?.type) === "file") {
+      const dataUrl = safeString(discoveryInput?.dataUrl);
+      return isQuickLinkUrl(dataUrl)
+        ? {
+            label: "Download Source File",
+            url: dataUrl,
+          }
+        : null;
+    }
+    return null;
+  })();
+  const quickLinks = (() => {
+    const out: Array<{ label: string; url: string }> = [];
+    const seen = new Set<string>();
+    const candidates = [
+      ...linksRaw.map((item: any) => ({
+        label: safeString(item?.label || item?.title || "Link"),
+        url: safeString(item?.url),
+      })),
+      ...(originalSourceLink ? [originalSourceLink] : []),
+    ];
+    for (const item of candidates) {
+      if (!isQuickLinkUrl(item.url)) continue;
+      const key = /^data:/i.test(item.url) ? item.label.toLowerCase() : item.url.toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(item);
+      if (out.length >= 5) break;
+    }
+    return out;
+  })();
+
   const extractionMeta = discoverySource?.extractionMeta || {};
   const parseResult = discoverySource?.parseResult || {};
   const parseLogistics = parseResult?.logistics || {};
@@ -205,6 +257,7 @@ export const normalizeGymMeetEventData = ({
   return {
     pageTemplateId: resolveGymMeetTemplateId(eventData),
     title: safeString(eventData?.eventTitle || eventTitle || "Gymnastics Meet"),
+    titleSize: normalizeGymMeetTitleSize(eventData?.fontSize),
     heroImage: safeString(eventData?.heroImage || eventData?.customHeroImage),
     hostGym: safeString(eventData?.hostGym),
     venue: safeString(eventData?.venue),
@@ -228,8 +281,8 @@ export const normalizeGymMeetEventData = ({
     meet,
     practiceBlocks,
     logistics,
-    gear,
-    volunteers,
+    gear: gearEnabled ? gear : { items: [] },
+    volunteers: volunteersEnabled ? volunteers : { volunteerSlots: [], carpoolOffers: [] },
     announcements,
     rsvpEnabled: Boolean(eventData?.rsvpEnabled),
     rsvpDeadline: safeString(eventData?.rsvpDeadline),

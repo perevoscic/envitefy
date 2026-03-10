@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   ShoppingBag,
   Ticket,
+  Users,
 } from "lucide-react";
 import StaticMap from "@/components/StaticMap";
 
@@ -44,6 +45,14 @@ const EmptyState = ({ className, children }: { className: string; children: Reac
   </div>
 );
 
+const DEFAULT_DISCOVERY_TABS = [
+  { id: "meet-details", label: "Meet Details" },
+  { id: "venue-details", label: "Venue Details" },
+  { id: "admission-sales", label: "Admission & Sales" },
+  { id: "traffic-parking", label: "Traffic & Parking" },
+  { id: "safety-policy", label: "Safety Policy" },
+];
+
 export default function GymMeetDiscoveryContent({
   model,
   variant,
@@ -51,7 +60,21 @@ export default function GymMeetDiscoveryContent({
   model: any;
   variant: any;
 }) {
-  const tabs = useMemo(() => model?.discovery?.tabs || [], [model?.discovery?.tabs]);
+  const tabs = useMemo(() => {
+    const rawTabs = Array.isArray(model?.discovery?.tabs) ? model.discovery.tabs : [];
+    if (rawTabs.length >= DEFAULT_DISCOVERY_TABS.length) return rawTabs;
+
+    const rawTabMap = new Map(
+      rawTabs
+        .filter((tab: any) => typeof tab?.id === "string")
+        .map((tab: any) => [tab.id, tab])
+    );
+
+    return DEFAULT_DISCOVERY_TABS.map((tab) => ({
+      ...tab,
+      ...(rawTabMap.get(tab.id) || {}),
+    }));
+  }, [model?.discovery?.tabs]);
   const [activeTab, setActiveTab] = useState(tabs[0]?.id || "meet-details");
   const railRef = useRef<HTMLDivElement | null>(null);
   const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -67,9 +90,21 @@ export default function GymMeetDiscoveryContent({
   const activeTabClass = variant.navActiveClass;
   const idleTabClass = variant.navIdleClass;
   const navFadeClass = variant.navFadeClass || "rgba(255,255,255,0.82)";
+  const navRailClass =
+    variant.navRailClass ||
+    "no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 md:grid md:overflow-visible";
+  const navButtonClass = variant.navButtonClass || "md:w-full md:min-w-0 md:flex-1";
+  const navRailStyle =
+    tabs.length > 1 ? ({ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` } as const) : undefined;
+  const resolvedNavButtonClass =
+    tabs.length === 1
+      ? `inline-flex items-center justify-center whitespace-nowrap ${navButtonClass}`
+      : `inline-flex flex-none items-center justify-center whitespace-nowrap md:w-full md:min-w-0 ${navButtonClass}`;
   const secondaryButtonClass = variant.secondaryButtonClass;
   const sectionTitleClass = variant.sectionTitleClass || "";
   const sectionTitleStyle = variant.sectionTitleStyle;
+  const cardTitleClass = sectionTitleClass;
+  const cardTitleStyle = sectionTitleStyle;
 
   const getScrollBehavior = useCallback((): ScrollBehavior => {
     if (typeof window === "undefined") return "auto";
@@ -198,6 +233,8 @@ export default function GymMeetDiscoveryContent({
   );
 
   const discovery = model.discovery;
+  const hasMeetOverviewContent =
+    Boolean(discovery?.meetDetails?.hasContent) || (model?.announcements?.length ?? 0) > 0;
   const venueAwards = discovery.venueDetails.awardsAreaItems || [];
 
   return (
@@ -208,10 +245,11 @@ export default function GymMeetDiscoveryContent({
             className="transition-transform duration-200 ease-out will-change-transform"
             style={{ transform: `translateX(${bounceOffset}px)` }}
           >
-            <div
-              ref={railRef}
-              className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 md:grid md:grid-cols-5 md:overflow-visible"
-            >
+              <div
+                ref={railRef}
+                className={navRailClass}
+                style={navRailStyle}
+              >
               {tabs.map((tab: any) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -221,7 +259,7 @@ export default function GymMeetDiscoveryContent({
                       tabButtonRefs.current[tab.id] = node;
                     }}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`${focusRing} shrink-0 whitespace-nowrap md:w-full ${
+                    className={`${focusRing} ${resolvedNavButtonClass} shrink-0 md:shrink ${
                       isActive ? activeTabClass : idleTabClass
                     }`}
                     aria-current={isActive ? "page" : undefined}
@@ -248,17 +286,211 @@ export default function GymMeetDiscoveryContent({
       </div>
 
       {activeTab === "meet-details" ? (
-        discovery.meetDetails.hasContent ? (
+        hasMeetOverviewContent ? (
           <div className={panelClass}>
             <div className={sectionTitleClass}>
               <TabHeading title="Meet Details" style={sectionTitleStyle} />
             </div>
             {renderLineList(discovery.meetDetails.lines)}
+            {model.announcements.length > 0 ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Communication
+                </p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {model.announcements.slice(0, 4).map((item: any) => (
+                    <div key={item.id} className={cardClass}>
+                      {item.title ? (
+                        <p
+                          className={`text-lg font-black leading-tight ${cardTitleClass}`}
+                          style={cardTitleStyle}
+                        >
+                          {item.title}
+                        </p>
+                      ) : null}
+                      {item.body ? (
+                        <p className={`${item.title ? "mt-2 " : ""}text-sm leading-relaxed opacity-80`}>
+                          {item.body}
+                        </p>
+                      ) : null}
+                      {item.date ? (
+                        <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
+                          {item.date}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : (
           <EmptyState className={panelClass}>
             Meet details are still being mapped from the source packet. Re-open parsing in the
             builder to refresh this section.
+          </EmptyState>
+        )
+      ) : null}
+
+      {activeTab === "coaches" ? (
+        discovery.coaches.hasContent ? (
+          <div className="space-y-4">
+            <div className={panelClass}>
+              <div className={sectionTitleClass}>
+                <TabHeading title="Coach Info" style={sectionTitleStyle} />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {discovery.coaches.signIn ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Sign-In
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.signIn}</p>
+                  </div>
+                ) : null}
+                {discovery.coaches.hospitality ? (
+                  <div className={cardClass}>
+                    <div className="flex items-start gap-3">
+                      <Coffee size={18} className="mt-0.5 opacity-60" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                          Hospitality
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed">
+                          {discovery.coaches.hospitality}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                {discovery.coaches.floorAccess ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Floor Access
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">
+                      {discovery.coaches.floorAccess}
+                    </p>
+                  </div>
+                ) : null}
+                {discovery.coaches.scratches ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Scratches
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.scratches}</p>
+                  </div>
+                ) : null}
+                {discovery.coaches.rotationSheets ? (
+                  <div className={cardClass}>
+                    <div className="flex items-start gap-3">
+                      <ClipboardList size={18} className="mt-0.5 opacity-60" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                          Rotation Sheets
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed">
+                          {discovery.coaches.rotationSheets}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                {discovery.coaches.regionalCommitment ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Regional Commitment
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">
+                      {discovery.coaches.regionalCommitment}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {discovery.coaches.contacts.length > 0 ? (
+              <div className={panelClass}>
+                <div className="mb-4 flex items-center gap-3">
+                  <Users size={20} className="opacity-70" />
+                  <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                    Coach Contacts
+                  </h4>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {discovery.coaches.contacts.map((contact: any, index: number) => (
+                    <div key={`${contact.role}-${contact.email}-${index}`} className={cardClass}>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                        {contact.role || "Contact"}
+                      </p>
+                      {contact.name ? <p className="mt-2 text-sm font-semibold">{contact.name}</p> : null}
+                      {contact.email ? <p className="mt-1 text-sm opacity-80">{contact.email}</p> : null}
+                      {contact.phone ? <p className="mt-1 text-sm opacity-80">{contact.phone}</p> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {discovery.coaches.deadlines.length > 0 ? (
+              <div className={panelClass}>
+                <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Coach Deadlines
+                </h4>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {discovery.coaches.deadlines.map((item: any, index: number) => (
+                    <div key={`${item.label}-${item.date}-${index}`} className={cardClass}>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                        {item.label || "Deadline"}
+                      </p>
+                      {item.date ? <p className="mt-2 text-sm font-semibold">{item.date}</p> : null}
+                      {item.note ? <p className="mt-1 text-sm leading-relaxed opacity-80">{item.note}</p> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {discovery.coaches.attire.length > 0 || discovery.coaches.notes.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {discovery.coaches.attire.length > 0 ? (
+                  <div className={panelClass}>
+                    <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                      Coach Attire
+                    </h4>
+                    <ul className="mt-4 space-y-2 text-sm leading-relaxed opacity-85">
+                      {discovery.coaches.attire.map((item: string) => (
+                        <li key={item} className="flex gap-2">
+                          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-current opacity-40" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {discovery.coaches.notes.length > 0 ? (
+                  <div className={panelClass}>
+                    <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                      Additional Coach Notes
+                    </h4>
+                    <ul className="mt-4 space-y-2 text-sm leading-relaxed opacity-85">
+                      {discovery.coaches.notes.map((item: string) => (
+                        <li key={item} className="flex gap-2">
+                          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-current opacity-40" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <EmptyState className={panelClass}>
+            Coach-specific instructions were not detected in the source packet.
           </EmptyState>
         )
       ) : null}
@@ -343,11 +575,8 @@ export default function GymMeetDiscoveryContent({
         discovery.admissionSales.hasContent ? (
           <div className="space-y-4">
             <div className={panelClass}>
-              <div className={sectionTitleClass}>
-                <TabHeading title="Admission & Sales" style={sectionTitleStyle} />
-              </div>
               {discovery.admissionSales.admissionCards.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
                   {discovery.admissionSales.admissionCards.map((item: any, index: number) => (
                     <div key={`${item.label}-${index}`} className={cardClass}>
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
@@ -379,7 +608,7 @@ export default function GymMeetDiscoveryContent({
               ) : null}
 
               {discovery.admissionSales.logisticsItems.length > 0 ? (
-                <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="mt-4 grid gap-4 md:grid-cols-3 xl:grid-cols-4">
                   {discovery.admissionSales.logisticsItems.map((item: any) => (
                     <div key={item.key} className={cardClass}>
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
@@ -392,11 +621,13 @@ export default function GymMeetDiscoveryContent({
               ) : null}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {discovery.admissionSales.merchandiseText || discovery.admissionSales.merchandiseLink ? (
                 <div className={panelClass}>
                   <ShoppingBag className="mb-4 opacity-70" size={26} />
-                  <h4 className="text-lg font-black">Merchandise</h4>
+                  <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                    Merchandise
+                  </h4>
                   {discovery.admissionSales.merchandiseText ? (
                     <p className="mt-2 text-sm leading-relaxed opacity-80">
                       {discovery.admissionSales.merchandiseText}
@@ -419,7 +650,9 @@ export default function GymMeetDiscoveryContent({
               {discovery.admissionSales.rotationLink ? (
                 <div className={panelClass}>
                   <ClipboardList className="mb-4 opacity-70" size={26} />
-                  <h4 className="text-lg font-black">Rotation Sheets</h4>
+                  <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                    Rotation Sheets
+                  </h4>
                   <p className="mt-2 text-sm leading-relaxed opacity-80">
                     Download or view updated rotation sheets from the official event links.
                   </p>
@@ -438,7 +671,9 @@ export default function GymMeetDiscoveryContent({
               {discovery.admissionSales.resultsText || discovery.admissionSales.resultsLinks.length > 0 ? (
                 <div className={panelClass}>
                   <Ticket className="mb-4 opacity-70" size={26} />
-                  <h4 className="text-lg font-black">Results & Live Scoring</h4>
+                  <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                    Results & Live Scoring
+                  </h4>
                   {discovery.admissionSales.resultsText ? (
                     <p className="mt-2 text-sm leading-relaxed opacity-80">
                       {discovery.admissionSales.resultsText}
@@ -520,7 +755,9 @@ export default function GymMeetDiscoveryContent({
                 <div className={panelClass}>
                   <div className="mb-4 flex items-center gap-3">
                     <Car size={22} className="opacity-70" />
-                    <h4 className="text-lg font-black">Parking</h4>
+                    <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                      Parking
+                    </h4>
                   </div>
                   <p className="text-sm leading-relaxed opacity-80">
                     {discovery.trafficParking.parkingText}
@@ -554,7 +791,9 @@ export default function GymMeetDiscoveryContent({
                 <div className={panelClass}>
                   <div className="mb-4 flex items-center gap-3">
                     <Navigation size={22} className="opacity-70" />
-                    <h4 className="text-lg font-black">Ride Share</h4>
+                    <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                      Ride Share
+                    </h4>
                   </div>
                   {discovery.trafficParking.mapAddress ? (
                     <p className="text-sm leading-relaxed opacity-80">
@@ -600,7 +839,9 @@ export default function GymMeetDiscoveryContent({
             {discovery.safetyPolicy.foodBeverage ? (
               <div className={panelClass}>
                 <Coffee className="mb-4 opacity-70" size={26} />
-                <h4 className="text-lg font-black">Food & Beverage</h4>
+                <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Food & Beverage
+                </h4>
                 <p className="mt-2 text-sm leading-relaxed opacity-80">
                   {discovery.safetyPolicy.foodBeverage}
                 </p>
@@ -609,7 +850,9 @@ export default function GymMeetDiscoveryContent({
             {discovery.safetyPolicy.hydration ? (
               <div className={panelClass}>
                 <Droplets className="mb-4 opacity-70" size={26} />
-                <h4 className="text-lg font-black">Hydration</h4>
+                <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Hydration
+                </h4>
                 <p className="mt-2 text-sm leading-relaxed opacity-80">
                   {discovery.safetyPolicy.hydration}
                 </p>
@@ -618,7 +861,9 @@ export default function GymMeetDiscoveryContent({
             {discovery.safetyPolicy.serviceAnimals ? (
               <div className={panelClass}>
                 <Dog className="mb-4 opacity-70" size={26} />
-                <h4 className="text-lg font-black">Service Animals</h4>
+                <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Service Animals
+                </h4>
                 <p className="mt-2 text-sm leading-relaxed opacity-80">
                   {discovery.safetyPolicy.serviceAnimals}
                 </p>
@@ -627,7 +872,9 @@ export default function GymMeetDiscoveryContent({
             {discovery.safetyPolicy.safetyPolicy ? (
               <div className={panelClass}>
                 <ShieldAlert className="mb-4 opacity-70 text-red-500" size={26} />
-                <h4 className="text-lg font-black">Safety Policy</h4>
+                <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Safety Policy
+                </h4>
                 <p className="mt-2 text-sm leading-relaxed opacity-80">
                   {discovery.safetyPolicy.safetyPolicy}
                 </p>

@@ -9,13 +9,14 @@ import {
   Clock,
   ExternalLink,
   Phone,
-  Share2,
 } from "lucide-react";
 import ShowcaseDiscoveryContent, {
   SHOWCASE_DISCOVERY_TABS,
 } from "../ShowcaseDiscoveryContent";
+import FloatingActionStrip from "../FloatingActionStrip";
 import { ShowcaseThemeConfig } from "../showcaseThemes";
 import { GymMeetTemplateRendererProps } from "../types";
+import { getGymMeetTitleSizeStyle } from "../titleSizing";
 
 const formatTime = (value: string) => {
   if (!value) return "";
@@ -116,6 +117,21 @@ const HeroDecor = ({ theme }: { theme: ShowcaseThemeConfig }) => {
       return (
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.15),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.7),transparent_36%)]" />
       );
+    case "vaporwave":
+      return (
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(244,114,182,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(244,114,182,0.12)_1px,transparent_1px)] bg-[size:36px_36px]" />
+          <div className="absolute bottom-0 left-1/2 h-40 w-[120%] -translate-x-1/2 rounded-full bg-pink-500/18 blur-3xl" />
+        </div>
+      );
+    case "blueprint":
+      return (
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.13)_1px,transparent_1px)] bg-[size:18px_18px]" />
+      );
+    case "toxic":
+      return (
+        <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(24,24,27,0.9)_0px,rgba(24,24,27,0.9)_14px,rgba(132,204,22,0.08)_14px,rgba(132,204,22,0.08)_28px)] opacity-35" />
+      );
     default:
       return null;
   }
@@ -163,6 +179,10 @@ export default function ShowcaseGymMeetTemplate({
   const activeTabId = topTabs.some((tab) => tab.id === activeTab)
     ? activeTab
     : topTabs[0]?.id || "meet-details";
+  const topTabsStyle =
+    topTabs.length > 1
+      ? ({ gridTemplateColumns: `repeat(${topTabs.length}, minmax(0, 1fr))` } as const)
+      : undefined;
 
   const heroStyle = model.heroImage
     ? {
@@ -206,7 +226,13 @@ export default function ShowcaseGymMeetTemplate({
                     {model.hostGym || model.team || model.venue}
                   </p>
                 )}
-                <h1 className={theme.titleClass} style={theme.titleStyle}>
+                <h1
+                  className={theme.titleClass}
+                  style={{
+                    ...theme.titleStyle,
+                    ...getGymMeetTitleSizeStyle(model.titleSize),
+                  }}
+                >
                   {model.title}
                 </h1>
                 <div
@@ -243,11 +269,22 @@ export default function ShowcaseGymMeetTemplate({
             </div>
           </header>
 
-          <main className="space-y-5 px-3 py-5 sm:px-5 sm:py-6">
+          <div className="relative z-20 -mt-6 px-3 sm:px-5">
+            <FloatingActionStrip
+              buttonClass={theme.ctaSecondaryClass}
+              onShare={onShare}
+              onCalendar={onAppleCalendar}
+            />
+          </div>
+
+          <main className="space-y-5 px-3 pb-5 pt-6 sm:px-5 sm:pb-6 sm:pt-7">
             <section className="space-y-4">
               <div className="sticky top-3 z-20">
                 <div className={theme.navShellClass}>
-                  <div className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 md:grid md:grid-cols-5 md:overflow-visible">
+                  <div
+                    className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 md:grid md:overflow-visible"
+                    style={topTabsStyle}
+                  >
                     {topTabs.map((tab) => {
                       const Icon = tab.icon;
                       const selected = tab.id === activeTabId;
@@ -256,7 +293,7 @@ export default function ShowcaseGymMeetTemplate({
                           key={tab.id}
                           type="button"
                           onClick={() => setActiveTab(tab.id)}
-                          className={`${selected ? theme.navActiveClass : theme.navIdleClass} inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap md:w-full`}
+                          className={`${selected ? theme.navActiveClass : theme.navIdleClass} inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap md:min-w-0 md:w-full md:shrink`}
                         >
                           <Icon size={16} />
                           <span>{tab.label}</span>
@@ -378,24 +415,6 @@ export default function ShowcaseGymMeetTemplate({
               </Section>
             ) : null}
 
-            {model.announcements.length > 0 ? (
-              <Section title="Announcements" eyebrow="Communication" theme={theme}>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {model.announcements.slice(0, 4).map((item) => (
-                    <div key={item.id} className={theme.sectionCardClass}>
-                      <p className="text-base font-black">{item.title}</p>
-                      {item.body ? <p className="mt-2 text-sm opacity-75">{item.body}</p> : null}
-                      {item.date ? (
-                        <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
-                          {item.date}
-                        </p>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </Section>
-            ) : null}
-
             {rsvpProps.enabled ? (
               <Section title="RSVP" eyebrow="Attendance" theme={theme}>
                 {!rsvpProps.submitted ? (
@@ -497,50 +516,32 @@ export default function ShowcaseGymMeetTemplate({
               </Section>
             ) : null}
 
-            <div className="grid gap-5 xl:grid-cols-[1fr_0.95fr]">
-              <Section title="Add to Calendar" eyebrow="Share" theme={theme}>
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={onShare} className={theme.ctaSecondaryClass}>
-                    <Share2 size={14} /> Share
-                  </button>
-                  <button onClick={onGoogleCalendar} className={theme.ctaSecondaryClass}>
-                    <Calendar size={14} /> Google
-                  </button>
-                  <button onClick={onAppleCalendar} className={theme.ctaSecondaryClass}>
-                    <Calendar size={14} /> Apple
-                  </button>
-                  <button onClick={onOutlookCalendar} className={theme.ctaSecondaryClass}>
-                    <Calendar size={14} /> Outlook
-                  </button>
+            {(model.quickLinks.length > 0 || model.coachPhone) ? (
+              <Section title="Quick Access" eyebrow="Links" theme={theme}>
+                <div className="flex flex-wrap gap-2">
+                  {model.quickLinks.map((link) =>
+                    safeUrl(link.url) || /^data:/i.test(link.url) ? (
+                      <a
+                        key={link.url}
+                        href={link.url}
+                        target={/^data:/i.test(link.url) ? undefined : "_blank"}
+                        rel={/^data:/i.test(link.url) ? undefined : "noopener noreferrer"}
+                        download={/^data:/i.test(link.url) ? "source-file" : undefined}
+                        className={theme.ctaSecondaryClass}
+                      >
+                        {link.label || "Open Link"}
+                        <ExternalLink size={14} />
+                      </a>
+                    ) : null
+                  )}
+                  {model.coachPhone ? (
+                    <a href={`tel:${model.coachPhone}`} className={theme.ctaSecondaryClass}>
+                      <Phone size={14} /> Contact Coach
+                    </a>
+                  ) : null}
                 </div>
               </Section>
-
-              {(model.quickLinks.length > 0 || model.coachPhone) ? (
-                <Section title="Quick Access" eyebrow="Links" theme={theme}>
-                  <div className="flex flex-wrap gap-2">
-                    {model.quickLinks.map((link) =>
-                      safeUrl(link.url) ? (
-                        <a
-                          key={link.url}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={theme.ctaSecondaryClass}
-                        >
-                          {link.label || "Open Link"}
-                          <ExternalLink size={14} />
-                        </a>
-                      ) : null
-                    )}
-                    {model.coachPhone ? (
-                      <a href={`tel:${model.coachPhone}`} className={theme.ctaSecondaryClass}>
-                        <Phone size={14} /> Contact Coach
-                      </a>
-                    ) : null}
-                  </div>
-                </Section>
-              ) : null}
-            </div>
+            ) : null}
 
             <footer className="px-2 py-6 text-center text-xs font-semibold uppercase tracking-[0.22em] opacity-50">
               Envitefy Gymnastics Meet Page

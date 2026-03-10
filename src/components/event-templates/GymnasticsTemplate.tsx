@@ -1392,7 +1392,7 @@ const logisticsSection = {
   menuTitle: "Logistics & Travel",
   menuDesc: "Transport, hotel, meals, fees, waivers.",
   initialState: {
-    enabled: true,
+    enabled: false,
     showTransportation: true,
     showAccommodations: true,
     showFees: true,
@@ -2029,6 +2029,7 @@ const gearSection = {
   menuTitle: "Gear & Uniform",
   menuDesc: "Leotard, grips, equipment checklist.",
   initialState: {
+    enabled: false,
     leotardOfDay:
       "Navy blue competition leotard with silver accents. Team warm-up jacket and black leggings for march-in.",
     hairMakeupNotes:
@@ -2094,6 +2095,7 @@ const gearSection = {
     ] as GearItem[],
   },
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
+    const isEnabled = state?.enabled !== false;
     const items: GearItem[] = state?.items || [];
 
     const addItem = () => {
@@ -2128,6 +2130,17 @@ const gearSection = {
 
     return (
       <div className="space-y-6">
+        <SectionToggle
+          label="Show Gear & Uniform"
+          checked={isEnabled}
+          onChange={(value) => setState((s: any) => ({ ...s, enabled: value }))}
+        />
+        {!isEnabled ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            Gear & uniform are hidden from the public page.
+          </div>
+        ) : (
+          <>
         <div className="bg-pink-50 border border-pink-100 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Shirt className="text-pink-600 mt-0.5" size={20} />
@@ -2222,6 +2235,8 @@ const gearSection = {
             <Plus size={14} /> Add item
           </button>
         </div>
+          </>
+        )}
       </div>
     );
   },
@@ -2234,6 +2249,7 @@ const gearSection = {
     titleColor,
     headingFontStyle,
   }) => {
+    if (state?.enabled === false) return null;
     const items: GearItem[] = state?.items || [];
     const hasData = state?.leotardOfDay || items.length > 0;
     if (!hasData) return null;
@@ -2316,7 +2332,7 @@ const volunteersSection = {
   menuTitle: "Volunteers & Carpool",
   menuDesc: "Sign up for roles, coordinate rides.",
   initialState: {
-    enabled: true,
+    enabled: false,
     showVolunteerSlots: true,
     showCarpool: true,
     volunteerSlots: [

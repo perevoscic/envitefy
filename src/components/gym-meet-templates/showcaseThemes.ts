@@ -15,6 +15,11 @@ export type ShowcaseThemeId = Extract<
   | "midnight-frost"
   | "eco-motion"
   | "holo-elite"
+  | "vaporwave-grid"
+  | "heavy-impact"
+  | "blueprint-tech"
+  | "toxic-kinetic"
+  | "luxe-magazine"
 >;
 
 export type ShowcaseThemeConfig = {
@@ -44,7 +49,20 @@ export type ShowcaseThemeConfig = {
   ctaPrimaryClass: string;
   ctaSecondaryClass: string;
   headerAlign?: "left" | "center";
-  heroDecor?: "grid" | "paper" | "spotlight" | "burst" | "swiss" | "deco" | "concrete" | "frost" | "organic" | "holo";
+  heroDecor?:
+    | "grid"
+    | "paper"
+    | "spotlight"
+    | "burst"
+    | "swiss"
+    | "deco"
+    | "concrete"
+    | "frost"
+    | "organic"
+    | "holo"
+    | "vaporwave"
+    | "blueprint"
+    | "toxic";
   cardRadiusMode?: "soft" | "sharp";
   navRadiusMode?: "pill" | "sharp";
 };
@@ -60,6 +78,11 @@ export const SHOWCASE_THEME_ORDER: ShowcaseThemeId[] = [
   "midnight-frost",
   "eco-motion",
   "holo-elite",
+  "vaporwave-grid",
+  "heavy-impact",
+  "blueprint-tech",
+  "toxic-kinetic",
+  "luxe-magazine",
 ];
 
 export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
@@ -514,5 +537,237 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     heroDecor: "holo",
     cardRadiusMode: "soft",
     navRadiusMode: "pill",
+  },
+  "vaporwave-grid": {
+    id: "vaporwave-grid",
+    name: "Vector Vapor",
+    pageClass:
+      "min-h-screen bg-[radial-gradient(circle_at_top,#4c1d95_0%,#2d0a4e_34%,#140420_100%)] text-[#f5d0fe]",
+    shellClass:
+      "overflow-hidden border border-cyan-300/35 bg-[#18042d]/94 shadow-[0_28px_90px_rgba(34,211,238,0.18),0_0_0_1px_rgba(244,114,182,0.18)] backdrop-blur",
+    headerClass:
+      "relative overflow-hidden bg-[linear-gradient(145deg,#2d0a4e_0%,#1a0633_46%,#520091_100%)] px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(circle_at_top,rgba(244,114,182,0.18),transparent_34%)]",
+    titleClass:
+      "max-w-5xl text-5xl font-black uppercase leading-[0.86] tracking-[-0.05em] text-[#67e8f9] sm:text-6xl lg:text-8xl [font-family:'Orbitron','Rajdhani',sans-serif]",
+    titleStyle: { color: "#67e8f9" },
+    subtitleClass: "text-fuchsia-200/90",
+    metaClass: "text-violet-100/82",
+    heroBadgeClass:
+      "inline-flex items-center rounded-none border border-cyan-300/45 bg-fuchsia-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100",
+    navShellClass:
+      "rounded-none border-2 border-cyan-300/55 bg-fuchsia-600/75 px-2 py-2 shadow-[0_16px_40px_rgba(244,114,182,0.22)]",
+    navActiveClass:
+      "rounded-none bg-cyan-300 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-black",
+    navIdleClass:
+      "rounded-none border border-cyan-300/25 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-cyan-100/82 transition hover:border-cyan-200/60 hover:text-white",
+    panelClass:
+      "rounded-none border border-fuchsia-400/28 bg-[#22053d]/86 px-5 py-5 shadow-[0_16px_42px_rgba(168,85,247,0.18)]",
+    cardClass:
+      "rounded-none border border-cyan-300/25 bg-fuchsia-500/8 px-4 py-4",
+    summaryCardClass:
+      "rounded-none border border-cyan-300/25 bg-cyan-300/8 px-4 py-4",
+    sectionClass:
+      "rounded-none border border-fuchsia-400/28 bg-[#22053d]/88 px-5 py-5 shadow-[0_16px_42px_rgba(168,85,247,0.18)]",
+    sectionTitleClass: "text-cyan-100",
+    sectionTitleStyle: { color: "#cffafe" },
+    sectionCardClass:
+      "rounded-none border border-cyan-300/25 bg-[#2b0b4a] px-4 py-4",
+    sectionMutedClass: "bg-cyan-300 text-black",
+    accentClass: "text-fuchsia-300",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none bg-cyan-300 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-black transition hover:bg-cyan-200",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border border-cyan-300/45 bg-fuchsia-500/8 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-cyan-50 transition hover:bg-cyan-300/10",
+    headerAlign: "center",
+    heroDecor: "vaporwave",
+    cardRadiusMode: "sharp",
+    navRadiusMode: "sharp",
+  },
+  "heavy-impact": {
+    id: "heavy-impact",
+    name: "Heavy Impact",
+    pageClass:
+      "min-h-screen bg-[linear-gradient(180deg,#fde047_0%,#facc15_52%,#fef08a_100%)] text-black",
+    shellClass:
+      "overflow-hidden border-[8px] border-black bg-white shadow-[20px_20px_0px_#000000]",
+    headerClass:
+      "relative overflow-hidden bg-black px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_50%)]",
+    titleClass:
+      "max-w-5xl text-6xl font-black uppercase leading-[0.82] tracking-[-0.06em] text-yellow-300 sm:text-7xl lg:text-[5.5rem] [font-family:'Archivo_Black','Arial_Black',sans-serif]",
+    titleStyle: { color: "#fde047" },
+    subtitleClass: "text-white/82",
+    metaClass: "text-white/78",
+    heroBadgeClass:
+      "inline-flex items-center rounded-none bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-black",
+    navShellClass:
+      "rounded-none border-y-[6px] border-yellow-300 bg-black px-2 py-2",
+    navActiveClass:
+      "rounded-none bg-yellow-300 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-black",
+    navIdleClass:
+      "rounded-none border border-transparent px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:border-yellow-300 hover:text-yellow-200",
+    panelClass:
+      "rounded-none border-[4px] border-black bg-white px-5 py-5 shadow-[10px_10px_0px_#000000]",
+    cardClass:
+      "rounded-none border-[3px] border-black bg-yellow-100 px-4 py-4 shadow-[6px_6px_0px_#000000]",
+    summaryCardClass:
+      "rounded-none border-[3px] border-black bg-white px-4 py-4 shadow-[6px_6px_0px_#000000]",
+    sectionClass:
+      "rounded-none border-[4px] border-black bg-white px-5 py-5 shadow-[10px_10px_0px_#000000]",
+    sectionTitleClass: "text-black",
+    sectionTitleStyle: { color: "#000000" },
+    sectionCardClass:
+      "rounded-none border-[3px] border-black bg-yellow-50 px-4 py-4 shadow-[6px_6px_0px_#000000]",
+    sectionMutedClass: "bg-black text-yellow-300",
+    accentClass: "text-black",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border-[3px] border-black bg-yellow-300 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-black transition hover:bg-yellow-200",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border-[3px] border-black bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-black transition hover:bg-yellow-50",
+    headerAlign: "left",
+    cardRadiusMode: "sharp",
+    navRadiusMode: "sharp",
+  },
+  "blueprint-tech": {
+    id: "blueprint-tech",
+    name: "Tech Blueprint",
+    pageClass:
+      "min-h-screen bg-[linear-gradient(180deg,#002447_0%,#003366_48%,#0a4a7a_100%)] text-white",
+    shellClass:
+      "overflow-hidden border border-white/35 bg-[#002a52]/92 shadow-[0_28px_84px_rgba(0,0,0,0.28)]",
+    headerClass:
+      "relative overflow-hidden border-b border-white/30 bg-[linear-gradient(145deg,#003366_0%,#0a4a7a_52%,#1e3a8a_100%)] px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(rgba(255,255,255,0.12)_1px,transparent_1px)] bg-[size:18px_18px]",
+    titleClass:
+      "max-w-5xl text-5xl font-bold uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-6xl lg:text-8xl [font-family:'IBM_Plex_Mono','Courier_New',monospace]",
+    titleStyle: { color: "#ffffff" },
+    subtitleClass: "text-blue-100/88",
+    metaClass: "text-white/78",
+    heroBadgeClass:
+      "inline-flex items-center rounded-none border border-white/50 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white",
+    navShellClass:
+      "rounded-none border border-white/45 bg-[#003366] px-2 py-2",
+    navActiveClass:
+      "rounded-none bg-white px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-[#003366]",
+    navIdleClass:
+      "rounded-none border border-transparent px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white/65 transition hover:border-white/35 hover:text-white",
+    panelClass:
+      "rounded-none border border-dashed border-white/45 bg-white/5 px-5 py-5",
+    cardClass:
+      "rounded-none border border-dashed border-white/38 bg-white/5 px-4 py-4",
+    summaryCardClass:
+      "rounded-none border border-dashed border-white/45 bg-white/6 px-4 py-4",
+    sectionClass:
+      "rounded-none border border-dashed border-white/45 bg-white/5 px-5 py-5",
+    sectionTitleClass: "text-white",
+    sectionTitleStyle: { color: "#ffffff" },
+    sectionCardClass:
+      "rounded-none border border-dashed border-white/38 bg-[#0b3b64] px-4 py-4",
+    sectionMutedClass: "bg-white text-[#003366]",
+    accentClass: "text-blue-100",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-[#003366] transition hover:bg-blue-50",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border border-white/50 bg-transparent px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-white/10",
+    headerAlign: "center",
+    heroDecor: "blueprint",
+    cardRadiusMode: "sharp",
+    navRadiusMode: "sharp",
+  },
+  "toxic-kinetic": {
+    id: "toxic-kinetic",
+    name: "Toxic Kinetic",
+    pageClass:
+      "min-h-screen bg-[linear-gradient(180deg,#000000_0%,#09090b_54%,#111827_100%)] text-lime-300",
+    shellClass:
+      "overflow-hidden border border-lime-400/35 bg-zinc-950 shadow-[0_28px_84px_rgba(132,204,22,0.14)]",
+    headerClass:
+      "relative overflow-hidden bg-[linear-gradient(145deg,#000000_0%,#111827_50%,#14532d_100%)] px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(circle_at_top_left,rgba(132,204,22,0.16),transparent_30%)]",
+    titleClass:
+      "max-w-5xl text-5xl font-black uppercase italic leading-[0.84] tracking-[-0.06em] text-lime-400 sm:text-6xl lg:text-8xl [font-family:'Kanit','Oswald',sans-serif] [-skew-x-6]",
+    titleStyle: { color: "#a3e635" },
+    subtitleClass: "text-lime-200/78",
+    metaClass: "text-lime-100/70",
+    heroBadgeClass:
+      "inline-flex items-center rounded-none border border-lime-400/40 bg-lime-400/12 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-lime-200",
+    navShellClass:
+      "rounded-none border-y-2 border-lime-400/65 bg-black px-2 py-2",
+    navActiveClass:
+      "rounded-none bg-lime-400 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-black [-skew-x-6]",
+    navIdleClass:
+      "rounded-none border border-transparent px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-lime-200/62 transition hover:border-lime-400/35 hover:text-lime-100",
+    panelClass:
+      "rounded-none border border-lime-400/28 bg-zinc-950 px-5 py-5 shadow-[0_16px_42px_rgba(10,10,10,0.3)]",
+    cardClass:
+      "rounded-none border border-lime-400/25 bg-zinc-900 px-4 py-4",
+    summaryCardClass:
+      "rounded-none border border-lime-400/25 bg-black px-4 py-4",
+    sectionClass:
+      "rounded-none border border-lime-400/28 bg-zinc-950 px-5 py-5 shadow-[0_16px_42px_rgba(10,10,10,0.3)]",
+    sectionTitleClass: "text-lime-300",
+    sectionTitleStyle: { color: "#bef264" },
+    sectionCardClass:
+      "rounded-none border border-lime-400/24 bg-zinc-900 px-4 py-4",
+    sectionMutedClass: "bg-lime-400 text-black",
+    accentClass: "text-lime-300",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none bg-lime-400 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-black transition hover:bg-lime-300",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border border-lime-400/45 bg-transparent px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-lime-200 transition hover:bg-lime-400/10",
+    headerAlign: "left",
+    heroDecor: "toxic",
+    cardRadiusMode: "sharp",
+    navRadiusMode: "sharp",
+  },
+  "luxe-magazine": {
+    id: "luxe-magazine",
+    name: "Luxe Editorial",
+    pageClass:
+      "min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#fafaf9_56%,#f5f5f4_100%)] text-black",
+    shellClass:
+      "overflow-hidden border-b border-black bg-white shadow-[0_18px_46px_rgba(0,0,0,0.06)]",
+    headerClass:
+      "relative overflow-hidden bg-white px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass: "bg-transparent",
+    titleClass:
+      "max-w-5xl text-5xl font-light leading-[0.92] tracking-[-0.04em] text-black sm:text-6xl lg:text-8xl [font-family:'Cormorant_Garamond',Georgia,serif]",
+    titleStyle: { color: "#000000" },
+    subtitleClass: "text-zinc-500",
+    metaClass: "text-zinc-600",
+    heroBadgeClass:
+      "inline-flex items-center rounded-none border-b border-black px-0 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-black",
+    navShellClass:
+      "rounded-none border-y border-black bg-white px-2 py-2",
+    navActiveClass:
+      "rounded-none bg-black px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white",
+    navIdleClass:
+      "rounded-none border border-transparent px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-600 transition hover:border-black hover:text-black",
+    panelClass:
+      "rounded-none border-b border-black bg-white px-5 py-5",
+    cardClass:
+      "rounded-none border-b border-black bg-white px-4 py-4",
+    summaryCardClass:
+      "rounded-none border-b border-black bg-white px-4 py-4",
+    sectionClass:
+      "rounded-none border-b border-black bg-white px-5 py-5",
+    sectionTitleClass: "text-black",
+    sectionTitleStyle: { color: "#000000" },
+    sectionCardClass:
+      "rounded-none border-b border-black bg-white px-4 py-4",
+    sectionMutedClass: "bg-black text-white",
+    accentClass: "text-zinc-500",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none bg-black px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-zinc-800",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border border-black bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-black transition hover:bg-zinc-50",
+    headerAlign: "left",
+    cardRadiusMode: "sharp",
+    navRadiusMode: "sharp",
   },
 };

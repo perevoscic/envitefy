@@ -8,6 +8,7 @@ import {
   resolveGymMeetTemplateId,
 } from "./registry";
 import BentoBoxTemplate from "./renderers/BentoBoxTemplate";
+import BlueprintTechTemplate from "./renderers/BlueprintTechTemplate";
 import ChalkStrikeTemplate from "./renderers/ChalkStrikeTemplate";
 import ClubClassicTemplate from "./renderers/ClubClassicTemplate";
 import ConcreteGymTemplate from "./renderers/ConcreteGymTemplate";
@@ -16,8 +17,10 @@ import ArtDecoTemplate from "./renderers/ArtDecoTemplate";
 import CyberAthleteTemplate from "./renderers/CyberAthleteTemplate";
 import EcoMotionTemplate from "./renderers/EcoMotionTemplate";
 import EliteAthleteTemplate from "./renderers/EliteAthleteTemplate";
+import HeavyImpactTemplate from "./renderers/HeavyImpactTemplate";
 import HoloEliteTemplate from "./renderers/HoloEliteTemplate";
 import JudgesSheetTemplate from "./renderers/JudgesSheetTemplate";
+import LuxeMagazineTemplate from "./renderers/LuxeMagazineTemplate";
 import MedalPosterTemplate from "./renderers/MedalPosterTemplate";
 import MidnightFrostTemplate from "./renderers/MidnightFrostTemplate";
 import ParentCommandTemplate from "./renderers/ParentCommandTemplate";
@@ -28,7 +31,9 @@ import RibbonEditorialTemplate from "./renderers/RibbonEditorialTemplate";
 import ScoutingReportTemplate from "./renderers/ScoutingReportTemplate";
 import SpringEnergyTemplate from "./renderers/SpringEnergyTemplate";
 import SunsetArenaTemplate from "./renderers/SunsetArenaTemplate";
+import ToxicKineticTemplate from "./renderers/ToxicKineticTemplate";
 import TravelBriefingTemplate from "./renderers/TravelBriefingTemplate";
+import VaporwaveGridTemplate from "./renderers/VaporwaveGridTemplate";
 import VaultGridTemplate from "./renderers/VaultGridTemplate";
 import VarsityClassicTemplate from "./renderers/VarsityClassicTemplate";
 import WeekendJourneyTemplate from "./renderers/WeekendJourneyTemplate";
@@ -63,6 +68,16 @@ export default function GymMeetTemplateRenderer(props: any) {
       return <EcoMotionTemplate {...props} />;
     case "holo-elite":
       return <HoloEliteTemplate {...props} />;
+    case "vaporwave-grid":
+      return <VaporwaveGridTemplate {...props} />;
+    case "heavy-impact":
+      return <HeavyImpactTemplate {...props} />;
+    case "blueprint-tech":
+      return <BlueprintTechTemplate {...props} />;
+    case "toxic-kinetic":
+      return <ToxicKineticTemplate {...props} />;
+    case "luxe-magazine":
+      return <LuxeMagazineTemplate {...props} />;
     case "chalk-strike":
       return <ChalkStrikeTemplate {...props} />;
     case "podium-lights":

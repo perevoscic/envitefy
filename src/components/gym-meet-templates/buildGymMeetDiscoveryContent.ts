@@ -117,6 +117,7 @@ export function buildGymMeetDiscoveryContent({
   const parseLogistics = parseResult?.logistics || {};
   const parseMeetDetails = parseResult?.meetDetails || {};
   const parseCommunications = parseResult?.communications || {};
+  const parseCoachInfo = parseResult?.coachInfo || {};
   const parseLinks = Array.isArray(parseResult?.links) ? parseResult.links : [];
   const quickLinks =
     Array.isArray(eventData?.links) && eventData.links.length ? eventData.links : parseLinks;
@@ -725,22 +726,184 @@ export function buildGymMeetDiscoveryContent({
       sourceSafetyObjectsLine ||
       sourcePolicyLine(/(safety policy|throwing objects|baseballs|footballs|safety)/i),
   ];
+  const extractionCoachPageHints = Array.isArray(
+    eventData?.discoverySource?.extractionMeta?.coachPageHints
+  )
+    ? eventData.discoverySource.extractionMeta.coachPageHints
+    : [];
+  const coachRolePattern =
+    /\b(coach|meet director|director of operations|assistant event coordinator|floor manager)\b/i;
+  const coachContacts = ([
+    ...((Array.isArray(parseCoachInfo?.contacts) ? parseCoachInfo.contacts : []) as any[]),
+    ...((Array.isArray(parseResult?.contacts) ? parseResult.contacts : []).filter((item: any) =>
+      coachRolePattern.test(`${safeString(item?.role)} ${safeString(item?.name)}`)
+    ) as any[]),
+  ] as any[])
+    .map((item: any) => ({
+      role: safeString(item?.role || "Coach contact"),
+      name: safeString(item?.name),
+      email: safeString(item?.email),
+      phone: safeString(item?.phone),
+    }))
+    .filter((item) => item.name || item.email || item.phone)
+    .filter((item, idx, arr) => {
+      const key = normalizeCompareText(
+        `${item.role}|${item.name}|${item.email}|${item.phone}`
+      );
+      return (
+        arr.findIndex((candidate) => {
+          const candidateKey = normalizeCompareText(
+            `${safeString(candidate.role)}|${safeString(candidate.name)}|${safeString(
+              candidate.email
+            )}|${safeString(candidate.phone)}`
+          );
+          return candidateKey === key;
+        }) === idx
+      );
+    });
+  const coachDeadlines = [
+    ...((Array.isArray(parseCoachInfo?.deadlines) ? parseCoachInfo.deadlines : []) as any[]),
+    ...((Array.isArray(parseResult?.deadlines) ? parseResult.deadlines : []).filter((item: any) =>
+      /(regional|entry|registration|deadline|meet reservation|meet maker)/i.test(
+        `${safeString(item?.label)} ${safeString(item?.note)}`
+      )
+    ) as any[]),
+  ]
+    .map((item: any) => ({
+      label: safeString(item?.label || "Coach deadline"),
+      date: safeString(item?.date),
+      note: safeString(item?.note),
+    }))
+    .filter((item) => item.date || item.note || item.label !== "Coach deadline")
+    .filter((item, idx, arr) => {
+      const key = normalizeCompareText(`${item.label}|${item.date}|${item.note}`);
+      return (
+        arr.findIndex((candidate) => {
+          const candidateKey = normalizeCompareText(
+            `${safeString(candidate.label)}|${safeString(candidate.date)}|${safeString(
+              candidate.note
+            )}`
+          );
+          return candidateKey === key;
+        }) === idx
+      );
+    });
+  const sourceCoachSignInLine =
+    sourceLines.find((line) =>
+      /(coaches?\s+sign[- ]?in|sign the official .*sign[- ]?in sheet|main computer scoring table)/i.test(
+        line
+      )
+    ) || "";
+  const sourceCoachHospitalityLine =
+    sourceLines.find((line) =>
+      /(coaches?\s+hospitality|lunch and dinner provided to coaches|grab\s*&\s*go snacks|coffee.*water.*coaches)/i.test(
+        line
+      )
+    ) || "";
+  const sourceCoachFloorAccessLine =
+    sourceLines.find((line) =>
+      /(competition floor|verifiable member status|allowed entry via spectator admission|children of coaches)/i.test(
+        line
+      )
+    ) || "";
+  const sourceCoachScratchesLine =
+    sourceLines.find((line) => /\bscratches?\b/i.test(line)) || "";
+  const sourceCoachRotationLine =
+    sourceLines.find((line) =>
+      /(rotation sheets?|rotationsheets\.com|master rotation sheet)/i.test(line)
+    ) || "";
+  const sourceCoachRegionalLine =
+    sourceLines.find((line) =>
+      /(regional meet coaches information|regional commitment|qualifying athletes|meet maker|meet reservation|must enter by noon)/i.test(
+        line
+      )
+    ) || "";
+  const coachAttire = uniqueTextLines(
+    [
+      ...(Array.isArray(parseCoachInfo?.attire) ? parseCoachInfo.attire : []),
+      ...sourceLines.filter((line) =>
+        /(closed toe athletic shoes|athletic or tailored shorts|collared or business casual|no hats or visors|dress code|coaches attire)/i.test(
+          line
+        )
+      ),
+    ],
+    8
+  );
+  const coachNotes = uniqueTextLines(
+    [
+      ...(Array.isArray(parseCoachInfo?.notes) ? parseCoachInfo.notes : []),
+      ...extractionCoachPageHints
+        .map((item: any) => safeString(item?.excerpt))
+        .filter(Boolean),
+    ],
+    8
+  ).filter(
+    (line) =>
+      ![
+        safeString(parseCoachInfo?.signIn),
+        safeString(parseCoachInfo?.hospitality),
+        safeString(parseCoachInfo?.floorAccess),
+        safeString(parseCoachInfo?.scratches),
+        safeString(parseCoachInfo?.rotationSheets),
+        safeString(parseCoachInfo?.regionalCommitment),
+      ]
+        .filter(Boolean)
+        .some((candidate) => normalizeCompareText(candidate) === normalizeCompareText(line))
+  );
+  const coachSignIn = safeString(parseCoachInfo?.signIn || sourceCoachSignInLine);
+  const coachHospitality = safeString(parseCoachInfo?.hospitality || sourceCoachHospitalityLine);
+  const coachFloorAccess = safeString(parseCoachInfo?.floorAccess || sourceCoachFloorAccessLine);
+  const coachScratches = safeString(parseCoachInfo?.scratches || sourceCoachScratchesLine);
+  const coachRotationSheets = safeString(
+    parseCoachInfo?.rotationSheets || sourceCoachRotationLine
+  );
+  const coachRegionalCommitment = safeString(
+    parseCoachInfo?.regionalCommitment || sourceCoachRegionalLine
+  );
+  const coachesHasContent =
+    Boolean(parseCoachInfo?.hasContent) ||
+    coachContacts.length > 0 ||
+    coachDeadlines.length > 0 ||
+    coachAttire.length > 0 ||
+    coachNotes.length > 0 ||
+    Boolean(coachSignIn) ||
+    Boolean(coachHospitality) ||
+    Boolean(coachFloorAccess) ||
+    Boolean(coachScratches) ||
+    Boolean(coachRotationSheets) ||
+    Boolean(coachRegionalCommitment) ||
+    extractionCoachPageHints.length > 0;
 
   const awardsAreaItems = toStructuredListItems(awardsAreaNote, /^awards?\s*area\s*:\s*/i);
   const meetDetailsInline = meetDetailsLines.map(extractInlineUrl);
   const venueDetailsInline = venueListLines.map(extractInlineUrl);
+  const tabs = [
+    { id: "meet-details", label: "Meet Details" },
+    ...(coachesHasContent ? [{ id: "coaches", label: "Coaches" }] : []),
+    { id: "venue-details", label: "Venue Details" },
+    { id: "admission-sales", label: "Admission & Sales" },
+    { id: "traffic-parking", label: "Traffic & Parking" },
+    { id: "safety-policy", label: "Safety Policy" },
+  ];
 
   return {
-    tabs: [
-      { id: "meet-details", label: "Meet Details" },
-      { id: "venue-details", label: "Venue Details" },
-      { id: "admission-sales", label: "Admission & Sales" },
-      { id: "traffic-parking", label: "Traffic & Parking" },
-      { id: "safety-policy", label: "Safety Policy" },
-    ],
+    tabs,
     meetDetails: {
       lines: meetDetailsInline,
       hasContent: meetDetailsInline.length > 0,
+    },
+    coaches: {
+      contacts: coachContacts,
+      deadlines: coachDeadlines,
+      attire: coachAttire,
+      notes: coachNotes,
+      signIn: coachSignIn,
+      hospitality: coachHospitality,
+      floorAccess: coachFloorAccess,
+      scratches: coachScratches,
+      rotationSheets: coachRotationSheets,
+      regionalCommitment: coachRegionalCommitment,
+      hasContent: coachesHasContent,
     },
     venueDetails: {
       lines: venueDetailsInline,

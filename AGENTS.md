@@ -270,6 +270,7 @@ curl -X POST \
     - `gymLayoutZones` (LLM-detected map regions with normalized boxes and confidence),
     - `gymLayoutPage` (0-based PDF page index when applicable),
     - `gymLayoutSelection` (optional diagnostics payload with selected page, confidence, reason, and scored candidates).
+    - `coachPageHints` (optional compact hints for PDF/source sections that look coach-specific, including page number, heading, and excerpt).
   - PDF hall-layout image capture now uses a renderer fallback path (PDF.js + Canvas) when direct PDF page rasterization is unavailable, so venue map screenshots can still be generated from uploaded PDFs.
   - PDF hall-layout page selection is strict map-only: text/prose pages are rejected even if they contain generic hall terms. If no page passes strict gates, `gymLayoutImageDataUrl` is stored as `null` (no text-page fallback image).
   - Hall-layout fact lines are now strictly sanitized before mapping/rendering (readability + venue-anchor checks + near-duplicate collapse). Fragmented/paraphrased snippets are dropped so Venue Details may be intentionally sparse when source confidence is low.
@@ -277,9 +278,11 @@ curl -X POST \
   - AI parsing is **OpenAI primary** with strict JSON schema validation.
   - If OpenAI returns invalid JSON, retries once with JSON-fix instruction.
   - If still invalid or OpenAI errors, falls back to Gemini once.
-  - Gymnastics parse schema is dynamic-file oriented and includes `documentProfile` plus expanded sections for operations/policies/contacts/deadlines/unmapped facts to improve recall across varied meet packets.
+  - Gymnastics parse schema is dynamic-file oriented and includes `documentProfile` plus expanded sections for operations/policies/coach info/contacts/deadlines/unmapped facts to improve recall across varied meet packets.
+  - Gymnastics parsing now trains specifically on coach-only sections/pages and returns a structured `parseResult.coachInfo` block (`signIn`, `attire`, `hospitality`, `floorAccess`, `scratches`, `rotationSheets`, `regionalCommitment`, coach contacts/deadlines, and notes) when detected.
   - Gymnastics mapping safeguards meet dates by preferring parsed date ranges (for example `March 6-8, 2026`) when a conflicting single `startAt` value is out of range.
   - Gymnastics mapping resolves an assigned gym location (`athlete.assignedGym` first, then strongest gym mention) and attempts a focused crop from the detected gym layout zones. If crop confidence is insufficient or no matching zone is found, it safely falls back to the full layout image.
+  - Gymnastics discovery rendering now adds a dynamic `Coaches` navigation tab when parsed/extracted coach content exists; visibility follows the normal event access rules.
   - Football uses a separate football-oriented schema/prompt that classifies `football_game_packet` vs `football_season_schedule` and maps results into football builder fields (`games`, `practice`, `roster`, `logistics`, `gear`, `volunteers`, `announcements`, team/stadium metadata).
   - Stores source audit info (`extractedText`, `parseResult`, `rawModelOutput`, `modelUsed`, timestamps, extraction quality metadata`) under `discoverySource`.
 - **Output**: `{ ok, eventId, repaired, modelUsed, parseResult, statuses }` where `modelUsed` is `"openai"`, `"gemini"`, or `"quality-gate"` when parsing is skipped due to low extraction quality.

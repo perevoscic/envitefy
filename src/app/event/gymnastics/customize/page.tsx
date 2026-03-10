@@ -219,10 +219,13 @@ const GYM_FONTS = [
 ];
 
 const FONT_SIZE_OPTIONS = [
-  { id: "small", label: "Small", className: "text-3xl md:text-4xl" },
-  { id: "medium", label: "Medium", className: "text-4xl md:text-5xl" },
-  { id: "large", label: "Large", className: "text-5xl md:text-6xl" },
+  { id: "small", label: "Small", className: "text-2xl md:text-3xl" },
+  { id: "medium", label: "Medium", className: "text-3xl md:text-4xl" },
+  { id: "large", label: "Large", className: "text-4xl md:text-5xl" },
 ];
+
+const resolveFontSizeOption = (value: unknown) =>
+  FONT_SIZE_OPTIONS.find((option) => option.id === value) || FONT_SIZE_OPTIONS[1];
 
 const baseInputClass =
   "w-full p-3 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow";
@@ -307,7 +310,7 @@ const SECTION_SHOWS_ON_EVENT: Record<string, string> = {
   volunteers: "Volunteers & Carpool section",
   announcements: "Announcements section",
   rsvp: "Attendance / RSVP area",
-  passcode: "Access gate for the whole page (when enabled)",
+  passcode: "Access gate for the whole page",
 };
 
 const MenuCard = ({
@@ -800,7 +803,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       venue: "",
       details: "",
       hero: "",
-      rsvpEnabled: true,
+      rsvpEnabled: false,
       rsvpDeadline:
         typeof config.defaultRsvpDeadlineDays === "number"
           ? (() => {
@@ -910,9 +913,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.themes.find((t) => t.id === themeId) || config.themes[0];
     const selectedFont =
       GYM_FONTS.find((f) => f.id === data.fontId) || GYM_FONTS[0];
-    const selectedSize =
-      FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
-      FONT_SIZE_OPTIONS[1];
+    const selectedSize = resolveFontSizeOption(data.fontSize);
 
     const isDarkBackground = useMemo(() => {
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -1161,7 +1162,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const advancedStatus = (enabled: boolean): "not-started" | "ready" =>
       enabled ? "ready" : "not-started";
     const passcodeStatus: "not-started" | "in-progress" | "ready" = (() => {
-      if (!data.passcodeRequired) return "ready";
+      if (!data.passcodeRequired) return "not-started";
       if (!data.passcode?.trim()) return "in-progress";
       return data.passcode.trim().length >= 4 ? "ready" : "in-progress";
     })();
@@ -1172,7 +1173,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const missingEssentials = [
       !data.title?.trim() ? "Event title" : null,
       !data.date ? "Date" : null,
-      !data.time ? "Start time in Details" : null,
+      !data.time ? "Start time in Event Basics" : null,
       !data.timezone?.trim() ? "Timezone" : null,
       !data.venue?.trim() && !data.address?.trim()
         ? "Venue or address"
@@ -1759,6 +1760,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             numberOfGuests: 0,
             templateId: config.slug,
             pageTemplateId: resolvedPageTemplateId,
+            fontSize: selectedSize.id,
+            fontSizeClass: selectedSize.className,
             templateConfig: {
               displayName: config.displayName,
               categoryLabel: config.categoryLabel || config.displayName,
@@ -1896,6 +1899,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.rsvpCopy,
       themeId,
       currentTheme,
+      selectedSize,
       editEventId,
       isDiscoveryEdit,
       loadedDiscoverySource,
@@ -2463,10 +2467,46 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         onBack={() => setActiveView("main")}
         showBack
       >
-        <TemplateSelector
-          value={resolveGymMeetTemplateId(data)}
-          onChange={handleTemplateSelection}
-        />
+        <div className="space-y-4">
+          <TemplateSelector
+            value={resolveGymMeetTemplateId(data)}
+            onChange={handleTemplateSelection}
+          />
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                  Title Size
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Controls the event title in preview and on the live meet page.
+                </p>
+              </div>
+              <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {selectedSize.label}
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {FONT_SIZE_OPTIONS.map((option) => {
+                const active = option.id === selectedSize.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => updateData("fontSize", option.id)}
+                    className={`rounded-xl border px-3 py-3 text-sm font-semibold transition ${
+                      active
+                        ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
       </GymnasticsEditorLayout>
     );
 
@@ -2834,6 +2874,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         numberOfGuests: 0,
         templateId: config.slug,
         pageTemplateId: data.pageTemplateId,
+        fontSize: selectedSize.id,
+        fontSizeClass: selectedSize.className,
         templateConfig: {
           displayName: config.displayName,
           categoryLabel: config.categoryLabel || config.displayName,
@@ -2893,6 +2935,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.passcodeRequired,
       data.rsvpDeadline,
       data.rsvpEnabled,
+      selectedSize,
       data.state,
       data.time,
       data.timezone,

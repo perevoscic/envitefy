@@ -3,9 +3,11 @@
 "use client";
 
 import React from "react";
-import { Calendar, Check, Clock, Phone, Share2 } from "lucide-react";
+import { Calendar, Check, Clock, Phone } from "lucide-react";
 import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
+import FloatingActionStrip from "../FloatingActionStrip";
 import { GymMeetTemplateRendererProps } from "../types";
+import { getGymMeetTitleSizeStyle } from "../titleSizing";
 
 const formatTime = (value: string) => {
   if (!value) return "";
@@ -69,6 +71,8 @@ export default function DashboardGymMeetTemplate({
     navActiveClass: string;
     navIdleClass: string;
     navFadeClass?: string;
+    navRailClass?: string;
+    navButtonClass?: string;
     summaryCardClass: string;
     sectionClass: string;
     sectionMutedClass?: string;
@@ -123,7 +127,12 @@ export default function DashboardGymMeetTemplate({
 
               <div className="grid gap-6 lg:grid-cols-[1.5fr_0.9fr] lg:items-end">
                 <div>
-                  <h1 className={variant.titleClass}>{model.title}</h1>
+                  <h1
+                    className={variant.titleClass}
+                    style={getGymMeetTitleSizeStyle(model.titleSize)}
+                  >
+                    {model.title}
+                  </h1>
                   <div className={`mt-4 flex flex-wrap gap-4 text-sm font-semibold ${variant.mutedClass}`}>
                     {model.dateLabel ? (
                       <span className="inline-flex items-center gap-2">
@@ -158,7 +167,15 @@ export default function DashboardGymMeetTemplate({
             </div>
           </header>
 
-          <main className="px-3 py-5 sm:px-5 sm:py-6">
+          <div className="relative z-20 -mt-6 px-3 sm:px-5">
+            <FloatingActionStrip
+              buttonClass={variant.secondaryButtonClass}
+              onShare={onShare}
+              onCalendar={onAppleCalendar}
+            />
+          </div>
+
+          <main className="px-3 pb-5 pt-6 sm:px-5 sm:pb-6 sm:pt-7">
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
               <div className="space-y-5">
                 <GymMeetDiscoveryContent model={model} variant={variant} />
@@ -268,23 +285,6 @@ export default function DashboardGymMeetTemplate({
                   </Section>
                 ) : null}
 
-                {model.announcements.length > 0 ? (
-                  <Section title="Announcements" eyebrow="Communication" className={variant.sectionClass}>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {model.announcements.slice(0, 4).map((item) => (
-                        <div key={item.id} className={variant.summaryCardClass}>
-                          <p className="text-base font-black">{item.title}</p>
-                          {item.body ? <p className="mt-2 text-sm opacity-75">{item.body}</p> : null}
-                          {item.date ? (
-                            <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
-                              {item.date}
-                            </p>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  </Section>
-                ) : null}
               </div>
 
               <div className={`space-y-4 ${variant.stickyRailClass}`}>
@@ -402,23 +402,6 @@ export default function DashboardGymMeetTemplate({
                   </Section>
                 ) : null}
 
-                <Section title="Add to Calendar" eyebrow="Share" className={variant.sidebarCardClass}>
-                  <div className="grid gap-2">
-                    <button onClick={onShare} className={variant.secondaryButtonClass}>
-                      <Share2 size={14} /> Share
-                    </button>
-                    <button onClick={onGoogleCalendar} className={variant.secondaryButtonClass}>
-                      <Calendar size={14} /> Google
-                    </button>
-                    <button onClick={onAppleCalendar} className={variant.secondaryButtonClass}>
-                      <Calendar size={14} /> Apple
-                    </button>
-                    <button onClick={onOutlookCalendar} className={variant.secondaryButtonClass}>
-                      <Calendar size={14} /> Outlook
-                    </button>
-                  </div>
-                </Section>
-
                 {(model.quickLinks.length > 0 || model.coachPhone) ? (
                   <Section title="Quick Access" eyebrow="Links" className={variant.sidebarCardClass}>
                     <div className="grid gap-2">
@@ -426,8 +409,9 @@ export default function DashboardGymMeetTemplate({
                         <a
                           key={link.url}
                           href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          target={/^data:/i.test(link.url) ? undefined : "_blank"}
+                          rel={/^data:/i.test(link.url) ? undefined : "noopener noreferrer"}
+                          download={/^data:/i.test(link.url) ? "source-file" : undefined}
                           className={variant.secondaryButtonClass}
                         >
                           {link.label || "Open Link"}
@@ -441,6 +425,7 @@ export default function DashboardGymMeetTemplate({
                     </div>
                   </Section>
                 ) : null}
+
               </div>
             </div>
 

@@ -3,9 +3,11 @@
 "use client";
 
 import React from "react";
-import { Calendar, Check, Clock, Phone, Share2 } from "lucide-react";
+import { Calendar, Check, Clock, Phone } from "lucide-react";
 import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
+import FloatingActionStrip from "../FloatingActionStrip";
 import { GymMeetTemplateRendererProps } from "../types";
+import { getGymMeetTitleSizeStyle } from "../titleSizing";
 
 const formatTime = (value: string) => {
   if (!value) return "";
@@ -132,7 +134,13 @@ export default function BaseGymMeetTemplate({
 
               <div className="grid gap-6 lg:grid-cols-[1.6fr_0.9fr] lg:items-end">
                 <div>
-                  <h1 className={variant.titleClass} style={variant.titleStyle}>
+                  <h1
+                    className={variant.titleClass}
+                    style={{
+                      ...variant.titleStyle,
+                      ...getGymMeetTitleSizeStyle(model.titleSize),
+                    }}
+                  >
                     {model.title}
                   </h1>
                   <div className={`mt-4 flex flex-wrap gap-4 text-sm font-semibold ${variant.mutedClass}`}>
@@ -164,7 +172,15 @@ export default function BaseGymMeetTemplate({
             </div>
           </header>
 
-          <main className="space-y-4 px-3 py-5 sm:px-5 sm:py-6">
+          <div className="relative z-20 -mt-6 px-3 sm:px-5">
+            <FloatingActionStrip
+              buttonClass={variant.secondaryButtonClass}
+              onShare={onShare}
+              onCalendar={onAppleCalendar}
+            />
+          </div>
+
+          <main className="space-y-4 px-3 pb-5 pt-6 sm:px-5 sm:pb-6 sm:pt-7">
             <GymMeetDiscoveryContent model={model} variant={variant} />
 
             {(model.rosterAthletes.length > 0 || practiceBlocks.length > 0) ? (
@@ -315,30 +331,6 @@ export default function BaseGymMeetTemplate({
               </div>
             ) : null}
 
-            {model.announcements.length > 0 ? (
-              <BaseSection
-                title="Announcements"
-                eyebrow="Communication"
-                className={variant.sectionClass}
-                titleClass={variant.sectionTitleClass}
-                titleStyle={variant.sectionTitleStyle}
-              >
-                <div className="space-y-3">
-                  {model.announcements.slice(0, 4).map((item) => (
-                    <div key={item.id} className={variant.summaryCardClass}>
-                      <p className="text-base font-black">{item.title}</p>
-                      {item.body ? <p className="mt-2 text-sm opacity-75">{item.body}</p> : null}
-                      {item.date ? (
-                        <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
-                          {item.date}
-                        </p>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </BaseSection>
-            ) : null}
-
             {rsvpProps.enabled ? (
               <div id="rsvp">
                 <BaseSection
@@ -449,59 +441,35 @@ export default function BaseGymMeetTemplate({
               </div>
             ) : null}
 
-            <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            {(model.quickLinks.length > 0 || model.coachPhone) ? (
               <BaseSection
-                title="Add to Calendar"
-                eyebrow="Share"
+                title="Quick Access"
+                eyebrow="Links"
                 className={variant.sectionClass}
                 titleClass={variant.sectionTitleClass}
                 titleStyle={variant.sectionTitleStyle}
               >
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={onShare} className={variant.secondaryButtonClass}>
-                    <Share2 size={14} /> Share
-                  </button>
-                  <button onClick={onGoogleCalendar} className={variant.secondaryButtonClass}>
-                    <Calendar size={14} /> Google
-                  </button>
-                  <button onClick={onAppleCalendar} className={variant.secondaryButtonClass}>
-                    <Calendar size={14} /> Apple
-                  </button>
-                  <button onClick={onOutlookCalendar} className={variant.secondaryButtonClass}>
-                    <Calendar size={14} /> Outlook
-                  </button>
+                <div className="flex flex-wrap gap-2">
+                  {model.quickLinks.map((link) => (
+                    <a
+                      key={link.url}
+                      href={link.url}
+                      target={/^data:/i.test(link.url) ? undefined : "_blank"}
+                      rel={/^data:/i.test(link.url) ? undefined : "noopener noreferrer"}
+                      download={/^data:/i.test(link.url) ? "source-file" : undefined}
+                      className={variant.secondaryButtonClass}
+                    >
+                      {link.label || "Open Link"}
+                    </a>
+                  ))}
+                  {model.coachPhone ? (
+                    <a href={`tel:${model.coachPhone}`} className={variant.secondaryButtonClass}>
+                      <Phone size={14} /> Contact Coach
+                    </a>
+                  ) : null}
                 </div>
               </BaseSection>
-
-              {(model.quickLinks.length > 0 || model.coachPhone) ? (
-                <BaseSection
-                  title="Quick Access"
-                  eyebrow="Links"
-                  className={variant.sectionClass}
-                  titleClass={variant.sectionTitleClass}
-                  titleStyle={variant.sectionTitleStyle}
-                >
-                  <div className="flex flex-wrap gap-2">
-                    {model.quickLinks.map((link) => (
-                      <a
-                        key={link.url}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={variant.secondaryButtonClass}
-                      >
-                        {link.label || "Open Link"}
-                      </a>
-                    ))}
-                    {model.coachPhone ? (
-                      <a href={`tel:${model.coachPhone}`} className={variant.secondaryButtonClass}>
-                        <Phone size={14} /> Contact Coach
-                      </a>
-                    ) : null}
-                  </div>
-                </BaseSection>
-              ) : null}
-            </div>
+            ) : null}
 
             <footer className="px-2 py-6 text-center text-xs font-semibold uppercase tracking-[0.22em] opacity-50">
               Envitefy Gymnastics Meet Page

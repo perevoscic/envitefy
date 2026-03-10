@@ -10,6 +10,7 @@ import {
   MapPin,
   ShieldAlert,
   Ticket,
+  Users,
 } from "lucide-react";
 import { ShowcaseThemeConfig } from "./showcaseThemes";
 import { GymMeetDiscoveryTabId, GymMeetInlineLinkLine, GymMeetRenderModel } from "./types";
@@ -20,6 +21,7 @@ export const SHOWCASE_DISCOVERY_TABS: Array<{
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }> = [
   { id: "meet-details", label: "MEET DETAILS", icon: Activity },
+  { id: "coaches", label: "COACHES", icon: Users },
   { id: "venue-details", label: "VENUE DETAILS", icon: MapPin },
   { id: "admission-sales", label: "ADMISSION & SALES", icon: Ticket },
   { id: "traffic-parking", label: "TRAFFIC & ARRIVAL", icon: Car },
@@ -78,6 +80,8 @@ export default function ShowcaseDiscoveryContent({
   const discovery = model.discovery;
   const panelTitleClass = theme.sectionTitleClass || "";
   const panelTitleStyle = theme.sectionTitleStyle;
+  const cardTitleClass = panelTitleClass;
+  const cardTitleStyle = panelTitleStyle;
   const resourceUrl =
     safeUrl(model.quickLinks?.[0]?.url) ||
     safeUrl(discovery?.admissionSales?.rotationLink?.url);
@@ -85,6 +89,8 @@ export default function ShowcaseDiscoveryContent({
     safeUrl(discovery?.trafficParking?.mapDashboardLink?.url) ||
     mapSearchUrl(discovery?.trafficParking?.mapAddress || "");
   const floorPlanUrl = safeUrl(discovery?.venueDetails?.gymLayoutImageUrl);
+  const hasMeetOverviewContent =
+    Boolean(discovery?.meetDetails?.hasContent) || model.announcements.length > 0;
   const safetyCards = [
     {
       key: "food-beverage",
@@ -108,8 +114,151 @@ export default function ShowcaseDiscoveryContent({
     },
   ].filter((item) => item.body);
 
-  if (activeTab === "meet-details") {
+  if (activeTab === "coaches") {
     return (
+      <section className={theme.panelClass}>
+        <div className="space-y-6">
+          <div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
+              Coaches
+            </p>
+            <h2
+              className={`mt-2 text-3xl font-black tracking-tight sm:text-4xl ${panelTitleClass}`}
+              style={panelTitleStyle}
+            >
+              Coach Info
+            </h2>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {discovery?.coaches?.signIn ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Sign-In
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.signIn}</p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.hospitality ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Hospitality
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.hospitality}</p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.floorAccess ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Floor Access
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.floorAccess}</p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.scratches ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Scratches
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.scratches}</p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.rotationSheets ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Rotation Sheets
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">
+                  {discovery.coaches.rotationSheets}
+                </p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.regionalCommitment ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Regional Commitment
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">
+                  {discovery.coaches.regionalCommitment}
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          {discovery?.coaches?.contacts?.length ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {discovery.coaches.contacts.map((contact, index) => (
+                <div
+                  key={`${contact.role}-${contact.email}-${index}`}
+                  className={theme.cardClass}
+                >
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                    {contact.role || "Contact"}
+                  </p>
+                  {contact.name ? <p className="mt-2 text-sm font-semibold">{contact.name}</p> : null}
+                  {contact.email ? <p className="mt-1 text-sm opacity-80">{contact.email}</p> : null}
+                  {contact.phone ? <p className="mt-1 text-sm opacity-80">{contact.phone}</p> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {discovery?.coaches?.deadlines?.length ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {discovery.coaches.deadlines.map((item, index) => (
+                <div key={`${item.label}-${item.date}-${index}`} className={theme.cardClass}>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                    {item.label || "Deadline"}
+                  </p>
+                  {item.date ? <p className="mt-2 text-sm font-semibold">{item.date}</p> : null}
+                  {item.note ? <p className="mt-1 text-sm leading-relaxed opacity-85">{item.note}</p> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {discovery?.coaches?.attire?.length || discovery?.coaches?.notes?.length ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {discovery.coaches.attire?.length ? (
+                <div className={theme.cardClass}>
+                  <p className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                    Coach Attire
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm leading-relaxed">
+                    {discovery.coaches.attire.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-current opacity-40" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {discovery.coaches.notes?.length ? (
+                <div className={theme.cardClass}>
+                  <p className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                    Additional Coach Notes
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm leading-relaxed">
+                    {discovery.coaches.notes.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-current opacity-40" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
+
+  if (activeTab === "meet-details") {
+    return hasMeetOverviewContent ? (
       <section className={theme.panelClass}>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -168,7 +317,46 @@ export default function ShowcaseDiscoveryContent({
           ) : null}
 
           {renderLineList({ lines: discovery?.meetDetails?.lines || [], theme })}
+
+          {model.announcements.length > 0 ? (
+            <div className="space-y-3">
+              <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
+                Communication
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                {model.announcements.slice(0, 4).map((item) => (
+                  <div key={item.id} className={theme.cardClass}>
+                    {item.title ? (
+                      <p
+                        className={`text-lg font-black leading-tight ${cardTitleClass}`}
+                        style={cardTitleStyle}
+                      >
+                        {item.title}
+                      </p>
+                    ) : null}
+                    {item.body ? (
+                      <p className={`${item.title ? "mt-2 " : ""}text-sm leading-relaxed opacity-85`}>
+                        {item.body}
+                      </p>
+                    ) : null}
+                    {item.date ? (
+                      <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
+                        {item.date}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
+      </section>
+    ) : (
+      <section className={theme.panelClass}>
+        <p className="text-sm leading-relaxed opacity-75">
+          Meet details are still being mapped from the source packet. Re-open parsing in the
+          builder to refresh this section.
+        </p>
       </section>
     );
   }
@@ -272,20 +460,8 @@ export default function ShowcaseDiscoveryContent({
     return (
       <section className={theme.panelClass}>
         <div className="space-y-6">
-          <div>
-            <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
-              Admission & Sales
-            </p>
-            <h2
-              className={`mt-2 text-3xl font-black tracking-tight sm:text-4xl ${panelTitleClass}`}
-              style={panelTitleStyle}
-            >
-              Spectator Access
-            </h2>
-          </div>
-
           {discovery?.admissionSales?.admissionCards?.length ? (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
               {discovery.admissionSales.admissionCards.map((item, index) => (
                 <div key={`${item.label}-${index}`} className={theme.cardClass}>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
@@ -300,7 +476,7 @@ export default function ShowcaseDiscoveryContent({
             </div>
           ) : null}
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             {discovery?.admissionSales?.primaryNote ? (
               <div className={theme.cardClass}>
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
@@ -313,7 +489,7 @@ export default function ShowcaseDiscoveryContent({
             ) : null}
 
             {discovery?.admissionSales?.logisticsItems?.length ? (
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {discovery.admissionSales.logisticsItems.map((item) => (
                   <div key={item.key} className={theme.cardClass}>
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
@@ -330,7 +506,9 @@ export default function ShowcaseDiscoveryContent({
             {discovery?.admissionSales?.merchandiseText ||
             discovery?.admissionSales?.merchandiseLink ? (
               <div className={theme.cardClass}>
-                <p className="text-lg font-black">Merchandise</p>
+                <p className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Merchandise
+                </p>
                 {discovery.admissionSales.merchandiseText ? (
                   <p className="mt-2 text-sm leading-relaxed opacity-85">
                     {discovery.admissionSales.merchandiseText}
@@ -352,7 +530,9 @@ export default function ShowcaseDiscoveryContent({
 
             {safeUrl(discovery?.admissionSales?.rotationLink?.url) ? (
               <div className={theme.cardClass}>
-                <p className="text-lg font-black">Rotation Sheets</p>
+                <p className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Rotation Sheets
+                </p>
                 <p className="mt-2 text-sm leading-relaxed opacity-85">
                   Open the official packet, rotation sheet, or scoring reference linked by the
                   event source.
@@ -372,7 +552,9 @@ export default function ShowcaseDiscoveryContent({
             {discovery?.admissionSales?.resultsText ||
             discovery?.admissionSales?.resultsLinks?.length ? (
               <div className={theme.cardClass}>
-                <p className="text-lg font-black">Results & Live Scoring</p>
+                <p className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Results & Live Scoring
+                </p>
                 {discovery.admissionSales.resultsText ? (
                   <p className="mt-2 text-sm leading-relaxed opacity-85">
                     {discovery.admissionSales.resultsText}
@@ -539,7 +721,10 @@ export default function ShowcaseDiscoveryContent({
         <div className="grid gap-4 md:grid-cols-2">
           {safetyCards.map((item) => (
             <div key={item.key} className={theme.cardClass}>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+              <p
+                className={`text-lg font-black leading-tight ${cardTitleClass}`}
+                style={cardTitleStyle}
+              >
                 {item.title}
               </p>
               <p className="mt-2 text-sm leading-relaxed">{item.body}</p>

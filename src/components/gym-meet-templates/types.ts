@@ -19,6 +19,11 @@ export type GymMeetTemplateId =
   | "midnight-frost"
   | "eco-motion"
   | "holo-elite"
+  | "vaporwave-grid"
+  | "heavy-impact"
+  | "blueprint-tech"
+  | "toxic-kinetic"
+  | "luxe-magazine"
   | "chalk-strike"
   | "podium-lights"
   | "judges-sheet"
@@ -55,6 +60,7 @@ export type GymMeetPageTemplateMeta = {
   previewKicker: string;
   previewClassName: string;
   previewAccentClassName: string;
+  previewTitleClassName?: string;
 };
 
 export type GymMeetNavItem = {
@@ -64,6 +70,7 @@ export type GymMeetNavItem = {
 
 export type GymMeetDiscoveryTabId =
   | "meet-details"
+  | "coaches"
   | "venue-details"
   | "admission-sales"
   | "traffic-parking"
@@ -113,10 +120,36 @@ export type GymMeetLinkAction = {
   url: string;
 };
 
+export type GymMeetCoachContact = {
+  role: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+};
+
+export type GymMeetCoachDeadline = {
+  label: string;
+  date?: string;
+  note?: string;
+};
+
 export type GymMeetDiscoveryContent = {
   tabs: GymMeetDiscoveryTab[];
   meetDetails: {
     lines: GymMeetInlineLinkLine[];
+    hasContent: boolean;
+  };
+  coaches: {
+    contacts: GymMeetCoachContact[];
+    deadlines: GymMeetCoachDeadline[];
+    attire: string[];
+    notes: string[];
+    signIn?: string;
+    hospitality?: string;
+    floorAccess?: string;
+    scratches?: string;
+    rotationSheets?: string;
+    regionalCommitment?: string;
     hasContent: boolean;
   };
   venueDetails: {
@@ -159,9 +192,12 @@ export type GymMeetDiscoveryContent = {
   };
 };
 
+export type GymMeetTitleSize = "small" | "medium" | "large";
+
 export type GymMeetRenderModel = {
   pageTemplateId: GymMeetTemplateId;
   title: string;
+  titleSize: GymMeetTitleSize;
   heroImage?: string;
   hostGym?: string;
   venue?: string;

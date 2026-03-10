@@ -20,10 +20,12 @@ export default function VaultGridTemplate(props: any) {
         navShellClass:
           "rounded-[24px] border border-indigo-100 bg-white/92 px-2 py-2 shadow-sm backdrop-blur",
         navActiveClass:
-          "rounded-full bg-slate-900 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white",
+          "rounded-full bg-slate-900 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white sm:text-[11px]",
         navIdleClass:
-          "rounded-full bg-indigo-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-indigo-700 transition hover:bg-indigo-100",
+          "rounded-full bg-indigo-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-indigo-700 transition hover:bg-indigo-100 sm:text-[11px]",
         navFadeClass: "rgba(255,255,255,0.92)",
+        navRailClass:
+          "no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 md:grid md:overflow-visible",
         summaryCardClass:
           "rounded-[22px] border border-indigo-100 bg-slate-50 px-4 py-4 shadow-sm",
         sectionClass:

@@ -94,6 +94,28 @@ export type ParseResult = {
     animals: string | null;
     misc: string[];
   };
+  coachInfo: {
+    hasContent: boolean;
+    signIn: string | null;
+    attire: string[];
+    hospitality: string | null;
+    floorAccess: string | null;
+    scratches: string | null;
+    rotationSheets: string | null;
+    regionalCommitment: string | null;
+    contacts: Array<{
+      role: string;
+      name: string | null;
+      email: string | null;
+      phone: string | null;
+    }>;
+    deadlines: Array<{
+      label: string;
+      date: string | null;
+      note: string | null;
+    }>;
+    notes: string[];
+  };
   contacts: Array<{
     role: string;
     name: string | null;
@@ -168,6 +190,12 @@ type GymLayoutSelectionDiagnostics = {
   candidates: GymLayoutSelectionCandidate[];
 };
 
+type CoachPageHint = {
+  page: number;
+  heading: string;
+  excerpt: string;
+};
+
 type ExtractionResult = {
   extractedText: string;
   extractionMeta: {
@@ -180,6 +208,7 @@ type ExtractionResult = {
     gymLayoutZones?: GymLayoutZone[];
     gymLayoutPage?: number | null;
     gymLayoutSelection?: GymLayoutSelectionDiagnostics;
+    coachPageHints?: CoachPageHint[];
     textQuality?: TextQuality | null;
     qualitySignals?: TextQualitySignals | null;
   };
@@ -208,6 +237,7 @@ export type DiscoveryEvidence = {
     sessionHints: string[];
     logisticsHints: string[];
     policyHints: string[];
+    coachHints: string[];
     linkHints: Array<{ label: string; url: string }>;
   };
   snippets: {
@@ -215,6 +245,7 @@ export type DiscoveryEvidence = {
     additionalInfoLines: string[];
     trafficLines: string[];
     hallLayoutLines: string[];
+    coachLines: string[];
   };
 };
 
@@ -242,6 +273,11 @@ type GymLayoutExtraction = {
   zones: GymLayoutZone[];
   page: number | null;
   selection?: GymLayoutSelectionDiagnostics;
+};
+
+type PdfTextExtraction = {
+  text: string;
+  pages: Array<{ num: number; text: string }>;
 };
 
 function safeString(value: unknown): string {
@@ -297,6 +333,60 @@ function uniqueLines(lines: string[], limit = 12): string[] {
     if (out.length >= limit) break;
   }
   return out;
+}
+
+function isCoachHeadingLine(line: string): boolean {
+  return /^(attention coaches!?|coaches information(?:[—-].*)?|regional meet coaches information|coaches attire|coaches sign in|attending coaches.*|coach(?:es)?\b.*important)/i.test(
+    safeString(line)
+  );
+}
+
+function looksLikeCoachLine(line: string): boolean {
+  return /(coach(?:es)?|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|floor manager|meet director|director of operations|assistant event coordinator|dress code|attire)/i.test(
+    safeString(line)
+  );
+}
+
+function sanitizeCoachExcerpt(lines: string[]): string {
+  return safeString(lines.join(" ").replace(/\s+/g, " ")).slice(0, 320);
+}
+
+function extractCoachPageHintsFromPages(
+  pages: Array<{ num: number; text: string }>
+): CoachPageHint[] {
+  const hints: CoachPageHint[] = [];
+  for (const page of pages) {
+    const pageText = cleanExtractedText(safeString(page?.text));
+    if (!pageText) continue;
+    const lines = pageText
+      .split(/\n+/)
+      .map((line) => safeString(line))
+      .filter(Boolean);
+    const heading =
+      lines.find((line) => isCoachHeadingLine(line)) ||
+      lines.find((line) => /coach(?:es)?/i.test(line)) ||
+      "";
+    const coachLines = lines.filter((line) => looksLikeCoachLine(line));
+    const strongSignalCount = [
+      /coach(?:es)?/gi,
+      /\bhospitality\b/gi,
+      /\bsign[- ]?in\b/gi,
+      /\bscratches?\b/gi,
+      /\brotation sheets?\b/gi,
+      /\bregional\b/gi,
+    ].reduce((count, pattern) => count + countPatternMatches(pageText, pattern), 0);
+    if (!heading && strongSignalCount < 3) continue;
+    const excerpt = sanitizeCoachExcerpt(
+      coachLines.length > 0 ? coachLines.slice(0, 5) : lines.slice(0, 5)
+    );
+    if (!excerpt) continue;
+    hints.push({
+      page: Number.isFinite(page?.num) ? Number(page.num) : hints.length + 1,
+      heading: heading || "Coach information",
+      excerpt,
+    });
+  }
+  return uniqueBy(hints, (item) => `${item.page}|${item.heading}|${item.excerpt}`).slice(0, 6);
 }
 
 function toIsoDate(year: number, monthIndex: number, day: number): string | null {
@@ -490,9 +580,25 @@ export function buildDiscoveryEvidence(
     /(hydration|service animal|service dog|safety|food|beverage|outside food|throwing object|flash)/i,
     12
   );
+  const coachHints = uniqueLines(
+    [
+      ...matchLines(
+        /(coach(?:es)?|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|meet director|floor manager|attire|dress code)/i,
+        16
+      ),
+      ...pickArray(extractionMeta.coachPageHints)
+        .flatMap((item) => [safeString(item?.heading), safeString(item?.excerpt)])
+        .filter(Boolean),
+    ],
+    16
+  );
   const trafficLines = matchLines(/(traffic|disney on ice|benchmark|parking rate|30-45)/i, 8);
   const hallLayoutLines = matchLines(
     /(east hall|west hall|central hall|registration|guest services|competition area|coffee bar|awards)/i,
+    10
+  );
+  const coachLines = matchLines(
+    /(coach(?:es)?|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|meet director|floor manager|attire|dress code)/i,
     10
   );
   const titleHints = uniqueLines(
@@ -532,6 +638,7 @@ export function buildDiscoveryEvidence(
       sessionHints,
       logisticsHints,
       policyHints,
+      coachHints,
       linkHints,
     },
     snippets: {
@@ -539,6 +646,7 @@ export function buildDiscoveryEvidence(
       additionalInfoLines,
       trafficLines,
       hallLayoutLines,
+      coachLines,
     },
   };
 }
@@ -739,7 +847,7 @@ function analyzeTextQuality(text: string): {
   return { cleanedText, quality: "suspect", signals };
 }
 
-async function extractPdfTextWithNodeWorker(buffer: Buffer): Promise<string> {
+async function extractPdfTextWithNodeWorker(buffer: Buffer): Promise<PdfTextExtraction> {
   let tempDir = "";
   try {
     tempDir = await mkdtemp(join(tmpdir(), "envitefy-pdf-"));
@@ -753,7 +861,15 @@ const { PDFParse } = require("pdf-parse");
   const parser = new PDFParse({ data });
   const result = await parser.getText();
   if (typeof parser.destroy === "function") await parser.destroy();
-  process.stdout.write(JSON.stringify({ text: result?.text || "" }));
+  process.stdout.write(JSON.stringify({
+    text: result?.text || "",
+    pages: Array.isArray(result?.pages)
+      ? result.pages.map((page) => ({
+          num: Number(page?.num) || 0,
+          text: page?.text || "",
+        }))
+      : [],
+  }));
 })().catch((error) => {
   process.stderr.write(String(error?.message || error));
   process.exit(1);
@@ -763,7 +879,15 @@ const { PDFParse } = require("pdf-parse");
       maxBuffer: 10 * 1024 * 1024,
     });
     const payload = JSON.parse(stdout || "{}");
-    return cleanExtractedText(String(payload?.text || ""));
+    return {
+      text: cleanExtractedText(String(payload?.text || "")),
+      pages: pickArray(payload?.pages)
+        .map((page) => ({
+          num: Number(page?.num) || 0,
+          text: cleanExtractedText(safeString(page?.text || "")),
+        }))
+        .filter((page) => page.text),
+    };
   } catch (err: unknown) {
     const message =
       err instanceof Error ? err.message : typeof err === "string" ? err : String(err || "");
@@ -778,7 +902,17 @@ const { PDFParse } = require("pdf-parse");
         const parser = new PDFParseCtor({ data: buffer });
         const result = await parser.getText();
         if (typeof parser.destroy === "function") await parser.destroy();
-        return cleanExtractedText(String(result?.text || ""));
+        return {
+          text: cleanExtractedText(String(result?.text || "")),
+          pages: Array.isArray(result?.pages)
+            ? result.pages
+                .map((page: any) => ({
+                  num: Number(page?.num) || 0,
+                  text: cleanExtractedText(safeString(page?.text || "")),
+                }))
+                .filter((page: any) => page.text)
+            : [],
+        };
       }
     } catch (fallbackErr: unknown) {
       const fallbackMessage =
@@ -791,7 +925,7 @@ const { PDFParse } = require("pdf-parse");
         message: fallbackMessage,
       });
     }
-    return "";
+    return { text: "", pages: [] };
   } finally {
     if (tempDir) {
       await rm(tempDir, { recursive: true, force: true });
@@ -938,6 +1072,7 @@ async function openAiAnalyzeGymLayoutPage(
 async function extractTextFromPdf(buffer: Buffer): Promise<{
   text: string;
   usedOcr: boolean;
+  coachPageHints: CoachPageHint[];
   textQuality: TextQuality;
   qualitySignals: TextQualitySignals;
 }> {
@@ -952,9 +1087,14 @@ async function extractTextFromPdf(buffer: Buffer): Promise<{
     };
   };
 
-  const workerCandidate = toCandidate(await extractPdfTextWithNodeWorker(buffer), false);
+  const workerExtraction = await extractPdfTextWithNodeWorker(buffer);
+  const workerCoachPageHints = extractCoachPageHintsFromPages(workerExtraction.pages);
+  const workerCandidate = toCandidate(workerExtraction.text, false);
   if (workerCandidate.text.length >= LOW_TEXT_THRESHOLD && workerCandidate.textQuality === "good") {
-    return workerCandidate;
+    return {
+      ...workerCandidate,
+      coachPageHints: workerCoachPageHints,
+    };
   }
 
   const heuristicCandidate = toCandidate(extractPdfTextHeuristic(buffer), false);
@@ -962,7 +1102,10 @@ async function extractTextFromPdf(buffer: Buffer): Promise<{
     heuristicCandidate.text.length >= LOW_TEXT_THRESHOLD &&
     heuristicCandidate.textQuality === "good"
   ) {
-    return heuristicCandidate;
+    return {
+      ...heuristicCandidate,
+      coachPageHints: workerCoachPageHints,
+    };
   }
 
   let ocrCandidate: ReturnType<typeof toCandidate> | null = null;
@@ -981,7 +1124,10 @@ async function extractTextFromPdf(buffer: Buffer): Promise<{
     if (ocrPages.length > 0) {
       ocrCandidate = toCandidate(ocrPages.join("\n\n"), true);
       if (ocrCandidate.textQuality === "good" && ocrCandidate.text.length > 0) {
-        return ocrCandidate;
+        return {
+          ...ocrCandidate,
+          coachPageHints: workerCoachPageHints,
+        };
       }
     }
   } catch {
@@ -991,7 +1137,10 @@ async function extractTextFromPdf(buffer: Buffer): Promise<{
     try {
       ocrCandidate = toCandidate(await extractTextFromImage(buffer), true);
       if (ocrCandidate.textQuality === "good" && ocrCandidate.text.length > 0) {
-        return ocrCandidate;
+        return {
+          ...ocrCandidate,
+          coachPageHints: workerCoachPageHints,
+        };
       }
     } catch {
       // Continue to best-candidate selection.
@@ -1009,13 +1158,17 @@ async function extractTextFromPdf(buffer: Buffer): Promise<{
 
   const best = candidates[0];
   if (best && best.textQuality !== "poor") {
-    return best;
+    return {
+      ...best,
+      coachPageHints: workerCoachPageHints,
+    };
   }
 
   const emptyQuality = analyzeTextQuality("");
   return {
     text: "",
     usedOcr: false,
+    coachPageHints: workerCoachPageHints,
     textQuality: "poor",
     qualitySignals: emptyQuality.signals,
   };
@@ -1652,7 +1805,7 @@ export function buildDefaultGymMeetData() {
     venue: "",
     address: "",
     details: "",
-    rsvpEnabled: true,
+    rsvpEnabled: false,
     accessControl: {
       mode: "public",
       requirePasscode: false,
@@ -1687,7 +1840,7 @@ export function buildDefaultGymMeetData() {
       },
       practice: { enabled: true, blocks: [], excusedAthletes: [], modifiedTraining: [] },
       logistics: {
-        enabled: true,
+        enabled: false,
         showTransportation: true,
         showAccommodations: true,
         showFees: true,
@@ -1713,13 +1866,14 @@ export function buildDefaultGymMeetData() {
         additionalDocuments: [],
       },
       gear: {
+        enabled: false,
         leotardOfDay: "",
         hairMakeupNotes: "",
         musicFileLink: "",
         items: [],
       },
       volunteers: {
-        enabled: true,
+        enabled: false,
         showVolunteerSlots: true,
         showCarpool: true,
         volunteerSlots: [],
@@ -1739,7 +1893,8 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
     if (!parsed) throw new Error("Invalid file payload");
     const mime = (parsed.mimeType || input.mimeType || "").toLowerCase();
     if (/pdf/.test(mime)) {
-      const { text, usedOcr, textQuality, qualitySignals } = await extractTextFromPdf(parsed.buffer);
+      const { text, usedOcr, coachPageHints, textQuality, qualitySignals } =
+        await extractTextFromPdf(parsed.buffer);
       const gymLayout = await extractGymLayoutImageFromPdf(parsed.buffer);
       const combinedLayoutFacts = sanitizeVenueFactLines(
         [...gymLayout.facts, ...extractHallFactsFromText(text)],
@@ -1764,6 +1919,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
           gymLayoutZones: gymLayout.zones,
           gymLayoutPage: gymLayout.page,
           gymLayoutSelection: gymLayout.selection,
+          coachPageHints,
           textQuality,
           qualitySignals,
         },
@@ -1811,6 +1967,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
   let gymLayoutFacts: string[] = [];
   let gymLayoutZones: GymLayoutZone[] = [];
   let gymLayoutSelection: GymLayoutSelectionDiagnostics | undefined = undefined;
+  let coachPageHints: CoachPageHint[] = [];
 
   for (const asset of linkedAssets) {
     try {
@@ -1820,6 +1977,10 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
         const parsed = await extractTextFromPdf(fetched.buffer);
         linkedChunks.push(parsed.text);
         usedOcr = usedOcr || parsed.usedOcr;
+        coachPageHints = uniqueBy(
+          [...coachPageHints, ...parsed.coachPageHints],
+          (item) => `${item.page}|${item.heading}|${item.excerpt}`
+        );
         if (!gymLayoutImageDataUrl) {
           const layout = await extractGymLayoutImageFromPdf(fetched.buffer);
           gymLayoutImageDataUrl = layout.dataUrl;
@@ -1883,6 +2044,7 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
       gymLayoutZones,
       gymLayoutPage,
       gymLayoutSelection,
+      coachPageHints,
       textQuality: quality.quality,
       qualitySignals: quality.signals,
     },
@@ -1922,6 +2084,19 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
   },
   "policies": {
     "food": string|null, "hydration": string|null, "safety": string|null, "animals": string|null, "misc": [string]
+  },
+  "coachInfo": {
+    "hasContent": boolean,
+    "signIn": string|null,
+    "attire": [string],
+    "hospitality": string|null,
+    "floorAccess": string|null,
+    "scratches": string|null,
+    "rotationSheets": string|null,
+    "regionalCommitment": string|null,
+    "contacts": [{ "role": string, "name": string|null, "email": string|null, "phone": string|null }],
+    "deadlines": [{ "label": string, "date": string|null, "note": string|null }],
+    "notes": [string]
   },
   "contacts": [{ "role": string, "name": string|null, "email": string|null, "phone": string|null }],
   "deadlines": [{ "label": string, "date": string|null, "note": string|null }],
@@ -1965,6 +2140,7 @@ function buildProfessionalParsePrompt(
     "- `parent_packet`: doors/arrival, facility layout, parking/traffic, visitor policies.",
     "- `registration_packet`: entry fees, qualification criteria, deadlines, refund/late-fee rules, organizer contacts.",
     "- `athlete_session`: warmup schedule, march-in, session windows, rotation order/apparatus, awards, assigned gym.",
+    "- `coachInfo`: sign-in, attire, hospitality, scratches, floor-access rules, rotation-sheet instructions, regional commitment steps, and coach/admin contacts.",
     "",
     "## Field-Level Rules",
     "- `rotationOrder`: populate ONLY when the source explicitly lists an apparatus/rotation sequence.",
@@ -1980,6 +2156,9 @@ function buildProfessionalParsePrompt(
     "- `athlete.awards`: only explicit awards location/time when shown; otherwise null.",
     "- Keep traffic/parking/general travel guidance in logistics fields, not awards/facility-specific fields.",
     "- Do not output fragmented line-wrap artifacts (for example avoid splitting one sentence into multiple array items).",
+    "- If evidence includes coach-page hints, treat them as a strong signal to populate `coachInfo`.",
+    "- Put coach-only operational instructions in `coachInfo` before using generic `contacts`, `deadlines`, or `unmappedFacts`.",
+    "- `coachInfo.attire` and `coachInfo.notes` should contain short standalone bullet-like strings, not paragraphs.",
     "",
     "## No Fact Left Behind",
     "Any fact that does not map to a primary field must be placed in one of:",
@@ -2086,6 +2265,44 @@ function normalizeParseResult(value: any): ParseResult | null {
       safety: safeString(value.policies?.safety) || null,
       animals: safeString(value.policies?.animals) || null,
       misc: pickArray(value.policies?.misc).map((item) => safeString(item)).filter(Boolean),
+    },
+    coachInfo: {
+      hasContent: Boolean(value.coachInfo?.hasContent),
+      signIn: safeString(value.coachInfo?.signIn) || null,
+      attire: uniqueBy(
+        pickArray(value.coachInfo?.attire).map((item) => safeString(item)).filter(Boolean),
+        (item) => item
+      ),
+      hospitality: safeString(value.coachInfo?.hospitality) || null,
+      floorAccess: safeString(value.coachInfo?.floorAccess) || null,
+      scratches: safeString(value.coachInfo?.scratches) || null,
+      rotationSheets: safeString(value.coachInfo?.rotationSheets) || null,
+      regionalCommitment: safeString(value.coachInfo?.regionalCommitment) || null,
+      contacts: uniqueBy(
+        pickArray(value.coachInfo?.contacts)
+          .map((item) => ({
+            role: safeString(item?.role) || "Coach contact",
+            name: safeString(item?.name) || null,
+            email: safeString(item?.email) || null,
+            phone: safeString(item?.phone) || null,
+          }))
+          .filter((item) => item.name || item.email || item.phone),
+        (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+      ),
+      deadlines: uniqueBy(
+        pickArray(value.coachInfo?.deadlines)
+          .map((item) => ({
+            label: safeString(item?.label) || "Coach deadline",
+            date: safeString(item?.date) || null,
+            note: safeString(item?.note) || null,
+          }))
+          .filter((item) => item.date || item.note || item.label !== "Coach deadline"),
+        (item) => [item.label, item.date || "", item.note || ""].join("|")
+      ),
+      notes: uniqueBy(
+        pickArray(value.coachInfo?.notes).map((item) => safeString(item)).filter(Boolean),
+        (item) => item
+      ),
     },
     contacts: uniqueBy(
       pickArray(value.contacts)
@@ -2232,6 +2449,19 @@ function buildEmptyParseResult(): ParseResult {
       safety: null,
       animals: null,
       misc: [],
+    },
+    coachInfo: {
+      hasContent: false,
+      signIn: null,
+      attire: [],
+      hospitality: null,
+      floorAccess: null,
+      scratches: null,
+      rotationSheets: null,
+      regionalCommitment: null,
+      contacts: [],
+      deadlines: [],
+      notes: [],
     },
     contacts: [],
     deadlines: [],
@@ -2570,6 +2800,33 @@ export async function mapParseResultToGymData(
       url: item.url,
     })
   );
+  const coachRolePattern =
+    /\b(coach|meet director|director of operations|assistant event coordinator|floor manager)\b/i;
+  const assistantCoachRolePattern = /\bassistant coach\b/i;
+  const coachContacts = uniqueBy(
+    [
+      ...pickArray(parseResult.coachInfo?.contacts),
+      ...parseResult.contacts.filter((item) => coachRolePattern.test(safeString(item?.role))),
+    ]
+      .map((item) => ({
+        role: safeString(item?.role) || "Coach contact",
+        name: safeString(item?.name) || null,
+        email: safeString(item?.email) || null,
+        phone: safeString(item?.phone) || null,
+      }))
+      .filter((item) => item.name || item.email || item.phone),
+    (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+  );
+  const primaryCoachContact =
+    coachContacts.find((item) => /\bhead coach\b/i.test(item.role)) ||
+    coachContacts.find((item) => /\bcoach\b/i.test(item.role) && !assistantCoachRolePattern.test(item.role)) ||
+    coachContacts[0] ||
+    null;
+  const assistantCoachContact =
+    coachContacts.find((item) => assistantCoachRolePattern.test(item.role)) || null;
+  const derivedCoachName = safeString(primaryCoachContact?.name);
+  const derivedAssistantCoachName = safeString(assistantCoachContact?.name);
+  const derivedCoachPhone = safeString(primaryCoachContact?.phone);
 
   const generatedAnnouncements: Array<{ title: string; body: string }> = [];
   const existingAnnouncementEntries: Array<{ title: string; body: string }> = pickArray(
@@ -2681,6 +2938,7 @@ export async function mapParseResultToGymData(
     },
     logistics: {
       ...(existingAdvanced.logistics || {}),
+      enabled: existingAdvanced.logistics?.enabled ?? false,
       hotelName: parseResult.logistics.hotel || "",
       mealPlan: parseResult.logistics.meals || "",
       feeAmount: parseResult.logistics.fees || "",
@@ -2698,6 +2956,7 @@ export async function mapParseResultToGymData(
     },
     gear: {
       ...(existingAdvanced.gear || {}),
+      enabled: existingAdvanced.gear?.enabled ?? false,
       leotardOfDay: parseResult.gear.uniform || "",
       items: (parseResult.gear.checklist || []).map((item, idx) => ({
         id: `gear-${idx + 1}`,
@@ -2708,7 +2967,7 @@ export async function mapParseResultToGymData(
     },
     volunteers: {
       ...(existingAdvanced.volunteers || {}),
-      enabled: true,
+      enabled: existingAdvanced.volunteers?.enabled ?? false,
       signupLink: parseResult.volunteers.signupLink || "",
       notes: parseResult.volunteers.notes || "",
     },
@@ -2779,9 +3038,10 @@ export async function mapParseResultToGymData(
       ...(baseData?.customFields || {}),
       team: parseResult.hostGym || athlete.team || "",
       season: baseData?.customFields?.season || "",
-      coach: baseData?.customFields?.coach || "",
-      assistantCoach: baseData?.customFields?.assistantCoach || "",
-      coachPhone: baseData?.customFields?.coachPhone || "",
+      coach: baseData?.customFields?.coach || derivedCoachName || "",
+      assistantCoach:
+        baseData?.customFields?.assistantCoach || derivedAssistantCoachName || "",
+      coachPhone: baseData?.customFields?.coachPhone || derivedCoachPhone || "",
       admission: admissionText,
       discoveryDocumentProfile: parseResult.documentProfile,
       meetDateRangeLabel: derivedRange.label || "",
@@ -2901,7 +3161,7 @@ export function computeGymBuilderStatuses(data: any) {
           ? data?.accessControl?.passcodeHash
             ? ("ready" as Status)
             : ("in-progress" as Status)
-          : ("ready" as Status),
+          : ("not-started" as Status),
       announcements:
         Array.isArray(announcements?.announcements) &&
         announcements.announcements.length > 0

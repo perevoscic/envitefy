@@ -62,7 +62,7 @@ export default function TemplateSelector({
                     : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
                 }`}
               >
-                <div className="relative px-3 pb-2 pt-3">
+                <div className="relative px-3 pb-1.5 pt-3">
                   <div
                     className={`absolute right-3 top-3 z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
                       selected
@@ -73,13 +73,17 @@ export default function TemplateSelector({
                     {selected ? <Check size={14} /> : <ChevronRight size={14} />}
                   </div>
                   <div
-                    className={`relative min-h-[108px] overflow-hidden rounded-2xl border ${
+                    className={`relative min-h-[100px] overflow-hidden rounded-2xl border ${
                       selected ? "border-white/15" : "border-slate-200"
                     } ${template.previewClassName}`}
                   >
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_42%)]" />
-                    <div className="relative flex h-full items-end px-4 pb-3 pt-4 pr-12">
-                      <div className="text-base font-black leading-tight">
+                    <div className="relative flex h-full items-end px-4 pb-2 pt-4 pr-12">
+                      <div
+                        className={`text-base font-black leading-tight ${
+                          template.previewTitleClassName || "tracking-tight"
+                        }`}
+                      >
                         {template.name}
                       </div>
                     </div>
