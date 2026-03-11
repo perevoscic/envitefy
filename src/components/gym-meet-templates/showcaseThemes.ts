@@ -15,6 +15,11 @@ export type ShowcaseThemeId = Extract<
   | "midnight-frost"
   | "eco-motion"
   | "holo-elite"
+  | "glitch-sport"
+  | "organic-flow"
+  | "pixel-arena"
+  | "architect-clean"
+  | "noir-silhouette"
   | "vaporwave-grid"
   | "heavy-impact"
   | "blueprint-tech"
@@ -60,6 +65,10 @@ export type ShowcaseThemeConfig = {
     | "frost"
     | "organic"
     | "holo"
+    | "glitch"
+    | "pixel"
+    | "architect"
+    | "noir"
     | "vaporwave"
     | "blueprint"
     | "toxic";
@@ -78,6 +87,11 @@ export const SHOWCASE_THEME_ORDER: ShowcaseThemeId[] = [
   "midnight-frost",
   "eco-motion",
   "holo-elite",
+  "glitch-sport",
+  "organic-flow",
+  "pixel-arena",
+  "architect-clean",
+  "noir-silhouette",
   "vaporwave-grid",
   "heavy-impact",
   "blueprint-tech",
@@ -537,6 +551,241 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     heroDecor: "holo",
     cardRadiusMode: "soft",
     navRadiusMode: "pill",
+  },
+  "glitch-sport": {
+    id: "glitch-sport",
+    name: "Glitch Sport",
+    pageClass:
+      "min-h-screen bg-[linear-gradient(180deg,#020617_0%,#09090b_46%,#000000_100%)] text-cyan-100",
+    shellClass:
+      "overflow-hidden border border-red-500/35 bg-black/92 shadow-[0_30px_90px_rgba(239,68,68,0.18),0_0_0_1px_rgba(34,211,238,0.15)]",
+    headerClass:
+      "relative overflow-hidden bg-[linear-gradient(145deg,#000000_0%,#111827_42%,#0f172a_100%)] px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.16),transparent_30%)]",
+    titleClass:
+      "max-w-5xl text-5xl font-black uppercase italic leading-[0.82] tracking-[-0.08em] text-white sm:text-6xl lg:text-[5.8rem] [font-family:'Orbitron','Rajdhani',sans-serif]",
+    titleStyle: { color: "#ffffff", textShadow: "3px 3px 0 #ef4444, -3px -3px 0 #22d3ee" },
+    subtitleClass: "text-cyan-300/85",
+    metaClass: "text-cyan-100/80",
+    heroBadgeClass:
+      "inline-flex items-center rounded-none bg-red-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white",
+    navShellClass:
+      "rounded-none border border-red-500/40 bg-black/92 px-2 py-2 shadow-[0_0_20px_rgba(239,68,68,0.18)] backdrop-blur",
+    navActiveClass:
+      "rounded-none bg-red-500 px-4 py-3 text-[11px] font-black uppercase italic tracking-[0.18em] text-white shadow-[4px_0_0_#22d3ee]",
+    navIdleClass:
+      "rounded-none border border-transparent px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-cyan-400/60 transition hover:border-red-500/40 hover:text-cyan-100",
+    panelClass:
+      "rounded-none border border-red-500/28 bg-zinc-950/92 px-5 py-5 shadow-[8px_8px_0px_rgba(34,211,238,0.2)]",
+    cardClass:
+      "rounded-none border border-red-500/24 bg-cyan-400/5 px-4 py-4",
+    summaryCardClass:
+      "rounded-none border border-red-500/24 bg-zinc-900 px-4 py-4",
+    sectionClass:
+      "rounded-none border border-red-500/28 bg-zinc-950/92 px-5 py-5 shadow-[8px_8px_0px_rgba(34,211,238,0.18)]",
+    sectionTitleClass: "text-white",
+    sectionTitleStyle: { color: "#ffffff" },
+    sectionCardClass:
+      "rounded-none border border-red-500/24 bg-black/70 px-4 py-4",
+    sectionMutedClass: "bg-red-500 text-white",
+    accentClass: "text-cyan-300",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none bg-cyan-400 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-black transition hover:bg-cyan-300",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border border-red-500/35 bg-white/5 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-cyan-50 transition hover:bg-red-500/10",
+    headerAlign: "left",
+    heroDecor: "glitch",
+    cardRadiusMode: "sharp",
+    navRadiusMode: "sharp",
+  },
+  "organic-flow": {
+    id: "organic-flow",
+    name: "Organic Flow",
+    pageClass:
+      "min-h-screen bg-[linear-gradient(180deg,#ecfdf5_0%,#f0fdf4_56%,#fffbeb_100%)] text-emerald-950",
+    shellClass:
+      "overflow-hidden rounded-[38px] border border-emerald-100 bg-white/92 shadow-[0_28px_84px_rgba(16,185,129,0.12)] backdrop-blur",
+    headerClass:
+      "relative overflow-hidden bg-[linear-gradient(145deg,#065f46_0%,#047857_42%,#10b981_100%)] px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),transparent_34%)]",
+    titleClass:
+      "mx-auto max-w-5xl text-center text-5xl font-black italic leading-[0.84] tracking-[-0.05em] text-white sm:text-6xl lg:text-[5.5rem] [font-family:'Poppins','Avenir_Next',sans-serif]",
+    titleStyle: { color: "#ffffff" },
+    subtitleClass: "text-emerald-100/92",
+    metaClass: "text-emerald-50/88",
+    heroBadgeClass:
+      "inline-flex items-center rounded-full bg-emerald-300 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-950",
+    navShellClass:
+      "rounded-full border border-emerald-200 bg-white/94 px-2 py-2 shadow-[0_18px_40px_rgba(16,185,129,0.12)] backdrop-blur",
+    navActiveClass:
+      "rounded-full bg-emerald-900 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white",
+    navIdleClass:
+      "rounded-full px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-emerald-800 transition hover:bg-emerald-50",
+    panelClass:
+      "rounded-[34px] border border-emerald-100 bg-white px-5 py-5 shadow-[0_14px_36px_rgba(16,185,129,0.08)]",
+    cardClass:
+      "rounded-[30px] border border-emerald-100 bg-emerald-50/80 px-4 py-4",
+    summaryCardClass:
+      "rounded-[30px] border border-emerald-100 bg-white px-4 py-4 shadow-sm",
+    sectionClass:
+      "rounded-[34px] border border-emerald-100 bg-white px-5 py-5 shadow-[0_14px_36px_rgba(16,185,129,0.08)]",
+    sectionTitleClass: "text-emerald-900",
+    sectionTitleStyle: { color: "#064e3b" },
+    sectionCardClass:
+      "rounded-[30px] border border-emerald-100 bg-emerald-50/75 px-4 py-4",
+    sectionMutedClass: "bg-emerald-100 text-emerald-900",
+    accentClass: "text-emerald-700",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-full bg-emerald-900 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-emerald-800",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-emerald-900 transition hover:bg-emerald-50",
+    headerAlign: "center",
+    heroDecor: "organic",
+    cardRadiusMode: "soft",
+    navRadiusMode: "pill",
+  },
+  "pixel-arena": {
+    id: "pixel-arena",
+    name: "Pixel Arena",
+    pageClass:
+      "min-h-screen bg-[linear-gradient(180deg,#000000_0%,#03120a_54%,#000000_100%)] text-[#00ff41]",
+    shellClass:
+      "overflow-hidden border-[4px] border-[#00ff41] bg-black shadow-[12px_12px_0px_rgba(0,255,65,0.18)]",
+    headerClass:
+      "relative overflow-hidden border-b-[6px] border-[#00ff41] bg-black px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(circle_at_top,rgba(0,255,65,0.08),transparent_34%)]",
+    titleClass:
+      "mx-auto max-w-5xl text-center text-5xl font-black uppercase leading-[0.84] tracking-[-0.06em] text-[#00ff41] sm:text-6xl lg:text-[5.4rem] [font-family:'Press_Start_2P','Orbitron','Courier_New',monospace]",
+    titleStyle: { color: "#00ff41" },
+    subtitleClass: "text-[#00ff41]/80",
+    metaClass: "text-[#86efac]",
+    heroBadgeClass:
+      "inline-flex items-center rounded-none border-2 border-[#00ff41] bg-black px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#00ff41]",
+    navShellClass:
+      "rounded-none border-[4px] border-[#00ff41] bg-black px-2 py-2",
+    navActiveClass:
+      "rounded-none bg-[#00ff41] px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-black",
+    navIdleClass:
+      "rounded-none border border-[#00ff41]/20 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-[#00ff41]/60 transition hover:border-[#00ff41]/55 hover:text-[#00ff41]",
+    panelClass:
+      "rounded-none border-[4px] border-[#00ff41] bg-black px-5 py-5 shadow-[10px_10px_0px_rgba(0,255,65,0.15)]",
+    cardClass:
+      "rounded-none border-[3px] border-[#00ff41] bg-black px-4 py-4",
+    summaryCardClass:
+      "rounded-none border-[3px] border-[#00ff41] bg-black px-4 py-4",
+    sectionClass:
+      "rounded-none border-[4px] border-[#00ff41] bg-black px-5 py-5 shadow-[10px_10px_0px_rgba(0,255,65,0.15)]",
+    sectionTitleClass: "text-[#00ff41]",
+    sectionTitleStyle: { color: "#00ff41" },
+    sectionCardClass:
+      "rounded-none border-[3px] border-[#00ff41] bg-black px-4 py-4",
+    sectionMutedClass: "bg-[#00ff41] text-black",
+    accentClass: "text-[#86efac]",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none bg-[#00ff41] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-black transition hover:bg-[#86efac]",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border-[2px] border-[#00ff41] bg-black px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-[#00ff41] transition hover:bg-[#00ff41]/10",
+    headerAlign: "center",
+    heroDecor: "pixel",
+    cardRadiusMode: "sharp",
+    navRadiusMode: "sharp",
+  },
+  "architect-clean": {
+    id: "architect-clean",
+    name: "Structural HQ",
+    pageClass:
+      "min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f5f5f5_58%,#ffffff_100%)] text-slate-800",
+    shellClass:
+      "overflow-hidden border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.08)]",
+    headerClass:
+      "relative overflow-hidden border-b border-slate-200 bg-white px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(circle_at_top_right,rgba(15,23,42,0.04),transparent_28%)]",
+    titleClass:
+      "max-w-5xl text-5xl font-light uppercase leading-[0.82] tracking-[-0.07em] text-slate-800 sm:text-6xl lg:text-[5.5rem] [font-family:'Barlow_Condensed','Helvetica_Neue',sans-serif]",
+    titleStyle: { color: "#1e293b" },
+    subtitleClass: "text-slate-500",
+    metaClass: "text-slate-500",
+    heroBadgeClass:
+      "inline-flex items-center rounded-none bg-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white",
+    navShellClass:
+      "rounded-none border-y border-slate-300 bg-white px-2 py-2 shadow-none",
+    navActiveClass:
+      "rounded-none bg-black px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white",
+    navIdleClass:
+      "rounded-none border border-transparent px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-800",
+    panelClass:
+      "rounded-none border border-slate-200 bg-white px-5 py-5 shadow-none",
+    cardClass:
+      "rounded-none border-t border-slate-200 bg-slate-50 px-4 py-4",
+    summaryCardClass:
+      "rounded-none border-t border-slate-200 bg-white px-4 py-4",
+    sectionClass:
+      "rounded-none border border-slate-200 bg-white px-5 py-5 shadow-none",
+    sectionTitleClass: "text-slate-800",
+    sectionTitleStyle: { color: "#1e293b" },
+    sectionCardClass:
+      "rounded-none border-t border-slate-200 bg-slate-50 px-4 py-4",
+    sectionMutedClass: "bg-slate-900 text-white",
+    accentClass: "text-slate-500",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none bg-slate-900 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-slate-700",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border border-slate-300 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-700 transition hover:bg-slate-50",
+    headerAlign: "left",
+    heroDecor: "architect",
+    cardRadiusMode: "sharp",
+    navRadiusMode: "sharp",
+  },
+  "noir-silhouette": {
+    id: "noir-silhouette",
+    name: "Noir Silhouette",
+    pageClass:
+      "min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_44%,#ffffff_100%)] text-black",
+    shellClass:
+      "overflow-hidden border border-black bg-white shadow-[0_24px_60px_rgba(0,0,0,0.08)]",
+    headerClass:
+      "relative overflow-hidden bg-black px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_30%)]",
+    titleClass:
+      "mx-auto max-w-5xl text-center text-6xl font-black uppercase leading-[0.78] tracking-[-0.08em] text-white sm:text-7xl lg:text-[6.2rem] [font-family:'League_Spartan','Arial_Black',sans-serif]",
+    titleStyle: { color: "#ffffff" },
+    subtitleClass: "text-white/72",
+    metaClass: "text-white/76",
+    heroBadgeClass:
+      "inline-flex items-center rounded-none bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-black",
+    navShellClass:
+      "rounded-none border-y border-black bg-black px-2 py-2",
+    navActiveClass:
+      "rounded-none bg-white px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-black",
+    navIdleClass:
+      "rounded-none border border-white/10 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white/70 transition hover:border-white/30 hover:text-white",
+    panelClass:
+      "rounded-none border-b-[6px] border-black bg-white px-5 py-5",
+    cardClass:
+      "rounded-none border border-black bg-black px-4 py-4 text-white",
+    summaryCardClass:
+      "rounded-none border border-black bg-white px-4 py-4",
+    sectionClass:
+      "rounded-none border-b-[6px] border-black bg-white px-5 py-5",
+    sectionTitleClass: "text-black",
+    sectionTitleStyle: { color: "#000000" },
+    sectionCardClass:
+      "rounded-none border border-black bg-white px-4 py-4",
+    sectionMutedClass: "bg-black text-white",
+    accentClass: "text-zinc-500",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none bg-black px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-zinc-800",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-none border border-black bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-black transition hover:bg-slate-100",
+    headerAlign: "center",
+    heroDecor: "noir",
+    cardRadiusMode: "sharp",
+    navRadiusMode: "sharp",
   },
   "vaporwave-grid": {
     id: "vaporwave-grid",

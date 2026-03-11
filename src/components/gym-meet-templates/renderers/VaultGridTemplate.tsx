@@ -25,7 +25,7 @@ export default function VaultGridTemplate(props: any) {
           "rounded-full bg-indigo-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-indigo-700 transition hover:bg-indigo-100 sm:text-[11px]",
         navFadeClass: "rgba(255,255,255,0.92)",
         navRailClass:
-          "no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 md:grid md:overflow-visible",
+          "no-scrollbar flex flex-nowrap gap-2 overflow-x-auto px-1 py-1",
         summaryCardClass:
           "rounded-[22px] border border-indigo-100 bg-slate-50 px-4 py-4 shadow-sm",
         sectionClass:

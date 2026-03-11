@@ -43,3 +43,24 @@ test("gym meet renderer sources do not reference model.description", () => {
     );
   }
 });
+
+test("discovery nav renderers use overflow chips instead of equal-width desktop grids", () => {
+  const files = [
+    "src/components/gym-meet-templates/GymMeetDiscoveryContent.tsx",
+    "src/components/gym-meet-templates/renderers/ShowcaseGymMeetTemplate.tsx",
+  ];
+
+  for (const file of files) {
+    const source = readSource(file);
+    assert.equal(
+      source.includes("repeat(${"),
+      false,
+      `${file} still computes equal-width discovery grid columns`
+    );
+    assert.equal(
+      source.includes("md:grid md:overflow-visible"),
+      false,
+      `${file} still switches the discovery rail to a desktop grid`
+    );
+  }
+});

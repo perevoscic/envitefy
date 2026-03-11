@@ -815,7 +815,6 @@ const meetSection = {
             </div>
           </div>
         </div>
-
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">

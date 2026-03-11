@@ -269,6 +269,91 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
       "[font-family:'Arial_Black','Helvetica_Neue',sans-serif]",
   },
   {
+    id: "glitch-sport",
+    name: "Glitch Sport",
+    style: "Showcase / Glitch Arena",
+    description:
+      "Black, red, and cyan collision with scanline energy and a sharp competition-night edge.",
+    group: "showcase",
+    layoutFamily: "standard",
+    thumbnailMode: "rendered-card",
+    previewTitle: "Glitch Sport",
+    previewKicker: "Scanline Pulse",
+    previewClassName:
+      "bg-[linear-gradient(145deg,#000000_0%,#111827_42%,#06b6d4_100%)] text-white",
+    previewAccentClassName: "text-red-400",
+    previewTitleClassName:
+      "uppercase italic tracking-[-0.05em] [font-family:'Orbitron','Rajdhani',sans-serif]",
+  },
+  {
+    id: "organic-flow",
+    name: "Organic Flow",
+    style: "Showcase / Organic Premium",
+    description:
+      "Soft emerald shells, rounded navigation, and a calmer club-first presentation.",
+    group: "showcase",
+    layoutFamily: "standard",
+    thumbnailMode: "rendered-card",
+    previewTitle: "Organic Flow",
+    previewKicker: "Club Rhythm",
+    previewClassName:
+      "bg-[linear-gradient(160deg,#ecfdf5_0%,#d1fae5_52%,#065f46_100%)] text-emerald-950",
+    previewAccentClassName: "text-white",
+    previewTitleClassName:
+      "italic [font-family:'Poppins','Avenir_Next',sans-serif]",
+  },
+  {
+    id: "pixel-arena",
+    name: "Pixel Arena",
+    style: "Showcase / Arcade Scoreboard",
+    description:
+      "CRT green, rigid borders, and retro-sport contrast built for loud meet-day information.",
+    group: "showcase",
+    layoutFamily: "standard",
+    thumbnailMode: "rendered-card",
+    previewTitle: "Pixel Arena",
+    previewKicker: "Arcade Grid",
+    previewClassName:
+      "bg-[linear-gradient(145deg,#000000_0%,#03120a_56%,#00ff41_100%)] text-[#00ff41]",
+    previewAccentClassName: "text-white",
+    previewTitleClassName:
+      "uppercase [font-family:'Courier_New','IBM_Plex_Mono',monospace]",
+  },
+  {
+    id: "architect-clean",
+    name: "Structural HQ",
+    style: "Showcase / Structural Minimal",
+    description:
+      "White space, blueprint grid discipline, and stripped-back editorial utility.",
+    group: "showcase",
+    layoutFamily: "standard",
+    thumbnailMode: "rendered-card",
+    previewTitle: "Structural HQ",
+    previewKicker: "Clean Grid",
+    previewClassName:
+      "bg-[linear-gradient(180deg,#ffffff_0%,#f5f5f5_56%,#e2e8f0_100%)] text-slate-800",
+    previewAccentClassName: "text-slate-500",
+    previewTitleClassName:
+      "[font-family:'Barlow_Condensed','Helvetica_Neue',sans-serif]",
+  },
+  {
+    id: "noir-silhouette",
+    name: "Noir Silhouette",
+    style: "Showcase / Monochrome Poster",
+    description:
+      "Stark black-and-white framing with oversized typography and gallery-poster confidence.",
+    group: "showcase",
+    layoutFamily: "standard",
+    thumbnailMode: "rendered-card",
+    previewTitle: "Noir Silhouette",
+    previewKicker: "Monochrome Impact",
+    previewClassName:
+      "bg-[linear-gradient(145deg,#000000_0%,#1f2937_44%,#ffffff_100%)] text-white",
+    previewAccentClassName: "text-zinc-400",
+    previewTitleClassName:
+      "uppercase tracking-[-0.06em] [font-family:'League_Spartan','Arial_Black',sans-serif]",
+  },
+  {
     id: "vaporwave-grid",
     name: "Vector Vapor",
     style: "Showcase / Neon Vapor",

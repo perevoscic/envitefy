@@ -4,6 +4,10 @@ import { resolveGymMeetTemplateId } from "./registry";
 import { GymMeetRenderModel } from "./types";
 import { buildGymMeetDiscoveryContent } from "./buildGymMeetDiscoveryContent";
 import { normalizeGymMeetTitleSize } from "./titleSizing";
+import {
+  collapseRepeatedDisplayText,
+  formatGymMeetTime,
+} from "./displayText";
 
 const safeString = (value: unknown): string =>
   typeof value === "string"
@@ -144,6 +148,16 @@ const unique = (items: string[], limit = 12) => {
   return out;
 };
 
+const STRUCTURED_ANNOUNCEMENT_PATTERN =
+  /(arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue[_\s]?contact|meet director|director of operations|assistant event coordinator|floor manager|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|sponsor|visit lauderdale|hairstyle to impress|document[_\s-]?version|club participation)/i;
+
+const shouldRenderAnnouncement = (item: any) => {
+  const title = safeString(item?.title || item?.label);
+  const body = safeString(item?.body || item?.message || item?.text || item?.title);
+  if (!body) return false;
+  return !STRUCTURED_ANNOUNCEMENT_PATTERN.test(`${title} ${body}`);
+};
+
 const formatDate = (value: string) => {
   if (!value) return "";
   try {
@@ -153,20 +167,6 @@ const formatDate = (value: string) => {
       day: "numeric",
       year: "numeric",
     }).format(new Date(value));
-  } catch {
-    return value;
-  }
-};
-
-const formatTime = (value: string) => {
-  if (!value) return "";
-  try {
-    const [h, m] = value.split(":");
-    const hour = Number(h);
-    const minute = m || "00";
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minute} ${ampm}`;
   } catch {
     return value;
   }
@@ -203,6 +203,7 @@ export const normalizeGymMeetEventData = ({
     advancedSections?.announcements?.announcements ||
     [];
   const announcements = (Array.isArray(announcementsRaw) ? announcementsRaw : [])
+    .filter((item: any) => shouldRenderAnnouncement(item))
     .map((item: any, idx: number) =>
       normalizeAnnouncementEntry(item, `announcement-${idx + 1}`)
     )
@@ -282,9 +283,6 @@ export const normalizeGymMeetEventData = ({
       parseMeetDetails?.registrationInfo
         ? `Registration: ${parseMeetDetails.registrationInfo}`
         : "",
-      ...(Array.isArray(parseCommunications?.announcements)
-        ? parseCommunications.announcements.map((item: any) => item?.body)
-        : []),
     ],
     8
   );
@@ -312,15 +310,15 @@ export const normalizeGymMeetEventData = ({
 
   const heroBadges = unique(
     [
-      safeString(customFields?.meetDateRangeLabel),
-      safeString(meet?.sessionNumber || meet?.session),
+      collapseRepeatedDisplayText(customFields?.meetDateRangeLabel),
+      collapseRepeatedDisplayText(meet?.sessionNumber || meet?.session),
       rosterAthletes.length
         ? unique(
             rosterAthletes.map((athlete) => safeString(athlete?.level)).filter(Boolean),
             3
           ).join(" / ")
         : "",
-      safeString(meet?.assignedGym || logistics?.gymLayoutLabel),
+      collapseRepeatedDisplayText(meet?.assignedGym || logistics?.gymLayoutLabel),
     ],
     4
   );
@@ -328,11 +326,11 @@ export const normalizeGymMeetEventData = ({
   const summaryItems = [
     {
       label: "Warm-up",
-      value: formatTime(safeString(meet?.warmUpTime || meet?.warmupTime)),
+      value: formatGymMeetTime(meet?.warmUpTime || meet?.warmupTime),
     },
     {
       label: "March-in",
-      value: formatTime(safeString(meet?.marchInTime || meet?.marchinTime)),
+      value: formatGymMeetTime(meet?.marchInTime || meet?.marchinTime),
     },
     {
       label: "Start Event",
@@ -361,17 +359,17 @@ export const normalizeGymMeetEventData = ({
     title: safeString(eventData?.eventTitle || eventTitle || "Gymnastics Meet"),
     titleSize: normalizeGymMeetTitleSize(eventData?.fontSize),
     heroImage: safeString(eventData?.heroImage || eventData?.customHeroImage),
-    hostGym: safeString(eventData?.hostGym),
-    venue: safeString(eventData?.venue),
-    address: safeString(eventData?.address),
-    headerLocation: safeString(headerLocation),
+    hostGym: collapseRepeatedDisplayText(eventData?.hostGym),
+    venue: collapseRepeatedDisplayText(eventData?.venue),
+    address: collapseRepeatedDisplayText(eventData?.address),
+    headerLocation: collapseRepeatedDisplayText(headerLocation),
     dateLabel: formatDate(safeString(eventData?.date || eventData?.startISO)),
-    timeLabel: formatTime(safeString(eventData?.time)),
+    timeLabel: formatGymMeetTime(eventData?.time),
     detailsText,
     heroSummary: undefined,
-    team: safeString(customFields?.team || eventData?.extra?.team),
-    season: safeString(customFields?.season || eventData?.extra?.season),
-    coach: safeString(customFields?.coach || eventData?.extra?.coach),
+    team: collapseRepeatedDisplayText(customFields?.team || eventData?.extra?.team),
+    season: collapseRepeatedDisplayText(customFields?.season || eventData?.extra?.season),
+    coach: collapseRepeatedDisplayText(customFields?.coach || eventData?.extra?.coach),
     assistantCoach: safeString(
       customFields?.assistantCoach || eventData?.extra?.assistantCoach
     ),
@@ -395,6 +393,6 @@ export const normalizeGymMeetEventData = ({
     rulesNotes,
     logisticsNotes,
     discovery,
-    assignedGym: safeString(meet?.assignedGym),
+    assignedGym: collapseRepeatedDisplayText(meet?.assignedGym),
   };
 };

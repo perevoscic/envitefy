@@ -11,26 +11,13 @@ import {
   Phone,
 } from "lucide-react";
 import ShowcaseDiscoveryContent, {
-  SHOWCASE_DISCOVERY_TABS,
+  getShowcaseDiscoveryTabs,
 } from "../ShowcaseDiscoveryContent";
 import FloatingActionStrip from "../FloatingActionStrip";
 import { ShowcaseThemeConfig } from "../showcaseThemes";
 import { GymMeetTemplateRendererProps } from "../types";
 import { getGymMeetTitleSizeStyle } from "../titleSizing";
-
-const formatTime = (value: string) => {
-  if (!value) return "";
-  try {
-    const [h, m] = value.split(":");
-    const hour = Number(h);
-    const minute = m || "00";
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minute} ${ampm}`;
-  } catch {
-    return value;
-  }
-};
+import { formatGymMeetTime, joinUniqueDisplayParts } from "../displayText";
 
 const formatStatus = (value: string) => {
   const normalized = String(value || "").replace(/_/g, " ").trim();
@@ -119,6 +106,32 @@ const HeroDecor = ({ theme }: { theme: ShowcaseThemeConfig }) => {
       return (
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.15),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.7),transparent_36%)]" />
       );
+    case "glitch":
+      return (
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(239,68,68,0.08)_0px,rgba(239,68,68,0.08)_2px,transparent_2px,transparent_4px)] opacity-70" />
+          <div className="absolute inset-y-0 left-[12%] w-px bg-cyan-300/35 shadow-[0_0_18px_rgba(34,211,238,0.5)]" />
+          <div className="absolute inset-y-0 right-[18%] w-px bg-red-400/35 shadow-[0_0_18px_rgba(248,113,113,0.45)]" />
+        </div>
+      );
+    case "pixel":
+      return (
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,65,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,65,0.12)_1px,transparent_1px)] bg-[size:18px_18px]" />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent_0%,rgba(0,255,65,0.14)_100%)]" />
+        </div>
+      );
+    case "architect":
+      return (
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(15,23,42,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      );
+    case "noir":
+      return (
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,transparent_62%,rgba(255,255,255,0.08)_62%,rgba(255,255,255,0.08)_64%,transparent_64%,transparent_100%)]" />
+          <div className="absolute left-1/2 top-0 h-52 w-52 -translate-x-1/2 rounded-full bg-white/8 blur-3xl" />
+        </div>
+      );
     case "vaporwave":
       return (
         <div className="absolute inset-0">
@@ -154,7 +167,7 @@ export default function ShowcaseGymMeetTemplate({
 }: GymMeetTemplateRendererProps & {
   theme: ShowcaseThemeConfig;
 }) {
-  const [activeTab, setActiveTab] = useState("meet-details");
+  const [activeTab, setActiveTab] = useState("");
 
   const practiceBlocks = Array.isArray(model.practiceBlocks) ? model.practiceBlocks : [];
   const volunteerSlots = Array.isArray(model.volunteers?.volunteerSlots)
@@ -174,19 +187,19 @@ export default function ShowcaseGymMeetTemplate({
     : [];
 
   const topTabs = useMemo(() => {
-    return SHOWCASE_DISCOVERY_TABS.filter((tab) =>
-      (model.discovery?.tabs || []).some((candidate) => candidate.id === tab.id)
-    );
-  }, [model.discovery?.tabs]);
+    return getShowcaseDiscoveryTabs(model.discovery?.sections || []);
+  }, [model.discovery?.sections]);
 
   const activeTabId = topTabs.some((tab) => tab.id === activeTab)
     ? activeTab
-    : topTabs[0]?.id || "meet-details";
+    : topTabs[0]?.id || "";
   const hasQuickAccessSection = model.quickLinks.length > 0 || Boolean(model.coachPhone);
-  const topTabsStyle =
-    topTabs.length > 1
-      ? ({ gridTemplateColumns: `repeat(${topTabs.length}, minmax(0, 1fr))` } as const)
-      : undefined;
+  const heroVenueLine = joinUniqueDisplayParts(
+    [model.hostGym || model.team || model.venue, model.address || model.headerLocation],
+    ", "
+  );
+  const heroMetaLocation =
+    heroVenueLine && model.address ? "" : joinUniqueDisplayParts([model.headerLocation], ", ");
 
   const heroStyle = model.heroImage
     ? {
@@ -225,9 +238,9 @@ export default function ShowcaseGymMeetTemplate({
                   theme.headerAlign === "center" ? "mx-auto max-w-5xl text-center" : "max-w-5xl"
                 }`}
               >
-                {(model.hostGym || model.team || model.venue) && (
+                {heroVenueLine && (
                   <p className={`text-sm font-black uppercase tracking-[0.34em] ${theme.subtitleClass}`}>
-                    {model.hostGym || model.team || model.venue}
+                    {heroVenueLine}
                   </p>
                 )}
                 <h1
@@ -254,7 +267,7 @@ export default function ShowcaseGymMeetTemplate({
                       <Clock size={16} /> {model.timeLabel}
                     </span>
                   ) : null}
-                  {model.headerLocation ? <span>{model.headerLocation}</span> : null}
+                  {heroMetaLocation ? <span>{heroMetaLocation}</span> : null}
                 </div>
               </div>
 
@@ -287,8 +300,7 @@ export default function ShowcaseGymMeetTemplate({
               <div className="sticky top-3 z-20">
                 <div className={theme.navShellClass}>
                   <div
-                    className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 md:grid md:overflow-visible"
-                    style={topTabsStyle}
+                    className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1"
                   >
                     {topTabs.map((tab) => {
                       const Icon = tab.icon;
@@ -298,10 +310,12 @@ export default function ShowcaseGymMeetTemplate({
                           key={tab.id}
                           type="button"
                           onClick={() => setActiveTab(tab.id)}
-                          className={`${selected ? theme.navActiveClass : theme.navIdleClass} inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap md:min-w-0 md:w-full md:shrink`}
+                          className={`${selected ? theme.navActiveClass : theme.navIdleClass} inline-flex max-w-[240px] shrink-0 items-center justify-center gap-2 whitespace-nowrap`}
+                          aria-label={tab.label}
+                          title={tab.label}
                         >
-                          <Icon size={16} />
-                          <span>{tab.label}</span>
+                          <Icon size={16} className="shrink-0" />
+                          <span className="truncate">{tab.label}</span>
                         </button>
                       );
                     })}
@@ -353,7 +367,7 @@ export default function ShowcaseGymMeetTemplate({
                             <p className="text-base font-black">{block.day}</p>
                             <p className="text-xs font-bold uppercase tracking-[0.16em] opacity-60">
                               {block.time ||
-                                [formatTime(block.startTime), formatTime(block.endTime)]
+                                [formatGymMeetTime(block.startTime), formatGymMeetTime(block.endTime)]
                                   .filter(Boolean)
                                   .join(" - ")}
                             </p>

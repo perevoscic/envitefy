@@ -412,6 +412,81 @@ function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {
   return out;
 }
 
+const USABLE_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const PUBLIC_MEET_CONTACT_ROLE_PATTERN =
+  /\b(meet director|director of operations|assistant event coordinator|event coordinator|floor manager|meet contact|event contact)\b/i;
+const VENUE_CONTACT_ROLE_PATTERN =
+  /\b(venue contact|facility contact|gym contact|gymnasium contact)\b|\b(venue|facility|gym(?:nasium)?)\b/i;
+const COACH_CONTACT_ROLE_PATTERN =
+  /\b(coach|registration|meet reservations?|meetmaker|entry|regional|club admin|team admin|pro member)\b/i;
+const SUPPRESSED_UNMAPPED_FACT_CATEGORIES = new Set([
+  "marketing",
+  "club_participation",
+  "document_version",
+]);
+
+function isUsableEmail(value: unknown): boolean {
+  return USABLE_EMAIL_PATTERN.test(safeString(value));
+}
+
+function isUsablePhone(value: unknown): boolean {
+  return safeString(value).replace(/\D/g, "").length >= 7;
+}
+
+function sanitizeDiscoveryContact(item: any, fallbackRole = "Contact") {
+  const role = safeString(item?.role || fallbackRole) || fallbackRole;
+  const name = safeString(item?.name);
+  const email = isUsableEmail(item?.email) ? safeString(item?.email) : "";
+  const phone = isUsablePhone(item?.phone) ? safeString(item?.phone) : "";
+  if (!name && !email && !phone) return null;
+  return {
+    role,
+    name: name || null,
+    email: email || null,
+    phone: phone || null,
+  };
+}
+
+function classifyDiscoveryContact(item: any): "public" | "venue" | "coach" | "other" {
+  const haystack = `${safeString(item?.role)} ${safeString(item?.name)}`;
+  if (VENUE_CONTACT_ROLE_PATTERN.test(haystack)) return "venue";
+  if (PUBLIC_MEET_CONTACT_ROLE_PATTERN.test(haystack)) return "public";
+  if (COACH_CONTACT_ROLE_PATTERN.test(haystack)) return "coach";
+  return "other";
+}
+
+function shouldSuppressUnmappedFact(item: any): boolean {
+  const category = safeString(item?.category).toLowerCase();
+  const detail = safeString(item?.detail);
+  if (!detail) return true;
+  if (SUPPRESSED_UNMAPPED_FACT_CATEGORIES.has(category)) return true;
+  return false;
+}
+
+function isAdmissionAnnouncementText(value: string): boolean {
+  return /(spectator|admission|ticket|pre[-\s]?sale|credit\/debit|credit card|debit card|cashless|cash is not accepted|cash not accepted|no cash)/i.test(
+    safeString(value)
+  );
+}
+
+function isStructuredAnnouncementText(value: string): boolean {
+  return /(doors open|arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue contact|facility contact|meet director|director of operations|event coordinator|floor manager)/i.test(
+    safeString(value)
+  );
+}
+
+function shouldPersistParsedAnnouncement(item: any): boolean {
+  const title = safeString(item?.title || item?.label);
+  const body = safeString(item?.body || item?.text || item?.message);
+  const combined = `${title} ${body}`;
+  if (!body) return false;
+  if (isAdmissionAnnouncementText(combined) || isStructuredAnnouncementText(combined)) return false;
+  if (/(marketing|sponsor|visit lauderdale|hairstyle to impress|final posting)/i.test(combined)) {
+    return false;
+  }
+  return body.split(/\s+/).filter(Boolean).length >= 4;
+}
+
 function uniqueLines(lines: string[], limit = 12): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
@@ -2492,6 +2567,7 @@ export function buildDefaultGymMeetData() {
         awardsInfo: "",
         sessionWindows: [],
         operationalNotes: [],
+        staffContacts: [],
       },
       practice: { enabled: true, blocks: [], excusedAthletes: [], modifiedTraining: [] },
       logistics: {
@@ -2521,6 +2597,8 @@ export function buildDefaultGymMeetData() {
         policySafety: "",
         policyAnimals: "",
         additionalDocuments: [],
+        venueContacts: [],
+        venueContactNotes: [],
       },
       coaches: {
         enabled: false,
@@ -2920,6 +2998,9 @@ function buildProfessionalParsePrompt(
     "- Keep parking maps/rates in `logistics.parkingLinks` or `logistics.parkingPricingLinks`.",
     "- Put public results/live scoring text in `meetDetails.resultsInfo`; put coach-only rotation-sheet procedures in `coachInfo.rotationSheets` or `meetDetails.rotationSheetsInfo` only when they are public-facing.",
     "- `coachInfo.attire` should be one concise string. Use `coachInfo.notes` for extra bullet-like coach notes.",
+    "- For `communications.announcements`, include ONLY true transient updates or cross-cutting alerts that a user would reasonably expect in an announcements module.",
+    "- Do NOT place venue phone numbers, facility contacts, meet staff contacts, admission pricing/policies, arrival guidance, registration instructions, results, rotation sheets, awards, sponsor blurbs, club-participation lists, or document-version notes in `communications.announcements`.",
+    "- Do not prefix leftover facts with category labels inside announcement text (examples to avoid: `venue_contact ...`, `marketing ...`, `document_version ...`).",
     "- For `communications.announcements`, use a short `title` when obvious and keep the `body` as the explanatory sentence only.",
     "- Never repeat the title words at the beginning of `communications.announcements[].body`.",
     "",
@@ -3776,21 +3857,57 @@ export async function mapParseResultToGymData(
       url: item.url,
     })
   );
-  const coachRolePattern =
-    /\b(coach|meet director|director of operations|assistant event coordinator|floor manager)\b/i;
   const assistantCoachRolePattern = /\bassistant coach\b/i;
+  const publicMeetContacts = uniqueBy(
+    [
+      ...pickArray(existingAdvanced.meet?.staffContacts),
+      ...parseResult.contacts.filter((item) => classifyDiscoveryContact(item) === "public"),
+    ]
+      .map((item) => sanitizeDiscoveryContact(item, "Meet staff"))
+      .filter(
+        (
+          item
+        ): item is { role: string; name: string | null; email: string | null; phone: string | null } =>
+          Boolean(item)
+      ),
+    (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+  );
+  const venueContacts = uniqueBy(
+    [
+      ...pickArray(existingAdvanced.logistics?.venueContacts),
+      ...parseResult.contacts.filter((item) => classifyDiscoveryContact(item) === "venue"),
+    ]
+      .map((item) => sanitizeDiscoveryContact(item, "Venue contact"))
+      .filter(
+        (
+          item
+        ): item is { role: string; name: string | null; email: string | null; phone: string | null } =>
+          Boolean(item)
+      ),
+    (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+  );
+  const venueContactNotes = uniqueLines(
+    [
+      ...pickArray(existingAdvanced.logistics?.venueContactNotes),
+      ...parseResult.unmappedFacts
+        .filter((fact) => !shouldSuppressUnmappedFact(fact))
+        .filter((fact) => /\bvenue_contact\b/i.test(safeString(fact.category)))
+        .map((fact) => safeString(fact.detail)),
+    ],
+    6
+  );
   const coachContacts = uniqueBy(
     [
       ...pickArray(parseResult.coachInfo?.contacts),
-      ...parseResult.contacts.filter((item) => coachRolePattern.test(safeString(item?.role))),
+      ...parseResult.contacts.filter((item) => classifyDiscoveryContact(item) === "coach"),
     ]
-      .map((item) => ({
-        role: safeString(item?.role) || "Coach contact",
-        name: safeString(item?.name) || null,
-        email: safeString(item?.email) || null,
-        phone: safeString(item?.phone) || null,
-      }))
-      .filter((item) => item.name || item.email || item.phone),
+      .map((item) => sanitizeDiscoveryContact(item, "Coach contact"))
+      .filter(
+        (
+          item
+        ): item is { role: string; name: string | null; email: string | null; phone: string | null } =>
+          Boolean(item)
+      ),
     (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
   );
   const primaryCoachContact =
@@ -3832,7 +3949,6 @@ export async function mapParseResultToGymData(
     (item) => `${item.label}|${item.date}|${item.note}`
   );
 
-  const generatedAnnouncements: Array<{ title: string; body: string }> = [];
   const existingAnnouncementEntries: Array<{ title: string; body: string }> = pickArray(
     existingAdvanced.announcements?.announcements
   )
@@ -3841,67 +3957,16 @@ export async function mapParseResultToGymData(
       body: safeString(item?.text || item?.body || item?.title),
     }))
     .filter((item) => item.body);
-  if (parseResult.meetDetails.doorsOpen) {
-    generatedAnnouncements.push({ title: "Doors Open", body: parseResult.meetDetails.doorsOpen });
-  }
-  if (parseResult.meetDetails.arrivalGuidance) {
-    generatedAnnouncements.push({
-      title: "Arrival Guidance",
-      body: parseResult.meetDetails.arrivalGuidance,
-    });
-  }
-  if (parseResult.meetDetails.registrationInfo) {
-    generatedAnnouncements.push({
-      title: "Registration",
-      body: parseResult.meetDetails.registrationInfo,
-    });
-  }
-  if (parseResult.meetDetails.scoringInfo) {
-    generatedAnnouncements.push({
-      title: "Scoring Information",
-      body: parseResult.meetDetails.scoringInfo,
-    });
-  }
-  if (parseResult.meetDetails.resultsInfo) {
-    generatedAnnouncements.push({
-      title: "Results",
-      body: parseResult.meetDetails.resultsInfo,
-    });
-  }
-  if (parseResult.meetDetails.awardsInfo) {
-    generatedAnnouncements.push({
-      title: "Awards",
-      body: parseResult.meetDetails.awardsInfo,
-    });
-  }
-  for (const item of parseResult.deadlines) {
-    generatedAnnouncements.push({
-      title: item.label || "Deadline",
-      body: [item.date, item.note].filter(Boolean).join(" — "),
-    });
-  }
-  for (const item of parseResult.contacts) {
-    generatedAnnouncements.push({
-      title: item.role || "Contact",
-      body: [item.name, item.email, item.phone].filter(Boolean).join(" • "),
-    });
-  }
-  for (const item of parseResult.unmappedFacts.filter((fact) => fact.confidence !== "low")) {
-    generatedAnnouncements.push({
-      title: item.category || "Additional details",
-      body: item.detail,
-    });
-  }
-  for (const line of policyLines) {
-    generatedAnnouncements.push({
-      title: "Policy",
-      body: line,
-    });
-  }
+  const parsedAnnouncementEntries = pickArray(parseResult.communications?.announcements)
+    .filter((item) => shouldPersistParsedAnnouncement(item))
+    .map((item) => ({
+      title: safeString(item?.title || item?.label),
+      body: safeString(item?.body || item?.text || item?.message),
+    }))
+    .filter((item) => item.body);
   const mergedAnnouncements = uniqueBy(
     [
-      ...parseResult.communications.announcements,
-      ...generatedAnnouncements,
+      ...parsedAnnouncementEntries,
       ...existingAnnouncementEntries,
     ].filter(
       (item) => safeString(item.title) || safeString(item.body)
@@ -3954,6 +4019,13 @@ export async function mapParseResultToGymData(
       awardsInfo: parseResult.meetDetails.awardsInfo || "",
       sessionWindows: parseResult.meetDetails.sessionWindows || [],
       operationalNotes,
+      staffContacts: publicMeetContacts.map((item, idx) => ({
+        id: `meet-staff-${idx + 1}`,
+        role: item.role,
+        name: item.name || "",
+        email: item.email || "",
+        phone: item.phone || "",
+      })),
     },
     logistics: {
       ...(existingAdvanced.logistics || {}),
@@ -3974,6 +4046,14 @@ export async function mapParseResultToGymData(
       policyAnimals: parseResult.policies.animals || "",
       gymLayoutImage: resolvedGymLayoutImage,
       gymLayoutLabel: resolvedGymLayoutLabel,
+      venueContacts: venueContacts.map((item, idx) => ({
+        id: `venue-contact-${idx + 1}`,
+        role: item.role,
+        name: item.name || "",
+        email: item.email || "",
+        phone: item.phone || "",
+      })),
+      venueContactNotes,
     },
     coaches: {
       ...(existingAdvanced.coaches || {}),

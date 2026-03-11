@@ -152,6 +152,105 @@ const safeString = (value: unknown): string =>
     ? ""
     : String(value).trim();
 
+const USABLE_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const PUBLIC_MEET_CONTACT_ROLE_PATTERN =
+  /\b(meet director|director of operations|assistant event coordinator|event coordinator|floor manager|meet contact|event contact)\b/i;
+const VENUE_CONTACT_ROLE_PATTERN =
+  /\b(venue[_\s]?contact|facility contact|gym contact|gymnasium contact)\b|\b(venue|facility|gym(?:nasium)?)\b/i;
+const COACH_CONTACT_ROLE_PATTERN =
+  /\b(coach|registration|meet reservations?|meetmaker|entry|regional|club admin|team admin|pro member)\b/i;
+const STRUCTURED_ANNOUNCEMENT_PATTERN =
+  /(arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue[_\s]?contact|meet director|director of operations|assistant event coordinator|floor manager|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|sponsor|visit lauderdale|hairstyle to impress|document[_\s-]?version|club participation)/i;
+const SUPPRESSED_ANNOUNCEMENT_PATTERN =
+  /(marketing|visit lauderdale|hairstyle to impress|document[_\s-]?version|club participation|venue[_\s]?contact)/i;
+
+const uniqueBy = <T,>(items: T[], getKey: (item: T) => string): T[] => {
+  const out: T[] = [];
+  const seen = new Set<string>();
+  for (const item of Array.isArray(items) ? items : []) {
+    const key = safeString(getKey(item)).toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+};
+
+const isUsableEmail = (value: unknown) => USABLE_EMAIL_PATTERN.test(safeString(value));
+const isUsablePhone = (value: unknown) => safeString(value).replace(/\D/g, "").length >= 7;
+
+const sanitizeContactRecord = (item: any, fallbackRole = "Contact") => {
+  const role = safeString(item?.role || fallbackRole) || fallbackRole;
+  const name = safeString(item?.name);
+  const email = isUsableEmail(item?.email) ? safeString(item?.email) : "";
+  const phone = isUsablePhone(item?.phone) ? safeString(item?.phone) : "";
+  if (!name && !email && !phone) return null;
+  return {
+    role,
+    name,
+    email,
+    phone,
+  };
+};
+
+const classifyContactRole = (item: any): "public" | "venue" | "coach" | "other" => {
+  const haystack = `${safeString(item?.role)} ${safeString(item?.name)}`;
+  if (VENUE_CONTACT_ROLE_PATTERN.test(haystack)) return "venue";
+  if (PUBLIC_MEET_CONTACT_ROLE_PATTERN.test(haystack)) return "public";
+  if (COACH_CONTACT_ROLE_PATTERN.test(haystack)) return "coach";
+  return "other";
+};
+
+const getAnnouncementItems = (announcements: any) => {
+  const items = announcements?.items || announcements?.announcements || [];
+  return (Array.isArray(items) ? items : []).map((item: any) => ({
+    ...item,
+    title: safeString(item?.title || item?.label),
+    body: safeString(item?.text || item?.message || item?.body || item?.title),
+  }));
+};
+
+const shouldRenderAnnouncementCard = (item: any) => {
+  const combined = `${safeString(item?.title)} ${safeString(item?.body)}`;
+  if (!safeString(item?.body)) return false;
+  if (SUPPRESSED_ANNOUNCEMENT_PATTERN.test(combined)) return false;
+  return !STRUCTURED_ANNOUNCEMENT_PATTERN.test(combined);
+};
+
+const parseLegacyContactFromText = (value: string, fallbackRole: string) => {
+  const text = safeString(value);
+  if (!text) return null;
+  const cleaned = text
+    .replace(/^(venue[_\s]?contact|policy)\s+/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const parts = cleaned.split("•").map((part) => safeString(part));
+  const leading = parts[0] || cleaned;
+  const roleMatch = leading.match(
+    /(Meet Director|Director of Operations|Assistant Event Coordinator|Event Coordinator|Floor Manager|Venue Contact)/i
+  );
+  const role = roleMatch?.[1] || fallbackRole;
+  const name = safeString(leading.replace(new RegExp(`^${role}`, "i"), "").trim());
+  const email = parts.find((part) => isUsableEmail(part)) || "";
+  const phone = parts.find((part) => isUsablePhone(part)) || "";
+  if (!name && !email && !phone) {
+    return {
+      role,
+      name: "",
+      email: "",
+      phone: "",
+      body: cleaned,
+    };
+  }
+  return {
+    role,
+    name,
+    email,
+    phone,
+    body: "",
+  };
+};
+
 const normalizeRosterAthletes = (roster: any): NormalizedRosterAthlete[] => {
   if (!roster || typeof roster !== "object") return [];
   const entries = Array.isArray(roster.athletes)
@@ -1096,9 +1195,10 @@ export default function SimpleTemplateView({
         (advancedSections?.volunteers?.showCarpool !== false &&
           ((advancedSections?.volunteers?.carpoolOffers?.length ?? 0) > 0 ||
             (advancedSections?.volunteers?.carpools?.length ?? 0) > 0));
-  const hasAnnouncements =
-    (advancedSections?.announcements?.items?.length ?? 0) > 0 ||
-    (advancedSections?.announcements?.announcements?.length ?? 0) > 0;
+  const renderableAnnouncementItems = getAnnouncementItems(
+    advancedSections?.announcements
+  ).filter((item: any) => shouldRenderAnnouncementCard(item));
+  const hasAnnouncements = renderableAnnouncementItems.length > 0;
   const hasRsvpSection = rsvpEnabled;
   const hasEvents =
     Array.isArray(advancedSections?.events?.events) &&
@@ -2833,13 +2933,7 @@ export default function SimpleTemplateView({
 
   // Render announcements section - handle both data structures
   const renderAnnouncementsSection = () => {
-    const announcements = advancedSections?.announcements;
-
-    // Handle both data structures: items array and announcements array
-    const items = announcements?.items || announcements?.announcements || [];
-    const filteredItems = items.filter(
-      (item: any) => item.text || item.message || item.title
-    );
+    const filteredItems = renderableAnnouncementItems;
 
     if (!filteredItems.length) return null;
 
@@ -2856,7 +2950,6 @@ export default function SimpleTemplateView({
             const isUrgent = item.priority === "urgent" || item.urgent;
             const message = item.text || item.message || "";
             const title = item.title || "";
-            const date = item.date || item.createdAt;
 
             return (
               <div
@@ -2895,11 +2988,6 @@ export default function SimpleTemplateView({
                         style={bodyShadow}
                       >
                         {message}
-                      </p>
-                    )}
-                    {date && (
-                      <p className={`text-xs opacity-50 mt-2 ${textClass}`}>
-                        {formatDateWithTimeZone(date)}
                       </p>
                     )}
                   </div>
@@ -3478,6 +3566,14 @@ export default function SimpleTemplateView({
           safeString(item?.body)
         )
       : null;
+    const legacyAnnouncementItems = getAnnouncementItems(
+      advancedSections?.announcements
+    );
+    const legacyAnnouncementTexts = legacyAnnouncementItems
+      .map((item: any) => safeString(item?.body))
+      .filter(Boolean);
+    const findLegacyAnnouncementText = (pattern: RegExp) =>
+      legacyAnnouncementTexts.find((line) => pattern.test(line)) || "";
     const admissionNoteCandidates = uniqueTextLines(
       [
         ...baseAdmissionNoteCandidates,
@@ -3524,8 +3620,34 @@ export default function SimpleTemplateView({
       )
         ? announcementBody
         : sourceMerchandiseLine;
+    const routedArrivalGuidance =
+      safeString(parseMeetDetails?.arrivalGuidance) ||
+      stripKnownLabelPrefix(sourceArrivalGuidanceLine, /^arrival guidance:\s*/i) ||
+      findLegacyAnnouncementText(/^arrival guidance\b/i)
+        .replace(/^arrival guidance\s*/i, "")
+        .trim();
+    const routedRegistrationInfo =
+      safeString(parseMeetDetails?.registrationInfo) ||
+      stripKnownLabelPrefix(sourceRegistrationLine, /^registration:\s*/i) ||
+      findLegacyAnnouncementText(/^registration\b/i)
+        .replace(/^registration\s*/i, "")
+        .trim();
+    const routedRotationSheetsInfo =
+      safeString(parseMeetDetails?.rotationSheetsInfo) ||
+      findLegacyAnnouncementText(/rotation sheets?/i)
+        .replace(/^rotation sheets?(?: availability)?\s*/i, "")
+        .trim();
+    const routedAwardsInfo =
+      safeString(parseMeetDetails?.awardsInfo) ||
+      findLegacyAnnouncementText(/awards?/i)
+        .replace(/^awards?\s*/i, "")
+        .trim();
     const resultsInfoText =
+      safeString(parseMeetDetails?.resultsInfo) ||
       sourceResultsText ||
+      findLegacyAnnouncementText(/results|live scoring/i)
+        .replace(/^results?\s*/i, "")
+        .trim() ||
       (/(official results|live scoring|meetscoresonline)/i.test(announcementBody)
         ? announcementBody
         : "");
@@ -3542,28 +3664,112 @@ export default function SimpleTemplateView({
       {
         key: "arrival-guidance",
         label: "Arrival Guidance",
-        value:
-          safeString(parseMeetDetails?.arrivalGuidance) ||
-          stripKnownLabelPrefix(
-            sourceArrivalGuidanceLine,
-            /^arrival guidance:\s*/i
-          ),
+        value: routedArrivalGuidance,
       },
       {
         key: "registration",
         label: "Registration",
-        value:
-          safeString(parseMeetDetails?.registrationInfo) ||
-          stripKnownLabelPrefix(sourceRegistrationLine, /^registration:\s*/i),
+        value: routedRegistrationInfo,
       },
     ].filter((item) => Boolean(safeString(item.value)));
-    const hasSpectatorLogistics = spectatorLogisticsItems.length > 0;
-    const hasRotationLink = Boolean(safeString(rotationLink?.url));
+    const meetOverviewCards = uniqueBy(
+      [
+        spectatorLogisticsItems.find((item) => item.key === "arrival-guidance")
+          ? {
+              key: "arrival-guidance",
+              label: "Arrival Guidance",
+              body: routedArrivalGuidance,
+            }
+          : null,
+        spectatorLogisticsItems.find((item) => item.key === "registration")
+          ? {
+              key: "registration",
+              label: "Registration",
+              body: routedRegistrationInfo,
+            }
+          : null,
+        routedRotationSheetsInfo
+          ? {
+              key: "rotation-sheets",
+              label: "Rotation Sheets",
+              body: routedRotationSheetsInfo,
+            }
+          : null,
+        routedAwardsInfo
+          ? {
+              key: "awards",
+              label: "Awards",
+              body: routedAwardsInfo,
+            }
+          : null,
+      ].filter(Boolean),
+      (item: any) =>
+        normalizeVenueFactForCompare(
+          `${safeString(item?.label)}|${safeString(item?.body)}`
+        )
+    );
     const hasAdmissionContent =
       admissionCards.length > 0 || Boolean(admissionPrimaryNote);
-    const hasAdmissionSection = hasAdmissionContent || hasSpectatorLogistics;
+    const publicMeetStaffCards = uniqueBy(
+      [
+        ...(Array.isArray(advancedSections?.meet?.staffContacts)
+          ? advancedSections.meet.staffContacts
+          : []),
+        ...(Array.isArray(parseResult?.contacts)
+          ? parseResult.contacts.filter(
+              (item: any) => classifyContactRole(item) === "public"
+            )
+          : []),
+        ...legacyAnnouncementTexts
+          .filter((line) => PUBLIC_MEET_CONTACT_ROLE_PATTERN.test(line))
+          .map((line) => parseLegacyContactFromText(line, "Meet staff")),
+      ]
+        .map((item: any) => sanitizeContactRecord(item, "Meet staff") || item)
+        .filter(Boolean)
+        .map((item: any, index: number) => ({
+          key: `meet-staff-${index}`,
+          label: safeString(item?.role || "Meet staff"),
+          value: safeString(item?.name),
+          body:
+            item?.body ||
+            [safeString(item?.email), safeString(item?.phone)]
+              .filter(Boolean)
+              .join(" • "),
+        }))
+        .filter((item: any) => item.value || item.body),
+      (item: any) =>
+        normalizeVenueFactForCompare(
+          `${safeString(item?.label)}|${safeString(item?.value)}|${safeString(item?.body)}`
+        )
+    );
+    const admissionPolicyCards = uniqueBy(
+      [
+        ...legacyAnnouncementTexts
+          .filter((line) =>
+            /(spectator admission|pre[-\s]?sale|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|no cash)/i.test(
+              line
+            )
+          )
+          .map((line, index) => ({
+            key: `admission-policy-${index}`,
+            label: /(pre[-\s]?sale|spectator admission)/i.test(line)
+              ? "Spectator Pre-Sale"
+              : "Admission Policy",
+            body: line
+              .replace(/^policy\s*/i, "")
+              .replace(/^spectator admission\s*/i, "")
+              .trim(),
+          })),
+      ],
+      (item: any) =>
+        normalizeVenueFactForCompare(
+          `${safeString(item?.label)}|${safeString(item?.body)}`
+        )
+    );
+    const hasAdmissionSection =
+      hasAdmissionContent || admissionPolicyCards.length > 0;
     const hasSpectatorCards =
-      Boolean(merchandiseText) || hasRotationLink || Boolean(resultsInfoText);
+      Boolean(merchandiseText) || Boolean(resultsInfoText);
     const rulesUpdateText =
       safeString(firstAnnouncement?.body) || safeString(description);
     const eventCity = (() => {
@@ -3895,13 +4101,54 @@ export default function SimpleTemplateView({
       Boolean(addressLabel) ||
       Boolean(safeString(logistics?.hotelInfo || parseLogistics?.hotel)) ||
       Boolean(facilityMapAddress);
+    const venueContactCards = uniqueBy(
+      [
+        ...(Array.isArray(logistics?.venueContacts) ? logistics.venueContacts : []),
+        ...(Array.isArray(parseResult?.contacts)
+          ? parseResult.contacts.filter(
+              (item: any) => classifyContactRole(item) === "venue"
+            )
+          : []),
+        ...legacyAnnouncementTexts
+          .filter((line) => VENUE_CONTACT_ROLE_PATTERN.test(line))
+          .map((line) => parseLegacyContactFromText(line, "Venue Contact")),
+        ...((Array.isArray(logistics?.venueContactNotes)
+          ? logistics.venueContactNotes
+          : []) as string[]).map((line, index) => ({
+          role: "Venue Contact",
+          body: safeString(line),
+          key: `venue-note-${index}`,
+        })),
+      ]
+        .map((item: any) => sanitizeContactRecord(item, "Venue Contact") || item)
+        .filter(Boolean)
+        .map((item: any, index: number) => ({
+          key: item?.key || `venue-contact-${index}`,
+          label: safeString(item?.role || "Venue Contact"),
+          value: safeString(item?.name),
+          body:
+            item?.body ||
+            [safeString(item?.email), safeString(item?.phone)]
+              .filter(Boolean)
+              .join(" • "),
+        }))
+        .filter((item: any) => item.value || item.body),
+      (item: any) =>
+        normalizeVenueFactForCompare(
+          `${safeString(item?.label)}|${safeString(item?.value)}|${safeString(item?.body)}`
+        )
+    );
     const hasFacilityContent =
       Boolean(gymLayoutImageUrl) ||
       Boolean(gymLayoutLabel) ||
       venueListLines.length > 0 ||
       showRegistrationDeskNote ||
-      showAwardsAreaNote;
-    const hasMeetDetailsContent = meetDetailsLines.length > 0;
+      showAwardsAreaNote ||
+      venueContactCards.length > 0;
+    const hasMeetDetailsContent =
+      meetDetailsLines.length > 0 ||
+      meetOverviewCards.length > 0 ||
+      publicMeetStaffCards.length > 0;
     const extractInlineUrl = (line: string) => {
       const urlMatch = line.match(/(?:https?:\/\/[^\s)]+|www\.[^\s)]+)/i);
       if (!urlMatch) {
@@ -4251,37 +4498,87 @@ export default function SimpleTemplateView({
                       <Info className={discoveryIcon} size={24} /> Meet Details
                     </h3>
                     {hasMeetDetailsContent ? (
-                      <ul className="space-y-4">
-                        {meetDetailsLines.map((line) =>
-                          (() => {
-                            const parsedLine = extractInlineUrl(line);
-                            return (
-                              <li
-                                key={`meet-details-line-${line}`}
-                                className="flex items-start gap-3"
+                      <div className="space-y-6">
+                        {meetOverviewCards.length > 0 && (
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            {meetOverviewCards.map((item: any) => (
+                              <div
+                                key={item.key}
+                                className="bg-slate-50 p-5 rounded-3xl border border-[color:var(--border,#E2E8F0)]"
                               >
-                                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-slate-400/70" />
-                                <div className="space-y-2">
-                                  <p className="text-sm text-slate-700 leading-relaxed">
-                                    {parsedLine.textWithoutUrl ||
-                                      "Reference link"}
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                                  {item.label}
+                                </p>
+                                <p className="text-sm text-slate-700 leading-relaxed">
+                                  {item.body}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {meetDetailsLines.length > 0 && (
+                          <ul className="space-y-4">
+                            {meetDetailsLines.map((line) =>
+                              (() => {
+                                const parsedLine = extractInlineUrl(line);
+                                return (
+                                  <li
+                                    key={`meet-details-line-${line}`}
+                                    className="flex items-start gap-3"
+                                  >
+                                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-slate-400/70" />
+                                    <div className="space-y-2">
+                                      <p className="text-sm text-slate-700 leading-relaxed">
+                                        {parsedLine.textWithoutUrl ||
+                                          "Reference link"}
+                                      </p>
+                                      {parsedLine.href && (
+                                        <a
+                                          href={parsedLine.href}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={`inline-flex items-center gap-2 rounded-full border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] hover:border-[color:var(--color-border-hover,#D4AF37)] ${discoveryFocusRing}`}
+                                        >
+                                          Open Link <ExternalLink size={12} />
+                                        </a>
+                                      )}
+                                    </div>
+                                  </li>
+                                );
+                              })()
+                            )}
+                          </ul>
+                        )}
+                        {publicMeetStaffCards.length > 0 && (
+                          <div>
+                            <h4 className="font-bold text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)]">
+                              Meet Staff
+                            </h4>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                              {publicMeetStaffCards.map((item: any) => (
+                                <div
+                                  key={item.key}
+                                  className="bg-slate-50 p-5 rounded-3xl border border-[color:var(--border,#E2E8F0)]"
+                                >
+                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                                    {item.label}
                                   </p>
-                                  {parsedLine.href && (
-                                    <a
-                                      href={parsedLine.href}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={`inline-flex items-center gap-2 rounded-full border border-[color:var(--border,#E2E8F0)] bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] hover:border-[color:var(--color-border-hover,#D4AF37)] ${discoveryFocusRing}`}
-                                    >
-                                      Open Link <ExternalLink size={12} />
-                                    </a>
+                                  {item.value && (
+                                    <p className="text-base font-bold text-slate-900">
+                                      {item.value}
+                                    </p>
+                                  )}
+                                  {item.body && (
+                                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                                      {item.body}
+                                    </p>
                                   )}
                                 </div>
-                              </li>
-                            );
-                          })()
+                              ))}
+                            </div>
+                          </div>
                         )}
-                      </ul>
+                      </div>
                     ) : (
                       <p className="text-sm text-slate-600 leading-relaxed">
                         Meet details are still being mapped from the source
@@ -4340,13 +4637,13 @@ export default function SimpleTemplateView({
                           </p>
                         </div>
                       )}
-                      {hasSpectatorLogistics && (
+                      {admissionPolicyCards.length > 0 && (
                         <div className="mt-8">
                           <h4 className="font-bold text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)]">
-                            Arrival & Registration
+                            Admission Policies
                           </h4>
-                          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            {spectatorLogisticsItems.map((item) => (
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            {admissionPolicyCards.map((item: any) => (
                               <div
                                 key={item.key}
                                 className="bg-slate-50 p-5 rounded-3xl border border-[color:var(--border,#E2E8F0)]"
@@ -4355,7 +4652,7 @@ export default function SimpleTemplateView({
                                   {item.label}
                                 </p>
                                 <p className="text-sm text-slate-700 leading-relaxed">
-                                  {item.value}
+                                  {item.body}
                                 </p>
                               </div>
                             ))}
@@ -4397,34 +4694,6 @@ export default function SimpleTemplateView({
                               <ExternalLink size={14} />
                             </a>
                           )}
-                        </div>
-                      )}
-                      {hasRotationLink && (
-                        <div className={`${discoveryCard} p-4 sm:p-5 md:p-8`}>
-                          <ClipboardList
-                            className="text-[color:var(--accent,#D4AF37)] mb-4"
-                            size={28}
-                          />
-                          <h4 className="font-bold text-lg mb-2 text-[color:var(--color-heading,#2D1B4E)]">
-                            Rotation Sheets
-                          </h4>
-                          <p className="text-sm text-slate-500 leading-relaxed">
-                            Download or view updated rotation sheets from the
-                            official event links.
-                          </p>
-                          <a
-                            href={rotationLink?.url || "#"}
-                            target={rotationLink?.url ? "_blank" : undefined}
-                            rel={
-                              rotationLink?.url
-                                ? "noopener noreferrer"
-                                : undefined
-                            }
-                            className={`mt-6 inline-flex items-center gap-2 text-xs font-black uppercase text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] ${discoveryFocusRing}`}
-                          >
-                            {rotationLink?.label || "Official Website"}{" "}
-                            <ExternalLink size={14} />
-                          </a>
                         </div>
                       )}
                       {(resultsInfoText || resultsLinks.length > 0) && (
@@ -4655,6 +4924,35 @@ export default function SimpleTemplateView({
                           );
                         })}
                       </ul>
+                    )}
+                    {venueContactCards.length > 0 && (
+                      <div className="mt-8 border-t border-[color:var(--border,#E2E8F0)] pt-6">
+                        <h4 className="font-bold text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)]">
+                          Venue Contact
+                        </h4>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          {venueContactCards.map((item: any) => (
+                            <div
+                              key={item.key}
+                              className="bg-slate-50 p-5 rounded-3xl border border-[color:var(--border,#E2E8F0)]"
+                            >
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                                {item.label}
+                              </p>
+                              {item.value && (
+                                <p className="text-base font-bold text-slate-900">
+                                  {item.value}
+                                </p>
+                              )}
+                              {item.body && (
+                                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                                  {item.body}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                     {(showRegistrationDeskNote || showAwardsAreaNote) && (
                       <ul className="mt-6 space-y-4">

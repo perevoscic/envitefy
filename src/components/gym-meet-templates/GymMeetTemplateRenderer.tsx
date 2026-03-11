@@ -19,6 +19,11 @@ import EcoMotionTemplate from "./renderers/EcoMotionTemplate";
 import EliteAthleteTemplate from "./renderers/EliteAthleteTemplate";
 import HeavyImpactTemplate from "./renderers/HeavyImpactTemplate";
 import HoloEliteTemplate from "./renderers/HoloEliteTemplate";
+import GlitchSportTemplate from "./renderers/GlitchSportTemplate";
+import OrganicFlowTemplate from "./renderers/OrganicFlowTemplate";
+import PixelArenaTemplate from "./renderers/PixelArenaTemplate";
+import ArchitectCleanTemplate from "./renderers/ArchitectCleanTemplate";
+import NoirSilhouetteTemplate from "./renderers/NoirSilhouetteTemplate";
 import JudgesSheetTemplate from "./renderers/JudgesSheetTemplate";
 import LuxeMagazineTemplate from "./renderers/LuxeMagazineTemplate";
 import MedalPosterTemplate from "./renderers/MedalPosterTemplate";
@@ -68,6 +73,16 @@ export default function GymMeetTemplateRenderer(props: any) {
       return <EcoMotionTemplate {...props} />;
     case "holo-elite":
       return <HoloEliteTemplate {...props} />;
+    case "glitch-sport":
+      return <GlitchSportTemplate {...props} />;
+    case "organic-flow":
+      return <OrganicFlowTemplate {...props} />;
+    case "pixel-arena":
+      return <PixelArenaTemplate {...props} />;
+    case "architect-clean":
+      return <ArchitectCleanTemplate {...props} />;
+    case "noir-silhouette":
+      return <NoirSilhouetteTemplate {...props} />;
     case "vaporwave-grid":
       return <VaporwaveGridTemplate {...props} />;
     case "heavy-impact":

@@ -19,6 +19,11 @@ export type GymMeetTemplateId =
   | "midnight-frost"
   | "eco-motion"
   | "holo-elite"
+  | "glitch-sport"
+  | "organic-flow"
+  | "pixel-arena"
+  | "architect-clean"
+  | "noir-silhouette"
   | "vaporwave-grid"
   | "heavy-impact"
   | "blueprint-tech"
@@ -65,19 +70,6 @@ export type GymMeetPageTemplateMeta = {
 
 export type GymMeetNavItem = {
   id: string;
-  label: string;
-};
-
-export type GymMeetDiscoveryTabId =
-  | "meet-details"
-  | "coaches"
-  | "venue-details"
-  | "admission-sales"
-  | "traffic-parking"
-  | "safety-policy";
-
-export type GymMeetDiscoveryTab = {
-  id: GymMeetDiscoveryTabId;
   label: string;
 };
 
@@ -146,76 +138,91 @@ export type GymMeetCoachLateFee = {
   note?: string;
 };
 
+export type GymMeetDiscoverySectionKind =
+  | "meet_overview"
+  | "registration"
+  | "admission"
+  | "results"
+  | "coaches"
+  | "venue"
+  | "venue_map"
+  | "traffic_parking"
+  | "hotels"
+  | "safety"
+  | "documents"
+  | "announcements";
+
+export type GymMeetDiscoveryCard = {
+  key: string;
+  label?: string;
+  value?: string;
+  body?: string;
+  meta?: string;
+  items?: string[];
+  action?: GymMeetLinkAction;
+};
+
+export type GymMeetDiscoveryBlock =
+  | {
+      id: string;
+      type: "line-list";
+      title?: string;
+      lines: GymMeetInlineLinkLine[];
+    }
+  | {
+      id: string;
+      type: "text";
+      title?: string;
+      text: string;
+      tone?: "default" | "warning";
+    }
+  | {
+      id: string;
+      type: "card-grid";
+      title?: string;
+      columns?: 2 | 3 | 4;
+      cards: GymMeetDiscoveryCard[];
+    }
+  | {
+      id: string;
+      type: "link-list";
+      title?: string;
+      links: GymMeetLink[];
+    }
+  | {
+      id: string;
+      type: "cta";
+      title?: string;
+      text?: string;
+      action: GymMeetLinkAction;
+    }
+  | {
+      id: string;
+      type: "image";
+      title?: string;
+      imageUrl: string;
+      alt?: string;
+    }
+  | {
+      id: string;
+      type: "map";
+      title?: string;
+      address: string;
+      text?: string;
+    };
+
+export type GymMeetDiscoverySection = {
+  id: string;
+  label: string;
+  navLabel?: string;
+  kind: GymMeetDiscoverySectionKind | string;
+  priority: number;
+  hasContent: boolean;
+  blocks: GymMeetDiscoveryBlock[];
+};
+
 export type GymMeetDiscoveryContent = {
-  tabs: GymMeetDiscoveryTab[];
-  meetDetails: {
-    lines: GymMeetInlineLinkLine[];
-    hasContent: boolean;
-  };
-  coaches: {
-    contacts: GymMeetCoachContact[];
-    deadlines: GymMeetCoachDeadline[];
-    attire: string[];
-    notes: string[];
-    entryFees: GymMeetCoachFee[];
-    teamFees: GymMeetCoachFee[];
-    lateFees: GymMeetCoachLateFee[];
-    links: GymMeetLink[];
-    signIn?: string;
-    hospitality?: string;
-    floorAccess?: string;
-    scratches?: string;
-    floorMusic?: string;
-    rotationSheets?: string;
-    awards?: string;
-    regionalCommitment?: string;
-    qualification?: string;
-    meetFormat?: string;
-    equipment?: string;
-    refundPolicy?: string;
-    paymentInstructions?: string;
-    hasContent: boolean;
-  };
-  venueDetails: {
-    lines: GymMeetInlineLinkLine[];
-    registrationDeskNote?: string;
-    awardsAreaItems: string[];
-    assignedGymLabel?: string;
-    gymLayoutImageUrl?: string;
-    hasContent: boolean;
-  };
-  admissionSales: {
-    admissionCards: GymMeetAdmissionCard[];
-    primaryNote?: string;
-    logisticsItems: GymMeetInfoCard[];
-    merchandiseText?: string;
-    merchandiseLink?: GymMeetLinkAction;
-    rotationLink?: GymMeetLinkAction;
-    resultsText?: string;
-    resultsLinks: string[];
-    hasContent: boolean;
-  };
-  trafficParking: {
-    alertText?: string;
-    alertSlots: Array<{ date: string; times: string }>;
-    daylightSavingsNote?: string;
-    parkingText?: string;
-    parkingLinks: GymMeetLinkAction[];
-    parkingPricingLinks: GymMeetLinkAction[];
-    mapDashboardLink?: GymMeetLinkAction;
-    ratesInfoLink?: GymMeetLinkAction;
-    rideShareNote?: string;
-    hotelInfo?: string;
-    mapAddress?: string;
-    hasContent: boolean;
-  };
-  safetyPolicy: {
-    foodBeverage?: string;
-    hydration?: string;
-    serviceAnimals?: string;
-    safetyPolicy?: string;
-    hasContent: boolean;
-  };
+  sections: GymMeetDiscoverySection[];
 };
 
 export type GymMeetTitleSize = "small" | "medium" | "large";
