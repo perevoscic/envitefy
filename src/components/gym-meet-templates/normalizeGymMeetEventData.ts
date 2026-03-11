@@ -149,7 +149,7 @@ const unique = (items: string[], limit = 12) => {
 };
 
 const STRUCTURED_ANNOUNCEMENT_PATTERN =
-  /(arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue[_\s]?contact|meet director|director of operations|assistant event coordinator|floor manager|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|sponsor|visit lauderdale|hairstyle to impress|document[_\s-]?version|club participation)/i;
+  /(arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue[_\s]?contact|meet director|director of operations|assistant event coordinator|floor manager|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|sponsor|visit lauderdale|hairstyle to impress|document[_\s-]?version|club[_\s-]?participation)/i;
 
 const shouldRenderAnnouncement = (item: any) => {
   const title = safeString(item?.title || item?.label);
@@ -170,6 +170,31 @@ const formatDate = (value: string) => {
   } catch {
     return value;
   }
+};
+
+const DISCOVERY_GENERATED_DETAILS_PREFIX =
+  /^(meet dates?:|doors open:|arrival guidance:|registration:|facility layout:|scoring:|results:|rotation sheets?:|awards:|hall layout:|food policy:|hydration:|safety:|animals:)/i;
+const DISCOVERY_GENERATED_DETAILS_INLINE =
+  /(spectator admission|on-site adult|on-site senior|on-site child|weekend pass|pre[-\s]?sale|ticket(?:s)?|credit\/debit|debit\/credit|credit card|debit card|cash is not accepted|cash not accepted|no cash)/i;
+const DISCOVERY_GENERATED_DATE_LINE =
+  /^(?:(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s*[-–]\s*\d{1,2})?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}(?:\s*[-–]\s*\d{1,2}\/\d{1,2}\/\d{2,4})?)$/i;
+
+const stripDiscoveryGeneratedDetails = (value: unknown): string => {
+  const text = safeString(value);
+  if (!text) return "";
+  return unique(
+    text
+      .split(/\n+/)
+      .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+      .filter(Boolean)
+      .filter(
+        (line) =>
+          !DISCOVERY_GENERATED_DETAILS_PREFIX.test(line) &&
+          !DISCOVERY_GENERATED_DETAILS_INLINE.test(line) &&
+          !DISCOVERY_GENERATED_DATE_LINE.test(line)
+      ),
+    8
+  ).join("\n");
 };
 
 export const normalizeGymMeetEventData = ({
@@ -342,7 +367,12 @@ export const normalizeGymMeetEventData = ({
     },
   ].filter((item) => safeString(item.value));
 
-  const detailsText = safeString(eventData?.description || eventData?.details);
+  const isDiscoveryEvent =
+    safeString(eventData?.createdVia) === "meet-discovery" ||
+    Boolean(eventData?.discoverySource?.input || eventData?.discoverySource?.parseResult);
+  const detailsText = isDiscoveryEvent
+    ? stripDiscoveryGeneratedDetails(eventData?.details || eventData?.description)
+    : safeString(eventData?.details || eventData?.description);
 
   const discovery = buildGymMeetDiscoveryContent({
     eventData,

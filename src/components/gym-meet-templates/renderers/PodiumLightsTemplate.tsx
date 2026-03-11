@@ -12,7 +12,7 @@ export default function PodiumLightsTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[30px] border border-amber-200/10 bg-slate-950/92 shadow-[0_34px_94px_rgba(15,23,42,0.58)] backdrop-blur",
         titleClass:
-          "max-w-4xl text-5xl font-black uppercase leading-[0.92] tracking-tight text-amber-50 sm:text-6xl lg:text-7xl [font-family:'Franklin_Gothic_Medium','Arial_Narrow',sans-serif]",
+          "max-w-4xl text-5xl font-sans font-black leading-[0.92] tracking-tight text-amber-600 sm:text-6xl lg:text-7xl",
         titleStyle: { color: "#fffbeb" },
         mutedClass: "text-slate-200",
         heroPanelClass: "bg-[linear-gradient(145deg,#0f172a_0%,#1e293b_58%,#a16207_100%)]",

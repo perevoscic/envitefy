@@ -12,7 +12,7 @@ export default function ScoutingReportTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-none border border-slate-400 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.12)]",
         titleClass:
-          "max-w-4xl text-4xl font-black uppercase leading-[1] tracking-tight sm:text-5xl lg:text-6xl [font-family:ui-monospace,SFMono-Regular,Menlo,monospace]",
+          "max-w-4xl text-4xl font-mono font-bold uppercase leading-[1] tracking-widest text-slate-900 sm:text-5xl lg:text-6xl",
         mutedClass: "text-slate-600",
         heroPanelClass:
           "bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)]",

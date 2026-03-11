@@ -160,7 +160,7 @@ const normalizeAnnouncementCards = (items: any[], source: "builder" | "parsed") 
             ? explicitLabel
             : safeString(item?.priority).toLowerCase() === "urgent"
             ? "Urgent Update"
-            : "Announcement";
+            : "";
         const body = collapseRepeatedDisplayText(item?.body || item?.text || item?.message);
         return {
           key: safeString(item?.id || `announcement-${index + 1}`),
@@ -196,12 +196,134 @@ const SUPPRESSED_UNMAPPED_FACT_CATEGORIES = new Set([
   "document_version",
 ]);
 const STRUCTURED_ANNOUNCEMENT_PATTERN =
-  /(arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue[_\s]?contact|meet director|director of operations|assistant event coordinator|floor manager|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|sponsor|visit lauderdale|hairstyle to impress|document[_\s-]?version|club participation)/i;
+  /(arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue[_\s]?contact|meet director|director of operations|assistant event coordinator|floor manager|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|sponsor|visit lauderdale|hairstyle to impress|document[_\s-]?version|club[_\s-]?participation)/i;
 const TRANSIENT_ANNOUNCEMENT_HINT_PATTERN =
   /(urgent|reminder|delay|changed|change|closed|closing|today|tomorrow|tonight|this morning|this afternoon|this evening|earlier|later|weather|alert|update)/i;
+const MARKETING_SOURCE_PATTERN =
+  /(visit lauderdale|hairstyle\s*to\s*impress|many thanks to our sponsors|sponsor(?:ed|ship)?|book your hairstyling appointment|travel photos|#visitlauderdale)/i;
+const SCHEDULE_GRID_SOURCE_PATTERN =
+  /(session\s+(?:fr|sa|su|\d)|stretch\/warmup|march in|open stretch|capital cup|xcel|session time|level\s+\d|bronze|silver|gold|platinum|diamond|team award|session award)/i;
+const CLUB_PARTICIPATION_SOURCE_PATTERN =
+  /\b(360 gymnastics fl|alpha gymnastics|christi'?s gymnastics|browns gym|team twisters|canada|fgtc)\b/i;
+const GENERAL_INFO_SOURCE_PATTERN =
+  /(rosters?|athlete\s*&\s*coach registration|rotation sheets?|awards ceremon|spectator admission|meet director|director of operations|assistant event coordinator|floor manager|results|live scoring|arrival guidance|registration)/i;
+const VENUE_ADMISSION_SOURCE_PATTERN =
+  /(meet site|ph:\s*\d|phone numbers? are|on-site admission prices|weekend pass|group hotel|driving directions|coral springs gymnasium|debit\/credit card only|cash not accepted)/i;
+const TRUE_GEAR_TEXT_PATTERN =
+  /\b(leotard|uniform|warm[-\s]?up|warmups?|grips?|wristbands?|beam shoes?|scrunchie|hair\b|bun\b|ponytail|bag\b|duffel|backpack|water bottle|music file|music upload|athletic shoes?)\b/i;
+const GEAR_EXCLUDED_TEXT_PATTERN =
+  /\b(admission|ticket|spectator|cash(?:less)?|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|check[-\s]?in|registration|arrival guidance|results?|website|sponsor|visit lauderdale|hairstyl|temperature inside the venue|chilly|athlete card|score card|awards ceremon|rotation sheets?)\b/i;
+const VENUE_COMFORT_TEXT_PATTERN =
+  /\b(temperature inside the venue|inside the venue is chilly|venue is chilly|please come prepared|beyond our control)\b/i;
+const VENUE_DETAIL_TEXT_PATTERN =
+  /\b(meet site|venue contact|facility contact|gym contact|gymnasium|phone numbers? are|ph:\s*\d|temperature inside the venue|inside the venue is chilly|guest services|awards area|competition area|east hall|west hall|central hall|north hall|south hall)\b/i;
+const VENUE_ONLY_INCLUDE_PATTERN =
+  /\b(meet site|venue contact|facility contact|gym contact|gymnasium|phone numbers? are|ph:\s*\d|guest services|awards area|competition area|east hall|west hall|central hall|north hall|south hall|entrance|map|layout|assigned gym|gym\s*[a-z0-9]{1,2}|2nd floor|second floor|3rd floor|third floor|freight door|right door)\b/i;
+const VENUE_ONLY_EXCLUDE_PATTERN =
+  /\b(athlete|athletes|coach|coaches|gift\b|sign[-\s]?in|check[-\s]?in|receive a gift|warm clothing|layers\b|please come prepared|come prepared|beyond our control|temperature inside the venue|inside the venue is chilly|venue is chilly|admission|ticket|spectator|cash(?:less)?|credit\/debit|credit card|debit card|rotation sheets?|results?|registration opens|arrive|arrival guidance)\b/i;
+const ADMISSION_POLICY_TEXT_PATTERN =
+  /\b(admission|ticket|spectator|pre[-\s]?sale|credit\/debit|credit card|debit card|cashless|cash is not accepted|cash not accepted|no cash)\b/i;
+const MEET_DETAIL_TEXT_PATTERN =
+  /\b(arrival guidance|registration|rotation sheets?|results?|live scoring|awards|athlete card|score card|gift\b|check in prior|check-in prior)\b/i;
+
+type ExtractedPageKind =
+  | "general_info"
+  | "schedule_grid"
+  | "venue_admission"
+  | "marketing"
+  | "empty"
+  | "unknown";
+
+const normalizeLineKey = (value: string) => safeString(value).toLowerCase().replace(/\s+/g, " ").trim();
 
 const isUsableEmail = (value: unknown) => USABLE_EMAIL_PATTERN.test(safeString(value));
 const isUsablePhone = (value: unknown) => safeString(value).replace(/\D/g, "").length >= 7;
+const isMarketingLikeSourceLine = (value: string) => MARKETING_SOURCE_PATTERN.test(safeString(value));
+const isScheduleGridLikeSourceLine = (value: string) => {
+  const text = safeString(value);
+  if (!text) return false;
+  if (SCHEDULE_GRID_SOURCE_PATTERN.test(text)) return true;
+  if (CLUB_PARTICIPATION_SOURCE_PATTERN.test(text)) return true;
+  const allCapsWords = text.match(/\b[A-Z][A-Za-z'.&-]+\b/g) || [];
+  if (allCapsWords.length >= 4 && /\b(gym|gymnastics|fl)\b/i.test(text)) return true;
+  return false;
+};
+const isClubParticipationLikeSourceLine = (value: string) =>
+  CLUB_PARTICIPATION_SOURCE_PATTERN.test(safeString(value));
+const isParticipantListingLine = (value: string) => {
+  const text = safeString(value);
+  if (!text) return false;
+  if (isClubParticipationLikeSourceLine(text)) return true;
+  if (/[.!?:;]/.test(text)) return false;
+  const orgHits = (text.match(/\b(gymnastics|gym|academy|ymca|twisters|zga|fl)\b/gi) || []).length;
+  const titleWordHits = (text.match(/\b[A-Z][A-Za-z'&.-]+\b/g) || []).length;
+  return orgHits >= 3 || (orgHits >= 2 && titleWordHits >= 5);
+};
+const isTrueGearLine = (value: string) => {
+  const text = safeString(value);
+  return Boolean(text) && TRUE_GEAR_TEXT_PATTERN.test(text) && !GEAR_EXCLUDED_TEXT_PATTERN.test(text);
+};
+const classifyOperationalLine = (value: string): "venue" | "admission" | "meet" | "suppress" | "other" => {
+  const text = safeString(value);
+  if (!text) return "suppress";
+  if (isMarketingLikeSourceLine(text) || isScheduleGridLikeSourceLine(text)) return "suppress";
+  if (VENUE_COMFORT_TEXT_PATTERN.test(text)) return "venue";
+  if (ADMISSION_POLICY_TEXT_PATTERN.test(text)) return "admission";
+  if (MEET_DETAIL_TEXT_PATTERN.test(text)) return "meet";
+  if (VENUE_DETAIL_TEXT_PATTERN.test(text)) return "venue";
+  return "other";
+};
+
+const splitExtractedDiscoveryPages = (text: string) => {
+  const normalized = safeString(text);
+  if (!normalized) return [] as Array<{ pageNumber: number; text: string; lines: string[] }>;
+  const markerPattern = /(?:^|\n)\s*--\s*(\d+)\s+of\s+(\d+)\s*--\s*(?=\n|$)/gi;
+  const matches = [...normalized.matchAll(markerPattern)];
+  if (!matches.length) {
+    return [
+      {
+        pageNumber: 1,
+        text: normalized,
+        lines: normalized.split(/\n+/).map((line) => safeString(line)).filter(Boolean),
+      },
+    ];
+  }
+
+  const pages: Array<{ pageNumber: number; text: string; lines: string[] }> = [];
+  for (let index = 0; index < matches.length; index += 1) {
+    const match = matches[index];
+    const pageNumber = Number.parseInt(match[1] || `${index + 1}`, 10) || index + 1;
+    const start = (match.index || 0) + match[0].length;
+    const end = index + 1 < matches.length ? matches[index + 1].index || normalized.length : normalized.length;
+    const pageText = normalized.slice(start, end).trim();
+    const lines = pageText.split(/\n+/).map((line) => safeString(line)).filter(Boolean);
+    pages.push({ pageNumber, text: pageText, lines });
+  }
+  return pages;
+};
+
+const classifyExtractedPageKind = (page: { text: string; lines: string[] }): ExtractedPageKind => {
+  const text = safeString(page?.text);
+  const lines = Array.isArray(page?.lines) ? page.lines.map((line) => safeString(line)).filter(Boolean) : [];
+  if (!text || !lines.length) return "empty";
+  const combined = lines.join(" ");
+  if (isMarketingLikeSourceLine(combined)) return "marketing";
+  const scheduleSignals = lines.filter((line) => isScheduleGridLikeSourceLine(line)).length;
+  if (scheduleSignals >= 2 || /session\s+(?:fr|sa|su|\d)/i.test(combined)) return "schedule_grid";
+  if (VENUE_ADMISSION_SOURCE_PATTERN.test(combined)) return "venue_admission";
+  if (GENERAL_INFO_SOURCE_PATTERN.test(combined)) return "general_info";
+  return "unknown";
+};
+
+const collectRoutableSourceLines = (text: string) =>
+  uniqueTextLines(
+    splitExtractedDiscoveryPages(text)
+      .map((page) => ({ ...page, kind: classifyExtractedPageKind(page) }))
+      .filter((page) => page.kind !== "marketing" && page.kind !== "schedule_grid" && page.kind !== "empty")
+      .flatMap((page) => page.lines)
+      .filter(Boolean),
+    220
+  );
 
 const sanitizeContactRecord = (item: any, fallbackRole = "Contact") => {
   const role = collapseRepeatedDisplayText(item?.role || fallbackRole) || fallbackRole;
@@ -229,6 +351,10 @@ const shouldSuppressUnmappedFact = (fact: any) => {
   const category = safeString(fact?.category).toLowerCase();
   const detail = safeString(fact?.detail);
   if (!detail) return true;
+  if (isMarketingLikeSourceLine(detail)) return true;
+  if (isScheduleGridLikeSourceLine(detail)) return true;
+  if (isClubParticipationLikeSourceLine(detail)) return true;
+  if (/^[^\s@]+@$/i.test(detail)) return true;
   return SUPPRESSED_UNMAPPED_FACT_CATEGORIES.has(category);
 };
 
@@ -359,28 +485,6 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
   const replaceAt = (index: number, section: GymMeetDiscoverySection) => {
     working[index] = section;
   };
-
-  const registrationMatch = takeSection("registration");
-  const admissionMatch = takeSection("admission");
-  if (
-    registrationMatch &&
-    admissionMatch &&
-    isSparseSection(registrationMatch.section) &&
-    isLightAdmissionSection(admissionMatch.section)
-  ) {
-    const registrationMetrics = getSectionMetrics(registrationMatch.section);
-    if (registrationMetrics.cardCount < 3 && registrationMetrics.linkCount < 2) {
-      const merged = mergeSections({
-        primary: registrationMatch.section,
-        secondary: admissionMatch.section,
-        id: "registration-admission",
-        label: "Registration & Admission",
-        kind: "admission",
-      });
-      replaceAt(registrationMatch.index, merged);
-      removeAt(admissionMatch.index > registrationMatch.index ? admissionMatch.index : admissionMatch.index);
-    }
-  }
 
   const meetDetailsMatch = takeSection("meet-details");
   const resultsMatch = takeSection("results");
@@ -641,13 +745,13 @@ export function buildGymMeetDiscoveryContent({
     /("@context"|schema\.org|@graph|breadcrumb|myftpupload|wp-content|wordpress|site name|home\s*>\s*|json-ld|application\/ld\+json)/i.test(
       safeString(line)
     );
-  const sourceLines = extractedDiscoveryText
-    ? extractedDiscoveryText
-        .split(/\n+/)
-        .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
-        .filter(Boolean)
-        .filter((line) => !isHtmlNoiseLine(line))
-    : [];
+  const sourceLines = collectRoutableSourceLines(extractedDiscoveryText)
+    .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+    .filter(Boolean)
+    .filter((line) => !isHtmlNoiseLine(line))
+    .filter((line) => !isMarketingLikeSourceLine(line))
+    .filter((line) => !isScheduleGridLikeSourceLine(line))
+    .filter((line) => !isClubParticipationLikeSourceLine(line));
 
   const isVenueHeaderNoiseLine = (line: string) =>
     /^(spectator admission\b|updated\s+[a-z]+\s+\d{1,2},\s+\d{4}\b|page\s+\d+\s+of\s+\d+\b)/i.test(
@@ -814,6 +918,16 @@ export function buildGymMeetDiscoveryContent({
     ],
     8
   );
+  const sourceAdmissionFactLines = uniqueTextLines(
+    sourceLines.filter((line) => {
+      const text = safeString(line);
+      return (
+        ADMISSION_POLICY_TEXT_PATTERN.test(text) &&
+        !/(arrival guidance|registration|rotation sheets?|results?)/i.test(text)
+      );
+    }),
+    8
+  );
   const admissionPrimaryNote = (() => {
     const hasDoorFees = admissionNoteCandidates.some((line) => /\bdoor fees?\b/i.test(line));
     const hasWeekendPass = admissionNoteCandidates.some((line) =>
@@ -839,6 +953,21 @@ export function buildGymMeetDiscoveryContent({
   )
     ? announcementBody
     : sourceMerchandiseLine;
+  const parsedUnmappedFacts = Array.isArray(parseResult?.unmappedFacts) ? parseResult.unmappedFacts : [];
+  const parsedVenueDetailLines = uniqueTextLines(
+    parsedUnmappedFacts
+      .filter((fact: any) => !shouldSuppressUnmappedFact(fact))
+      .filter((fact: any) => /\bvenue(?:[_\s-]?detail|[_\s-]?contact)?\b/i.test(safeString(fact?.category)))
+      .map((fact: any) => safeString(fact?.detail)),
+    8
+  );
+  const parsedMeetDetailLines = uniqueTextLines(
+    parsedUnmappedFacts
+      .filter((fact: any) => !shouldSuppressUnmappedFact(fact))
+      .filter((fact: any) => /\bmeet[_\s-]?detail\b/i.test(safeString(fact?.category)))
+      .map((fact: any) => safeString(fact?.detail)),
+    8
+  );
   const resultsInfoTextRaw =
     safeString(meetSection?.resultsInfo || parseMeetDetails?.resultsInfo) ||
     sourceResultsText ||
@@ -938,7 +1067,7 @@ export function buildGymMeetDiscoveryContent({
     .slice(0, 12);
 
   const isVenueDetailLine = (line: string) =>
-    /(east hall|west hall|central hall|north hall|south hall|registration|guest services|entrance|coffee bar|competition area|awards area|gym\s*[a-z0-9]{1,2}|2nd floor|second floor|3rd floor|third floor|check-?in|freight door|right door)/i.test(
+    /(east hall|west hall|central hall|north hall|south hall|registration|guest services|entrance|coffee bar|competition area|awards area|gym\s*[a-z0-9]{1,2}|2nd floor|second floor|3rd floor|third floor|check-?in|freight door|right door|meet site|phone numbers?|ph:\s*\d|temperature inside the venue|inside the venue is chilly|please come prepared|beyond our control|coral springs gymnasium)/i.test(
       line
     );
   const eventDatesLabelNormalized = normalizeCompareText(eventDatesLabel);
@@ -978,7 +1107,10 @@ export function buildGymMeetDiscoveryContent({
     isMerchandiseLine(line) ||
     isResultsLine(line) ||
     isDaylightLine(line) ||
-    isSafetyObjectsLine(line);
+    isSafetyObjectsLine(line) ||
+    isMarketingLikeSourceLine(line) ||
+    isScheduleGridLikeSourceLine(line) ||
+    isClubParticipationLikeSourceLine(line);
   const meetsAnyLine = (line: string, candidates: string[]) => {
     const normalized = normalizeCompareText(line);
     if (!normalized) return false;
@@ -1000,6 +1132,7 @@ export function buildGymMeetDiscoveryContent({
       safeString(parseMeetDetails?.scoringInfo)
         ? `Scoring: ${safeString(parseMeetDetails.scoringInfo)}`
         : "",
+      ...parsedMeetDetailLines,
       ...(Array.isArray(parseMeetDetails?.operationalNotes)
         ? parseMeetDetails.operationalNotes
         : []),
@@ -1034,6 +1167,7 @@ export function buildGymMeetDiscoveryContent({
   const facilityLinesFromFacts = sanitizeVenueFactLines(
     [
       ...extractionLayoutFacts,
+      ...parsedVenueDetailLines,
       ...(Array.isArray(parseMeetDetails?.operationalNotes) ? parseMeetDetails.operationalNotes : []),
       safeString(parseMeetDetails?.facilityLayout),
       safeString(parseMeetDetails?.registrationInfo),
@@ -1045,15 +1179,15 @@ export function buildGymMeetDiscoveryContent({
       excludePatterns: venueExcludePatterns,
     }
   );
-  const facilityLinesFromSource =
-    facilityLinesFromFacts.length > 0
-      ? []
-      : sanitizeVenueFactLines(primaryMeetDetailsLines.filter((line) => !rideSharePattern.test(line)), {
-          mode: "strict",
-          maxLines: 10,
-          requireAnchor: true,
-          excludePatterns: venueExcludePatterns,
-        });
+  const facilityLinesFromSource = sanitizeVenueFactLines(
+    sourceLines.filter((line) => !rideSharePattern.test(line)),
+    {
+      mode: "strict",
+      maxLines: 10,
+      requireAnchor: true,
+      excludePatterns: venueExcludePatterns,
+    }
+  );
   const facilityLinesRaw = uniqueTextLines(
     stitchSentenceFragments([...facilityLinesFromFacts, ...facilityLinesFromSource]),
     14
@@ -1078,10 +1212,31 @@ export function buildGymMeetDiscoveryContent({
     if (/[.!?]$/.test(text)) return wordCount >= 5;
     return wordCount >= 9;
   };
+  const isVenueOnlyDisplayLine = (line: string) => {
+    const text = safeString(line);
+    if (!text) return false;
+    if (
+      isMarketingLikeSourceLine(text) ||
+      isScheduleGridLikeSourceLine(text) ||
+      isClubParticipationLikeSourceLine(text) ||
+      isParticipantListingLine(text) ||
+      VENUE_ONLY_EXCLUDE_PATTERN.test(text)
+    ) {
+      return false;
+    }
+    return VENUE_ONLY_INCLUDE_PATTERN.test(text);
+  };
 
-  const venueListLinesRaw = venueParagraphSentences.length > 0 ? venueParagraphSentences : facilityLines;
+  const venueListLinesRaw = uniqueTextLines(
+    [
+      ...(venueParagraphSentences.length > 0 ? venueParagraphSentences : []),
+      ...facilityLines,
+      ...parsedVenueDetailLines,
+    ],
+    14
+  );
   const venueListLines = uniqueTextLines(
-    venueListLinesRaw.filter((line) => isSentenceLikeVenueLine(line)),
+    venueListLinesRaw.filter((line) => isSentenceLikeVenueLine(line) && isVenueOnlyDisplayLine(line)),
     12
   );
   const parsedAwardsFallback =
@@ -1114,10 +1269,12 @@ export function buildGymMeetDiscoveryContent({
   const showRegistrationDeskNote =
     Boolean(registrationDeskNote) &&
     isSentenceLikeVenueLine(registrationDeskNote) &&
+    isVenueOnlyDisplayLine(registrationDeskNote) &&
     !venueDetailContains(registrationDeskNote);
   const showAwardsAreaNote =
     Boolean(awardsAreaNote) &&
     isSentenceLikeVenueLine(awardsAreaNote) &&
+    isVenueOnlyDisplayLine(awardsAreaNote) &&
     !venueDetailContains(awardsAreaNote);
 
   const sourcePolicyLine = (pattern: RegExp) =>
@@ -1467,12 +1624,12 @@ export function buildGymMeetDiscoveryContent({
     extractionCoachPageHints.length > 0;
 
   const awardsAreaItems = toStructuredListItems(awardsAreaNote, /^awards?\s*area\s*:\s*/i);
-  const meetDetailsInline = meetDetailsLines.map(extractInlineUrl);
-  const venueDetailsInline = venueListLines.map(extractInlineUrl);
+  const meetDetailsInlineBase = meetDetailsLines.map(extractInlineUrl);
+  const venueDetailsInlineBase = venueListLines.map(extractInlineUrl);
   const venueContactNotes = uniqueTextLines(
     [
       ...((Array.isArray(logistics?.venueContactNotes) ? logistics.venueContactNotes : []) as string[]),
-      ...((Array.isArray(parseResult?.unmappedFacts) ? parseResult.unmappedFacts : []) as any[])
+      ...(parsedUnmappedFacts as any[])
         .filter((fact: any) => !shouldSuppressUnmappedFact(fact))
         .filter((fact: any) => /\bvenue_contact\b/i.test(safeString(fact?.category)))
         .map((fact: any) => safeString(fact?.detail)),
@@ -1530,16 +1687,54 @@ export function buildGymMeetDiscoveryContent({
   );
   const resultsLinkTargets =
     resultsLinkItems.length > 0 ? resultsLinkItems : resultsLinks.map((url) => ({ url }));
+  const reroutedGearVenueLines: string[] = [];
+  const reroutedGearAdmissionLines: string[] = [];
+  const reroutedGearMeetLines: string[] = [];
+  const pushReroutedGearLine = (bucket: string[], line: string) => {
+    const text = safeString(line);
+    if (!text) return;
+    const key = normalizeCompareText(text);
+    if (!key || bucket.some((item) => normalizeCompareText(item) === key)) return;
+    bucket.push(text);
+  };
+  const routeRejectedGearLine = (line: string) => {
+    switch (classifyOperationalLine(line)) {
+      case "venue":
+        pushReroutedGearLine(reroutedGearVenueLines, line);
+        break;
+      case "admission":
+        pushReroutedGearLine(reroutedGearAdmissionLines, line);
+        break;
+      case "meet":
+        pushReroutedGearLine(reroutedGearMeetLines, line);
+        break;
+      default:
+        break;
+    }
+  };
+  const gearNarrativeItems = uniqueTextLines(
+    [
+      safeString(gearSection?.leotardOfDay || parseGear?.uniform),
+      safeString(gearSection?.hairMakeupNotes),
+    ],
+    4
+  ).filter((line) => {
+    if (isTrueGearLine(line)) return true;
+    routeRejectedGearLine(line);
+    return false;
+  });
   const parsedAdmissionFactCards = ensureUniqueDiscoveryCardKeys(
     uniqueTextLines(
-      ((Array.isArray(parseResult?.unmappedFacts) ? parseResult.unmappedFacts : []) as any[])
+      [...(parsedUnmappedFacts as any[])]
         .filter((fact: any) => !shouldSuppressUnmappedFact(fact))
         .filter((fact: any) =>
           /(admission|ticket|pre[-\s]?sale|spectator|credit\/debit|credit card|debit card|cashless|cash is not accepted|cash not accepted|no cash)/i.test(
             `${safeString(fact?.category)} ${safeString(fact?.detail)}`
           )
         )
-        .map((fact: any) => safeString(fact?.detail)),
+        .map((fact: any) => safeString(fact?.detail))
+        .concat(sourceAdmissionFactLines)
+        .concat(reroutedGearAdmissionLines),
       6
     ).map((detail, index) => ({
       key: `admission-detail-${index + 1}`,
@@ -1584,18 +1779,17 @@ export function buildGymMeetDiscoveryContent({
       ...(Array.isArray(parseGear?.checklist) ? parseGear.checklist : []),
     ],
     10
-  );
+  ).filter((line) => {
+    if (isTrueGearLine(line)) return true;
+    routeRejectedGearLine(line);
+    return false;
+  });
   const gearCards = [
-    safeString(gearSection?.leotardOfDay || parseGear?.uniform)
+    gearNarrativeItems.length > 0
       ? {
           key: "gear-uniform",
           label: "Gear & Uniform",
-          body: [
-            safeString(gearSection?.leotardOfDay || parseGear?.uniform),
-            safeString(gearSection?.hairMakeupNotes),
-          ]
-            .filter(Boolean)
-            .join("\n"),
+          body: gearNarrativeItems.join("\n"),
         }
       : null,
     gearChecklistItems.length > 0
@@ -1792,13 +1986,28 @@ export function buildGymMeetDiscoveryContent({
     value: item.price,
     body: sanitizeLinkedCopy(item.note, admissionLinks),
   }));
+  const reroutedGearAdmissionCards = reroutedGearAdmissionLines.map((detail, index) => ({
+    key: `gear-admission-${index + 1}`,
+    label: /(pre[-\s]?sale|ticket)/i.test(detail) ? "Spectator Pre-Sale" : "Admission Policy",
+    body: sanitizeLinkedCopy(detail, admissionLinks),
+  }));
   const admissionInfoCards = uniqueBy(
-    [...admissionAnnouncements, ...parsedAdmissionFactCards].filter((item) => item.body),
+    [...admissionAnnouncements, ...parsedAdmissionFactCards, ...reroutedGearAdmissionCards].filter(
+      (item) => item.body
+    ),
     (item) => normalizeCompareText(`${safeString(item.label)}|${safeString(item.body)}`)
   );
   const admissionPrimaryNoteText = sanitizeLinkedCopy(admissionPrimaryNote, admissionLinks);
   const merchandiseNoteText = sanitizeLinkedCopy(merchandiseText, admissionLinks);
   const resultsInfoText = sanitizeLinkedCopy(resultsInfoTextRaw, resultsLinkTargets);
+  const meetDetailsInline = uniqueBy(
+    [...meetDetailsInlineBase, ...reroutedGearMeetLines.map(extractInlineUrl)],
+    (item) => normalizeCompareText(`${safeString(item?.text)}|${safeString(item?.href)}`)
+  );
+  const venueDetailsInline = uniqueBy(
+    [...venueDetailsInlineBase, ...reroutedGearVenueLines.filter(isVenueOnlyDisplayLine).map(extractInlineUrl)],
+    (item) => normalizeCompareText(`${safeString(item?.text)}|${safeString(item?.href)}`)
+  );
   const resultsCards = resultsInfoText
     ? [{ key: "results-info", label: "Results & Live Scoring", body: resultsInfoText }]
     : [];
@@ -1814,20 +2023,13 @@ export function buildGymMeetDiscoveryContent({
       },
     })),
   ];
-  const trafficCards = [
-    trafficText ? { key: "traffic-alert", label: "Traffic Alert", body: trafficText } : null,
-    sourceDaylightLine
-      ? { key: "daylight", label: "Timing Note", body: sourceDaylightLine }
-      : null,
-    safeString(logistics?.parking || parseLogistics?.parking)
-      ? {
-          key: "parking",
-          label: "Parking",
-          body: safeString(logistics?.parking || parseLogistics?.parking),
-        }
-      : null,
-    rideShareNote ? { key: "ride-share", label: "Ride Share", body: rideShareNote } : null,
-  ].filter(Boolean);
+  const parkingCard = safeString(logistics?.parking || parseLogistics?.parking)
+    ? {
+        key: "parking",
+        label: "Parking",
+        body: safeString(logistics?.parking || parseLogistics?.parking),
+      }
+    : null;
   const hotelCards = safeString(logistics?.hotelInfo || parseLogistics?.hotel)
     ? [
         {
@@ -1837,6 +2039,14 @@ export function buildGymMeetDiscoveryContent({
         },
       ]
     : [];
+  const trafficPrimaryCards = [parkingCard, ...hotelCards].filter(Boolean);
+  const trafficSecondaryCards = [
+    trafficText ? { key: "traffic-alert", label: "Traffic Alert", body: trafficText } : null,
+    sourceDaylightLine
+      ? { key: "daylight", label: "Timing Note", body: sourceDaylightLine }
+      : null,
+    rideShareNote ? { key: "ride-share", label: "Ride Share", body: rideShareNote } : null,
+  ].filter(Boolean);
   const safetyCards = [
     policyNotes[0] ? { key: "food-beverage", label: "Food & Beverage", body: policyNotes[0] } : null,
     policyNotes[1] ? { key: "hydration", label: "Hydration", body: policyNotes[1] } : null,
@@ -1864,7 +2074,6 @@ export function buildGymMeetDiscoveryContent({
               {
                 id: "meet-overview-cards",
                 type: "card-grid" as const,
-                title: "Overview",
                 columns: 2 as const,
                 cards: meetOverviewCards,
               },
@@ -1930,35 +2139,6 @@ export function buildGymMeetDiscoveryContent({
                 title: "Results & Links",
                 columns: 2 as const,
                 cards: communicationCards,
-              },
-            ]
-          : []),
-      ],
-    },
-    {
-      id: "registration",
-      label: "Registration",
-      kind: "registration",
-      priority: 20,
-      hasContent: registrationCards.length > 0 || registrationLinks.length > 0,
-      blocks: [
-        ...(registrationCards.length > 0
-          ? [
-              {
-                id: "registration-cards",
-                type: "card-grid" as const,
-                columns: 3 as const,
-                cards: registrationCards,
-              },
-            ]
-          : []),
-        ...(registrationLinks.length > 0
-          ? [
-              {
-                id: "registration-links",
-                type: "link-list" as const,
-                title: "Registration Links",
-                links: registrationLinks,
               },
             ]
           : []),
@@ -2046,6 +2226,27 @@ export function buildGymMeetDiscoveryContent({
               },
             ]
           : []),
+        ...(registrationCards.length > 0
+          ? [
+              {
+                id: "registration-cards",
+                type: "card-grid" as const,
+                title: "Entries & Deadlines",
+                columns: 3 as const,
+                cards: registrationCards,
+              },
+            ]
+          : []),
+        ...(registrationLinks.length > 0
+          ? [
+              {
+                id: "registration-links",
+                type: "link-list" as const,
+                title: "Coach Registration Links",
+                links: registrationLinks,
+              },
+            ]
+          : []),
         ...(coachContactCards.length > 0
           ? [
               {
@@ -2106,7 +2307,9 @@ export function buildGymMeetDiscoveryContent({
         venueDetailsInline.length > 0 ||
         venueCards.length > 0 ||
         venueContactCards.length > 0 ||
-        venueLinks.length > 0,
+        venueLinks.length > 0 ||
+        Boolean(gymLayoutImageUrl) ||
+        Boolean(facilityMapAddress && (gymLayoutImageUrl || gymLayoutLabelValue)),
       blocks: [
         ...(venueDetailsInline.length > 0
           ? [
@@ -2148,36 +2351,14 @@ export function buildGymMeetDiscoveryContent({
               },
             ]
           : []),
-      ],
-    },
-    {
-      id: "venue-map",
-      label: "Venue Map",
-      kind: "venue_map",
-      priority: 60,
-      hasContent: Boolean(gymLayoutImageUrl) || Boolean(gymLayoutLabelValue),
-      blocks: [
         ...(gymLayoutImageUrl
           ? [
               {
                 id: "gym-layout-image",
                 type: "image" as const,
-                title: "Gym Layout",
+                title: "Venue Map",
                 imageUrl: gymLayoutImageUrl,
                 alt: "Gym layout",
-              },
-            ]
-          : []),
-        ...(facilityMapAddress && (gymLayoutImageUrl || gymLayoutLabelValue)
-          ? [
-              {
-                id: "venue-map-address",
-                type: "map" as const,
-                title: "Map",
-                address: facilityMapAddress,
-                text: gymLayoutLabelValue
-                  ? `Assigned gym: ${gymLayoutLabelValue}`
-                  : undefined,
               },
             ]
           : []),
@@ -2188,16 +2369,30 @@ export function buildGymMeetDiscoveryContent({
       label: "Traffic & Parking",
       kind: "traffic_parking",
       priority: 70,
-      hasContent: trafficCards.length > 0 || parkingLinks.length > 0 || trafficSlots.length > 0,
+      hasContent:
+        trafficPrimaryCards.length > 0 ||
+        trafficSecondaryCards.length > 0 ||
+        parkingLinks.length > 0 ||
+        trafficSlots.length > 0,
       blocks: [
-        ...(trafficCards.length > 0 || trafficSlots.length > 0
+        ...(trafficPrimaryCards.length > 0
+          ? [
+              {
+                id: "traffic-primary-cards",
+                type: "card-grid" as const,
+                columns: 2 as const,
+                cards: trafficPrimaryCards,
+              },
+            ]
+          : []),
+        ...(trafficSecondaryCards.length > 0 || trafficSlots.length > 0
           ? [
               {
                 id: "traffic-cards",
                 type: "card-grid" as const,
                 columns: 2 as const,
                 cards: [
-                  ...trafficCards,
+                  ...trafficSecondaryCards,
                   ...trafficSlots.map((slot, index) => ({
                     key: `traffic-slot-${index}`,
                     label: slot.date,
@@ -2234,18 +2429,8 @@ export function buildGymMeetDiscoveryContent({
       label: "Hotels",
       kind: "hotels",
       priority: 80,
-      hasContent: hotelCards.length > 0 || hotelLinks.length > 0,
+      hasContent: hotelLinks.length > 0,
       blocks: [
-        ...(hotelCards.length > 0
-          ? [
-              {
-                id: "hotel-cards",
-                type: "card-grid" as const,
-                cards: hotelCards,
-                columns: 2 as const,
-              },
-            ]
-          : []),
         ...(hotelLinks.length > 0
           ? [
               {

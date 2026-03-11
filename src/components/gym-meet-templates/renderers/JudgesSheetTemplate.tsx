@@ -12,7 +12,7 @@ export default function JudgesSheetTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[22px] border-2 border-stone-400/30 bg-[#fbf8f2] shadow-[0_20px_60px_rgba(120,113,108,0.18)]",
         titleClass:
-          "max-w-4xl text-4xl font-black uppercase leading-[0.94] tracking-tight sm:text-5xl lg:text-6xl [font-family:'Courier_New','IBM_Plex_Mono',monospace]",
+          "max-w-4xl text-4xl font-mono font-bold uppercase leading-[0.94] tracking-widest text-stone-900 sm:text-5xl lg:text-6xl",
         mutedClass: "text-stone-600",
         heroPanelClass: "bg-[linear-gradient(180deg,#fbf8f2_0%,#efe7da_100%)]",
         chipClass:

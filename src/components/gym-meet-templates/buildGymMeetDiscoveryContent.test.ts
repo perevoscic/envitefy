@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildGymMeetDiscoveryContent } from "./buildGymMeetDiscoveryContent";
+import { normalizeGymMeetEventData } from "./normalizeGymMeetEventData";
 
 const findSection = (discovery: any, id: string) =>
   discovery.sections.find((section: any) => section.id === id);
@@ -70,13 +71,14 @@ test("mixed packet content keeps rich operational sections separate but merges l
   });
 
   assert.ok(findSection(discovery, "admission"));
-  assert.ok(findSection(discovery, "registration"));
+  assert.equal(findSection(discovery, "registration"), undefined);
   assert.ok(findSection(discovery, "coaches"));
   assert.ok(findSection(discovery, "traffic-parking"));
   assert.equal(findSection(discovery, "results"), undefined);
   assert.equal(findSection(discovery, "documents"), undefined);
   assert.equal(findSection(discovery, "hotels"), undefined);
   assert.match(JSON.stringify(findSection(discovery, "meet-details")), /Live scoring available online/);
+  assert.match(JSON.stringify(findSection(discovery, "coaches")), /Athlete Entry Fee|MeetMaker/);
   assert.match(JSON.stringify(findSection(discovery, "traffic-parking")), /Host Hotel/);
 });
 
@@ -142,6 +144,30 @@ test("public registration info stays in meet details while admission remains sep
   assert.ok(admission);
   assert.ok(meetDetails);
   assert.match(JSON.stringify(meetDetails), /Registration opens at 7:00 AM/i);
+});
+
+test("normalizeGymMeetEventData strips discovery-generated description text", () => {
+  const model = normalizeGymMeetEventData({
+    eventData: {
+      createdVia: "meet-discovery",
+      details: [
+        "March 13-15, 2026",
+        "On-site Adult (Ages 12+): $26: Debit/credit card only; cash not accepted.",
+        "Arrival guidance: Arrive 30 minutes early.",
+        "Parents should bring a refillable water bottle.",
+      ].join("\n"),
+      advancedSections: {
+        meet: {
+          arrivalGuidance: "Arrive 30 minutes early.",
+        },
+      },
+    },
+    eventTitle: "Florida Crown Championships",
+    navItems: [],
+    rosterAthletes: [],
+  });
+
+  assert.equal(model.detailsText, "Parents should bring a refillable water bottle.");
 });
 
 test("no coach content means no coaches section", () => {
@@ -550,6 +576,112 @@ test("persisted generated announcements are suppressed while transient updates r
   assert.doesNotMatch(serialized, /venue_contact Coral Springs Gymnasium phone numbers/i);
 });
 
+test("venue details stay venue-only and absorb the venue map blocks", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          meetDetails: {
+            arrivalGuidance: "Sessions can begin up to 30 minutes early.",
+            registrationInfo: "Athletes check in at registration before entering the competition area.",
+            rotationSheetsInfo:
+              "Rotation sheets will be posted online the week before the event and a copy will be available at the floor music table each session.",
+            awardsInfo:
+              "Awards ceremonies take place immediately following every session.",
+          },
+          gear: {
+            uniform:
+              "Coral Springs Gymnasium: The temperature inside the venue is chilly and beyond our control. Please come prepared.",
+            checklist: [
+              "Admission tickets purchased in advance to avoid price increase and expedite check-in.",
+              "Athlete card for recording scores after competition.",
+            ],
+          },
+          unmappedFacts: [
+            {
+              category: "venue_detail",
+              detail:
+                "Coral Springs Gymnasium: The temperature inside the venue is chilly and beyond our control. Please come prepared.",
+            },
+          ],
+          links: [{ label: "Admission", url: "https://tickets.example.com/admission" }],
+        },
+        extractionMeta: {
+          gymLayoutImageDataUrl: "data:image/png;base64,abc123",
+        },
+        extractedText: [
+          "-- 1 of 6 --",
+          "Arrival Guidance: Sessions can begin up to 30 minutes early.",
+          "Registration: Athletes check in at registration before entering the competition area.",
+          "Rotation Sheets will be posted online the week before the event.",
+          "-- 2 of 6 --",
+          "Session FR A",
+          "360 Gymnastics FL 360 Gymnastics FL 360 Gymnastics FL Alpha Gymnastics Christi's Gymnastics",
+          "Twisters Canada Top Gymnastics FL Top Gymnastics FL ZGA",
+          "-- 3 of 6 --",
+          "Meet Site: Coral Springs Gymnasium",
+          "Coral Springs Gymnasium phone numbers are 954-345-2201 and 954-345-2107.",
+          "On-Site Admission Prices",
+          "On-site admission is credit/debit card only; cash is not accepted.",
+          "Coral Springs Gymnasium: The temperature inside the venue is chilly and beyond our control. Please come prepared.",
+          "-- 4 of 6 --",
+          "Visit Lauderdale is a sponsor and encourages visitors to tag #VisitLauderdale.",
+        ].join("\n"),
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {
+        assignedGym: "Gym B",
+      },
+      logistics: {
+        gymLayoutLabel: "Assigned gym location: Gym B",
+      },
+      coaches: {},
+      gear: {},
+    },
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+  });
+
+  const meetDetails = findSection(discovery, "meet-details");
+  const admission = findSection(discovery, "admission");
+  const venueDetails = findSection(discovery, "venue-details");
+  const venueMap = findSection(discovery, "venue-map");
+  const trafficParking = findSection(discovery, "traffic-parking");
+  const meetOverviewBlock = findBlock(meetDetails, "meet-overview-cards");
+  const gearBlock = findBlock(meetDetails, "gear");
+  const venueImageBlock = findBlock(venueDetails, "gym-layout-image");
+  const venueMapBlock = findBlock(venueDetails, "venue-map-address");
+  const trafficPrimaryBlock = findBlock(trafficParking, "traffic-primary-cards");
+  const allContent = JSON.stringify(discovery.sections);
+
+  assert.ok(meetDetails);
+  assert.ok(admission);
+  assert.ok(venueDetails);
+  assert.ok(trafficParking);
+  assert.equal(venueMap, undefined);
+  assert.equal(meetOverviewBlock?.title, undefined);
+  assert.equal(gearBlock, undefined);
+  assert.ok(venueImageBlock);
+  assert.equal(venueMapBlock, undefined);
+  assert.ok(trafficPrimaryBlock);
+  assert.match(JSON.stringify(admission), /Admission tickets purchased in advance/i);
+  assert.match(JSON.stringify(admission), /credit\/debit card only; cash is not accepted/i);
+  assert.match(JSON.stringify(meetDetails), /Athlete card for recording scores after competition/i);
+  assert.match(JSON.stringify(venueDetails), /Coral Springs Gymnasium phone numbers are 954-345-2201 and 954-345-2107/i);
+  assert.match(JSON.stringify(venueDetails), /"label":"Assigned Gym","value":"Gym B"/i);
+  assert.match(JSON.stringify(venueDetails), /"title":"Venue Map"/i);
+  assert.doesNotMatch(JSON.stringify(venueDetails), /Athletes check in at registration/i);
+  assert.doesNotMatch(JSON.stringify(venueDetails), /temperature inside the venue is chilly/i);
+  assert.doesNotMatch(JSON.stringify(venueDetails), /Twisters Canada|Top Gymnastics FL|ZGA/i);
+  assert.match(JSON.stringify(trafficPrimaryBlock), /Parking/i);
+  assert.match(JSON.stringify(trafficPrimaryBlock), /Stay \/ Travel Note/i);
+  assert.doesNotMatch(allContent, /360 Gymnastics FL|Alpha Gymnastics|Christi's Gymnastics/i);
+  assert.doesNotMatch(allContent, /Twisters Canada|Top Gymnastics FL|ZGA/i);
+  assert.doesNotMatch(allContent, /Visit Lauderdale is a sponsor/i);
+});
+
 test("uploaded gear and general announcements stay visible inside meet details", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
@@ -646,7 +778,49 @@ test("builder announcements render inside the meet details tab", () => {
   assert.match(JSON.stringify(meetDetails), /Spectator admission pre-sale closes Thursday at 8:00 PM/i);
   assert.match(JSON.stringify(meetDetails), /Session 2 families should arrive 20 minutes earlier/i);
   assert.match(JSON.stringify(meetDetails), /Urgent Update/i);
+  assert.doesNotMatch(JSON.stringify(meetDetails), /"label":"Announcement"/i);
   assert.doesNotMatch(JSON.stringify(meetDetails), /2026-03-10T1[23]:00:00\.000Z/i);
+});
+
+test("club_participation announcement fragments are suppressed", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          communications: {
+            announcements: [
+              {
+                title: "club_participation",
+                body: "club_participation 360 Gymnastics FL Alpha Gymnastics Christi's Gymnastics.",
+              },
+            ],
+          },
+          links: [],
+        },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {},
+      logistics: {},
+      coaches: {},
+      announcements: {
+        announcements: [
+          {
+            id: "announcement-1",
+            text: "club_participation 360 Gymnastics FL Alpha Gymnastics Christi's Gymnastics.",
+            priority: "normal",
+          },
+        ],
+      },
+    },
+    venue: "State Arena",
+    address: "123 Main St, Chicago, IL 60601",
+  });
+
+  assert.doesNotMatch(JSON.stringify(discovery.sections), /club_participation|360 Gymnastics FL|Alpha Gymnastics|Christi's Gymnastics/i);
 });
 
 test("duplicate announcement ids are normalized to unique card keys", () => {

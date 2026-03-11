@@ -53,6 +53,26 @@ export type GymMeetTemplateLayoutFamily =
   | "editorial"
   | "dashboard";
 
+export type GymMeetTitleTypographyId =
+  | "anton"
+  | "audiowide"
+  | "barlow-condensed"
+  | "bungee"
+  | "cormorant"
+  | "exo2"
+  | "ibm-plex-mono"
+  | "kanit"
+  | "league-spartan"
+  | "manrope"
+  | "montserrat"
+  | "orbitron"
+  | "oswald"
+  | "playfair"
+  | "poppins"
+  | "press-start-2p"
+  | "sora"
+  | "space-mono";
+
 export type GymMeetPageTemplateMeta = {
   id: GymMeetTemplateId;
   name: string;
@@ -65,6 +85,7 @@ export type GymMeetPageTemplateMeta = {
   previewKicker: string;
   previewClassName: string;
   previewAccentClassName: string;
+  titleTypographyId?: GymMeetTitleTypographyId;
   previewTitleClassName?: string;
 };
 

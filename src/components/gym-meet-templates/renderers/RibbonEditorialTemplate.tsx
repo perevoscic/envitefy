@@ -12,7 +12,7 @@ export default function RibbonEditorialTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[34px] border border-rose-100 bg-white/96 shadow-[0_28px_80px_rgba(148,163,184,0.16)]",
         titleClass:
-          "max-w-5xl text-5xl font-black leading-[0.9] tracking-[-0.04em] sm:text-6xl lg:text-7xl [font-family:Georgia,'Times_New_Roman',serif]",
+          "max-w-5xl text-5xl font-serif font-light lowercase leading-[0.9] tracking-[-0.05em] sm:text-6xl lg:text-7xl",
         mutedClass: "text-stone-600",
         heroPanelClass: "bg-[linear-gradient(145deg,#fff7ed_0%,#fdf2f8_55%,#f8fafc_100%)]",
         chipClass:

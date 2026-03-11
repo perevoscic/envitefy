@@ -8,7 +8,16 @@ import {
   GYM_MEET_TEMPLATE_LIBRARY,
   getGymMeetTemplateMeta,
 } from "./registry";
+import { getGymMeetTitleTypography } from "./titleTypography";
 import { GymMeetTemplateGroup, GymMeetTemplateId } from "./types";
+
+const FEATURED_TEMPLATE_IDS: GymMeetTemplateId[] = [
+  "glitch-sport",
+  "organic-flow",
+  "pixel-arena",
+  "architect-clean",
+  "noir-silhouette",
+];
 
 const GROUP_ORDER: GymMeetTemplateGroup[] = [
   "current",
@@ -18,6 +27,67 @@ const GROUP_ORDER: GymMeetTemplateGroup[] = [
   "editorial",
   "dashboard",
 ];
+
+const TemplateCard = ({
+  template,
+  selected,
+  onSelect,
+  featured = false,
+}: {
+  template: (typeof GYM_MEET_TEMPLATE_LIBRARY)[number];
+  selected: boolean;
+  onSelect: (value: GymMeetTemplateId) => void;
+  featured?: boolean;
+}) => {
+  const titleTypography = getGymMeetTitleTypography(template.id);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(template.id)}
+      style={{ touchAction: "pan-y" }}
+      className={`group w-full overflow-hidden rounded-2xl border text-left transition-all ${
+        selected
+          ? "border-slate-900 bg-slate-900 text-white shadow-lg"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
+      }`}
+    >
+      <div className="relative px-3 pb-1.5 pt-3">
+        {featured ? (
+          <div className="absolute left-3 top-3 z-10 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-950">
+            New
+          </div>
+        ) : null}
+        <div
+          className={`absolute right-3 top-3 z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
+            selected
+              ? "border-white/20 bg-white/10"
+              : "border-slate-200 bg-white/85 text-slate-400"
+          }`}
+        >
+          {selected ? <Check size={14} /> : <ChevronRight size={14} />}
+        </div>
+        <div
+          className={`relative min-h-[100px] overflow-hidden rounded-2xl border ${
+            selected ? "border-white/15" : "border-slate-200"
+          } ${template.previewClassName}`}
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_42%)]" />
+          <div className={`relative flex h-full items-end px-4 pb-2 pt-4 pr-12 ${featured ? "pl-20" : ""}`}>
+            <div
+              className={`${titleTypography.cardClassName} text-base font-black leading-tight ${
+                template.previewTitleClassName || "tracking-tight"
+              }`}
+              style={titleTypography.fontStyle}
+            >
+              {template.name}
+            </div>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+};
 
 export default function TemplateSelector({
   value,
@@ -29,6 +99,12 @@ export default function TemplateSelector({
   const active = getGymMeetTemplateMeta(value);
   const templates = GROUP_ORDER.flatMap((group) =>
     GYM_MEET_TEMPLATE_LIBRARY.filter((template) => template.group === group)
+  );
+  const featuredTemplates = FEATURED_TEMPLATE_IDS.map((id) =>
+    GYM_MEET_TEMPLATE_LIBRARY.find((template) => template.id === id)
+  ).filter(Boolean);
+  const remainingTemplates = templates.filter(
+    (template) => !FEATURED_TEMPLATE_IDS.includes(template.id)
   );
 
   return (
@@ -47,51 +123,46 @@ export default function TemplateSelector({
         className="max-h-[calc(100dvh-17rem)] overflow-y-auto overscroll-contain pr-1 touch-pan-y"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="grid grid-cols-1 gap-3">
-          {templates.map((template) => {
-            const selected = template.id === value;
-            return (
-              <button
-                key={template.id}
-                type="button"
-                onClick={() => onChange(template.id)}
-                style={{ touchAction: "pan-y" }}
-                className={`group w-full overflow-hidden rounded-2xl border text-left transition-all ${
-                  selected
-                    ? "border-slate-900 bg-slate-900 text-white shadow-lg"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
-                }`}
-              >
-                <div className="relative px-3 pb-1.5 pt-3">
-                  <div
-                    className={`absolute right-3 top-3 z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
-                      selected
-                        ? "border-white/20 bg-white/10"
-                        : "border-slate-200 bg-white/85 text-slate-400"
-                    }`}
-                  >
-                    {selected ? <Check size={14} /> : <ChevronRight size={14} />}
-                  </div>
-                  <div
-                    className={`relative min-h-[100px] overflow-hidden rounded-2xl border ${
-                      selected ? "border-white/15" : "border-slate-200"
-                    } ${template.previewClassName}`}
-                  >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_42%)]" />
-                    <div className="relative flex h-full items-end px-4 pb-2 pt-4 pr-12">
-                      <div
-                        className={`text-base font-black leading-tight ${
-                          template.previewTitleClassName || "tracking-tight"
-                        }`}
-                      >
-                        {template.name}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+        <div className="space-y-6">
+          <section className="space-y-3">
+            <div className="px-1">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                New Showcase Templates
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                The five new gymnastics looks are pinned here.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {featuredTemplates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  selected={template.id === value}
+                  onSelect={onChange}
+                  featured
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <div className="px-1">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                All Templates
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {remainingTemplates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  selected={template.id === value}
+                  onSelect={onChange}
+                />
+              ))}
+            </div>
+          </section>
         </div>
       </div>
     </div>

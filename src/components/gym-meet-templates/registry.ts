@@ -18,8 +18,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(140deg,#020617_0%,#0f172a_45%,#2563eb_100%)] text-white",
     previewAccentClassName: "text-blue-300",
-    previewTitleClassName:
-      "uppercase italic tracking-[-0.05em] [font-family:'Cormorant_Garamond',Georgia,'Times_New_Roman',serif]",
+    titleTypographyId: "anton",
+    previewTitleClassName: "font-sans font-black text-blue-700",
   },
   {
     id: "bento-box",
@@ -34,8 +34,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(160deg,#f8fafc_0%,#eef2ff_50%,#ffffff_100%)] text-slate-900",
     previewAccentClassName: "text-indigo-600",
-    previewTitleClassName:
-      "[font-family:'Trebuchet_MS','Avenir_Next',sans-serif]",
+    titleTypographyId: "league-spartan",
+    previewTitleClassName: "font-sans font-light uppercase tracking-widest",
   },
   {
     id: "parent-command",
@@ -50,6 +50,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#eff6ff_0%,#ffffff_65%,#dbeafe_100%)] text-slate-900",
     previewAccentClassName: "text-blue-700",
+    titleTypographyId: "montserrat",
     previewTitleClassName: "tracking-tight",
   },
   {
@@ -66,6 +67,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#fdfbf5_0%,#f5efe4_100%)] text-stone-900",
     previewAccentClassName: "text-red-900",
+    titleTypographyId: "cormorant",
     previewTitleClassName: "[font-family:Georgia,'Times_New_Roman',serif]",
   },
   {
@@ -81,6 +83,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_55%,#ecfdf5_100%)] text-slate-900",
     previewAccentClassName: "text-emerald-700",
+    titleTypographyId: "barlow-condensed",
     previewTitleClassName:
       "[font-family:'Avenir_Next','Segoe_UI',sans-serif]",
   },
@@ -97,8 +100,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#e5e7eb_0%,#f8fafc_100%)] text-slate-900",
     previewAccentClassName: "text-slate-600",
-    previewTitleClassName:
-      "uppercase [font-family:'Courier_New','IBM_Plex_Mono',monospace]",
+    titleTypographyId: "space-mono",
+    previewTitleClassName: "font-mono font-bold uppercase tracking-widest",
   },
   {
     id: "cyber-athlete",
@@ -114,8 +117,9 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#020617_0%,#000000_45%,#06b6d4_100%)] text-cyan-100",
     previewAccentClassName: "text-cyan-300",
+    titleTypographyId: "orbitron",
     previewTitleClassName:
-      "uppercase [font-family:'Orbitron','Rajdhani',sans-serif]",
+      "font-sans font-black text-fuchsia-500 [text-shadow:0_0_18px_rgba(217,70,239,0.55)]",
   },
   {
     id: "paper-proto",
@@ -131,6 +135,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#fafaf9_0%,#f5f5f4_60%,#e7e5e4_100%)] text-stone-900",
     previewAccentClassName: "text-stone-700",
+    titleTypographyId: "playfair",
     previewTitleClassName:
       "italic [font-family:'Playfair_Display',Georgia,serif]",
   },
@@ -148,6 +153,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#1c1917_0%,#92400e_45%,#fbbf24_100%)] text-amber-50",
     previewAccentClassName: "text-amber-200",
+    titleTypographyId: "cormorant",
     previewTitleClassName: "[font-family:Georgia,'Times_New_Roman',serif]",
   },
   {
@@ -164,8 +170,9 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(135deg,#fde047_0%,#facc15_55%,#0f172a_100%)] text-slate-950",
     previewAccentClassName: "text-red-600",
+    titleTypographyId: "bungee",
     previewTitleClassName:
-      "italic [font-family:'Archivo_Black','Arial_Black',sans-serif]",
+      "font-mono font-black text-[#ffcc00] [text-shadow:4px_4px_0px_#000000]",
   },
   {
     id: "swiss-grid",
@@ -181,8 +188,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_55%,#fee2e2_100%)] text-black",
     previewAccentClassName: "text-red-600",
-    previewTitleClassName:
-      "tracking-tight [font-family:'Helvetica_Neue','Arial',sans-serif]",
+    titleTypographyId: "league-spartan",
+    previewTitleClassName: "font-sans font-black text-red-600",
   },
   {
     id: "art-deco",
@@ -198,6 +205,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#0a0a0a_0%,#1f1f1f_40%,#d4af37_100%)] text-[#f5deb3]",
     previewAccentClassName: "text-[#d4af37]",
+    titleTypographyId: "cormorant",
     previewTitleClassName: "[font-family:Georgia,'Times_New_Roman',serif]",
   },
   {
@@ -212,10 +220,10 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewTitle: "Concrete Gym",
     previewKicker: "Raw Ops",
     previewClassName:
-      "bg-[linear-gradient(180deg,#a1a1aa_0%,#d4d4d8_55%,#f4f4f5_100%)] text-zinc-900",
+      "bg-[linear-gradient(145deg,#18181b_0%,#52525b_45%,#a1a1aa_100%)] text-white",
     previewAccentClassName: "text-zinc-700",
-    previewTitleClassName:
-      "italic [font-family:'Kanit','Oswald',sans-serif]",
+    titleTypographyId: "ibm-plex-mono",
+    previewTitleClassName: "font-mono font-black italic text-zinc-100",
   },
   {
     id: "midnight-frost",
@@ -231,8 +239,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#020617_0%,#1e1b4b_50%,#60a5fa_100%)] text-indigo-50",
     previewAccentClassName: "text-sky-200",
-    previewTitleClassName:
-      "[font-family:'League_Spartan','Montserrat',sans-serif]",
+    titleTypographyId: "sora",
+    previewTitleClassName: "font-sans font-black",
   },
   {
     id: "eco-motion",
@@ -248,6 +256,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#ecfdf5_0%,#d1fae5_50%,#fefce8_100%)] text-emerald-950",
     previewAccentClassName: "text-emerald-700",
+    titleTypographyId: "manrope",
     previewTitleClassName:
       "[font-family:'Avenir_Next','Gill_Sans',sans-serif]",
   },
@@ -265,8 +274,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#ffffff_0%,#dbeafe_50%,#bfdbfe_100%)] text-slate-900",
     previewAccentClassName: "text-blue-600",
-    previewTitleClassName:
-      "[font-family:'Arial_Black','Helvetica_Neue',sans-serif]",
+    titleTypographyId: "exo2",
+    previewTitleClassName: "font-sans font-black text-white drop-shadow-2xl",
   },
   {
     id: "glitch-sport",
@@ -282,8 +291,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#000000_0%,#111827_42%,#06b6d4_100%)] text-white",
     previewAccentClassName: "text-red-400",
-    previewTitleClassName:
-      "uppercase italic tracking-[-0.05em] [font-family:'Orbitron','Rajdhani',sans-serif]",
+    titleTypographyId: "ibm-plex-mono",
+    previewTitleClassName: "font-mono font-black italic uppercase",
   },
   {
     id: "organic-flow",
@@ -299,8 +308,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(160deg,#ecfdf5_0%,#d1fae5_52%,#065f46_100%)] text-emerald-950",
     previewAccentClassName: "text-white",
-    previewTitleClassName:
-      "italic [font-family:'Poppins','Avenir_Next',sans-serif]",
+    titleTypographyId: "manrope",
+    previewTitleClassName: "font-sans font-black italic text-white",
   },
   {
     id: "pixel-arena",
@@ -316,8 +325,9 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#000000_0%,#03120a_56%,#00ff41_100%)] text-[#00ff41]",
     previewAccentClassName: "text-white",
+    titleTypographyId: "press-start-2p",
     previewTitleClassName:
-      "uppercase [font-family:'Courier_New','IBM_Plex_Mono',monospace]",
+      "font-mono font-black uppercase text-[#00ff41] [text-shadow:4px_4px_0px_#14532d]",
   },
   {
     id: "architect-clean",
@@ -333,8 +343,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#ffffff_0%,#f5f5f5_56%,#e2e8f0_100%)] text-slate-800",
     previewAccentClassName: "text-slate-500",
-    previewTitleClassName:
-      "[font-family:'Barlow_Condensed','Helvetica_Neue',sans-serif]",
+    titleTypographyId: "manrope",
+    previewTitleClassName: "font-sans font-light tracking-tight text-slate-800",
   },
   {
     id: "noir-silhouette",
@@ -350,8 +360,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#000000_0%,#1f2937_44%,#ffffff_100%)] text-white",
     previewAccentClassName: "text-zinc-400",
-    previewTitleClassName:
-      "uppercase tracking-[-0.06em] [font-family:'League_Spartan','Arial_Black',sans-serif]",
+    titleTypographyId: "anton",
+    previewTitleClassName: "font-black tracking-tighter text-white",
   },
   {
     id: "vaporwave-grid",
@@ -367,8 +377,9 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#2d0a4e_0%,#1a0633_45%,#00f2ff_100%)] text-[#00f2ff]",
     previewAccentClassName: "text-pink-400",
+    titleTypographyId: "audiowide",
     previewTitleClassName:
-      "uppercase tracking-[-0.04em] [font-family:'Orbitron','Rajdhani',sans-serif]",
+      "font-mono font-black text-pink-400 [text-shadow:4px_4px_0px_#ff00ff]",
   },
   {
     id: "heavy-impact",
@@ -384,8 +395,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#000000_0%,#111111_55%,#facc15_100%)] text-yellow-300",
     previewAccentClassName: "text-white",
-    previewTitleClassName:
-      "uppercase [font-family:'Archivo_Black','Arial_Black',sans-serif]",
+    titleTypographyId: "anton",
+    previewTitleClassName: "font-black text-yellow-400",
   },
   {
     id: "blueprint-tech",
@@ -401,8 +412,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#003366_0%,#0a4a7a_55%,#1e90ff_100%)] text-white",
     previewAccentClassName: "text-blue-100",
-    previewTitleClassName:
-      "uppercase [font-family:'Courier_New','IBM_Plex_Mono',monospace]",
+    titleTypographyId: "ibm-plex-mono",
+    previewTitleClassName: "font-mono font-light uppercase text-white border-b-2",
   },
   {
     id: "toxic-kinetic",
@@ -418,8 +429,9 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#000000_0%,#18181b_50%,#84cc16_100%)] text-lime-400",
     previewAccentClassName: "text-lime-300",
+    titleTypographyId: "kanit",
     previewTitleClassName:
-      "uppercase italic tracking-[-0.03em] [font-family:'Kanit','Oswald',sans-serif]",
+      "font-sans font-black italic uppercase text-lime-400 [-skew-x-6]",
   },
   {
     id: "luxe-magazine",
@@ -435,8 +447,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#ffffff_0%,#fafaf9_100%)] text-black",
     previewAccentClassName: "text-zinc-500",
-    previewTitleClassName:
-      "[font-family:'Cormorant_Garamond',Georgia,serif]",
+    titleTypographyId: "cormorant",
+    previewTitleClassName: "font-serif font-thin tracking-[1em] text-black",
   },
   {
     id: "chalk-strike",
@@ -452,8 +464,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(135deg,#030712_0%,#111827_45%,#ec4899_100%)] text-white",
     previewAccentClassName: "text-pink-300",
-    previewTitleClassName:
-      "uppercase tracking-[-0.02em] [font-family:'Oswald','Arial_Narrow',sans-serif]",
+    titleTypographyId: "space-mono",
+    previewTitleClassName: "font-black uppercase tracking-tighter",
   },
   {
     id: "podium-lights",
@@ -469,8 +481,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#0f172a_0%,#1e293b_55%,#f59e0b_100%)] text-white",
     previewAccentClassName: "text-amber-200",
-    previewTitleClassName:
-      "uppercase [font-family:'Franklin_Gothic_Medium','Arial_Narrow',sans-serif]",
+    titleTypographyId: "oswald",
+    previewTitleClassName: "font-sans font-black text-amber-600",
   },
   {
     id: "judges-sheet",
@@ -486,8 +498,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#f8f5ef_0%,#ede7dc_100%)] text-stone-900",
     previewAccentClassName: "text-rose-800",
-    previewTitleClassName:
-      "uppercase [font-family:'Courier_New','IBM_Plex_Mono',monospace]",
+    titleTypographyId: "space-mono",
+    previewTitleClassName: "font-mono font-bold uppercase tracking-widest",
   },
   {
     id: "spring-energy",
@@ -503,6 +515,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#ecfeff_0%,#fef3c7_52%,#ffe4e6_100%)] text-slate-900",
     previewAccentClassName: "text-sky-700",
+    titleTypographyId: "poppins",
     previewTitleClassName:
       "[font-family:'Trebuchet_MS','Avenir_Next',sans-serif]",
   },
@@ -519,7 +532,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#fff7ed_0%,#fef2f2_60%,#e0f2fe_100%)] text-slate-900",
     previewAccentClassName: "text-red-800",
-    previewTitleClassName: "[font-family:Georgia,'Times_New_Roman',serif]",
+    titleTypographyId: "barlow-condensed",
+    previewTitleClassName: "font-sans font-black italic text-orange-900",
   },
   {
     id: "aurora-lift",
@@ -535,8 +549,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#082f49_0%,#155e75_45%,#34d399_100%)] text-white",
     previewAccentClassName: "text-emerald-200",
-    previewTitleClassName:
-      "[font-family:'Arial_Black','Gill_Sans',sans-serif]",
+    titleTypographyId: "exo2",
+    previewTitleClassName: "font-sans font-black text-cyan-400",
   },
   {
     id: "ribbon-editorial",
@@ -552,7 +566,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(180deg,#fffaf5_0%,#fdf2f8_100%)] text-stone-900",
     previewAccentClassName: "text-fuchsia-700",
-    previewTitleClassName: "[font-family:Georgia,'Times_New_Roman',serif]",
+    titleTypographyId: "cormorant",
+    previewTitleClassName: "font-serif font-light lowercase tracking-[-0.05em]",
   },
   {
     id: "medal-poster",
@@ -566,10 +581,10 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewTitle: "Championship Poster",
     previewKicker: "Session One",
     previewClassName:
-      "bg-[linear-gradient(135deg,#fef3c7_0%,#fed7aa_48%,#fecaca_100%)] text-stone-900",
+      "bg-[linear-gradient(145deg,#111827_0%,#7c2d12_52%,#ef4444_100%)] text-white",
     previewAccentClassName: "text-amber-800",
-    previewTitleClassName:
-      "[font-family:'Arial_Black','Gill_Sans',sans-serif]",
+    titleTypographyId: "kanit",
+    previewTitleClassName: "font-black italic tracking-[-0.1em] text-white",
   },
   {
     id: "vault-grid",
@@ -585,6 +600,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#e0e7ff_0%,#f8fafc_45%,#dbeafe_100%)] text-slate-900",
     previewAccentClassName: "text-indigo-700",
+    titleTypographyId: "league-spartan",
     previewTitleClassName:
       "[font-family:'Arial_Black','Avenir_Next',sans-serif]",
   },
@@ -602,6 +618,7 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewClassName:
       "bg-[linear-gradient(145deg,#ecfccb_0%,#f8fafc_55%,#dbeafe_100%)] text-slate-900",
     previewAccentClassName: "text-lime-700",
+    titleTypographyId: "barlow-condensed",
     previewTitleClassName:
       "uppercase [font-family:'Franklin_Gothic_Medium','Arial_Narrow',sans-serif]",
   },

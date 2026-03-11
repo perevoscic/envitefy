@@ -15,6 +15,7 @@ import ShowcaseDiscoveryContent, {
 } from "../ShowcaseDiscoveryContent";
 import FloatingActionStrip from "../FloatingActionStrip";
 import { ShowcaseThemeConfig } from "../showcaseThemes";
+import { getGymMeetTitleTypography } from "../titleTypography";
 import { GymMeetTemplateRendererProps } from "../types";
 import { getGymMeetTitleSizeStyle } from "../titleSizing";
 import { formatGymMeetTime, joinUniqueDisplayParts } from "../displayText";
@@ -167,6 +168,7 @@ export default function ShowcaseGymMeetTemplate({
 }: GymMeetTemplateRendererProps & {
   theme: ShowcaseThemeConfig;
 }) {
+  const titleTypography = getGymMeetTitleTypography(model.pageTemplateId);
   const [activeTab, setActiveTab] = useState("");
 
   const practiceBlocks = Array.isArray(model.practiceBlocks) ? model.practiceBlocks : [];
@@ -244,8 +246,9 @@ export default function ShowcaseGymMeetTemplate({
                   </p>
                 )}
                 <h1
-                  className={theme.titleClass}
+                  className={`${titleTypography.heroClassName} ${theme.titleClass}`}
                   style={{
+                    ...titleTypography.fontStyle,
                     ...theme.titleStyle,
                     ...getGymMeetTitleSizeStyle(model.titleSize),
                   }}

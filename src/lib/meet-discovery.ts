@@ -424,6 +424,20 @@ const SUPPRESSED_UNMAPPED_FACT_CATEGORIES = new Set([
   "club_participation",
   "document_version",
 ]);
+const MARKETING_TEXT_PATTERN =
+  /(visit lauderdale|hairstyle ?to ?impress|hairstyling appointment|sponsor(?:ing)? this event|many thanks to our sponsors|book your hairstyling appointment)/i;
+const SCHEDULE_GRID_TEXT_PATTERN =
+  /(session\s+(?:fr|sa|su)\d+\b|stretch\/warmup:|levels?\s+\d|clubs in pink|individual & team awards|your designated number of athlete spots per session|questions\?\s*email us asap)/i;
+const CLUB_PARTICIPATION_TEXT_PATTERN =
+  /\b(360 gymnastics fl|alpha gymnastics|christi'?s gymnastics|browns? gym(?:nastics)?|team twisters|twisters canada|top gymnastics fl|whitby-galaxy|gymnastics usa|gymnastics du sol|miracle gymnastics|southern starz|fgtc|ega|zga|world class miami|intensity gymnastics|harbor city|sunny gymnastics)\b/i;
+const TRUE_GEAR_TEXT_PATTERN =
+  /\b(leotard|uniform|warm-?ups?|warmup jacket|grips|beam shoes|shoes|scrunchie|hair|bun|bobby pins?|bag|equipment bag|water bottle|wristbands?|athletic tape|music file)\b/i;
+const GEAR_EXCLUDED_TEXT_PATTERN =
+  /(admission|ticket|pre[-\s]?sale|cash|credit\/debit|credit card|debit card|registration|check[- ]?in|results?|live scoring|website|visit us on the web|rotation sheets?|awards ceremonies?|temperature inside the venue|beyond our control|come prepared|athlete cards? will be distributed|record scores)/i;
+const VENUE_DETAIL_TEXT_PATTERN =
+  /(meet site:|coral springs gymnasium|temperature inside the venue|beyond our control|please come prepared|parking is complimentary|\bph:\b|\bphone numbers?\b|venue is chilly|inside the venue is chilly)/i;
+const MEET_DETAIL_REROUTE_TEXT_PATTERN =
+  /(athlete cards? will be distributed|athlete cards?\b.*record(?:ing)? scores?|record scores on (?:their|the) cards?|memento of their meet|coaches choose competitive order|submit cards to judges)/i;
 
 function isUsableEmail(value: unknown): boolean {
   return USABLE_EMAIL_PATTERN.test(safeString(value));
@@ -481,10 +495,62 @@ function shouldPersistParsedAnnouncement(item: any): boolean {
   const combined = `${title} ${body}`;
   if (!body) return false;
   if (isAdmissionAnnouncementText(combined) || isStructuredAnnouncementText(combined)) return false;
-  if (/(marketing|sponsor|visit lauderdale|hairstyle to impress|final posting)/i.test(combined)) {
+  if (
+    /(marketing|sponsor|visit lauderdale|hairstyle to impress|final posting|club[_\s-]?participation|venue[_\s-]?contact|document[_\s-]?version)/i.test(
+      combined
+    )
+  ) {
     return false;
   }
   return body.split(/\s+/).filter(Boolean).length >= 4;
+}
+
+function isMarketingLikeText(value: unknown): boolean {
+  return MARKETING_TEXT_PATTERN.test(safeString(value));
+}
+
+function isScheduleGridLikeText(value: unknown): boolean {
+  return SCHEDULE_GRID_TEXT_PATTERN.test(safeString(value));
+}
+
+function isClubParticipationLikeText(value: unknown): boolean {
+  const text = safeString(value);
+  if (!text) return false;
+  if (CLUB_PARTICIPATION_TEXT_PATTERN.test(text)) return true;
+  return (text.match(/\b(?:gymnastics|gym|academy|twisters|ymca|starz|miami|wellington|boca|canada)\b/gi) || [])
+    .length >= 3;
+}
+
+function isTrueGearLikeText(value: unknown): boolean {
+  const text = safeString(value);
+  if (!text) return false;
+  if (GEAR_EXCLUDED_TEXT_PATTERN.test(text)) return false;
+  return TRUE_GEAR_TEXT_PATTERN.test(text);
+}
+
+function appendUnmappedFact(
+  items: Array<{ category: string; detail: string; confidence: "high" | "medium" | "low" }>,
+  category: string,
+  detail: string,
+  confidence: "high" | "medium" | "low" = "high"
+) {
+  const cleanDetail = safeString(detail);
+  if (!cleanDetail) return items;
+  const key = `${safeString(category)}|${cleanDetail}`.toLowerCase().replace(/\s+/g, " ").trim();
+  if (!key) return items;
+  if (
+    items.some(
+      (item) =>
+        `${safeString(item?.category)}|${safeString(item?.detail)}`
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .trim() === key
+    )
+  ) {
+    return items;
+  }
+  items.push({ category, detail: cleanDetail, confidence });
+  return items;
 }
 
 function uniqueLines(lines: string[], limit = 12): string[] {
@@ -2998,6 +3064,12 @@ function buildProfessionalParsePrompt(
     "- Keep parking maps/rates in `logistics.parkingLinks` or `logistics.parkingPricingLinks`.",
     "- Put public results/live scoring text in `meetDetails.resultsInfo`; put coach-only rotation-sheet procedures in `coachInfo.rotationSheets` or `meetDetails.rotationSheetsInfo` only when they are public-facing.",
     "- `coachInfo.attire` should be one concise string. Use `coachInfo.notes` for extra bullet-like coach notes.",
+    "- `gear.uniform` and `gear.checklist` are ONLY for true athlete gear, uniform, hair, or equipment-prep items.",
+    "- Never place venue temperature notes, admission reminders, ticket policy, athlete cards, score-recording notes, results websites, sponsor copy, or general operational reminders in `gear`.",
+    "- Pages dominated by session labels, stretch/warmup times, and repeated club names are schedule grids, not public prose.",
+    "- Do not convert session grids, club participation tables, or repeated club-name lists into `meetDetails.operationalNotes`, `gear`, `communications.announcements`, or `unmappedFacts`.",
+    "- Venue comfort notes (for example temperature/chilly reminders) belong with venue details, not `gear`.",
+    "- Athlete card or scorecard-memento notes belong in `meetDetails.operationalNotes`, not `gear`.",
     "- For `communications.announcements`, include ONLY true transient updates or cross-cutting alerts that a user would reasonably expect in an announcements module.",
     "- Do NOT place venue phone numbers, facility contacts, meet staff contacts, admission pricing/policies, arrival guidance, registration instructions, results, rotation sheets, awards, sponsor blurbs, club-participation lists, or document-version notes in `communications.announcements`.",
     "- Do not prefix leftover facts with category labels inside announcement text (examples to avoid: `venue_contact ...`, `marketing ...`, `document_version ...`).",
@@ -3267,6 +3339,96 @@ function normalizeParseResult(value: any): ParseResult | null {
       passcode: safeString(value.communications?.passcode) || null,
     },
   };
+}
+
+function sanitizeDiscoveryParseResult(value: ParseResult): ParseResult {
+  const next: ParseResult = {
+    ...value,
+    meetDetails: {
+      ...value.meetDetails,
+      operationalNotes: [...pickArray(value.meetDetails?.operationalNotes)],
+    },
+    gear: {
+      ...value.gear,
+      checklist: [...pickArray(value.gear?.checklist)],
+    },
+    unmappedFacts: pickArray(value.unmappedFacts).map((item) => ({
+      category: safeString(item?.category) || "general",
+      detail: safeString(item?.detail),
+      confidence:
+        item?.confidence === "high" || item?.confidence === "low" ? item.confidence : "medium",
+    })),
+  };
+
+  const nextFacts = [...next.unmappedFacts];
+  const routeRejectedFact = (line: string) => {
+    const text = safeString(line);
+    if (!text) return;
+    if (isMarketingLikeText(text) || isScheduleGridLikeText(text) || isClubParticipationLikeText(text)) {
+      return;
+    }
+    if (VENUE_DETAIL_TEXT_PATTERN.test(text)) {
+      appendUnmappedFact(nextFacts, "venue_detail", text);
+      return;
+    }
+    if (isAdmissionAnnouncementText(text)) {
+      appendUnmappedFact(nextFacts, "admission_policy", text);
+      return;
+    }
+    if (MEET_DETAIL_REROUTE_TEXT_PATTERN.test(text)) {
+      appendUnmappedFact(nextFacts, "meet_detail", text);
+    }
+  };
+
+  next.meetDetails.operationalNotes = uniqueBy(
+    next.meetDetails.operationalNotes
+      .map((item) => safeString(item))
+      .filter(Boolean)
+      .filter((item) => {
+        if (isMarketingLikeText(item) || isScheduleGridLikeText(item) || isClubParticipationLikeText(item)) {
+          return false;
+        }
+        if (VENUE_DETAIL_TEXT_PATTERN.test(item) || isAdmissionAnnouncementText(item)) {
+          routeRejectedFact(item);
+          return false;
+        }
+        return true;
+      }),
+    (item) => item
+  );
+
+  const gearUniform = safeString(next.gear.uniform);
+  next.gear.uniform = gearUniform && isTrueGearLikeText(gearUniform) ? gearUniform : null;
+  if (gearUniform && !next.gear.uniform) {
+    routeRejectedFact(gearUniform);
+  }
+
+  next.gear.checklist = uniqueBy(
+    next.gear.checklist
+      .map((item) => safeString(item))
+      .filter(Boolean)
+      .filter((item) => {
+        if (isTrueGearLikeText(item)) return true;
+        routeRejectedFact(item);
+        return false;
+      }),
+    (item) => item
+  );
+
+  next.unmappedFacts = uniqueBy(
+    nextFacts.filter((item) => {
+      const category = safeString(item?.category).toLowerCase();
+      const detail = safeString(item?.detail);
+      if (!detail) return false;
+      if (SUPPRESSED_UNMAPPED_FACT_CATEGORIES.has(category)) return false;
+      if (isMarketingLikeText(detail)) return false;
+      if (isScheduleGridLikeText(detail) || isClubParticipationLikeText(detail)) return false;
+      return true;
+    }),
+    (item) => `${safeString(item?.category)}|${safeString(item?.detail)}`
+  );
+
+  return next;
 }
 
 function mergeCoachFeesFromAdmission(parseResult: ParseResult): ParseResult {
@@ -3595,7 +3757,8 @@ export async function parseMeetFromExtractedText(
 }> {
   const evidence = buildDiscoveryEvidence(extractedText, extractionMeta);
   const finalizeParseResult = (value: ParseResult): ParseResult => {
-    const withCoachRouting = routeCoachDeadlines(mergeCoachFeesFromAdmission(value));
+    const sanitized = sanitizeDiscoveryParseResult(value);
+    const withCoachRouting = routeCoachDeadlines(mergeCoachFeesFromAdmission(sanitized));
     return reconcileParsedDates(withCoachRouting, extractedText);
   };
   if (extractionMeta.textQuality === "poor") {
@@ -3689,6 +3852,7 @@ export async function mapParseResultToGymData(
   baseData: any = {},
   extractionMeta?: ExtractionResult["extractionMeta"]
 ) {
+  parseResult = sanitizeDiscoveryParseResult(parseResult);
   const resolvedPageTemplateId =
     resolveGymMeetTemplateId(baseData) || DEFAULT_GYM_MEET_TEMPLATE_ID;
   const { date, time } = splitDateTime(parseResult.startAt);
@@ -3790,42 +3954,6 @@ export async function mapParseResultToGymData(
     )
     .filter(Boolean)
     .join("\n");
-  const policyLines = uniqueBy(
-    [
-      parseResult.policies.food ? `Food policy: ${parseResult.policies.food}` : "",
-      parseResult.policies.hydration ? `Hydration: ${parseResult.policies.hydration}` : "",
-      parseResult.policies.safety ? `Safety: ${parseResult.policies.safety}` : "",
-      parseResult.policies.animals ? `Animals: ${parseResult.policies.animals}` : "",
-      ...parseResult.policies.misc,
-    ].filter(Boolean),
-    (item) => item
-  );
-  const detailBlocks = uniqueBy(
-    [
-      parseResult.dates,
-      admissionText,
-      parseResult.meetDetails.doorsOpen ? `Doors open: ${parseResult.meetDetails.doorsOpen}` : "",
-      parseResult.meetDetails.arrivalGuidance
-        ? `Arrival guidance: ${parseResult.meetDetails.arrivalGuidance}`
-        : "",
-      parseResult.meetDetails.registrationInfo
-        ? `Registration: ${parseResult.meetDetails.registrationInfo}`
-        : "",
-      parseResult.meetDetails.facilityLayout
-        ? `Facility layout: ${parseResult.meetDetails.facilityLayout}`
-        : "",
-      parseResult.meetDetails.scoringInfo ? `Scoring: ${parseResult.meetDetails.scoringInfo}` : "",
-      parseResult.meetDetails.resultsInfo ? `Results: ${parseResult.meetDetails.resultsInfo}` : "",
-      parseResult.meetDetails.rotationSheetsInfo
-        ? `Rotation sheets: ${parseResult.meetDetails.rotationSheetsInfo}`
-        : "",
-      parseResult.meetDetails.awardsInfo ? `Awards: ${parseResult.meetDetails.awardsInfo}` : "",
-      ...layoutFacts.map((item) => `Hall layout: ${item}`),
-      ...policyLines,
-    ].filter(Boolean),
-    (item) => item
-  );
-
   const athlete = parseResult.athlete;
   const existingDocuments = pickArray(existingAdvanced.logistics?.additionalDocuments)
     .map((item) => ({
@@ -4181,7 +4309,7 @@ export async function mapParseResultToGymData(
   return {
     ...baseData,
     title: parseResult.title || baseData?.title || "",
-    details: uniqueBy([baseData?.details, ...detailBlocks].filter(Boolean), (item) => item).join("\n\n"),
+    details: safeString(baseData?.details),
     date: mappedDate,
     time: mappedTime,
     startISO: mappedStartISO,
@@ -4391,6 +4519,7 @@ export const __testUtils = {
   deriveDateRangeFromText,
   classifyMeetDateCandidates,
   normalizeParseResult,
+  sanitizeDiscoveryParseResult,
   mergeCoachFeesFromAdmission,
   routeCoachDeadlines,
   hasCoachInfoContent,

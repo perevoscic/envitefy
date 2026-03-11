@@ -7,12 +7,84 @@ const {
   deriveDateRangeFromText,
   classifyMeetDateCandidates,
   normalizeParseResult,
+  sanitizeDiscoveryParseResult,
   mergeCoachFeesFromAdmission,
   routeCoachDeadlines,
   collectDiscoveryCandidates,
   setUrlDiscoveryTestHooks,
   resetUrlDiscoveryTestHooks,
 } = __testUtils;
+
+test("sanitizeDiscoveryParseResult suppresses schedule grids and reroutes invalid gear facts", () => {
+  const sanitized = sanitizeDiscoveryParseResult(
+    normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "meet_packet",
+      title: "Florida Crown Championships",
+      dates: "March 13-15, 2026",
+      startAt: null,
+      endAt: null,
+      timezone: "America/New_York",
+      venue: "Coral Springs Gymnasium",
+      address: "123 Main St, Coral Springs, FL 33065",
+      hostGym: "USA Competitions",
+      admission: [],
+      athlete: {},
+      meetDetails: {
+        operationalNotes: [
+          "Visit Lauderdale is a sponsor and encourages visitors to tag #VisitLauderdale.",
+          "360 Gymnastics FL 360 Gymnastics FL Alpha Gymnastics Christi's Gymnastics.",
+          "Athlete cards will be distributed after competition for recording scores.",
+        ],
+      },
+      logistics: {},
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {
+        uniform: "Coral Springs Gymnasium: The temperature inside the venue is chilly and beyond our control. Please come prepared.",
+        checklist: [
+          "Admission tickets purchased in advance to avoid price increase and expedite check-in.",
+          "Athlete card for recording scores after competition.",
+          "Grips",
+        ],
+      },
+      volunteers: {},
+      communications: {},
+      links: [],
+      unmappedFacts: [],
+    })!
+  );
+
+  assert.equal(sanitized.gear.uniform, null);
+  assert.deepEqual(sanitized.gear.checklist, ["Grips"]);
+  assert.deepEqual(sanitized.meetDetails.operationalNotes, [
+    "Athlete cards will be distributed after competition for recording scores.",
+  ]);
+  assert.ok(
+    sanitized.unmappedFacts.some(
+      (fact) =>
+        fact.category === "venue_detail" &&
+        /temperature inside the venue is chilly/i.test(fact.detail)
+    )
+  );
+  assert.ok(
+    sanitized.unmappedFacts.some(
+      (fact) =>
+        fact.category === "admission_policy" &&
+        /Admission tickets purchased in advance/i.test(fact.detail)
+    )
+  );
+  assert.ok(
+    sanitized.unmappedFacts.some(
+      (fact) => fact.category === "meet_detail" && /Athlete card/i.test(fact.detail)
+    )
+  );
+  assert.ok(
+    !sanitized.unmappedFacts.some((fact) => /Visit Lauderdale|360 Gymnastics FL/i.test(fact.detail))
+  );
+});
 
 const emptyQualitySignals = {
   controlRatio: 0,

@@ -6,6 +6,7 @@ import React from "react";
 import { Calendar, Check, Clock, Phone } from "lucide-react";
 import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
 import FloatingActionStrip from "../FloatingActionStrip";
+import { getGymMeetTitleTypography } from "../titleTypography";
 import { GymMeetTemplateRendererProps } from "../types";
 import { getGymMeetTitleSizeStyle } from "../titleSizing";
 
@@ -91,6 +92,7 @@ export default function BaseGymMeetTemplate({
     timeline?: boolean;
   };
 }) {
+  const titleTypography = getGymMeetTitleTypography(model.pageTemplateId);
   const practiceBlocks = Array.isArray(model.practiceBlocks) ? model.practiceBlocks : [];
   const volunteerSlots = Array.isArray(model.volunteers?.volunteerSlots)
     ? model.volunteers.volunteerSlots
@@ -139,8 +141,9 @@ export default function BaseGymMeetTemplate({
               <div className="grid gap-6 lg:grid-cols-[1.6fr_0.9fr] lg:items-end">
                 <div>
                   <h1
-                    className={variant.titleClass}
+                    className={`${titleTypography.heroClassName} ${variant.titleClass}`}
                     style={{
+                      ...titleTypography.fontStyle,
                       ...variant.titleStyle,
                       ...getGymMeetTitleSizeStyle(model.titleSize),
                     }}

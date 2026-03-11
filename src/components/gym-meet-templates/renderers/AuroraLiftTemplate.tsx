@@ -12,8 +12,8 @@ export default function AuroraLiftTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[30px] border border-white/10 bg-slate-950/78 shadow-[0_30px_88px_rgba(8,47,73,0.56)] backdrop-blur-xl",
         titleClass:
-          "max-w-4xl text-5xl font-black leading-[0.92] tracking-tight text-emerald-50 sm:text-6xl lg:text-7xl [font-family:'Arial_Black','Gill_Sans',sans-serif]",
-        titleStyle: { color: "#ecfdf5" },
+          "max-w-4xl text-5xl font-sans font-black leading-[0.92] tracking-tight text-cyan-400 sm:text-6xl lg:text-7xl",
+        titleStyle: { color: "#22d3ee" },
         mutedClass: "text-teal-50",
         heroPanelClass: "bg-[linear-gradient(145deg,#082f49_0%,#0f766e_55%,#34d399_100%)]",
         chipClass:

@@ -12,7 +12,7 @@ export default function EliteAthleteTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/80 shadow-[0_28px_80px_rgba(2,6,23,0.55)] backdrop-blur",
         titleClass:
-          "max-w-4xl text-5xl font-black uppercase italic leading-[0.92] tracking-tight text-white sm:text-6xl lg:text-7xl [font-family:Impact,Haettenschweiler,'Arial_Narrow_Bold',sans-serif]",
+          "max-w-4xl text-5xl font-sans font-black leading-[0.92] tracking-tight text-blue-700 sm:text-6xl lg:text-7xl",
         titleStyle: { color: "#f8fafc" },
         mutedClass: "text-slate-200",
         heroPanelClass: "bg-slate-950",

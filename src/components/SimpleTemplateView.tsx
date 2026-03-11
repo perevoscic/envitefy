@@ -160,9 +160,9 @@ const VENUE_CONTACT_ROLE_PATTERN =
 const COACH_CONTACT_ROLE_PATTERN =
   /\b(coach|registration|meet reservations?|meetmaker|entry|regional|club admin|team admin|pro member)\b/i;
 const STRUCTURED_ANNOUNCEMENT_PATTERN =
-  /(arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue[_\s]?contact|meet director|director of operations|assistant event coordinator|floor manager|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|sponsor|visit lauderdale|hairstyle to impress|document[_\s-]?version|club participation)/i;
+  /(arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue[_\s]?contact|meet director|director of operations|assistant event coordinator|floor manager|credit\/debit|credit card|debit card|cash is not accepted|cash not accepted|sponsor|visit lauderdale|hairstyle to impress|document[_\s-]?version|club[_\s-]?participation)/i;
 const SUPPRESSED_ANNOUNCEMENT_PATTERN =
-  /(marketing|visit lauderdale|hairstyle to impress|document[_\s-]?version|club participation|venue[_\s]?contact)/i;
+  /(marketing|visit lauderdale|hairstyle to impress|document[_\s-]?version|club[_\s-]?participation|venue[_\s]?contact)/i;
 
 const uniqueBy = <T,>(items: T[], getKey: (item: T) => string): T[] => {
   const out: T[] = [];
@@ -205,7 +205,9 @@ const getAnnouncementItems = (announcements: any) => {
   const items = announcements?.items || announcements?.announcements || [];
   return (Array.isArray(items) ? items : []).map((item: any) => ({
     ...item,
-    title: safeString(item?.title || item?.label),
+    title: /^announcement$/i.test(safeString(item?.title || item?.label))
+      ? ""
+      : safeString(item?.title || item?.label),
     body: safeString(item?.text || item?.message || item?.body || item?.title),
   }));
 };

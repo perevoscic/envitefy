@@ -12,7 +12,7 @@ export default function ChalkStrikeTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/90 shadow-[0_32px_90px_rgba(2,6,23,0.6)] backdrop-blur",
         titleClass:
-          "max-w-4xl text-5xl font-black uppercase leading-[0.9] tracking-[-0.03em] text-pink-50 sm:text-6xl lg:text-7xl [font-family:'Oswald','Arial_Narrow',sans-serif]",
+          "max-w-4xl text-5xl font-black uppercase leading-[0.9] tracking-tighter text-pink-50 sm:text-6xl lg:text-7xl",
         titleStyle: { color: "#fdf2f8" },
         mutedClass: "text-slate-200",
         heroPanelClass: "bg-[linear-gradient(145deg,#020617_0%,#111827_55%,#831843_100%)]",

@@ -112,8 +112,8 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.18),transparent_32%)]",
     titleClass:
-      "max-w-5xl text-5xl font-black uppercase italic leading-[0.88] tracking-[-0.04em] text-cyan-100 sm:text-6xl lg:text-8xl [font-family:'Orbitron','Rajdhani',sans-serif]",
-    titleStyle: { color: "#ecfeff" },
+      "max-w-5xl text-5xl font-sans font-black leading-[0.88] tracking-[-0.04em] text-fuchsia-500 sm:text-6xl lg:text-8xl [text-shadow:0_0_18px_rgba(217,70,239,0.55)]",
+    titleStyle: { color: "#d946ef" },
     subtitleClass: "text-cyan-100/80",
     metaClass: "text-cyan-100/80",
     heroBadgeClass:
@@ -250,8 +250,8 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.34),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(239,68,68,0.2),transparent_24%),radial-gradient(#ffffff_1.5px,transparent_1.5px)] [background-size:auto,auto,14px_14px]",
     titleClass:
-      "max-w-5xl text-5xl font-black uppercase italic leading-[0.86] tracking-[-0.05em] text-white sm:text-6xl lg:text-8xl [font-family:'Archivo_Black','Arial_Black',sans-serif]",
-    titleStyle: { color: "#fff7ed" },
+      "max-w-5xl text-5xl font-mono font-black uppercase leading-[0.86] tracking-[-0.05em] text-[#ffcc00] sm:text-6xl lg:text-8xl [text-shadow:4px_4px_0px_#000000]",
+    titleStyle: { color: "#ffcc00" },
     subtitleClass: "text-yellow-300",
     metaClass: "text-white/85",
     heroBadgeClass:
@@ -297,7 +297,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[linear-gradient(90deg,rgba(220,38,38,0.1)_0,rgba(220,38,38,0.1)_20%,transparent_20%,transparent_100%),linear-gradient(rgba(15,23,42,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.04)_1px,transparent_1px)] bg-[size:100%_100%,28px_28px,28px_28px]",
     titleClass:
-      "max-w-5xl text-5xl font-black uppercase leading-[0.88] tracking-[-0.07em] text-black sm:text-6xl lg:text-8xl [font-family:'Helvetica_Neue','Arial',sans-serif]",
+      "max-w-5xl text-5xl font-sans font-black leading-[0.88] tracking-[-0.07em] text-red-600 sm:text-6xl lg:text-8xl",
     subtitleClass: "text-red-600",
     metaClass: "text-slate-700",
     heroBadgeClass:
@@ -382,8 +382,8 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.05)_50%,rgba(255,255,255,0.05)_75%,transparent_75%,transparent)] bg-[size:28px_28px]",
     titleClass:
-      "max-w-5xl text-5xl font-black uppercase italic leading-[0.88] tracking-[-0.05em] text-zinc-50 sm:text-6xl lg:text-8xl [font-family:'Kanit','Oswald',sans-serif]",
-    titleStyle: { color: "#fafafa" },
+      "max-w-5xl text-5xl font-mono font-black italic leading-[0.88] tracking-[-0.05em] text-zinc-100 sm:text-6xl lg:text-8xl",
+    titleStyle: { color: "#f4f4f5" },
     subtitleClass: "text-zinc-200",
     metaClass: "text-zinc-200/80",
     heroBadgeClass:
@@ -429,7 +429,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top,rgba(191,219,254,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_36%)]",
     titleClass:
-      "max-w-5xl text-5xl font-black leading-[0.88] tracking-[-0.05em] text-transparent sm:text-6xl lg:text-8xl [font-family:'League_Spartan','Montserrat',sans-serif] bg-[linear-gradient(180deg,#ffffff_0%,#c7d2fe_70%,#60a5fa_100%)] bg-clip-text",
+      "max-w-5xl text-5xl font-sans font-black leading-[0.88] tracking-[-0.05em] text-transparent sm:text-6xl lg:text-8xl bg-[linear-gradient(180deg,#ffffff_0%,#c7d2fe_70%,#60a5fa_100%)] bg-clip-text",
     titleStyle: { color: "#eef2ff" },
     subtitleClass: "text-indigo-100/85",
     metaClass: "text-indigo-100/80",
@@ -520,7 +520,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.7),transparent_38%)]",
     titleClass:
-      "max-w-5xl text-5xl font-black leading-[0.88] tracking-[-0.05em] text-slate-900 sm:text-6xl lg:text-8xl [font-family:'Exo_2','Montserrat',sans-serif]",
+      "max-w-5xl text-5xl font-sans font-black leading-[0.88] tracking-[-0.05em] text-slate-900 sm:text-6xl lg:text-8xl",
     subtitleClass: "text-blue-700",
     metaClass: "text-slate-600",
     heroBadgeClass:
@@ -564,7 +564,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.16),transparent_30%)]",
     titleClass:
-      "max-w-5xl text-5xl font-black uppercase italic leading-[0.82] tracking-[-0.08em] text-white sm:text-6xl lg:text-[5.8rem] [font-family:'Orbitron','Rajdhani',sans-serif]",
+      "max-w-5xl text-5xl font-mono font-black italic uppercase leading-[0.82] tracking-[-0.08em] text-white sm:text-6xl lg:text-[5.8rem]",
     titleStyle: { color: "#ffffff", textShadow: "3px 3px 0 #ef4444, -3px -3px 0 #22d3ee" },
     subtitleClass: "text-cyan-300/85",
     metaClass: "text-cyan-100/80",
@@ -611,7 +611,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),transparent_34%)]",
     titleClass:
-      "mx-auto max-w-5xl text-center text-5xl font-black italic leading-[0.84] tracking-[-0.05em] text-white sm:text-6xl lg:text-[5.5rem] [font-family:'Poppins','Avenir_Next',sans-serif]",
+      "mx-auto max-w-5xl text-center text-5xl font-sans font-black italic leading-[0.84] tracking-[-0.05em] text-white sm:text-6xl lg:text-[5.5rem]",
     titleStyle: { color: "#ffffff" },
     subtitleClass: "text-emerald-100/92",
     metaClass: "text-emerald-50/88",
@@ -658,7 +658,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top,rgba(0,255,65,0.08),transparent_34%)]",
     titleClass:
-      "mx-auto max-w-5xl text-center text-5xl font-black uppercase leading-[0.84] tracking-[-0.06em] text-[#00ff41] sm:text-6xl lg:text-[5.4rem] [font-family:'Press_Start_2P','Orbitron','Courier_New',monospace]",
+      "mx-auto max-w-5xl text-center text-5xl font-mono font-black uppercase leading-[0.84] tracking-[-0.06em] text-[#00ff41] sm:text-6xl lg:text-[5.4rem] [text-shadow:4px_4px_0px_#14532d]",
     titleStyle: { color: "#00ff41" },
     subtitleClass: "text-[#00ff41]/80",
     metaClass: "text-[#86efac]",
@@ -705,7 +705,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top_right,rgba(15,23,42,0.04),transparent_28%)]",
     titleClass:
-      "max-w-5xl text-5xl font-light uppercase leading-[0.82] tracking-[-0.07em] text-slate-800 sm:text-6xl lg:text-[5.5rem] [font-family:'Barlow_Condensed','Helvetica_Neue',sans-serif]",
+      "max-w-5xl text-5xl font-sans font-light leading-[0.82] tracking-tight text-slate-800 sm:text-6xl lg:text-[5.5rem]",
     titleStyle: { color: "#1e293b" },
     subtitleClass: "text-slate-500",
     metaClass: "text-slate-500",
@@ -746,13 +746,13 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     pageClass:
       "min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_44%,#ffffff_100%)] text-black",
     shellClass:
-      "overflow-hidden border border-black bg-white shadow-[0_24px_60px_rgba(0,0,0,0.08)]",
+      "overflow-hidden border border-black bg-white shadow-[0_20px_48px_rgba(0,0,0,0.06)]",
     headerClass:
       "relative overflow-hidden bg-black px-5 py-12 sm:px-8 sm:py-16",
     headerOverlayClass:
-      "bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_30%)]",
+      "bg-[linear-gradient(135deg,transparent_0%,transparent_62%,rgba(255,255,255,0.08)_62%,rgba(255,255,255,0.08)_68%,transparent_68%)]",
     titleClass:
-      "mx-auto max-w-5xl text-center text-6xl font-black uppercase leading-[0.78] tracking-[-0.08em] text-white sm:text-7xl lg:text-[6.2rem] [font-family:'League_Spartan','Arial_Black',sans-serif]",
+      "mx-auto max-w-5xl text-center text-6xl font-black leading-[0.78] tracking-tighter text-white sm:text-7xl lg:text-[6.2rem]",
     titleStyle: { color: "#ffffff" },
     subtitleClass: "text-white/72",
     metaClass: "text-white/76",
@@ -799,8 +799,8 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top,rgba(244,114,182,0.18),transparent_34%)]",
     titleClass:
-      "max-w-5xl text-5xl font-black uppercase leading-[0.86] tracking-[-0.05em] text-[#67e8f9] sm:text-6xl lg:text-8xl [font-family:'Orbitron','Rajdhani',sans-serif]",
-    titleStyle: { color: "#67e8f9" },
+      "max-w-5xl text-5xl font-mono font-black leading-[0.86] tracking-[-0.05em] text-pink-400 sm:text-6xl lg:text-8xl [text-shadow:4px_4px_0px_#ff00ff]",
+    titleStyle: { color: "#f472b6" },
     subtitleClass: "text-fuchsia-200/90",
     metaClass: "text-violet-100/82",
     heroBadgeClass:
@@ -846,8 +846,8 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_50%)]",
     titleClass:
-      "max-w-5xl text-6xl font-black uppercase leading-[0.82] tracking-[-0.06em] text-yellow-300 sm:text-7xl lg:text-[5.5rem] [font-family:'Archivo_Black','Arial_Black',sans-serif]",
-    titleStyle: { color: "#fde047" },
+      "max-w-5xl text-7xl font-black leading-[0.82] tracking-[-0.06em] text-yellow-400 sm:text-[8rem] lg:text-[12rem]",
+    titleStyle: { color: "#facc15" },
     subtitleClass: "text-white/82",
     metaClass: "text-white/78",
     heroBadgeClass:
@@ -892,7 +892,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(rgba(255,255,255,0.12)_1px,transparent_1px)] bg-[size:18px_18px]",
     titleClass:
-      "max-w-5xl text-5xl font-bold uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-6xl lg:text-8xl [font-family:'IBM_Plex_Mono','Courier_New',monospace]",
+      "max-w-5xl border-b-2 border-white pb-2 text-5xl font-mono font-light uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-6xl lg:text-8xl",
     titleStyle: { color: "#ffffff" },
     subtitleClass: "text-blue-100/88",
     metaClass: "text-white/78",
@@ -939,7 +939,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     headerOverlayClass:
       "bg-[radial-gradient(circle_at_top_left,rgba(132,204,22,0.16),transparent_30%)]",
     titleClass:
-      "max-w-5xl text-5xl font-black uppercase italic leading-[0.84] tracking-[-0.06em] text-lime-400 sm:text-6xl lg:text-8xl [font-family:'Kanit','Oswald',sans-serif] [-skew-x-6]",
+      "max-w-5xl text-5xl font-sans font-black italic uppercase leading-[0.84] tracking-[-0.06em] text-lime-400 sm:text-6xl lg:text-8xl [-skew-x-6]",
     titleStyle: { color: "#a3e635" },
     subtitleClass: "text-lime-200/78",
     metaClass: "text-lime-100/70",
@@ -985,7 +985,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
       "relative overflow-hidden bg-white px-5 py-12 sm:px-8 sm:py-16",
     headerOverlayClass: "bg-transparent",
     titleClass:
-      "max-w-5xl text-5xl font-light leading-[0.92] tracking-[-0.04em] text-black sm:text-6xl lg:text-8xl [font-family:'Cormorant_Garamond',Georgia,serif]",
+      "max-w-5xl text-5xl font-serif font-thin leading-[0.92] tracking-[1em] text-black sm:text-6xl lg:text-8xl",
     titleStyle: { color: "#000000" },
     subtitleClass: "text-zinc-500",
     metaClass: "text-zinc-600",

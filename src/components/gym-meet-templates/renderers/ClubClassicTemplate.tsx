@@ -12,7 +12,7 @@ export default function ClubClassicTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[24px] border-2 border-slate-900/8 bg-[#fffdf8] shadow-[0_24px_64px_rgba(15,23,42,0.12)]",
         titleClass:
-          "max-w-4xl text-4xl font-black uppercase leading-[0.95] tracking-tight sm:text-5xl lg:text-6xl [font-family:Georgia,'Times_New_Roman',serif]",
+          "max-w-4xl text-4xl font-sans font-black italic leading-[0.95] tracking-tight text-orange-900 sm:text-5xl lg:text-6xl",
         mutedClass: "text-slate-600",
         heroPanelClass: "bg-[linear-gradient(180deg,#fffaf2_0%,#fef2f2_100%)]",
         chipClass:

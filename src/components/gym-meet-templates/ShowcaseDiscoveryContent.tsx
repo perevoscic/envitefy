@@ -118,6 +118,13 @@ export default function ShowcaseDiscoveryContent({
   const panelTitleStyle = theme.sectionTitleStyle;
   const cardTitleClass = panelTitleClass;
   const cardTitleStyle = panelTitleStyle;
+  const sectionEyebrow = (() => {
+    const eyebrow = String(section?.kind || "").replace(/_/g, " ").trim();
+    const label = String(section?.label || "").trim();
+    if (!eyebrow) return "";
+    if (eyebrow.toLowerCase() === label.toLowerCase()) return "";
+    return eyebrow;
+  })();
   const sectionLinks = (Array.isArray(section?.blocks) ? section.blocks : []).flatMap((block: any) => {
     if (block?.type === "link-list" && Array.isArray(block.links)) return block.links;
     if (block?.type === "cta" && block.action) return [block.action];
@@ -305,9 +312,11 @@ export default function ShowcaseDiscoveryContent({
     <section className={theme.panelClass}>
       <div className="space-y-6">
         <div>
-          <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
-            {section.kind.replace(/_/g, " ")}
-          </p>
+          {sectionEyebrow ? (
+            <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
+              {sectionEyebrow}
+            </p>
+          ) : null}
           <h2
             className={`mt-2 text-3xl font-black tracking-tight sm:text-4xl ${panelTitleClass}`}
             style={panelTitleStyle}

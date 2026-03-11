@@ -12,7 +12,7 @@ export default function BentoBoxTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[34px] border border-slate-200 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.12)]",
         titleClass:
-          "max-w-4xl text-4xl font-black leading-[0.96] tracking-tight sm:text-5xl lg:text-6xl [font-family:'Trebuchet_MS','Avenir_Next',sans-serif]",
+          "max-w-4xl text-4xl font-sans font-light uppercase leading-[0.96] tracking-widest text-slate-900 sm:text-5xl lg:text-6xl",
         mutedClass: "text-slate-600",
         heroPanelClass:
           "bg-[linear-gradient(145deg,#ffffff_0%,#eef2ff_55%,#e0e7ff_100%)]",

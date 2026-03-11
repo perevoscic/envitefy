@@ -169,6 +169,16 @@ const GYM_FONTS = [
     css: "'Barlow Condensed', 'Roboto Condensed', sans-serif",
   },
   {
+    id: "space-mono",
+    name: "Space Mono",
+    css: "'Space Mono', 'IBM Plex Mono', monospace",
+  },
+  {
+    id: "ibm-plex-mono",
+    name: "IBM Plex Mono",
+    css: "'IBM Plex Mono', 'Space Mono', monospace",
+  },
+  {
     id: "rajdhani",
     name: "Rajdhani",
     css: "'Rajdhani', 'Roboto Condensed', sans-serif",
@@ -199,6 +209,11 @@ const GYM_FONTS = [
     name: "Orbitron",
     css: "'Orbitron', 'Audiowide', sans-serif",
   },
+  {
+    id: "audiowide",
+    name: "Audiowide",
+    css: "'Audiowide', 'Orbitron', sans-serif",
+  },
   { id: "righteous", name: "Righteous", css: "'Righteous', 'Baloo', cursive" },
   {
     id: "syncopate",
@@ -216,6 +231,18 @@ const GYM_FONTS = [
     name: "Cormorant Garamond",
     css: "'Cormorant Garamond', 'Garamond', serif",
   },
+  {
+    id: "manrope",
+    name: "Manrope",
+    css: "'Manrope', 'Inter', sans-serif",
+  },
+  { id: "sora", name: "Sora", css: "'Sora', 'Inter', sans-serif" },
+  {
+    id: "press-start-2p",
+    name: "Press Start 2P",
+    css: "'Press Start 2P', 'IBM Plex Mono', monospace",
+  },
+  { id: "bungee", name: "Bungee", css: "'Bungee', 'Impact', sans-serif" },
 ];
 
 const FONT_SIZE_OPTIONS = [
@@ -522,44 +549,29 @@ const inferHostGymFromDiscovery = (
   return normalizeHostGymName(gymNameLine);
 };
 
-const buildDiscoveryMeetDetailsDescription = (parseResult: any): string => {
-  const parseMeetDetails = parseResult?.meetDetails || {};
-  const lines = uniqueLines(
-    [
-      asTrimmedString(parseResult?.dates)
-        ? `Meet dates: ${asTrimmedString(parseResult.dates)}`
-        : "",
-      asTrimmedString(parseMeetDetails?.doorsOpen)
-        ? `Doors open: ${asTrimmedString(parseMeetDetails.doorsOpen)}`
-        : "",
-      asTrimmedString(parseMeetDetails?.arrivalGuidance)
-        ? `Arrival guidance: ${asTrimmedString(parseMeetDetails.arrivalGuidance)}`
-        : "",
-      asTrimmedString(parseMeetDetails?.registrationInfo)
-        ? `Registration: ${asTrimmedString(parseMeetDetails.registrationInfo)}`
-        : "",
-      asTrimmedString(parseMeetDetails?.facilityLayout)
-        ? `Facility layout: ${asTrimmedString(parseMeetDetails.facilityLayout)}`
-        : "",
-      asTrimmedString(parseMeetDetails?.scoringInfo)
-        ? `Scoring: ${asTrimmedString(parseMeetDetails.scoringInfo)}`
-        : "",
-      asTrimmedString(parseMeetDetails?.resultsInfo)
-        ? `Results: ${asTrimmedString(parseMeetDetails.resultsInfo)}`
-        : "",
-      asTrimmedString(parseMeetDetails?.rotationSheetsInfo)
-        ? `Rotation sheets: ${asTrimmedString(parseMeetDetails.rotationSheetsInfo)}`
-        : "",
-      asTrimmedString(parseMeetDetails?.awardsInfo)
-        ? `Awards: ${asTrimmedString(parseMeetDetails.awardsInfo)}`
-        : "",
-      ...(Array.isArray(parseMeetDetails?.operationalNotes)
-        ? parseMeetDetails.operationalNotes
-        : []),
-    ],
-    16
-  );
-  return lines.join("\n");
+const DISCOVERY_GENERATED_DETAILS_PREFIX =
+  /^(meet dates?:|doors open:|arrival guidance:|registration:|facility layout:|scoring:|results:|rotation sheets?:|awards:|hall layout:|food policy:|hydration:|safety:|animals:)/i;
+const DISCOVERY_GENERATED_DETAILS_INLINE =
+  /(spectator admission|on-site adult|on-site senior|on-site child|weekend pass|pre[-\s]?sale|ticket(?:s)?|credit\/debit|debit\/credit|credit card|debit card|cash is not accepted|cash not accepted|no cash)/i;
+const DISCOVERY_GENERATED_DATE_LINE =
+  /^(?:(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s*[-–]\s*\d{1,2})?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}(?:\s*[-–]\s*\d{1,2}\/\d{1,2}\/\d{2,4})?)$/i;
+
+const stripDiscoveryGeneratedDetails = (value: unknown): string => {
+  const text = asTrimmedString(value);
+  if (!text) return "";
+  return uniqueLines(
+    text
+      .split(/\n+/)
+      .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+      .filter(Boolean)
+      .filter(
+        (line) =>
+          !DISCOVERY_GENERATED_DETAILS_PREFIX.test(line) &&
+          !DISCOVERY_GENERATED_DETAILS_INLINE.test(line) &&
+          !DISCOVERY_GENERATED_DATE_LINE.test(line)
+      ),
+    8
+  ).join("\n");
 };
 
 const normalizeIsoDate = (value: unknown): string => {
@@ -1129,13 +1141,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const useParseDrivenSections = Boolean(
       editEventId && (isDiscoveryEdit || hasDiscoveryParsePayload)
     );
-    const syncedMeetDetailsDescription = useMemo(
-      () =>
-        useParseDrivenSections
-          ? buildDiscoveryMeetDetailsDescription(parseResult)
-          : "",
-      [parseResult, useParseDrivenSections]
-    );
     const visibleAdvancedSections = useMemo(() => {
       const allSections = config.advancedSections || [];
       if (!useParseDrivenSections) return allSections;
@@ -1214,13 +1219,32 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return filled >= 5 ? "ready" : "in-progress";
     })();
 
+    const hasStructuredDetailsContent = Boolean(
+      asTrimmedString(
+        advancedState?.meet?.warmUpTime ||
+          advancedState?.meet?.judgingNotes ||
+          advancedState?.meet?.sessionNumber ||
+          advancedState?.meet?.doorsOpen ||
+          advancedState?.meet?.arrivalGuidance ||
+          advancedState?.meet?.registrationInfo ||
+          advancedState?.meet?.facilityLayout ||
+          advancedState?.meet?.scoringInfo ||
+          advancedState?.meet?.resultsInfo ||
+          advancedState?.meet?.rotationSheetsInfo ||
+          advancedState?.meet?.awardsInfo
+      )
+    );
     const detailsStatus: "not-started" | "in-progress" | "ready" = (() => {
       const base = Boolean(data.details?.trim());
       const extrasFilled = Object.values(data.extra || {}).filter((value) =>
         String(value || "").trim()
       ).length;
-      if (!base && extrasFilled === 0) return "not-started";
-      if (base && extrasFilled >= 2) return "ready";
+      if (!base && !hasStructuredDetailsContent && extrasFilled === 0) {
+        return "not-started";
+      }
+      if (hasStructuredDetailsContent || (base && extrasFilled >= 2)) {
+        return "ready";
+      }
       return "in-progress";
     })();
 
@@ -1243,7 +1267,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       !data.venue?.trim() && !data.address?.trim()
         ? "Venue or address"
         : null,
-      !(data.details || "").trim() ? "Description" : null,
+      !((data.details || "").trim() || hasStructuredDetailsContent) ? "Details" : null,
     ].filter(Boolean) as string[];
     const navItems = useMemo(
       () =>
@@ -1403,6 +1427,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             accessControl?.passcodeHash || accessControl?.requirePasscode
           );
 
+          const editableDetails = isExistingDiscoveryEvent
+            ? stripDiscoveryGeneratedDetails(existing.details || existing.description)
+            : existing.details || existing.description || "";
+
           setData((prev) => ({
             ...prev,
             title: json?.title || existing.title || prev.title,
@@ -1419,7 +1447,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             state: existing.state || prev.state,
             address: existing.address || prev.address,
             venue: existing.venue || existing.location || prev.venue,
-            details: existing.details || existing.description || prev.details,
+            details: editableDetails,
             hero: existing.heroImage || existing.hero || prev.hero,
             pageTemplateId: resolveGymMeetTemplateId(existing),
             rsvpEnabled:
@@ -1678,16 +1706,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return () => observer.disconnect();
     }, [navItems]);
 
-    useEffect(() => {
-      if (!useParseDrivenSections) return;
-      if (!syncedMeetDetailsDescription) return;
-      setData((prev) =>
-        prev.details === syncedMeetDetailsDescription
-          ? prev
-          : { ...prev, details: syncedMeetDetailsDescription }
-      );
-    }, [syncedMeetDetailsDescription, useParseDrivenSections]);
-
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
@@ -1793,6 +1811,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             hostGym: data.hostGym || undefined,
             city: data.city || undefined,
             state: data.state || undefined,
+            details: data.details || undefined,
             description: data.details || undefined,
             rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
             rsvpEnabled: data.rsvpEnabled,
@@ -2927,6 +2946,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         hostGym: data.hostGym || undefined,
         city: data.city || undefined,
         state: data.state || undefined,
+        details: data.details || undefined,
         description: data.details || undefined,
         rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
         rsvpEnabled: data.rsvpEnabled,
