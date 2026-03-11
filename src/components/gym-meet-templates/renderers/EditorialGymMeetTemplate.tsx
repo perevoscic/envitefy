@@ -31,15 +31,17 @@ const formatStatus = (value: string) => {
 const Section = ({
   title,
   eyebrow,
+  id,
   className,
   children,
 }: {
   title: string;
   eyebrow?: string;
+  id?: string;
   className: string;
   children: React.ReactNode;
 }) => (
-  <section className={className}>
+  <section id={id} className={`${className} scroll-mt-28`}>
     {eyebrow ? (
       <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-60">{eyebrow}</p>
     ) : null}
@@ -97,6 +99,9 @@ export default function EditorialGymMeetTemplate({
     : Array.isArray(model.gear)
     ? model.gear
     : [];
+  const hasQuickAccessSection =
+    model.quickLinks.length > 0 ||
+    Boolean(model.coachPhone || model.coach || model.assistantCoach);
   const heroStyle = model.heroImage
     ? {
         backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.14), rgba(2,6,23,0.42)), url(${model.heroImage})`,
@@ -166,6 +171,7 @@ export default function EditorialGymMeetTemplate({
               buttonClass={variant.secondaryButtonClass}
               onShare={onShare}
               onCalendar={onCalendar}
+              resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
             />
           </div>
 
@@ -400,7 +406,12 @@ export default function EditorialGymMeetTemplate({
             ) : null}
 
             {(model.quickLinks.length > 0 || model.coachPhone || model.coach || model.assistantCoach) ? (
-              <Section title="Quick Access" eyebrow="Contacts" className={variant.sectionClass}>
+              <Section
+                id="quick-access"
+                title="Quick Access"
+                eyebrow="Contacts"
+                className={variant.sectionClass}
+              >
                 {(model.coach || model.assistantCoach) ? (
                   <div className={`mb-4 grid gap-3 sm:grid-cols-2 ${variant.dividerClass || ""}`}>
                     {model.coach ? (

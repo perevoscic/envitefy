@@ -48,6 +48,16 @@ type MeetInfo = {
   rotationOrder: string[];
   judgingNotes: string;
   scoresLink: string;
+  doorsOpen?: string;
+  arrivalGuidance?: string;
+  registrationInfo?: string;
+  facilityLayout?: string;
+  scoringInfo?: string;
+  resultsInfo?: string;
+  rotationSheetsInfo?: string;
+  awardsInfo?: string;
+  sessionWindows?: Array<{ date?: string; start?: string; end?: string; note?: string }>;
+  operationalNotes?: string[];
 };
 
 type PracticeBlock = {
@@ -78,6 +88,12 @@ type LogisticsInfo = {
   feeDueDate: string;
   feeAmount: string;
   gymLayoutImage?: string;
+  parking?: string;
+  trafficAlerts?: string;
+  rideShare?: string;
+  accessibility?: string;
+  parkingLinks?: { label: string; url: string }[];
+  parkingPricingLinks?: { label: string; url: string }[];
   additionalDocuments: {
     id: string;
     name: string;
@@ -85,6 +101,31 @@ type LogisticsInfo = {
     mimeType?: string;
   }[];
   waiverLinks?: string[];
+};
+
+type CoachesInfo = {
+  enabled: boolean;
+  signIn: string;
+  attire: string;
+  hospitality: string;
+  floorAccess: string;
+  scratches: string;
+  floorMusic: string;
+  rotationSheets: string;
+  awards: string;
+  regionalCommitment: string;
+  qualification: string;
+  meetFormat: string;
+  equipment: string;
+  refundPolicy: string;
+  paymentInstructions: string;
+  entryFees: Array<{ id: string; label: string; amount: string; note: string }>;
+  teamFees: Array<{ id: string; label: string; amount: string; note: string }>;
+  lateFees: Array<{ id: string; label: string; amount: string; trigger: string; note: string }>;
+  deadlines: Array<{ id: string; label: string; date: string; note: string }>;
+  contacts: Array<{ id: string; role: string; name: string; email: string; phone: string }>;
+  links: Array<{ id: string; label: string; url: string }>;
+  notes: string[];
 };
 
 type GearItem = {
@@ -736,6 +777,16 @@ const meetSection = {
     judgingNotes:
       "This is a sanctioned USAG meet. Judges are from Region 5. Remember: salute before and after each routine. Deductions for steps on dismounts. No chalk on beam except hands. Good luck, team!",
     scoresLink: "https://meetscoresonline.com/results/2025-illinois-state-inv",
+    doorsOpen: "",
+    arrivalGuidance: "",
+    registrationInfo: "",
+    facilityLayout: "",
+    scoringInfo: "",
+    resultsInfo: "",
+    rotationSheetsInfo: "",
+    awardsInfo: "",
+    sessionWindows: [],
+    operationalNotes: [],
   } as MeetInfo,
   renderEditor: ({ state, setState, inputClass, textareaClass }) => {
     const meet: MeetInfo = state || {};
@@ -888,6 +939,51 @@ const meetSection = {
             Link to live scoring (MeetScoresOnline, MyUSAGym, etc.)
           </p>
         </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <BufferedTextarea
+            className={textareaClass}
+            placeholder="Doors open details"
+            value={meet.doorsOpen || ""}
+            onCommit={(value) => updateField("doorsOpen", value)}
+            rows={2}
+          />
+          <BufferedTextarea
+            className={textareaClass}
+            placeholder="Arrival guidance"
+            value={meet.arrivalGuidance || ""}
+            onCommit={(value) => updateField("arrivalGuidance", value)}
+            rows={2}
+          />
+          <BufferedTextarea
+            className={textareaClass}
+            placeholder="Registration info"
+            value={meet.registrationInfo || ""}
+            onCommit={(value) => updateField("registrationInfo", value)}
+            rows={2}
+          />
+          <BufferedTextarea
+            className={textareaClass}
+            placeholder="Facility layout"
+            value={meet.facilityLayout || ""}
+            onCommit={(value) => updateField("facilityLayout", value)}
+            rows={2}
+          />
+          <BufferedTextarea
+            className={textareaClass}
+            placeholder="Results or live scoring details"
+            value={meet.resultsInfo || ""}
+            onCommit={(value) => updateField("resultsInfo", value)}
+            rows={2}
+          />
+          <BufferedTextarea
+            className={textareaClass}
+            placeholder="Awards details"
+            value={meet.awardsInfo || ""}
+            onCommit={(value) => updateField("awardsInfo", value)}
+            rows={2}
+          />
+        </div>
       </div>
     );
   },
@@ -905,7 +1001,11 @@ const meetSection = {
       meet.sessionNumber ||
       meet.warmUpTime ||
       meet.marchInTime ||
-      meet.judgingNotes;
+      meet.judgingNotes ||
+      meet.doorsOpen ||
+      meet.arrivalGuidance ||
+      meet.resultsInfo ||
+      meet.awardsInfo;
     if (!hasData) return null;
 
     const formatTime = (t: string) => {
@@ -1019,6 +1119,16 @@ const meetSection = {
             {meet.judgingNotes}
           </div>
         )}
+        {meet.resultsInfo ? (
+          <div className={`mt-3 text-sm opacity-80 whitespace-pre-wrap ${textClass}`} style={bodyShadow}>
+            Results: {meet.resultsInfo}
+          </div>
+        ) : null}
+        {meet.awardsInfo ? (
+          <div className={`mt-2 text-sm opacity-80 whitespace-pre-wrap ${textClass}`} style={bodyShadow}>
+            Awards: {meet.awardsInfo}
+          </div>
+        ) : null}
         {meet.scoresLink && (
           <a
             href={meet.scoresLink}
@@ -1410,6 +1520,12 @@ const logisticsSection = {
       .toISOString()
       .split("T")[0],
     feeAmount: "$125 per athlete",
+    parking: "",
+    trafficAlerts: "",
+    rideShare: "",
+    accessibility: "",
+    parkingLinks: [],
+    parkingPricingLinks: [],
     gymLayoutImage: "",
     additionalDocuments: [
       {
@@ -2021,7 +2137,315 @@ const logisticsSection = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 5: GEAR & UNIFORM CHECKLIST
+// SECTION 5: COACHES
+// ═══════════════════════════════════════════════════════════════════════════
+
+const coachesSection = {
+  id: "coaches",
+  menuTitle: "Coaches",
+  menuDesc: "Coach operations, registration fees, payment rules, deadlines.",
+  initialState: {
+    enabled: false,
+    signIn: "",
+    attire: "",
+    hospitality: "",
+    floorAccess: "",
+    scratches: "",
+    floorMusic: "",
+    rotationSheets: "",
+    awards: "",
+    regionalCommitment: "",
+    qualification: "",
+    meetFormat: "",
+    equipment: "",
+    refundPolicy: "",
+    paymentInstructions: "",
+    entryFees: [],
+    teamFees: [],
+    lateFees: [],
+    deadlines: [],
+    contacts: [],
+    links: [],
+    notes: [],
+  } as CoachesInfo,
+  renderEditor: ({ state, setState, inputClass, textareaClass }) => {
+    const coaches: CoachesInfo = state || {};
+    const updateField = (field: string, value: any) =>
+      setState((s: any) => ({ ...s, [field]: value }));
+    const addItem = (field: string, item: any) =>
+      setState((s: any) => ({ ...s, [field]: [...(s?.[field] || []), item] }));
+    const updateItem = (field: string, id: string, key: string, value: string) =>
+      setState((s: any) => ({
+        ...s,
+        [field]: (s?.[field] || []).map((item: any) =>
+          item.id === id ? { ...item, [key]: value } : item
+        ),
+      }));
+    const removeItem = (field: string, id: string) =>
+      setState((s: any) => ({
+        ...s,
+        [field]: (s?.[field] || []).filter((item: any) => item.id !== id),
+      }));
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <ClipboardList className="text-slate-700 mt-0.5" size={20} />
+            <div>
+              <h4 className="font-semibold text-slate-900">Coach Packet Details</h4>
+              <p className="text-sm text-slate-600">
+                Keep coach-only pricing, payment, deadlines, sign-in rules, and operational notes here.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <SectionToggle
+          label="Show Coaches Section"
+          checked={coaches.enabled !== false}
+          onChange={(value) => updateField("enabled", value)}
+        />
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[
+            ["signIn", "Sign-In"],
+            ["hospitality", "Hospitality"],
+            ["floorAccess", "Floor Access"],
+            ["scratches", "Scratches"],
+            ["floorMusic", "Floor Music"],
+            ["rotationSheets", "Rotation Sheets"],
+            ["awards", "Awards"],
+            ["regionalCommitment", "Regional Commitment"],
+            ["qualification", "Qualification"],
+            ["meetFormat", "Meet Format"],
+            ["equipment", "Equipment"],
+            ["refundPolicy", "Refund Policy"],
+            ["paymentInstructions", "Payment Instructions"],
+          ].map(([field, label]) => (
+            <div key={field}>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                {label}
+              </label>
+              <BufferedTextarea
+                className={textareaClass}
+                value={(coaches as any)?.[field] || ""}
+                onCommit={(value) => updateField(field, value)}
+                rows={2}
+              />
+            </div>
+          ))}
+          <div className="md:col-span-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              Attire
+            </label>
+            <BufferedTextarea
+              className={textareaClass}
+              placeholder="Business casual, closed-toe athletic shoes, no hats..."
+              value={coaches.attire || ""}
+              onCommit={(value) => updateField("attire", value)}
+              rows={2}
+            />
+          </div>
+        </div>
+
+        {[
+          ["entryFees", "Entry Fees", { label: "Entry fee", amount: "", note: "" }],
+          ["teamFees", "Team Fees", { label: "Team fee", amount: "", note: "" }],
+        ].map(([field, label, seed]: any) => (
+          <div key={field} className="space-y-3 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-slate-700">{label}</h4>
+              <button
+                type="button"
+                onClick={() => addItem(field, { id: genId(), ...seed })}
+                className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+              >
+                <Plus size={14} /> Add
+              </button>
+            </div>
+            {(coaches as any)?.[field]?.map((item: any) => (
+              <div key={item.id} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-3">
+                <BufferedInput
+                  className={inputClass}
+                  placeholder="Label"
+                  value={item.label || ""}
+                  onCommit={(value) => updateItem(field, item.id, "label", value)}
+                />
+                <BufferedInput
+                  className={inputClass}
+                  placeholder="$0.00"
+                  value={item.amount || ""}
+                  onCommit={(value) => updateItem(field, item.id, "amount", value)}
+                />
+                <BufferedInput
+                  className={inputClass}
+                  placeholder="Note"
+                  value={item.note || ""}
+                  onCommit={(value) => updateItem(field, item.id, "note", value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeItem(field, item.id)}
+                  className="justify-self-start text-sm text-red-600 hover:text-red-800"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        ))}
+
+        <div className="space-y-3 border-t pt-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-slate-700">Late Fees</h4>
+            <button
+              type="button"
+              onClick={() =>
+                addItem("lateFees", {
+                  id: genId(),
+                  label: "Late fee",
+                  amount: "",
+                  trigger: "",
+                  note: "",
+                })
+              }
+              className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+            >
+              <Plus size={14} /> Add
+            </button>
+          </div>
+          {(coaches.lateFees || []).map((item) => (
+            <div key={item.id} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-4">
+              <BufferedInput className={inputClass} placeholder="Label" value={item.label || ""} onCommit={(value) => updateItem("lateFees", item.id, "label", value)} />
+              <BufferedInput className={inputClass} placeholder="$0.00" value={item.amount || ""} onCommit={(value) => updateItem("lateFees", item.id, "amount", value)} />
+              <BufferedInput className={inputClass} placeholder="Trigger" value={item.trigger || ""} onCommit={(value) => updateItem("lateFees", item.id, "trigger", value)} />
+              <BufferedInput className={inputClass} placeholder="Note" value={item.note || ""} onCommit={(value) => updateItem("lateFees", item.id, "note", value)} />
+              <button type="button" onClick={() => removeItem("lateFees", item.id)} className="justify-self-start text-sm text-red-600 hover:text-red-800">
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {[
+          ["deadlines", "Deadlines", { label: "Deadline", date: "", note: "" }],
+          ["contacts", "Contacts", { role: "Coach contact", name: "", email: "", phone: "" }],
+          ["links", "Links", { label: "Coach link", url: "" }],
+        ].map(([field, label, seed]: any) => (
+          <div key={field} className="space-y-3 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-slate-700">{label}</h4>
+              <button
+                type="button"
+                onClick={() => addItem(field, { id: genId(), ...seed })}
+                className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+              >
+                <Plus size={14} /> Add
+              </button>
+            </div>
+            {(coaches as any)?.[field]?.map((item: any) => (
+              <div key={item.id} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-4">
+                {field === "deadlines" ? (
+                  <>
+                    <BufferedInput className={inputClass} placeholder="Label" value={item.label || ""} onCommit={(value) => updateItem(field, item.id, "label", value)} />
+                    <BufferedInput className={inputClass} placeholder="YYYY-MM-DD" value={item.date || ""} onCommit={(value) => updateItem(field, item.id, "date", value)} />
+                    <BufferedInput className={inputClass} placeholder="Note" value={item.note || ""} onCommit={(value) => updateItem(field, item.id, "note", value)} />
+                  </>
+                ) : null}
+                {field === "contacts" ? (
+                  <>
+                    <BufferedInput className={inputClass} placeholder="Role" value={item.role || ""} onCommit={(value) => updateItem(field, item.id, "role", value)} />
+                    <BufferedInput className={inputClass} placeholder="Name" value={item.name || ""} onCommit={(value) => updateItem(field, item.id, "name", value)} />
+                    <BufferedInput className={inputClass} placeholder="Email" value={item.email || ""} onCommit={(value) => updateItem(field, item.id, "email", value)} />
+                    <BufferedInput className={inputClass} placeholder="Phone" value={item.phone || ""} onCommit={(value) => updateItem(field, item.id, "phone", value)} />
+                  </>
+                ) : null}
+                {field === "links" ? (
+                  <>
+                    <BufferedInput className={inputClass} placeholder="Label" value={item.label || ""} onCommit={(value) => updateItem(field, item.id, "label", value)} />
+                    <div className="md:col-span-2">
+                      <BufferedInput className={inputClass} placeholder="https://..." value={item.url || ""} onCommit={(value) => updateItem(field, item.id, "url", value)} />
+                    </div>
+                  </>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => removeItem(field, item.id)}
+                  className="justify-self-start text-sm text-red-600 hover:text-red-800"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        ))}
+
+        <div className="border-t pt-4">
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            Additional Notes
+          </label>
+          <BufferedTextarea
+            className={textareaClass}
+            placeholder="One note per line"
+            value={(coaches.notes || []).join("\n")}
+            onCommit={(value) =>
+              updateField(
+                "notes",
+                value
+                  .split(/\n+/)
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+              )
+            }
+            rows={4}
+          />
+        </div>
+      </div>
+    );
+  },
+  renderPreview: ({ state, textClass, accentClass, headingShadow, bodyShadow, titleColor }) => {
+    const coaches: CoachesInfo = state || {};
+    const hasData =
+      coaches.enabled !== false &&
+      (coaches.signIn ||
+        coaches.hospitality ||
+        coaches.floorAccess ||
+        coaches.rotationSheets ||
+        coaches.paymentInstructions ||
+        coaches.entryFees?.length ||
+        coaches.teamFees?.length ||
+        coaches.lateFees?.length ||
+        coaches.deadlines?.length ||
+        coaches.contacts?.length);
+    if (!hasData) return null;
+
+    return (
+      <>
+        <h2
+          className={`text-2xl mb-4 ${accentClass}`}
+          style={{ ...headingShadow, ...(titleColor || {}) }}
+        >
+          Coaches
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[coaches.signIn && `Sign-In: ${coaches.signIn}`, coaches.hospitality && `Hospitality: ${coaches.hospitality}`, coaches.floorAccess && `Floor access: ${coaches.floorAccess}`, coaches.rotationSheets && `Rotation sheets: ${coaches.rotationSheets}`, coaches.paymentInstructions && `Payment: ${coaches.paymentInstructions}`]
+            .filter(Boolean)
+            .map((item) => (
+              <div key={item} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <p className={`text-sm whitespace-pre-wrap ${textClass}`} style={bodyShadow}>
+                  {item}
+                </p>
+              </div>
+            ))}
+        </div>
+      </>
+    );
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 6: GEAR & UNIFORM CHECKLIST
 // ═══════════════════════════════════════════════════════════════════════════
 
 const gearSection = {
@@ -3276,6 +3700,7 @@ const config = {
     meetSection,
     practiceSection,
     logisticsSection,
+    coachesSection,
     gearSection,
     volunteersSection,
     announcementsSection,
@@ -3288,6 +3713,7 @@ export {
   meetSection,
   practiceSection,
   logisticsSection,
+  coachesSection,
   gearSection,
   volunteersSection,
   announcementsSection,
@@ -3298,6 +3724,7 @@ export type {
   MeetInfo,
   PracticeBlock,
   LogisticsInfo,
+  CoachesInfo,
   GearItem,
   VolunteerSlot,
   CarpoolOffer,

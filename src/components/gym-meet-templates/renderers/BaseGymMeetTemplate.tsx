@@ -31,6 +31,7 @@ const formatStatus = (value: string) => {
 const BaseSection = ({
   title,
   eyebrow,
+  id,
   className,
   titleClass,
   titleStyle,
@@ -38,12 +39,13 @@ const BaseSection = ({
 }: {
   title: string;
   eyebrow?: string;
+  id?: string;
   className: string;
   titleClass?: string;
   titleStyle?: React.CSSProperties;
   children: React.ReactNode;
 }) => (
-  <section className={className}>
+  <section id={id} className={`${className} scroll-mt-28`}>
     {eyebrow ? (
       <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-60">{eyebrow}</p>
     ) : null}
@@ -105,6 +107,7 @@ export default function BaseGymMeetTemplate({
     : Array.isArray(model.gear)
     ? model.gear
     : [];
+  const hasQuickAccessSection = model.quickLinks.length > 0 || Boolean(model.coachPhone);
 
   const heroStyle = model.heroImage
     ? {
@@ -178,6 +181,7 @@ export default function BaseGymMeetTemplate({
               buttonClass={variant.secondaryButtonClass}
               onShare={onShare}
               onCalendar={onCalendar}
+              resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
             />
           </div>
 
@@ -444,6 +448,7 @@ export default function BaseGymMeetTemplate({
 
             {(model.quickLinks.length > 0 || model.coachPhone) ? (
               <BaseSection
+                id="quick-access"
                 title="Quick Access"
                 eyebrow="Links"
                 className={variant.sectionClass}

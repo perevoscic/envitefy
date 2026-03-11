@@ -544,6 +544,15 @@ const buildDiscoveryMeetDetailsDescription = (parseResult: any): string => {
       asTrimmedString(parseMeetDetails?.scoringInfo)
         ? `Scoring: ${asTrimmedString(parseMeetDetails.scoringInfo)}`
         : "",
+      asTrimmedString(parseMeetDetails?.resultsInfo)
+        ? `Results: ${asTrimmedString(parseMeetDetails.resultsInfo)}`
+        : "",
+      asTrimmedString(parseMeetDetails?.rotationSheetsInfo)
+        ? `Rotation sheets: ${asTrimmedString(parseMeetDetails.rotationSheetsInfo)}`
+        : "",
+      asTrimmedString(parseMeetDetails?.awardsInfo)
+        ? `Awards: ${asTrimmedString(parseMeetDetails.awardsInfo)}`
+        : "",
       ...(Array.isArray(parseMeetDetails?.operationalNotes)
         ? parseMeetDetails.operationalNotes
         : []),
@@ -982,7 +991,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         advancedState?.meet?.marchInTime ||
         advancedState?.meet?.startApparatus ||
         advancedState?.meet?.judgingNotes ||
-        advancedState?.meet?.scoresLink
+        advancedState?.meet?.scoresLink ||
+        advancedState?.meet?.doorsOpen ||
+        advancedState?.meet?.arrivalGuidance ||
+        advancedState?.meet?.registrationInfo ||
+        advancedState?.meet?.facilityLayout ||
+        advancedState?.meet?.scoringInfo ||
+        advancedState?.meet?.resultsInfo ||
+        advancedState?.meet?.rotationSheetsInfo ||
+        advancedState?.meet?.awardsInfo
     );
     const hasPractice =
       advancedState?.practice?.enabled !== false &&
@@ -1033,6 +1050,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const parseLogistics = parseResult?.logistics || {};
     const parseGear = parseResult?.gear || {};
     const parseVolunteers = parseResult?.volunteers || {};
+    const parseCoachInfo = parseResult?.coachInfo || {};
     const parseHasRoster = hasAnyText(
       parseAthlete?.name,
       parseAthlete?.level,
@@ -1044,6 +1062,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       parseMeetDetails?.marchIn,
       parseMeetDetails?.rotationOrder,
       parseMeetDetails?.judgingNotes,
+      parseMeetDetails?.doorsOpen,
+      parseMeetDetails?.arrivalGuidance,
+      parseMeetDetails?.registrationInfo,
+      parseMeetDetails?.facilityLayout,
+      parseMeetDetails?.scoringInfo,
+      parseMeetDetails?.resultsInfo,
+      parseMeetDetails?.rotationSheetsInfo,
+      parseMeetDetails?.awardsInfo,
       parseAthlete?.stretchTime,
       parseAthlete?.marchIn,
       parseAthlete?.session
@@ -1066,6 +1092,31 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const parseHasAnnouncements =
       Array.isArray(parseCommunications?.announcements) &&
       parseCommunications.announcements.length > 0;
+    const parseHasCoaches =
+      hasAnyText(
+        parseCoachInfo?.signIn,
+        parseCoachInfo?.attire,
+        parseCoachInfo?.hospitality,
+        parseCoachInfo?.floorAccess,
+        parseCoachInfo?.scratches,
+        parseCoachInfo?.floorMusic,
+        parseCoachInfo?.rotationSheets,
+        parseCoachInfo?.awards,
+        parseCoachInfo?.regionalCommitment,
+        parseCoachInfo?.qualification,
+        parseCoachInfo?.meetFormat,
+        parseCoachInfo?.equipment,
+        parseCoachInfo?.refundPolicy,
+        parseCoachInfo?.paymentInstructions
+      ) ||
+      (Array.isArray(parseCoachInfo?.entryFees) && parseCoachInfo.entryFees.length > 0) ||
+      (Array.isArray(parseCoachInfo?.teamFees) && parseCoachInfo.teamFees.length > 0) ||
+      (Array.isArray(parseCoachInfo?.lateFees) && parseCoachInfo.lateFees.length > 0) ||
+      (Array.isArray(parseCoachInfo?.deadlines) && parseCoachInfo.deadlines.length > 0) ||
+      (Array.isArray(parseCoachInfo?.contacts) && parseCoachInfo.contacts.length > 0) ||
+      (Array.isArray(parseCoachInfo?.links) && parseCoachInfo.links.length > 0) ||
+      (Array.isArray(loadedDiscoverySource?.extractionMeta?.coachPageHints) &&
+        loadedDiscoverySource.extractionMeta.coachPageHints.length > 0);
     const parseHasGymLayoutImage = hasAnyText(
       loadedDiscoverySource?.extractionMeta?.gymLayoutImageDataUrl
     );
@@ -1103,6 +1154,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               parseHasGymLayoutImage ||
               parseHasGymLayoutFacts
             );
+          case "coaches":
+            return (
+              hasAnyText(
+                advancedState?.coaches?.signIn,
+                advancedState?.coaches?.hospitality,
+                advancedState?.coaches?.floorAccess,
+                advancedState?.coaches?.paymentInstructions
+              ) ||
+              (advancedState?.coaches?.entryFees?.length ?? 0) > 0 ||
+              (advancedState?.coaches?.teamFees?.length ?? 0) > 0 ||
+              (advancedState?.coaches?.lateFees?.length ?? 0) > 0 ||
+              parseHasCoaches
+            );
           case "gear":
             return hasGear || parseHasGear;
           case "volunteers":
@@ -1123,6 +1187,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       hasRoster,
       hasVolunteers,
       parseHasAnnouncements,
+      parseHasCoaches,
       parseHasGear,
       parseHasGymLayoutImage,
       parseHasGymLayoutFacts,

@@ -31,15 +31,17 @@ const formatStatus = (value: string) => {
 const Section = ({
   title,
   eyebrow,
+  id,
   className,
   children,
 }: {
   title: string;
   eyebrow?: string;
+  id?: string;
   className: string;
   children: React.ReactNode;
 }) => (
-  <section className={className}>
+  <section id={id} className={`${className} scroll-mt-28`}>
     {eyebrow ? (
       <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-60">{eyebrow}</p>
     ) : null}
@@ -106,11 +108,11 @@ export default function DashboardGymMeetTemplate({
     Boolean(model.gear?.uniform) ||
     volunteerSlots.length > 0 ||
     carpools.length > 0;
+  const hasQuickAccessSection = model.quickLinks.length > 0 || Boolean(model.coachPhone);
   const hasSidebarSections =
     Boolean(model.hostGym || model.team || model.venue || model.headerLocation || model.address || model.mapAddress || model.coach || model.assistantCoach) ||
     rsvpProps.enabled ||
-    model.quickLinks.length > 0 ||
-    Boolean(model.coachPhone);
+    hasQuickAccessSection;
   const heroStyle = model.heroImage
     ? {
         backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.2), rgba(2,6,23,0.56)), url(${model.heroImage})`,
@@ -180,6 +182,7 @@ export default function DashboardGymMeetTemplate({
               buttonClass={variant.secondaryButtonClass}
               onShare={onShare}
               onCalendar={onCalendar}
+              resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
             />
           </div>
 
@@ -408,7 +411,12 @@ export default function DashboardGymMeetTemplate({
                   ) : null}
 
                   {(model.quickLinks.length > 0 || model.coachPhone) ? (
-                    <Section title="Quick Access" eyebrow="Links" className={variant.sidebarCardClass}>
+                    <Section
+                      id="quick-access"
+                      title="Quick Access"
+                      eyebrow="Links"
+                      className={variant.sidebarCardClass}
+                    >
                       <div className="grid gap-2">
                         {model.quickLinks.map((link) => (
                           <a

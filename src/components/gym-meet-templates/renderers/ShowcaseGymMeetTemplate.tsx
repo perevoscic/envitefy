@@ -45,15 +45,17 @@ const safeUrl = (value: unknown) => {
 const Section = ({
   title,
   eyebrow,
+  id,
   theme,
   children,
 }: {
   title: string;
   eyebrow?: string;
+  id?: string;
   theme: ShowcaseThemeConfig;
   children: React.ReactNode;
 }) => (
-  <section className={theme.sectionClass}>
+  <section id={id} className={`${theme.sectionClass} scroll-mt-28`}>
     {eyebrow ? (
       <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
         {eyebrow}
@@ -180,6 +182,7 @@ export default function ShowcaseGymMeetTemplate({
   const activeTabId = topTabs.some((tab) => tab.id === activeTab)
     ? activeTab
     : topTabs[0]?.id || "meet-details";
+  const hasQuickAccessSection = model.quickLinks.length > 0 || Boolean(model.coachPhone);
   const topTabsStyle =
     topTabs.length > 1
       ? ({ gridTemplateColumns: `repeat(${topTabs.length}, minmax(0, 1fr))` } as const)
@@ -275,6 +278,7 @@ export default function ShowcaseGymMeetTemplate({
               buttonClass={theme.ctaSecondaryClass}
               onShare={onShare}
               onCalendar={onCalendar}
+              resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
             />
           </div>
 
@@ -518,7 +522,7 @@ export default function ShowcaseGymMeetTemplate({
             ) : null}
 
             {(model.quickLinks.length > 0 || model.coachPhone) ? (
-              <Section title="Quick Access" eyebrow="Links" theme={theme}>
+              <Section id="quick-access" title="Quick Access" eyebrow="Links" theme={theme}>
                 <div className="flex flex-wrap gap-2">
                   {model.quickLinks.map((link) =>
                     safeUrl(link.url) || /^data:/i.test(link.url) ? (

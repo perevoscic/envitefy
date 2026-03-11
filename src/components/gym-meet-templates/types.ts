@@ -133,6 +133,19 @@ export type GymMeetCoachDeadline = {
   note?: string;
 };
 
+export type GymMeetCoachFee = {
+  label: string;
+  amount: string;
+  note?: string;
+};
+
+export type GymMeetCoachLateFee = {
+  label: string;
+  amount: string;
+  trigger?: string;
+  note?: string;
+};
+
 export type GymMeetDiscoveryContent = {
   tabs: GymMeetDiscoveryTab[];
   meetDetails: {
@@ -144,12 +157,23 @@ export type GymMeetDiscoveryContent = {
     deadlines: GymMeetCoachDeadline[];
     attire: string[];
     notes: string[];
+    entryFees: GymMeetCoachFee[];
+    teamFees: GymMeetCoachFee[];
+    lateFees: GymMeetCoachLateFee[];
+    links: GymMeetLink[];
     signIn?: string;
     hospitality?: string;
     floorAccess?: string;
     scratches?: string;
+    floorMusic?: string;
     rotationSheets?: string;
+    awards?: string;
     regionalCommitment?: string;
+    qualification?: string;
+    meetFormat?: string;
+    equipment?: string;
+    refundPolicy?: string;
+    paymentInstructions?: string;
     hasContent: boolean;
   };
   venueDetails: {
@@ -176,6 +200,8 @@ export type GymMeetDiscoveryContent = {
     alertSlots: Array<{ date: string; times: string }>;
     daylightSavingsNote?: string;
     parkingText?: string;
+    parkingLinks: GymMeetLinkAction[];
+    parkingPricingLinks: GymMeetLinkAction[];
     mapDashboardLink?: GymMeetLinkAction;
     ratesInfoLink?: GymMeetLinkAction;
     rideShareNote?: string;
@@ -205,7 +231,8 @@ export type GymMeetRenderModel = {
   headerLocation?: string;
   dateLabel?: string;
   timeLabel?: string;
-  description?: string;
+  detailsText?: string;
+  heroSummary?: string;
   team?: string;
   season?: string;
   coach?: string;

@@ -3,15 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import StaticMap from "@/components/StaticMap";
-import {
-  Activity,
-  Car,
-  ExternalLink,
-  MapPin,
-  ShieldAlert,
-  Ticket,
-  Users,
-} from "lucide-react";
+import { Activity, Car, ExternalLink, MapPin, ShieldAlert, Ticket, Users } from "lucide-react";
 import { ShowcaseThemeConfig } from "./showcaseThemes";
 import { GymMeetDiscoveryTabId, GymMeetInlineLinkLine, GymMeetRenderModel } from "./types";
 
@@ -82,9 +74,6 @@ export default function ShowcaseDiscoveryContent({
   const panelTitleStyle = theme.sectionTitleStyle;
   const cardTitleClass = panelTitleClass;
   const cardTitleStyle = panelTitleStyle;
-  const resourceUrl =
-    safeUrl(model.quickLinks?.[0]?.url) ||
-    safeUrl(discovery?.admissionSales?.rotationLink?.url);
   const navigationUrl =
     safeUrl(discovery?.trafficParking?.mapDashboardLink?.url) ||
     mapSearchUrl(discovery?.trafficParking?.mapAddress || "");
@@ -163,6 +152,14 @@ export default function ShowcaseDiscoveryContent({
                 <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.scratches}</p>
               </div>
             ) : null}
+            {discovery?.coaches?.floorMusic ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Floor Music
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.floorMusic}</p>
+              </div>
+            ) : null}
             {discovery?.coaches?.rotationSheets ? (
               <div className={theme.cardClass}>
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
@@ -183,7 +180,92 @@ export default function ShowcaseDiscoveryContent({
                 </p>
               </div>
             ) : null}
+            {discovery?.coaches?.paymentInstructions ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Payment
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">
+                  {discovery.coaches.paymentInstructions}
+                </p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.refundPolicy ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Refund Policy
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.refundPolicy}</p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.qualification ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Qualification
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.qualification}</p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.meetFormat ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Meet Format
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.meetFormat}</p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.equipment ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Equipment
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.equipment}</p>
+              </div>
+            ) : null}
+            {discovery?.coaches?.awards ? (
+              <div className={theme.cardClass}>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                  Awards
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.awards}</p>
+              </div>
+            ) : null}
           </div>
+
+          {discovery?.coaches?.entryFees?.length ||
+          discovery?.coaches?.teamFees?.length ||
+          discovery?.coaches?.lateFees?.length ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {discovery.coaches.entryFees.map((item, index) => (
+                <div key={`entry-${item.label}-${index}`} className={theme.cardClass}>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                    {item.label || "Entry fee"}
+                  </p>
+                  {item.amount ? <p className="mt-2 text-3xl font-black leading-none">{item.amount}</p> : null}
+                  {item.note ? <p className="mt-3 text-sm opacity-85">{item.note}</p> : null}
+                </div>
+              ))}
+              {discovery.coaches.teamFees.map((item, index) => (
+                <div key={`team-${item.label}-${index}`} className={theme.cardClass}>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                    {item.label || "Team fee"}
+                  </p>
+                  {item.amount ? <p className="mt-2 text-3xl font-black leading-none">{item.amount}</p> : null}
+                  {item.note ? <p className="mt-3 text-sm opacity-85">{item.note}</p> : null}
+                </div>
+              ))}
+              {discovery.coaches.lateFees.map((item, index) => (
+                <div key={`late-${item.label}-${index}`} className={theme.cardClass}>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                    {item.label || "Late fee"}
+                  </p>
+                  {item.amount ? <p className="mt-2 text-3xl font-black leading-none">{item.amount}</p> : null}
+                  {item.trigger ? <p className="mt-3 text-sm font-semibold">{item.trigger}</p> : null}
+                  {item.note ? <p className="mt-1 text-sm opacity-85">{item.note}</p> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           {discovery?.coaches?.contacts?.length ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -252,6 +334,23 @@ export default function ShowcaseDiscoveryContent({
               ) : null}
             </div>
           ) : null}
+
+          {discovery?.coaches?.links?.length ? (
+            <div className="flex flex-wrap gap-2">
+              {discovery.coaches.links.map((item, index) => (
+                <a
+                  key={`${item.url}-${index}`}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={theme.ctaSecondaryClass}
+                >
+                  {item.label || "Open Link"}
+                  <ExternalLink size={14} />
+                </a>
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
     );
@@ -261,60 +360,11 @@ export default function ShowcaseDiscoveryContent({
     return hasMeetOverviewContent ? (
       <section className={theme.panelClass}>
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl">
-              <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
-                Meet Overview
-              </p>
-              <h2
-                className={`mt-2 text-3xl font-black tracking-tight sm:text-4xl ${panelTitleClass}`}
-                style={panelTitleStyle}
-              >
-                {model.title}
-              </h2>
-              {model.description ? (
-                <p className="mt-4 text-sm leading-7 opacity-85 sm:text-base">
-                  {model.description}
-                </p>
-              ) : null}
-            </div>
-            {resourceUrl ? (
-              <a
-                href={resourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={theme.ctaPrimaryClass}
-              >
-                Resources
-                <ExternalLink size={14} />
-              </a>
-            ) : null}
+          <div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
+              Meet Overview
+            </p>
           </div>
-
-          {model.summaryItems?.length ? (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {model.summaryItems.map((item) => (
-                <div key={`${item.label}-${item.value}`} className={theme.summaryCardClass}>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                    {item.label}
-                  </p>
-                  <p className="mt-2 text-xl font-black leading-tight sm:text-2xl">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {model.heroBadges?.length ? (
-            <div className="flex flex-wrap gap-2">
-              {model.heroBadges.map((badge) => (
-                <div key={badge} className={theme.cardClass}>
-                  <p className="text-xs font-black uppercase tracking-[0.16em]">{badge}</p>
-                </div>
-              ))}
-            </div>
-          ) : null}
 
           {renderLineList({ lines: discovery?.meetDetails?.lines || [], theme })}
 
@@ -325,7 +375,7 @@ export default function ShowcaseDiscoveryContent({
               </p>
               <div className="grid gap-3 md:grid-cols-2">
                 {model.announcements.slice(0, 4).map((item) => (
-                  <div key={item.id} className={theme.cardClass}>
+                  <div key={item.id} className="space-y-2">
                     {item.title ? (
                       <p
                         className={`text-lg font-black leading-tight ${cardTitleClass}`}
@@ -334,16 +384,16 @@ export default function ShowcaseDiscoveryContent({
                         {item.title}
                       </p>
                     ) : null}
-                    {item.body ? (
-                      <p className={`${item.title ? "mt-2 " : ""}text-sm leading-relaxed opacity-85`}>
-                        {item.body}
-                      </p>
-                    ) : null}
-                    {item.date ? (
-                      <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
-                        {item.date}
-                      </p>
-                    ) : null}
+                    <div className={theme.cardClass}>
+                      {item.body ? (
+                        <p className="text-sm leading-relaxed opacity-85">{item.body}</p>
+                      ) : null}
+                      {item.date ? (
+                        <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
+                          {item.date}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -516,7 +566,7 @@ export default function ShowcaseDiscoveryContent({
                 ) : null}
                 {safeUrl(discovery.admissionSales.merchandiseLink?.url) ? (
                   <a
-                    href={discovery.admissionSales.merchandiseLink.url}
+                    href={discovery.admissionSales.merchandiseLink?.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`mt-4 ${theme.ctaSecondaryClass}`}
@@ -538,7 +588,7 @@ export default function ShowcaseDiscoveryContent({
                   event source.
                 </p>
                 <a
-                  href={discovery.admissionSales.rotationLink.url}
+                  href={discovery.admissionSales.rotationLink?.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`mt-4 ${theme.ctaSecondaryClass}`}
@@ -633,6 +683,40 @@ export default function ShowcaseDiscoveryContent({
                   </p>
                 </div>
               ) : null}
+              {discovery?.trafficParking?.parkingLinks?.length ||
+              discovery?.trafficParking?.parkingPricingLinks?.length ? (
+                <div className={theme.cardClass}>
+                  <p className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                    Parking Links
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {(discovery.trafficParking.parkingLinks || []).map((item, index) => (
+                      <a
+                        key={`parking-${item.url}-${index}`}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={theme.ctaSecondaryClass}
+                      >
+                        {item.label || "Parking Map"}
+                        <ExternalLink size={14} />
+                      </a>
+                    ))}
+                    {(discovery.trafficParking.parkingPricingLinks || []).map((item, index) => (
+                      <a
+                        key={`parking-price-${item.url}-${index}`}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={theme.ctaSecondaryClass}
+                      >
+                        {item.label || "Parking Rates"}
+                        <ExternalLink size={14} />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {discovery?.trafficParking?.rideShareNote ? (
                 <div className={theme.cardClass}>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
@@ -679,7 +763,7 @@ export default function ShowcaseDiscoveryContent({
               ) : null}
               {safeUrl(discovery?.trafficParking?.ratesInfoLink?.url) ? (
                 <a
-                  href={discovery.trafficParking.ratesInfoLink.url}
+                  href={discovery.trafficParking.ratesInfoLink?.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={theme.ctaSecondaryClass}

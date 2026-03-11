@@ -299,7 +299,7 @@ export default function GymMeetDiscoveryContent({
                 </p>
                 <div className="grid gap-4 md:grid-cols-2">
                   {model.announcements.slice(0, 4).map((item: any) => (
-                    <div key={item.id} className={cardClass}>
+                    <div key={item.id} className="space-y-2">
                       {item.title ? (
                         <p
                           className={`text-lg font-black leading-tight ${cardTitleClass}`}
@@ -308,16 +308,16 @@ export default function GymMeetDiscoveryContent({
                           {item.title}
                         </p>
                       ) : null}
-                      {item.body ? (
-                        <p className={`${item.title ? "mt-2 " : ""}text-sm leading-relaxed opacity-80`}>
-                          {item.body}
-                        </p>
-                      ) : null}
-                      {item.date ? (
-                        <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
-                          {item.date}
-                        </p>
-                      ) : null}
+                      <div className={cardClass}>
+                        {item.body ? (
+                          <p className="text-sm leading-relaxed opacity-80">{item.body}</p>
+                        ) : null}
+                        {item.date ? (
+                          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] opacity-50">
+                            {item.date}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -382,6 +382,14 @@ export default function GymMeetDiscoveryContent({
                     <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.scratches}</p>
                   </div>
                 ) : null}
+                {discovery.coaches.floorMusic ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Floor Music
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.floorMusic}</p>
+                  </div>
+                ) : null}
                 {discovery.coaches.rotationSheets ? (
                   <div className={cardClass}>
                     <div className="flex items-start gap-3">
@@ -407,8 +415,98 @@ export default function GymMeetDiscoveryContent({
                     </p>
                   </div>
                 ) : null}
+                {discovery.coaches.paymentInstructions ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Payment
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">
+                      {discovery.coaches.paymentInstructions}
+                    </p>
+                  </div>
+                ) : null}
+                {discovery.coaches.refundPolicy ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Refund Policy
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.refundPolicy}</p>
+                  </div>
+                ) : null}
+                {discovery.coaches.qualification ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Qualification
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.qualification}</p>
+                  </div>
+                ) : null}
+                {discovery.coaches.meetFormat ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Meet Format
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.meetFormat}</p>
+                  </div>
+                ) : null}
+                {discovery.coaches.equipment ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Equipment
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.equipment}</p>
+                  </div>
+                ) : null}
+                {discovery.coaches.awards ? (
+                  <div className={cardClass}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      Awards
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed">{discovery.coaches.awards}</p>
+                  </div>
+                ) : null}
               </div>
             </div>
+
+            {discovery.coaches.entryFees.length > 0 ||
+            discovery.coaches.teamFees.length > 0 ||
+            discovery.coaches.lateFees.length > 0 ? (
+              <div className={panelClass}>
+                <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Registration & Fees
+                </h4>
+                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {discovery.coaches.entryFees.map((item: any, index: number) => (
+                    <div key={`entry-${item.label}-${index}`} className={cardClass}>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                        {item.label || "Entry fee"}
+                      </p>
+                      {item.amount ? <p className="mt-2 text-2xl font-black leading-none">{item.amount}</p> : null}
+                      {item.note ? <p className="mt-2 text-sm leading-relaxed opacity-80">{item.note}</p> : null}
+                    </div>
+                  ))}
+                  {discovery.coaches.teamFees.map((item: any, index: number) => (
+                    <div key={`team-${item.label}-${index}`} className={cardClass}>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                        {item.label || "Team fee"}
+                      </p>
+                      {item.amount ? <p className="mt-2 text-2xl font-black leading-none">{item.amount}</p> : null}
+                      {item.note ? <p className="mt-2 text-sm leading-relaxed opacity-80">{item.note}</p> : null}
+                    </div>
+                  ))}
+                  {discovery.coaches.lateFees.map((item: any, index: number) => (
+                    <div key={`late-${item.label}-${index}`} className={cardClass}>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                        {item.label || "Late fee"}
+                      </p>
+                      {item.amount ? <p className="mt-2 text-2xl font-black leading-none">{item.amount}</p> : null}
+                      {item.trigger ? <p className="mt-2 text-sm font-semibold">{item.trigger}</p> : null}
+                      {item.note ? <p className="mt-1 text-sm leading-relaxed opacity-80">{item.note}</p> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             {discovery.coaches.contacts.length > 0 ? (
               <div className={panelClass}>
@@ -485,6 +583,28 @@ export default function GymMeetDiscoveryContent({
                     </ul>
                   </div>
                 ) : null}
+              </div>
+            ) : null}
+
+            {discovery.coaches.links.length > 0 ? (
+              <div className={panelClass}>
+                <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                  Coach Links
+                </h4>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {discovery.coaches.links.map((item: any, index: number) => (
+                    <a
+                      key={`${item.url}-${index}`}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${secondaryButtonClass} ${focusRing}`}
+                    >
+                      {item.label || "Open Link"}
+                      <ExternalLink size={12} />
+                    </a>
+                  ))}
+                </div>
               </div>
             ) : null}
           </div>
@@ -783,6 +903,40 @@ export default function GymMeetDiscoveryContent({
                         Rates Info
                       </a>
                     ) : null}
+                  </div>
+                </div>
+              ) : null}
+              {discovery.trafficParking.parkingLinks.length > 0 ||
+              discovery.trafficParking.parkingPricingLinks.length > 0 ? (
+                <div className={panelClass}>
+                  <h4 className={`text-lg font-black ${cardTitleClass}`} style={cardTitleStyle}>
+                    Parking Links
+                  </h4>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {discovery.trafficParking.parkingLinks.map((item: any, index: number) => (
+                      <a
+                        key={`parking-link-${item.url}-${index}`}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${secondaryButtonClass} ${focusRing}`}
+                      >
+                        {item.label || "Parking Map"}
+                        <ExternalLink size={12} />
+                      </a>
+                    ))}
+                    {discovery.trafficParking.parkingPricingLinks.map((item: any, index: number) => (
+                      <a
+                        key={`parking-price-${item.url}-${index}`}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${secondaryButtonClass} ${focusRing}`}
+                      >
+                        {item.label || "Parking Rates"}
+                        <ExternalLink size={12} />
+                      </a>
+                    ))}
                   </div>
                 </div>
               ) : null}

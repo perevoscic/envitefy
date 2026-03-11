@@ -68,6 +68,9 @@ export type ParseResult = {
     registrationInfo: string | null;
     facilityLayout: string | null;
     scoringInfo: string | null;
+    resultsInfo: string | null;
+    rotationSheetsInfo: string | null;
+    awardsInfo: string | null;
     sessionWindows: Array<{
       date: string | null;
       start: string | null;
@@ -86,6 +89,7 @@ export type ParseResult = {
     rideShare: string | null;
     accessibility: string | null;
     parkingLinks: Array<{ label: string; url: string }>;
+    parkingPricingLinks: Array<{ label: string; url: string }>;
   };
   policies: {
     food: string | null;
@@ -95,14 +99,28 @@ export type ParseResult = {
     misc: string[];
   };
   coachInfo: {
-    hasContent: boolean;
     signIn: string | null;
-    attire: string[];
+    attire: string | null;
     hospitality: string | null;
     floorAccess: string | null;
     scratches: string | null;
+    floorMusic: string | null;
     rotationSheets: string | null;
+    awards: string | null;
     regionalCommitment: string | null;
+    qualification: string | null;
+    meetFormat: string | null;
+    equipment: string | null;
+    refundPolicy: string | null;
+    paymentInstructions: string | null;
+    entryFees: Array<{ label: string; amount: string; note: string | null }>;
+    teamFees: Array<{ label: string; amount: string; note: string | null }>;
+    lateFees: Array<{
+      label: string;
+      amount: string;
+      trigger: string | null;
+      note: string | null;
+    }>;
     contacts: Array<{
       role: string;
       name: string | null;
@@ -114,6 +132,7 @@ export type ParseResult = {
       date: string | null;
       note: string | null;
     }>;
+    links: Array<{ label: string; url: string }>;
     notes: string[];
   };
   contacts: Array<{
@@ -192,8 +211,27 @@ type GymLayoutSelectionDiagnostics = {
 
 type CoachPageHint = {
   page: number;
-  heading: string;
+  heading: string | null;
   excerpt: string;
+};
+
+type DiscoveryLinkKind = "asset" | "html" | "external";
+
+type DiscoveredLink = {
+  url: string;
+  label: string;
+  sourceUrl: string;
+  depth: 0 | 1;
+  kind: DiscoveryLinkKind;
+  sameHost: boolean;
+  followed: boolean;
+  contentType?: string | null;
+};
+
+type CrawledPage = {
+  url: string;
+  title: string | null;
+  depth: 0 | 1;
 };
 
 type ExtractionResult = {
@@ -202,6 +240,8 @@ type ExtractionResult = {
     sourceType: "file" | "url";
     usedOcr: boolean;
     linkedAssets: Array<{ url: string; contentType: string }>;
+    discoveredLinks?: DiscoveredLink[];
+    crawledPages?: CrawledPage[];
     pageTitle?: string | null;
     gymLayoutImageDataUrl?: string | null;
     gymLayoutFacts?: string[];
@@ -240,6 +280,29 @@ export type DiscoveryEvidence = {
     coachHints: string[];
     linkHints: Array<{ label: string; url: string }>;
   };
+  sections: {
+    spectator: string[];
+    venue: string[];
+    traffic: string[];
+    policy: string[];
+    coachOps: string[];
+    registration: string[];
+  };
+  dateAnalysis: {
+    primaryCandidate: {
+      label: string;
+      startDate: string | null;
+      endDate: string | null;
+      line: string;
+      score: number;
+    } | null;
+    ignoredCandidates: Array<{
+      label: string;
+      line: string;
+      score: number;
+      reason: string;
+    }>;
+  };
   snippets: {
     firstLines: string[];
     additionalInfoLines: string[];
@@ -249,7 +312,33 @@ export type DiscoveryEvidence = {
   };
 };
 
-const MAX_LINKED_ASSETS = 4;
+type CrawlCandidate = DiscoveredLink & {
+  score: number;
+};
+
+type UrlDiscoveryTestHooks = {
+  fetchWithLimit?: (
+    url: string
+  ) => Promise<{ contentType: string; buffer: Buffer; text: string }>;
+  extractTextFromPdf?: (buffer: Buffer) => Promise<{
+    text: string;
+    usedOcr: boolean;
+    coachPageHints: CoachPageHint[];
+    textQuality: TextQuality;
+    qualitySignals: TextQualitySignals;
+  }>;
+  extractTextFromImage?: (buffer: Buffer) => Promise<string>;
+  extractGymLayoutImageFromPdf?: (buffer: Buffer) => Promise<GymLayoutExtraction>;
+  openAiExtractGymLayoutZones?: (
+    buffer: Buffer,
+    mimeType?: string
+  ) => Promise<GymLayoutZone[]>;
+  toOptimizedImageDataUrl?: (buffer: Buffer) => Promise<string | null>;
+};
+
+const MAX_FETCHED_LINKED_ASSETS = 8;
+const MAX_FOLLOWED_CHILD_PAGES = 3;
+const MAX_DISCOVERED_LINKS = 24;
 const MAX_FETCH_BYTES = 7 * 1024 * 1024;
 const LOW_TEXT_THRESHOLD = 200;
 const execFileAsync = promisify(execFile);
@@ -260,6 +349,7 @@ let pdfRenderDepsPromise: Promise<
     }
   | null
 > | null = null;
+let urlDiscoveryTestHooks: UrlDiscoveryTestHooks | null = null;
 
 type DateRangeInfo = {
   label: string | null;
@@ -335,20 +425,236 @@ function uniqueLines(lines: string[], limit = 12): string[] {
   return out;
 }
 
+function isLikelySectionHeading(line: string): boolean {
+  const text = safeString(line);
+  if (!text) return false;
+  if (text.length > 72) return false;
+  if (/^[A-Z0-9][A-Z0-9/&(),.' -]{2,}$/.test(text)) return true;
+  return /^(entry fees|how to enter|awards|coaches information|parking|doors open|additional info|spectator admission|traffic|payment|refund|qualification|regional meet coaches information)\b/i.test(
+    text
+  );
+}
+
+function normalizeDiscoveryDateArtifacts(value: string): string {
+  return safeString(value)
+    .replace(/\u2013|\u2014/g, "-")
+    .replace(
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*-\s*(\d{1,2})(\s*,\s*\d{4})/gi,
+      "$1 $2-$3$4"
+    )
+    .replace(
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*-\s*(\d{1,2})\b/gi,
+      "$1 $2-$3"
+    )
+    .replace(/\$\s+(\d)/g, "$$$1")
+    .replace(/(\d)\s*-\s+(\d{1,2},\s*\d{4})/g, "$1-$2")
+    .replace(/([A-Za-z])\s*-\s*\n\s*([A-Za-z])/g, "$1$2")
+    .replace(/\b([A-Za-z]{3,})\s*\n\s*(\d{1,2}\b)/g, "$1 $2")
+    .replace(/\b(\d{1,2})\s*\n\s*-\s*\n\s*(\d{1,2}\b)/g, "$1-$2")
+    .replace(/\b(\d{1,2})\s*-\s*\n\s*(\d{1,2}\b)/g, "$1-$2")
+    .replace(/[ \t]{2,}/g, " ");
+}
+
+function stitchDiscoveryLines(lines: string[]): string[] {
+  const out: string[] = [];
+  for (const rawLine of lines) {
+    const line = normalizeDiscoveryDateArtifacts(rawLine);
+    if (!line) continue;
+    if (!out.length) {
+      out.push(line);
+      continue;
+    }
+    const prev = out[out.length - 1];
+    const prevText = safeString(prev);
+    const nextText = safeString(line);
+    const prevIsHeading = isLikelySectionHeading(prevText);
+    const nextIsHeading = isLikelySectionHeading(nextText);
+    const prevEndsSentence = /[.!?:]$/.test(prevText);
+    const startsContinuation =
+      /^[a-z(]/.test(nextText) ||
+      /^[\d$]/.test(nextText) ||
+      /^(and|or|but|with|for|to|from|by|at|in|on|of|if|when|then)\b/i.test(nextText);
+    const joinsBrokenWord = /[A-Za-z]-$/.test(prevText) && /^[A-Za-z]/.test(nextText);
+    const joinsCurrency = /(?:\$|usd)\s*$/i.test(prevText) && /^[\d.]/.test(nextText);
+    const joinsDateRange =
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2}\s*-\s*$/i.test(
+        prevText
+      ) && /^\d{1,2}(?:,\s*\d{4})?\b/.test(nextText);
+
+    if (!prevIsHeading && !nextIsHeading && (joinsBrokenWord || joinsCurrency || joinsDateRange)) {
+      out[out.length - 1] = `${prevText.replace(/-\s*$/, "")}${nextText}`.replace(/\s+/g, " ").trim();
+      continue;
+    }
+    if (!prevIsHeading && !nextIsHeading && !prevEndsSentence && startsContinuation) {
+      out[out.length - 1] = `${prevText} ${nextText}`.replace(/\s+/g, " ").trim();
+      continue;
+    }
+    out.push(nextText);
+  }
+  return out;
+}
+
 function isCoachHeadingLine(line: string): boolean {
-  return /^(attention coaches!?|coaches information(?:[—-].*)?|regional meet coaches information|coaches attire|coaches sign in|attending coaches.*|coach(?:es)?\b.*important)/i.test(
+  return /^(attention coaches!?|coaches information(?:[—-].*)?|regional meet coaches information|coaches attire|coaches sign in|attending coaches.*|coach(?:es)?\b.*important|entry fees|how to enter|payment|refund policy|qualification|coaches? meeting|scratches?|rotation sheets?)/i.test(
     safeString(line)
   );
 }
 
 function looksLikeCoachLine(line: string): boolean {
-  return /(coach(?:es)?|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|floor manager|meet director|director of operations|assistant event coordinator|dress code|attire)/i.test(
+  return /(coach(?:es)?|entry fees?|team fees?|team entry|athlete fees?|late fees?|payment|refund|qualification|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|floor manager|meet director|director of operations|assistant event coordinator|dress code|attire|floor music|meet maker|reservation)/i.test(
     safeString(line)
   );
 }
 
 function sanitizeCoachExcerpt(lines: string[]): string {
   return safeString(lines.join(" ").replace(/\s+/g, " ")).slice(0, 320);
+}
+
+type ScoredDateCandidate = {
+  label: string;
+  line: string;
+  startDate: string | null;
+  endDate: string | null;
+  score: number;
+  reason: string;
+};
+
+function parseDateRangeCandidate(value: string): DateRangeInfo {
+  return deriveDateRangeFromText(normalizeDiscoveryDateArtifacts(value));
+}
+
+function scoreMeetDateLine(line: string, index: number): ScoredDateCandidate | null {
+  const text = normalizeDiscoveryDateArtifacts(line);
+  if (!text) return null;
+  const parsed = parseDateRangeCandidate(text);
+  if (!parsed.startDate) return null;
+
+  let score = parsed.endDate && parsed.endDate !== parsed.startDate ? 7 : 4;
+  const lowered = text.toLowerCase();
+  const reasons: string[] = [];
+
+  if (/^(when|meet dates?|competition dates?|event dates?)\b/i.test(text)) {
+    score += 7;
+    reasons.push("labelled-date");
+  }
+  if (index < 12) {
+    score += 4;
+    reasons.push("title-area");
+  } else if (index < 24) {
+    score += 2;
+    reasons.push("early-document");
+  }
+  if (
+    /\b(updated|posted|deadline|late fee|refund|entry fee|entry deadline|how to enter|must enter|by noon|page\s+\d+\s+of\s+\d+)\b/i.test(
+      lowered
+    )
+  ) {
+    score -= 10;
+    reasons.push("admin-date");
+  }
+  if (/\b(noon|11:59|11:00|12:00)\b/i.test(lowered)) {
+    score -= 3;
+    reasons.push("deadline-time");
+  }
+  if (/\b(entry|refund|late fee|qualification|payment|regional commitment)\b/i.test(lowered)) {
+    score -= 4;
+    reasons.push("coach-admin-context");
+  }
+
+  return {
+    label: parsed.label || text,
+    line: text,
+    startDate: parsed.startDate,
+    endDate: parsed.endDate,
+    score,
+    reason: reasons.join(","),
+  };
+}
+
+function classifyMeetDateCandidates(text: string): {
+  primary: ScoredDateCandidate | null;
+  ignored: ScoredDateCandidate[];
+} {
+  const baseLines = stitchDiscoveryLines(
+    cleanExtractedText(text)
+      .split(/\n+/)
+      .map((line) => safeString(line))
+      .filter(Boolean)
+  );
+  const lines = baseLines.flatMap((line) =>
+    line
+      .split(/(?=\b(?:when|meet dates?|competition dates?|event dates?)\b[:]?)/i)
+      .map((item) => safeString(item))
+      .filter(Boolean)
+  );
+  const candidates = lines
+    .map((line, index) => scoreMeetDateLine(line, index))
+    .filter((item): item is ScoredDateCandidate => Boolean(item));
+  const ranked = [...candidates].sort((a, b) => {
+    const scoreDelta = b.score - a.score;
+    if (scoreDelta !== 0) return scoreDelta;
+    const aSpan = a.startDate && a.endDate && a.startDate !== a.endDate ? 1 : 0;
+    const bSpan = b.startDate && b.endDate && b.startDate !== b.endDate ? 1 : 0;
+    return bSpan - aSpan;
+  });
+  const primary = ranked.find((item) => item.score > 0) || null;
+  return {
+    primary,
+    ignored: ranked.filter((item) => !primary || item.line !== primary.line).slice(0, 8),
+  };
+}
+
+function isSpectatorAdmissionLabel(value: string): boolean {
+  const text = safeString(value);
+  return /(spectator|admission|ticket|adult|child|children|seniors?|military|cash|door|weekend pass|per day|parking)/i.test(
+    text
+  );
+}
+
+function inferCoachFeeBucket(item: {
+  label: string;
+  amount?: string;
+  price?: string;
+  note: string | null;
+}):
+  | "entry"
+  | "team"
+  | "late"
+  | null {
+  const haystack = `${safeString(item.label)} ${safeString(item.note)} ${safeString(
+    item.amount || item.price
+  )}`.toLowerCase();
+  if (/(late fee|late entry|after .*deadline)/i.test(haystack)) return "late";
+  if (/\b(team fee|team entry|team)\b/i.test(haystack)) return "team";
+  if (/\b(entry fee|athlete fee|registration fee|per gymnast|entry)\b/i.test(haystack)) return "entry";
+  return null;
+}
+
+function hasCoachInfoContent(value: any): boolean {
+  const coachInfo = value || {};
+  return Boolean(
+    safeString(coachInfo.signIn) ||
+      safeString(coachInfo.attire) ||
+      safeString(coachInfo.hospitality) ||
+      safeString(coachInfo.floorAccess) ||
+      safeString(coachInfo.scratches) ||
+      safeString(coachInfo.floorMusic) ||
+      safeString(coachInfo.rotationSheets) ||
+      safeString(coachInfo.awards) ||
+      safeString(coachInfo.regionalCommitment) ||
+      safeString(coachInfo.qualification) ||
+      safeString(coachInfo.meetFormat) ||
+      safeString(coachInfo.equipment) ||
+      safeString(coachInfo.refundPolicy) ||
+      safeString(coachInfo.paymentInstructions) ||
+      pickArray(coachInfo.entryFees).length ||
+      pickArray(coachInfo.teamFees).length ||
+      pickArray(coachInfo.lateFees).length ||
+      pickArray(coachInfo.deadlines).length ||
+      pickArray(coachInfo.contacts).length ||
+      pickArray(coachInfo.links).length ||
+      pickArray(coachInfo.notes).length
+  );
 }
 
 function extractCoachPageHintsFromPages(
@@ -358,17 +664,29 @@ function extractCoachPageHintsFromPages(
   for (const page of pages) {
     const pageText = cleanExtractedText(safeString(page?.text));
     if (!pageText) continue;
-    const lines = pageText
-      .split(/\n+/)
-      .map((line) => safeString(line))
-      .filter(Boolean);
+    const lines = stitchDiscoveryLines(
+      pageText
+        .split(/\n+/)
+        .map((line) => safeString(line))
+        .filter(Boolean)
+    );
     const heading =
       lines.find((line) => isCoachHeadingLine(line)) ||
-      lines.find((line) => /coach(?:es)?/i.test(line)) ||
-      "";
+      lines.find((line) =>
+        /(coach(?:es)?|entry fees?|how to enter|payment|refund|qualification|regional commitment)/i.test(
+          line
+        )
+      ) ||
+      null;
     const coachLines = lines.filter((line) => looksLikeCoachLine(line));
     const strongSignalCount = [
       /coach(?:es)?/gi,
+      /\bentry fees?\b/gi,
+      /\bteam fees?\b/gi,
+      /\blate fees?\b/gi,
+      /\bpayment\b/gi,
+      /\brefund\b/gi,
+      /\bqualification\b/gi,
       /\bhospitality\b/gi,
       /\bsign[- ]?in\b/gi,
       /\bscratches?\b/gi,
@@ -377,12 +695,12 @@ function extractCoachPageHintsFromPages(
     ].reduce((count, pattern) => count + countPatternMatches(pageText, pattern), 0);
     if (!heading && strongSignalCount < 3) continue;
     const excerpt = sanitizeCoachExcerpt(
-      coachLines.length > 0 ? coachLines.slice(0, 5) : lines.slice(0, 5)
+      coachLines.length > 0 ? coachLines.slice(0, 6) : lines.slice(0, 6)
     );
     if (!excerpt) continue;
     hints.push({
       page: Number.isFinite(page?.num) ? Number(page.num) : hints.length + 1,
-      heading: heading || "Coach information",
+      heading,
       excerpt,
     });
   }
@@ -401,6 +719,12 @@ function toIsoDate(year: number, monthIndex: number, day: number): string | null
   if (Number.isNaN(dt.getTime())) return null;
   if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m || dt.getUTCDate() !== d) return null;
   return dt.toISOString().slice(0, 10);
+}
+
+function normalizeParsedYear(value: number): number {
+  if (!Number.isFinite(value)) return value;
+  if (value >= 100) return value;
+  return value >= 70 ? 1900 + value : 2000 + value;
 }
 
 function monthNameToIndex(value: string): number {
@@ -474,15 +798,15 @@ function deriveDateRangeFromText(value: string): DateRangeInfo {
 
   const slashRange =
     text.match(
-      /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[–-]\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\b/
+      /\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*[–-]\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/
     ) || null;
   if (slashRange) {
     const m1 = Number.parseInt(slashRange[1], 10) - 1;
     const d1 = Number.parseInt(slashRange[2], 10);
-    const y1 = Number.parseInt(slashRange[3], 10);
+    const y1 = normalizeParsedYear(Number.parseInt(slashRange[3], 10));
     const m2 = Number.parseInt(slashRange[4], 10) - 1;
     const d2 = Number.parseInt(slashRange[5], 10);
-    const y2 = Number.parseInt(slashRange[6], 10);
+    const y2 = normalizeParsedYear(Number.parseInt(slashRange[6], 10));
     return {
       label: text,
       startDate: toIsoDate(y1, m1, d1),
@@ -490,11 +814,11 @@ function deriveDateRangeFromText(value: string): DateRangeInfo {
     };
   }
 
-  const slashSingle = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/) || null;
+  const slashSingle = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/) || null;
   if (slashSingle) {
     const m = Number.parseInt(slashSingle[1], 10) - 1;
     const d = Number.parseInt(slashSingle[2], 10);
-    const y = Number.parseInt(slashSingle[3], 10);
+    const y = normalizeParsedYear(Number.parseInt(slashSingle[3], 10));
     const date = toIsoDate(y, m, d);
     return {
       label: text,
@@ -527,10 +851,12 @@ export function buildDiscoveryEvidence(
   extractionMeta: ExtractionResult["extractionMeta"]
 ): DiscoveryEvidence {
   const text = cleanExtractedText(extractedText);
-  const lines = text
-    .split(/\n+/)
-    .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
-    .filter(Boolean);
+  const lines = stitchDiscoveryLines(
+    text
+      .split(/\n+/)
+      .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+      .filter(Boolean)
+  );
   const firstLines = uniqueLines(lines.slice(0, 24), 12);
   const additionalInfoStartIdx = lines.findIndex((line) => /additional\s*info/i.test(line));
   const additionalInfoLines =
@@ -540,9 +866,16 @@ export function buildDiscoveryEvidence(
 
   const matchLines = (pattern: RegExp, limit = 12) =>
     uniqueLines(lines.filter((line) => pattern.test(line)), limit);
+  const sectionMatchLines = (patterns: RegExp[], limit = 12) =>
+    uniqueLines(
+      lines.filter((line) => patterns.some((pattern) => pattern.test(line))),
+      limit
+    );
+  const dateAnalysis = classifyMeetDateCandidates(text);
 
   const dateHints = uniqueLines(
     [
+      ...(dateAnalysis.primary ? [dateAnalysis.primary.label] : []),
       ...(text.match(
         /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:\s*[–-]\s*\d{1,2})?(?:,\s*\d{4})?/gi
       ) || []),
@@ -583,7 +916,7 @@ export function buildDiscoveryEvidence(
   const coachHints = uniqueLines(
     [
       ...matchLines(
-        /(coach(?:es)?|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|meet director|floor manager|attire|dress code)/i,
+        /(coach(?:es)?|entry fees?|team fees?|late fees?|payment|refund|qualification|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|meet director|floor manager|attire|dress code)/i,
         16
       ),
       ...pickArray(extractionMeta.coachPageHints)
@@ -598,8 +931,36 @@ export function buildDiscoveryEvidence(
     10
   );
   const coachLines = matchLines(
-    /(coach(?:es)?|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|meet director|floor manager|attire|dress code)/i,
+    /(coach(?:es)?|entry fees?|team fees?|late fees?|payment|refund|qualification|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|meet director|floor manager|attire|dress code)/i,
     10
+  );
+  const spectatorSection = sectionMatchLines(
+    [/(spectator admission|admission|ticket|door fees?|weekend passes?|adult|child|cash only)/i],
+    12
+  );
+  const venueSection = sectionMatchLines(
+    [
+      /(east hall|west hall|central hall|guest services|registration|competition area|venue|facility layout|awards area|entrance)/i,
+    ],
+    12
+  );
+  const trafficSection = sectionMatchLines(
+    [/(parking|traffic|ride ?share|uber|lyft|drop-?off|garage|parkmobile|complimentary parking)/i],
+    12
+  );
+  const policySection = sectionMatchLines(
+    [/(food|water|hydration|service animals?|service dogs?|safety|outside food|throwing objects?)/i],
+    12
+  );
+  const coachOpsSection = sectionMatchLines(
+    [
+      /(coach(?:es)?|sign[- ]?in|floor access|attire|hospitality|scratches|rotation sheets?|floor music|regional commitment|qualification)/i,
+    ],
+    12
+  );
+  const registrationSection = sectionMatchLines(
+    [/(entry fees?|team fees?|late fees?|how to enter|payment|refund|deadline|meet maker|reservation)/i],
+    12
   );
   const titleHints = uniqueLines(
     [
@@ -608,10 +969,21 @@ export function buildDiscoveryEvidence(
     ],
     8
   );
-  const linkHints = uniqueLines(
-    (text.match(/https?:\/\/[^\s)]+/gi) || []).map((url) => url.replace(/[.,;!?]+$/, "")),
-    14
-  ).map((url) => ({ label: "Source link", url }));
+  const linkHints = uniqueBy(
+    [
+      ...pickArray(extractionMeta.discoveredLinks)
+        .map((item) => ({
+          label: safeString(item?.label) || "Source link",
+          url: normalizeUrl(item?.url),
+        }))
+        .filter((item) => item.url),
+      ...uniqueLines(
+        (text.match(/https?:\/\/[^\s)]+/gi) || []).map((url) => url.replace(/[.,;!?]+$/, "")),
+        14
+      ).map((url) => ({ label: "Source link", url })),
+    ],
+    (item) => item.url
+  ).slice(0, 14);
 
   return {
     source: {
@@ -640,6 +1012,31 @@ export function buildDiscoveryEvidence(
       policyHints,
       coachHints,
       linkHints,
+    },
+    sections: {
+      spectator: spectatorSection,
+      venue: venueSection,
+      traffic: trafficSection,
+      policy: policySection,
+      coachOps: coachOpsSection,
+      registration: registrationSection,
+    },
+    dateAnalysis: {
+      primaryCandidate: dateAnalysis.primary
+        ? {
+            label: dateAnalysis.primary.label,
+            startDate: dateAnalysis.primary.startDate,
+            endDate: dateAnalysis.primary.endDate,
+            line: dateAnalysis.primary.line,
+            score: dateAnalysis.primary.score,
+          }
+        : null,
+      ignoredCandidates: dateAnalysis.ignored.map((item) => ({
+        label: item.label,
+        line: item.line,
+        score: item.score,
+        reason: item.reason,
+      })),
     },
     snippets: {
       firstLines,
@@ -706,7 +1103,20 @@ function extractPdfTextHeuristic(buffer: Buffer): string {
 }
 
 function cleanExtractedText(text: string): string {
-  return (text || "")
+  const normalized = normalizeDiscoveryDateArtifacts(
+    (text || "")
+      .replace(/\r\n?/g, "\n")
+      .replace(/\u0000/g, " ")
+      .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ")
+  );
+  const stitched = stitchDiscoveryLines(
+    normalized
+      .split(/\n+/)
+      .map((line) => line.replace(/[ \t]{2,}/g, " ").trim())
+      .filter(Boolean)
+  );
+  return stitched
+    .join("\n")
     .replace(/\u0000/g, " ")
     .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ")
     .replace(/[ \t]{2,}/g, " ")
@@ -1724,31 +2134,197 @@ function extractMetadataText(html: string): string {
   return snippets.filter(Boolean).join("\n\n");
 }
 
-function assetUrlFromHref(base: URL, href: string): URL | null {
+function decodeHtmlEntities(input: string): string {
+  return safeString(input)
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'");
+}
+
+function linkUrlFromHref(base: URL, href: string): URL | null {
   try {
-    const next = new URL(href, base);
+    const decodedHref = decodeHtmlEntities(href);
+    if (!decodedHref || decodedHref.startsWith("#")) return null;
+    if (/^(mailto:|tel:|javascript:)/i.test(decodedHref)) return null;
+    const next = new URL(decodedHref, base);
     if (next.protocol !== "http:" && next.protocol !== "https:") return null;
-    if (next.host !== base.host) return null;
     return next;
   } catch {
     return null;
   }
 }
 
-function collectLinkedAssets(html: string, baseUrl: URL): URL[] {
-  const links: URL[] = [];
-  const hrefRegex = /href=["']([^"']+)["']/gi;
-  let match: RegExpExecArray | null = null;
-  while ((match = hrefRegex.exec(html))) {
-    const url = assetUrlFromHref(baseUrl, match[1]);
-    if (!url) continue;
-    if (!/\.(pdf|png|jpg|jpeg|webp)(\?|#|$)/i.test(url.href)) continue;
-    if (!links.find((existing) => existing.href === url.href)) {
-      links.push(url);
-    }
-    if (links.length >= MAX_LINKED_ASSETS) break;
+function isAssetUrl(url: URL | string): boolean {
+  const href = typeof url === "string" ? url : url.href;
+  return /\.(pdf|png|jpg|jpeg|webp)(\?|#|$)/i.test(href);
+}
+
+function extractLinkAttribute(rawAttrs: string, name: string): string {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = rawAttrs.match(new RegExp(`${escaped}=["']([^"']+)["']`, "i"));
+  return decodeHtmlEntities(match?.[1] || "");
+}
+
+function fallbackLinkLabel(url: URL): string {
+  const tail = safeString(url.pathname.split("/").filter(Boolean).pop() || "");
+  if (!tail) return url.hostname.replace(/^www\./i, "");
+  const decoded = decodeURIComponent(tail)
+    .replace(/\.[a-z0-9]+$/i, "")
+    .replace(/[-_]+/g, " ")
+    .trim();
+  return decoded || url.hostname.replace(/^www\./i, "");
+}
+
+function normalizeLinkLabel(innerHtml: string, rawAttrs: string, url: URL): string {
+  const textLabel = decodeHtmlEntities(stripHtml(innerHtml));
+  const ariaLabel = extractLinkAttribute(rawAttrs, "aria-label");
+  const titleLabel = extractLinkAttribute(rawAttrs, "title");
+  const label = safeString(textLabel || ariaLabel || titleLabel || fallbackLinkLabel(url))
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return label || fallbackLinkLabel(url);
+}
+
+function classifyDiscoveryLink(url: URL, baseUrl: URL): DiscoveryLinkKind {
+  if (url.host !== baseUrl.host) return "external";
+  return isAssetUrl(url) ? "asset" : "html";
+}
+
+function scoreDiscoveryCandidate(candidate: Omit<CrawlCandidate, "score" | "followed">): number {
+  const haystack = `${candidate.label} ${candidate.url}`.toLowerCase();
+  let score = 0;
+
+  const boosts: Array<[RegExp, number]> = [
+    [/\bschedule\b/, 7],
+    [/\binfo\b/, 5],
+    [/\bpacket\b/, 7],
+    [/\broster\b/, 6],
+    [/\brotation\b/, 6],
+    [/\bfaq\b/, 5],
+    [/\bresults?\b/, 5],
+    [/\bhotel\b/, 5],
+    [/\bparking\b/, 4],
+    [/\bmap\b/, 3],
+    [/\badmission\b/, 6],
+    [/\btickets?\b/, 5],
+    [/\bregistration\b/, 4],
+  ];
+  for (const [pattern, value] of boosts) {
+    if (pattern.test(haystack)) score += value;
   }
-  return links;
+
+  const penalties: Array<[RegExp, number]> = [
+    [/\bhome\b/, 6],
+    [/\babout\b/, 5],
+    [/\bcontact\b/, 5],
+    [/\bblog\b/, 6],
+    [/\bsponsorship\b/, 5],
+    [/\bauthor\b/, 5],
+    [/\bfeed\b/, 5],
+    [/\bcomments?\b/, 4],
+    [/\bfacebook\b|\binstagram\b|\byoutube\b/, 8],
+  ];
+  for (const [pattern, value] of penalties) {
+    if (pattern.test(haystack)) score -= value;
+  }
+
+  if (candidate.kind === "asset") score += 5;
+  if (/\.pdf(\?|#|$)/i.test(candidate.url)) score += 4;
+  if (candidate.kind === "external" && /(square|groupbook|ticket|hotel|results)/i.test(haystack)) {
+    score += 3;
+  }
+  if (candidate.sameHost && candidate.depth === 0) score += 1;
+  if (candidate.label.length <= 2) score -= 2;
+  if (candidate.kind === "html" && /\/(?:about-us|contact|gymnastics-blog)\/?$/i.test(candidate.url)) {
+    score -= 5;
+  }
+
+  return score;
+}
+
+function compareDiscoveryCandidates(a: CrawlCandidate, b: CrawlCandidate): number {
+  const scoreDelta = b.score - a.score;
+  if (scoreDelta !== 0) return scoreDelta;
+  const kindRank = { asset: 0, html: 1, external: 2 } as const;
+  const kindDelta = kindRank[a.kind] - kindRank[b.kind];
+  if (kindDelta !== 0) return kindDelta;
+  const depthDelta = a.depth - b.depth;
+  if (depthDelta !== 0) return depthDelta;
+  return a.url.localeCompare(b.url);
+}
+
+function shouldReplaceDiscoveryLink(existing: CrawlCandidate, next: CrawlCandidate): boolean {
+  if (next.score !== existing.score) return next.score > existing.score;
+  if (next.label.length !== existing.label.length) return next.label.length > existing.label.length;
+  return next.depth < existing.depth;
+}
+
+function upsertDiscoveredLink(map: Map<string, CrawlCandidate>, candidate: CrawlCandidate) {
+  const existing = map.get(candidate.url);
+  if (!existing) {
+    map.set(candidate.url, candidate);
+    return;
+  }
+  const merged: CrawlCandidate = shouldReplaceDiscoveryLink(existing, candidate)
+    ? { ...existing, ...candidate }
+    : { ...candidate, ...existing };
+  merged.followed = existing.followed || candidate.followed;
+  merged.contentType = candidate.contentType || existing.contentType || null;
+  merged.depth = existing.depth <= candidate.depth ? existing.depth : candidate.depth;
+  merged.sourceUrl = shouldReplaceDiscoveryLink(existing, candidate)
+    ? candidate.sourceUrl
+    : existing.sourceUrl;
+  merged.score = Math.max(existing.score, candidate.score);
+  map.set(candidate.url, merged);
+}
+
+function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): CrawlCandidate[] {
+  const links: CrawlCandidate[] = [];
+  const anchorRegex = /<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi;
+  let match: RegExpExecArray | null = null;
+  while ((match = anchorRegex.exec(html))) {
+    const rawAttrs = `${match[1] || ""} ${match[3] || ""}`;
+    const url = linkUrlFromHref(baseUrl, match[2] || "");
+    if (!url) continue;
+    if (url.href === baseUrl.href) continue;
+    const kind = classifyDiscoveryLink(url, baseUrl);
+    const sameHost = url.host === baseUrl.host;
+    const candidateBase = {
+      url: url.toString(),
+      label: normalizeLinkLabel(match[4] || "", rawAttrs, url),
+      sourceUrl: baseUrl.toString(),
+      depth,
+      kind,
+      sameHost,
+    };
+    links.push({
+      ...candidateBase,
+      followed: false,
+      contentType: null,
+      score: scoreDiscoveryCandidate(candidateBase),
+    });
+  }
+  return uniqueBy(links, (item) => item.url).sort(compareDiscoveryCandidates);
+}
+
+function buildHtmlTextChunk(
+  pageUrl: string,
+  metadataText: string,
+  readableText: string
+): string {
+  const pieces = [
+    `Source URL: ${pageUrl}`,
+    safeString(metadataText),
+    safeString(readableText),
+  ].filter(Boolean);
+  return pieces.join("\n\n").trim();
+}
+
+function getPageTitle(html: string): string | null {
+  return safeString(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "") || null;
 }
 
 async function fetchWithLimit(url: string): Promise<{ contentType: string; buffer: Buffer; text: string }> {
@@ -1775,6 +2351,82 @@ async function fetchWithLimit(url: string): Promise<{ contentType: string; buffe
     text = buffer.toString("utf8");
   }
   return { contentType, buffer, text };
+}
+
+function getUrlDiscoveryHooks(): Required<UrlDiscoveryTestHooks> {
+  return {
+    fetchWithLimit: urlDiscoveryTestHooks?.fetchWithLimit || fetchWithLimit,
+    extractTextFromPdf: urlDiscoveryTestHooks?.extractTextFromPdf || extractTextFromPdf,
+    extractTextFromImage: urlDiscoveryTestHooks?.extractTextFromImage || extractTextFromImage,
+    extractGymLayoutImageFromPdf:
+      urlDiscoveryTestHooks?.extractGymLayoutImageFromPdf || extractGymLayoutImageFromPdf,
+    openAiExtractGymLayoutZones:
+      urlDiscoveryTestHooks?.openAiExtractGymLayoutZones || openAiExtractGymLayoutZones,
+    toOptimizedImageDataUrl:
+      urlDiscoveryTestHooks?.toOptimizedImageDataUrl || toOptimizedImageDataUrl,
+  };
+}
+
+async function appendFetchedAssetText(
+  assetUrl: URL,
+  fetched: { contentType: string; buffer: Buffer; text: string },
+  accumulators: {
+    linkedChunks: string[];
+    linkedMeta: Array<{ url: string; contentType: string }>;
+    usedOcr: boolean;
+    gymLayoutImageDataUrl: string | null;
+    gymLayoutPage: number | null;
+    gymLayoutFacts: string[];
+    gymLayoutZones: GymLayoutZone[];
+    gymLayoutSelection?: GymLayoutSelectionDiagnostics;
+    coachPageHints: CoachPageHint[];
+  },
+  hooks: Required<UrlDiscoveryTestHooks>
+) {
+  accumulators.linkedMeta.push({ url: assetUrl.toString(), contentType: fetched.contentType });
+  if (/pdf/i.test(fetched.contentType) || /\.pdf(\?|#|$)/i.test(assetUrl.pathname)) {
+    const parsed = await hooks.extractTextFromPdf(fetched.buffer);
+    accumulators.linkedChunks.push(parsed.text);
+    accumulators.usedOcr = accumulators.usedOcr || parsed.usedOcr;
+    accumulators.coachPageHints = uniqueBy(
+      [...accumulators.coachPageHints, ...parsed.coachPageHints],
+      (item) => `${item.page}|${item.heading}|${item.excerpt}`
+    );
+    if (!accumulators.gymLayoutImageDataUrl) {
+      const layout = await hooks.extractGymLayoutImageFromPdf(fetched.buffer);
+      accumulators.gymLayoutImageDataUrl = layout.dataUrl;
+      accumulators.gymLayoutPage = layout.page;
+      accumulators.gymLayoutFacts = uniqueLines(
+        [...accumulators.gymLayoutFacts, ...layout.facts],
+        14
+      );
+      accumulators.gymLayoutZones = normalizeGymLayoutZones(layout.zones);
+      if (layout.selection) {
+        accumulators.gymLayoutSelection = layout.selection;
+      }
+    }
+    return;
+  }
+
+  if (
+    /image\/(png|jpe?g|webp)/i.test(fetched.contentType) ||
+    /\.(png|jpe?g|webp)(\?|#|$)/i.test(assetUrl.pathname)
+  ) {
+    const imageText = await hooks.extractTextFromImage(fetched.buffer);
+    accumulators.linkedChunks.push(imageText);
+    accumulators.usedOcr = true;
+    if (!accumulators.gymLayoutImageDataUrl && looksLikeGymLayoutText(imageText)) {
+      accumulators.gymLayoutImageDataUrl = await hooks.toOptimizedImageDataUrl(fetched.buffer);
+      accumulators.gymLayoutZones = await hooks.openAiExtractGymLayoutZones(
+        fetched.buffer,
+        fetched.contentType || "image/png"
+      );
+    }
+    accumulators.gymLayoutFacts = uniqueLines(
+      [...accumulators.gymLayoutFacts, ...extractHallFactsFromText(imageText)],
+      14
+    );
+  }
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } | null {
@@ -1835,6 +2487,9 @@ export function buildDefaultGymMeetData() {
         registrationInfo: "",
         facilityLayout: "",
         scoringInfo: "",
+        resultsInfo: "",
+        rotationSheetsInfo: "",
+        awardsInfo: "",
         sessionWindows: [],
         operationalNotes: [],
       },
@@ -1859,11 +2514,37 @@ export function buildDefaultGymMeetData() {
         feeAmount: "",
         rideShare: "",
         accessibility: "",
+        parkingLinks: [],
+        parkingPricingLinks: [],
         policyFood: "",
         policyHydration: "",
         policySafety: "",
         policyAnimals: "",
         additionalDocuments: [],
+      },
+      coaches: {
+        enabled: false,
+        signIn: "",
+        attire: "",
+        hospitality: "",
+        floorAccess: "",
+        scratches: "",
+        floorMusic: "",
+        rotationSheets: "",
+        awards: "",
+        regionalCommitment: "",
+        qualification: "",
+        meetFormat: "",
+        equipment: "",
+        refundPolicy: "",
+        paymentInstructions: "",
+        entryFees: [],
+        teamFees: [],
+        lateFees: [],
+        deadlines: [],
+        contacts: [],
+        links: [],
+        notes: [],
       },
       gear: {
         enabled: false,
@@ -1914,6 +2595,8 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
           sourceType: "file",
           usedOcr,
           linkedAssets: [],
+          discoveredLinks: [],
+          crawledPages: [],
           gymLayoutImageDataUrl: gymLayout.dataUrl || null,
           gymLayoutFacts: combinedLayoutFacts,
           gymLayoutZones: gymLayout.zones,
@@ -1941,6 +2624,8 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
           sourceType: "file",
           usedOcr: true,
           linkedAssets: [],
+          discoveredLinks: [],
+          crawledPages: [],
           gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
           gymLayoutFacts,
           gymLayoutZones,
@@ -1954,13 +2639,19 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
   }
 
   const url = new URL(input.url);
-  const page = await fetchWithLimit(url.toString());
+  const hooks = getUrlDiscoveryHooks();
+  const page = await hooks.fetchWithLimit(url.toString());
   const html = page.text || page.buffer.toString("utf8");
   const readable = stripHtml(html);
   const metadata = extractMetadataText(html);
-  const linkedAssets = collectLinkedAssets(html, url);
+  const pageTitle = getPageTitle(html);
+  const rootCandidates = collectDiscoveryCandidates(html, url, 0);
   const linkedChunks: string[] = [];
+  const htmlChunks: string[] = [buildHtmlTextChunk(url.toString(), metadata, readable)];
   const linkedMeta: Array<{ url: string; contentType: string }> = [];
+  const discoveredLinkMap = new Map<string, CrawlCandidate>();
+  const crawledPages: CrawledPage[] = [{ url: url.toString(), title: pageTitle, depth: 0 }];
+  const fetchedAssetUrls = new Set<string>();
   let usedOcr = false;
   let gymLayoutImageDataUrl: string | null = null;
   let gymLayoutPage: number | null = null;
@@ -1969,52 +2660,96 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
   let gymLayoutSelection: GymLayoutSelectionDiagnostics | undefined = undefined;
   let coachPageHints: CoachPageHint[] = [];
 
-  for (const asset of linkedAssets) {
+  for (const candidate of rootCandidates) {
+    upsertDiscoveredLink(discoveredLinkMap, candidate);
+  }
+
+  const accumulators = {
+    linkedChunks,
+    linkedMeta,
+    usedOcr,
+    gymLayoutImageDataUrl,
+    gymLayoutPage,
+    gymLayoutFacts,
+    gymLayoutZones,
+    gymLayoutSelection,
+    coachPageHints,
+  };
+
+  const fetchAssetCandidate = async (candidate: CrawlCandidate) => {
+    if (fetchedAssetUrls.has(candidate.url)) return;
+    if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) return;
     try {
-      const fetched = await fetchWithLimit(asset.toString());
-      linkedMeta.push({ url: asset.toString(), contentType: fetched.contentType });
-      if (/pdf/i.test(fetched.contentType) || /\.pdf(\?|#|$)/i.test(asset.pathname)) {
-        const parsed = await extractTextFromPdf(fetched.buffer);
-        linkedChunks.push(parsed.text);
-        usedOcr = usedOcr || parsed.usedOcr;
-        coachPageHints = uniqueBy(
-          [...coachPageHints, ...parsed.coachPageHints],
-          (item) => `${item.page}|${item.heading}|${item.excerpt}`
-        );
-        if (!gymLayoutImageDataUrl) {
-          const layout = await extractGymLayoutImageFromPdf(fetched.buffer);
-          gymLayoutImageDataUrl = layout.dataUrl;
-          gymLayoutPage = layout.page;
-          gymLayoutFacts = uniqueLines([...gymLayoutFacts, ...layout.facts], 14);
-          gymLayoutZones = normalizeGymLayoutZones(layout.zones);
-          if (layout.selection) {
-            gymLayoutSelection = layout.selection;
-          }
-        }
-        continue;
-      }
-      if (
-        /image\/(png|jpe?g|webp)/i.test(fetched.contentType) ||
-        /\.(png|jpe?g|webp)(\?|#|$)/i.test(asset.pathname)
-      ) {
-        const imageText = await extractTextFromImage(fetched.buffer);
-        linkedChunks.push(imageText);
-        usedOcr = true;
-        if (!gymLayoutImageDataUrl && looksLikeGymLayoutText(imageText)) {
-          gymLayoutImageDataUrl = await toOptimizedImageDataUrl(fetched.buffer);
-          gymLayoutZones = await openAiExtractGymLayoutZones(
-            fetched.buffer,
-            fetched.contentType || "image/png"
-          );
-        }
-        gymLayoutFacts = uniqueLines([...gymLayoutFacts, ...extractHallFactsFromText(imageText)], 14);
-      }
+      const fetched = await hooks.fetchWithLimit(candidate.url);
+      fetchedAssetUrls.add(candidate.url);
+      upsertDiscoveredLink(discoveredLinkMap, {
+        ...candidate,
+        followed: true,
+        contentType: fetched.contentType || null,
+      });
+      await appendFetchedAssetText(new URL(candidate.url), fetched, accumulators, hooks);
     } catch {
       // Best-effort linked assets.
     }
+  };
+
+  for (const asset of rootCandidates.filter((candidate) => candidate.kind === "asset")) {
+    if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) break;
+    await fetchAssetCandidate(asset);
   }
 
-  const fullText = [metadata, readable, ...linkedChunks]
+  for (const childPage of rootCandidates.filter((candidate) => candidate.kind === "html")) {
+    if (crawledPages.length - 1 >= MAX_FOLLOWED_CHILD_PAGES) break;
+    try {
+      const fetched = await hooks.fetchWithLimit(childPage.url);
+      upsertDiscoveredLink(discoveredLinkMap, {
+        ...childPage,
+        followed: true,
+        contentType: fetched.contentType || null,
+      });
+      if (!/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)) {
+        if (isAssetUrl(childPage.url) || /pdf|image\//i.test(fetched.contentType)) {
+          await appendFetchedAssetText(new URL(childPage.url), fetched, accumulators, hooks);
+          fetchedAssetUrls.add(childPage.url);
+        }
+        continue;
+      }
+
+      const childHtml = fetched.text || fetched.buffer.toString("utf8");
+      const childUrl = new URL(childPage.url);
+      const childMetadata = extractMetadataText(childHtml);
+      const childReadable = stripHtml(childHtml);
+      const childTitle = getPageTitle(childHtml);
+      crawledPages.push({ url: childPage.url, title: childTitle, depth: 1 });
+      htmlChunks.push(buildHtmlTextChunk(childPage.url, childMetadata, childReadable));
+
+      const childCandidates = collectDiscoveryCandidates(childHtml, childUrl, 1);
+      for (const candidate of childCandidates) {
+        upsertDiscoveredLink(discoveredLinkMap, candidate);
+      }
+      for (const asset of childCandidates.filter((candidate) => candidate.kind === "asset")) {
+        if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) break;
+        await fetchAssetCandidate(asset);
+      }
+    } catch {
+      // Best-effort child pages.
+    }
+  }
+
+  usedOcr = accumulators.usedOcr;
+  gymLayoutImageDataUrl = accumulators.gymLayoutImageDataUrl;
+  gymLayoutPage = accumulators.gymLayoutPage;
+  gymLayoutFacts = accumulators.gymLayoutFacts;
+  gymLayoutZones = accumulators.gymLayoutZones;
+  gymLayoutSelection = accumulators.gymLayoutSelection;
+  coachPageHints = accumulators.coachPageHints;
+
+  const discoveredLinks = [...discoveredLinkMap.values()]
+    .sort(compareDiscoveryCandidates)
+    .slice(0, MAX_DISCOVERED_LINKS)
+    .map(({ score: _score, ...item }) => item);
+
+  const fullText = [...htmlChunks, ...linkedChunks]
     .filter(Boolean)
     .join("\n\n---\n\n")
     .trim();
@@ -2038,7 +2773,9 @@ export async function extractDiscoveryText(input: DiscoverySourceInput): Promise
       sourceType: "url",
       usedOcr,
       linkedAssets: linkedMeta,
-      pageTitle: safeString(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ""),
+      discoveredLinks,
+      crawledPages,
+      pageTitle: pageTitle || "",
       gymLayoutImageDataUrl: gymLayoutImageDataUrl || null,
       gymLayoutFacts: mergedLayoutFacts,
       gymLayoutZones,
@@ -2073,6 +2810,7 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
     "warmup": string|null, "marchIn": string|null, "rotationOrder": string|null, "judgingNotes": string|null,
     "doorsOpen": string|null, "arrivalGuidance": string|null, "registrationInfo": string|null,
     "facilityLayout": string|null, "scoringInfo": string|null,
+    "resultsInfo": string|null, "rotationSheetsInfo": string|null, "awardsInfo": string|null,
     "sessionWindows": [{ "date": string|null, "start": string|null, "end": string|null, "note": string|null }],
     "operationalNotes": [string]
   },
@@ -2080,22 +2818,33 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
     "parking": string|null, "trafficAlerts": string|null, "hotel": string|null,
     "meals": string|null, "fees": string|null, "waivers": string|null,
     "rideShare": string|null, "accessibility": string|null,
-    "parkingLinks": [{ "label": string, "url": string }]
+    "parkingLinks": [{ "label": string, "url": string }],
+    "parkingPricingLinks": [{ "label": string, "url": string }]
   },
   "policies": {
     "food": string|null, "hydration": string|null, "safety": string|null, "animals": string|null, "misc": [string]
   },
   "coachInfo": {
-    "hasContent": boolean,
     "signIn": string|null,
-    "attire": [string],
+    "attire": string|null,
     "hospitality": string|null,
     "floorAccess": string|null,
     "scratches": string|null,
+    "floorMusic": string|null,
     "rotationSheets": string|null,
+    "awards": string|null,
     "regionalCommitment": string|null,
+    "qualification": string|null,
+    "meetFormat": string|null,
+    "equipment": string|null,
+    "refundPolicy": string|null,
+    "paymentInstructions": string|null,
+    "entryFees": [{ "label": string, "amount": string, "note": string|null }],
+    "teamFees": [{ "label": string, "amount": string, "note": string|null }],
+    "lateFees": [{ "label": string, "amount": string, "trigger": string|null, "note": string|null }],
     "contacts": [{ "role": string, "name": string|null, "email": string|null, "phone": string|null }],
     "deadlines": [{ "label": string, "date": string|null, "note": string|null }],
+    "links": [{ "label": string, "url": string }],
     "notes": [string]
   },
   "contacts": [{ "role": string, "name": string|null, "email": string|null, "phone": string|null }],
@@ -2140,14 +2889,17 @@ function buildProfessionalParsePrompt(
     "- `parent_packet`: doors/arrival, facility layout, parking/traffic, visitor policies.",
     "- `registration_packet`: entry fees, qualification criteria, deadlines, refund/late-fee rules, organizer contacts.",
     "- `athlete_session`: warmup schedule, march-in, session windows, rotation order/apparatus, awards, assigned gym.",
-    "- `coachInfo`: sign-in, attire, hospitality, scratches, floor-access rules, rotation-sheet instructions, regional commitment steps, and coach/admin contacts.",
+    "- Documents may be mixed packets. Use `documentProfile` only as the coarse primary label; still extract both public and coach-only sections when present.",
+    "- `coachInfo`: sign-in, attire, hospitality, scratches, floor-access rules, rotation-sheet instructions, regional commitment steps, payment/refund/qualification rules, and coach/admin contacts.",
     "",
     "## Field-Level Rules",
     "- `rotationOrder`: populate ONLY when the source explicitly lists an apparatus/rotation sequence.",
     "- Narrative references to rotation sheets are NOT a sequence; set `rotationOrder` to null and keep narrative in operational notes.",
     "- For `dates`, preserve meet ranges exactly when present (example: `March 6-8, 2026`).",
     "- Never use update/revision stamps (e.g., `Updated February 23, 2026`) as meet date values.",
+    "- Never use posted timestamps (for example `Posted 3/4/26`) as meet date values.",
     "- Never use traffic windows or unrelated schedule snippets as primary meet dates.",
+    "- Never place late-fee dates, refund deadlines, or entry deadlines in `dates`, `startAt`, or `endAt`.",
     "- URLs must be absolute (https://...) whenever possible.",
     "- Strings must be short and factual. No meta commentary.",
     "- Use only explicitly visible/source-grounded facts. No paraphrase or inferred venue details.",
@@ -2158,7 +2910,18 @@ function buildProfessionalParsePrompt(
     "- Do not output fragmented line-wrap artifacts (for example avoid splitting one sentence into multiple array items).",
     "- If evidence includes coach-page hints, treat them as a strong signal to populate `coachInfo`.",
     "- Put coach-only operational instructions in `coachInfo` before using generic `contacts`, `deadlines`, or `unmappedFacts`.",
-    "- `coachInfo.attire` and `coachInfo.notes` should contain short standalone bullet-like strings, not paragraphs.",
+    "- Route public spectator pricing ONLY into `admission`.",
+    "- Do not repeat public meet dates inside `meetDetails.operationalNotes`; dates belong in `dates` only.",
+    "- Do not repeat public admission pricing inside `meetDetails.operationalNotes`; pricing belongs in `admission` only.",
+    "- Do not place public admission pass labels or ticket notes in `meetDetails.operationalNotes` (examples: `Day Pass`, `All Session Pass`, `Adult`, `Child`, `Children 5 and under`, `Cash only`, `Credit card`).",
+    "- If a line is about spectator tickets, pass types, admission prices, or who gets in free, route it ONLY to `admission` and keep it out of `meetDetails.operationalNotes`.",
+    "- Route club/coach registration fees, team fees, late fees, payment rules, refunds, qualification, meet format, equipment notes, and coach operations into `coachInfo`.",
+    "- Never place coach entry fees or team fees into public `admission`.",
+    "- Keep parking maps/rates in `logistics.parkingLinks` or `logistics.parkingPricingLinks`.",
+    "- Put public results/live scoring text in `meetDetails.resultsInfo`; put coach-only rotation-sheet procedures in `coachInfo.rotationSheets` or `meetDetails.rotationSheetsInfo` only when they are public-facing.",
+    "- `coachInfo.attire` should be one concise string. Use `coachInfo.notes` for extra bullet-like coach notes.",
+    "- For `communications.announcements`, use a short `title` when obvious and keep the `body` as the explanatory sentence only.",
+    "- Never repeat the title words at the beginning of `communications.announcements[].body`.",
     "",
     "## No Fact Left Behind",
     "Any fact that does not map to a primary field must be placed in one of:",
@@ -2228,6 +2991,9 @@ function normalizeParseResult(value: any): ParseResult | null {
       registrationInfo: safeString(value.meetDetails?.registrationInfo) || null,
       facilityLayout: safeString(value.meetDetails?.facilityLayout) || null,
       scoringInfo: safeString(value.meetDetails?.scoringInfo) || null,
+      resultsInfo: safeString(value.meetDetails?.resultsInfo) || null,
+      rotationSheetsInfo: safeString(value.meetDetails?.rotationSheetsInfo) || null,
+      awardsInfo: safeString(value.meetDetails?.awardsInfo) || null,
       sessionWindows: pickArray(value.meetDetails?.sessionWindows)
         .map((item) => ({
           date: safeString(item?.date) || null,
@@ -2258,6 +3024,15 @@ function normalizeParseResult(value: any): ParseResult | null {
           .filter((item) => item.url),
         (item) => item.url
       ),
+      parkingPricingLinks: uniqueBy(
+        pickArray(value.logistics?.parkingPricingLinks)
+          .map((item) => ({
+            label: safeString(item?.label) || "Parking pricing",
+            url: normalizeUrl(item?.url),
+          }))
+          .filter((item) => item.url),
+        (item) => item.url
+      ),
     },
     policies: {
       food: safeString(value.policies?.food) || null,
@@ -2267,17 +3042,57 @@ function normalizeParseResult(value: any): ParseResult | null {
       misc: pickArray(value.policies?.misc).map((item) => safeString(item)).filter(Boolean),
     },
     coachInfo: {
-      hasContent: Boolean(value.coachInfo?.hasContent),
       signIn: safeString(value.coachInfo?.signIn) || null,
-      attire: uniqueBy(
-        pickArray(value.coachInfo?.attire).map((item) => safeString(item)).filter(Boolean),
-        (item) => item
-      ),
+      attire:
+        safeString(value.coachInfo?.attire) ||
+        uniqueBy(
+          pickArray(value.coachInfo?.attire).map((item) => safeString(item)).filter(Boolean),
+          (item) => item
+        ).join("\n") ||
+        null,
       hospitality: safeString(value.coachInfo?.hospitality) || null,
       floorAccess: safeString(value.coachInfo?.floorAccess) || null,
       scratches: safeString(value.coachInfo?.scratches) || null,
+      floorMusic: safeString(value.coachInfo?.floorMusic) || null,
       rotationSheets: safeString(value.coachInfo?.rotationSheets) || null,
+      awards: safeString(value.coachInfo?.awards) || null,
       regionalCommitment: safeString(value.coachInfo?.regionalCommitment) || null,
+      qualification: safeString(value.coachInfo?.qualification) || null,
+      meetFormat: safeString(value.coachInfo?.meetFormat) || null,
+      equipment: safeString(value.coachInfo?.equipment) || null,
+      refundPolicy: safeString(value.coachInfo?.refundPolicy) || null,
+      paymentInstructions: safeString(value.coachInfo?.paymentInstructions) || null,
+      entryFees: uniqueBy(
+        pickArray(value.coachInfo?.entryFees)
+          .map((item) => ({
+            label: safeString(item?.label) || "Entry fee",
+            amount: safeString(item?.amount || item?.price),
+            note: safeString(item?.note) || null,
+          }))
+          .filter((item) => item.label || item.amount || item.note),
+        (item) => [item.label, item.amount, item.note || ""].join("|")
+      ),
+      teamFees: uniqueBy(
+        pickArray(value.coachInfo?.teamFees)
+          .map((item) => ({
+            label: safeString(item?.label) || "Team fee",
+            amount: safeString(item?.amount || item?.price),
+            note: safeString(item?.note) || null,
+          }))
+          .filter((item) => item.label || item.amount || item.note),
+        (item) => [item.label, item.amount, item.note || ""].join("|")
+      ),
+      lateFees: uniqueBy(
+        pickArray(value.coachInfo?.lateFees)
+          .map((item) => ({
+            label: safeString(item?.label) || "Late fee",
+            amount: safeString(item?.amount || item?.price),
+            trigger: safeString(item?.trigger) || null,
+            note: safeString(item?.note) || null,
+          }))
+          .filter((item) => item.label || item.amount || item.trigger || item.note),
+        (item) => [item.label, item.amount, item.trigger || "", item.note || ""].join("|")
+      ),
       contacts: uniqueBy(
         pickArray(value.coachInfo?.contacts)
           .map((item) => ({
@@ -2298,6 +3113,15 @@ function normalizeParseResult(value: any): ParseResult | null {
           }))
           .filter((item) => item.date || item.note || item.label !== "Coach deadline"),
         (item) => [item.label, item.date || "", item.note || ""].join("|")
+      ),
+      links: uniqueBy(
+        pickArray(value.coachInfo?.links)
+          .map((item) => ({
+            label: safeString(item?.label) || "Coach link",
+            url: normalizeUrl(item?.url),
+          }))
+          .filter((item) => item.url),
+        (item) => item.url
       ),
       notes: uniqueBy(
         pickArray(value.coachInfo?.notes).map((item) => safeString(item)).filter(Boolean),
@@ -2361,6 +3185,125 @@ function normalizeParseResult(value: any): ParseResult | null {
         .filter((item) => item.title || item.body),
       passcode: safeString(value.communications?.passcode) || null,
     },
+  };
+}
+
+function mergeCoachFeesFromAdmission(parseResult: ParseResult): ParseResult {
+  const spectatorAdmission: ParseResult["admission"] = [];
+  const entryFees = [...parseResult.coachInfo.entryFees];
+  const teamFees = [...parseResult.coachInfo.teamFees];
+  const lateFees = [...parseResult.coachInfo.lateFees];
+
+  for (const item of parseResult.admission) {
+    const bucket = inferCoachFeeBucket(item);
+    if (!isSpectatorAdmissionLabel(item.label) && bucket) {
+      if (bucket === "entry") {
+        entryFees.push({
+          label: item.label || "Entry fee",
+          amount: item.price,
+          note: item.note || null,
+        });
+      } else if (bucket === "team") {
+        teamFees.push({
+          label: item.label || "Team fee",
+          amount: item.price,
+          note: item.note || null,
+        });
+      } else if (bucket === "late") {
+        lateFees.push({
+          label: item.label || "Late fee",
+          amount: item.price,
+          trigger: item.note || null,
+          note: item.note || null,
+        });
+      }
+      continue;
+    }
+    spectatorAdmission.push(item);
+  }
+
+  return {
+    ...parseResult,
+    admission: uniqueBy(spectatorAdmission, (item) =>
+      [item.label, item.price, item.note || ""].join("|")
+    ),
+    coachInfo: {
+      ...parseResult.coachInfo,
+      entryFees: uniqueBy(entryFees, (item) => [item.label, item.amount, item.note || ""].join("|")),
+      teamFees: uniqueBy(teamFees, (item) => [item.label, item.amount, item.note || ""].join("|")),
+      lateFees: uniqueBy(lateFees, (item) =>
+        [item.label, item.amount, item.trigger || "", item.note || ""].join("|")
+      ),
+    },
+  };
+}
+
+function routeCoachDeadlines(parseResult: ParseResult): ParseResult {
+  const publicDeadlines: ParseResult["deadlines"] = [];
+  const coachDeadlines = [...parseResult.coachInfo.deadlines];
+  for (const item of parseResult.deadlines) {
+    const haystack = `${item.label} ${item.note || ""}`;
+    if (/(entry|registration|deadline|late fee|refund|regional|qualification|payment|meet maker|reservation)/i.test(haystack)) {
+      coachDeadlines.push(item);
+      continue;
+    }
+    publicDeadlines.push(item);
+  }
+  return {
+    ...parseResult,
+    deadlines: uniqueBy(publicDeadlines, (item) => [item.label, item.date || "", item.note || ""].join("|")),
+    coachInfo: {
+      ...parseResult.coachInfo,
+      deadlines: uniqueBy(coachDeadlines, (item) => [item.label, item.date || "", item.note || ""].join("|")),
+    },
+  };
+}
+
+function reconcileParsedDates(parseResult: ParseResult, extractedText: string): ParseResult {
+  const dateAnalysis = classifyMeetDateCandidates(extractedText);
+  const primary = dateAnalysis.primary;
+  const currentRange = deriveDateRangeFromText(parseResult.dates);
+  const currentLabel = safeString(parseResult.dates);
+  const currentLooksAdministrative =
+    /\b(updated|posted|deadline|late fee|refund|entry|page\s+\d+\s+of\s+\d+)\b/i.test(currentLabel);
+  const shouldReplaceDates =
+    Boolean(primary) &&
+    (currentLooksAdministrative ||
+      !currentRange.startDate ||
+      !currentLabel ||
+      (primary &&
+        currentRange.startDate &&
+        primary.startDate &&
+        currentRange.startDate !== primary.startDate &&
+        primary.score >= 4));
+
+  if (!primary || !shouldReplaceDates) {
+    return parseResult;
+  }
+
+  const preserveIsoTime = (iso: string | null, nextDate: string | null) => {
+    if (!iso || !nextDate) return iso;
+    const match = iso.match(/T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/);
+    if (!match) return `${nextDate}T00:00:00.000Z`;
+    return `${nextDate}${match[0]}`;
+  };
+
+  const nextStartAt =
+    !parseResult.startAt ||
+    !isDateWithinRange(parseResult.startAt.slice(0, 10), primary.startDate, primary.endDate)
+      ? preserveIsoTime(parseResult.startAt, primary.startDate)
+      : parseResult.startAt;
+  const nextEndAt =
+    !parseResult.endAt ||
+    !isDateWithinRange(parseResult.endAt.slice(0, 10), primary.startDate, primary.endDate)
+      ? preserveIsoTime(parseResult.endAt, primary.endDate || primary.startDate)
+      : parseResult.endAt;
+
+  return {
+    ...parseResult,
+    dates: primary.label,
+    startAt: nextStartAt,
+    endAt: nextEndAt,
   };
 }
 
@@ -2429,6 +3372,9 @@ function buildEmptyParseResult(): ParseResult {
       registrationInfo: null,
       facilityLayout: null,
       scoringInfo: null,
+      resultsInfo: null,
+      rotationSheetsInfo: null,
+      awardsInfo: null,
       sessionWindows: [],
       operationalNotes: [],
     },
@@ -2442,6 +3388,7 @@ function buildEmptyParseResult(): ParseResult {
       rideShare: null,
       accessibility: null,
       parkingLinks: [],
+      parkingPricingLinks: [],
     },
     policies: {
       food: null,
@@ -2451,16 +3398,26 @@ function buildEmptyParseResult(): ParseResult {
       misc: [],
     },
     coachInfo: {
-      hasContent: false,
       signIn: null,
-      attire: [],
+      attire: null,
       hospitality: null,
       floorAccess: null,
       scratches: null,
+      floorMusic: null,
       rotationSheets: null,
+      awards: null,
       regionalCommitment: null,
+      qualification: null,
+      meetFormat: null,
+      equipment: null,
+      refundPolicy: null,
+      paymentInstructions: null,
+      entryFees: [],
+      teamFees: [],
+      lateFees: [],
       contacts: [],
       deadlines: [],
+      links: [],
       notes: [],
     },
     contacts: [],
@@ -2556,6 +3513,10 @@ export async function parseMeetFromExtractedText(
   evidence: DiscoveryEvidence;
 }> {
   const evidence = buildDiscoveryEvidence(extractedText, extractionMeta);
+  const finalizeParseResult = (value: ParseResult): ParseResult => {
+    const withCoachRouting = routeCoachDeadlines(mergeCoachFeesFromAdmission(value));
+    return reconcileParsedDates(withCoachRouting, extractedText);
+  };
   if (extractionMeta.textQuality === "poor") {
     return {
       parseResult: buildEmptyParseResult(),
@@ -2575,7 +3536,7 @@ export async function parseMeetFromExtractedText(
     openAiRaw = first.raw;
     if (first.result) {
       return {
-        parseResult: first.result,
+        parseResult: finalizeParseResult(first.result),
         modelUsed: "openai",
         rawModelOutput: first.raw,
         evidence,
@@ -2589,7 +3550,7 @@ export async function parseMeetFromExtractedText(
     openAiRaw = second.raw;
     if (second.result) {
       return {
-        parseResult: second.result,
+        parseResult: finalizeParseResult(second.result),
         modelUsed: "openai",
         rawModelOutput: second.raw,
         evidence,
@@ -2613,7 +3574,7 @@ export async function parseMeetFromExtractedText(
     throw new Error("Gemini returned invalid JSON");
   }
   return {
-    parseResult: gemini.result,
+    parseResult: finalizeParseResult(gemini.result),
     modelUsed: "gemini",
     rawModelOutput: gemini.raw || openAiRaw,
     evidence,
@@ -2676,7 +3637,9 @@ export async function mapParseResultToGymData(
     ),
     14
   );
-  const assignedGym = safeString(existingAdvanced.meet?.assignedGym || "");
+  const assignedGym = safeString(
+    parseResult.athlete.assignedGym || existingAdvanced.meet?.assignedGym || ""
+  );
   const extractionLayoutImage = safeString(extractionMeta?.gymLayoutImageDataUrl);
   const extractionLayoutZones = normalizeGymLayoutZones(extractionMeta?.gymLayoutZones);
   const assignedGymLayoutImage =
@@ -2715,6 +3678,9 @@ export async function mapParseResultToGymData(
     safeString(parseResult.meetDetails.registrationInfo),
     safeString(parseResult.meetDetails.facilityLayout),
     safeString(parseResult.meetDetails.scoringInfo),
+    safeString(parseResult.meetDetails.resultsInfo),
+    safeString(parseResult.meetDetails.rotationSheetsInfo),
+    safeString(parseResult.meetDetails.awardsInfo),
   ].filter(Boolean);
   const dedicatedFieldKeys = new Set(
     dedicatedFieldValues
@@ -2768,6 +3734,11 @@ export async function mapParseResultToGymData(
         ? `Facility layout: ${parseResult.meetDetails.facilityLayout}`
         : "",
       parseResult.meetDetails.scoringInfo ? `Scoring: ${parseResult.meetDetails.scoringInfo}` : "",
+      parseResult.meetDetails.resultsInfo ? `Results: ${parseResult.meetDetails.resultsInfo}` : "",
+      parseResult.meetDetails.rotationSheetsInfo
+        ? `Rotation sheets: ${parseResult.meetDetails.rotationSheetsInfo}`
+        : "",
+      parseResult.meetDetails.awardsInfo ? `Awards: ${parseResult.meetDetails.awardsInfo}` : "",
       ...layoutFacts.map((item) => `Hall layout: ${item}`),
       ...policyLines,
     ].filter(Boolean),
@@ -2789,6 +3760,11 @@ export async function mapParseResultToGymData(
     ...parseResult.logistics.parkingLinks.map((item, idx) => ({
       id: `parking-link-${idx + 1}`,
       name: item.label || `Parking Link ${idx + 1}`,
+      url: item.url,
+    })),
+    ...parseResult.logistics.parkingPricingLinks.map((item, idx) => ({
+      id: `parking-pricing-link-${idx + 1}`,
+      name: item.label || `Parking Pricing ${idx + 1}`,
       url: item.url,
     })),
   ]
@@ -2827,6 +3803,34 @@ export async function mapParseResultToGymData(
   const derivedCoachName = safeString(primaryCoachContact?.name);
   const derivedAssistantCoachName = safeString(assistantCoachContact?.name);
   const derivedCoachPhone = safeString(primaryCoachContact?.phone);
+  const coachSectionEnabled = hasCoachInfoContent(parseResult.coachInfo);
+  const coachLinks = uniqueBy(
+    [...parseResult.coachInfo.links, ...parseResult.links]
+      .map((item) => ({
+        label: safeString(item?.label) || "Coach link",
+        url: normalizeUrl(item?.url),
+      }))
+      .filter(
+        (item) =>
+          item.url &&
+          /(coach|entry|payment|refund|qualification|regional|rotation|meet maker|reservation|score|result)/i.test(
+            `${item.label} ${item.url}`
+          )
+      ),
+    (item) => item.url
+  );
+  const coachNotes = uniqueBy(
+    parseResult.coachInfo.notes.map((item) => safeString(item)).filter(Boolean),
+    (item) => item
+  );
+  const coachDeadlines = uniqueBy(
+    parseResult.coachInfo.deadlines.map((item) => ({
+      label: safeString(item.label) || "Coach deadline",
+      date: safeString(item.date) || "",
+      note: safeString(item.note) || "",
+    })),
+    (item) => `${item.label}|${item.date}|${item.note}`
+  );
 
   const generatedAnnouncements: Array<{ title: string; body: string }> = [];
   const existingAnnouncementEntries: Array<{ title: string; body: string }> = pickArray(
@@ -2856,6 +3860,18 @@ export async function mapParseResultToGymData(
     generatedAnnouncements.push({
       title: "Scoring Information",
       body: parseResult.meetDetails.scoringInfo,
+    });
+  }
+  if (parseResult.meetDetails.resultsInfo) {
+    generatedAnnouncements.push({
+      title: "Results",
+      body: parseResult.meetDetails.resultsInfo,
+    });
+  }
+  if (parseResult.meetDetails.awardsInfo) {
+    generatedAnnouncements.push({
+      title: "Awards",
+      body: parseResult.meetDetails.awardsInfo,
     });
   }
   for (const item of parseResult.deadlines) {
@@ -2933,6 +3949,9 @@ export async function mapParseResultToGymData(
       registrationInfo: parseResult.meetDetails.registrationInfo || "",
       facilityLayout: parseResult.meetDetails.facilityLayout || "",
       scoringInfo: parseResult.meetDetails.scoringInfo || "",
+      resultsInfo: parseResult.meetDetails.resultsInfo || "",
+      rotationSheetsInfo: parseResult.meetDetails.rotationSheetsInfo || "",
+      awardsInfo: parseResult.meetDetails.awardsInfo || "",
       sessionWindows: parseResult.meetDetails.sessionWindows || [],
       operationalNotes,
     },
@@ -2947,12 +3966,70 @@ export async function mapParseResultToGymData(
       trafficAlerts: parseResult.logistics.trafficAlerts || "",
       rideShare: parseResult.logistics.rideShare || "",
       accessibility: parseResult.logistics.accessibility || "",
+      parkingLinks: parseResult.logistics.parkingLinks || [],
+      parkingPricingLinks: parseResult.logistics.parkingPricingLinks || [],
       policyFood: parseResult.policies.food || "",
       policyHydration: parseResult.policies.hydration || "",
       policySafety: parseResult.policies.safety || "",
       policyAnimals: parseResult.policies.animals || "",
       gymLayoutImage: resolvedGymLayoutImage,
       gymLayoutLabel: resolvedGymLayoutLabel,
+    },
+    coaches: {
+      ...(existingAdvanced.coaches || {}),
+      enabled: coachSectionEnabled,
+      signIn: parseResult.coachInfo.signIn || "",
+      attire: parseResult.coachInfo.attire || "",
+      hospitality: parseResult.coachInfo.hospitality || "",
+      floorAccess: parseResult.coachInfo.floorAccess || "",
+      scratches: parseResult.coachInfo.scratches || "",
+      floorMusic: parseResult.coachInfo.floorMusic || "",
+      rotationSheets: parseResult.coachInfo.rotationSheets || "",
+      awards: parseResult.coachInfo.awards || "",
+      regionalCommitment: parseResult.coachInfo.regionalCommitment || "",
+      qualification: parseResult.coachInfo.qualification || "",
+      meetFormat: parseResult.coachInfo.meetFormat || "",
+      equipment: parseResult.coachInfo.equipment || "",
+      refundPolicy: parseResult.coachInfo.refundPolicy || "",
+      paymentInstructions: parseResult.coachInfo.paymentInstructions || "",
+      entryFees: parseResult.coachInfo.entryFees.map((item, idx) => ({
+        id: `entry-fee-${idx + 1}`,
+        label: item.label,
+        amount: item.amount,
+        note: item.note || "",
+      })),
+      teamFees: parseResult.coachInfo.teamFees.map((item, idx) => ({
+        id: `team-fee-${idx + 1}`,
+        label: item.label,
+        amount: item.amount,
+        note: item.note || "",
+      })),
+      lateFees: parseResult.coachInfo.lateFees.map((item, idx) => ({
+        id: `late-fee-${idx + 1}`,
+        label: item.label,
+        amount: item.amount,
+        trigger: item.trigger || "",
+        note: item.note || "",
+      })),
+      deadlines: coachDeadlines.map((item, idx) => ({
+        id: `coach-deadline-${idx + 1}`,
+        label: item.label,
+        date: item.date,
+        note: item.note,
+      })),
+      contacts: coachContacts.map((item, idx) => ({
+        id: `coach-contact-${idx + 1}`,
+        role: item.role,
+        name: item.name || "",
+        email: item.email || "",
+        phone: item.phone || "",
+      })),
+      links: coachLinks.map((item, idx) => ({
+        id: `coach-link-${idx + 1}`,
+        label: item.label,
+        url: item.url,
+      })),
+      notes: coachNotes,
     },
     gear: {
       ...(existingAdvanced.gear || {}),
@@ -3050,7 +4127,12 @@ export async function mapParseResultToGymData(
       advancedSections: nextAdvanced,
     },
     links: uniqueBy(
-      [...parseResult.links, ...parseResult.logistics.parkingLinks].filter((item) => item.url),
+      [
+        ...parseResult.links,
+        ...parseResult.coachInfo.links,
+        ...parseResult.logistics.parkingLinks,
+        ...parseResult.logistics.parkingPricingLinks,
+      ].filter((item) => item.url),
       (item) => item.url
     ),
     advancedSections: nextAdvanced,
@@ -3076,6 +4158,7 @@ export function computeGymBuilderStatuses(data: any) {
   const meet = adv?.meet || {};
   const practice = adv?.practice || {};
   const logistics = adv?.logistics || {};
+  const coaches = adv?.coaches || {};
   const gear = adv?.gear || {};
   const volunteers = adv?.volunteers || {};
   const announcements = adv?.announcements || {};
@@ -3101,7 +4184,10 @@ export function computeGymBuilderStatuses(data: any) {
               meet?.arrivalGuidance ||
               meet?.registrationInfo ||
               meet?.facilityLayout ||
-              meet?.scoringInfo
+              meet?.scoringInfo ||
+              meet?.resultsInfo ||
+              meet?.rotationSheetsInfo ||
+              meet?.awardsInfo
           )
         ),
       ]),
@@ -3120,13 +4206,47 @@ export function computeGymBuilderStatuses(data: any) {
               meet?.marchInTime ||
               meet?.doorsOpen ||
               meet?.arrivalGuidance ||
-              meet?.registrationInfo
+              meet?.registrationInfo ||
+              meet?.resultsInfo
           )
         ),
-        Boolean(safeString(meet?.facilityLayout || meet?.scoringInfo || meet?.judgingNotes)),
+        Boolean(
+          safeString(
+            meet?.facilityLayout ||
+              meet?.scoringInfo ||
+              meet?.judgingNotes ||
+              meet?.rotationSheetsInfo ||
+              meet?.awardsInfo
+          )
+        ),
         (Array.isArray(meet?.rotationOrder) && meet.rotationOrder.length > 0) ||
           (Array.isArray(meet?.sessionWindows) && meet.sessionWindows.length > 0) ||
           (Array.isArray(meet?.operationalNotes) && meet.operationalNotes.length > 0),
+      ]),
+      coaches: getStatusFromFlags([
+        Boolean(
+          safeString(
+            coaches?.signIn ||
+              coaches?.hospitality ||
+              coaches?.floorAccess ||
+              coaches?.rotationSheets ||
+              coaches?.paymentInstructions
+          )
+        ),
+        Boolean(
+          safeString(
+            coaches?.attire ||
+              coaches?.scratches ||
+              coaches?.regionalCommitment ||
+              coaches?.refundPolicy ||
+              coaches?.qualification
+          )
+        ),
+        (Array.isArray(coaches?.entryFees) && coaches.entryFees.length > 0) ||
+          (Array.isArray(coaches?.teamFees) && coaches.teamFees.length > 0) ||
+          (Array.isArray(coaches?.lateFees) && coaches.lateFees.length > 0) ||
+          (Array.isArray(coaches?.deadlines) && coaches.deadlines.length > 0) ||
+          (Array.isArray(coaches?.contacts) && coaches.contacts.length > 0),
       ]),
       practicePlanner:
         Array.isArray(practice?.blocks) && practice.blocks.length > 0
@@ -3186,3 +4306,20 @@ export function computeGymBuilderStatuses(data: any) {
     },
   };
 }
+
+export const __testUtils = {
+  deriveDateRangeFromText,
+  classifyMeetDateCandidates,
+  normalizeParseResult,
+  mergeCoachFeesFromAdmission,
+  routeCoachDeadlines,
+  hasCoachInfoContent,
+  collectDiscoveryCandidates,
+  compareDiscoveryCandidates,
+  setUrlDiscoveryTestHooks(hooks: UrlDiscoveryTestHooks | null) {
+    urlDiscoveryTestHooks = hooks;
+  },
+  resetUrlDiscoveryTestHooks() {
+    urlDiscoveryTestHooks = null;
+  },
+};

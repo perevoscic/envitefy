@@ -14,6 +14,9 @@ const safeString = (value: unknown): string =>
     ? ""
     : String(value).trim();
 
+const countCurrencyAmounts = (value: string) =>
+  (safeString(value).match(/\$\s*\d+(?:\.\d{2})?/g) || []).length;
+
 const formatDate = (value: string) => {
   if (!value) return "";
   try {
@@ -100,7 +103,7 @@ export function buildGymMeetDiscoveryContent({
   customFields,
   advancedSections,
   date,
-  description,
+  detailsText,
   venue,
   address,
 }: {
@@ -108,11 +111,13 @@ export function buildGymMeetDiscoveryContent({
   customFields: any;
   advancedSections: any;
   date?: string;
-  description?: string;
+  detailsText?: string;
   venue?: string;
   address?: string;
 }): GymMeetDiscoveryContent {
   const logistics = advancedSections?.logistics || {};
+  const meetSection = advancedSections?.meet || {};
+  const coachesSection = advancedSections?.coaches || {};
   const parseResult = eventData?.discoverySource?.parseResult || {};
   const parseLogistics = parseResult?.logistics || {};
   const parseMeetDetails = parseResult?.meetDetails || {};
@@ -134,6 +139,12 @@ export function buildGymMeetDiscoveryContent({
         include.test(`${item.label} ${item.url}`) &&
         (!exclude || !exclude.test(`${item.label} ${item.url}`))
     );
+  const pickLinks = (include: RegExp, exclude?: RegExp, limit = 6) =>
+    normalizedLinks.filter(
+      (item) =>
+        include.test(`${item.label} ${item.url}`) &&
+        (!exclude || !exclude.test(`${item.label} ${item.url}`))
+    ).slice(0, limit);
 
   const parseAdmissionsFromText = (value: any) =>
     String(value || "")
@@ -209,6 +220,18 @@ export function buildGymMeetDiscoveryContent({
     normalizedLinks.find((item) => item.url !== mapDashboardLink?.url) ||
     normalizedLinks[1];
   const merchandiseLink = pickLink(/(merch|shop|store|vendor|apparel|souvenir|leotard)/i);
+  const normalizedParkingLinks = (
+    Array.isArray(logistics?.parkingLinks) ? logistics.parkingLinks : parseLogistics?.parkingLinks || []
+  )
+    .map(toAction)
+    .filter(Boolean);
+  const normalizedParkingPricingLinks = (
+    Array.isArray(logistics?.parkingPricingLinks)
+      ? logistics.parkingPricingLinks
+      : parseLogistics?.parkingPricingLinks || []
+  )
+    .map(toAction)
+    .filter(Boolean);
 
   const eventDatesLabel =
     customFields?.meetDateRangeLabel ||
@@ -216,6 +239,7 @@ export function buildGymMeetDiscoveryContent({
     (date ? formatDate(date) : "");
   const venueLabel = safeString(venue || eventData?.venue);
   const addressLabel = safeString(address || eventData?.address);
+  const normalizedDetailsText = safeString(detailsText);
   const facilityMapAddress = addressLabel || venueLabel;
   const gymLayoutImageUrl = safeString(
     advancedSections?.logistics?.gymLayoutImage ||
@@ -431,6 +455,7 @@ export function buildGymMeetDiscoveryContent({
     ? announcementBody
     : sourceMerchandiseLine;
   const resultsInfoText =
+    safeString(meetSection?.resultsInfo || parseMeetDetails?.resultsInfo) ||
     sourceResultsText ||
     (/(official results|live scoring|meetscoresonline)/i.test(announcementBody)
       ? announcementBody
@@ -533,9 +558,19 @@ export function buildGymMeetDiscoveryContent({
     );
   const eventDatesLabelNormalized = normalizeCompareText(eventDatesLabel);
   const isAdmissionLine = (line: string) =>
-    /(spectator admission|door fees?|weekend passes?|cash\b|adults?\b.*\$\d|children\s*\(?\d{1,2}\s*[-–]?\s*\d{0,2}\)?\b.*\$\d|\$\d+\s*per\s*day)/i.test(
-      safeString(line)
-    );
+    ((text: string) => {
+      const currencyCount = countCurrencyAmounts(text);
+      const normalized = safeString(text);
+      return (
+        /(spectator admission|admission|tickets?|day passes?|all session passes?|weekend passes?|credit card|cash only|adults?\b|child(?:ren)?(?:\s*under)?\b|children\s+\d+\s+and\s+under\b|seniors?\b|military\b|free\b)/i.test(
+          normalized
+        ) &&
+        (currencyCount > 0 ||
+          /(door fees?|tickets?|day passes?|all session passes?|weekend passes?|credit card|cash only|under\s+\d+\s*:\s*free|children\s+\d+\s+and\s+under\s*:\s*free|free admission|child under|children?\b.*\bfree\b|adults?\b.*\$|children?\b.*\$)/i.test(
+            normalized
+          ))
+      );
+    })(safeString(line));
   const isSpectatorLogisticsLine = (line: string) =>
     /^(doors open|arrival guidance|registration):/i.test(safeString(line));
   const isMeetDateLine = (line: string) => {
@@ -551,6 +586,7 @@ export function buildGymMeetDiscoveryContent({
     );
   };
   const isMeetDetailsExcludedLine = (line: string) =>
+    isMeetDateLine(line) ||
     isAdmissionLine(line) ||
     isSpectatorLogisticsLine(line) ||
     isHydrationLine(line) ||
@@ -573,7 +609,6 @@ export function buildGymMeetDiscoveryContent({
 
   const meetDetailsFallbackLines = uniqueTextLines(
     [
-      eventDatesLabel ? `Meet dates: ${eventDatesLabel}` : "",
       safeString(parseMeetDetails?.facilityLayout)
         ? `Facility layout: ${safeString(parseMeetDetails.facilityLayout)}`
         : "",
@@ -587,7 +622,7 @@ export function buildGymMeetDiscoveryContent({
     12
   ).filter((line) => line.length > 10);
   const descriptionLines = uniqueTextLines(
-    safeString(description)
+    normalizedDetailsText
       .split(/\n+/)
       .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
       .filter(Boolean),
@@ -597,21 +632,10 @@ export function buildGymMeetDiscoveryContent({
   const meetDetailsRawLines = (() => {
     const out: string[] = [];
     const seen = new Set<string>();
-    let keptMeetDate = false;
     for (const rawLine of [...descriptionLines, ...meetDetailsFallbackLines, ...primaryMeetDetailsLines]) {
       const line = safeString(rawLine);
       if (!line || line.length <= 10) continue;
       if (isMeetDetailsExcludedLine(line)) continue;
-      if (isMeetDateLine(line)) {
-        if (keptMeetDate) continue;
-        keptMeetDate = true;
-        const canonicalLine = eventDatesLabel ? `Meet dates: ${eventDatesLabel}` : line;
-        const canonicalKey = normalizeCompareText(canonicalLine);
-        if (!canonicalKey || seen.has(canonicalKey)) continue;
-        seen.add(canonicalKey);
-        out.push(canonicalLine);
-        continue;
-      }
       const key = normalizeCompareText(line);
       if (!key || seen.has(key)) continue;
       seen.add(key);
@@ -731,9 +755,64 @@ export function buildGymMeetDiscoveryContent({
   )
     ? eventData.discoverySource.extractionMeta.coachPageHints
     : [];
+  const normalizeCoachFeeItems = (items: any[], labelFallback: string) =>
+    (Array.isArray(items) ? items : [])
+      .map((item: any) => ({
+        label: safeString(item?.label || labelFallback),
+        amount: safeString(item?.amount || item?.price),
+        note: safeString(item?.note),
+      }))
+      .filter((item) => item.label || item.amount || item.note)
+      .filter((item, idx, arr) => {
+        const key = normalizeCompareText(`${item.label}|${item.amount}|${item.note}`);
+        return (
+          arr.findIndex((candidate) => {
+            const candidateKey = normalizeCompareText(
+              `${safeString(candidate.label)}|${safeString(candidate.amount)}|${safeString(candidate.note)}`
+            );
+            return candidateKey === key;
+          }) === idx
+        );
+      });
+  const normalizeCoachLateFeeItems = (items: any[]) =>
+    (Array.isArray(items) ? items : [])
+      .map((item: any) => ({
+        label: safeString(item?.label || "Late fee"),
+        amount: safeString(item?.amount || item?.price),
+        trigger: safeString(item?.trigger),
+        note: safeString(item?.note),
+      }))
+      .filter((item) => item.label || item.amount || item.trigger || item.note)
+      .filter((item, idx, arr) => {
+        const key = normalizeCompareText(
+          `${item.label}|${item.amount}|${item.trigger}|${item.note}`
+        );
+        return (
+          arr.findIndex((candidate) => {
+            const candidateKey = normalizeCompareText(
+              `${safeString(candidate.label)}|${safeString(candidate.amount)}|${safeString(
+                candidate.trigger
+              )}|${safeString(candidate.note)}`
+            );
+            return candidateKey === key;
+          }) === idx
+        );
+      });
+  const normalizeCoachLinks = (items: any[]) =>
+    (Array.isArray(items) ? items : [])
+      .map((item: any) => ({
+        label: safeString(item?.label || "Coach link"),
+        url: safeString(item?.url),
+      }))
+      .filter((item) => /^https?:\/\//i.test(item.url))
+      .filter((item, idx, arr) => {
+        const key = normalizeCompareText(item.url);
+        return arr.findIndex((candidate) => normalizeCompareText(candidate.url) === key) === idx;
+      });
   const coachRolePattern =
     /\b(coach|meet director|director of operations|assistant event coordinator|floor manager)\b/i;
   const coachContacts = ([
+    ...((Array.isArray(coachesSection?.contacts) ? coachesSection.contacts : []) as any[]),
     ...((Array.isArray(parseCoachInfo?.contacts) ? parseCoachInfo.contacts : []) as any[]),
     ...((Array.isArray(parseResult?.contacts) ? parseResult.contacts : []).filter((item: any) =>
       coachRolePattern.test(`${safeString(item?.role)} ${safeString(item?.name)}`)
@@ -762,6 +841,7 @@ export function buildGymMeetDiscoveryContent({
       );
     });
   const coachDeadlines = [
+    ...((Array.isArray(coachesSection?.deadlines) ? coachesSection.deadlines : []) as any[]),
     ...((Array.isArray(parseCoachInfo?.deadlines) ? parseCoachInfo.deadlines : []) as any[]),
     ...((Array.isArray(parseResult?.deadlines) ? parseResult.deadlines : []).filter((item: any) =>
       /(regional|entry|registration|deadline|meet reservation|meet maker)/i.test(
@@ -818,9 +898,29 @@ export function buildGymMeetDiscoveryContent({
         line
       )
     ) || "";
+  const sourceCoachPaymentLine =
+    sourceLines.find((line) =>
+      /(payment|payable|credit card|convenience fee|cashier'?s check|meet maker|venmo|zelle|checks? payable|refund)/i.test(
+        line
+      )
+    ) || "";
+  const sourceCoachQualificationLine =
+    sourceLines.find((line) => /(qualif|state meet|qualifying score|must qualify)/i.test(line)) || "";
+  const sourceCoachFormatLine =
+    sourceLines.find((line) => /(modified capital cup|meet format|capital cup|super team|competition format)/i.test(line)) ||
+    "";
+  const sourceCoachEquipmentLine =
+    sourceLines.find((line) => /(equipment|ub mats|sting mats|vault table|rod floor|apparatus)/i.test(line)) ||
+    "";
+  const sourceCoachAwardsLine =
+    sourceLines.find((line) => /(team awards?|awards ceremony|awards will be|awards presented)/i.test(line)) ||
+    "";
+  const sourceCoachFloorMusicLine =
+    sourceLines.find((line) => /(floor music|music file|music upload|music must be)/i.test(line)) || "";
   const coachAttire = uniqueTextLines(
     [
-      ...(Array.isArray(parseCoachInfo?.attire) ? parseCoachInfo.attire : []),
+      ...toStructuredListItems(parseCoachInfo?.attire || ""),
+      ...toStructuredListItems(coachesSection?.attire || ""),
       ...sourceLines.filter((line) =>
         /(closed toe athletic shoes|athletic or tailored shorts|collared or business casual|no hats or visors|dress code|coaches attire)/i.test(
           line
@@ -831,6 +931,7 @@ export function buildGymMeetDiscoveryContent({
   );
   const coachNotes = uniqueTextLines(
     [
+      ...((Array.isArray(coachesSection?.notes) ? coachesSection.notes : []) as any[]),
       ...(Array.isArray(parseCoachInfo?.notes) ? parseCoachInfo.notes : []),
       ...extractionCoachPageHints
         .map((item: any) => safeString(item?.excerpt))
@@ -850,28 +951,95 @@ export function buildGymMeetDiscoveryContent({
         .filter(Boolean)
         .some((candidate) => normalizeCompareText(candidate) === normalizeCompareText(line))
   );
-  const coachSignIn = safeString(parseCoachInfo?.signIn || sourceCoachSignInLine);
-  const coachHospitality = safeString(parseCoachInfo?.hospitality || sourceCoachHospitalityLine);
-  const coachFloorAccess = safeString(parseCoachInfo?.floorAccess || sourceCoachFloorAccessLine);
-  const coachScratches = safeString(parseCoachInfo?.scratches || sourceCoachScratchesLine);
+  const coachSignIn = safeString(coachesSection?.signIn || parseCoachInfo?.signIn || sourceCoachSignInLine);
+  const coachHospitality = safeString(
+    coachesSection?.hospitality || parseCoachInfo?.hospitality || sourceCoachHospitalityLine
+  );
+  const coachFloorAccess = safeString(
+    coachesSection?.floorAccess || parseCoachInfo?.floorAccess || sourceCoachFloorAccessLine
+  );
+  const coachScratches = safeString(
+    coachesSection?.scratches || parseCoachInfo?.scratches || sourceCoachScratchesLine
+  );
+  const coachFloorMusic = safeString(
+    coachesSection?.floorMusic || parseCoachInfo?.floorMusic || sourceCoachFloorMusicLine
+  );
   const coachRotationSheets = safeString(
-    parseCoachInfo?.rotationSheets || sourceCoachRotationLine
+    coachesSection?.rotationSheets || parseCoachInfo?.rotationSheets || sourceCoachRotationLine
   );
   const coachRegionalCommitment = safeString(
-    parseCoachInfo?.regionalCommitment || sourceCoachRegionalLine
+    coachesSection?.regionalCommitment || parseCoachInfo?.regionalCommitment || sourceCoachRegionalLine
   );
+  const coachAwards = safeString(
+    coachesSection?.awards || parseCoachInfo?.awards || sourceCoachAwardsLine
+  );
+  const coachQualification = safeString(
+    coachesSection?.qualification || parseCoachInfo?.qualification || sourceCoachQualificationLine
+  );
+  const coachMeetFormat = safeString(
+    coachesSection?.meetFormat || parseCoachInfo?.meetFormat || sourceCoachFormatLine
+  );
+  const coachEquipment = safeString(
+    coachesSection?.equipment || parseCoachInfo?.equipment || sourceCoachEquipmentLine
+  );
+  const coachRefundPolicy = safeString(
+    coachesSection?.refundPolicy || parseCoachInfo?.refundPolicy || ""
+  );
+  const coachPaymentInstructions = safeString(
+    coachesSection?.paymentInstructions || parseCoachInfo?.paymentInstructions || sourceCoachPaymentLine
+  );
+  const coachEntryFees = normalizeCoachFeeItems(
+    [
+      ...((coachesSection?.entryFees as any[]) || []),
+      ...((parseCoachInfo?.entryFees as any[]) || []),
+    ],
+    "Entry fee"
+  );
+  const coachTeamFees = normalizeCoachFeeItems(
+    [
+      ...((coachesSection?.teamFees as any[]) || []),
+      ...((parseCoachInfo?.teamFees as any[]) || []),
+    ],
+    "Team fee"
+  );
+  const coachLateFees = normalizeCoachLateFeeItems(
+    [
+      ...((coachesSection?.lateFees as any[]) || []),
+      ...((parseCoachInfo?.lateFees as any[]) || []),
+    ]
+  );
+  const coachLinks = normalizeCoachLinks([
+    ...((coachesSection?.links as any[]) || []),
+    ...((parseCoachInfo?.links as any[]) || []),
+    ...pickLinks(
+      /(coach|entry|payment|refund|qualification|regional|rotation|meet maker|reservation|score|result)/i,
+      /(parking|traffic|parkmobile|garage|rate|wayfinding)/i,
+      8
+    ),
+  ]);
   const coachesHasContent =
-    Boolean(parseCoachInfo?.hasContent) ||
+    Boolean(coachesSection?.enabled) ||
     coachContacts.length > 0 ||
     coachDeadlines.length > 0 ||
     coachAttire.length > 0 ||
     coachNotes.length > 0 ||
+    coachEntryFees.length > 0 ||
+    coachTeamFees.length > 0 ||
+    coachLateFees.length > 0 ||
+    coachLinks.length > 0 ||
     Boolean(coachSignIn) ||
     Boolean(coachHospitality) ||
     Boolean(coachFloorAccess) ||
     Boolean(coachScratches) ||
+    Boolean(coachFloorMusic) ||
     Boolean(coachRotationSheets) ||
+    Boolean(coachAwards) ||
     Boolean(coachRegionalCommitment) ||
+    Boolean(coachQualification) ||
+    Boolean(coachMeetFormat) ||
+    Boolean(coachEquipment) ||
+    Boolean(coachRefundPolicy) ||
+    Boolean(coachPaymentInstructions) ||
     extractionCoachPageHints.length > 0;
 
   const awardsAreaItems = toStructuredListItems(awardsAreaNote, /^awards?\s*area\s*:\s*/i);
@@ -897,12 +1065,23 @@ export function buildGymMeetDiscoveryContent({
       deadlines: coachDeadlines,
       attire: coachAttire,
       notes: coachNotes,
+      entryFees: coachEntryFees,
+      teamFees: coachTeamFees,
+      lateFees: coachLateFees,
+      links: coachLinks,
       signIn: coachSignIn,
       hospitality: coachHospitality,
       floorAccess: coachFloorAccess,
       scratches: coachScratches,
+      floorMusic: coachFloorMusic,
       rotationSheets: coachRotationSheets,
+      awards: coachAwards,
       regionalCommitment: coachRegionalCommitment,
+      qualification: coachQualification,
+      meetFormat: coachMeetFormat,
+      equipment: coachEquipment,
+      refundPolicy: coachRefundPolicy,
+      paymentInstructions: coachPaymentInstructions,
       hasContent: coachesHasContent,
     },
     venueDetails: {
@@ -941,7 +1120,9 @@ export function buildGymMeetDiscoveryContent({
       alertText: trafficText,
       alertSlots: trafficSlots,
       daylightSavingsNote: sourceDaylightLine,
-      parkingText: safeString(logistics?.parking),
+      parkingText: safeString(logistics?.parking || parseLogistics?.parking),
+      parkingLinks: normalizedParkingLinks,
+      parkingPricingLinks: normalizedParkingPricingLinks,
       mapDashboardLink: toAction(mapDashboardLink),
       ratesInfoLink: toAction(ratesInfoLink),
       rideShareNote,
@@ -951,7 +1132,9 @@ export function buildGymMeetDiscoveryContent({
         Boolean(trafficText) ||
         trafficSlots.length > 0 ||
         Boolean(sourceDaylightLine) ||
-        Boolean(safeString(logistics?.parking)) ||
+        Boolean(safeString(logistics?.parking || parseLogistics?.parking)) ||
+        normalizedParkingLinks.length > 0 ||
+        normalizedParkingPricingLinks.length > 0 ||
         Boolean(rideShareNote) ||
         Boolean(safeString(logistics?.hotelInfo || parseLogistics?.hotel)) ||
         Boolean(facilityMapAddress),

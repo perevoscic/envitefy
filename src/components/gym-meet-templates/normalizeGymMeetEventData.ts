@@ -26,6 +26,109 @@ const normalizeAnnouncementTitle = (value: unknown): string => {
   return /^announcement$/i.test(title) ? "" : title;
 };
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const stripRepeatedTitleFromBody = (body: string, title: string): string => {
+  const normalizedBody = safeString(body);
+  const normalizedTitle = safeString(title).replace(/[:\-–—]+\s*$/g, "").trim();
+  if (!normalizedBody || !normalizedTitle) return normalizedBody;
+
+  const leadingTitlePattern = new RegExp(
+    `^${escapeRegExp(normalizedTitle)}(?:[:\\-–—]\\s*|\\s+)+`,
+    "i"
+  );
+
+  let nextBody = normalizedBody;
+  while (leadingTitlePattern.test(nextBody)) {
+    nextBody = nextBody.replace(leadingTitlePattern, "").trim();
+  }
+  return nextBody || normalizedBody;
+};
+
+const inferAnnouncementFromBody = (body: string): { title: string; body: string } => {
+  const normalizedBody = safeString(body).replace(/\s+/g, " ").trim();
+  if (!normalizedBody) return { title: "", body: "" };
+
+  const words = normalizedBody.split(" ");
+  const maxTitleWords = Math.min(6, Math.max(words.length - 1, 0));
+
+  for (let count = maxTitleWords; count >= 2; count -= 1) {
+    const titleCandidate = words.slice(0, count).join(" ");
+    const remainder = words.slice(count).join(" ");
+    if (
+      remainder &&
+      remainder.toLowerCase().startsWith(`${titleCandidate.toLowerCase()} `)
+    ) {
+      const dedupedBody = stripRepeatedTitleFromBody(normalizedBody, titleCandidate);
+      if (dedupedBody && dedupedBody.length >= 16) {
+        return { title: titleCandidate, body: dedupedBody };
+      }
+    }
+  }
+
+  const bodyStartWords = new Set([
+    "upon",
+    "all",
+    "if",
+    "when",
+    "where",
+    "please",
+    "coaches",
+    "parents",
+    "spectators",
+    "athletes",
+    "results",
+    "live",
+    "doors",
+    "registration",
+    "arrival",
+    "parking",
+    "competition",
+  ]);
+  const bodyStartVerbs = new Set(["will", "are", "is", "must", "may", "can", "should"]);
+
+  for (let index = 2; index < Math.min(words.length, 7); index += 1) {
+    const token = words[index]?.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "") || "";
+    const lower = token.toLowerCase();
+    if (!token) continue;
+    if (!bodyStartWords.has(lower) && !bodyStartVerbs.has(lower)) continue;
+
+    const titleCandidate = words.slice(0, index).join(" ").trim();
+    const bodyCandidate = words.slice(index).join(" ").trim();
+    if (!titleCandidate || !bodyCandidate) continue;
+    if (titleCandidate.length > 64 || bodyCandidate.length < 16) continue;
+    return { title: titleCandidate, body: bodyCandidate };
+  }
+
+  return { title: "", body: normalizedBody };
+};
+
+const normalizeAnnouncementEntry = (
+  item: any,
+  fallbackId: string
+): { id: string; title: string; body: string; date: string } => {
+  const initialTitle = normalizeAnnouncementTitle(item?.title || item?.label);
+  const rawBody = safeString(item?.body || item?.message || item?.text || "");
+  const date = safeString(item?.date || item?.updatedAt || "");
+
+  if (initialTitle) {
+    return {
+      id: item?.id || fallbackId,
+      title: initialTitle,
+      body: stripRepeatedTitleFromBody(rawBody, initialTitle),
+      date,
+    };
+  }
+
+  const inferred = inferAnnouncementFromBody(rawBody);
+  return {
+    id: item?.id || fallbackId,
+    title: inferred.title,
+    body: inferred.body,
+    date,
+  };
+};
+
 const unique = (items: string[], limit = 12) => {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -100,12 +203,9 @@ export const normalizeGymMeetEventData = ({
     advancedSections?.announcements?.announcements ||
     [];
   const announcements = (Array.isArray(announcementsRaw) ? announcementsRaw : [])
-    .map((item: any, idx: number) => ({
-      id: item?.id || `announcement-${idx + 1}`,
-      title: normalizeAnnouncementTitle(item?.title || item?.label),
-      body: safeString(item?.body || item?.message || item?.text || ""),
-      date: safeString(item?.date || item?.updatedAt || ""),
-    }))
+    .map((item: any, idx: number) =>
+      normalizeAnnouncementEntry(item, `announcement-${idx + 1}`)
+    )
     .filter((item) => item.title || item.body);
 
   const linksRaw = Array.isArray(eventData?.links)
@@ -244,12 +344,14 @@ export const normalizeGymMeetEventData = ({
     },
   ].filter((item) => safeString(item.value));
 
+  const detailsText = safeString(eventData?.description || eventData?.details);
+
   const discovery = buildGymMeetDiscoveryContent({
     eventData,
     customFields,
     advancedSections,
     date: safeString(eventData?.date || eventData?.startISO),
-    description: safeString(eventData?.description || eventData?.details),
+    detailsText,
     venue: safeString(eventData?.venue),
     address: safeString(eventData?.address),
   });
@@ -265,7 +367,8 @@ export const normalizeGymMeetEventData = ({
     headerLocation: safeString(headerLocation),
     dateLabel: formatDate(safeString(eventData?.date || eventData?.startISO)),
     timeLabel: formatTime(safeString(eventData?.time)),
-    description: safeString(eventData?.description || eventData?.details),
+    detailsText,
+    heroSummary: undefined,
     team: safeString(customFields?.team || eventData?.extra?.team),
     season: safeString(customFields?.season || eventData?.extra?.season),
     coach: safeString(customFields?.coach || eventData?.extra?.coach),
