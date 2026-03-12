@@ -4,16 +4,19 @@ import { getVisionClient } from "@/lib/gcp";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import {
+  deleteEventHistoryById,
   getUserIdByEmail,
   incrementCreditsByEmail,
   incrementUserScanCounters,
   insertEventHistory,
+  upsertEventHistoryInputBlob,
 } from "@/lib/db";
 import { corsJson, corsPreflight } from "@/lib/cors";
 import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
 import { buildDefaultFootballDiscoveryData } from "@/lib/football-discovery";
 
 export const runtime = "nodejs";
+const DISCOVERY_INGEST_LOG_PREFIX = "[discovery-ingest]";
 
 export function OPTIONS(request: Request) {
   return corsPreflight(request);
@@ -42,6 +45,11 @@ async function handleDiscoveryIngest(
   const rawUrl = String(formData.get("url") || "").trim();
   const hasFile = file instanceof File;
   const hasUrl = Boolean(rawUrl);
+  console.log(`${DISCOVERY_INGEST_LOG_PREFIX} request received`, {
+    workflow: options.workflow,
+    hasFile,
+    hasUrl,
+  });
   if (!hasFile && !hasUrl) {
     return corsJson(
       request,
@@ -58,6 +66,10 @@ async function handleDiscoveryIngest(
   }
 
   const userId = await getSessionUserId();
+  console.log(`${DISCOVERY_INGEST_LOG_PREFIX} resolved user`, {
+    workflow: options.workflow,
+    userId,
+  });
   const baseData = options.buildBaseData();
   const now = new Date().toISOString();
   let discoveryInput: any = null;
@@ -66,6 +78,12 @@ async function handleDiscoveryIngest(
   if (hasFile) {
     const fileValue = file as File;
     const mimeType = fileValue.type || "";
+    console.log(`${DISCOVERY_INGEST_LOG_PREFIX} validating file input`, {
+      workflow: options.workflow,
+      fileName: fileValue.name || "upload",
+      mimeType: mimeType || "application/octet-stream",
+      sizeBytes: fileValue.size || 0,
+    });
     const validMime =
       /pdf/i.test(mimeType) ||
       /image\/(png|jpe?g)/i.test(mimeType) ||
@@ -78,17 +96,69 @@ async function handleDiscoveryIngest(
       );
     }
     const bytes = Buffer.from(await fileValue.arrayBuffer());
-    const dataUrl = `data:${mimeType || "application/octet-stream"};base64,${bytes.toString(
-      "base64"
-    )}`;
     discoveryInput = {
       type: "file",
       fileName: fileValue.name || "upload",
       mimeType: mimeType || "application/octet-stream",
       sizeBytes: fileValue.size || bytes.length,
-      dataUrl,
+      blobStored: true,
     };
     title = fileValue.name?.replace(/\.[^.]+$/, "") || title;
+
+    const row = await insertEventHistory({
+      userId: userId || null,
+      title,
+      data: {
+        ...baseData,
+        title,
+        discoverySource: {
+          status: "ingested",
+          workflow: options.workflow,
+          input: discoveryInput,
+          extractedText: null,
+          parseResult: null,
+          modelUsed: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+    });
+    console.log(`${DISCOVERY_INGEST_LOG_PREFIX} inserted discovery row`, {
+      workflow: options.workflow,
+      eventId: row.id,
+      title,
+    });
+
+    try {
+      await upsertEventHistoryInputBlob({
+        eventId: row.id,
+        mimeType: mimeType || "application/octet-stream",
+        fileName: fileValue.name || "upload",
+        sizeBytes: fileValue.size || bytes.length,
+        data: bytes,
+      });
+      console.log(`${DISCOVERY_INGEST_LOG_PREFIX} stored blob`, {
+        workflow: options.workflow,
+        eventId: row.id,
+        sizeBytes: fileValue.size || bytes.length,
+      });
+    } catch (error) {
+      console.error(`${DISCOVERY_INGEST_LOG_PREFIX} blob write failed`, {
+        workflow: options.workflow,
+        eventId: row.id,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      try {
+        await deleteEventHistoryById(row.id);
+      } catch {}
+      throw error;
+    }
+
+    console.log(`${DISCOVERY_INGEST_LOG_PREFIX} request complete`, {
+      workflow: options.workflow,
+      eventId: row.id,
+    });
+    return corsJson(request, { eventId: row.id });
   } else {
     let normalizedUrl = "";
     try {
@@ -101,6 +171,10 @@ async function handleDiscoveryIngest(
       return corsJson(request, { error: "Invalid URL" }, { status: 400 });
     }
     discoveryInput = { type: "url", url: normalizedUrl };
+    console.log(`${DISCOVERY_INGEST_LOG_PREFIX} accepted url input`, {
+      workflow: options.workflow,
+      url: normalizedUrl,
+    });
   }
 
   const row = await insertEventHistory({
@@ -120,6 +194,11 @@ async function handleDiscoveryIngest(
         updatedAt: now,
       },
     },
+  });
+  console.log(`${DISCOVERY_INGEST_LOG_PREFIX} inserted url discovery row`, {
+    workflow: options.workflow,
+    eventId: row.id,
+    title,
   });
   return corsJson(request, { eventId: row.id });
 }
@@ -158,7 +237,7 @@ async function handleLegacyIngest(request: Request) {
   }
 
   const vision = getVisionClient();
-  const [result] = await vision.textDetection({
+  const [result] = await vision.documentTextDetection({
     image: { content: ocrBuffer },
     imageContext: { languageHints: ["en"] },
   });
@@ -259,6 +338,7 @@ export async function POST(request: Request) {
   try {
     const url = new URL(request.url);
     const mode = (url.searchParams.get("mode") || "").toLowerCase();
+    console.log(`${DISCOVERY_INGEST_LOG_PREFIX} dispatch`, { mode });
     if (mode === "meet_discovery") {
       return await handleMeetDiscoveryIngest(request);
     }
@@ -268,6 +348,9 @@ export async function POST(request: Request) {
     return await handleLegacyIngest(request);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error(`${DISCOVERY_INGEST_LOG_PREFIX} request failed`, {
+      message,
+    });
     return corsJson(request, { error: message }, { status: 500 });
   }
 }

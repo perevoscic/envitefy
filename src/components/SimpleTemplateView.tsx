@@ -5207,7 +5207,7 @@ export default function SimpleTemplateView({
         ref={templateRootRef}
         className="event-modern-container flex justify-center py-3 md:py-8"
       >
-        <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px]">
+        <div className="w-full">
           <div
             className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
               disableThemeBackground

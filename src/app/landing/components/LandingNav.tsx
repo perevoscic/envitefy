@@ -73,7 +73,7 @@ export default function LandingNav() {
           <div className="hidden md:flex items-center gap-4">
             {status === "authenticated" ? (
               <Link
-                href="/calendar"
+                href="/"
                 className="px-5 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
               >
                 Go to Dashboard
@@ -126,7 +126,7 @@ export default function LandingNav() {
             <div className="h-px bg-gray-100 w-full my-2" />
             {status === "authenticated" ? (
               <Link
-                href="/calendar"
+                href="/"
                 className="w-full py-3 rounded-xl bg-black text-white text-center font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >

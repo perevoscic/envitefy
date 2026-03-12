@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUserIdByEmail, listEventHistoryByUser, listRecentEventHistory } from "@/lib/db";
+import { redactHistoryHeavyFields } from "@/lib/history-view";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,8 +25,7 @@ export async function GET() {
         user_id: r.user_id,
         title: r.title,
         created_at: r.created_at,
-        // Avoid huge payloads that can blow up JSON responses
-        data: r.data && typeof r.data === "object" ? { ...r.data, ocrText: undefined } : r.data,
+        data: redactHistoryHeavyFields(r.data),
       }));
 
     return NextResponse.json({

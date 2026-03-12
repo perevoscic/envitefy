@@ -15,13 +15,13 @@ test("normalizeGymMeetEventData maps long packet text to detailsText instead of 
 
   assert.match(
     source,
-    /const detailsText = safeString\(eventData\?\.description \|\| eventData\?\.details\);/
+    /const detailsText = isDiscoveryEvent[\s\S]*stripDiscoveryGeneratedDetails\(eventData\?\.details \|\| eventData\?\.description\)[\s\S]*safeString\(eventData\?\.details \|\| eventData\?\.description\);/
   );
   assert.match(source, /buildGymMeetDiscoveryContent\(\{[\s\S]*detailsText,/);
   assert.match(source, /detailsText,\s*\n\s*heroSummary: undefined,/);
   assert.doesNotMatch(
     source,
-    /\n\s*description:\s*safeString\(eventData\?\.description \|\| eventData\?\.details\),/
+    /\n\s*description:\s*safeString\(eventData\?\.(?:description|details)[\s\S]*,/
   );
 });
 
@@ -63,4 +63,71 @@ test("discovery nav renderers use overflow chips instead of equal-width desktop 
       `${file} still switches the discovery rail to a desktop grid`
     );
   }
+});
+
+test("discovery nav keeps safe-edge padding and avoids naive center scrolling", () => {
+  const source = readSource(
+    "src/components/gym-meet-templates/GymMeetDiscoveryContent.tsx"
+  );
+  const showcaseSource = readSource(
+    "src/components/gym-meet-templates/renderers/ShowcaseGymMeetTemplate.tsx"
+  );
+
+  assert.equal(
+    source.includes('inline: "center"'),
+    false,
+    "GymMeetDiscoveryContent still relies on scrollIntoView center alignment"
+  );
+  assert.match(
+    source,
+    /const navRailClass = `\$\{baseNavRailClass\} pr-12 md:pr-1`;/,
+    "GymMeetDiscoveryContent is missing mobile-safe end padding on the nav rail"
+  );
+  assert.match(
+    source,
+    /const safeEdgeInset = isDesktop \? DESKTOP_NAV_SAFE_EDGE_PX : MOBILE_NAV_SAFE_EDGE_PX;/,
+    "GymMeetDiscoveryContent no longer scrolls tabs into a safe visible region"
+  );
+  assert.match(
+    showcaseSource,
+    /className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 pr-12 md:pr-1"/,
+    "ShowcaseGymMeetTemplate is missing mobile-safe end padding on the tab rail"
+  );
+  assert.match(
+    showcaseSource,
+    /const safeEdgeInset = isDesktop \? DESKTOP_TAB_SAFE_EDGE_PX : MOBILE_TAB_SAFE_EDGE_PX;/,
+    "ShowcaseGymMeetTemplate no longer scrolls tabs into a safe visible region"
+  );
+});
+
+test("quick access renderers keep coach metadata out of link-only actions", () => {
+  const files = [
+    "src/components/gym-meet-templates/renderers/BaseGymMeetTemplate.tsx",
+    "src/components/gym-meet-templates/renderers/DashboardGymMeetTemplate.tsx",
+    "src/components/gym-meet-templates/renderers/EditorialGymMeetTemplate.tsx",
+    "src/components/gym-meet-templates/renderers/ShowcaseGymMeetTemplate.tsx",
+  ];
+
+  for (const file of files) {
+    const source = readSource(file);
+    assert.equal(
+      source.includes("model.quickLinks.length > 0 || Boolean(model.coachPhone"),
+      false,
+      `${file} still treats coach phone as quick access content`
+    );
+    assert.equal(
+      source.includes("Contact Coach"),
+      false,
+      `${file} still renders Contact Coach in Quick Access`
+    );
+  }
+
+  const editorialSource = readSource(
+    "src/components/gym-meet-templates/renderers/EditorialGymMeetTemplate.tsx"
+  );
+  assert.equal(
+    editorialSource.includes("Assistant Coach"),
+    false,
+    "EditorialGymMeetTemplate still renders coach cards in Quick Access"
+  );
 });

@@ -32,46 +32,14 @@ export type CategoryData = {
 
 export function useEventCategories() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const loadHistory = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/history?view=summary&limit=100", {
-        cache: "no-cache",
-        credentials: "include",
-      });
-      const data = await res.json().catch(() => ({ items: [] }));
-      const items = (Array.isArray(data?.items) ? data.items : []).map((item: any) => ({
-        ...item,
-        category: item.category || item.data?.category,
-      }));
-      setHistory(items);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+    setHistory([]);
   }, []);
 
   useEffect(() => {
     loadHistory();
-    
-    const onHistoryChanged = (event: Event) => {
-        // Optimistic updates could go here, or just reload
-        loadHistory();
-    };
-    
-    if (typeof window !== "undefined") {
-        window.addEventListener("history:created", onHistoryChanged);
-        window.addEventListener("history:deleted", onHistoryChanged);
-    }
-    return () => {
-        if (typeof window !== "undefined") {
-            window.removeEventListener("history:created", onHistoryChanged);
-            window.removeEventListener("history:deleted", onHistoryChanged);
-        }
-    };
   }, [loadHistory]);
 
   // Normalize category names - map sport-related categories to "Sport Events"

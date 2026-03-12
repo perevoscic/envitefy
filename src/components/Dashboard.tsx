@@ -542,35 +542,10 @@ export default function Dashboard({
   };
 
   useEffect(() => {
-    if (!isSignedIn) return;
-    const loadDashboard = async () => {
-      setDashboardLoading(true);
-      try {
-        const res = await fetch("/api/dashboard", {
-          credentials: "include",
-          cache: "no-store",
-        });
-        const json = (await res
-          .json()
-          .catch(() => null)) as DashboardResponse | null;
-        if (res.ok && isDashboardResponsePayload(json)) {
-          setDashboardData(json);
-          setNextEventMetrics(json.metricsCache || null);
-          setEnrichMeta(null);
-        } else {
-          setDashboardData(null);
-          setNextEventMetrics(null);
-          setEnrichMeta(null);
-        }
-      } catch {
-        setDashboardData(null);
-        setNextEventMetrics(null);
-        setEnrichMeta(null);
-      } finally {
-        setDashboardLoading(false);
-      }
-    };
-    void loadDashboard();
+    setDashboardLoading(false);
+    setDashboardData(null);
+    setNextEventMetrics(null);
+    setEnrichMeta(null);
   }, [isSignedIn]);
 
   useEffect(() => {
@@ -681,128 +656,15 @@ export default function Dashboard({
       },
     ];
 
-    let ignore = false;
-    (async () => {
-      try {
-        const [eventRes, rsvpRes] = await Promise.all([
-          fetch(`/api/history/${selectedEventId}`, {
-            cache: "no-store",
-            credentials: "include",
-          }),
-          fetch(`/api/events/${selectedEventId}/rsvp`, {
-            cache: "no-store",
-            credentials: "include",
-          }),
-        ]);
-
-        const eventPayload = eventRes.ok
-          ? await eventRes.json().catch(() => null)
-          : null;
-        const rsvpPayload = rsvpRes.ok
-          ? await rsvpRes.json().catch(() => null)
-          : null;
-
-        const rowData = eventPayload?.data || {};
-        const title =
-          eventPayload?.title || selectedEventTitle || "Untitled event";
-        const startRaw =
-          rowData?.startISO ||
-          rowData?.start ||
-          rowData?.fieldsGuess?.start ||
-          rowData?.event?.start ||
-          null;
-        const endRaw =
-          rowData?.endISO ||
-          rowData?.end ||
-          rowData?.fieldsGuess?.end ||
-          rowData?.event?.end ||
-          null;
-        const dateLine = startRaw
-          ? formatEventTimeRange(
-              String(startRaw),
-              endRaw ? String(endRaw) : null
-            )
-          : "Date pending";
-
-        const stats = rsvpPayload?.stats || { yes: 0, no: 0, maybe: 0 };
-        const yes = Number(stats.yes || 0);
-        const no = Number(stats.no || 0);
-        const maybe = Number(stats.maybe || 0);
-        const filled = Number(
-          rsvpPayload?.filled != null ? rsvpPayload.filled : yes + no + maybe
-        );
-        const configuredGuests = Number(rowData?.numberOfGuests || 0);
-        const totalGuests = configuredGuests > 0 ? configuredGuests : filled;
-        const rsvpRate =
-          totalGuests > 0 ? Math.round((filled / totalGuests) * 100) : 0;
-
-        const responses: OwnerRsvpRow[] = Array.isArray(rsvpPayload?.responses)
-          ? rsvpPayload.responses
-              .slice(0, 6)
-              .map((entry: any, index: number) => {
-                const fullName = [entry?.firstName, entry?.lastName]
-                  .map((part) => String(part || "").trim())
-                  .filter(Boolean)
-                  .join(" ");
-                const displayName =
-                  fullName ||
-                  String(entry?.name || "").trim() ||
-                  String(entry?.email || "").trim() ||
-                  `Guest ${index + 1}`;
-                const responseRaw = String(entry?.response || "").toLowerCase();
-                const status: OwnerRsvpRow["status"] =
-                  responseRaw === "yes"
-                    ? "Attending"
-                    : responseRaw === "no"
-                    ? "Declined"
-                    : responseRaw === "maybe"
-                    ? "Maybe"
-                    : "Pending";
-                return {
-                  id: `${selectedEventId}-rsvp-${index}`,
-                  name: displayName,
-                  status,
-                  plusOnes: String(entry?.plusOnes ?? "0"),
-                  foodPrefs: String(entry?.foodPrefs || "-"),
-                };
-              })
-          : [];
-
-        const pageViewsRaw =
-          rowData?.analytics?.pageViews ??
-          rowData?.pageViews ??
-          rowData?.views ??
-          null;
-
-        if (!ignore) {
-          setOwnerDashboardData({
-            title,
-            dateLine,
-            totalGuests,
-            rsvpRate,
-            declined: no,
-            pageViews: formatPageViews(pageViewsRaw),
-            recentRsvps: responses.length > 0 ? responses : fallbackRows,
-          });
-        }
-      } catch {
-        if (!ignore) {
-          setOwnerDashboardData({
-            title: selectedEventTitle || "Untitled event",
-            dateLine: "Date pending",
-            totalGuests: 0,
-            rsvpRate: 0,
-            declined: 0,
-            pageViews: "--",
-            recentRsvps: fallbackRows,
-          });
-        }
-      }
-    })();
-
-    return () => {
-      ignore = true;
-    };
+    setOwnerDashboardData({
+      title: selectedEventTitle || "Untitled event",
+      dateLine: "Date pending",
+      totalGuests: 0,
+      rsvpRate: 0,
+      declined: 0,
+      pageViews: "--",
+      recentRsvps: fallbackRows,
+    });
   }, [selectedEventId, selectedEventTitle]);
 
   const router = useRouter();
@@ -2747,12 +2609,6 @@ function UpcomingEventsPanel({
       <div className="relative z-10 mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-2xl font-semibold text-[#201942]">My Schedule</h3>
-          <Link
-            href="/calendar"
-            className="text-sm font-semibold text-[#4e4acf] transition hover:text-[#3a37a5]"
-          >
-            View Calendar
-          </Link>
         </div>
         <div className="relative">
           <div

@@ -184,8 +184,8 @@ export async function middleware(req: NextRequest) {
     return redirectWithMarker(url, 302);
   }
 
-  // Protect calendar/subscription pages when not signed in
-  const protectedPrefixes = ["/calendar", "/subscription"];
+  // Protect subscription pages when not signed in
+  const protectedPrefixes = ["/subscription"];
   for (const prefix of protectedPrefixes) {
     if (pathname === prefix || pathname.startsWith(prefix + "/")) {
       if (!hasSession) {

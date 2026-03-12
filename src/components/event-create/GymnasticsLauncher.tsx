@@ -18,6 +18,7 @@ type GymnasticsLauncherProps = {
 
 type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
+const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
 
 export default function GymnasticsLauncher({
   forwardQueryString,
@@ -44,6 +45,10 @@ export default function GymnasticsLauncher({
     null
   );
   const cancelRequestedRef = useRef(false);
+  const discoveryLogStateRef = useRef<{
+    status: string;
+    bucket: number;
+  }>({ status: "", bucket: -1 });
 
   const toErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
@@ -84,6 +89,7 @@ export default function GymnasticsLauncher({
   };
 
   const cancelDiscovery = () => {
+    console.log(`${GYM_DISCOVERY_LOG_PREFIX} cancel requested`);
     cancelRequestedRef.current = true;
     clearDiscoveryHandles();
     setUploadBusy(false);
@@ -106,22 +112,49 @@ export default function GymnasticsLauncher({
     url,
     onProgress,
   }: DiscoveryInput & { onProgress?: DiscoveryProgressHandler }) => {
+    const traceId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const log = (message: string, detail?: unknown) => {
+      if (detail === undefined) {
+        console.log(`${GYM_DISCOVERY_LOG_PREFIX} [${traceId}] ${message}`);
+        return;
+      }
+      console.log(`${GYM_DISCOVERY_LOG_PREFIX} [${traceId}] ${message}`, detail);
+    };
     const reportProgress = (progress: number, status: string) => {
+      const bucket = Math.floor(progress / 10);
+      const lastState = discoveryLogStateRef.current;
+      if (lastState.status !== status || lastState.bucket !== bucket || progress === 96 || progress === 100) {
+        log(`progress ${progress}%`, { status });
+        discoveryLogStateRef.current = { status, bucket };
+      }
       if (!onProgress) return;
       onProgress(Math.max(0, Math.min(100, Math.round(progress))), status);
     };
     const throwIfCancelled = () => {
       if (cancelRequestedRef.current) throw abortError();
     };
+    log("starting discovery", file
+      ? {
+          inputType: "file",
+          fileName: file.name,
+          sizeBytes: file.size,
+          mimeType: file.type || "application/octet-stream",
+        }
+      : {
+          inputType: "url",
+          url,
+        });
     const formData = new FormData();
     if (file) formData.append("file", file);
     if (url) formData.append("url", url);
 
     let ingestJson: { eventId?: string; error?: string } = {};
     cancelRequestedRef.current = false;
+    discoveryLogStateRef.current = { status: "", bucket: -1 };
 
     if (file) {
       reportProgress(4, "Uploading meet file...");
+      log("starting ingest upload request");
       ingestJson = await new Promise<{ eventId?: string; error?: string }>(
         (resolve, reject) => {
           const xhr = new XMLHttpRequest();
@@ -151,6 +184,10 @@ export default function GymnasticsLauncher({
                 error?: string;
               };
               if (xhr.status >= 200 && xhr.status < 300 && json?.eventId) {
+                log("ingest upload completed", {
+                  status: xhr.status,
+                  eventId: json.eventId,
+                });
                 resolve(json);
                 return;
               }
@@ -166,6 +203,7 @@ export default function GymnasticsLauncher({
       throwIfCancelled();
     } else {
       reportProgress(20, "Submitting meet URL...");
+      log("starting ingest url request");
       ingestAbortRef.current = new AbortController();
       const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
         method: "POST",
@@ -179,11 +217,16 @@ export default function GymnasticsLauncher({
       if (!ingestRes.ok || !ingestJson?.eventId) {
         throw new Error(ingestJson?.error || "Failed to ingest source");
       }
+      log("ingest url completed", {
+        status: ingestRes.status,
+        eventId: ingestJson.eventId,
+      });
       throwIfCancelled();
     }
 
     const eventId = String(ingestJson.eventId);
     reportProgress(72, "Processing meet file...");
+    log("starting parse request", { eventId });
     let parseProgress = 72;
     parseProgressTimerRef.current = setInterval(() => {
       parseProgress = Math.min(parseProgress + 3, 96);
@@ -192,6 +235,7 @@ export default function GymnasticsLauncher({
 
     try {
       parseAbortRef.current = new AbortController();
+      const parseStartedAt = Date.now();
       const parseRes = await fetch(`/api/parse/${eventId}`, {
         method: "POST",
         credentials: "include",
@@ -200,6 +244,14 @@ export default function GymnasticsLauncher({
         parseAbortRef.current = null;
       });
       const parseJson = await parseRes.json().catch(() => ({}));
+      log("parse request completed", {
+        status: parseRes.status,
+        durationMs: Date.now() - parseStartedAt,
+        modelUsed: parseJson?.modelUsed || null,
+        repaired: parseJson?.repaired ?? null,
+        phase: parseJson?.phase || null,
+        enrichmentPending: parseJson?.enrichment?.pending ?? null,
+      });
       if (!parseRes.ok) {
         throw new Error(parseJson?.error || "Failed to parse source");
       }
@@ -212,6 +264,7 @@ export default function GymnasticsLauncher({
     }
 
     reportProgress(100, "Opening meet builder...");
+    log("routing to builder", { eventId });
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
     router.push(
@@ -228,6 +281,11 @@ export default function GymnasticsLauncher({
     setUploadFileName(pickedFile.name);
     setUploadProgress(0);
     setUploadStatus("Uploading meet file...");
+    console.log(`${GYM_DISCOVERY_LOG_PREFIX} selected file`, {
+      fileName: pickedFile.name,
+      sizeBytes: pickedFile.size,
+      mimeType: pickedFile.type || "application/octet-stream",
+    });
     try {
       await startDiscovery({
         file: pickedFile,
@@ -238,10 +296,12 @@ export default function GymnasticsLauncher({
       });
     } catch (err: unknown) {
       if (isAbortError(err)) {
+        console.log(`${GYM_DISCOVERY_LOG_PREFIX} discovery cancelled by user`);
         setUploadStatus("");
         setUploadProgress(0);
         return;
       }
+      console.error(`${GYM_DISCOVERY_LOG_PREFIX} discovery failed`, err);
       setUploadError(toErrorMessage(err, "Failed to parse file"));
       setUploadStatus("");
     } finally {

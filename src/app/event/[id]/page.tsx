@@ -1418,7 +1418,7 @@ export default async function EventPage({
 
   return (
     <main
-      className={`event-modern-page max-w-5xl mx-auto px-5 sm:px-10 py-10 md:py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(2.6rem+env(safe-area-inset-top))] ${
+      className={`event-modern-page w-full px-5 sm:px-10 py-10 md:py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(2.6rem+env(safe-area-inset-top))] ${
         isReadOnly
           ? "pb-[calc(1em+env(safe-area-inset-bottom))]"
           : "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-[calc(1em+env(safe-area-inset-bottom))]"

@@ -82,6 +82,194 @@ test("mixed packet content keeps rich operational sections separate but merges l
   assert.match(JSON.stringify(findSection(discovery, "traffic-parking")), /Host Hotel/);
 });
 
+test("schedule section renders between coaches and venue details when populated", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          admission: [{ label: "Adults", price: "$20", note: "" }],
+          contacts: [{ role: "Meet Director", email: "director@example.com" }],
+          links: [],
+        },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: { admission: "Adults: $20" },
+    advancedSections: {
+      meet: {},
+      logistics: { gymLayoutLabel: "Assigned gym location: Hall B" },
+      coaches: { enabled: true, signIn: "Sign in at the scoring table." },
+      schedule: {
+        enabled: true,
+        venueLabel: "Greater Fort Lauderdale / Broward County Convention Center",
+        supportEmail: "director@example.com",
+        days: [
+          {
+            id: "fri",
+            date: "Friday, March 13, 2026",
+            shortDate: "Friday • Mar 13",
+            sessions: [
+              {
+                id: "fri-1",
+                code: "FR1",
+                label: "Session FR1",
+                group: "Bronze",
+                startTime: "8:00 AM",
+                clubs: [
+                  { id: "club-1", name: "Browns Gym", teamAwardEligible: true },
+                  { id: "club-2", name: "Twisters Canada", teamAwardEligible: false },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+  });
+
+  const schedule = findSection(discovery, "schedule");
+  const orderedIds = discovery.sections.map((section: any) => section.id);
+
+  assert.ok(schedule);
+  assert.ok(findBlock(schedule, "schedule-board"));
+  assert.equal(schedule?.hideSectionHeading, true);
+  assert.deepEqual(
+    orderedIds.filter((id: string) =>
+      ["admission", "coaches", "schedule", "venue-details"].includes(id)
+    ),
+    ["admission", "coaches", "schedule", "venue-details"]
+  );
+});
+
+test("schedule section stays hidden when no usable schedule sessions exist", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: { links: [] },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {},
+      logistics: { gymLayoutLabel: "Assigned gym location: Hall B" },
+      coaches: {},
+      schedule: {
+        enabled: true,
+        days: [{ id: "fri", date: "Friday, March 13, 2026", shortDate: "Friday • Mar 13", sessions: [] }],
+      },
+    },
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+  });
+
+  assert.equal(findSection(discovery, "schedule"), undefined);
+});
+
+test("schedule section renders when only session codes are present", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: { links: [] },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {},
+      logistics: {},
+      coaches: {},
+      schedule: {
+        enabled: true,
+        days: [
+          {
+            id: "fri",
+            date: "Friday, March 13, 2026",
+            shortDate: "Friday • Mar 13",
+            sessions: [{ id: "fri-1", code: "FR1", clubs: [] }],
+          },
+        ],
+      },
+    },
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+  });
+
+  assert.ok(findSection(discovery, "schedule"));
+});
+
+test("rotation-sheet links are rewritten to the fixed URL without touching unrelated links", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          meetDetails: {
+            rotationSheetsInfo: "Rotation sheets will be posted online before the event.",
+          },
+          coachInfo: {
+            signIn: "Coaches sign in at the scoring table.",
+            links: [
+              {
+                label: "Rotation Sheets Portal",
+                url: "https://legacy.example.com/rotation-sheets",
+              },
+            ],
+          },
+          links: [
+            {
+              label: "Master Rotation Sheet",
+              url: "https://old.example.com/master-rotation-sheet",
+            },
+            { label: "Official Results", url: "https://example.com/results" },
+            { label: "Purchase Admission Here", url: "https://tickets.example.com/admission" },
+            { label: "Parking Map", url: "https://example.com/parking-map" },
+          ],
+        },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {
+        rotationSheetsInfo: "Rotation sheets will be posted online before the event.",
+      },
+      coaches: {
+        enabled: true,
+      },
+      logistics: {
+        parkingLinks: [{ label: "Parking Map", url: "https://example.com/parking-map" }],
+      },
+    },
+    venue: "State Arena",
+    address: "123 Main St, Chicago, IL 60601",
+  });
+
+  const documents = findSection(discovery, "documents");
+  const coaches = findSection(discovery, "coaches");
+  const admission = findSection(discovery, "admission");
+  const trafficParking = findSection(discovery, "traffic-parking");
+  const allContent = JSON.stringify(discovery.sections);
+
+  assert.ok(documents);
+  assert.ok(coaches);
+  assert.ok(admission);
+  assert.ok(trafficParking);
+  assert.match(allContent, /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
+  assert.match(JSON.stringify(documents), /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
+  assert.match(JSON.stringify(coaches), /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
+  assert.match(JSON.stringify(admission), /https:\/\/tickets\.example\.com\/admission/i);
+  assert.match(JSON.stringify(trafficParking), /https:\/\/example\.com\/parking-map/i);
+  assert.match(allContent, /https:\/\/example\.com\/results/i);
+  assert.doesNotMatch(allContent, /https:\/\/legacy\.example\.com\/rotation-sheets/i);
+  assert.doesNotMatch(allContent, /https:\/\/old\.example\.com\/master-rotation-sheet/i);
+});
+
 test("lightweight results merge into meet details without leaking into admission", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {

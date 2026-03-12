@@ -6,6 +6,7 @@ import StaticMap from "@/components/StaticMap";
 import {
   Activity,
   Car,
+  Calendar,
   ClipboardList,
   ExternalLink,
   MapPin,
@@ -16,6 +17,7 @@ import {
 import { ShowcaseThemeConfig } from "./showcaseThemes";
 import { GymMeetRenderModel } from "./types";
 import { stripLinkedDomainMentions } from "./displayText";
+import ScheduleBoard from "./ScheduleBoard";
 
 const safeUrl = (value: unknown) => {
   const text = typeof value === "string" ? value.trim() : "";
@@ -28,6 +30,7 @@ const iconByKind: Record<string, React.ComponentType<{ size?: number; className?
   admission: Ticket,
   results: Ticket,
   coaches: Users,
+  schedule: Calendar,
   venue: MapPin,
   venue_map: MapPin,
   traffic_parking: Car,
@@ -130,6 +133,11 @@ export default function ShowcaseDiscoveryContent({
     if (block?.type === "cta" && block.action) return [block.action];
     return [];
   });
+  const isBareScheduleSection =
+    Boolean(section?.hideSectionHeading) &&
+    Array.isArray(section?.blocks) &&
+    section.blocks.length === 1 &&
+    section.blocks[0]?.type === "schedule-board";
 
   if (!section) {
     return (
@@ -303,27 +311,56 @@ export default function ShowcaseDiscoveryContent({
             <StaticMap address={block.address} height={360} />
           </div>
         );
+      case "schedule-board":
+        return (
+          <ScheduleBoard
+            schedule={block.data}
+            preferredClubName={model?.assignedGym}
+            appearance={{
+              panelClass: theme.cardClass,
+              cardClass: theme.cardClass,
+              summaryCardClass: theme.summaryCardClass,
+              navShellClass: theme.navShellClass,
+              navActiveClass: theme.navActiveClass,
+              navIdleClass: theme.navIdleClass,
+              sectionTitleClass: theme.sectionTitleClass,
+              sectionTitleStyle: theme.sectionTitleStyle,
+              accentClass: theme.accentClass,
+              sectionMutedClass: theme.sectionMutedClass,
+              primaryButtonClass: theme.ctaPrimaryClass,
+              secondaryButtonClass: theme.ctaSecondaryClass,
+              sessionTitleClass: theme.sectionTitleClass,
+              sessionTitleStyle: theme.sectionTitleStyle,
+            }}
+          />
+        );
       default:
         return null;
     }
   };
 
+  if (isBareScheduleSection) {
+    return <>{renderBlock(section.blocks[0])}</>;
+  }
+
   return (
     <section className={theme.panelClass}>
       <div className="space-y-6">
-        <div>
-          {sectionEyebrow ? (
-            <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
-              {sectionEyebrow}
-            </p>
-          ) : null}
-          <h2
-            className={`mt-2 text-3xl font-black tracking-tight sm:text-4xl ${panelTitleClass}`}
-            style={panelTitleStyle}
-          >
-            {section.label}
-          </h2>
-        </div>
+        {section.hideSectionHeading ? null : (
+          <div>
+            {sectionEyebrow ? (
+              <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
+                {sectionEyebrow}
+              </p>
+            ) : null}
+            <h2
+              className={`mt-2 text-3xl font-black tracking-tight sm:text-4xl ${panelTitleClass}`}
+              style={panelTitleStyle}
+            >
+              {section.label}
+            </h2>
+          </div>
+        )}
 
         <div className="space-y-4">{section.blocks.map((block: any) => <div key={block.id}>{renderBlock(block)}</div>)}</div>
       </div>

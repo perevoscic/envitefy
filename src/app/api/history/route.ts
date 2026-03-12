@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, insertEventHistory, listEventHistoryByUser, listAcceptedSharedEventsForUser, listSharesByOwnerForEvents, upsertSignupForm } from "@/lib/db";
+import { getUserIdByEmail, insertEventHistory, listHistoryForUser, upsertSignupForm } from "@/lib/db";
 import { getCachedHistory, setCachedHistory, invalidateUserHistory } from "@/lib/history-cache";
 import { createHash } from "crypto";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
+import {
+  isCacheableHistoryView,
+  normalizeHistoryView,
+  redactHistoryHeavyFields,
+} from "@/lib/history-view";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,12 +19,9 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const limitRaw = url.searchParams.get("limit");
-    const viewRaw = (url.searchParams.get("view") || "summary").toLowerCase();
+    const viewRaw = url.searchParams.get("view");
     const limit = Math.max(1, Math.min(200, Number.parseInt(limitRaw || "40", 10)));
-    const view: "summary" | "calendar" | "sidebar" | "full" =
-      viewRaw === "full" || viewRaw === "calendar" || viewRaw === "sidebar"
-        ? (viewRaw as any)
-        : "summary";
+    const view = normalizeHistoryView(viewRaw);
 
     const session: any = await getServerSession(authOptions as any);
     const sessionUser: any = (session && (session as any).user) || null;
@@ -37,131 +39,41 @@ export async function GET(req: Request) {
       return NextResponse.json({ items: [] });
     }
 
-    // In-memory cache guards DB load
-    const cached = getCachedHistory(userId);
-    let items: any[];
-    if (cached) {
-      items = cached;
-    } else {
-      const [own, shared] = await Promise.all([
-        listEventHistoryByUser(userId, limit),
-        (async () => {
-          try {
-            return await listAcceptedSharedEventsForUser(userId);
-          } catch (e: any) {
-            if (HISTORY_DEBUG) {
-              console.warn(
-                "[history] GET: shared events unavailable (likely no event_shares table yet)",
-                String(e?.message || e)
-              );
-            }
-            return [];
-          }
-        })(),
-      ]);
-
-      let ownWithShareOut = own;
-      try {
-        if (own.length > 0) {
-          const ids = own.map((r: any) => r.id);
-          const stats = await listSharesByOwnerForEvents(userId, ids);
-          const sharedOutSet = new Set(
-            (stats || [])
-              .filter(
-                (s) => Number(s.accepted_count || 0) + Number(s.pending_count || 0) > 0
-              )
-              .map((s) => s.event_id)
-          );
-          ownWithShareOut = own.map((r: any) =>
-            sharedOutSet.has(r.id) ? { ...r, data: { ...(r.data || {}), sharedOut: true } } : r
-          );
+    const finalizeItems = (rows: any[]) =>
+      (rows || []).map((row) => {
+        let data =
+          view === "full"
+            ? redactHistoryHeavyFields(row?.data)
+            : row?.data && typeof row.data === "object"
+            ? { ...row.data }
+            : row?.data;
+        if (view === "sidebar" && data && typeof data === "object" && data.signupForm == null) {
+          data = { ...data };
+          delete (data as any).signupForm;
         }
-      } catch {}
-
-      const annotatedShared = (shared || []).map((r) => ({
-        ...r,
-        data: { ...(r.data || {}), shared: true, category: "Shared events" },
-      }));
-
-      items = [...ownWithShareOut, ...annotatedShared].sort((a: any, b: any) => {
-        const ta = new Date(a.created_at || 0).getTime();
-        const tb = new Date(b.created_at || 0).getTime();
-        return tb - ta;
+        return {
+          id: row.id,
+          title: row.title,
+          created_at: row.created_at || null,
+          data,
+        };
       });
 
-      setCachedHistory(userId, items);
+    const useCache = isCacheableHistoryView(view);
+    const cached = useCache ? getCachedHistory(userId, view, limit) : null;
+    let light: any[];
+    if (cached) {
+      light = cached;
+    } else {
+      const rows = await listHistoryForUser({ userId, view, limit });
+      light = finalizeItems(rows);
+      if (useCache) {
+        setCachedHistory(userId, view, limit, light);
+      }
     }
 
-    // Scrub heavy fields based on view
-    const scrub = (data: any) => {
-      if (!data || typeof data !== "object") return data;
-      const out: any = { ...data };
-      if (view !== "full") {
-        if (typeof out.ocrText === "string") out.ocrText = undefined;
-        if (out.attachment && typeof out.attachment === "object") {
-          out.attachment = { ...out.attachment, dataUrl: undefined };
-        }
-      }
-      if (view === "summary") {
-        return {
-          category: out.category ?? null,
-          shared: out.shared ?? false,
-          sharedOut: out.sharedOut ?? false,
-        };
-      }
-      if (view === "sidebar") {
-        const responses = Array.isArray(out?.signupForm?.responses)
-          ? out.signupForm.responses.map((row: any) => ({
-              userId:
-                typeof row?.userId === "string" ? row.userId : undefined,
-              email: typeof row?.email === "string" ? row.email : undefined,
-              status:
-                typeof row?.status === "string" ? row.status : undefined,
-              name: typeof row?.name === "string" ? row.name : undefined,
-            }))
-          : null;
-        return {
-          category: out.category ?? null,
-          shared: out.shared ?? false,
-          sharedOut: out.sharedOut ?? false,
-          status: out.status ?? null,
-          description:
-            typeof out.description === "string" ? out.description : null,
-          startISO: out.startISO ?? null,
-          start: out.start ?? null,
-          createdVia: out.createdVia ?? null,
-          color: out.color ?? null,
-          event:
-            out.event && typeof out.event === "object"
-              ? {
-                  start: out.event.start ?? null,
-                  color: out.event.color ?? null,
-                }
-              : null,
-          signupForm: responses ? { responses } : undefined,
-        };
-      }
-      return out;
-    };
-
-    const light = (items || []).map((r) => ({
-      id: r.id,
-      title: r.title,
-      created_at: r.created_at || null,
-      data: scrub(r.data),
-    }));
-
     // Conditional response with ETag/Last-Modified
-    const seed = JSON.stringify(
-      light.map((i) => [
-        i.id,
-        i.created_at || null,
-        i.title || "",
-        i.data?.category ?? null,
-        i.data?.shared ?? false,
-        i.data?.sharedOut ?? false,
-      ])
-    );
+    const seed = JSON.stringify(light);
     const etag = '"h:' + createHash("sha1").update(seed).digest("hex") + '"';
     const lastModifiedIso = light[0]?.created_at ? new Date(light[0].created_at) : new Date();
     const headers: Record<string, string> = {

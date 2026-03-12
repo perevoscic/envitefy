@@ -3,7 +3,7 @@
 "use client";
 
 import React from "react";
-import { Calendar, Check, Clock, Phone } from "lucide-react";
+import { Calendar, Check, Clock } from "lucide-react";
 import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
 import FloatingActionStrip from "../FloatingActionStrip";
 import { getGymMeetTitleTypography } from "../titleTypography";
@@ -68,6 +68,7 @@ export default function EditorialGymMeetTemplate({
     pageClass: string;
     shellClass: string;
     titleClass: string;
+    titleStyle?: React.CSSProperties;
     mutedClass: string;
     heroPanelClass: string;
     chipClass: string;
@@ -101,9 +102,7 @@ export default function EditorialGymMeetTemplate({
     : Array.isArray(model.gear)
     ? model.gear
     : [];
-  const hasQuickAccessSection =
-    model.quickLinks.length > 0 ||
-    Boolean(model.coachPhone || model.coach || model.assistantCoach);
+  const hasQuickAccessSection = model.quickLinks.length > 0;
   const heroStyle = model.heroImage
     ? {
         backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.14), rgba(2,6,23,0.42)), url(${model.heroImage})`,
@@ -138,6 +137,7 @@ export default function EditorialGymMeetTemplate({
                     style={{
                       ...titleTypography.fontStyle,
                       ...getGymMeetTitleSizeStyle(model.titleSize),
+                      ...(variant.titleStyle || {}),
                     }}
                   >
                     {model.title}
@@ -410,33 +410,13 @@ export default function EditorialGymMeetTemplate({
               </Section>
             ) : null}
 
-            {(model.quickLinks.length > 0 || model.coachPhone || model.coach || model.assistantCoach) ? (
+            {model.quickLinks.length > 0 ? (
               <Section
                 id="quick-access"
                 title="Quick Access"
                 eyebrow="Contacts"
                 className={variant.sectionClass}
               >
-                {(model.coach || model.assistantCoach) ? (
-                  <div className={`mb-4 grid gap-3 sm:grid-cols-2 ${variant.dividerClass || ""}`}>
-                    {model.coach ? (
-                      <div className={variant.summaryCardClass}>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                          Coach
-                        </p>
-                        <p className="mt-2 text-sm font-semibold">{model.coach}</p>
-                      </div>
-                    ) : null}
-                    {model.assistantCoach ? (
-                      <div className={variant.summaryCardClass}>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                          Assistant Coach
-                        </p>
-                        <p className="mt-2 text-sm font-semibold">{model.assistantCoach}</p>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
                 <div className="flex flex-wrap gap-2">
                   {model.quickLinks.map((link) => (
                     <a
@@ -450,11 +430,6 @@ export default function EditorialGymMeetTemplate({
                       {link.label || "Open Link"}
                     </a>
                   ))}
-                  {model.coachPhone ? (
-                    <a href={`tel:${model.coachPhone}`} className={variant.secondaryButtonClass}>
-                      <Phone size={14} /> Contact Coach
-                    </a>
-                  ) : null}
                 </div>
               </Section>
             ) : null}

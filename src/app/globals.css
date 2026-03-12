@@ -780,7 +780,6 @@ h5 {
 
   .event-modern-container {
     width: 100%;
-    max-width: 1120px;
     margin-left: auto;
     margin-right: auto;
     padding-left: 0.9rem;
@@ -812,6 +811,20 @@ h5 {
       padding-right: 1.4rem;
       padding-top: calc(1.25rem + env(safe-area-inset-top));
       padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .event-modern-container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .event-modern-container {
+      padding-left: 2.75rem;
+      padding-right: 2.75rem;
     }
   }
 

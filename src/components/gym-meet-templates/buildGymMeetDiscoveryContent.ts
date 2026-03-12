@@ -5,7 +5,13 @@ import {
   sanitizeVenueFactLines,
   stitchVenueContinuationLines,
 } from "@/lib/venue-facts";
-import { GymMeetDiscoveryContent, GymMeetDiscoverySection, GymMeetLinkAction } from "./types";
+import {
+  GymMeetDiscoveryContent,
+  GymMeetDiscoverySection,
+  GymMeetLinkAction,
+  GymMeetScheduleAwardLegend,
+  GymMeetScheduleInfo,
+} from "./types";
 import {
   collapseRepeatedDisplayText,
   stripLinkedDomainMentions,
@@ -62,6 +68,99 @@ const uniqueBy = <T,>(items: T[], getKey: (item: T) => string): T[] => {
   return out;
 };
 
+const normalizeScheduleInfo = (
+  value: unknown,
+  fallback: Partial<GymMeetScheduleInfo> = {}
+): GymMeetScheduleInfo => {
+  const schedule = (value && typeof value === "object" ? value : {}) as Record<string, any>;
+  const days = (Array.isArray(schedule.days) ? schedule.days : [])
+    .map((day: any, dayIndex: number) => {
+      const sessions = (Array.isArray(day?.sessions) ? day.sessions : [])
+        .map((session: any, sessionIndex: number) => ({
+          id:
+            safeString(session?.id) ||
+            `${safeString(day?.id) || `day-${dayIndex + 1}`}-session-${sessionIndex + 1}`,
+          code: safeString(session?.code),
+          label:
+            safeString(session?.label) ||
+            (safeString(session?.code) ? `Session ${safeString(session?.code)}` : `Session ${sessionIndex + 1}`),
+          group: safeString(session?.group),
+          startTime: safeString(session?.startTime),
+          warmupTime: safeString(session?.warmupTime),
+          note: safeString(session?.note),
+          clubs: uniqueBy(
+            (Array.isArray(session?.clubs) ? session.clubs : [])
+              .map((club: any, clubIndex: number) => ({
+                id:
+                  safeString(club?.id) ||
+                  `${safeString(session?.id) || `session-${sessionIndex + 1}`}-club-${clubIndex + 1}`,
+                name: safeString(club?.name),
+                teamAwardEligible:
+                  typeof club?.teamAwardEligible === "boolean"
+                    ? club.teamAwardEligible
+                    : null,
+                athleteCount:
+                  typeof club?.athleteCount === "number" && Number.isFinite(club.athleteCount)
+                    ? club.athleteCount
+                    : null,
+                divisionLabel: safeString(club?.divisionLabel),
+              }))
+              .filter((club) => club.name),
+            (club) => [club.name, club.divisionLabel, `${club.athleteCount ?? ""}`].join("|")
+          ),
+        }))
+        .filter((session) => session.code || session.group || session.startTime || session.clubs.length > 0);
+      if (!safeString(day?.date) && !safeString(day?.shortDate) && sessions.length === 0) return null;
+      return {
+        id: safeString(day?.id) || `schedule-day-${dayIndex + 1}`,
+        date: safeString(day?.date),
+        shortDate: safeString(day?.shortDate) || safeString(day?.date),
+        isoDate: safeString(day?.isoDate) || undefined,
+        sessions,
+      };
+    })
+    .filter((day): day is NonNullable<typeof day> => Boolean(day));
+
+  return {
+    enabled: schedule.enabled !== false,
+    venueLabel: safeString(schedule.venueLabel || fallback.venueLabel),
+    supportEmail: safeString(schedule.supportEmail || fallback.supportEmail),
+    notes: uniqueBy(
+      [
+        ...(Array.isArray(schedule.notes) ? schedule.notes : []),
+        ...(Array.isArray(fallback.notes) ? fallback.notes : []),
+      ]
+        .map((item) => safeString(item))
+        .filter(Boolean),
+      (item) => item
+    ),
+    awardLegend: uniqueBy(
+      [
+        ...(Array.isArray(schedule.awardLegend) ? schedule.awardLegend : []),
+        ...(Array.isArray(fallback.awardLegend) ? fallback.awardLegend : []),
+      ]
+        .map(
+          (item: any): GymMeetScheduleAwardLegend => ({
+            colorLabel: safeString(item?.colorLabel) || undefined,
+            meaning: safeString(item?.meaning),
+            teamAwardEligible:
+              typeof item?.teamAwardEligible === "boolean" ? item.teamAwardEligible : null,
+          })
+        )
+        .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
+      (item) => `${item.meaning}|${item.colorLabel || ""}|${item.teamAwardEligible ?? ""}`
+    ),
+    days,
+  };
+};
+
+const hasScheduleInfoContent = (value: unknown) => {
+  const schedule = normalizeScheduleInfo(value);
+  return schedule.days.some((day) =>
+    day.sessions.some((session) => session.clubs.length > 0 || session.group || session.startTime || session.code)
+  );
+};
+
 const extractInlineUrl = (line: string) => {
   const urlMatch = line.match(/(?:https?:\/\/[^\s)]+|www\.[^\s)]+)/i);
   if (!urlMatch) {
@@ -105,11 +204,29 @@ const toStructuredListItems = (text: string, stripPrefixPattern?: RegExp): strin
   );
 };
 
-const toAction = (item: any): GymMeetLinkAction | undefined => {
+const ROTATION_SHEETS_URL = "https://usacompetitions.com/rotation-sheets/";
+const ROTATION_SHEETS_PATTERN =
+  /(rotation sheets?|rotationsheets\.com|master rotation sheet)/i;
+
+const normalizeRotationSheetsLink = (item: any) => {
+  if (!item || typeof item !== "object") return item;
+  const label = safeString(item?.label || item?.title);
   const url = safeString(item?.url);
+  if (!ROTATION_SHEETS_PATTERN.test(`${label} ${url}`)) return item;
+  return {
+    ...item,
+    label: label || "Rotation Sheets",
+    title: safeString(item?.title) || label || "Rotation Sheets",
+    url: ROTATION_SHEETS_URL,
+  };
+};
+
+const toAction = (item: any): GymMeetLinkAction | undefined => {
+  const normalizedItem = normalizeRotationSheetsLink(item);
+  const url = safeString(normalizedItem?.url);
   if (!/^https?:\/\//i.test(url)) return undefined;
   return {
-    label: safeString(item?.label || item?.title || "Open Link"),
+    label: safeString(normalizedItem?.label || normalizedItem?.title || "Open Link"),
     url,
   };
 };
@@ -118,13 +235,14 @@ const uniqueLinks = (items: any[], limit = 8) => {
   const seen = new Set<string>();
   const out: Array<{ label: string; url: string }> = [];
   for (const item of Array.isArray(items) ? items : []) {
-    const url = safeString(item?.url);
+    const normalizedItem = normalizeRotationSheetsLink(item);
+    const url = safeString(normalizedItem?.url);
     if (!/^https?:\/\//i.test(url)) continue;
     const key = url.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     out.push({
-      label: safeString(item?.label || item?.title || "Open Link"),
+      label: safeString(normalizedItem?.label || normalizedItem?.title || "Open Link"),
       url,
     });
     if (out.length >= limit) break;
@@ -1342,6 +1460,7 @@ export function buildGymMeetDiscoveryContent({
       });
   const normalizeCoachLinks = (items: any[]) =>
     (Array.isArray(items) ? items : [])
+      .map((item: any) => normalizeRotationSheetsLink(item))
       .map((item: any) => ({
         label: safeString(item?.label || "Coach link"),
         url: safeString(item?.url),
@@ -2053,6 +2172,31 @@ export function buildGymMeetDiscoveryContent({
     policyNotes[2] ? { key: "service-animals", label: "Service Animals", body: policyNotes[2] } : null,
     policyNotes[3] ? { key: "safety-policy", label: "Safety Policy", body: policyNotes[3] } : null,
   ].filter(Boolean);
+  const scheduleSupportEmail = safeString(
+    advancedSections?.schedule?.supportEmail ||
+      (Array.isArray(advancedSections?.meet?.staffContacts)
+        ? advancedSections.meet.staffContacts.find((item: any) => safeString(item?.email))?.email
+        : "") ||
+      (Array.isArray(advancedSections?.coaches?.contacts)
+        ? advancedSections.coaches.contacts.find((item: any) => safeString(item?.email))?.email
+        : "") ||
+      (Array.isArray(advancedSections?.logistics?.venueContacts)
+        ? advancedSections.logistics.venueContacts.find((item: any) => safeString(item?.email))?.email
+        : "") ||
+      (Array.isArray(parseResult?.contacts)
+        ? parseResult.contacts.find((item: any) => safeString(item?.email))?.email
+        : "")
+  );
+  const scheduleInfo = normalizeScheduleInfo(
+    advancedSections?.schedule || parseResult?.schedule || {},
+    {
+      venueLabel:
+        safeString(advancedSections?.schedule?.venueLabel) ||
+        safeString(addressLabel || venueLabel),
+      supportEmail: scheduleSupportEmail,
+    }
+  );
+  const scheduleHasContent = scheduleInfo.enabled !== false && hasScheduleInfoContent(scheduleInfo);
 
   const sections: GymMeetDiscoverySection[] = [
     {
@@ -2297,6 +2441,23 @@ export function buildGymMeetDiscoveryContent({
             ]
           : []),
       ],
+    },
+    {
+      id: "schedule",
+      label: "Schedule",
+      kind: "schedule",
+      priority: 45,
+      hasContent: scheduleHasContent,
+      hideSectionHeading: true,
+      blocks: scheduleHasContent
+        ? [
+            {
+              id: "schedule-board",
+              type: "schedule-board" as const,
+              data: scheduleInfo,
+            },
+          ]
+        : [],
     },
     {
       id: "venue-details",

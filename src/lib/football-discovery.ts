@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
+import type { DiscoveryPerformance } from "@/lib/meet-discovery";
 
 type ExtractionMeta = {
   textQuality?: "good" | "suspect" | "poor" | null;
@@ -155,6 +156,211 @@ const FOOTBALL_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown.
   "links": [{ "label": string, "url": string }],
   "unmappedFacts": [{ "category": string, "detail": string, "confidence": "high" | "medium" | "low" }]
 }`;
+
+const JSON_STRING = { type: "string" } as const;
+const JSON_NUMBER = { type: "number" } as const;
+const JSON_BOOLEAN = { type: "boolean" } as const;
+
+function jsonNullable(schema: Record<string, unknown>) {
+  return { anyOf: [schema, { type: "null" }] };
+}
+
+function jsonArray(items: Record<string, unknown>) {
+  return { type: "array", items };
+}
+
+function jsonObject(properties: Record<string, unknown>) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties,
+    required: Object.keys(properties),
+  };
+}
+
+function resolveDiscoveryParseModel(): string {
+  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-4.1-mini";
+}
+
+function normalizeTokenUsage(usage: any) {
+  if (!usage || typeof usage !== "object") return null;
+  const promptTokens =
+    Number(usage.prompt_tokens ?? usage.input_tokens ?? 0) || 0;
+  const completionTokens =
+    Number(usage.completion_tokens ?? usage.output_tokens ?? 0) || 0;
+  const totalTokens =
+    Number(usage.total_tokens ?? promptTokens + completionTokens) || 0;
+  if (!promptTokens && !completionTokens && !totalTokens) return null;
+  return { promptTokens, completionTokens, totalTokens };
+}
+
+function recordParseUsage(performance: DiscoveryPerformance | undefined, usage: any) {
+  if (!performance) return;
+  const normalized = normalizeTokenUsage(usage);
+  if (!normalized) return;
+  const existing = performance.tokenUsage?.parse;
+  performance.tokenUsage = performance.tokenUsage || {};
+  performance.tokenUsage.parse = {
+    promptTokens: (existing?.promptTokens || 0) + normalized.promptTokens,
+    completionTokens:
+      (existing?.completionTokens || 0) + normalized.completionTokens,
+    totalTokens: (existing?.totalTokens || 0) + normalized.totalTokens,
+    cachedTokens: existing?.cachedTokens || 0,
+  };
+}
+
+const FOOTBALL_PARSE_JSON_SCHEMA = {
+  name: "football_discovery_parse",
+  strict: true,
+  schema: jsonObject({
+    eventType: {
+      type: "string",
+      enum: ["football_game_packet", "football_season_schedule", "unknown"],
+    },
+    documentProfile: {
+      type: "string",
+      enum: [
+        "game_day_packet",
+        "season_schedule",
+        "travel_itinerary",
+        "roster_sheet",
+        "parent_letter",
+        "unknown",
+      ],
+    },
+    title: JSON_STRING,
+    summary: jsonNullable(JSON_STRING),
+    dates: JSON_STRING,
+    startAt: jsonNullable(JSON_STRING),
+    endAt: jsonNullable(JSON_STRING),
+    timezone: jsonNullable(JSON_STRING),
+    homeTeam: jsonNullable(JSON_STRING),
+    opponent: jsonNullable(JSON_STRING),
+    season: jsonNullable(JSON_STRING),
+    headCoach: jsonNullable(JSON_STRING),
+    venue: jsonNullable(JSON_STRING),
+    address: jsonNullable(JSON_STRING),
+    games: jsonArray(
+      jsonObject({
+        opponent: JSON_STRING,
+        date: jsonNullable(JSON_STRING),
+        time: jsonNullable(JSON_STRING),
+        homeAway: jsonNullable({
+          type: "string",
+          enum: ["home", "away"],
+        }),
+        venue: jsonNullable(JSON_STRING),
+        address: jsonNullable(JSON_STRING),
+        conference: jsonNullable(JSON_BOOLEAN),
+        broadcast: jsonNullable(JSON_STRING),
+        ticketsLink: jsonNullable(JSON_STRING),
+        result: jsonNullable({
+          type: "string",
+          enum: ["W", "L", "T"],
+        }),
+        score: jsonNullable(JSON_STRING),
+        notes: jsonNullable(JSON_STRING),
+      })
+    ),
+    roster: jsonObject({
+      players: jsonArray(
+        jsonObject({
+          name: JSON_STRING,
+          jerseyNumber: jsonNullable(JSON_STRING),
+          position: jsonNullable(JSON_STRING),
+          grade: jsonNullable(JSON_STRING),
+          parentName: jsonNullable(JSON_STRING),
+          parentPhone: jsonNullable(JSON_STRING),
+          parentEmail: jsonNullable(JSON_STRING),
+          medicalNotes: jsonNullable(JSON_STRING),
+          status: jsonNullable({
+            type: "string",
+            enum: ["active", "injured", "ineligible", "pending"],
+          }),
+        })
+      ),
+    }),
+    practice: jsonObject({
+      blocks: jsonArray(
+        jsonObject({
+          day: jsonNullable(JSON_STRING),
+          date: jsonNullable(JSON_STRING),
+          startTime: jsonNullable(JSON_STRING),
+          endTime: jsonNullable(JSON_STRING),
+          arrivalTime: jsonNullable(JSON_STRING),
+          type: jsonNullable({
+            type: "string",
+            enum: [
+              "full_pads",
+              "shells",
+              "helmets",
+              "no_contact",
+              "walk_through",
+            ],
+          }),
+          positionGroups: jsonArray(JSON_STRING),
+          focus: jsonNullable(JSON_STRING),
+          film: jsonNullable(JSON_BOOLEAN),
+        })
+      ),
+    }),
+    logistics: jsonObject({
+      travelMode: jsonNullable({
+        type: "string",
+        enum: ["bus", "parent_drive", "carpool", "other"],
+      }),
+      callTime: jsonNullable(JSON_STRING),
+      departureTime: jsonNullable(JSON_STRING),
+      pickupWindow: jsonNullable(JSON_STRING),
+      parking: jsonNullable(JSON_STRING),
+      hotelName: jsonNullable(JSON_STRING),
+      hotelAddress: jsonNullable(JSON_STRING),
+      mealPlan: jsonNullable(JSON_STRING),
+      weatherPolicy: jsonNullable(JSON_STRING),
+      ticketsLink: jsonNullable(JSON_STRING),
+      broadcast: jsonNullable(JSON_STRING),
+      notes: jsonArray(JSON_STRING),
+    }),
+    gear: jsonObject({
+      uniform: jsonNullable(JSON_STRING),
+      checklist: jsonArray(JSON_STRING),
+    }),
+    volunteers: jsonObject({
+      signupLink: jsonNullable(JSON_STRING),
+      notes: jsonNullable(JSON_STRING),
+      slots: jsonArray(
+        jsonObject({
+          role: JSON_STRING,
+          name: jsonNullable(JSON_STRING),
+          filled: jsonNullable(JSON_BOOLEAN),
+          gameDate: jsonNullable(JSON_STRING),
+        })
+      ),
+    }),
+    communications: jsonObject({
+      announcements: jsonArray(
+        jsonObject({
+          title: JSON_STRING,
+          body: JSON_STRING,
+        })
+      ),
+      passcode: jsonNullable(JSON_STRING),
+    }),
+    links: jsonArray(
+      jsonObject({
+        label: JSON_STRING,
+        url: JSON_STRING,
+      })
+    ),
+    unmappedFacts: jsonArray(
+      jsonObject({
+        category: JSON_STRING,
+        detail: JSON_STRING,
+        confidence: { type: "string", enum: ["high", "medium", "low"] },
+      })
+    ),
+  }),
+} as const;
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -488,14 +694,18 @@ function buildFootballParsePrompt(sourceText: string, followup?: string): string
 
 async function callOpenAiFootballParse(
   text: string,
-  followup?: string
-): Promise<{ result: FootballParseResult | null; raw: string }> {
+  performance?: DiscoveryPerformance
+): Promise<{ result: FootballParseResult | null; raw: string; usage: any }> {
   const apiKey = process.env.OPENAI_API_KEY || "";
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
   const client = new OpenAI({ apiKey });
   const completion = await client.chat.completions.create({
-    model: process.env.OPENAI_OCR_MODEL || process.env.LLM_MODEL || "gpt-5.1",
+    model: resolveDiscoveryParseModel(),
     temperature: 0,
+    response_format: {
+      type: "json_schema",
+      json_schema: FOOTBALL_PARSE_JSON_SCHEMA,
+    } as any,
     messages: [
       {
         role: "system",
@@ -504,12 +714,17 @@ async function callOpenAiFootballParse(
       },
       {
         role: "user",
-        content: buildFootballParsePrompt(text, followup),
+        content: buildFootballParsePrompt(text),
       },
     ],
   });
+  recordParseUsage(performance, completion.usage);
   const raw = completion.choices?.[0]?.message?.content || "";
-  return { raw, result: normalizeParseResult(extractJsonObject(raw)) };
+  return {
+    raw,
+    result: normalizeParseResult(extractJsonObject(raw)),
+    usage: completion.usage || null,
+  };
 }
 
 async function callGeminiFootballParse(
@@ -546,7 +761,8 @@ async function callGeminiFootballParse(
 
 export async function parseFootballFromExtractedText(
   extractedText: string,
-  extractionMeta: ExtractionMeta
+  extractionMeta: ExtractionMeta,
+  options?: { performance?: DiscoveryPerformance }
 ): Promise<{
   parseResult: FootballParseResult;
   modelUsed: "openai" | "gemini" | "quality-gate";
@@ -567,7 +783,14 @@ export async function parseFootballFromExtractedText(
   let openAiRaw = "";
   let openAiErrorMessage = "";
   try {
-    const first = await callOpenAiFootballParse(extractedText);
+    const modelStartedAt = Date.now();
+    const first = await callOpenAiFootballParse(
+      extractedText,
+      options?.performance
+    );
+    if (options?.performance) {
+      options.performance.modelParseMs += Date.now() - modelStartedAt;
+    }
     openAiRaw = first.raw;
     if (first.result) {
       return {
@@ -576,19 +799,7 @@ export async function parseFootballFromExtractedText(
         rawModelOutput: first.raw,
       };
     }
-    const second = await callOpenAiFootballParse(
-      extractedText,
-      `Your previous output was invalid. Fix it and return valid strict JSON only. Previous output:\n${first.raw}`
-    );
-    openAiRaw = second.raw;
-    if (second.result) {
-      return {
-        parseResult: second.result,
-        modelUsed: "openai",
-        rawModelOutput: second.raw,
-      };
-    }
-    openAiErrorMessage = "OpenAI returned invalid JSON twice.";
+    openAiErrorMessage = "OpenAI returned invalid structured output.";
   } catch (err: any) {
     openAiErrorMessage = String(err?.message || "OpenAI parse failed.");
   }
@@ -603,7 +814,11 @@ export async function parseFootballFromExtractedText(
     );
   }
 
+  const geminiStartedAt = Date.now();
   const gemini = await callGeminiFootballParse(extractedText);
+  if (options?.performance) {
+    options.performance.modelParseMs += Date.now() - geminiStartedAt;
+  }
   if (!gemini.result) {
     throw new Error("Gemini returned invalid JSON");
   }

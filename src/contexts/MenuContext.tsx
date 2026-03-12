@@ -77,68 +77,26 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   }, [displayName]);
 
   const fetchConnectedCalendars = useCallback(async () => {
-    try {
-      const res = await fetch("/api/calendars", { credentials: "include" });
-      if (!res.ok) {
-        console.warn(`[menu-context] /api/calendars returned status ${res.status}`);
-        setConnectedCalendars({
-          google: false,
-          microsoft: false,
-          apple: false,
-        });
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      setConnectedCalendars({
-        google: Boolean(data?.google),
-        microsoft: Boolean(data?.microsoft),
-        apple: Boolean(data?.apple),
-      });
-    } catch (err) {
-      console.error(
-        "Failed to fetch connected calendars:",
-        err instanceof Error ? err.message : String(err)
-      );
-    }
+    setConnectedCalendars({
+      google: false,
+      microsoft: false,
+      apple: false,
+    });
   }, []);
 
   const handleCalendarConnect = useCallback(
-    (provider: CalendarProviderKey) => {
-      if (typeof window === "undefined") return;
-      try {
-        if (provider === "google") {
-          window.open(
-            "/api/google/auth?source=menu",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        } else if (provider === "microsoft") {
-          window.open(
-            "/api/outlook/auth?source=menu",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        } else {
-          window.open(
-            "https://support.apple.com/guide/calendar/welcome/mac",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        }
-        window.setTimeout(() => {
-          fetchConnectedCalendars();
-        }, 4000);
-      } catch (err) {
-        console.error("Failed to initiate calendar connection:", err);
-      }
+    (_provider: CalendarProviderKey) => {
+      setConnectedCalendars({
+        google: false,
+        microsoft: false,
+        apple: false,
+      });
     },
     [fetchConnectedCalendars]
   );
 
   useEffect(() => {
-    if (status === "authenticated") {
-      fetchConnectedCalendars();
-    }
+    if (status === "authenticated") fetchConnectedCalendars();
   }, [status, fetchConnectedCalendars]);
 
   const value = useMemo(

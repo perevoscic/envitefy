@@ -3,7 +3,7 @@
 "use client";
 
 import React from "react";
-import { Calendar, Check, Clock, Phone } from "lucide-react";
+import { Calendar, Check, Clock } from "lucide-react";
 import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
 import FloatingActionStrip from "../FloatingActionStrip";
 import { getGymMeetTitleTypography } from "../titleTypography";
@@ -109,7 +109,7 @@ export default function BaseGymMeetTemplate({
     : Array.isArray(model.gear)
     ? model.gear
     : [];
-  const hasQuickAccessSection = model.quickLinks.length > 0 || Boolean(model.coachPhone);
+  const hasQuickAccessSection = model.quickLinks.length > 0;
 
   const heroStyle = model.heroImage
     ? {
@@ -449,7 +449,7 @@ export default function BaseGymMeetTemplate({
               </div>
             ) : null}
 
-            {(model.quickLinks.length > 0 || model.coachPhone) ? (
+            {model.quickLinks.length > 0 ? (
               <BaseSection
                 id="quick-access"
                 title="Quick Access"
@@ -471,11 +471,6 @@ export default function BaseGymMeetTemplate({
                       {link.label || "Open Link"}
                     </a>
                   ))}
-                  {model.coachPhone ? (
-                    <a href={`tel:${model.coachPhone}`} className={variant.secondaryButtonClass}>
-                      <Phone size={14} /> Contact Coach
-                    </a>
-                  ) : null}
                 </div>
               </BaseSection>
             ) : null}

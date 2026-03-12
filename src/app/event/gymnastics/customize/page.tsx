@@ -68,6 +68,11 @@ type ThemeSpec = {
   previewTo?: string;
 };
 
+type MissingEssentialItem = {
+  label: string;
+  view: string;
+};
+
 type AdvancedSectionRenderContext = {
   state: any;
   setState: (updater: any) => void;
@@ -333,6 +338,7 @@ const SECTION_SHOWS_ON_EVENT: Record<string, string> = {
   meet: "Meet Details tab (warm-up, march-in, apparatus, judging, scores link)",
   practice: "Practice Planner section",
   logistics: "Logistics & Travel section",
+  schedule: "Schedule tab between Coaches and Venue Details",
   gear: "Gear & Uniform section",
   volunteers: "Volunteers & Carpool section",
   announcements: "Announcements section",
@@ -865,10 +871,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<
       Record<string, any> | null
     >(null);
+    const [discoveryEnrichmentState, setDiscoveryEnrichmentState] = useState<
+      Record<string, any> | null
+    >(null);
     const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(false);
     const [isInIframe, setIsInIframe] = useState(false);
     const [loadVersion, setLoadVersion] = useState(0);
     const repairAttemptedRef = useRef(false);
+    const enrichRequestStartedRef = useRef(false);
+    const sidebarScrollRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
       if (typeof window !== "undefined") {
         setIsInIframe(window.self !== window.top);
@@ -882,6 +893,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     useEffect(() => {
       repairAttemptedRef.current = false;
     }, [editEventId]);
+
+    useEffect(() => {
+      enrichRequestStartedRef.current = false;
+    }, [editEventId, loadVersion]);
 
     useEffect(() => {
       if (!isEmbed || typeof document === "undefined") return;
@@ -1016,6 +1031,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const hasPractice =
       advancedState?.practice?.enabled !== false &&
       (advancedState?.practice?.blocks?.length ?? 0) > 0;
+    const hasSchedule =
+      advancedState?.schedule?.enabled !== false &&
+      (advancedState?.schedule?.days || []).some(
+        (day: any) =>
+          (day?.sessions || []).some(
+            (session: any) =>
+              (session?.clubs?.length ?? 0) > 0 ||
+              Boolean(session?.group || session?.startTime || session?.code)
+          )
+      );
     const hasLogistics =
       advancedState?.logistics?.enabled !== false &&
       ((advancedState?.logistics?.showTransportation !== false &&
@@ -1086,6 +1111,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       parseAthlete?.marchIn,
       parseAthlete?.session
     );
+    const parseHasSchedule =
+      Array.isArray(parseResult?.schedule?.days) &&
+      parseResult.schedule.days.some(
+        (day: any) =>
+          Array.isArray(day?.sessions) &&
+          day.sessions.some(
+            (session: any) =>
+              (session?.clubs?.length ?? 0) > 0 ||
+              hasAnyText(session?.group, session?.startTime, session?.code)
+          )
+      );
     const parseHasLogistics = hasAnyText(
       parseLogistics?.parking,
       parseLogistics?.trafficAlerts,
@@ -1152,6 +1188,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             return hasMeet || parseHasMeet;
           case "practice":
             return hasPractice;
+          case "schedule":
+            return hasSchedule || parseHasSchedule;
           case "logistics":
             return (
               hasLogistics ||
@@ -1189,6 +1227,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       hasLogistics,
       hasMeet,
       hasPractice,
+      hasSchedule,
       hasRoster,
       hasVolunteers,
       parseHasAnnouncements,
@@ -1199,6 +1238,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       parseHasLogistics,
       parseHasMeet,
       parseHasRoster,
+      parseHasSchedule,
       parseHasVolunteers,
       useParseDrivenSections,
     ]);
@@ -1260,15 +1300,25 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       : "not-started";
 
     const missingEssentials = [
-      !data.title?.trim() ? "Event title" : null,
-      !data.date ? "Date" : null,
-      !data.time ? "Start time in Event Basics" : null,
-      !data.timezone?.trim() ? "Timezone" : null,
+      !data.title?.trim() ? { label: "Event title", view: "headline" } : null,
+      !data.date ? { label: "Date", view: "headline" } : null,
+      !data.time ? { label: "Start time in Event Basics", view: "headline" } : null,
+      !data.timezone?.trim() ? { label: "Timezone", view: "headline" } : null,
       !data.venue?.trim() && !data.address?.trim()
-        ? "Venue or address"
+        ? { label: "Venue or address", view: "headline" }
         : null,
-      !((data.details || "").trim() || hasStructuredDetailsContent) ? "Details" : null,
-    ].filter(Boolean) as string[];
+      !((data.details || "").trim() || hasStructuredDetailsContent)
+        ? { label: "Details", view: "details" }
+        : null,
+    ].filter(Boolean) as MissingEssentialItem[];
+    const openEditorView = useCallback((view: string) => {
+      setActiveView(view);
+      if (typeof window !== "undefined") {
+        window.requestAnimationFrame(() => {
+          sidebarScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      }
+    }, []);
     const navItems = useMemo(
       () =>
         [
@@ -1276,6 +1326,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           { id: "roster", label: "Roster", enabled: hasRoster },
           { id: "meet", label: "Meet", enabled: hasMeet },
           { id: "practice", label: "Practice", enabled: hasPractice },
+          { id: "schedule", label: "Schedule", enabled: hasSchedule },
           { id: "logistics", label: "Logistics", enabled: hasLogistics },
           { id: "gear", label: "Gear", enabled: hasGear },
           { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
@@ -1361,6 +1412,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               : null;
           const inferredHostGym = inferHostGymFromDiscovery(existingDiscoverySource);
           setLoadedDiscoverySource(existingDiscoverySource);
+          setDiscoveryEnrichmentState(
+            existingDiscoverySource?.enrichment &&
+              typeof existingDiscoverySource.enrichment === "object"
+              ? existingDiscoverySource.enrichment
+              : null
+          );
           setIsDiscoveryEdit(
             existingCreatedVia === "meet-discovery" ||
               Boolean(existingDiscoverySource?.input)
@@ -1665,6 +1722,77 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       advancedState?.meet?.registrationInfo,
       advancedState?.meet?.scoringInfo,
       data.date,
+      editEventId,
+      isDiscoveryEdit,
+      loadedDiscoverySource,
+      loadingExisting,
+    ]);
+
+    useEffect(() => {
+      if (!editEventId || !isDiscoveryEdit || loadingExisting) return;
+      if (!loadedDiscoverySource?.input) return;
+      if (!discoveryEnrichmentState?.pending) return;
+      if (enrichRequestStartedRef.current) return;
+
+      enrichRequestStartedRef.current = true;
+      let cancelled = false;
+      setDiscoveryEnrichmentState((prev) =>
+        prev && typeof prev === "object"
+          ? {
+              ...prev,
+              state: "running",
+              pending: true,
+              startedAt:
+                asTrimmedString(prev.startedAt) || new Date().toISOString(),
+              lastError: "",
+            }
+          : prev
+      );
+
+      (async () => {
+        try {
+          const enrichRes = await fetch(`/api/parse/${editEventId}/enrich`, {
+            method: "POST",
+            credentials: "include",
+          });
+          const enrichJson = await enrichRes.json().catch(() => ({}));
+          if (!enrichRes.ok) {
+            throw new Error(enrichJson?.error || "Failed discovery enrichment");
+          }
+          if (!cancelled) {
+            setDiscoveryEnrichmentState(
+              enrichJson?.enrichmentState &&
+                typeof enrichJson.enrichmentState === "object"
+                ? enrichJson.enrichmentState
+                : {
+                    state: "completed",
+                    pending: false,
+                    lastError: "",
+                  }
+            );
+            setLoadVersion((prev) => prev + 1);
+          }
+        } catch (err) {
+          console.error("[Edit] Discovery enrichment failed", err);
+          if (!cancelled) {
+            setDiscoveryEnrichmentState((prev) => ({
+              ...(prev || {}),
+              state: "failed",
+              pending: false,
+              finishedAt: new Date().toISOString(),
+              lastError: String(
+                (err as any)?.message || err || "Failed discovery enrichment"
+              ),
+            }));
+          }
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [
+      discoveryEnrichmentState,
       editEventId,
       isDiscoveryEdit,
       loadedDiscoverySource,
@@ -2221,6 +2349,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     return hasPractice;
                   case "logistics":
                     return hasLogistics;
+                  case "coaches":
+                    return (
+                      hasAnyText(
+                        advancedState?.coaches?.signIn,
+                        advancedState?.coaches?.hospitality,
+                        advancedState?.coaches?.floorAccess,
+                        advancedState?.coaches?.paymentInstructions
+                      ) ||
+                      (advancedState?.coaches?.entryFees?.length ?? 0) > 0 ||
+                      (advancedState?.coaches?.teamFees?.length ?? 0) > 0 ||
+                      (advancedState?.coaches?.lateFees?.length ?? 0) > 0
+                    );
+                  case "schedule":
+                    return hasSchedule;
                   case "gear":
                     return hasGear;
                   case "volunteers":
@@ -2692,10 +2834,23 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         setDiscoverError("Upload a file to continue.");
         return;
       }
+      const traceId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const log = (message: string, detail?: unknown) => {
+        if (detail === undefined) {
+          console.log(`[gymnastics-customize] [${traceId}] ${message}`);
+          return;
+        }
+        console.log(`[gymnastics-customize] [${traceId}] ${message}`, detail);
+      };
       setDiscoverBusy(true);
       try {
         const formData = new FormData();
         formData.append("file", discoverFile);
+        log("starting discovery upload", {
+          fileName: discoverFile.name,
+          sizeBytes: discoverFile.size,
+          mimeType: discoverFile.type || "application/octet-stream",
+        });
 
         const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
           method: "POST",
@@ -2707,16 +2862,27 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           throw new Error(ingestJson?.error || "Failed to ingest source");
         }
         const eventId = String(ingestJson.eventId);
+        log("ingest completed", { eventId, status: ingestRes.status });
+        const parseStartedAt = Date.now();
+        log("starting parse request", { eventId });
         const parseRes = await fetch(`/api/parse/${eventId}`, {
           method: "POST",
           credentials: "include",
         });
         const parseJson = await parseRes.json().catch(() => ({}));
+        log("parse completed", {
+          eventId,
+          status: parseRes.status,
+          durationMs: Date.now() - parseStartedAt,
+          modelUsed: parseJson?.modelUsed || null,
+        });
         if (!parseRes.ok) {
           throw new Error(parseJson?.error || "Failed to parse source");
         }
+        log("routing to builder", { eventId });
         router.push(`/event/gymnastics/customize?edit=${eventId}`);
       } catch (err: any) {
+        console.error(`[gymnastics-customize] discovery failed`, err);
         setDiscoverError(String(err?.message || err || "Failed to parse source"));
       } finally {
         setDiscoverBusy(false);
@@ -3056,6 +3222,29 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.title,
     ]);
 
+    const discoveryEnrichmentBanner =
+      isDiscoveryEdit && discoveryEnrichmentState ? (
+        discoveryEnrichmentState.pending ? (
+          <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-sky-700">
+              Finishing Details
+            </p>
+            <p className="mt-1 text-sm text-sky-800">
+              Finishing schedule and venue details in the background.
+            </p>
+          </div>
+        ) : discoveryEnrichmentState.state === "failed" ? (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
+              Enrichment Incomplete
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              Schedule and venue details could not finish automatically.
+            </p>
+          </div>
+        ) : null
+      ) : null;
+
     const sidebarPanel = (
       <div
         {...drawerTouchHandlers}
@@ -3068,6 +3257,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
       >
         <div
+          ref={sidebarScrollRef}
+          data-gym-editor-scroll="true"
           className="flex-1 min-h-0 overflow-y-auto"
           style={{
             WebkitOverflowScrolling: "touch",
@@ -3093,6 +3284,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             className="p-6 pt-4 pb-8 md:pt-6 md:pb-10"
             style={{ pointerEvents: "auto" }}
           >
+            {discoveryEnrichmentBanner}
             {activeView === "main" &&
               (editEventId && loadingExisting ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -3134,7 +3326,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-amber-700">
-                  Missing: {missingEssentials.join(", ")}
+                  <span>Missing: </span>
+                  {missingEssentials.map((item, index) => (
+                    <React.Fragment key={`${item.view}-${item.label}`}>
+                      {index > 0 ? <span>, </span> : null}
+                      <button
+                        type="button"
+                        onClick={() => openEditorView(item.view)}
+                        className="font-medium underline underline-offset-2 decoration-amber-400 hover:text-amber-800"
+                      >
+                        {item.label}
+                      </button>
+                    </React.Fragment>
+                  ))}
                 </p>
               )}
             </div>
@@ -3207,7 +3411,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             overscrollBehavior: "contain",
           }}
         >
-          <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
+          <div className="w-full my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
             <div
               id="guide-preview-root"
               className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0"

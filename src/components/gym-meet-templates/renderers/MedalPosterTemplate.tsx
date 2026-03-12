@@ -12,7 +12,11 @@ export default function MedalPosterTemplate(props: any) {
         shellClass:
           "overflow-hidden rounded-[24px] border-2 border-stone-900 bg-[#fff9ef] shadow-[0_26px_70px_rgba(146,64,14,0.16)]",
         titleClass:
-          "max-w-5xl text-6xl font-black italic leading-[0.88] tracking-[-0.1em] text-white sm:text-7xl lg:text-7xl",
+          "max-w-5xl text-6xl font-black italic leading-[0.88] tracking-[-0.1em] sm:text-7xl lg:text-7xl",
+        titleStyle: {
+          color: "#fff4d6",
+          textShadow: "0 3px 18px rgba(17,24,39,0.24)",
+        },
         mutedClass: "text-amber-100",
         heroPanelClass: "bg-[linear-gradient(145deg,#111827_0%,#7c2d12_55%,#ef4444_100%)]",
         chipClass:

@@ -159,12 +159,55 @@ export type GymMeetCoachLateFee = {
   note?: string;
 };
 
+export type GymMeetScheduleClub = {
+  id: string;
+  name: string;
+  teamAwardEligible?: boolean | null;
+  athleteCount?: number | null;
+  divisionLabel?: string;
+};
+
+export type GymMeetScheduleAwardLegend = {
+  colorLabel?: string;
+  meaning: string;
+  teamAwardEligible?: boolean | null;
+};
+
+export type GymMeetScheduleSession = {
+  id: string;
+  code?: string;
+  label: string;
+  group: string;
+  startTime: string;
+  warmupTime?: string;
+  note?: string;
+  clubs: GymMeetScheduleClub[];
+};
+
+export type GymMeetScheduleDay = {
+  id: string;
+  date: string;
+  shortDate: string;
+  isoDate?: string;
+  sessions: GymMeetScheduleSession[];
+};
+
+export type GymMeetScheduleInfo = {
+  enabled: boolean;
+  venueLabel?: string;
+  supportEmail?: string;
+  notes?: string[];
+  awardLegend?: GymMeetScheduleAwardLegend[];
+  days: GymMeetScheduleDay[];
+};
+
 export type GymMeetDiscoverySectionKind =
   | "meet_overview"
   | "registration"
   | "admission"
   | "results"
   | "coaches"
+  | "schedule"
   | "venue"
   | "venue_map"
   | "traffic_parking"
@@ -230,6 +273,11 @@ export type GymMeetDiscoveryBlock =
       title?: string;
       address: string;
       text?: string;
+    }
+  | {
+      id: string;
+      type: "schedule-board";
+      data: GymMeetScheduleInfo;
     };
 
 export type GymMeetDiscoverySection = {
@@ -240,6 +288,7 @@ export type GymMeetDiscoverySection = {
   priority: number;
   hasContent: boolean;
   blocks: GymMeetDiscoveryBlock[];
+  hideSectionHeading?: boolean;
 };
 
 export type GymMeetDiscoveryContent = {

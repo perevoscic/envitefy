@@ -1,6 +1,7 @@
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
 import { randomBytes, scrypt as nodeScrypt, timingSafeEqual, randomUUID } from "crypto";
 import { promisify } from "util";
+import type { HistoryView } from "@/lib/history-view";
 const scrypt = promisify(nodeScrypt);
 
 type NonEmptyString = string & { _brand: "NonEmptyString" };
@@ -1475,6 +1476,242 @@ export type EventHistoryRow = {
   created_at?: string;
 };
 
+export type EventHistoryInputBlobRow = {
+  event_id: string;
+  mime_type: string;
+  file_name?: string | null;
+  size_bytes?: number | null;
+  data: Buffer;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+function jsonbArrayOrEmpty(expr: string): string {
+  return `case when jsonb_typeof(${expr}) = 'array' then ${expr} else '[]'::jsonb end`;
+}
+
+function buildHistoryNormalizedEventObjectSql(valueSql: string): string {
+  return `jsonb_build_object(
+    'title', ${valueSql}->'title',
+    'start', ${valueSql}->'start',
+    'startISO', ${valueSql}->'startISO',
+    'end', ${valueSql}->'end',
+    'endISO', ${valueSql}->'endISO',
+    'allDay', ${valueSql}->'allDay',
+    'timezone', ${valueSql}->'timezone',
+    'venue', ${valueSql}->'venue',
+    'location', ${valueSql}->'location',
+    'description', ${valueSql}->'description',
+    'rsvp', ${valueSql}->'rsvp',
+    'category', ${valueSql}->'category',
+    'recurrence', ${valueSql}->'recurrence'
+  )`;
+}
+
+function buildHistoryNormalizedEventArraySql(arrayExpr: string): string {
+  return `(
+    select coalesce(
+      jsonb_agg(${buildHistoryNormalizedEventObjectSql("event_item")}),
+      '[]'::jsonb
+    )
+    from jsonb_array_elements(${jsonbArrayOrEmpty(arrayExpr)}) as event_item
+  )`;
+}
+
+function buildHistoryScheduleProjectionSql(dataSql: string): string {
+  return `case
+    when jsonb_typeof(${dataSql}->'schedule') = 'object' then
+      jsonb_build_object(
+        'detected', ${dataSql}#>'{schedule,detected}',
+        'homeTeam', ${dataSql}#>'{schedule,homeTeam}',
+        'season', ${dataSql}#>'{schedule,season}',
+        'games', ${buildHistoryNormalizedEventArraySql(`${dataSql}#>'{schedule,games}'`)}
+      )
+    else null
+  end`;
+}
+
+function buildHistoryDataProjectionSql(params: {
+  view: HistoryView;
+  dataSql: string;
+  categorySql: string;
+  sharedSql: string;
+  sharedOutSql: string;
+}): string {
+  const { view, dataSql, categorySql, sharedSql, sharedOutSql } = params;
+
+  if (view === "summary") {
+    return `jsonb_build_object(
+      'category', ${categorySql},
+      'shared', ${sharedSql},
+      'sharedOut', ${sharedOutSql}
+    )`;
+  }
+
+  if (view === "sidebar") {
+    return `jsonb_build_object(
+      'category', ${categorySql},
+      'shared', ${sharedSql},
+      'sharedOut', ${sharedOutSql},
+      'status', ${dataSql}->'status',
+      'description', ${dataSql}->'description',
+      'startISO', ${dataSql}->'startISO',
+      'start', ${dataSql}->'start',
+      'createdVia', ${dataSql}->'createdVia',
+      'color', ${dataSql}->'color',
+      'event', case
+        when jsonb_typeof(${dataSql}->'event') = 'object' then
+          jsonb_build_object(
+            'start', ${dataSql}#>'{event,start}',
+            'color', ${dataSql}#>'{event,color}'
+          )
+        else null
+      end,
+      'signupForm', case
+        when jsonb_typeof(${dataSql}->'signupForm') = 'object' then
+          jsonb_build_object(
+            'responses',
+            (
+              select coalesce(
+                jsonb_agg(
+                  jsonb_build_object(
+                    'userId', response_item->'userId',
+                    'email', response_item->'email',
+                    'status', response_item->'status',
+                    'name', response_item->'name',
+                    'calendar', response_item->'calendar'
+                  )
+                ),
+                '[]'::jsonb
+              )
+              from jsonb_array_elements(
+                ${jsonbArrayOrEmpty(`${dataSql}#>'{signupForm,responses}'`)}
+              ) as response_item
+            )
+          )
+        else null
+      end
+    )`;
+  }
+
+  if (view === "calendar") {
+    return `jsonb_build_object(
+      'category', ${categorySql},
+      'shared', ${sharedSql},
+      'sharedOut', ${sharedOutSql},
+      'timezone', ${dataSql}->'timezone',
+      'venue', ${dataSql}->'venue',
+      'location', ${dataSql}->'location',
+      'description', ${dataSql}->'description',
+      'rsvp', ${dataSql}->'rsvp',
+      'recurrence', ${dataSql}->'recurrence',
+      'start', ${dataSql}->'start',
+      'startISO', ${dataSql}->'startISO',
+      'end', ${dataSql}->'end',
+      'endISO', ${dataSql}->'endISO',
+      'allDay', ${dataSql}->'allDay',
+      'event', case
+        when jsonb_typeof(${dataSql}->'event') = 'object' then
+          ${buildHistoryNormalizedEventObjectSql(`${dataSql}->'event'`)}
+        else null
+      end,
+      'events', ${buildHistoryNormalizedEventArraySql(`${dataSql}->'events'`)},
+      'schedule', ${buildHistoryScheduleProjectionSql(dataSql)}
+    )`;
+  }
+
+  return `${dataSql} || jsonb_build_object(
+    'category', ${categorySql},
+    'shared', ${sharedSql},
+    'sharedOut', ${sharedOutSql}
+  )`;
+}
+
+function buildHistoryUnionQuery(view: HistoryView): string {
+  const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const ownProjection = buildHistoryDataProjectionSql({
+    view,
+    dataSql: ownDataSql,
+    categorySql: `${ownDataSql}->'category'`,
+    sharedSql: "false",
+    sharedOutSql: `exists(
+      select 1
+      from event_shares es2
+      where es2.owner_user_id = $1
+        and es2.event_id = eh.id
+        and es2.revoked_at is null
+        and es2.status in ('pending', 'accepted')
+    )`,
+  });
+  const sharedProjection = buildHistoryDataProjectionSql({
+    view,
+    dataSql: sharedDataSql,
+    categorySql: "to_jsonb('Shared events'::text)",
+    sharedSql: "true",
+    sharedOutSql: "false",
+  });
+
+  return `
+    with own_rows as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${ownProjection} as data,
+        eh.created_at
+      from event_history eh
+      where eh.user_id = $1
+    ),
+    shared_rows as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${sharedProjection} as data,
+        eh.created_at
+      from event_shares es
+      join event_history eh on eh.id = es.event_id
+      where es.recipient_user_id = $1
+        and es.status = 'accepted'
+        and es.revoked_at is null
+    ),
+    combined as (
+      select * from own_rows
+      union all
+      select * from shared_rows
+    )
+    select id, user_id, title, data, created_at
+    from combined
+    order by created_at desc nulls last, id desc
+    limit $2
+  `;
+}
+
+function buildHistoryOwnOnlyQuery(view: HistoryView): string {
+  const dataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const projection = buildHistoryDataProjectionSql({
+    view,
+    dataSql,
+    categorySql: `${dataSql}->'category'`,
+    sharedSql: "false",
+    sharedOutSql: "false",
+  });
+
+  return `
+    select
+      eh.id,
+      eh.user_id,
+      eh.title,
+      ${projection} as data,
+      eh.created_at
+    from event_history eh
+    where eh.user_id = $1
+    order by eh.created_at desc nulls last, eh.id desc
+    limit $2
+  `;
+}
+
 function sanitizeJsonStringForPostgres(value: string): string {
   // Remove NUL bytes and replace lone surrogate halves that Postgres JSONB rejects.
   const noNull = value.replace(/\u0000/g, "");
@@ -1662,6 +1899,100 @@ export async function listRecentEventHistory(limit: number = 20): Promise<EventH
     [Math.max(1, Math.min(200, limit))]
   );
   return res.rows || [];
+}
+
+export async function listHistoryForUser(params: {
+  userId: string;
+  view: HistoryView;
+  limit: number;
+}): Promise<EventHistoryRow[]> {
+  const safeLimit = Math.max(1, Math.min(200, Math.floor(params.limit || 40)));
+  try {
+    const res = await query<EventHistoryRow>(buildHistoryUnionQuery(params.view), [
+      params.userId,
+      safeLimit,
+    ]);
+    return res.rows || [];
+  } catch (err) {
+    if (!isTableMissingError(err)) throw err;
+    const res = await query<EventHistoryRow>(buildHistoryOwnOnlyQuery(params.view), [
+      params.userId,
+      safeLimit,
+    ]);
+    return res.rows || [];
+  }
+}
+
+async function ensureEventHistoryInputBlobsTable(): Promise<void> {
+  await ensureOnce("event_history_input_blobs_table", async () => {
+    await query(`
+      create table if not exists event_history_input_blobs (
+        event_id uuid primary key references event_history(id) on delete cascade,
+        mime_type text not null,
+        file_name text null,
+        size_bytes integer null,
+        data bytea not null,
+        created_at timestamptz default now(),
+        updated_at timestamptz default now()
+      )
+    `);
+  });
+}
+
+export async function upsertEventHistoryInputBlob(params: {
+  eventId: string;
+  mimeType: string;
+  fileName?: string | null;
+  sizeBytes?: number | null;
+  data: Buffer;
+}): Promise<EventHistoryInputBlobRow | null> {
+  await ensureEventHistoryInputBlobsTable();
+  const res = await query<EventHistoryInputBlobRow>(
+    `insert into event_history_input_blobs (
+       event_id,
+       mime_type,
+       file_name,
+       size_bytes,
+       data
+     )
+     values ($1, $2, $3, $4, $5)
+     on conflict (event_id)
+     do update set
+       mime_type = excluded.mime_type,
+       file_name = excluded.file_name,
+       size_bytes = excluded.size_bytes,
+       data = excluded.data,
+       updated_at = now()
+     returning event_id, mime_type, file_name, size_bytes, data, created_at, updated_at`,
+    [
+      params.eventId,
+      params.mimeType,
+      params.fileName || null,
+      params.sizeBytes ?? null,
+      params.data,
+    ]
+  );
+  return res.rows[0] || null;
+}
+
+export async function getEventHistoryInputBlob(
+  eventId: string
+): Promise<EventHistoryInputBlobRow | null> {
+  if (!eventId) return null;
+  try {
+    await ensureEventHistoryInputBlobsTable();
+    const res = await query<EventHistoryInputBlobRow>(
+      `select event_id, mime_type, file_name, size_bytes, data, created_at, updated_at
+       from event_history_input_blobs
+       where event_id = $1
+       limit 1`,
+      [eventId]
+    );
+    return res.rows[0] || null;
+  } catch (err) {
+    if (isTableMissingError(err)) return null;
+    throw err;
+  }
 }
 
 // Shared events

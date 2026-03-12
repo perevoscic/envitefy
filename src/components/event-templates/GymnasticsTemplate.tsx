@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import {
+  Calendar as CalendarIcon,
   Users,
   Trophy,
   ClipboardList,
@@ -126,6 +127,41 @@ type CoachesInfo = {
   contacts: Array<{ id: string; role: string; name: string; email: string; phone: string }>;
   links: Array<{ id: string; label: string; url: string }>;
   notes: string[];
+};
+
+type ScheduleClub = {
+  id: string;
+  name: string;
+  teamAwardEligible: boolean | null;
+  athleteCount: number | null;
+  divisionLabel: string;
+};
+
+type ScheduleSession = {
+  id: string;
+  code: string;
+  label: string;
+  group: string;
+  startTime: string;
+  warmupTime: string;
+  note: string;
+  clubs: ScheduleClub[];
+};
+
+type ScheduleDay = {
+  id: string;
+  date: string;
+  shortDate: string;
+  isoDate?: string;
+  sessions: ScheduleSession[];
+};
+
+type ScheduleInfo = {
+  enabled: boolean;
+  venueLabel: string;
+  supportEmail: string;
+  notes: string[];
+  days: ScheduleDay[];
 };
 
 type GearItem = {
@@ -2444,7 +2480,506 @@ const coachesSection = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 6: GEAR & UNIFORM CHECKLIST
+// SECTION 6: MEET SCHEDULE
+// ═══════════════════════════════════════════════════════════════════════════
+
+const scheduleSection = {
+  id: "schedule",
+  menuTitle: "Schedule",
+  menuDesc: "Meet days, sessions, clubs, and award flags.",
+  initialState: {
+    enabled: true,
+    venueLabel: "",
+    supportEmail: "",
+    notes: [],
+    days: [
+      {
+        id: "schedule-day-1",
+        date: "Friday, March 13, 2026",
+        shortDate: "Friday • Mar 13",
+        isoDate: "2026-03-13",
+        sessions: [
+          {
+            id: "schedule-session-1",
+            code: "FR1",
+            label: "Session FR1",
+            group: "Bronze",
+            startTime: "8:00 AM",
+            warmupTime: "8:00 AM",
+            note: "General Stretch & Warmup",
+            clubs: [
+              {
+                id: "schedule-club-1",
+                name: "Browns Gym",
+                teamAwardEligible: true,
+                athleteCount: null,
+                divisionLabel: "",
+              },
+              {
+                id: "schedule-club-2",
+                name: "Twisters Canada",
+                teamAwardEligible: false,
+                athleteCount: null,
+                divisionLabel: "",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  } as ScheduleInfo,
+  renderEditor: ({ state, setState, inputClass, textareaClass }) => {
+    const schedule: ScheduleInfo = state || {};
+    const updateField = (field: string, value: any) =>
+      setState((current: any) => ({ ...current, [field]: value }));
+    const updateDay = (dayId: string, patch: Record<string, any>) =>
+      setState((current: any) => ({
+        ...current,
+        days: (current?.days || []).map((day: ScheduleDay) =>
+          day.id === dayId ? { ...day, ...patch } : day
+        ),
+      }));
+    const removeDay = (dayId: string) =>
+      setState((current: any) => ({
+        ...current,
+        days: (current?.days || []).filter((day: ScheduleDay) => day.id !== dayId),
+      }));
+    const addDay = () =>
+      setState((current: any) => ({
+        ...current,
+        days: [
+          ...(current?.days || []),
+          {
+            id: genId(),
+            date: "",
+            shortDate: "",
+            isoDate: "",
+            sessions: [],
+          },
+        ],
+      }));
+    const addSession = (dayId: string) =>
+      setState((current: any) => ({
+        ...current,
+        days: (current?.days || []).map((day: ScheduleDay) =>
+          day.id === dayId
+            ? {
+                ...day,
+                sessions: [
+                  ...(day.sessions || []),
+                  {
+                    id: genId(),
+                    code: "",
+                    label: "",
+                    group: "",
+                    startTime: "",
+                    warmupTime: "",
+                    note: "",
+                    clubs: [],
+                  },
+                ],
+              }
+            : day
+        ),
+      }));
+    const updateSession = (dayId: string, sessionId: string, patch: Record<string, any>) =>
+      setState((current: any) => ({
+        ...current,
+        days: (current?.days || []).map((day: ScheduleDay) =>
+          day.id === dayId
+            ? {
+                ...day,
+                sessions: (day.sessions || []).map((session: ScheduleSession) =>
+                  session.id === sessionId ? { ...session, ...patch } : session
+                ),
+              }
+            : day
+        ),
+      }));
+    const removeSession = (dayId: string, sessionId: string) =>
+      setState((current: any) => ({
+        ...current,
+        days: (current?.days || []).map((day: ScheduleDay) =>
+          day.id === dayId
+            ? {
+                ...day,
+                sessions: (day.sessions || []).filter(
+                  (session: ScheduleSession) => session.id !== sessionId
+                ),
+              }
+            : day
+        ),
+      }));
+    const addClub = (dayId: string, sessionId: string) =>
+      setState((current: any) => ({
+        ...current,
+        days: (current?.days || []).map((day: ScheduleDay) =>
+          day.id === dayId
+            ? {
+                ...day,
+                sessions: (day.sessions || []).map((session: ScheduleSession) =>
+                  session.id === sessionId
+                    ? {
+                        ...session,
+                        clubs: [
+                          ...(session.clubs || []),
+                          {
+                            id: genId(),
+                            name: "",
+                            teamAwardEligible: null,
+                            athleteCount: null,
+                            divisionLabel: "",
+                          },
+                        ],
+                      }
+                    : session
+                ),
+              }
+            : day
+        ),
+      }));
+    const updateClub = (
+      dayId: string,
+      sessionId: string,
+      clubId: string,
+      patch: Record<string, any>
+    ) =>
+      setState((current: any) => ({
+        ...current,
+        days: (current?.days || []).map((day: ScheduleDay) =>
+          day.id === dayId
+            ? {
+                ...day,
+                sessions: (day.sessions || []).map((session: ScheduleSession) =>
+                  session.id === sessionId
+                    ? {
+                        ...session,
+                        clubs: (session.clubs || []).map((club: ScheduleClub) =>
+                          club.id === clubId ? { ...club, ...patch } : club
+                        ),
+                      }
+                    : session
+                ),
+              }
+            : day
+        ),
+      }));
+    const removeClub = (dayId: string, sessionId: string, clubId: string) =>
+      setState((current: any) => ({
+        ...current,
+        days: (current?.days || []).map((day: ScheduleDay) =>
+          day.id === dayId
+            ? {
+                ...day,
+                sessions: (day.sessions || []).map((session: ScheduleSession) =>
+                  session.id === sessionId
+                    ? {
+                        ...session,
+                        clubs: (session.clubs || []).filter((club: ScheduleClub) => club.id !== clubId),
+                      }
+                    : session
+                ),
+              }
+            : day
+        ),
+      }));
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <CalendarIcon className="text-slate-700 mt-0.5" size={20} />
+            <div>
+              <h4 className="font-semibold text-slate-900">Public Meet Schedule</h4>
+              <p className="text-sm text-slate-600">
+                Add the session schedule shown on the public event page. If no days are listed, the Schedule tab stays hidden.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <SectionToggle
+          label="Show Schedule Section"
+          checked={schedule.enabled !== false}
+          onChange={(value) => updateField("enabled", value)}
+        />
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              Venue Label
+            </label>
+            <BufferedInput
+              className={inputClass}
+              placeholder="Greater Fort Lauderdale / Broward County Convention Center"
+              value={schedule.venueLabel || ""}
+              onCommit={(value) => updateField("venueLabel", value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              Support Email
+            </label>
+            <BufferedInput
+              className={inputClass}
+              placeholder="info@example.com"
+              value={schedule.supportEmail || ""}
+              onCommit={(value) => updateField("supportEmail", value)}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            Admin Notes
+          </label>
+          <BufferedTextarea
+            className={textareaClass}
+            placeholder="One note per line"
+            value={(schedule.notes || []).join("\n")}
+            onCommit={(value) =>
+              updateField(
+                "notes",
+                value
+                  .split(/\n+/)
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+              )
+            }
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-4 border-t pt-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-slate-700">Schedule Days</h4>
+            <button
+              type="button"
+              onClick={addDay}
+              className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+            >
+              <Plus size={14} /> Add Day
+            </button>
+          </div>
+
+          {(schedule.days || []).map((day) => (
+            <div key={day.id} className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h5 className="font-semibold text-slate-800">
+                  {day.shortDate || day.date || "New Day"}
+                </h5>
+                <button
+                  type="button"
+                  onClick={() => removeDay(day.id)}
+                  className="text-sm text-red-600 hover:text-red-800"
+                >
+                  Remove Day
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <BufferedInput
+                  className={inputClass}
+                  placeholder="Friday, March 13, 2026"
+                  value={day.date || ""}
+                  onCommit={(value) => updateDay(day.id, { date: value })}
+                />
+                <BufferedInput
+                  className={inputClass}
+                  placeholder="Friday • Mar 13"
+                  value={day.shortDate || ""}
+                  onCommit={(value) => updateDay(day.id, { shortDate: value })}
+                />
+                <BufferedInput
+                  className={inputClass}
+                  placeholder="2026-03-13"
+                  value={day.isoDate || ""}
+                  onCommit={(value) => updateDay(day.id, { isoDate: value })}
+                />
+              </div>
+
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <h6 className="font-semibold text-slate-700">Sessions</h6>
+                  <button
+                    type="button"
+                    onClick={() => addSession(day.id)}
+                    className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                  >
+                    <Plus size={14} /> Add Session
+                  </button>
+                </div>
+
+                {(day.sessions || []).map((session) => (
+                  <div key={session.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-slate-800">
+                        {session.label || session.code || "Session"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeSession(day.id, session.id)}
+                        className="text-sm text-red-600 hover:text-red-800"
+                      >
+                        Remove Session
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <BufferedInput
+                        className={inputClass}
+                        placeholder="FR1"
+                        value={session.code || ""}
+                        onCommit={(value) => updateSession(day.id, session.id, { code: value })}
+                      />
+                      <BufferedInput
+                        className={inputClass}
+                        placeholder="Session FR1"
+                        value={session.label || ""}
+                        onCommit={(value) => updateSession(day.id, session.id, { label: value })}
+                      />
+                      <BufferedInput
+                        className={inputClass}
+                        placeholder="Bronze"
+                        value={session.group || ""}
+                        onCommit={(value) => updateSession(day.id, session.id, { group: value })}
+                      />
+                      <BufferedInput
+                        className={inputClass}
+                        placeholder="8:00 AM"
+                        value={session.startTime || ""}
+                        onCommit={(value) => updateSession(day.id, session.id, { startTime: value })}
+                      />
+                      <BufferedInput
+                        className={inputClass}
+                        placeholder="8:00 AM"
+                        value={session.warmupTime || ""}
+                        onCommit={(value) => updateSession(day.id, session.id, { warmupTime: value })}
+                      />
+                      <BufferedInput
+                        className={inputClass}
+                        placeholder="General Stretch & Warmup"
+                        value={session.note || ""}
+                        onCommit={(value) => updateSession(day.id, session.id, { note: value })}
+                      />
+                    </div>
+
+                    <div className="space-y-3 border-t pt-3">
+                      <div className="flex items-center justify-between">
+                        <h6 className="font-semibold text-slate-700">Clubs</h6>
+                        <button
+                          type="button"
+                          onClick={() => addClub(day.id, session.id)}
+                          className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                        >
+                          <Plus size={14} /> Add Club
+                        </button>
+                      </div>
+
+                      {(session.clubs || []).map((club) => (
+                        <div
+                          key={club.id}
+                          className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-4"
+                        >
+                          <BufferedInput
+                            className={inputClass}
+                            placeholder="Club name"
+                            value={club.name || ""}
+                            onCommit={(value) => updateClub(day.id, session.id, club.id, { name: value })}
+                          />
+                          <BufferedInput
+                            className={inputClass}
+                            placeholder="Athlete count"
+                            value={club.athleteCount == null ? "" : String(club.athleteCount)}
+                            onCommit={(value) =>
+                              updateClub(day.id, session.id, club.id, {
+                                athleteCount: value.trim() ? Number(value) || null : null,
+                              })
+                            }
+                          />
+                          <BufferedInput
+                            className={inputClass}
+                            placeholder="Division label"
+                            value={club.divisionLabel || ""}
+                            onCommit={(value) =>
+                              updateClub(day.id, session.id, club.id, { divisionLabel: value })
+                            }
+                          />
+                          <select
+                            className={inputClass}
+                            value={
+                              club.teamAwardEligible === true
+                                ? "team"
+                                : club.teamAwardEligible === false
+                                ? "individual"
+                                : "unknown"
+                            }
+                            onChange={(event) =>
+                              updateClub(day.id, session.id, club.id, {
+                                teamAwardEligible:
+                                  event.target.value === "team"
+                                    ? true
+                                    : event.target.value === "individual"
+                                    ? false
+                                    : null,
+                              })
+                            }
+                          >
+                            <option value="unknown">Awards status unknown</option>
+                            <option value="team">Individual &amp; Team Awards</option>
+                            <option value="individual">Individual Only</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => removeClub(day.id, session.id, club.id)}
+                            className="justify-self-start text-sm text-red-600 hover:text-red-800"
+                          >
+                            Remove Club
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
+  renderPreview: ({ state, textClass, accentClass, headingShadow, bodyShadow, titleColor }) => {
+    const schedule: ScheduleInfo = state || {};
+    if (schedule.enabled === false || (schedule.days?.length ?? 0) === 0) return null;
+
+    return (
+      <>
+        <h2
+          className={`text-2xl mb-4 ${accentClass}`}
+          style={{ ...headingShadow, ...(titleColor || {}) }}
+        >
+          Schedule
+        </h2>
+        <div className="space-y-3">
+          {(schedule.days || []).map((day) => (
+            <div key={day.id} className="bg-white/5 border border-white/10 rounded-lg p-4">
+              <div className={`font-semibold ${textClass}`} style={bodyShadow}>
+                {day.shortDate || day.date || "Schedule Day"}
+              </div>
+              <div className={`mt-2 text-sm opacity-80 ${textClass}`} style={bodyShadow}>
+                {(day.sessions || []).length} session
+                {(day.sessions || []).length === 1 ? "" : "s"}
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 7: GEAR & UNIFORM CHECKLIST
 // ═══════════════════════════════════════════════════════════════════════════
 
 const gearSection = {
@@ -3700,6 +4235,7 @@ const config = {
     practiceSection,
     logisticsSection,
     coachesSection,
+    scheduleSection,
     gearSection,
     volunteersSection,
     announcementsSection,
@@ -3713,6 +4249,7 @@ export {
   practiceSection,
   logisticsSection,
   coachesSection,
+  scheduleSection,
   gearSection,
   volunteersSection,
   announcementsSection,
@@ -3724,6 +4261,7 @@ export type {
   PracticeBlock,
   LogisticsInfo,
   CoachesInfo,
+  ScheduleInfo,
   GearItem,
   VolunteerSlot,
   CarpoolOffer,

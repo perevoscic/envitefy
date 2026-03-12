@@ -37,6 +37,11 @@ import {
   Cake,
   CalendarDays,
   Camera,
+  ChevronUp,
+  Info,
+  Mail,
+  Search,
+  ShieldCheck,
   Dumbbell,
   FileEdit,
   Footprints,
@@ -232,34 +237,34 @@ const ICON_LOOKUP: Record<string, any> = {
 // TEMPLATE_LINKS now imported from TopNav.tsx (shared menu)
 
 const SIDEBAR_CARD_CLASS =
-  "rounded-none bg-transparent shadow-none";
+  "rounded-[28px] border border-white/70 bg-white/90 shadow-[0_20px_40px_rgba(15,23,42,0.06)] backdrop-blur";
 const SIDEBAR_ITEM_CARD_CLASS =
-  "rounded-xl border border-transparent bg-transparent shadow-none transition-[background-color,color,transform] duration-150 hover:bg-[#e8e8e8]";
+  "rounded-2xl border border-transparent bg-transparent shadow-none transition-all duration-200 ease-out";
 const SIDEBAR_BADGE_CLASS =
-  "inline-flex min-w-6 items-center justify-center rounded-full bg-[#dcdcdc] px-2 py-0.5 text-[11px] font-semibold text-slate-600";
-const SIDEBAR_WIDTH_REM = "20rem";
-const SIDEBAR_COLLAPSED_REM = "4.5rem";
+  "inline-flex min-w-[24px] items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500";
+const SIDEBAR_WIDTH_REM = "21.25rem";
+const SIDEBAR_COLLAPSED_REM = "5.25rem";
 const SIDEBAR_WORDMARK_SRC = "/navElogo.png";
 const SUBPAGE_STICKY_HEADER_CLASS =
-  "sticky top-0 z-20 -mx-4 bg-[#efefef] px-4 pb-3 pt-2";
+  "sticky top-0 z-20 -mx-6 bg-[#f8f9fb]/95 px-6 pb-4 pt-2 backdrop-blur";
 const SIDEBAR_SECTION_LABEL_CLASS =
-  "px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500";
+  "px-1 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400";
 const SIDEBAR_DIVIDER_CLASS = "h-px w-full bg-transparent";
 const SIDEBAR_MENU_ROW_CLASS =
-  "flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-slate-700";
+  "flex w-full items-center gap-4 px-5 py-4 text-left text-[17px] font-bold text-slate-700";
 const SIDEBAR_BACK_ROW_CLASS =
-  "flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-700";
+  "flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left text-sm text-slate-700 shadow-sm transition-all hover:bg-white/85";
 const SIDEBAR_ICON_CHIP_CLASS =
-  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-transparent bg-transparent text-slate-500";
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm";
 const SIDEBAR_ICON_CHIP_ACCENT_CLASS =
-  "border-transparent bg-transparent text-slate-500";
+  "border-slate-200 bg-slate-100 text-slate-500";
 const SIDEBAR_PANEL_CLASS =
-  "absolute inset-0 overflow-y-auto no-scrollbar px-4 pb-5";
-const SIDEBAR_EVENT_PANEL_CLASS = "absolute inset-0 overflow-hidden bg-[#efefef]";
+  "absolute inset-0 overflow-y-auto no-scrollbar px-6 pb-6";
+const SIDEBAR_EVENT_PANEL_CLASS = "absolute inset-0 overflow-hidden bg-[#f8f9fb]";
 const SIDEBAR_TOGGLE_CLASS =
-  "inline-flex items-center justify-center rounded-full border border-transparent bg-[#e6e6e6] p-2 text-slate-500 shadow-none transition hover:bg-[#dddddd] hover:text-slate-700";
+  "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-200/60 p-2.5 text-slate-500 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-700";
 const SIDEBAR_FOOTER_TRIGGER_CLASS =
-  "w-full inline-flex items-center justify-between gap-3 rounded-xl border border-transparent px-3 py-2 text-slate-700 transition-colors duration-150 hover:bg-[#e8e8e8] focus:outline-none focus:ring-2 focus:ring-slate-300";
+  "w-full inline-flex items-center justify-between gap-3 rounded-[20px] border border-indigo-100 bg-white p-2.5 text-slate-700 shadow-lg transition-all duration-200 hover:shadow-xl active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-50/50";
 const MY_EVENTS_PAST_EXPANDED_STORAGE_KEY = "sidebar:my-events:past-expanded";
 const INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY =
   "sidebar:invited-events:past-expanded";
@@ -288,11 +293,8 @@ export default function LeftSidebar() {
     pathname?.startsWith("/event/") && searchParams?.get("edit")
   );
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuFloatingView, setMenuFloatingView] = useState<"main" | "calendar">(
-    "main"
-  );
-  const [menuMainHeight, setMenuMainHeight] = useState<number | null>(null);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
+  const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
   const [showPastMyEvents, setShowPastMyEvents] = useState(false);
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
   const [eventSidebarMode, setEventSidebarMode] =
@@ -394,7 +396,6 @@ export default function LeftSidebar() {
   const isEventMenuActive = Boolean(selectedEventId);
   const overflowClass = "overflow-hidden";
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const menuMainContentRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const openBarButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -564,26 +565,6 @@ export default function LeftSidebar() {
     };
   }, [menuOpen]);
 
-  useEffect(() => {
-    if (!menuOpen) setMenuFloatingView("main");
-  }, [menuOpen]);
-
-  useEffect(() => {
-    if (!menuOpen || menuFloatingView !== "main") return;
-    const node = menuMainContentRef.current;
-    if (!node) return;
-    const measure = () => {
-      setMenuMainHeight(node.offsetHeight || null);
-    };
-    measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => measure());
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-    };
-  }, [menuFloatingView, menuOpen]);
-
   // Always close menus on route change so navigation from a menu item hides the dropdowns.
   useEffect(() => {
     setMenuOpen(false);
@@ -674,6 +655,10 @@ export default function LeftSidebar() {
     prevSidebarPageRef.current = sidebarPage;
   }, [sidebarPage]);
 
+  useEffect(() => {
+    setSidebarSearchQuery("");
+  }, [sidebarPage]);
+
   const displayName =
     (session?.user?.name as string) ||
     (session?.user?.email as string) ||
@@ -692,6 +677,50 @@ export default function LeftSidebar() {
     Boolean((session?.user as any)?.isAdmin)
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const footerMenuItems = useMemo(
+    () =>
+      [
+        {
+          href: "/settings",
+          label: "Profile",
+          Icon: User,
+          colorClass: "text-indigo-500",
+          bgClass: "bg-indigo-50",
+        },
+        {
+          href: "/about",
+          label: "About us",
+          Icon: Info,
+          colorClass: "text-blue-500",
+          bgClass: "bg-blue-50",
+        },
+        {
+          href: "/contact",
+          label: "Contact us",
+          Icon: Mail,
+          colorClass: "text-purple-500",
+          bgClass: "bg-purple-50",
+        },
+        ...(isAdmin
+          ? [
+              {
+                href: "/admin",
+                label: "Admin",
+                Icon: ShieldCheck,
+                colorClass: "text-slate-500",
+                bgClass: "bg-slate-50",
+              },
+            ]
+          : []),
+      ] as Array<{
+        href: string;
+        label: string;
+        Icon: typeof User;
+        colorClass: string;
+        bgClass: string;
+      }>,
+    [isAdmin]
+  );
 
   useEffect(() => {
     let ignore = false;
@@ -918,6 +947,13 @@ export default function LeftSidebar() {
     () => createMenuItems.length,
     [createMenuItems]
   );
+  const normalizedSidebarSearchQuery = sidebarSearchQuery.trim().toLowerCase();
+  const filteredCreateMenuItems = useMemo(() => {
+    if (!normalizedSidebarSearchQuery) return createMenuItems;
+    return createMenuItems.filter((item) =>
+      item.label.toLowerCase().includes(normalizedSidebarSearchQuery)
+    );
+  }, [createMenuItems, normalizedSidebarSearchQuery]);
 
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const isActiveEventRow = useCallback((row: HistoryRow) => {
@@ -1010,7 +1046,6 @@ export default function LeftSidebar() {
         badge: smartSignupCount,
       },
       { icon: Plus, label: "Create Event", action: "create" },
-      { icon: CalendarDays, label: "Calendar", href: "/calendar" },
       {
         icon: Trophy,
         label: "My Events",
@@ -1594,7 +1629,39 @@ export default function LeftSidebar() {
   }, [categoryColors, history]);
   const myEventsGrouped = groupedEventLists.myEvents;
   const invitedEventsGrouped = groupedEventLists.invitedEvents;
-
+  const filterGroupedSections = useCallback(
+    (sections: GroupedEventSection[]) => {
+      if (!normalizedSidebarSearchQuery) return sections;
+      return sections
+        .map((section) => ({
+          ...section,
+          items: section.items.filter((item) => {
+            const haystack = `${section.category} ${item.title} ${item.dateLabel}`
+              .trim()
+              .toLowerCase();
+            return haystack.includes(normalizedSidebarSearchQuery);
+          }),
+        }))
+        .filter((section) => section.items.length > 0);
+    },
+    [normalizedSidebarSearchQuery]
+  );
+  const filteredMyEventsUpcoming = useMemo(
+    () => filterGroupedSections(myEventsGrouped.upcoming),
+    [filterGroupedSections, myEventsGrouped.upcoming]
+  );
+  const filteredMyEventsPast = useMemo(
+    () => filterGroupedSections(myEventsGrouped.past),
+    [filterGroupedSections, myEventsGrouped.past]
+  );
+  const filteredInvitedEventsUpcoming = useMemo(
+    () => filterGroupedSections(invitedEventsGrouped.upcoming),
+    [filterGroupedSections, invitedEventsGrouped.upcoming]
+  );
+  const filteredInvitedEventsPast = useMemo(
+    () => filterGroupedSections(invitedEventsGrouped.past),
+    [filterGroupedSections, invitedEventsGrouped.past]
+  );
   // Shared Events gradient palette (8 options)
   const SHARED_GRADIENTS: {
     id: string;
@@ -1777,45 +1844,10 @@ export default function LeftSidebar() {
   };
 
   useEffect(() => {
-    let cancelled = false;
-    if (status !== "authenticated") return;
-    (async () => {
-      try {
-        const res = await fetch("/api/history?view=sidebar&limit=40", {
-          cache: "no-cache",
-          credentials: "include",
-        });
-        const j = await res.json().catch(() => ({ items: [] }));
-        try {
-          const items = Array.isArray(j?.items) ? j.items : [];
-          const top = items?.[0] || null;
-          console.debug("[sidebar] fetched history", {
-            count: items.length,
-            top: top ? { id: top.id, created_at: top.created_at } : null,
-          });
-        } catch {}
-        if (!cancelled)
-          setHistory(
-            sortHistoryRows(
-              (j.items || []).map((r: any) => ({
-                id: r.id,
-                title: r.title,
-                created_at: r.created_at || undefined,
-                data: r.data,
-              }))
-            )
-          );
-      } catch {}
-    })();
-    return () => {
-      cancelled = true;
-    };
+    setHistory([]);
   }, [status]);
 
   useEffect(() => {
-    let cancelled = false;
-    const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
-
     const onCreated = async (e: Event) => {
       try {
         const anyEvent = e as any;
@@ -1854,83 +1886,16 @@ export default function LeftSidebar() {
             } catch {}
             return sorted;
           });
-
-          // Background refetch to ensure counts stay in sync with server
-          // This ensures category counts and other computed values are accurate
-          // Use a small delay to let server-side cache invalidation propagate
-          const refetchTimeout = setTimeout(async () => {
-            pendingTimeouts.delete(refetchTimeout as any);
-            if (cancelled) return;
-            try {
-              // Add cache-busting query param to force fresh fetch (slim view)
-              const res = await fetch(
-                `/api/history?view=sidebar&limit=40&t=${Date.now()}`,
-                {
-                  cache: "no-cache",
-                  credentials: "include",
-                }
-              );
-              const j = await res.json().catch(() => ({ items: [] }));
-              if (!cancelled) {
-                setHistory(
-                  sortHistoryRows(
-                    (j.items || []).map((r: any) => ({
-                      id: r.id,
-                      title: r.title,
-                      created_at: r.created_at || undefined,
-                      data: r.data,
-                    }))
-                  )
-                );
-                try {
-                  console.debug("[sidebar] history refreshed from server", {
-                    count: j.items?.length || 0,
-                  });
-                } catch {}
-              }
-            } catch (err) {
-              try {
-                console.debug("[sidebar] background refetch failed", err);
-              } catch {}
-            }
-          }, 1000); // 1 second delay - enough for cache invalidation, fast enough for UX
-
-          pendingTimeouts.add(refetchTimeout as any);
-        } else {
-          // Fallback: slim refetch
-          const res = await fetch("/api/history?view=sidebar&limit=40", {
-            cache: "no-cache",
-            credentials: "include",
-          });
-          const j = await res.json().catch(() => ({ items: [] }));
-          if (!cancelled)
-            setHistory(
-              sortHistoryRows(
-                (j.items || []).map((r: any) => ({
-                  id: r.id,
-                  title: r.title,
-                  created_at: r.created_at || undefined,
-                  data: r.data,
-                }))
-              )
-            );
         }
       } catch {}
     };
     window.addEventListener("history:created", onCreated as any);
     return () => {
-      cancelled = true;
       window.removeEventListener("history:created", onCreated as any);
-      // Clear any pending timeouts
-      pendingTimeouts.forEach((timeout) => clearTimeout(timeout as any));
-      pendingTimeouts.clear();
     };
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
-
     const onDeleted = async (e: Event) => {
       try {
         const anyEvent = e as any;
@@ -1949,47 +1914,14 @@ export default function LeftSidebar() {
         if (selectedEventId === deletedId) {
           clearEventContext();
         }
-
-        // Refetch shortly after delete to fully sync computed sidebar sections/counts.
-        const refetchTimeout = setTimeout(async () => {
-          pendingTimeouts.delete(refetchTimeout as any);
-          if (cancelled || status !== "authenticated") return;
-          try {
-            const res = await fetch(
-              `/api/history?view=sidebar&limit=40&t=${Date.now()}`,
-              {
-                cache: "no-cache",
-                credentials: "include",
-              }
-            );
-            const j = await res.json().catch(() => ({ items: [] }));
-            if (!cancelled) {
-              setHistory(
-                sortHistoryRows(
-                  (j.items || []).map((r: any) => ({
-                    id: r.id,
-                    title: r.title,
-                    created_at: r.created_at || undefined,
-                    data: r.data,
-                  }))
-                )
-              );
-            }
-          } catch {}
-        }, 350);
-
-        pendingTimeouts.add(refetchTimeout as any);
       } catch {}
     };
 
     window.addEventListener("history:deleted", onDeleted as EventListener);
     return () => {
-      cancelled = true;
       window.removeEventListener("history:deleted", onDeleted as EventListener);
-      pendingTimeouts.forEach((timeout) => clearTimeout(timeout as any));
-      pendingTimeouts.clear();
     };
-  }, [clearEventContext, selectedEventId, status]);
+  }, [clearEventContext, selectedEventId]);
 
   const buildEventOwnerHref = useCallback(
     (
@@ -2165,24 +2097,24 @@ export default function LeftSidebar() {
 
   const panelTransitionStyle: CSSProperties = {
     transition:
-      "transform 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms ease-in-out",
+      "transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease-in-out",
   };
   const rootPanelTransform =
-    sidebarPage === "root" ? "translateX(0%)" : "translateX(-100%)";
+    sidebarPage === "root" ? "translateX(0%)" : "translateX(-2rem)";
   const createEventPanelTransform =
     sidebarPage === "createEvent" ? "translateX(0%)" : "translateX(100%)";
   const myEventsPanelTransform =
     sidebarPage === "myEvents"
       ? "translateX(0%)"
       : sidebarPage === "eventContext" && eventContextSourcePage === "myEvents"
-      ? "translateX(-100%)"
+      ? "translateX(-2rem)"
       : "translateX(100%)";
   const invitedEventsPanelTransform =
     sidebarPage === "invitedEvents"
       ? "translateX(0%)"
       : sidebarPage === "eventContext" &&
         eventContextSourcePage === "invitedEvents"
-      ? "translateX(-100%)"
+      ? "translateX(-2rem)"
       : "translateX(100%)";
   const eventPanelTransform =
     sidebarPage === "eventContext" ? "translateX(0%)" : "translateX(100%)";
@@ -2192,6 +2124,22 @@ export default function LeftSidebar() {
     pointerEvents: isActive ? "auto" : "none",
     opacity: isActive ? 1 : 0,
   });
+  const renderPanelSearch = (placeholder: string) => (
+    <div className="relative mb-6 mt-4">
+      <Search
+        size={16}
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+        aria-hidden="true"
+      />
+      <input
+        type="text"
+        value={sidebarSearchQuery}
+        onChange={(event) => setSidebarSearchQuery(event.target.value)}
+        placeholder={placeholder}
+        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-700 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200"
+      />
+    </div>
+  );
 
   if (isEmbeddedEditMode) return null;
 
@@ -2329,18 +2277,25 @@ export default function LeftSidebar() {
       />
       <aside
         ref={asideRef}
-        className={`fixed left-0 top-0 z-[6000] flex h-full flex-col bg-[#efefef] ${overflowClass} transition-[transform,opacity,width] duration-200 ease-out will-change-transform ${pointerClass} lg:flex`}
+        className={`fixed left-0 top-0 z-[6000] flex h-full flex-col border-r border-slate-200 bg-[#f8f9fb] ${overflowClass} transition-[transform,opacity,width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform ${pointerClass} lg:flex`}
         style={{
           width: sidebarWidth,
           transform: sidebarTransform,
           opacity: isDesktop ? 1 : isOpen ? 1 : 0,
-          backgroundColor: "#efefef",
-          boxShadow: "none",
+          backgroundColor: "#f8f9fb",
+          boxShadow: "0 24px 60px rgba(15, 23, 42, 0.08)",
         }}
         aria-label="Sidebar"
       >
-        {isCompact && (
-          <div className="flex h-full flex-col items-center gap-4 bg-[#efefef] px-2 py-5">
+        <div
+          className={`absolute inset-0 flex h-full flex-col items-center gap-4 bg-[#f8f9fb] px-3 py-5 transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+            isCompact
+              ? "translate-x-0 opacity-100"
+              : "-translate-x-3 opacity-0 pointer-events-none"
+          }`}
+          aria-hidden={!isCompact}
+        >
+          <div className="flex h-full flex-col items-center gap-4">
             <button
               type="button"
               aria-label="Expand navigation"
@@ -2355,7 +2310,7 @@ export default function LeftSidebar() {
                 setIsCollapsed(false);
                 setSidebarPage("createEvent");
               }}
-              className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-transparent bg-transparent text-slate-600 transition hover:bg-[#e8e8e8]"
+              className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
               title="Create event"
             >
               <Plus size={18} />
@@ -2384,7 +2339,7 @@ export default function LeftSidebar() {
                         } catch {}
                       }
                     }}
-                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent bg-transparent text-slate-600 transition hover:bg-[#e8e8e8] hover:text-slate-900"
+                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-900 hover:shadow-md"
                     title={item.label}
                   >
                     <Icon size={18} />
@@ -2406,28 +2361,28 @@ export default function LeftSidebar() {
               <LogOut size={18} />
             </button>
           </div>
-        )}
+        </div>
 
         <div
-          className={`${
+          className={`relative h-full w-full transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
             isCompact
-              ? "opacity-0 pointer-events-none select-none"
-              : "flex h-full w-full"
-          } relative`}
+              ? "translate-x-3 opacity-0 pointer-events-none select-none"
+              : "translate-x-0 opacity-100"
+          }`}
           aria-hidden={isCompact}
         >
           <div className="relative h-full w-full overflow-hidden">
-            <div className="absolute inset-0 z-[1] flex h-full flex-col bg-[#efefef]">
+            <div className="absolute inset-0 z-[1] flex h-full flex-col bg-[#f8f9fb]">
               {/* Header with close button */}
-              <div className="relative flex-shrink-0 px-4 pb-2 pt-4">
-                <div className={`${SIDEBAR_CARD_CLASS} px-1 py-1`}>
+              <div className="relative z-10 flex-shrink-0 px-5 pb-3 pt-5">
+                <div className={`${SIDEBAR_CARD_CLASS} px-5 py-4`}>
                   <button
                     type="button"
                     aria-label={
                       isCollapsed ? "Expand navigation" : "Collapse navigation"
                     }
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className={`absolute right-3 top-3 ${SIDEBAR_TOGGLE_CLASS}`}
+                    className={`absolute right-4 top-4 ${SIDEBAR_TOGGLE_CLASS}`}
                   >
                     {isCollapsed ? (
                       <ChevronRight size={16} />
@@ -2438,7 +2393,7 @@ export default function LeftSidebar() {
                   <Link
                     href="/"
                     onClick={goHomeFromSidebar}
-                    className="inline-flex max-w-[120px] pr-10"
+                    className="inline-flex max-w-[140px] items-center pr-12"
                   >
                     <Image
                       src={SIDEBAR_WORDMARK_SRC}
@@ -2452,26 +2407,33 @@ export default function LeftSidebar() {
               </div>
               {/* Middle: Navigation area */}
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="px-4">
+                <div className="px-5">
                   <div className={SIDEBAR_DIVIDER_CLASS} />
                 </div>
 
-                <div className="relative mt-2 min-h-0 flex-1 overflow-hidden">
+                <div className="relative mt-1 min-h-0 flex-1 overflow-hidden">
                   <div
                     className={`${SIDEBAR_PANEL_CLASS} z-[5]`}
                     style={panelStyle(rootPanelTransform, sidebarPage === "root")}
                     aria-hidden={sidebarPage !== "root"}
                   >
-                    <div className="space-y-1.5">
-                      <p className={SIDEBAR_SECTION_LABEL_CLASS}>Main Menu</p>
-                      <div className="-ml-2 mr-2 space-y-0.5">
+                    <div className="space-y-3 pt-2">
+                      <div className="-ml-2 space-y-2">
                         <Link
                           href="/"
                           onClick={goHomeFromSidebar}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
+                            pathname === "/" && sidebarPage === "root"
+                              ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
+                              : "hover:bg-slate-200/40 text-slate-500"
+                          } py-3 pl-3 pr-4`}
                         >
                           <span
-                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                              pathname === "/" && sidebarPage === "root"
+                                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
+                                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                            }`}
                           >
                             <Home size={18} />
                           </span>
@@ -2480,10 +2442,18 @@ export default function LeftSidebar() {
                         <button
                           type="button"
                           onClick={() => setSidebarPage("createEvent")}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
+                            sidebarPage === "createEvent"
+                              ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
+                              : "text-slate-500 hover:bg-slate-200/40"
+                          } py-3 pl-3 pr-4`}
                         >
                           <span
-                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                              sidebarPage === "createEvent"
+                                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
+                                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                            }`}
                           >
                             <Plus size={18} />
                           </span>
@@ -2496,29 +2466,25 @@ export default function LeftSidebar() {
                           </span>
                         </button>
 
-                        <Link
-                          href="/calendar"
-                          onClick={collapseSidebarOnTouch}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
-                        >
-                          <span
-                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
-                          >
-                            <CalendarDays size={18} />
-                          </span>
-                          <span className="truncate">Calendar</span>
-                          <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>
-                            {calendarEventsCount}
-                          </span>
-                        </Link>
-
                         <button
                           type="button"
                           onClick={() => setSidebarPage("myEvents")}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
+                            sidebarPage === "myEvents" ||
+                            (sidebarPage === "eventContext" &&
+                              eventContextSourcePage === "myEvents")
+                              ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
+                              : "text-slate-500 hover:bg-slate-200/40"
+                          } py-3 pl-3 pr-4`}
                         >
                           <span
-                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                              sidebarPage === "myEvents" ||
+                              (sidebarPage === "eventContext" &&
+                                eventContextSourcePage === "myEvents")
+                                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
+                                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                            }`}
                           >
                             <Trophy size={18} />
                           </span>
@@ -2534,10 +2500,22 @@ export default function LeftSidebar() {
                         <button
                           type="button"
                           onClick={() => setSidebarPage("invitedEvents")}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} py-1.5 pr-5`}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
+                            sidebarPage === "invitedEvents" ||
+                            (sidebarPage === "eventContext" &&
+                              eventContextSourcePage === "invitedEvents")
+                              ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
+                              : "text-slate-500 hover:bg-slate-200/40"
+                          } py-3 pl-3 pr-4`}
                         >
                           <span
-                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                              sidebarPage === "invitedEvents" ||
+                              (sidebarPage === "eventContext" &&
+                                eventContextSourcePage === "invitedEvents")
+                                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
+                                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                            }`}
                           >
                             <Users size={18} />
                           </span>
@@ -2561,7 +2539,7 @@ export default function LeftSidebar() {
                     )}
                     aria-hidden={sidebarPage !== "createEvent"}
                   >
-                    <div className="space-y-1.5">
+                    <div className="space-y-3 pt-2">
                       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
                         <button
                           type="button"
@@ -2575,18 +2553,22 @@ export default function LeftSidebar() {
                           </span>
                           <span className="min-w-0">
                             <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                              Back to Menu
+                              Return
                             </span>
-                            <span className="block truncate text-sm font-semibold text-slate-900">
+                            <span className="block truncate text-xl font-extrabold text-slate-900">
                               Create Event
                             </span>
                           </span>
                         </button>
+                        {renderPanelSearch("Search create event options...")}
                       </div>
-
-                      <p className={SIDEBAR_SECTION_LABEL_CLASS}>Create Event</p>
-                      <div className="space-y-1">
-                        {createMenuItems.map((item, idx) => {
+                      <div className="space-y-3">
+                        {filteredCreateMenuItems.length === 0 ? (
+                          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+                            No event templates match your search.
+                          </div>
+                        ) : (
+                          filteredCreateMenuItems.map((item, idx) => {
                           const Icon = ICON_LOOKUP[item.label] || Sparkles;
                           const colorClass =
                             CREATE_SECTION_COLORS[
@@ -2596,24 +2578,25 @@ export default function LeftSidebar() {
                             <button
                               key={item.label}
                               type="button"
-                              className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS}`}
+                              className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} group border border-slate-100 bg-white py-3 pl-3 pr-4 hover:bg-slate-50 hover:shadow-md`}
                               onClick={() =>
                                 handleCreateModalSelect(item.label, item.href)
                               }
                             >
                               <span
-                                className={`flex h-10 w-10 items-center justify-center rounded-xl ${colorClass}`}
+                                className={`flex h-11 w-11 items-center justify-center rounded-xl border ${colorClass} shadow-sm`}
                               >
-                                <Icon size={16} />
+                                <Icon size={17} />
                               </span>
-                              <span className="truncate">{item.label}</span>
+                              <span className="truncate flex-1">{item.label}</span>
                               <ChevronRight
                                 size={16}
-                                className="ml-auto text-slate-400"
+                                className="ml-auto text-slate-300 transition-all group-hover:text-indigo-500"
                               />
                             </button>
                           );
-                        })}
+                          })
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2626,7 +2609,7 @@ export default function LeftSidebar() {
                     )}
                     aria-hidden={sidebarPage !== "myEvents"}
                   >
-                    <div className="space-y-1.5">
+                    <div className="space-y-3 pt-2">
                       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
                         <button
                           type="button"
@@ -2640,39 +2623,42 @@ export default function LeftSidebar() {
                           </span>
                           <span className="min-w-0">
                             <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                              Back to Menu
+                              Return
                             </span>
-                            <span className="block truncate text-sm font-semibold text-slate-900">
+                            <span className="block truncate text-xl font-extrabold text-slate-900">
                               My Events
                             </span>
                           </span>
                         </button>
+                        {renderPanelSearch("Search my events...")}
                       </div>
 
-                      <div className="space-y-1.5">
+                      <div className="space-y-4">
                         {myEventsGrouped.upcoming.length === 0 &&
                         myEventsGrouped.past.length === 0 ? (
                           <div
-                            className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-slate-500`}
+                            className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm"
                           >
                             No events yet.
                           </div>
                         ) : (
                           <div className="space-y-4">
-                            {myEventsGrouped.upcoming.length === 0 ? (
+                            {filteredMyEventsUpcoming.length === 0 ? (
                               <div
-                                className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-slate-500`}
+                                className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm"
                               >
-                                No upcoming events.
+                                {normalizedSidebarSearchQuery
+                                  ? "No upcoming events match your search."
+                                  : "No upcoming events."}
                               </div>
                             ) : (
-                              myEventsGrouped.upcoming.map((group) => (
+                              filteredMyEventsUpcoming.map((group) => (
                                 <section
                                   key={`upcoming-${group.category}`}
-                                  className="space-y-1"
+                                  className="space-y-2"
                                 >
                                   <div className="px-1 pt-1">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
                                       {group.category}
                                     </p>
                                     <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
@@ -2686,7 +2672,7 @@ export default function LeftSidebar() {
                                         isHistoryRowActive(item.row.id)
                                           ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                           : `${item.tintClass} ${item.hoverTintClass}`
-                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-slate-700`}
+                                      } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                       style={item.style}
                                     >
                                       <span
@@ -2715,7 +2701,7 @@ export default function LeftSidebar() {
                               <section className="space-y-1">
                                 <div className="px-1 pt-2">
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
                                       Past Events
                                     </p>
                                     <button
@@ -2723,7 +2709,7 @@ export default function LeftSidebar() {
                                       onClick={() =>
                                         setShowPastMyEvents((prev) => !prev)
                                       }
-                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 transition hover:bg-slate-200"
+                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-slate-600 shadow-sm transition hover:bg-slate-50"
                                     >
                                       <span>
                                         {showPastMyEvents
@@ -2742,13 +2728,18 @@ export default function LeftSidebar() {
                                 </div>
 
                                 {showPastMyEvents &&
-                                  myEventsGrouped.past.map((group) => (
+                                  (filteredMyEventsPast.length === 0 ? (
+                                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+                                      No past events match your search.
+                                    </div>
+                                  ) : (
+                                  filteredMyEventsPast.map((group) => (
                                     <section
                                       key={`past-${group.category}`}
-                                      className="space-y-1"
+                                      className="space-y-2"
                                     >
                                       <div className="px-1 pt-1">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
                                           {group.category}
                                         </p>
                                         <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
@@ -2764,7 +2755,7 @@ export default function LeftSidebar() {
                                             isHistoryRowActive(item.row.id)
                                               ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                               : `${item.tintClass} ${item.hoverTintClass}`
-                                          } w-full flex items-start gap-3 px-4 py-3 text-left text-slate-700 opacity-75 saturate-75`}
+                                          } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-75 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                           style={item.style}
                                         >
                                           <span
@@ -2786,6 +2777,7 @@ export default function LeftSidebar() {
                                         </button>
                                       ))}
                                     </section>
+                                  ))
                                   ))}
                               </section>
                             )}
@@ -2796,14 +2788,14 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
-                    className={`${SIDEBAR_PANEL_CLASS} z-[20] bg-[#fcfcfd]`}
+                    className={`${SIDEBAR_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
                       sidebarPage === "invitedEvents"
                     )}
                     aria-hidden={sidebarPage !== "invitedEvents"}
                   >
-                    <div className="space-y-1.5">
+                    <div className="space-y-3 pt-2">
                       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
                         <button
                           type="button"
@@ -2817,39 +2809,42 @@ export default function LeftSidebar() {
                           </span>
                           <span className="min-w-0">
                             <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                              Back to Menu
+                              Return
                             </span>
-                            <span className="block truncate text-sm font-semibold text-slate-900">
+                            <span className="block truncate text-xl font-extrabold text-slate-900">
                               Invited Events
                             </span>
                           </span>
                         </button>
+                        {renderPanelSearch("Search invited events...")}
                       </div>
 
-                      <div className="space-y-1.5">
+                      <div className="space-y-4">
                         {invitedEventsGrouped.upcoming.length === 0 &&
                         invitedEventsGrouped.past.length === 0 ? (
                           <div
-                            className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-slate-500`}
+                            className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm"
                           >
                             No invited events yet.
                           </div>
                         ) : (
                           <div className="space-y-4">
-                            {invitedEventsGrouped.upcoming.length === 0 ? (
+                            {filteredInvitedEventsUpcoming.length === 0 ? (
                               <div
-                                className={`${SIDEBAR_ITEM_CARD_CLASS} px-4 py-3 text-sm text-slate-500`}
+                                className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm"
                               >
-                                No upcoming events.
+                                {normalizedSidebarSearchQuery
+                                  ? "No upcoming invited events match your search."
+                                  : "No upcoming events."}
                               </div>
                             ) : (
-                              invitedEventsGrouped.upcoming.map((group) => (
+                              filteredInvitedEventsUpcoming.map((group) => (
                                 <section
                                   key={`invited-upcoming-${group.category}`}
-                                  className="space-y-1"
+                                  className="space-y-2"
                                 >
                                   <div className="px-1 pt-1">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
                                       {group.category}
                                     </p>
                                     <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
@@ -2868,7 +2863,7 @@ export default function LeftSidebar() {
                                         isHistoryRowActive(item.row.id)
                                           ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                           : `${item.tintClass} ${item.hoverTintClass}`
-                                      } w-full flex items-start gap-3 px-4 py-3 text-left text-slate-700`}
+                                      } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                       style={item.style}
                                     >
                                       <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
@@ -2895,7 +2890,7 @@ export default function LeftSidebar() {
                               <section className="space-y-1">
                                 <div className="px-1 pt-2">
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
                                       Past Events
                                     </p>
                                     <button
@@ -2905,7 +2900,7 @@ export default function LeftSidebar() {
                                           (prev) => !prev
                                         )
                                       }
-                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 transition hover:bg-slate-200"
+                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-slate-600 shadow-sm transition hover:bg-slate-50"
                                     >
                                       <span>
                                         {showPastInvitedEvents
@@ -2926,13 +2921,18 @@ export default function LeftSidebar() {
                                 </div>
 
                                 {showPastInvitedEvents &&
-                                  invitedEventsGrouped.past.map((group) => (
+                                  (filteredInvitedEventsPast.length === 0 ? (
+                                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+                                      No past invited events match your search.
+                                    </div>
+                                  ) : (
+                                  filteredInvitedEventsPast.map((group) => (
                                     <section
                                       key={`invited-past-${group.category}`}
-                                      className="space-y-1"
+                                      className="space-y-2"
                                     >
                                       <div className="px-1 pt-1">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
                                           {group.category}
                                         </p>
                                         <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
@@ -2951,7 +2951,7 @@ export default function LeftSidebar() {
                                             isHistoryRowActive(item.row.id)
                                               ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                               : `${item.tintClass} ${item.hoverTintClass}`
-                                          } w-full flex items-start gap-3 px-4 py-3 text-left text-slate-700 opacity-70 saturate-75`}
+                                          } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-70 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                           style={item.style}
                                         >
                                           <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
@@ -2971,6 +2971,7 @@ export default function LeftSidebar() {
                                         </button>
                                       ))}
                                     </section>
+                                  ))
                                   ))}
                               </section>
                             )}
@@ -3005,7 +3006,7 @@ export default function LeftSidebar() {
               </div>
 
               {/* Bottom: User button with dropdown */}
-              <div className="bg-[#efefef] px-3 py-3">
+              <div className="border-t border-slate-200 bg-[#f8f9fb] px-5 py-4">
                 <div className="relative z-[900]">
                   <button
                     ref={buttonRef}
@@ -3020,18 +3021,20 @@ export default function LeftSidebar() {
                     onMouseDown={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     aria-expanded={menuOpen}
-                    className={SIDEBAR_FOOTER_TRIGGER_CLASS}
+                    className={`${SIDEBAR_FOOTER_TRIGGER_CLASS} ${
+                      menuOpen ? "ring-2 ring-indigo-50/60 shadow-xl" : ""
+                    }`}
                   >
                     <div className="min-w-0 flex-1 inline-flex items-center gap-3">
-                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-sm font-semibold text-indigo-700">
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-sm font-bold text-indigo-700">
                         {profileInitials}
                       </span>
                       <div className="min-w-0 flex-1 text-left">
-                        <div className="truncate text-sm font-medium">
+                        <div className="truncate text-[13px] font-bold leading-tight text-slate-700">
                           {displayName}
                         </div>
                         {userEmail && (
-                          <div className="truncate text-xs md:text-sm text-slate-500">
+                          <div className="truncate text-[11px] text-slate-400">
                             {userEmail}
                           </div>
                         )}
@@ -3042,316 +3045,64 @@ export default function LeftSidebar() {
                         </span>
                       )}
                     </div>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={`h-4 w-4 text-slate-400 transition-transform ${
+                    <span
+                      className={`pr-1 text-slate-300 transition-transform duration-300 ${
                         menuOpen ? "rotate-180" : "rotate-0"
                       }`}
                       aria-hidden="true"
                     >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
+                      <ChevronUp size={16} />
+                    </span>
                   </button>
 
-                  {isOpen && menuOpen && (
-                    <div className="pointer-events-none absolute bottom-full right-0 mb-3 z-[1000]">
-                      <div
-                        ref={menuRef}
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        className="pointer-events-auto w-56 rounded-2xl border border-[#d9d3f3] bg-[linear-gradient(180deg,#ffffff_0%,#f3efff_100%)] shadow-[0_20px_44px_rgba(92,67,156,0.18)] overflow-visible"
-                      >
-                        <div
-                          ref={menuMainContentRef}
-                          className="p-2"
-                          style={
-                            menuMainHeight
-                              ? { minHeight: `${menuMainHeight}px` }
-                              : undefined
-                          }
+                  {isOpen && (
+                    <div
+                      ref={menuRef}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className={`pointer-events-auto absolute bottom-full right-0 z-[1000] mb-2 w-[75%] origin-bottom-right rounded-[22px] border border-indigo-50 bg-white p-1.5 shadow-xl transition-all duration-300 ease-out ${
+                        menuOpen
+                          ? "translate-y-0 scale-100 opacity-100"
+                          : "pointer-events-none translate-y-4 scale-90 opacity-0"
+                      }`}
+                    >
+                      <div className="flex flex-col space-y-0.5">
+                        {footerMenuItems.map(
+                          ({ href, label, Icon, colorClass, bgClass }) => (
+                            <Link
+                              key={label}
+                              href={href}
+                              onClick={() => {
+                                setMenuOpen(false);
+                              }}
+                              className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-slate-50"
+                            >
+                              <span
+                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${bgClass} ${colorClass} transition-transform group-hover:scale-105`}
+                              >
+                                <Icon size={14} />
+                              </span>
+                              <span className="text-[12px] font-medium text-slate-600">
+                                {label}
+                              </span>
+                            </Link>
+                          )
+                        )}
+
+                        <div className="mx-2 my-1 h-px bg-slate-100" />
+
+                        <button
+                          onClick={() => signOut({ callbackUrl: "/" })}
+                          className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-red-50"
                         >
-                          {menuFloatingView === "main" && (
-                            <Link
-                              href="/settings"
-                              onClick={() => {
-                                setMenuOpen(false);
-                              }}
-                              className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                            >
-                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="h-3.5 w-3.5"
-                                  aria-hidden="true"
-                                >
-                                  <circle cx="12" cy="7" r="4" />
-                                  <path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2" />
-                                </svg>
-                              </span>
-                              <span className="text-sm md:text-base">
-                                Profile
-                              </span>
-                            </Link>
-                          )}
-
-                          {menuFloatingView === "main" ? (
-                            <button
-                              type="button"
-                              onClick={() => setMenuFloatingView("calendar")}
-                              className="group mt-1 w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="h-3.5 w-3.5"
-                                    aria-hidden="true"
-                                  >
-                                    <rect
-                                      x="3"
-                                      y="4"
-                                      width="18"
-                                      height="18"
-                                      rx="2"
-                                      ry="2"
-                                    />
-                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                  </svg>
-                                </span>
-                                <span className="text-sm md:text-base">
-                                  Calendar
-                                </span>
-                              </div>
-                              <ChevronRight
-                                size={16}
-                                className="text-[#8a7ec0]"
-                                aria-hidden="true"
-                              />
-                            </button>
-                          ) : (
-                            <div className="mt-1 min-w-full">
-                              <div className="flex items-center gap-2 p-3 border-b border-[#ece7fb]">
-                                <button
-                                  type="button"
-                                  onClick={() => setMenuFloatingView("main")}
-                                  className="p-1 rounded-full hover:bg-[#f1edff] transition-colors"
-                                  aria-label="Back to menu"
-                                >
-                                  <ChevronLeft
-                                    size={18}
-                                    className="text-[#6f629d]"
-                                  />
-                                </button>
-                                <span className="font-semibold text-sm text-[#3f335f]">
-                                  Calendar Settings
-                                </span>
-                              </div>
-                              <div className="p-4">
-                                <h4 className="text-[10px] font-bold text-[#9589b7] uppercase tracking-wider mb-2">
-                                  Connection Status
-                                </h4>
-                                <p className="text-[12px] text-[#7d6fa5] mb-4 leading-snug">
-                                  Tap a provider to set default.
-                                </p>
-                                <div className="flex justify-between items-center px-1">
-                                  {CALENDAR_TARGETS.map(({ key, label, Icon }) => {
-                                    const isDefault = defaultCalendarProvider === key;
-                                    const isConnected = connectedCalendars[key];
-                                    return (
-                                      <button
-                                        key={key}
-                                        type="button"
-                                        onClick={() => void toggleCalendarDefault(key)}
-                                        className="flex flex-col items-center gap-1.5 group"
-                                        title={
-                                          isDefault
-                                            ? `Default is ${label}. Click to clear default`
-                                            : isConnected || key === "apple"
-                                            ? `Set ${label} as default calendar`
-                                            : `Connect ${label} calendar`
-                                        }
-                                      >
-                                        <div
-                                          className={`relative w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all ${
-                                            isDefault
-                                              ? "bg-[#6962c8] border-[#6962c8] text-white shadow-md scale-105"
-                                              : "bg-white border-[#e4dcf8] text-[#6f629d] hover:border-[#cfc2f1] hover:bg-[#f8f5ff] shadow-sm"
-                                          }`}
-                                        >
-                                          <Icon className="h-4 w-4" />
-                                          {isDefault && (
-                                            <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#7c67be] text-white border-2 border-white flex items-center justify-center">
-                                              <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 12 12"
-                                                fill="none"
-                                                className="h-2.5 w-2.5"
-                                                aria-hidden="true"
-                                              >
-                                                <path
-                                                  d="M10 3L4.5 8.5L2 6"
-                                                  stroke="currentColor"
-                                                  strokeWidth="2"
-                                                  strokeLinecap="round"
-                                                  strokeLinejoin="round"
-                                                />
-                                              </svg>
-                                            </span>
-                                          )}
-                                        </div>
-                                        <span
-                                          className={`text-[10px] font-medium ${
-                                            isDefault
-                                              ? "text-[#645bc1]"
-                                              : "text-[#8b80af]"
-                                          }`}
-                                        >
-                                          {label}
-                                        </span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {menuFloatingView === "main" && (
-                            <>
-                          <Link
-                            href="/about"
-                            onClick={() => {
-                              setMenuOpen(false);
-                            }}
-                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                          >
-                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-3.5 w-3.5"
-                                aria-hidden="true"
-                              >
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="16" x2="12" y2="12" />
-                                <line x1="12" y1="8" x2="12.01" y2="8" />
-                              </svg>
-                            </span>
-                            <span className="text-sm md:text-base">
-                              About us
-                            </span>
-                          </Link>
-
-                          <Link
-                            href="/contact"
-                            onClick={() => {
-                              setMenuOpen(false);
-                            }}
-                            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                          >
-                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#efebff] text-[#7264a7] group-hover:bg-[#e7e1ff]">
-                              <svg
-                                fill="currentColor"
-                                viewBox="0 0 492.014 492.014"
-                                className="h-3.5 w-3.5"
-                                aria-hidden="true"
-                              >
-                                <path d="M339.277,459.566H34.922V32.446h304.354v105.873l32.446-32.447V16.223C371.723,7.264,364.458,0,355.5,0 H18.699C9.739,0,2.473,7.264,2.473,16.223v459.568c0,8.959,7.265,16.223,16.226,16.223H355.5c8.958,0,16.223-7.264,16.223-16.223 V297.268l-32.446,32.447V459.566z" />
-                                <path d="M291.446,71.359H82.751c-6.843,0-12.396,5.553-12.396,12.398c0,6.844,5.553,12.397,12.396,12.397h208.694 c6.845,0,12.397-5.553,12.397-12.397C303.843,76.912,298.29,71.359,291.446,71.359z" />
-                                <path d="M303.843,149.876c0-6.844-5.553-12.398-12.397-12.398H82.751c-6.843,0-12.396,5.554-12.396,12.398 c0,6.845,5.553,12.398,12.396,12.398h208.694C298.29,162.274,303.843,156.722,303.843,149.876z" />
-                                <path d="M274.004,203.6H82.751c-6.843,0-12.396,5.554-12.396,12.398c0,6.845,5.553,12.397,12.396,12.397h166.457 L274.004,203.6z" />
-                                <path d="M204.655,285.79c1.678-5.618,4.076-11.001,6.997-16.07h-128.9c-6.843,0-12.396,5.553-12.396,12.398 c0,6.844,5.553,12.398,12.396,12.398h119.304L204.655,285.79z" />
-                                <path d="M82.751,335.842c-6.843,0-12.396,5.553-12.396,12.398c0,6.843,5.553,12.397,12.396,12.397h108.9 c-3.213-7.796-4.044-16.409-1.775-24.795H82.751z" />
-                                <path d="M479.403,93.903c-6.496-6.499-15.304-10.146-24.48-10.146c-9.176,0-17.982,3.647-24.471,10.138 L247.036,277.316c-5.005,5.003-8.676,11.162-10.703,17.942l-14.616,48.994c-0.622,2.074-0.057,4.318,1.477,5.852 c1.122,1.123,2.624,1.727,4.164,1.727c0.558,0,1.13-0.08,1.688-0.249l48.991-14.618c6.782-2.026,12.941-5.699,17.943-10.702 l183.422-183.414c6.489-6.49,10.138-15.295,10.138-24.472C489.54,109.197,485.892,100.392,479.403,93.903z" />
-                              </svg>
-                            </span>
-                            <span className="text-sm md:text-base">
-                              Contact us
-                            </span>
-                          </Link>
-
-                          {isAdmin && (
-                            <Link
-                              href="/admin"
-                              onClick={() => {
-                                setMenuOpen(false);
-                              }}
-                              className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#4b3f72] hover:text-[#34275c] hover:bg-[#f1edff] transition-all"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4 text-[#6e655f]"
-                                aria-hidden="true"
-                              >
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                              </svg>
-                              <span className="text-sm md:text-base">
-                                Admin
-                              </span>
-                            </Link>
-                          )}
-
-                          <div className="my-1 h-px bg-gradient-to-r from-transparent via-[#d8d2f3] to-transparent" />
-                          <button
-                            onClick={() => signOut({ callbackUrl: "/" })}
-                            className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#f0618a] hover:text-[#e44a79] hover:bg-[#ffeef5] transition-all"
-                          >
-                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#ffe8f0] text-current group-hover:bg-[#ffdce9]">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-3.5 w-3.5 text-current"
-                                aria-hidden="true"
-                              >
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                <polyline points="16 17 21 12 16 7" />
-                                <line x1="21" y1="12" x2="9" y2="12" />
-                              </svg>
-                            </span>
-                            <span className="text-sm md:text-base">
-                              Log out
-                            </span>
-                          </button>
-                            </>
-                          )}
-                        </div>
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-400 transition-transform group-hover:scale-105">
+                            <LogOut size={14} />
+                          </span>
+                          <span className="text-[12px] font-medium text-red-400">
+                            Log out
+                          </span>
+                        </button>
                       </div>
                     </div>
                   )}

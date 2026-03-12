@@ -3,7 +3,7 @@
 "use client";
 
 import React from "react";
-import { Calendar, Check, Clock, Phone } from "lucide-react";
+import { Calendar, Check, Clock } from "lucide-react";
 import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
 import FloatingActionStrip from "../FloatingActionStrip";
 import { getGymMeetTitleTypography } from "../titleTypography";
@@ -110,7 +110,7 @@ export default function DashboardGymMeetTemplate({
     Boolean(model.gear?.uniform) ||
     volunteerSlots.length > 0 ||
     carpools.length > 0;
-  const hasQuickAccessSection = model.quickLinks.length > 0 || Boolean(model.coachPhone);
+  const hasQuickAccessSection = model.quickLinks.length > 0;
   const hasSidebarSections =
     Boolean(model.hostGym || model.team || model.venue || model.headerLocation || model.address || model.mapAddress || model.coach || model.assistantCoach) ||
     rsvpProps.enabled ||
@@ -415,7 +415,7 @@ export default function DashboardGymMeetTemplate({
                     </Section>
                   ) : null}
 
-                  {(model.quickLinks.length > 0 || model.coachPhone) ? (
+                  {model.quickLinks.length > 0 ? (
                     <Section
                       id="quick-access"
                       title="Quick Access"
@@ -435,11 +435,6 @@ export default function DashboardGymMeetTemplate({
                             {link.label || "Open Link"}
                           </a>
                         ))}
-                        {model.coachPhone ? (
-                          <a href={`tel:${model.coachPhone}`} className={variant.secondaryButtonClass}>
-                            <Phone size={14} /> Contact Coach
-                          </a>
-                        ) : null}
                       </div>
                     </Section>
                   ) : null}

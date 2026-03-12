@@ -273,6 +273,8 @@ curl -X POST \
     - `gymLayoutPage` (0-based PDF page index when applicable),
     - `gymLayoutSelection` (optional diagnostics payload with selected page, confidence, reason, and scored candidates).
     - `coachPageHints` (optional compact hints for PDF/source sections that look coach-specific, including page number, heading, and excerpt).
+    - `schedulePageImages` / `schedulePageTexts` (optional schedule-grid artifacts used for gymnastics session extraction),
+    - `scheduleDiagnostics` (optional schedule extraction diagnostics including selected schedule pages, text/image parse counts, fallback usage, and stale-schedule repair detection).
   - PDF hall-layout image capture now uses a renderer fallback path (PDF.js + Canvas) when direct PDF page rasterization is unavailable, so venue map screenshots can still be generated from uploaded PDFs.
   - PDF hall-layout page selection is strict map-only: text/prose pages are rejected even if they contain generic hall terms. If no page passes strict gates, `gymLayoutImageDataUrl` is stored as `null` (no text-page fallback image).
   - Hall-layout fact lines are now strictly sanitized before mapping/rendering (readability + venue-anchor checks + near-duplicate collapse). Fragmented/paraphrased snippets are dropped so Venue Details may be intentionally sparse when source confidence is low.
@@ -284,8 +286,9 @@ curl -X POST \
   - Gymnastics parsing now trains specifically on coach-only sections/pages and returns a structured `parseResult.coachInfo` block when detected. The block now separates coach/registration data from public admission and includes coach ops (`signIn`, `attire`, `hospitality`, `floorAccess`, `scratches`, `floorMusic`, `rotationSheets`, `awards`, `regionalCommitment`), rules (`qualification`, `meetFormat`, `equipment`, `refundPolicy`, `paymentInstructions`), fee arrays (`entryFees`, `teamFees`, `lateFees`), and coach-facing `contacts`, `deadlines`, `links`, and `notes`.
   - Gymnastics mapping safeguards meet dates by preferring parsed date ranges (for example `March 6-8, 2026`) when a conflicting single `startAt` value is out of range, and it now applies deterministic date classification to demote update/posted/deadline stamps before mapped meet dates are finalized.
   - Gymnastics mapping resolves an assigned gym location (`athlete.assignedGym` first, then strongest gym mention) and attempts a focused crop from the detected gym layout zones. If crop confidence is insufficient or no matching zone is found, it safely falls back to the full layout image.
-  - Gymnastics discovery rendering keeps the public tabs fixed (`Meet Details`, `Venue Details`, `Admission & Sales`, `Traffic & Parking`, `Safety Policy`) and adds a dynamic `Coaches` navigation tab only when parsed/extracted coach content exists. Spectator admission remains public; club registration/team/late fees and coach-only rules render in `Coaches`.
-  - Gymnastics mapping now stores coach-facing content in `advancedSections.coaches`, adds `resultsInfo` / `rotationSheetsInfo` / `awardsInfo` to `advancedSections.meet`, and preserves normalized parking map/rate links in `advancedSections.logistics`.
+  - Gymnastics discovery rendering keeps the public tabs fixed (`Meet Details`, `Venue Details`, `Admission & Sales`, `Traffic & Parking`, `Safety Policy`) and adds dynamic navigation tabs when source-backed content exists: `Coaches` for coach-only packet content and `Schedule` for extracted session grids. `Schedule` appears between `Coaches` and `Venue Details` and stays hidden when no usable schedule data is stored.
+  - Gymnastics schedule-grid extraction is image-first for table layouts: schedule page images are parsed visually by session columns/subcolumns, with text fallback only used to supplement missing days or sessions. Visible color-coded club legends are interpreted visually and mapped into stored `teamAwardEligible` values when explicit, with optional structured `awardLegend` metadata when the legend meaning is clear.
+  - Gymnastics mapping now stores coach-facing content in `advancedSections.coaches`, extracted multi-day session grids in `advancedSections.schedule`, adds `resultsInfo` / `rotationSheetsInfo` / `awardsInfo` to `advancedSections.meet`, and preserves normalized parking map/rate links in `advancedSections.logistics`. Parsed schedule data seeds the builder when empty; later manual schedule edits are preserved on reparses unless explicitly replaced.
   - Football uses a separate football-oriented schema/prompt that classifies `football_game_packet` vs `football_season_schedule` and maps results into football builder fields (`games`, `practice`, `roster`, `logistics`, `gear`, `volunteers`, `announcements`, team/stadium metadata).
   - Stores source audit info (`extractedText`, `parseResult`, `rawModelOutput`, `modelUsed`, timestamps, extraction quality metadata`) under `discoverySource`.
 - **Output**: `{ ok, eventId, repaired, modelUsed, parseResult, statuses }` where `modelUsed` is `"openai"`, `"gemini"`, or `"quality-gate"` when parsing is skipped due to low extraction quality.
@@ -300,7 +303,8 @@ curl -X POST \
 - **GET Output**: `{ ok, eventId, title, meet_page_json, statuses }`.
 - **PUT Input (JSON)**: `{ patch: object, title?: string }` (deep-merges `patch` into existing meet JSON).
 - **PUT Output**: `{ ok, eventId, meet_page_json, statuses }`.
-- **Statuses**: Includes grouped step statuses for `Essentials`, `Operations`, `Communication`, and `Before Publish`.
+- **Meet JSON**: `meet_page_json.advancedSections` includes the discovery/builder sections used by the gymnastics page, including `meet`, `coaches`, `logistics`, and `schedule`. `advancedSections.schedule` stores public session-grid data as `days[] -> sessions[] -> clubs[]`, plus optional `venueLabel`, `supportEmail`, `notes`, and `awardLegend`.
+- **Statuses**: Includes grouped step statuses for `Essentials`, `Operations`, `Communication`, and `Before Publish`. `Operations` now includes a `schedule` status that is `ready` when stored schedule days contain at least one usable session.
 
 ### ICS Agent — GET `/api/ics`
 

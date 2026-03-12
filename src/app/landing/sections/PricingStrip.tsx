@@ -7,7 +7,7 @@ import AuthModal from "@/components/auth/AuthModal";
 export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("signup");
-  const primaryHref = "/calendar"; // Redirect to dashboard if authed
+  const primaryHref = "/";
 
   return (
     <section className="w-full py-20 bg-white">

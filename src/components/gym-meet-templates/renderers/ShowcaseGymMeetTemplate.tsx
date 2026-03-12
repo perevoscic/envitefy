@@ -2,13 +2,12 @@
 // @ts-nocheck
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Calendar,
   Check,
   Clock,
   ExternalLink,
-  Phone,
 } from "lucide-react";
 import ShowcaseDiscoveryContent, {
   getShowcaseDiscoveryTabs,
@@ -19,6 +18,9 @@ import { getGymMeetTitleTypography } from "../titleTypography";
 import { GymMeetTemplateRendererProps } from "../types";
 import { getGymMeetTitleSizeStyle } from "../titleSizing";
 import { formatGymMeetTime, joinUniqueDisplayParts } from "../displayText";
+
+const MOBILE_TAB_SAFE_EDGE_PX = 24;
+const DESKTOP_TAB_SAFE_EDGE_PX = 8;
 
 const formatStatus = (value: string) => {
   const normalized = String(value || "").replace(/_/g, " ").trim();
@@ -170,6 +172,8 @@ export default function ShowcaseGymMeetTemplate({
 }) {
   const titleTypography = getGymMeetTitleTypography(model.pageTemplateId);
   const [activeTab, setActiveTab] = useState("");
+  const tabsRailRef = useRef<HTMLDivElement | null>(null);
+  const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const practiceBlocks = Array.isArray(model.practiceBlocks) ? model.practiceBlocks : [];
   const volunteerSlots = Array.isArray(model.volunteers?.volunteerSlots)
@@ -195,7 +199,42 @@ export default function ShowcaseGymMeetTemplate({
   const activeTabId = topTabs.some((tab) => tab.id === activeTab)
     ? activeTab
     : topTabs[0]?.id || "";
-  const hasQuickAccessSection = model.quickLinks.length > 0 || Boolean(model.coachPhone);
+  const scrollActiveTabIntoView = useCallback(
+    (tabId: string, behavior: ScrollBehavior = "smooth") => {
+      const rail = tabsRailRef.current;
+      const button = tabButtonRefs.current[tabId];
+      if (!rail || !button) return;
+
+      const isDesktop =
+        typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+      const safeEdgeInset = isDesktop ? DESKTOP_TAB_SAFE_EDGE_PX : MOBILE_TAB_SAFE_EDGE_PX;
+      const maxScroll = Math.max(rail.scrollWidth - rail.clientWidth, 0);
+      const buttonLeft = button.offsetLeft;
+      const buttonRight = buttonLeft + button.offsetWidth;
+      const safeViewportLeft = rail.scrollLeft + safeEdgeInset;
+      const safeViewportRight = rail.scrollLeft + rail.clientWidth - safeEdgeInset;
+      const epsilon = 1;
+
+      if (
+        buttonLeft >= safeViewportLeft - epsilon &&
+        buttonRight <= safeViewportRight + epsilon
+      ) {
+        return;
+      }
+
+      const targetScrollLeft =
+        buttonLeft < safeViewportLeft
+          ? buttonLeft - safeEdgeInset
+          : buttonRight + safeEdgeInset - rail.clientWidth;
+
+      rail.scrollTo({
+        left: Math.min(Math.max(targetScrollLeft, 0), maxScroll),
+        behavior,
+      });
+    },
+    []
+  );
+  const hasQuickAccessSection = model.quickLinks.length > 0;
   const heroVenueLine = joinUniqueDisplayParts(
     [model.hostGym || model.team || model.venue, model.address || model.headerLocation],
     ", "
@@ -210,6 +249,19 @@ export default function ShowcaseGymMeetTemplate({
         backgroundPosition: "center",
       }
     : undefined;
+
+  useEffect(() => {
+    if (!activeTabId) return;
+    const behavior =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth";
+    const rafId = window.requestAnimationFrame(() => {
+      scrollActiveTabIntoView(activeTabId, behavior);
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [activeTabId, scrollActiveTabIntoView]);
 
   return (
     <div className={theme.pageClass}>
@@ -303,7 +355,8 @@ export default function ShowcaseGymMeetTemplate({
               <div className="sticky top-3 z-20">
                 <div className={theme.navShellClass}>
                   <div
-                    className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1"
+                    ref={tabsRailRef}
+                    className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 pr-12 md:pr-1"
                   >
                     {topTabs.map((tab) => {
                       const Icon = tab.icon;
@@ -312,6 +365,9 @@ export default function ShowcaseGymMeetTemplate({
                         <button
                           key={tab.id}
                           type="button"
+                          ref={(node) => {
+                            tabButtonRefs.current[tab.id] = node;
+                          }}
                           onClick={() => setActiveTab(tab.id)}
                           className={`${selected ? theme.navActiveClass : theme.navIdleClass} inline-flex max-w-[240px] shrink-0 items-center justify-center gap-2 whitespace-nowrap`}
                           aria-label={tab.label}
@@ -538,7 +594,7 @@ export default function ShowcaseGymMeetTemplate({
               </Section>
             ) : null}
 
-            {(model.quickLinks.length > 0 || model.coachPhone) ? (
+            {model.quickLinks.length > 0 ? (
               <Section id="quick-access" title="Quick Access" eyebrow="Links" theme={theme}>
                 <div className="flex flex-wrap gap-2">
                   {model.quickLinks.map((link) =>
@@ -556,11 +612,6 @@ export default function ShowcaseGymMeetTemplate({
                       </a>
                     ) : null
                   )}
-                  {model.coachPhone ? (
-                    <a href={`tel:${model.coachPhone}`} className={theme.ctaSecondaryClass}>
-                      <Phone size={14} /> Contact Coach
-                    </a>
-                  ) : null}
                 </div>
               </Section>
             ) : null}

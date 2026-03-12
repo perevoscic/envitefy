@@ -584,7 +584,8 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
       "bg-[linear-gradient(145deg,#111827_0%,#7c2d12_52%,#ef4444_100%)] text-white",
     previewAccentClassName: "text-amber-800",
     titleTypographyId: "kanit",
-    previewTitleClassName: "font-black italic tracking-[-0.1em] text-white",
+    previewTitleClassName:
+      "font-black italic tracking-[-0.1em] text-[#fff4d6] drop-shadow-[0_2px_10px_rgba(17,24,39,0.24)]",
   },
   {
     id: "vault-grid",

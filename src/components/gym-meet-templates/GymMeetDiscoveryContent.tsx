@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image";
 import { ExternalLink } from "lucide-react";
 import StaticMap from "@/components/StaticMap";
+import ScheduleBoard from "./ScheduleBoard";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2";
@@ -78,6 +79,9 @@ const getCollectionItemKey = (parentId: string | undefined, explicitKey: unknown
     : `${normalizedParentId}-${index}`;
 };
 
+const MOBILE_NAV_SAFE_EDGE_PX = 48;
+const DESKTOP_NAV_SAFE_EDGE_PX = 8;
+
 export default function GymMeetDiscoveryContent({
   model,
   variant,
@@ -107,9 +111,10 @@ export default function GymMeetDiscoveryContent({
   const activeTabClass = variant.navActiveClass;
   const idleTabClass = variant.navIdleClass;
   const navFadeClass = variant.navFadeClass || "rgba(255,255,255,0.82)";
-  const navRailClass =
+  const baseNavRailClass =
     variant.navRailClass ||
     "no-scrollbar flex gap-2 overflow-x-auto px-1 py-1";
+  const navRailClass = `${baseNavRailClass} pr-12 md:pr-1`;
   const navButtonClass = variant.navButtonClass || "";
   const navTextClass =
     sections.length >= 6
@@ -149,12 +154,37 @@ export default function GymMeetDiscoveryContent({
   }, []);
 
   const centerTab = useCallback((sectionId: string, behavior: ScrollBehavior = "smooth") => {
+    const rail = railRef.current;
     const button = tabButtonRefs.current[sectionId];
-    if (!button) return;
-    button.scrollIntoView({
+    if (!rail || !button) return;
+
+    const isDesktop =
+      typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+    const safeEdgeInset = isDesktop ? DESKTOP_NAV_SAFE_EDGE_PX : MOBILE_NAV_SAFE_EDGE_PX;
+    const leftInset = safeEdgeInset;
+    const rightInset = safeEdgeInset;
+    const maxScroll = Math.max(rail.scrollWidth - rail.clientWidth, 0);
+    const buttonLeft = button.offsetLeft;
+    const buttonRight = buttonLeft + button.offsetWidth;
+    const safeViewportLeft = rail.scrollLeft + leftInset;
+    const safeViewportRight = rail.scrollLeft + rail.clientWidth - rightInset;
+    const epsilon = 1;
+
+    if (
+      buttonLeft >= safeViewportLeft - epsilon &&
+      buttonRight <= safeViewportRight + epsilon
+    ) {
+      return;
+    }
+
+    const targetScrollLeft =
+      buttonLeft < safeViewportLeft
+        ? buttonLeft - leftInset
+        : buttonRight + rightInset - rail.clientWidth;
+
+    rail.scrollTo({
+      left: Math.min(Math.max(targetScrollLeft, 0), maxScroll),
       behavior,
-      inline: "center",
-      block: "nearest",
     });
   }, []);
 
@@ -223,6 +253,11 @@ export default function GymMeetDiscoveryContent({
   }, [activeSectionId, centerTab, getScrollBehavior, updateEdgeHints]);
 
   const activeSection = sections.find((section: any) => section.id === activeSectionId) || sections[0];
+  const isBareScheduleSection =
+    Boolean(activeSection?.hideSectionHeading) &&
+    Array.isArray(activeSection?.blocks) &&
+    activeSection.blocks.length === 1 &&
+    activeSection.blocks[0]?.type === "schedule-board";
 
   const renderBlock = (block: any) => {
     switch (block.type) {
@@ -372,6 +407,29 @@ export default function GymMeetDiscoveryContent({
             </div>
           </div>
         );
+      case "schedule-board":
+        return (
+          <ScheduleBoard
+            schedule={block.data}
+            preferredClubName={model?.assignedGym}
+            appearance={{
+              panelClass,
+              cardClass,
+              summaryCardClass: cardClass,
+              navShellClass,
+              navActiveClass: activeTabClass,
+              navIdleClass: idleTabClass,
+              accentClass: variant.accentClass,
+              sectionTitleClass,
+              sectionTitleStyle,
+              sectionMutedClass: variant.sectionMutedClass,
+              primaryButtonClass,
+              secondaryButtonClass,
+              sessionTitleClass: sectionTitleClass,
+              sessionTitleStyle: sectionTitleStyle,
+            }}
+          />
+        );
       default:
         return null;
     }
@@ -435,14 +493,20 @@ export default function GymMeetDiscoveryContent({
       </div>
 
       {activeSection ? (
-        <div className="space-y-4">
-          <div className={sectionTitleClass}>
-            <TabHeading title={activeSection.label} style={sectionTitleStyle} />
+        isBareScheduleSection ? (
+          renderBlock(activeSection.blocks[0])
+        ) : (
+          <div className="space-y-4">
+            {activeSection.hideSectionHeading ? null : (
+              <div className={sectionTitleClass}>
+                <TabHeading title={activeSection.label} style={sectionTitleStyle} />
+              </div>
+            )}
+            {activeSection.blocks.map((block: any) => (
+              <React.Fragment key={block.id}>{renderBlock(block)}</React.Fragment>
+            ))}
           </div>
-          {activeSection.blocks.map((block: any) => (
-            <React.Fragment key={block.id}>{renderBlock(block)}</React.Fragment>
-          ))}
-        </div>
+        )
       ) : (
         <EmptyState className={panelClass}>No discovery sections are available yet.</EmptyState>
       )}
