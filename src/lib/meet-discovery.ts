@@ -168,6 +168,22 @@ export type ParseResult = {
       meaning: string | null;
       teamAwardEligible: boolean | null;
     }>;
+    annotations?: Array<{
+      kind: string | null;
+      level: string | null;
+      sessionCode: string | null;
+      date: string | null;
+      time: string | null;
+      text: string;
+    }>;
+    assignments?: Array<{
+      level: string | null;
+      groupLabel: string | null;
+      sessionCode: string | null;
+      birthDateRange: string | null;
+      divisionLabel: string | null;
+      note: string | null;
+    }>;
     days: Array<{
       date: string | null;
       shortDate: string | null;
@@ -341,6 +357,16 @@ type ExtractionResult = {
     schedulePageTexts?: Array<{ pageNumber: number; text: string }>;
     scheduleDiagnostics?: {
       selectedSchedulePages: number[];
+      selectedScheduleSegments?: Array<{
+        pageNumber: number;
+        kind: "grid" | "narrative" | "assignment";
+        reason: string;
+      }>;
+      rejectedScheduleSegments?: Array<{
+        pageNumber: number;
+        reason: string;
+      }>;
+      ambiguityNotes?: string[];
       extractedDateLines: string[];
       parsedFromTextDayCount: number;
       parsedFromImageDayCount: number;
@@ -683,6 +709,24 @@ type StoredGymMeetSchedule = {
     meaning: string;
     teamAwardEligible: boolean | null;
   }>;
+  annotations: Array<{
+    id: string;
+    kind: string;
+    level: string;
+    sessionCode: string;
+    date: string;
+    time: string;
+    text: string;
+  }>;
+  assignments: Array<{
+    id: string;
+    level: string;
+    groupLabel: string;
+    sessionCode: string;
+    birthDateRange: string;
+    divisionLabel: string;
+    note: string;
+  }>;
   days: StoredGymMeetScheduleDay[];
 };
 
@@ -700,7 +744,7 @@ function compareScheduleSessionCodes(a: string, b: string): number {
 }
 
 const SCHEDULE_DATE_LINE_PATTERN =
-  /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday),?\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4}\b/i;
+  /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday),?\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:,?\s+\d{4})?\b/i;
 function slugifyScheduleToken(value: unknown, fallback: string): string {
   const normalized = safeString(value)
     .toLowerCase()
@@ -737,6 +781,20 @@ function formatScheduleIsoDate(value: string): string {
   } catch {
     return "";
   }
+}
+
+function deriveScheduleContextYear(text: string): string {
+  const primary = classifyMeetDateCandidates(text).primary;
+  if (primary?.startDate) return primary.startDate.slice(0, 4);
+  const yearMatch = safeString(text).match(/\b(20\d{2})\b/);
+  return yearMatch?.[1] || "";
+}
+
+function normalizeScheduleDayLabelWithContext(value: string, fallbackYear: string): string {
+  const raw = safeString(value).replace(/\s+/g, " ");
+  if (!raw) return "";
+  if (/\b20\d{2}\b/.test(raw) || !fallbackYear) return raw;
+  return `${raw.replace(/,\s*$/, "")}, ${fallbackYear}`;
 }
 
 function normalizeStoredSchedule(
@@ -834,6 +892,52 @@ function normalizeStoredSchedule(
           .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
       ],
       (item) => `${item.meaning}|${item.colorLabel}|${item.teamAwardEligible ?? ""}`
+    ),
+    annotations: uniqueBy(
+      [
+        ...pickArray(raw.annotations),
+        ...pickArray(fallback.annotations),
+      ]
+        .map((item, index) => ({
+          id: safeString(item?.id) || `schedule-annotation-${index + 1}`,
+          kind: safeString(item?.kind),
+          level: safeString(item?.level),
+          sessionCode: safeString(item?.sessionCode).toUpperCase(),
+          date: safeString(item?.date),
+          time: safeString(item?.time),
+          text: safeString(item?.text),
+        }))
+        .filter((item) => item.text),
+      (item) =>
+        [item.kind, item.level, item.sessionCode, item.date, item.time, item.text].join("|")
+    ),
+    assignments: uniqueBy(
+      [
+        ...pickArray(raw.assignments),
+        ...pickArray(fallback.assignments),
+      ]
+        .map((item, index) => ({
+          id: safeString(item?.id) || `schedule-assignment-${index + 1}`,
+          level: safeString(item?.level),
+          groupLabel: safeString(item?.groupLabel),
+          sessionCode: safeString(item?.sessionCode).toUpperCase(),
+          birthDateRange: safeString(item?.birthDateRange),
+          divisionLabel: safeString(item?.divisionLabel),
+          note: safeString(item?.note),
+        }))
+        .filter(
+          (item) =>
+            item.sessionCode || item.groupLabel || item.birthDateRange || item.divisionLabel || item.note
+        ),
+      (item) =>
+        [
+          item.level,
+          item.groupLabel,
+          item.sessionCode,
+          item.birthDateRange,
+          item.divisionLabel,
+          item.note,
+        ].join("|")
     ),
     days,
   };
@@ -996,7 +1100,10 @@ function splitExtractedSchedulePages(text: string) {
 }
 
 function selectSchedulePages(text: string) {
-  return splitExtractedSchedulePages(text).filter((page) => looksLikeSchedulePageText(page.text));
+  return selectScheduleSegments(splitExtractedSchedulePages(text)).map((segment) => ({
+    pageNumber: segment.pageNumber,
+    text: segment.text,
+  }));
 }
 
 const USABLE_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
@@ -1025,6 +1132,92 @@ const VENUE_DETAIL_TEXT_PATTERN =
   /(meet site:|coral springs gymnasium|temperature inside the venue|beyond our control|please come prepared|parking is complimentary|\bph:\b|\bphone numbers?\b|venue is chilly|inside the venue is chilly)/i;
 const MEET_DETAIL_REROUTE_TEXT_PATTERN =
   /(athlete cards? will be distributed|athlete cards?\b.*record(?:ing)? scores?|record scores on (?:their|the) cards?|memento of their meet|coaches choose competitive order|submit cards to judges)/i;
+
+type ScheduleSegmentKind = "grid" | "narrative" | "assignment" | "other";
+
+type SchedulePageSegment = {
+  pageNumber: number;
+  text: string;
+  kind: Exclude<ScheduleSegmentKind, "other">;
+  reason: string;
+};
+
+type ScheduleAnnotation = NonNullable<ParseResult["schedule"]["annotations"]>[number];
+type ScheduleAssignment = NonNullable<ParseResult["schedule"]["assignments"]>[number];
+
+function countScheduleSessionCodes(text: string): number {
+  return (safeString(text).match(/\bsession\s+(?:fr|sa|su)\d+\b/gi) || []).length;
+}
+
+function looksLikeScheduleNarrativeText(text: string): boolean {
+  const normalized = safeString(text);
+  if (!normalized) return false;
+  const sessionLines = countScheduleSessionCodes(normalized);
+  if (sessionLines === 0) return false;
+  return (
+    /\b(?:stretch|warm-?up|competition to follow|age groups?:|born\s+\d{1,2}\/\d{1,2}\/\d{2,4})/i.test(
+      normalized
+    ) && !/\t/.test(normalized)
+  );
+}
+
+function looksLikeScheduleAssignmentText(text: string): boolean {
+  const normalized = safeString(text);
+  if (!normalized) return false;
+  return (
+    /(age groups?\s+and\s+session assignments|age group\s+birth date\s+divisions?\s+session)/i.test(
+      normalized
+    ) ||
+    (/\bgroup\s+\d+\b/i.test(normalized) &&
+      /\bsession\s+(?:fr|sa|su)\d+\b/i.test(normalized) &&
+      /\b(?:younger|older)\b/i.test(normalized))
+  );
+}
+
+function classifySchedulePageText(text: string): {
+  kind: ScheduleSegmentKind;
+  reason: string;
+} {
+  const normalized = safeString(text);
+  if (!normalized) return { kind: "other", reason: "empty" };
+  if (looksLikeScheduleAssignmentText(normalized)) {
+    return { kind: "assignment", reason: "assignment_table_signals" };
+  }
+  if (SCHEDULE_GRID_TEXT_PATTERN.test(normalized) && /\t/.test(normalized)) {
+    return { kind: "grid", reason: "grid_tabs_and_schedule_signals" };
+  }
+  if (
+    SCHEDULE_GRID_TEXT_PATTERN.test(normalized) &&
+    CLUB_PARTICIPATION_TEXT_PATTERN.test(normalized) &&
+    /stretch\/warmup:/i.test(normalized)
+  ) {
+    return { kind: "grid", reason: "grid_club_and_warmup_signals" };
+  }
+  if (looksLikeScheduleNarrativeText(normalized)) {
+    return { kind: "narrative", reason: "narrative_session_signals" };
+  }
+  if (looksLikeSchedulePageText(normalized)) {
+    return { kind: "narrative", reason: "generic_schedule_signals" };
+  }
+  return { kind: "other", reason: "no_schedule_signals" };
+}
+
+function selectScheduleSegments(
+  pages: Array<{ pageNumber: number; text: string }>
+): SchedulePageSegment[] {
+  return pages
+    .map((page) => {
+      const classification = classifySchedulePageText(page.text);
+      if (classification.kind === "other") return null;
+      return {
+        pageNumber: page.pageNumber,
+        text: page.text,
+        kind: classification.kind,
+        reason: classification.reason,
+      };
+    })
+    .filter((segment): segment is SchedulePageSegment => Boolean(segment));
+}
 
 function isUsableEmail(value: unknown): boolean {
   return USABLE_EMAIL_PATTERN.test(safeString(value));
@@ -2266,6 +2459,313 @@ function parseScheduleDayFromPage(page: { pageNumber: number; text: string }) {
     shortDate: formatScheduleShortDate(dateLine),
     sessions,
   };
+}
+
+function sanitizeScheduleLegendEntries(
+  entries: Array<{ colorLabel: string | null; meaning: string | null; teamAwardEligible: boolean | null }>
+): Array<{ colorLabel: string | null; meaning: string | null; teamAwardEligible: boolean | null }> {
+  return uniqueBy(
+    entries.filter((entry) => {
+      const meaning = safeString(entry.meaning);
+      if (!meaning) return typeof entry.teamAwardEligible === "boolean";
+      if (
+        /(recognized at|competition floor|awards ceremony following|please review|host the|following items enclosed|team awards at approx)/i.test(
+          meaning
+        )
+      ) {
+        return false;
+      }
+      return true;
+    }),
+    (entry) => `${entry.meaning || ""}|${entry.colorLabel || ""}|${entry.teamAwardEligible ?? ""}`
+  );
+}
+
+function sanitizeScheduleAnnotations(entries: ScheduleAnnotation[]): ScheduleAnnotation[] {
+  return uniqueBy(
+    entries
+      .map((entry) => ({
+        kind: safeString(entry.kind) || null,
+        level: safeString(entry.level) || null,
+        sessionCode: safeString(entry.sessionCode).toUpperCase() || null,
+        date: safeString(entry.date) || null,
+        time: safeString(entry.time) || null,
+        text: safeString(entry.text),
+      }))
+      .filter((entry) => entry.text),
+    (entry) =>
+      `${entry.kind || ""}|${entry.level || ""}|${entry.sessionCode || ""}|${entry.date || ""}|${entry.time || ""}|${entry.text}`
+  );
+}
+
+function sanitizeScheduleAssignments(entries: ScheduleAssignment[]): ScheduleAssignment[] {
+  return uniqueBy(
+    entries
+      .map((entry) => ({
+        level: safeString(entry.level) || null,
+        groupLabel: safeString(entry.groupLabel) || null,
+        sessionCode: safeString(entry.sessionCode).toUpperCase() || null,
+        birthDateRange: safeString(entry.birthDateRange) || null,
+        divisionLabel: safeString(entry.divisionLabel) || null,
+        note: safeString(entry.note) || null,
+      }))
+      .filter(
+        (entry) =>
+          entry.sessionCode ||
+          entry.groupLabel ||
+          entry.birthDateRange ||
+          entry.divisionLabel ||
+          entry.note
+      ),
+    (entry) =>
+      `${entry.level || ""}|${entry.groupLabel || ""}|${entry.sessionCode || ""}|${entry.birthDateRange || ""}|${entry.divisionLabel || ""}|${entry.note || ""}`
+  );
+}
+
+function toStoredScheduleLegendEntries(
+  entries: Array<{ colorLabel: string | null; meaning: string | null; teamAwardEligible: boolean | null }>
+): StoredGymMeetSchedule["awardLegend"] {
+  return sanitizeScheduleLegendEntries(entries).map((entry) => ({
+    colorLabel: safeString(entry.colorLabel),
+    meaning: safeString(entry.meaning),
+    teamAwardEligible:
+      typeof entry.teamAwardEligible === "boolean" ? entry.teamAwardEligible : null,
+  }));
+}
+
+function toStoredScheduleAnnotations(entries: ScheduleAnnotation[]): StoredGymMeetSchedule["annotations"] {
+  return sanitizeScheduleAnnotations(entries).map((entry, index) => ({
+    id: `schedule-annotation-${index + 1}`,
+    kind: safeString(entry.kind),
+    level: safeString(entry.level),
+    sessionCode: safeString(entry.sessionCode),
+    date: safeString(entry.date),
+    time: safeString(entry.time),
+    text: entry.text,
+  }));
+}
+
+function toStoredScheduleAssignments(entries: ScheduleAssignment[]): StoredGymMeetSchedule["assignments"] {
+  return sanitizeScheduleAssignments(entries).map((entry, index) => ({
+    id: `schedule-assignment-${index + 1}`,
+    level: safeString(entry.level),
+    groupLabel: safeString(entry.groupLabel),
+    sessionCode: safeString(entry.sessionCode),
+    birthDateRange: safeString(entry.birthDateRange),
+    divisionLabel: safeString(entry.divisionLabel),
+    note: safeString(entry.note),
+  }));
+}
+
+function sanitizeNarrativeScheduleSessions(
+  sessions: ParseResult["schedule"]["days"][number]["sessions"]
+): ParseResult["schedule"]["days"][number]["sessions"] {
+  return sessions
+    .map((session) => ({
+      ...session,
+      group:
+        safeString(session.group) && !looksLikeMergedScheduleClubName(session.group)
+          ? session.group
+          : null,
+      note:
+        safeString(session.note) &&
+        !/please review|following items enclosed|visit us on the web|many thanks to our sponsors/i.test(
+          safeString(session.note)
+        )
+          ? session.note
+          : null,
+      clubs: [],
+    }))
+    .filter((session) => session.code || session.group || session.startTime || session.note);
+}
+
+function parseNarrativeScheduleSessionsFromPage(
+  page: { pageNumber: number; text: string },
+  fallbackYear: string
+): ParseResult["schedule"] {
+  const lines = page.text
+    .split(/\n+/)
+    .map((line) => safeString(line))
+    .filter(Boolean);
+  const days: ParseResult["schedule"]["days"] = [];
+  let currentDay: ParseResult["schedule"]["days"][number] | null = null;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (/^\*+\s*s(enior|chedule)/i.test(line)) continue;
+    if (SCHEDULE_DATE_LINE_PATTERN.test(line)) {
+      const normalizedDate = normalizeScheduleDayLabelWithContext(line, fallbackYear);
+      currentDay = {
+        date: normalizedDate || line,
+        shortDate: formatScheduleShortDate(normalizedDate || line),
+        sessions: [],
+      };
+      days.push(currentDay);
+      continue;
+    }
+
+    const sessionMatch = line.match(
+      /^session\s+([a-z]{2,3}\d{1,2})\s+(.+?)\s+(\d{1,2}:\d{2}\s*(?:am|pm))\s+stretch\b/i
+    );
+    if (!sessionMatch || !currentDay) continue;
+
+    const sessionCode = safeString(sessionMatch[1]).toUpperCase();
+    const group = safeString(sessionMatch[2]).replace(/\s+/g, " ");
+    const startTime = safeString(sessionMatch[3]);
+    let warmupTime: string | null = null;
+    const noteParts: string[] = [];
+
+    const nextLine = safeString(lines[index + 1]);
+    if (nextLine && !SCHEDULE_DATE_LINE_PATTERN.test(nextLine) && !/^session\s+/i.test(nextLine)) {
+      const warmupMatch = nextLine.match(/(\d{1,2}:\d{2}\s*(?:am|pm))\s+warm-?up/i);
+      if (warmupMatch) warmupTime = safeString(warmupMatch[1]);
+      const cleanedDetail = nextLine
+        .replace(/(\d{1,2}:\d{2}\s*(?:am|pm))\s+warm-?up\.?/i, "")
+        .replace(/competition to follow\.?/i, "")
+        .replace(/\*+/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      if (cleanedDetail) noteParts.push(cleanedDetail);
+      index += 1;
+    }
+
+    currentDay.sessions.push({
+      code: sessionCode,
+      group: group || null,
+      startTime: startTime || null,
+      warmupTime,
+      note: noteParts.join(" ").trim() || null,
+      clubs: [],
+    });
+  }
+
+  return {
+    venueLabel: null,
+    supportEmail: null,
+    notes: [],
+    awardLegend: [],
+    annotations: [],
+    assignments: [],
+    days: days
+      .map((day) => ({
+        ...day,
+        sessions: sanitizeNarrativeScheduleSessions(day.sessions),
+      }))
+      .filter((day) => day.sessions.length > 0),
+  };
+}
+
+function parseScheduleAnnotationsFromPages(
+  pages: Array<{ pageNumber: number; text: string }>,
+  fallbackYear: string
+): ScheduleAnnotation[] {
+  const annotations: ScheduleAnnotation[] = [];
+  for (const page of pages) {
+    const lines = page.text
+      .split(/\n+/)
+      .map((line) => safeString(line).replace(/\*+/g, ""))
+      .filter(Boolean);
+    let currentDate = "";
+    for (const line of lines) {
+      if (SCHEDULE_DATE_LINE_PATTERN.test(line)) {
+        currentDate = normalizeScheduleDayLabelWithContext(line, fallbackYear);
+        continue;
+      }
+
+      const seniorMatch = line.match(
+        /^level\s+([0-9a-z/ ]+):\s*(recognized.+)$/i
+      );
+      if (seniorMatch) {
+        annotations.push({
+          kind: "senior_recognition",
+          level: `Level ${safeString(seniorMatch[1]).toUpperCase()}`,
+          sessionCode: null,
+          date: currentDate || null,
+          time: null,
+          text: `Recognized ${safeString(seniorMatch[2]).replace(/^recognized\s+/i, "")}`,
+        });
+        continue;
+      }
+
+      const teamAwardMatch = line.match(
+        /^level\s+([0-9a-z/ ]+)\s+team awards?\s+at\s+approx\.?\s*([0-9:apm ]+),?\s*following session\s+([a-z]{2,3}\d{1,2})/i
+      );
+      if (teamAwardMatch) {
+        annotations.push({
+          kind: "team_awards",
+          level: `Level ${safeString(teamAwardMatch[1]).toUpperCase()}`,
+          sessionCode: safeString(teamAwardMatch[3]).toUpperCase(),
+          date: currentDate || null,
+          time: safeString(teamAwardMatch[2]) || null,
+          text: line,
+        });
+        continue;
+      }
+
+      if (
+        /\b(final level \d+\s+schedule will be released|waiting to see if we get any scratches|all level \d+['’]?s will compete)/i.test(
+          line
+        )
+      ) {
+        const levelMatch = line.match(/\blevel\s+([0-9a-z/ ]+)/i);
+        annotations.push({
+          kind: "schedule_note",
+          level: levelMatch ? `Level ${safeString(levelMatch[1]).toUpperCase()}` : null,
+          sessionCode: null,
+          date: currentDate || null,
+          time: null,
+          text: line,
+        });
+      }
+    }
+  }
+  return sanitizeScheduleAnnotations(annotations);
+}
+
+function parseScheduleAssignmentsFromPages(
+  pages: Array<{ pageNumber: number; text: string }>
+): ScheduleAssignment[] {
+  const assignments: ScheduleAssignment[] = [];
+  let currentLevel = "";
+
+  for (const page of pages) {
+    const lines = page.text
+      .split(/\n+/)
+      .map((line) => safeString(line))
+      .filter(Boolean);
+
+    for (const line of lines) {
+      const levelHeaderMatch = line.match(/^level\s+([0-9a-z/ ]+)\b/i);
+      if (
+        levelHeaderMatch &&
+        !/^level\s+\d+[:]/i.test(line) &&
+        !/^level\s+\d+['’]?s/i.test(line) &&
+        !/^level\s+\d+\s+team awards/i.test(line)
+      ) {
+        currentLevel = `Level ${safeString(levelHeaderMatch[1]).toUpperCase()}`;
+        continue;
+      }
+      if (
+        /^(age group|draw\b|please verify|for event info|many thanks|to be determined\b)/i.test(line)
+      ) {
+        continue;
+      }
+      const rowMatch = line.match(
+        /^(group\s+\d+|younger|middle|older)\s+(.+?)\s+([a-z]{2,3}\d{1,2})$/i
+      );
+      if (!rowMatch) continue;
+      assignments.push({
+        level: currentLevel || null,
+        groupLabel: safeString(rowMatch[1]) || null,
+        sessionCode: safeString(rowMatch[3]).toUpperCase() || null,
+        birthDateRange: safeString(rowMatch[2]) || null,
+        divisionLabel: null,
+        note: null,
+      });
+    }
+  }
+
+  return sanitizeScheduleAssignments(assignments);
 }
 
 function looksLikePdfInternals(text: string): boolean {
@@ -4314,6 +4814,26 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
           teamAwardEligible: jsonNullable(JSON_BOOLEAN),
         })
       ),
+      annotations: jsonArray(
+        jsonObject({
+          kind: jsonNullable(JSON_STRING),
+          level: jsonNullable(JSON_STRING),
+          sessionCode: jsonNullable(JSON_STRING),
+          date: jsonNullable(JSON_STRING),
+          time: jsonNullable(JSON_STRING),
+          text: JSON_STRING,
+        })
+      ),
+      assignments: jsonArray(
+        jsonObject({
+          level: jsonNullable(JSON_STRING),
+          groupLabel: jsonNullable(JSON_STRING),
+          sessionCode: jsonNullable(JSON_STRING),
+          birthDateRange: jsonNullable(JSON_STRING),
+          divisionLabel: jsonNullable(JSON_STRING),
+          note: jsonNullable(JSON_STRING),
+        })
+      ),
       days: jsonArray(
         jsonObject({
           date: jsonNullable(JSON_STRING),
@@ -4420,6 +4940,49 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
   "communications": {
     "announcements": [{ "title": string, "body": string }],
     "passcode": string|null
+  },
+  "schedule": {
+    "venueLabel": string|null,
+    "supportEmail": string|null,
+    "notes": [string],
+    "awardLegend": [{
+      "colorLabel": string|null,
+      "meaning": string|null,
+      "teamAwardEligible": boolean|null
+    }],
+    "annotations": [{
+      "kind": string|null,
+      "level": string|null,
+      "sessionCode": string|null,
+      "date": string|null,
+      "time": string|null,
+      "text": string
+    }],
+    "assignments": [{
+      "level": string|null,
+      "groupLabel": string|null,
+      "sessionCode": string|null,
+      "birthDateRange": string|null,
+      "divisionLabel": string|null,
+      "note": string|null
+    }],
+    "days": [{
+      "date": string|null,
+      "shortDate": string|null,
+      "sessions": [{
+        "code": string|null,
+        "group": string|null,
+        "startTime": string|null,
+        "warmupTime": string|null,
+        "note": string|null,
+        "clubs": [{
+          "name": string|null,
+          "teamAwardEligible": boolean|null,
+          "athleteCount": number|null,
+          "divisionLabel": string|null
+        }]
+      }]
+    }]
   },
   "links": [{ "label": string, "url": string }],
   "unmappedFacts": [{ "category": string, "detail": string, "confidence": "high"|"medium"|"low" }]
@@ -4778,6 +5341,41 @@ function normalizeParseResult(value: any): ParseResult | null {
           .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
         (item) => `${item.meaning || ""}|${item.colorLabel || ""}|${item.teamAwardEligible ?? ""}`
       ),
+      annotations: uniqueBy(
+        pickArray(value.schedule?.annotations)
+          .map((item) => ({
+            kind: safeString(item?.kind) || null,
+            level: safeString(item?.level) || null,
+            sessionCode: safeString(item?.sessionCode).toUpperCase() || null,
+            date: safeString(item?.date) || null,
+            time: safeString(item?.time) || null,
+            text: safeString(item?.text),
+          }))
+          .filter((item) => item.text),
+        (item) =>
+          `${item.kind || ""}|${item.level || ""}|${item.sessionCode || ""}|${item.date || ""}|${item.time || ""}|${item.text}`
+      ),
+      assignments: uniqueBy(
+        pickArray(value.schedule?.assignments)
+          .map((item) => ({
+            level: safeString(item?.level) || null,
+            groupLabel: safeString(item?.groupLabel) || null,
+            sessionCode: safeString(item?.sessionCode).toUpperCase() || null,
+            birthDateRange: safeString(item?.birthDateRange) || null,
+            divisionLabel: safeString(item?.divisionLabel) || null,
+            note: safeString(item?.note) || null,
+          }))
+          .filter(
+            (item) =>
+              item.sessionCode ||
+              item.groupLabel ||
+              item.birthDateRange ||
+              item.divisionLabel ||
+              item.note
+          ),
+        (item) =>
+          `${item.level || ""}|${item.groupLabel || ""}|${item.sessionCode || ""}|${item.birthDateRange || ""}|${item.divisionLabel || ""}|${item.note || ""}`
+      ),
       days: pickArray(value.schedule?.days)
         .map((day) => ({
           date: safeString(day?.date) || null,
@@ -4900,6 +5498,12 @@ function sanitizeDiscoveryParseResult(value: ParseResult): ParseResult {
     }),
     (item) => `${safeString(item?.category)}|${safeString(item?.detail)}`
   );
+  next.schedule = finalizeParsedSchedule({
+    ...next.schedule,
+    awardLegend: sanitizeScheduleLegendEntries(pickArray(next.schedule?.awardLegend) as any),
+    annotations: sanitizeScheduleAnnotations(pickArray(next.schedule?.annotations) as any),
+    assignments: sanitizeScheduleAssignments(pickArray(next.schedule?.assignments) as any),
+  });
 
   return next;
 }
@@ -5064,6 +5668,22 @@ const SCHEDULE_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown.
     "meaning": string|null,
     "teamAwardEligible": boolean|null
   }],
+  "annotations": [{
+    "kind": string|null,
+    "level": string|null,
+    "sessionCode": string|null,
+    "date": string|null,
+    "time": string|null,
+    "text": string
+  }],
+  "assignments": [{
+    "level": string|null,
+    "groupLabel": string|null,
+    "sessionCode": string|null,
+    "birthDateRange": string|null,
+    "divisionLabel": string|null,
+    "note": string|null
+  }],
   "days": [{
     "date": string|null,
     "shortDate": string|null,
@@ -5112,6 +5732,22 @@ const SCHEDULE_VISUAL_SCHEMA = `Return JSON only. Do not wrap in markdown.
     "colorLabel": string|null,
     "meaning": string|null,
     "teamAwardEligible": boolean|null
+  }],
+  "annotations": [{
+    "kind": string|null,
+    "level": string|null,
+    "sessionCode": string|null,
+    "date": string|null,
+    "time": string|null,
+    "text": string
+  }],
+  "assignments": [{
+    "level": string|null,
+    "groupLabel": string|null,
+    "sessionCode": string|null,
+    "birthDateRange": string|null,
+    "divisionLabel": string|null,
+    "note": string|null
   }],
   "days": [{
     "date": string|null,
@@ -5315,7 +5951,9 @@ async function openAiExtractVisualSchedulePage(
                   "- Output sessions in natural code order within the day, like FR1, FR2, FR3, FR4, FR5.",
                   "- If the image shows color-coded club text or an explicit legend, infer the meaning visually and set `teamAwardEligible` accordingly.",
                   "- Do not assume any specific colors unless the image or legend makes the rule explicit.",
-                  "- Return explicit legend/category meaning in `awardLegend` when visible, and also preserve important explanatory text in `notes` when relevant.",
+                  "- Return explicit legend/category meaning in `awardLegend` only for true visual legends tied to schedule styling.",
+                  "- Do not place ceremony rules, team-awards timing, senior-recognition prose, packet headers, or sponsor copy in `awardLegend`.",
+                  "- Use `annotations` for schedule-specific rules like team awards or senior recognition when they appear inside the cropped schedule region.",
                   "- Use the auxiliary OCR text only to clarify blurry text. The image layout is the source of truth for session boundaries, times, and club assignment.",
                   auxiliaryText ? "" : "",
                   auxiliaryText ? "Auxiliary OCR text:" : "",
@@ -5391,6 +6029,8 @@ async function deriveScheduleFromImages(
         supportEmail: null,
         notes: [],
         awardLegend: [],
+        annotations: [],
+        assignments: [],
         days: [],
       },
       tableBlocksDetected: 0,
@@ -5409,6 +6049,8 @@ async function deriveScheduleFromImages(
     supportEmail: null,
     notes: [],
     awardLegend: [],
+    annotations: [],
+    assignments: [],
     days: [],
   };
   let tableBlocksDetected = 0;
@@ -5665,8 +6307,11 @@ async function callOpenAiScheduleParse(
     "- Use club name text exactly when possible.",
     "- Athlete counts in parentheses should become `athleteCount`.",
     "- If the schedule uses color-coded club text or a visible legend to distinguish award categories, infer the category meaning from the source and set `teamAwardEligible` accordingly.",
-    "- If the source makes the award categories explicit, also return `awardLegend` entries describing the meaning.",
+    "- If the source makes visual award categories explicit, return `awardLegend` entries describing only the legend meaning.",
     "- Do not assume any specific colors unless the source makes the rule explicit.",
+    "- Do not place team-awards timing, senior-recognition prose, packet headers, or pending-schedule notes in `awardLegend`.",
+    "- Use `annotations` for schedule rules such as team awards, senior recognition, or pending/finalized schedule notices.",
+    "- Use `assignments` only for age-group or birth-date to session mapping tables.",
     "- If a session is split into divisions or level buckets, keep the main combined session label in `group` and use `divisionLabel` per club only when the source clearly associates a club with a sub-division.",
     "- `startTime` should be the visible session start/stretch/warmup time label for the session.",
     "- Do not invent venue, support email, notes, sessions, or clubs.",
@@ -5729,6 +6374,8 @@ function deriveScheduleFromTextFallback(
       supportEmail: null,
       notes: [],
       awardLegend: [],
+      annotations: [],
+      assignments: [],
       days: [],
     };
   }
@@ -5746,6 +6393,8 @@ function deriveScheduleFromTextFallback(
     supportEmail,
     notes: [],
     awardLegend: [],
+    annotations: [],
+    assignments: [],
     days,
   };
 }
@@ -5807,6 +6456,22 @@ function toParseScheduleShape(schedule: StoredGymMeetSchedule): ParseResult["sch
       meaning: entry.meaning || null,
       teamAwardEligible:
         typeof entry.teamAwardEligible === "boolean" ? entry.teamAwardEligible : null,
+    })),
+    annotations: schedule.annotations.map((entry) => ({
+      kind: entry.kind || null,
+      level: entry.level || null,
+      sessionCode: entry.sessionCode || null,
+      date: entry.date || null,
+      time: entry.time || null,
+      text: entry.text,
+    })),
+    assignments: schedule.assignments.map((entry) => ({
+      level: entry.level || null,
+      groupLabel: entry.groupLabel || null,
+      sessionCode: entry.sessionCode || null,
+      birthDateRange: entry.birthDateRange || null,
+      divisionLabel: entry.divisionLabel || null,
+      note: entry.note || null,
     })),
     days: schedule.days.map((day) => ({
       date: day.date || null,
@@ -6035,10 +6700,46 @@ function mergeScheduleWithFallback(
     venueLabel: primarySchedule.venueLabel || fallbackSchedule.venueLabel,
     supportEmail: primarySchedule.supportEmail || fallbackSchedule.supportEmail,
     notes: uniqueBy([...primarySchedule.notes, ...fallbackSchedule.notes], (item) => item),
-    awardLegend: uniqueBy(
-      [...primarySchedule.awardLegend, ...fallbackSchedule.awardLegend],
-      (item) => `${item.meaning}|${item.colorLabel}|${item.teamAwardEligible ?? ""}`
-    ),
+    awardLegend: toStoredScheduleLegendEntries([
+      ...primarySchedule.awardLegend,
+      ...fallbackSchedule.awardLegend,
+    ]),
+    annotations: toStoredScheduleAnnotations([
+      ...primarySchedule.annotations.map((item) => ({
+        kind: item.kind || null,
+        level: item.level || null,
+        sessionCode: item.sessionCode || null,
+        date: item.date || null,
+        time: item.time || null,
+        text: item.text,
+      })),
+      ...fallbackSchedule.annotations.map((item) => ({
+        kind: item.kind || null,
+        level: item.level || null,
+        sessionCode: item.sessionCode || null,
+        date: item.date || null,
+        time: item.time || null,
+        text: item.text,
+      })),
+    ]),
+    assignments: toStoredScheduleAssignments([
+      ...primarySchedule.assignments.map((item) => ({
+        level: item.level || null,
+        groupLabel: item.groupLabel || null,
+        sessionCode: item.sessionCode || null,
+        birthDateRange: item.birthDateRange || null,
+        divisionLabel: item.divisionLabel || null,
+        note: item.note || null,
+      })),
+      ...fallbackSchedule.assignments.map((item) => ({
+        level: item.level || null,
+        groupLabel: item.groupLabel || null,
+        sessionCode: item.sessionCode || null,
+        birthDateRange: item.birthDateRange || null,
+        divisionLabel: item.divisionLabel || null,
+        note: item.note || null,
+      })),
+    ]),
     days: mergedDays,
   });
 }
@@ -6074,6 +6775,27 @@ function finalizeParsedSchedule(
   const normalized = normalizeStoredSchedule(schedule || {});
   return toParseScheduleShape({
     ...normalized,
+    awardLegend: toStoredScheduleLegendEntries(normalized.awardLegend),
+    annotations: toStoredScheduleAnnotations(
+      normalized.annotations.map((item) => ({
+        kind: item.kind || null,
+        level: item.level || null,
+        sessionCode: item.sessionCode || null,
+        date: item.date || null,
+        time: item.time || null,
+        text: item.text,
+      }))
+    ),
+    assignments: toStoredScheduleAssignments(
+      normalized.assignments.map((item) => ({
+        level: item.level || null,
+        groupLabel: item.groupLabel || null,
+        sessionCode: item.sessionCode || null,
+        birthDateRange: item.birthDateRange || null,
+        divisionLabel: item.divisionLabel || null,
+        note: item.note || null,
+      }))
+    ),
     days: normalized.days.map((day) => ({
       ...day,
       sessions: day.sessions
@@ -6242,10 +6964,46 @@ function supplementScheduleWithFallback(
       venueLabel: primarySchedule.venueLabel || fallbackSchedule.venueLabel,
       supportEmail: primarySchedule.supportEmail || fallbackSchedule.supportEmail,
       notes: uniqueBy([...primarySchedule.notes, ...fallbackSchedule.notes], (item) => item),
-      awardLegend: uniqueBy(
-        [...primarySchedule.awardLegend, ...fallbackSchedule.awardLegend],
-        (item) => `${item.meaning}|${item.colorLabel}|${item.teamAwardEligible ?? ""}`
-      ),
+      awardLegend: toStoredScheduleLegendEntries([
+        ...primarySchedule.awardLegend,
+        ...fallbackSchedule.awardLegend,
+      ]),
+      annotations: toStoredScheduleAnnotations([
+        ...primarySchedule.annotations.map((item) => ({
+          kind: item.kind || null,
+          level: item.level || null,
+          sessionCode: item.sessionCode || null,
+          date: item.date || null,
+          time: item.time || null,
+          text: item.text,
+        })),
+        ...fallbackSchedule.annotations.map((item) => ({
+          kind: item.kind || null,
+          level: item.level || null,
+          sessionCode: item.sessionCode || null,
+          date: item.date || null,
+          time: item.time || null,
+          text: item.text,
+        })),
+      ]),
+      assignments: toStoredScheduleAssignments([
+        ...primarySchedule.assignments.map((item) => ({
+          level: item.level || null,
+          groupLabel: item.groupLabel || null,
+          sessionCode: item.sessionCode || null,
+          birthDateRange: item.birthDateRange || null,
+          divisionLabel: item.divisionLabel || null,
+          note: item.note || null,
+        })),
+        ...fallbackSchedule.assignments.map((item) => ({
+          level: item.level || null,
+          groupLabel: item.groupLabel || null,
+          sessionCode: item.sessionCode || null,
+          birthDateRange: item.birthDateRange || null,
+          divisionLabel: item.divisionLabel || null,
+          note: item.note || null,
+        })),
+      ]),
       days: mergedDays,
     }),
     tableRepairApplied,
@@ -6274,19 +7032,41 @@ async function deriveScheduleFromExtractedText(
         text: safeString(page?.text || ""),
       }))
       .filter((page) => page.pageNumber > 0 && page.text) || [];
-  const selectedPages = pages.length > 0 ? pages : selectSchedulePages(extractedText);
-  const extractedDateLines = extractScheduleDateLines(extractedText);
-  if (selectedPages.length === 0) {
+  const candidatePages = pages.length > 0 ? pages : splitExtractedSchedulePages(extractedText);
+  const selectedSegments = selectScheduleSegments(candidatePages);
+  const selectedPages = selectedSegments.map((segment) => ({
+    pageNumber: segment.pageNumber,
+    text: segment.text,
+  }));
+  const rejectedSegments = candidatePages
+    .filter((page) => !selectedSegments.some((segment) => segment.pageNumber === page.pageNumber))
+    .map((page) => ({
+      pageNumber: page.pageNumber,
+      reason: classifySchedulePageText(page.text).reason,
+    }));
+  const extractedDateLines = uniqueBy(
+    [
+      ...extractScheduleDateLines(extractedText),
+      ...selectedPages.flatMap((page) => extractScheduleDateLines(page.text)),
+    ],
+    (line) => line
+  );
+  if (selectedSegments.length === 0) {
     return {
       schedule: {
         venueLabel: null,
         supportEmail: null,
         notes: [],
         awardLegend: [],
+        annotations: [],
+        assignments: [],
         days: [],
       },
       diagnostics: {
         selectedSchedulePages: [],
+        selectedScheduleSegments: [],
+        rejectedScheduleSegments: rejectedSegments,
+        ambiguityNotes: [],
         extractedDateLines,
         parsedFromTextDayCount: 0,
         parsedFromImageDayCount: 0,
@@ -6298,38 +7078,91 @@ async function deriveScheduleFromExtractedText(
       },
     };
   }
-  const scheduleText = selectedPages
+  const fallbackYear = deriveScheduleContextYear(extractedText);
+  const gridPages = selectedSegments
+    .filter((segment) => segment.kind === "grid")
+    .map((segment) => ({ pageNumber: segment.pageNumber, text: segment.text }));
+  const narrativePages = selectedSegments
+    .filter((segment) => segment.kind === "narrative")
+    .map((segment) => ({ pageNumber: segment.pageNumber, text: segment.text }));
+  const assignmentPages = selectedSegments
+    .filter((segment) => segment.kind === "assignment")
+    .map((segment) => ({ pageNumber: segment.pageNumber, text: segment.text }));
+  const ambiguityNotes = uniqueBy(
+    [
+      ...selectedSegments
+        .filter((segment) => segment.kind === "narrative" && segment.reason === "generic_schedule_signals")
+        .map((segment) => `Page ${segment.pageNumber} classified as narrative from generic schedule signals.`),
+      ...selectedSegments
+        .filter((segment) => segment.kind === "assignment" && countScheduleSessionCodes(segment.text) < 2)
+        .map((segment) => `Page ${segment.pageNumber} contains assignment rows with sparse session coverage.`),
+    ],
+    (item) => item
+  );
+  const scheduleText = gridPages
     .map((page) => `-- ${page.pageNumber} --\n${page.text}`)
     .join("\n\n");
   console.log("[meet-discovery] derive schedule selected pages", {
     traceId: traceId || null,
-    selectedSchedulePageCount: selectedPages.length,
-    pageNumbers: selectedPages.map((page) => page.pageNumber),
+    selectedSchedulePageCount: selectedSegments.length,
+    pageNumbers: selectedSegments.map((page) => page.pageNumber),
+    segmentKinds: selectedSegments.map((segment) => `${segment.pageNumber}:${segment.kind}`),
   });
-  const scheduleTextStartedAt = Date.now();
-  const parsed = await callOpenAiScheduleParse(
-    scheduleText,
-    traceId,
-    options?.performance
-  );
-  if (options?.performance) {
-    options.performance.scheduleTextParseMs += Date.now() - scheduleTextStartedAt;
+  let parsed: ParseResult["schedule"] | null = null;
+  if (scheduleText) {
+    const scheduleTextStartedAt = Date.now();
+    parsed = await callOpenAiScheduleParse(scheduleText, traceId, options?.performance);
+    if (options?.performance) {
+      options.performance.scheduleTextParseMs += Date.now() - scheduleTextStartedAt;
+    }
   }
-  const fallback = deriveScheduleFromTextFallback(selectedPages);
-  const textSchedule =
-    countScheduleDaysWithSessions(fallback) > 0
+  const gridFallback = deriveScheduleFromTextFallback(gridPages);
+  const gridTextSchedule =
+    countScheduleDaysWithSessions(gridFallback) > 0
       ? mergeScheduleWithFallback(
-          fallback,
+          gridFallback,
           parsed && countScheduleDaysWithSessions(parsed) > 0 ? parsed : null
         )
       : parsed && countScheduleDaysWithSessions(parsed) > 0
       ? parsed
-      : fallback;
-  if (mode !== "enrich" || !shouldUseVisualScheduleRepair(textSchedule, fallback, selectedPages)) {
+      : gridFallback;
+  const narrativeSchedule = narrativePages.reduce<ParseResult["schedule"]>(
+    (acc, page) => mergeScheduleWithFallback(acc, parseNarrativeScheduleSessionsFromPage(page, fallbackYear)),
+    {
+      venueLabel: null,
+      supportEmail: null,
+      notes: [],
+      awardLegend: [],
+      annotations: [],
+      assignments: [],
+      days: [],
+    }
+  );
+  const annotations = parseScheduleAnnotationsFromPages(
+    selectedSegments
+      .filter((segment) => segment.kind !== "assignment")
+      .map((segment) => ({ pageNumber: segment.pageNumber, text: segment.text })),
+    fallbackYear
+  );
+  const assignments = parseScheduleAssignmentsFromPages(assignmentPages);
+  const textSchedule = mergeScheduleWithFallback(gridTextSchedule, narrativeSchedule);
+  const textScheduleWithSegments: ParseResult["schedule"] = {
+    ...textSchedule,
+    annotations,
+    assignments,
+    awardLegend: sanitizeScheduleLegendEntries([
+      ...pickArray(textSchedule.awardLegend as any),
+    ]),
+  };
+  if (
+    mode !== "enrich" ||
+    !gridPages.length ||
+    !shouldUseVisualScheduleRepair(gridTextSchedule, gridFallback, gridPages)
+  ) {
     const finalSchedule = finalizeParsedSchedule({
-      ...textSchedule,
+      ...textScheduleWithSegments,
       notes: uniqueBy(
-        pickArray(textSchedule.notes)
+        pickArray(textScheduleWithSegments.notes)
           .map((item) => safeString(item))
           .filter(Boolean),
         (item) => item
@@ -6338,23 +7171,35 @@ async function deriveScheduleFromExtractedText(
     return {
       schedule: finalSchedule,
       diagnostics: {
-        selectedSchedulePages: selectedPages.map((page) => page.pageNumber),
+        selectedSchedulePages: selectedSegments.map((segment) => segment.pageNumber),
+        selectedScheduleSegments: selectedSegments.map((segment) => ({
+          pageNumber: segment.pageNumber,
+          kind: segment.kind,
+          reason: segment.reason,
+        })),
+        rejectedScheduleSegments: rejectedSegments,
+        ambiguityNotes,
         extractedDateLines,
-        parsedFromTextDayCount: countScheduleDaysWithSessions(textSchedule),
+        parsedFromTextDayCount: countScheduleDaysWithSessions(textScheduleWithSegments),
         parsedFromImageDayCount: 0,
         finalDayCount: countScheduleDaysWithSessions(finalSchedule),
         usedImageTableExtraction: false,
         usedTextFallback:
-          countScheduleDaysWithSessions(fallback) > 0 &&
-          countScheduleDaysWithSessions(textSchedule) <= countScheduleDaysWithSessions(fallback),
+          countScheduleDaysWithSessions(gridFallback) > 0 &&
+          countScheduleDaysWithSessions(gridTextSchedule) <= countScheduleDaysWithSessions(gridFallback),
         usedImageAwardExtraction: false,
         staleStoredScheduleDetected: false,
       },
     };
   }
+  const gridPageNumbers = new Set(gridPages.map((page) => page.pageNumber));
   const visualScheduleResult = await deriveScheduleFromImages(
-    extractionMeta?.schedulePageImages,
-    extractionMeta?.schedulePageTexts,
+    pickArray(extractionMeta?.schedulePageImages).filter((item) =>
+      gridPageNumbers.has(Number(item?.pageNumber) || 0)
+    ),
+    pickArray(extractionMeta?.schedulePageTexts).filter((item) =>
+      gridPageNumbers.has(Number(item?.pageNumber) || 0)
+    ),
     {
       maxPages: 2,
       maxTableCropsPerPage: 3,
@@ -6364,14 +7209,14 @@ async function deriveScheduleFromExtractedText(
   );
   const repairedSchedule =
     countScheduleDaysWithSessions(visualScheduleResult.schedule) > 0
-      ? supplementScheduleWithFallback(visualScheduleResult.schedule, fallback)
+      ? supplementScheduleWithFallback(visualScheduleResult.schedule, gridFallback)
       : null;
-  const mergedSchedule =
-    repairedSchedule
-      ? repairedSchedule.schedule
-      : textSchedule;
+  const repairedGridSchedule = repairedSchedule ? repairedSchedule.schedule : gridTextSchedule;
+  const mergedSchedule = mergeScheduleWithFallback(repairedGridSchedule, narrativeSchedule);
   const finalSchedule = finalizeParsedSchedule({
     ...mergedSchedule,
+    annotations,
+    assignments,
     notes: uniqueBy(
       [
         ...pickArray(mergedSchedule.notes).map((item) => safeString(item)).filter(Boolean),
@@ -6384,17 +7229,24 @@ async function deriveScheduleFromExtractedText(
   return {
     schedule: finalSchedule,
     diagnostics: {
-      selectedSchedulePages: selectedPages.map((page) => page.pageNumber),
+      selectedSchedulePages: selectedSegments.map((segment) => segment.pageNumber),
+      selectedScheduleSegments: selectedSegments.map((segment) => ({
+        pageNumber: segment.pageNumber,
+        kind: segment.kind,
+        reason: segment.reason,
+      })),
+      rejectedScheduleSegments: rejectedSegments,
+      ambiguityNotes,
       extractedDateLines,
-      parsedFromTextDayCount: countScheduleDaysWithSessions(textSchedule),
+      parsedFromTextDayCount: countScheduleDaysWithSessions(textScheduleWithSegments),
       parsedFromImageDayCount: countScheduleDaysWithSessions(visualScheduleResult.schedule),
       finalDayCount: countScheduleDaysWithSessions(finalSchedule),
       usedImageTableExtraction,
       usedTextFallback:
-        countScheduleDaysWithSessions(fallback) > 0 &&
+        countScheduleDaysWithSessions(gridFallback) > 0 &&
         (!usedImageTableExtraction ||
-          countScheduleDaysWithSessions(visualScheduleResult.schedule) < countScheduleDaysWithSessions(fallback) ||
-          countScheduleDaysWithSessions(textSchedule) >
+          countScheduleDaysWithSessions(visualScheduleResult.schedule) < countScheduleDaysWithSessions(gridFallback) ||
+          countScheduleDaysWithSessions(textScheduleWithSegments) >
             countScheduleDaysWithSessions(visualScheduleResult.schedule)),
       usedImageAwardExtraction,
       staleStoredScheduleDetected: false,
@@ -6507,6 +7359,8 @@ function buildEmptyParseResult(): ParseResult {
       supportEmail: null,
       notes: [],
       awardLegend: [],
+      annotations: [],
+      assignments: [],
       days: [],
     },
     links: [],
@@ -7519,6 +8373,11 @@ export const __testUtils = {
   routeCoachDeadlines,
   hasCoachInfoContent,
   deriveScheduleFromTextFallback,
+  parseNarrativeScheduleSessionsFromPage,
+  parseScheduleAnnotationsFromPages,
+  parseScheduleAssignmentsFromPages,
+  classifySchedulePageText,
+  selectScheduleSegments,
   mergeScheduleWithFallback,
   supplementScheduleWithFallback,
   mergeScheduleAwardFlags,

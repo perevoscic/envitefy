@@ -14,7 +14,6 @@ import {
   computeGymBuilderStatuses,
   createDiscoveryPerformance,
   extractDiscoveryText,
-  finalizeMeetParseResult,
   isDiscoveryDebugArtifactsEnabled,
   mapParseResultToGymData,
   parseMeetFromExtractedText,

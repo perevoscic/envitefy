@@ -253,18 +253,23 @@ curl -X POST \
 
 ### Discovery Parse — POST `/api/parse/[eventId]`
 
-- **Purpose**: Run discovery extraction + AI parse for an ingested gymnastics or football source and persist mapped builder data.
+- **Purpose**: Run the fast core discovery extraction + parse for an ingested gymnastics or football source and persist builder-usable data immediately.
 - **Auth**: Optional; enforces ownership when event has `user_id`.
 - **Query params**:
   - `repair=1` (optional): forces a re-parse/re-map pass for an existing discovery event to repair stale or mis-mapped fields (same output shape, response includes `repaired: true`).
 - **Behavior**:
+  - Resolves the stored discovery workflow first. Football stays single-stage; gymnastics now returns after the core parse and marks enrichment as pending.
   - Extracts text from source input:
     - File PDFs use native extraction first; low-text PDFs fall back to OCR.
     - Images use OCR.
     - URLs fetch readable HTML text + metadata from the source page, follow up to one additional same-host HTML level, and parse same-host PDF/image assets discovered on the landing page or those followed child pages.
-  - OCR fallback for image/PDF pages is now OpenAI Vision when GCP OCR is unavailable/low-confidence.
-  - Extraction now computes quality diagnostics (`textQuality`, `qualitySignals`) and stores them in `discoverySource.extractionMeta`.
-  - Extraction metadata also stores hall-layout artifacts when detected:
+  - Dense document OCR now uses Google Vision `documentTextDetection` before OpenAI OCR fallback.
+  - Extraction is workflow-aware:
+    - `workflow="football"` skips gymnastics-only hall-layout and schedule-image branches entirely.
+    - `mode="core"` never generates gym-layout screenshots or schedule page images.
+    - Gymnastics core parse still keeps text-derived `schedulePageTexts` when native PDF text already exposes schedule pages.
+  - Extraction now computes quality diagnostics (`textQuality`, `qualitySignals`) and timing/call-count telemetry, stored under `discoverySource.performance` and `discoverySource.extractionMeta`.
+  - Extraction metadata stores hall-layout and schedule artifacts when available, with heavy base64 debug artifacts persisted only when `DISCOVERY_DEBUG_ARTIFACTS=1`:
     - `discoveredLinks` (labeled discovered URLs with crawl metadata such as source page, depth, kind, follow status, and content type when fetched),
     - `crawledPages` (root page plus any followed same-host child HTML pages with title/depth),
     - `gymLayoutImageDataUrl` (optimized screenshot data URL from PDF/image),
@@ -274,25 +279,40 @@ curl -X POST \
     - `gymLayoutSelection` (optional diagnostics payload with selected page, confidence, reason, and scored candidates).
     - `coachPageHints` (optional compact hints for PDF/source sections that look coach-specific, including page number, heading, and excerpt).
     - `schedulePageImages` / `schedulePageTexts` (optional schedule-grid artifacts used for gymnastics session extraction),
-    - `scheduleDiagnostics` (optional schedule extraction diagnostics including selected schedule pages, text/image parse counts, fallback usage, and stale-schedule repair detection).
+    - `scheduleDiagnostics` (optional schedule extraction diagnostics including selected schedule pages, selected/rejected schedule segments by kind, ambiguity notes, text/image parse counts, fallback usage, and stale-schedule repair detection).
   - PDF hall-layout image capture now uses a renderer fallback path (PDF.js + Canvas) when direct PDF page rasterization is unavailable, so venue map screenshots can still be generated from uploaded PDFs.
   - PDF hall-layout page selection is strict map-only: text/prose pages are rejected even if they contain generic hall terms. If no page passes strict gates, `gymLayoutImageDataUrl` is stored as `null` (no text-page fallback image).
   - Hall-layout fact lines are now strictly sanitized before mapping/rendering (readability + venue-anchor checks + near-duplicate collapse). Fragmented/paraphrased snippets are dropped so Venue Details may be intentionally sparse when source confidence is low.
   - If extracted text quality is `poor`, the route skips model calls and returns a safe null-heavy parse payload (`modelUsed: "quality-gate"`) instead of hallucinating fields from corrupted text.
-  - AI parsing is **OpenAI primary** with strict JSON schema validation.
-  - If OpenAI returns invalid JSON, retries once with JSON-fix instruction.
-  - If still invalid or OpenAI errors, falls back to Gemini once.
+  - AI parsing is **OpenAI primary** with strict JSON schema / structured outputs.
+  - Gemini remains the final fallback when the primary parse call fails.
   - Gymnastics parse schema is dynamic-file oriented and includes `documentProfile` plus expanded sections for operations/policies/coach info/contacts/deadlines/unmapped facts to improve recall across varied meet packets.
   - Gymnastics parsing now trains specifically on coach-only sections/pages and returns a structured `parseResult.coachInfo` block when detected. The block now separates coach/registration data from public admission and includes coach ops (`signIn`, `attire`, `hospitality`, `floorAccess`, `scratches`, `floorMusic`, `rotationSheets`, `awards`, `regionalCommitment`), rules (`qualification`, `meetFormat`, `equipment`, `refundPolicy`, `paymentInstructions`), fee arrays (`entryFees`, `teamFees`, `lateFees`), and coach-facing `contacts`, `deadlines`, `links`, and `notes`.
   - Gymnastics mapping safeguards meet dates by preferring parsed date ranges (for example `March 6-8, 2026`) when a conflicting single `startAt` value is out of range, and it now applies deterministic date classification to demote update/posted/deadline stamps before mapped meet dates are finalized.
   - Gymnastics mapping resolves an assigned gym location (`athlete.assignedGym` first, then strongest gym mention) and attempts a focused crop from the detected gym layout zones. If crop confidence is insufficient or no matching zone is found, it safely falls back to the full layout image.
   - Gymnastics discovery rendering keeps the public tabs fixed (`Meet Details`, `Venue Details`, `Admission & Sales`, `Traffic & Parking`, `Safety Policy`) and adds dynamic navigation tabs when source-backed content exists: `Coaches` for coach-only packet content and `Schedule` for extracted session grids. `Schedule` appears between `Coaches` and `Venue Details` and stays hidden when no usable schedule data is stored.
-  - Gymnastics schedule-grid extraction is image-first for table layouts: schedule page images are parsed visually by session columns/subcolumns, with text fallback only used to supplement missing days or sessions. Visible color-coded club legends are interpreted visually and mapped into stored `teamAwardEligible` values when explicit, with optional structured `awardLegend` metadata when the legend meaning is clear.
-  - Gymnastics mapping now stores coach-facing content in `advancedSections.coaches`, extracted multi-day session grids in `advancedSections.schedule`, adds `resultsInfo` / `rotationSheetsInfo` / `awardsInfo` to `advancedSections.meet`, and preserves normalized parking map/rate links in `advancedSections.logistics`. Parsed schedule data seeds the builder when empty; later manual schedule edits are preserved on reparses unless explicitly replaced.
+  - Gymnastics core schedule extraction is now segment-first. It classifies schedule pages into grid, narrative, and assignment segments before parsing, so packet headers, award prose, and age-group tables do not leak into session-grid fields.
+  - Visual schedule repair is deferred to `/api/parse/[eventId]/enrich` and only runs for true schedule-grid pages when text heuristics indicate incomplete or ambiguous grid parsing.
+  - Gymnastics mapping now stores coach-facing content in `advancedSections.coaches`, extracted multi-day session grids in `advancedSections.schedule`, adds `resultsInfo` / `rotationSheetsInfo` / `awardsInfo` to `advancedSections.meet`, and preserves normalized parking map/rate links in `advancedSections.logistics`. `advancedSections.schedule` also preserves `annotations` for schedule rules (for example team-awards timing, senior recognition, pending/finalized schedule notes) and `assignments` for age-group or birth-date to session mappings. Parsed schedule data seeds the builder when empty; later manual schedule edits are preserved on reparses unless explicitly replaced.
   - Football uses a separate football-oriented schema/prompt that classifies `football_game_packet` vs `football_season_schedule` and maps results into football builder fields (`games`, `practice`, `roster`, `logistics`, `gear`, `volunteers`, `announcements`, team/stadium metadata).
-  - Stores source audit info (`extractedText`, `parseResult`, `rawModelOutput`, `modelUsed`, timestamps, extraction quality metadata`) under `discoverySource`.
-- **Output**: `{ ok, eventId, repaired, modelUsed, parseResult, statuses }` where `modelUsed` is `"openai"`, `"gemini"`, or `"quality-gate"` when parsing is skipped due to low extraction quality.
-- **Env**: `OPENAI_API_KEY` required for primary parse; Gemini fallback needs `GEMINI_API_KEY` (or `GOOGLE_AI_API_KEY`). Optional model overrides: `OPENAI_OCR_MODEL`, `GEMINI_MODEL`.
+  - Stores source audit info (`extractedText`, `parseResult`, `rawModelOutput`, `modelUsed`, timestamps, extraction quality metadata, performance, enrichment state`) under `discoverySource`.
+- **Output**: `{ ok, eventId, repaired, modelUsed, parseResult, statuses, phase: "core", enrichment, performance }` where `modelUsed` is `"openai"`, `"gemini"`, or `"quality-gate"` when parsing is skipped due to low extraction quality.
+- **Env**: `OPENAI_API_KEY` required for primary parse; Gemini fallback needs `GEMINI_API_KEY` (or `GOOGLE_AI_API_KEY`). Optional model overrides: `OPENAI_DISCOVERY_PARSE_MODEL` (default `gpt-4.1-mini`), `OPENAI_DISCOVERY_VISION_MODEL` (default `gpt-4o-mini`), `DISCOVERY_CORE_BUDGET_MS` (default `25000`), `DISCOVERY_ENRICH_BUDGET_MS` (default `45000`), `DISCOVERY_DEBUG_ARTIFACTS=1` to persist heavy debug artifacts, plus optional `GEMINI_MODEL`.
+
+### Discovery Enrich — POST `/api/parse/[eventId]/enrich`
+
+- **Purpose**: Run deferred gymnastics-only enrichment after the builder opens, without blocking the initial discovery parse.
+- **Auth**: Optional; enforces ownership when event has `user_id`.
+- **Behavior**:
+  - Gymnastics only. Football returns `400`.
+  - Requires an existing core parse (`discoverySource.parseResult` + `extractedText`).
+  - Re-extracts the source in `mode="enrich"` and performs heavy gymnastics-only work:
+    - PDF/image hall-layout extraction with deterministic shortlist first, then at most 2 OpenAI layout confirmations across a 4-page scan window.
+    - Schedule image extraction capped to at most 2 pages and 3 table crops per page, with concurrency 2.
+    - Visual schedule repair only when text heuristics indicate incomplete or ambiguous schedule parsing.
+  - Persists `discoverySource.enrichment` with `state`, `pending`, `startedAt`, `finishedAt`, `lastError`, and `performance`.
+  - Merges enrichment output back into mapped builder data without intentionally clobbering existing manual schedule edits.
+- **Output**: `{ ok, eventId, enrichmentState, updatedSections, performance, statuses }`.
 
 ### Meet Builder Data — GET/PUT `/api/meet/[eventId]`
 
@@ -303,7 +323,7 @@ curl -X POST \
 - **GET Output**: `{ ok, eventId, title, meet_page_json, statuses }`.
 - **PUT Input (JSON)**: `{ patch: object, title?: string }` (deep-merges `patch` into existing meet JSON).
 - **PUT Output**: `{ ok, eventId, meet_page_json, statuses }`.
-- **Meet JSON**: `meet_page_json.advancedSections` includes the discovery/builder sections used by the gymnastics page, including `meet`, `coaches`, `logistics`, and `schedule`. `advancedSections.schedule` stores public session-grid data as `days[] -> sessions[] -> clubs[]`, plus optional `venueLabel`, `supportEmail`, `notes`, and `awardLegend`.
+- **Meet JSON**: `meet_page_json.advancedSections` includes the discovery/builder sections used by the gymnastics page, including `meet`, `coaches`, `logistics`, and `schedule`. `advancedSections.schedule` stores public session-grid data as `days[] -> sessions[] -> clubs[]`, plus optional `venueLabel`, `supportEmail`, `notes`, `awardLegend`, `annotations`, and `assignments`. `awardLegend` is reserved for explicit visual legend/category meanings, while schedule prose such as team-awards timing or senior recognition is stored in `annotations`.
 - **Statuses**: Includes grouped step statuses for `Essentials`, `Operations`, `Communication`, and `Before Publish`. `Operations` now includes a `schedule` status that is `ready` when stored schedule days contain at least one usable session.
 
 ### ICS Agent — GET `/api/ics`

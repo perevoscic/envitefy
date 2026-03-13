@@ -16,6 +16,11 @@ const {
   mergeCoachFeesFromAdmission,
   routeCoachDeadlines,
   deriveScheduleFromTextFallback,
+  parseNarrativeScheduleSessionsFromPage,
+  parseScheduleAnnotationsFromPages,
+  parseScheduleAssignmentsFromPages,
+  classifySchedulePageText,
+  selectScheduleSegments,
   mergeScheduleWithFallback,
   supplementScheduleWithFallback,
   mergeScheduleAwardFlags,
@@ -800,6 +805,138 @@ Friday, March 13, 2026
   );
 });
 
+test("classifySchedulePageText separates grid, narrative, and assignment packets", () => {
+  assert.equal(
+    classifySchedulePageText(
+      "Session FR1\tSession FR2\nBRONZE\tSILVER\nStretch/warmup: 8:00am\tStretch/warmup: 10:45am\nBrowns Gym\tAlpha Gym"
+    ).kind,
+    "grid"
+  );
+  assert.equal(
+    classifySchedulePageText(
+      "Friday, March 20\nSession FR1 Level 7 8:00am Stretch\nAge groups: 10, 2, 24, 8, 12 8:15am Warm-up. Competition to follow"
+    ).kind,
+    "narrative"
+  );
+  assert.equal(
+    classifySchedulePageText(
+      "AGE GROUPS AND SESSION ASSIGNMENTS\nLEVEL 7\nGroup 2 6/18/2015 — 11/3/2015 FR1"
+    ).kind,
+    "assignment"
+  );
+});
+
+test("selectScheduleSegments keeps narrative and assignment pages out of grid parsing", () => {
+  const selected = selectScheduleSegments([
+    {
+      pageNumber: 1,
+      text: "Session FR1 Level 7 8:00am Stretch\nAge groups: 10, 2, 24, 8, 12 8:15am Warm-up. Competition to follow",
+    },
+    {
+      pageNumber: 2,
+      text: "LEVEL 7\nAge Group Birth Date Divisions Session\nGroup 2 6/18/2015 — 11/3/2015 FR1",
+    },
+    {
+      pageNumber: 3,
+      text: "Spectator Admissions\nAdults $26\nChildren $11",
+    },
+  ]);
+
+  assert.deepEqual(
+    selected.map((item) => [item.pageNumber, item.kind]),
+    [
+      [1, "narrative"],
+      [2, "assignment"],
+    ]
+  );
+});
+
+test("parseNarrativeScheduleSessionsFromPage extracts narrative schedule sessions without club leakage", () => {
+  const schedule = parseNarrativeScheduleSessionsFromPage(
+    {
+      pageNumber: 1,
+      text: `
+Friday, March 20
+Session FR1 Level 7 8:00am Stretch
+Age groups: 10, 2, 24, 8, 12 8:15am Warm-up. Competition to follow
+Session FR2 Level 7 11:30am Stretch
+Age groups: 3, 21, 6, 11, 20 11:45am Warm-up. Competition to follow
+Saturday, March 21
+Session SA1 Level 7 8:00am Stretch
+Age groups: 15, 4, 9, 25, 14 8:15am Warm-up. Competition to follow
+      `,
+    },
+    "2026"
+  );
+
+  assert.equal(schedule.days.length, 2);
+  assert.equal(schedule.days[0]?.date, "Friday, March 20, 2026");
+  assert.equal(schedule.days[0]?.sessions[0]?.code, "FR1");
+  assert.equal(schedule.days[0]?.sessions[0]?.group, "Level 7");
+  assert.equal(schedule.days[0]?.sessions[0]?.startTime, "8:00am");
+  assert.equal(schedule.days[0]?.sessions[0]?.warmupTime, "8:15am");
+  assert.equal(schedule.days[0]?.sessions[0]?.note, "Age groups: 10, 2, 24, 8, 12");
+  assert.deepEqual(schedule.days[0]?.sessions[0]?.clubs, []);
+  assert.equal(schedule.days[1]?.sessions[0]?.code, "SA1");
+});
+
+test("parseScheduleAnnotationsFromPages keeps award prose out of awardLegend and captures schedule rules", () => {
+  const annotations = parseScheduleAnnotationsFromPages(
+    [
+      {
+        pageNumber: 1,
+        text: `
+**SENIOR RECOGNITION CEREMONIES**
+LEVEL 7: Recognized at the Awards Ceremony for any graduating L7 Senior
+Friday, March 20
+Session FR1 Level 7 8:00am Stretch
+Saturday, March 21
+**Level 7 Team awards at approx. 11:30am, following session SA1**
+LEVEL 10's
+The final Level 10 schedule will be released no later than Monday, March 16th.
+        `,
+      },
+    ],
+    "2026"
+  );
+
+  assert.equal(annotations.length, 3);
+  assert.deepEqual(
+    annotations.map((item) => [item.kind, item.level, item.sessionCode, item.date, item.time]),
+    [
+      ["senior_recognition", "Level 7", null, null, null],
+      ["team_awards", "Level 7", "SA1", "Saturday, March 21, 2026", "11:30am"],
+      ["schedule_note", "Level 10", null, "Saturday, March 21, 2026", null],
+    ]
+  );
+});
+
+test("parseScheduleAssignmentsFromPages extracts assignment rows without inventing clubs", () => {
+  const assignments = parseScheduleAssignmentsFromPages([
+    {
+      pageNumber: 2,
+      text: `
+LEVEL 7
+Age Group Birth Date Divisions Session
+Group 2 6/18/2015 — 11/3/2015 FR1
+Group 24 11/21/2009 — 11/9/2010 FR1
+LEVEL 9
+Age Group Birth Date Divisions Session
+Middle 7/3/2010 — 10/27/2011 SU2
+      `,
+    },
+  ]);
+
+  assert.deepEqual(
+    assignments.map((item) => [item.level, item.groupLabel, item.birthDateRange, item.sessionCode]),
+    [
+      ["Level 7", "Group 2", "6/18/2015 — 11/3/2015", "FR1"],
+      ["Level 7", "Group 24", "11/21/2009 — 11/9/2010", "FR1"],
+      ["Level 9", "Middle", "7/3/2010 — 10/27/2011", "SU2"],
+    ]
+  );
+});
+
 test("mergeScheduleWithFallback fills in missing session timing and clubs from fallback", () => {
   const merged = mergeScheduleWithFallback(
     {
@@ -1331,6 +1468,83 @@ Sunday, March 15, 2026
   assert.equal(mapped.advancedSections.schedule.days.length, 2);
   assert.equal(mapped.advancedSections.schedule.days[0]?.sessions[0]?.startTime, "8:00am");
   assert.equal(mapped.advancedSections.schedule.days[1]?.sessions[0]?.code, "SA1");
+});
+
+test("mapParseResultToGymData preserves schedule annotations and assignments", async () => {
+  const mapped = await mapParseResultToGymData(
+    normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "meet_overview",
+      title: "State Meet",
+      dates: "March 20-22, 2026",
+      startAt: null,
+      endAt: null,
+      timezone: "America/New_York",
+      venue: "Coral Springs Gymnasium",
+      address: "2501 Coral Springs Drive, Coral Springs, FL 33065",
+      hostGym: "USA Competitions",
+      admission: [],
+      athlete: {},
+      meetDetails: {},
+      logistics: {},
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      schedule: {
+        venueLabel: "Coral Springs Gymnasium",
+        supportEmail: "info@usacompetitions.com",
+        notes: [],
+        awardLegend: [],
+        annotations: [
+          {
+            kind: "team_awards",
+            level: "Level 7",
+            sessionCode: "SA1",
+            date: "Saturday, March 21, 2026",
+            time: "11:30am",
+            text: "Level 7 Team awards at approx. 11:30am, following session SA1",
+          },
+        ],
+        assignments: [
+          {
+            level: "Level 9",
+            groupLabel: "Middle",
+            sessionCode: "SU2",
+            birthDateRange: "7/3/2010 — 10/27/2011",
+            divisionLabel: null,
+            note: null,
+          },
+        ],
+        days: [
+          {
+            date: "Sunday, March 22, 2026",
+            shortDate: "Sunday • Mar 22",
+            sessions: [
+              {
+                code: "SU2",
+                group: "Level 9",
+                startTime: "11:30am",
+                warmupTime: "11:50am",
+                note: "Born 7/3/2010 — 10/27/2011",
+                clubs: [],
+              },
+            ],
+          },
+        ],
+      },
+      links: [],
+      unmappedFacts: [],
+    })!,
+    {}
+  );
+
+  assert.equal(mapped.advancedSections.schedule.annotations[0]?.sessionCode, "SA1");
+  assert.equal(mapped.advancedSections.schedule.assignments[0]?.sessionCode, "SU2");
+  assert.equal(mapped.advancedSections.schedule.assignments[0]?.birthDateRange, "7/3/2010 — 10/27/2011");
 });
 
 test("computeGymBuilderStatuses marks schedule ready when sessions exist", () => {

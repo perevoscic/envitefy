@@ -158,7 +158,6 @@ const FOOTBALL_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown.
 }`;
 
 const JSON_STRING = { type: "string" } as const;
-const JSON_NUMBER = { type: "number" } as const;
 const JSON_BOOLEAN = { type: "boolean" } as const;
 
 function jsonNullable(schema: Record<string, unknown>) {

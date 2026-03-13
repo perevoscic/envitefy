@@ -173,6 +173,26 @@ export type GymMeetScheduleAwardLegend = {
   teamAwardEligible?: boolean | null;
 };
 
+export type GymMeetScheduleAnnotation = {
+  id?: string;
+  kind?: string;
+  level?: string;
+  sessionCode?: string;
+  date?: string;
+  time?: string;
+  text: string;
+};
+
+export type GymMeetScheduleAssignment = {
+  id?: string;
+  level?: string;
+  groupLabel?: string;
+  sessionCode?: string;
+  birthDateRange?: string;
+  divisionLabel?: string;
+  note?: string;
+};
+
 export type GymMeetScheduleSession = {
   id: string;
   code?: string;
@@ -198,6 +218,8 @@ export type GymMeetScheduleInfo = {
   supportEmail?: string;
   notes?: string[];
   awardLegend?: GymMeetScheduleAwardLegend[];
+  annotations?: GymMeetScheduleAnnotation[];
+  assignments?: GymMeetScheduleAssignment[];
   days: GymMeetScheduleDay[];
 };
 

@@ -150,6 +150,49 @@ const normalizeScheduleInfo = (
         .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
       (item) => `${item.meaning}|${item.colorLabel || ""}|${item.teamAwardEligible ?? ""}`
     ),
+    annotations: uniqueBy(
+      [
+        ...(Array.isArray(schedule.annotations) ? schedule.annotations : []),
+        ...(Array.isArray(fallback.annotations) ? fallback.annotations : []),
+      ]
+        .map((item: any) => ({
+          id: safeString(item?.id) || undefined,
+          kind: safeString(item?.kind) || undefined,
+          level: safeString(item?.level) || undefined,
+          sessionCode: safeString(item?.sessionCode) || undefined,
+          date: safeString(item?.date) || undefined,
+          time: safeString(item?.time) || undefined,
+          text: safeString(item?.text),
+        }))
+        .filter((item) => item.text),
+      (item) =>
+        `${item.kind || ""}|${item.level || ""}|${item.sessionCode || ""}|${item.date || ""}|${item.time || ""}|${item.text}`
+    ),
+    assignments: uniqueBy(
+      [
+        ...(Array.isArray(schedule.assignments) ? schedule.assignments : []),
+        ...(Array.isArray(fallback.assignments) ? fallback.assignments : []),
+      ]
+        .map((item: any) => ({
+          id: safeString(item?.id) || undefined,
+          level: safeString(item?.level) || undefined,
+          groupLabel: safeString(item?.groupLabel) || undefined,
+          sessionCode: safeString(item?.sessionCode) || undefined,
+          birthDateRange: safeString(item?.birthDateRange) || undefined,
+          divisionLabel: safeString(item?.divisionLabel) || undefined,
+          note: safeString(item?.note) || undefined,
+        }))
+        .filter(
+          (item) =>
+            item.sessionCode ||
+            item.groupLabel ||
+            item.birthDateRange ||
+            item.divisionLabel ||
+            item.note
+        ),
+      (item) =>
+        `${item.level || ""}|${item.groupLabel || ""}|${item.sessionCode || ""}|${item.birthDateRange || ""}|${item.divisionLabel || ""}|${item.note || ""}`
+    ),
     days,
   };
 };

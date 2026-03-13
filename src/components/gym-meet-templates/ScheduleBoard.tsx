@@ -62,6 +62,35 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
         })
       )
       .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
+    annotations: (Array.isArray(schedule.annotations) ? schedule.annotations : [])
+      .map((item: any) => ({
+        id: safeString(item?.id) || undefined,
+        kind: safeString(item?.kind) || undefined,
+        level: safeString(item?.level) || undefined,
+        sessionCode: safeString(item?.sessionCode) || undefined,
+        date: safeString(item?.date) || undefined,
+        time: safeString(item?.time) || undefined,
+        text: safeString(item?.text),
+      }))
+      .filter((item) => item.text),
+    assignments: (Array.isArray(schedule.assignments) ? schedule.assignments : [])
+      .map((item: any) => ({
+        id: safeString(item?.id) || undefined,
+        level: safeString(item?.level) || undefined,
+        groupLabel: safeString(item?.groupLabel) || undefined,
+        sessionCode: safeString(item?.sessionCode) || undefined,
+        birthDateRange: safeString(item?.birthDateRange) || undefined,
+        divisionLabel: safeString(item?.divisionLabel) || undefined,
+        note: safeString(item?.note) || undefined,
+      }))
+      .filter(
+        (item) =>
+          item.sessionCode ||
+          item.groupLabel ||
+          item.birthDateRange ||
+          item.divisionLabel ||
+          item.note
+      ),
     days: days
       .map((day, dayIndex) => ({
         id: safeString(day?.id) || `schedule-day-${dayIndex + 1}`,
