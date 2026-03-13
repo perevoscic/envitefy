@@ -6,7 +6,9 @@ import { buildGymMeetDiscoveryContent } from "./buildGymMeetDiscoveryContent";
 import { normalizeGymMeetTitleSize } from "./titleSizing";
 import {
   collapseRepeatedDisplayText,
+  formatGymMeetDate,
   formatGymMeetTime,
+  sanitizeGymMeetDisplayDateLabel,
 } from "./displayText";
 
 const safeString = (value: unknown): string =>
@@ -187,20 +189,6 @@ const shouldRenderAnnouncement = (item: any) => {
   return !STRUCTURED_ANNOUNCEMENT_PATTERN.test(`${title} ${body}`);
 };
 
-const formatDate = (value: string) => {
-  if (!value) return "";
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(new Date(value));
-  } catch {
-    return value;
-  }
-};
-
 const DISCOVERY_GENERATED_DETAILS_PREFIX =
   /^(meet dates?:|doors open:|arrival guidance:|registration:|facility layout:|scoring:|results:|rotation sheets?:|awards:|hall layout:|food policy:|hydration:|safety:|animals:)/i;
 const DISCOVERY_GENERATED_DETAILS_INLINE =
@@ -364,7 +352,7 @@ export const normalizeGymMeetEventData = ({
 
   const heroBadges = unique(
     [
-      collapseRepeatedDisplayText(customFields?.meetDateRangeLabel),
+      sanitizeGymMeetDisplayDateLabel(customFields?.meetDateRangeLabel),
       collapseRepeatedDisplayText(meet?.sessionNumber || meet?.session),
       rosterAthletes.length
         ? unique(
@@ -402,6 +390,12 @@ export const normalizeGymMeetEventData = ({
   const detailsText = isDiscoveryEvent
     ? stripDiscoveryGeneratedDetails(eventData?.details || eventData?.description)
     : safeString(eventData?.details || eventData?.description);
+  const resolvedAddress = collapseRepeatedDisplayText(
+    eventData?.address || parseResult?.address || mapAddress
+  );
+  const resolvedHeaderLocation = collapseRepeatedDisplayText(
+    headerLocation || eventData?.location || eventData?.venue || resolvedAddress
+  );
 
   const discovery = buildGymMeetDiscoveryContent({
     eventData,
@@ -410,7 +404,7 @@ export const normalizeGymMeetEventData = ({
     date: safeString(eventData?.date || eventData?.startISO),
     detailsText,
     venue: safeString(eventData?.venue),
-    address: safeString(eventData?.address),
+    address: resolvedAddress,
   });
 
   return {
@@ -420,9 +414,13 @@ export const normalizeGymMeetEventData = ({
     heroImage: safeString(eventData?.heroImage || eventData?.customHeroImage),
     hostGym: collapseRepeatedDisplayText(sanitizeDisplayHostGym(eventData?.hostGym)),
     venue: collapseRepeatedDisplayText(eventData?.venue),
-    address: collapseRepeatedDisplayText(eventData?.address),
-    headerLocation: collapseRepeatedDisplayText(headerLocation),
-    dateLabel: formatDate(safeString(eventData?.date || eventData?.startISO)),
+    address: resolvedAddress,
+    headerLocation: resolvedHeaderLocation,
+    dateLabel:
+      sanitizeGymMeetDisplayDateLabel(customFields?.meetDateRangeLabel) ||
+      formatGymMeetDate(safeString(eventData?.date || eventData?.startISO), {
+        withWeekday: true,
+      }),
     timeLabel: formatGymMeetTime(eventData?.time),
     detailsText,
     heroSummary: undefined,
@@ -448,7 +446,7 @@ export const normalizeGymMeetEventData = ({
     announcements,
     rsvpEnabled: Boolean(eventData?.rsvpEnabled),
     rsvpDeadline: safeString(eventData?.rsvpDeadline),
-    mapAddress: safeString(mapAddress),
+    mapAddress: safeString(mapAddress || resolvedAddress),
     venueFacts,
     spectatorNotes,
     rulesNotes,

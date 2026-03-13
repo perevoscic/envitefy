@@ -92,7 +92,7 @@ export const TEMPLATE_DEFINITIONS: TemplateDef[] = [
   },
   {
     key: "gymnastics",
-    label: "Gymnastics Schedule",
+    label: "Gymnastics",
     href: "/event/gymnastics",
     icon: "🤸",
     section: "sports",

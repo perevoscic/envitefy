@@ -580,11 +580,17 @@ const stripDiscoveryGeneratedDetails = (value: unknown): string => {
   ).join("\n");
 };
 
+const ISO_DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATE_TIME_PATTERN =
+  /^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/i;
+
 const normalizeIsoDate = (value: unknown): string => {
   const text = asTrimmedString(value);
   if (!text) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-  const d = new Date(text);
+  if (ISO_DATE_ONLY_PATTERN.test(text)) return text;
+  if (!ISO_DATE_TIME_PATTERN.test(text)) return "";
+  const normalized = text.includes("T") ? text : text.replace(" ", "T");
+  const d = new Date(normalized);
   if (Number.isNaN(d.getTime())) return "";
   return d.toISOString().slice(0, 10);
 };
@@ -701,6 +707,9 @@ const parseDiscoveryDateRange = (
 
   return { start: "", end: "", label };
 };
+
+const sanitizeDisplayDateLabel = (value: unknown): string =>
+  parseDiscoveryDateRange(value).label;
 
 const isDateWithinRange = (value: string, start: string, end: string) => {
   const normalized = normalizeIsoDate(value);
@@ -1523,7 +1532,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               }
             }
           }
+          const resolvedDisplayDateLabel =
+            sanitizeDisplayDateLabel(existing?.customFields?.meetDateRangeLabel) ||
+            sanitizeDisplayDateLabel(existingDiscoverySource?.parseResult?.dates);
           const parseDatesLabel =
+            resolvedDisplayDateLabel ||
             existingDiscoverySource?.parseResult?.dates ||
             existing?.customFields?.meetDateRangeLabel;
           const parsedRange = parseDiscoveryDateRange(parseDatesLabel);
@@ -1603,6 +1616,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ...prev.extra,
               ...(existing.extra || {}),
               ...(existing.customFields || {}),
+              meetDateRangeLabel: resolvedDisplayDateLabel,
               team:
                 existing.team ||
                 existing.customFields?.team ||

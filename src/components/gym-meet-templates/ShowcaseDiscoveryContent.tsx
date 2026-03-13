@@ -88,7 +88,7 @@ const renderLineList = ({
 const gridClassForColumns = (columns?: number) => {
   switch (columns) {
     case 4:
-      return "grid gap-3 md:grid-cols-3 xl:grid-cols-4";
+      return "grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))]";
     case 3:
       return "grid gap-3 md:grid-cols-2 xl:grid-cols-3";
     default:

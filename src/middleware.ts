@@ -6,6 +6,9 @@ import { getToken } from "next-auth/jwt";
 const PUBLIC_UNAUTH_PATHS = new Set([
   "/",
   "/landing",
+  "/landing-preview",
+  "/gymnastics",
+  "/event/gymnastics",
   "/open",
   "/about",
   "/how-it-works",

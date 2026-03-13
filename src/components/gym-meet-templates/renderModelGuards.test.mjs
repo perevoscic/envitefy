@@ -131,3 +131,30 @@ test("quick access renderers keep coach metadata out of link-only actions", () =
     "EditorialGymMeetTemplate still renders coach cards in Quick Access"
   );
 });
+
+test("hero address rendering falls back to parsed and map addresses when eventData.address is blank", () => {
+  const normalizeSource = readSource(
+    "src/components/gym-meet-templates/normalizeGymMeetEventData.ts"
+  );
+
+  assert.match(
+    normalizeSource,
+    /const resolvedAddress = collapseRepeatedDisplayText\(\s*eventData\?\.address \|\| parseResult\?\.address \|\| mapAddress\s*\);/,
+    "normalizeGymMeetEventData no longer falls back to parseResult.address/mapAddress"
+  );
+
+  const rendererFiles = [
+    "src/components/gym-meet-templates/renderers/EditorialGymMeetTemplate.tsx",
+    "src/components/gym-meet-templates/renderers/DashboardGymMeetTemplate.tsx",
+    "src/components/gym-meet-templates/renderers/ShowcaseGymMeetTemplate.tsx",
+  ];
+
+  for (const file of rendererFiles) {
+    const source = readSource(file);
+    assert.match(
+      source,
+      /model\.address \|\| model\.mapAddress \|\| model\.headerLocation/,
+      `${file} no longer falls back to mapAddress in the hero address line`
+    );
+  }
+});

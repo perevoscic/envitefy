@@ -8,6 +8,7 @@ import {
   Check,
   Clock,
   ExternalLink,
+  Trophy,
 } from "lucide-react";
 import ShowcaseDiscoveryContent, {
   getShowcaseDiscoveryTabs,
@@ -235,12 +236,14 @@ export default function ShowcaseGymMeetTemplate({
     []
   );
   const hasQuickAccessSection = model.quickLinks.length > 0;
-  const heroVenueLine = joinUniqueDisplayParts(
-    [model.hostGym || model.team || model.venue, model.address || model.headerLocation],
-    ", "
-  );
-  const heroMetaLocation =
-    heroVenueLine && model.address ? "" : joinUniqueDisplayParts([model.headerLocation], ", ");
+  const heroHostGym = model.hostGym || model.team || "";
+  const heroAddressLine =
+    model.address || model.mapAddress || model.headerLocation
+      ? joinUniqueDisplayParts(
+          [heroHostGym, model.address || model.mapAddress || model.headerLocation],
+          ", "
+        )
+      : "";
 
   const heroStyle = model.heroImage
     ? {
@@ -292,11 +295,6 @@ export default function ShowcaseGymMeetTemplate({
                   theme.headerAlign === "center" ? "mx-auto max-w-5xl text-center" : "max-w-5xl"
                 }`}
               >
-                {heroVenueLine && (
-                  <p className={`text-sm font-black uppercase tracking-[0.34em] ${theme.subtitleClass}`}>
-                    {heroVenueLine}
-                  </p>
-                )}
                 <h1
                   className={`${titleTypography.heroClassName} ${theme.titleClass}`}
                   style={{
@@ -322,8 +320,17 @@ export default function ShowcaseGymMeetTemplate({
                       <Clock size={16} /> {model.timeLabel}
                     </span>
                   ) : null}
-                  {heroMetaLocation ? <span>{heroMetaLocation}</span> : null}
+                  {heroHostGym ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Trophy size={16} /> {heroHostGym}
+                    </span>
+                  ) : null}
                 </div>
+                {heroAddressLine ? (
+                  <p className={`mt-3 text-sm font-black uppercase tracking-[0.22em] ${theme.subtitleClass}`}>
+                    {heroAddressLine}
+                  </p>
+                ) : null}
               </div>
 
               {model.summaryItems?.length ? (

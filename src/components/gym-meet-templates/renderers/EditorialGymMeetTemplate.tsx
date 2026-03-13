@@ -3,12 +3,13 @@
 "use client";
 
 import React from "react";
-import { Calendar, Check, Clock } from "lucide-react";
+import { Calendar, Check, Clock, Trophy } from "lucide-react";
 import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
 import FloatingActionStrip from "../FloatingActionStrip";
 import { getGymMeetTitleTypography } from "../titleTypography";
 import { GymMeetTemplateRendererProps } from "../types";
 import { getGymMeetTitleSizeStyle } from "../titleSizing";
+import { joinUniqueDisplayParts } from "../displayText";
 
 const formatTime = (value: string) => {
   if (!value) return "";
@@ -103,6 +104,14 @@ export default function EditorialGymMeetTemplate({
     ? model.gear
     : [];
   const hasQuickAccessSection = model.quickLinks.length > 0;
+  const heroHostGym = model.hostGym || model.team || "";
+  const heroAddressLine =
+    model.address || model.mapAddress || model.headerLocation
+      ? joinUniqueDisplayParts(
+          [heroHostGym, model.address || model.mapAddress || model.headerLocation],
+          ", "
+        )
+      : "";
   const heroStyle = model.heroImage
     ? {
         backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.14), rgba(2,6,23,0.42)), url(${model.heroImage})`,
@@ -153,8 +162,17 @@ export default function EditorialGymMeetTemplate({
                         <Clock size={16} /> {model.timeLabel}
                       </span>
                     ) : null}
-                    {model.headerLocation ? <span>{model.headerLocation}</span> : null}
+                    {heroHostGym ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Trophy size={16} /> {heroHostGym}
+                      </span>
+                    ) : null}
                   </div>
+                  {heroAddressLine ? (
+                    <p className={`mt-3 text-sm font-black uppercase tracking-[0.18em] ${variant.mutedClass}`}>
+                      {heroAddressLine}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">

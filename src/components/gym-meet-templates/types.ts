@@ -159,38 +159,12 @@ export type GymMeetCoachLateFee = {
   note?: string;
 };
 
-export type GymMeetScheduleColorTarget = "session" | "club";
-
-export type GymMeetScheduleColorRef = {
-  legendId?: string | null;
-  textColorHex?: string | null;
-  confidence?: number | null;
-};
-
 export type GymMeetScheduleClub = {
   id: string;
   name: string;
   teamAwardEligible?: boolean | null;
   athleteCount?: number | null;
   divisionLabel?: string;
-  color?: GymMeetScheduleColorRef | null;
-};
-
-export type GymMeetScheduleColorLegendEntry = {
-  id?: string;
-  target?: GymMeetScheduleColorTarget;
-  colorHex?: string | null;
-  colorLabel?: string;
-  meaning: string;
-  sourceText?: string;
-  teamAwardEligible?: boolean | null;
-};
-
-export type GymMeetScheduleAwardLegend = {
-  colorHex?: string | null;
-  colorLabel?: string;
-  meaning: string;
-  teamAwardEligible?: boolean | null;
 };
 
 export type GymMeetScheduleAnnotation = {
@@ -221,7 +195,6 @@ export type GymMeetScheduleSession = {
   startTime: string;
   warmupTime?: string;
   note?: string;
-  color?: GymMeetScheduleColorRef | null;
   clubs: GymMeetScheduleClub[];
 };
 
@@ -238,8 +211,6 @@ export type GymMeetScheduleInfo = {
   venueLabel?: string;
   supportEmail?: string;
   notes?: string[];
-  colorLegend?: GymMeetScheduleColorLegendEntry[];
-  awardLegend?: GymMeetScheduleAwardLegend[];
   annotations?: GymMeetScheduleAnnotation[];
   assignments?: GymMeetScheduleAssignment[];
   days: GymMeetScheduleDay[];

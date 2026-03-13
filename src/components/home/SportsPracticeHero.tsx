@@ -18,7 +18,7 @@ const SPORTS_CARDS: SportsCard[] = [
     href: "/event/football",
   },
   {
-    label: "Gymnastics Schedule",
+    label: "Gymnastics",
     icon: "🤸",
     copy: "Detailed class times, location maps, and coach notes.",
     href: "/event/gymnastics",

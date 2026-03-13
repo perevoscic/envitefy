@@ -213,3 +213,56 @@ export const formatGymMeetTime = (value: unknown): string => {
   const hour12 = hour % 12 || 12;
   return `${hour12}:${minute} ${meridian}`;
 };
+
+const ISO_DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATE_TIME_PATTERN =
+  /^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/i;
+const MONTH_NAME_DATE_RANGE_PATTERN =
+  /\b(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s*[–-]\s*\d{1,2})?,?\s+\d{4}\b/i;
+const MONTH_NAME_DATE_SINGLE_PATTERN =
+  /\b(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2},?\s+\d{4}\b/i;
+const SLASH_DATE_RANGE_PATTERN =
+  /\b\d{1,2}\/\d{1,2}\/\d{4}\s*[–-]\s*\d{1,2}\/\d{1,2}\/\d{4}\b/;
+const SLASH_DATE_SINGLE_PATTERN = /\b\d{1,2}\/\d{1,2}\/\d{4}\b/;
+
+const parseStrictGymMeetDate = (value: unknown): Date | null => {
+  const text = toDisplayString(value);
+  if (!text) return null;
+
+  if (ISO_DATE_ONLY_PATTERN.test(text)) {
+    const candidate = new Date(`${text}T00:00:00`);
+    return Number.isNaN(candidate.getTime()) ? null : candidate;
+  }
+
+  if (ISO_DATE_TIME_PATTERN.test(text)) {
+    const normalized = text.includes("T") ? text : text.replace(" ", "T");
+    const candidate = new Date(normalized);
+    return Number.isNaN(candidate.getTime()) ? null : candidate;
+  }
+
+  return null;
+};
+
+export const sanitizeGymMeetDisplayDateLabel = (value: unknown): string => {
+  const text = collapseRepeatedDisplayText(value);
+  if (!text) return "";
+  if (MONTH_NAME_DATE_RANGE_PATTERN.test(text)) return text;
+  if (MONTH_NAME_DATE_SINGLE_PATTERN.test(text)) return text;
+  if (SLASH_DATE_RANGE_PATTERN.test(text)) return text;
+  if (SLASH_DATE_SINGLE_PATTERN.test(text)) return text;
+  return "";
+};
+
+export const formatGymMeetDate = (
+  value: unknown,
+  options?: { withWeekday?: boolean }
+): string => {
+  const date = parseStrictGymMeetDate(value);
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    ...(options?.withWeekday ? { weekday: "short" } : {}),
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+};

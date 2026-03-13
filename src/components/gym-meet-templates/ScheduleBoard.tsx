@@ -4,25 +4,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import {
   Clock,
-  Info,
   LayoutGrid,
   List,
   Search,
   Table as TableIcon,
-  Trophy,
   Users,
 } from "lucide-react";
-import {
-  GymMeetScheduleAwardLegend,
-  GymMeetScheduleColorLegendEntry,
-  GymMeetScheduleColorRef,
-  GymMeetScheduleInfo,
-} from "./types";
-import {
-  buildScheduleLegendEntryKey,
-  resolveScheduleLegendEntries,
-  resolveScheduleTextColor,
-} from "./scheduleColors";
+import { GymMeetScheduleInfo } from "./types";
 
 const safeString = (value: unknown): string =>
   typeof value === "string"
@@ -60,17 +48,6 @@ const formatScheduleDayLabel = (day: {
 const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
   const schedule = (value && typeof value === "object" ? value : {}) as Record<string, any>;
   const days = Array.isArray(schedule.days) ? schedule.days : [];
-  const normalizeColorRef = (item: any): GymMeetScheduleColorRef | null => {
-    if (!item || typeof item !== "object") return null;
-    const legendId = safeString(item?.legendId) || undefined;
-    const textColorHex = safeString(item?.textColorHex) || undefined;
-    const confidence =
-      typeof item?.confidence === "number" && Number.isFinite(item.confidence)
-        ? item.confidence
-        : null;
-    if (!legendId && !textColorHex && confidence == null) return null;
-    return { legendId, textColorHex, confidence };
-  };
   return {
     enabled: schedule.enabled !== false,
     venueLabel: safeString(schedule.venueLabel),
@@ -78,40 +55,6 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
     notes: (Array.isArray(schedule.notes) ? schedule.notes : [])
       .map((item) => safeString(item))
       .filter(Boolean),
-    colorLegend: (Array.isArray(schedule.colorLegend) ? schedule.colorLegend : [])
-      .map(
-        (item: any): GymMeetScheduleColorLegendEntry => ({
-          id: safeString(item?.id) || undefined,
-          target:
-            safeString(item?.target) === "session" || safeString(item?.target) === "club"
-              ? (safeString(item?.target) as "session" | "club")
-              : undefined,
-          colorHex: safeString(item?.colorHex) || null,
-          colorLabel: safeString(item?.colorLabel) || undefined,
-          meaning: safeString(item?.meaning),
-          sourceText: safeString(item?.sourceText) || undefined,
-          teamAwardEligible:
-            typeof item?.teamAwardEligible === "boolean" ? item.teamAwardEligible : null,
-        })
-      )
-      .filter(
-        (item) =>
-          item.meaning ||
-          item.colorHex ||
-          item.colorLabel ||
-          typeof item.teamAwardEligible === "boolean"
-      ),
-    awardLegend: (Array.isArray(schedule.awardLegend) ? schedule.awardLegend : [])
-      .map(
-        (item: any): GymMeetScheduleAwardLegend => ({
-          colorHex: safeString(item?.colorHex) || null,
-          colorLabel: safeString(item?.colorLabel) || undefined,
-          meaning: safeString(item?.meaning),
-          teamAwardEligible:
-            typeof item?.teamAwardEligible === "boolean" ? item.teamAwardEligible : null,
-        })
-      )
-      .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
     annotations: (Array.isArray(schedule.annotations) ? schedule.annotations : [])
       .map((item: any) => ({
         id: safeString(item?.id) || undefined,
@@ -158,7 +101,6 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
             startTime: safeString(session?.startTime),
             warmupTime: safeString(session?.warmupTime) || undefined,
             note: safeString(session?.note) || undefined,
-            color: normalizeColorRef(session?.color),
             clubs: (Array.isArray(session?.clubs) ? session.clubs : [])
               .map((club: any, clubIndex: number) => ({
                 id:
@@ -174,7 +116,6 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
                     ? club.athleteCount
                     : null,
                 divisionLabel: safeString(club?.divisionLabel) || undefined,
-                color: normalizeColorRef(club?.color),
               }))
               .filter((club: any) => club.name),
           }))
@@ -211,7 +152,6 @@ type ScheduleClubGroup = {
     teamAwardEligible?: boolean | null;
     athleteCount?: number | null;
     divisionLabel?: string;
-    color?: GymMeetScheduleColorRef | null;
   }>;
 };
 
@@ -222,7 +162,6 @@ const groupSessionClubsByDivision = (
     teamAwardEligible?: boolean | null;
     athleteCount?: number | null;
     divisionLabel?: string;
-    color?: GymMeetScheduleColorRef | null;
   }>
 ): { hasDivisionGrouping: boolean; groups: ScheduleClubGroup[] } => {
   const hasDivisionGrouping = clubs.some((club) => safeString(club.divisionLabel));
@@ -248,13 +187,13 @@ const groupSessionClubsByDivision = (
     groups.get(key)?.clubs.push(club);
   }
 
+  const orderedGroups = [...groups.values()];
   return {
     hasDivisionGrouping: true,
-    groups: [...groups.values()].sort((a, b) => {
-      if (a.isOther && !b.isOther) return 1;
-      if (!a.isOther && b.isOther) return -1;
-      return a.label.localeCompare(b.label);
-    }),
+    groups: [
+      ...orderedGroups.filter((group) => !group.isOther),
+      ...orderedGroups.filter((group) => group.isOther),
+    ],
   };
 };
 
@@ -303,7 +242,6 @@ type ScheduleBoardProps = {
     sessionTitleClass?: string;
     sessionTitleStyle?: CSSProperties;
     clubTextClass?: string;
-    legendTextClass?: string;
     tableShellClass?: string;
     tableHeadClass?: string;
     tableRowClass?: string;
@@ -361,30 +299,6 @@ export default function ScheduleBoard({
     [filteredSessions]
   );
 
-  const hasTeamAwardTrue = useMemo(
-    () =>
-      days.some((day) =>
-        day.sessions.some((session) =>
-          session.clubs.some((club) => club.teamAwardEligible === true)
-        )
-      ),
-    [days]
-  );
-  const hasTeamAwardFalse = useMemo(
-    () =>
-      days.some((day) =>
-        day.sessions.some((session) =>
-          session.clubs.some((club) => club.teamAwardEligible === false)
-        )
-      ),
-    [days]
-  );
-  const legendEntries = useMemo(
-    () => resolveScheduleLegendEntries(normalizedSchedule, hasTeamAwardTrue, hasTeamAwardFalse),
-    [normalizedSchedule, hasTeamAwardTrue, hasTeamAwardFalse]
-  );
-  const showLegend = legendEntries.length > 0;
-
   if (!normalizedSchedule.enabled || days.length === 0 || !activeDay) {
     return null;
   }
@@ -406,8 +320,6 @@ export default function ScheduleBoard({
   const sessionTitleClass = appearance?.sessionTitleClass || sectionTitleClass;
   const sessionTitleStyle = appearance?.sessionTitleStyle || sectionTitleStyle;
   const clubTextClass = appearance?.clubTextClass || "text-sm font-semibold";
-  const legendTextClass =
-    appearance?.legendTextClass || "text-[10px] font-black uppercase tracking-[0.16em]";
   const primaryButtonClass =
     appearance?.primaryButtonClass ||
     "inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-black transition hover:opacity-90";
@@ -429,24 +341,11 @@ export default function ScheduleBoard({
       const renderClubRow = (
         club: (typeof filteredSessions)[number]["clubs"][number],
         includeDivisionLabel: boolean
-      ) => {
-        const clubTextColor = resolveScheduleTextColor(club.color);
-        return (
-          <div key={club.id} className="flex items-center justify-between gap-3 py-1">
-            <span
-              className={clubTextClass}
-              style={clubTextColor ? { color: clubTextColor } : undefined}
-            >
-              {formatClubName(club, { includeDivisionLabel })}
-            </span>
-            {club.teamAwardEligible === true ? (
-              <span className="rounded bg-black/5 p-1 shadow-sm">
-                <Trophy size={12} style={clubTextColor ? { color: clubTextColor } : undefined} />
-              </span>
-            ) : null}
-          </div>
-        );
-      };
+      ) => (
+        <div key={club.id} className="flex items-center justify-between gap-3 py-1">
+          <span className={clubTextClass}>{formatClubName(club, { includeDivisionLabel })}</span>
+        </div>
+      );
 
       if (!grouped.hasDivisionGrouping) {
         return <div className="grid gap-y-3">{clubs.map((club) => renderClubRow(club, true))}</div>;
@@ -475,17 +374,8 @@ export default function ScheduleBoard({
       return (
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           {clubs.map((club) => (
-            <div
-              key={club.id}
-              className="flex items-center gap-2 text-xs font-semibold"
-              style={
-                resolveScheduleTextColor(club.color)
-                  ? { color: resolveScheduleTextColor(club.color) as string }
-                  : undefined
-              }
-            >
+            <div key={club.id} className="flex items-center gap-2 text-xs font-semibold">
               <span>{formatClubName(club)}</span>
-              {club.teamAwardEligible === true ? <Trophy size={11} /> : null}
             </div>
           ))}
         </div>
@@ -501,17 +391,8 @@ export default function ScheduleBoard({
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {group.clubs.map((club) => (
-                <div
-                  key={club.id}
-                  className="flex items-center gap-2 text-xs font-semibold"
-                  style={
-                    resolveScheduleTextColor(club.color)
-                      ? { color: resolveScheduleTextColor(club.color) as string }
-                      : undefined
-                  }
-                >
+                <div key={club.id} className="flex items-center gap-2 text-xs font-semibold">
                   <span>{formatClubName(club, { includeDivisionLabel: false })}</span>
-                  {club.teamAwardEligible === true ? <Trophy size={11} /> : null}
                 </div>
               ))}
             </div>
@@ -530,14 +411,6 @@ export default function ScheduleBoard({
             <span
               key={club.id}
               className="rounded-full border border-current/10 bg-black/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]"
-              style={
-                resolveScheduleTextColor(club.color)
-                  ? {
-                      color: resolveScheduleTextColor(club.color) as string,
-                      borderColor: `${resolveScheduleTextColor(club.color)}66`,
-                    }
-                  : undefined
-              }
             >
               {formatClubName(club)}
             </span>
@@ -558,14 +431,6 @@ export default function ScheduleBoard({
                 <span
                   key={club.id}
                   className="rounded-full border border-current/10 bg-black/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]"
-                  style={
-                    resolveScheduleTextColor(club.color)
-                      ? {
-                          color: resolveScheduleTextColor(club.color) as string,
-                          borderColor: `${resolveScheduleTextColor(club.color)}66`,
-                        }
-                      : undefined
-                  }
                 >
                   {formatClubName(club, { includeDivisionLabel: false })}
                 </span>
@@ -582,7 +447,6 @@ export default function ScheduleBoard({
       {filteredSessions.map((session) => {
         const timingRows = buildSessionTimingRows(session.startTime, session.warmupTime);
         const showSessionClubs = session.clubs.length > 0;
-        const sessionTextColor = resolveScheduleTextColor(session.color);
         return (
           <article
             key={session.id}
@@ -592,10 +456,7 @@ export default function ScheduleBoard({
               <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="mb-5 flex items-center justify-between gap-3">
-                    <span
-                      className="rounded-full border border-current/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] opacity-70"
-                      style={sessionTextColor ? { color: sessionTextColor } : undefined}
-                    >
+                    <span className="rounded-full border border-current/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] opacity-70">
                       {session.label || session.code || "Session"}
                     </span>
                   </div>
@@ -604,18 +465,11 @@ export default function ScheduleBoard({
                       sessionHeadingClass(session.group || session.code || "Session"),
                       sessionTitleClass
                     )}
-                    style={
-                      sessionTextColor
-                        ? { ...(sessionTitleStyle || {}), color: sessionTextColor }
-                        : sessionTitleStyle
-                    }
+                    style={sessionTitleStyle}
                   >
                     {session.group || session.code || "Session"}
                   </h3>
-                  <div
-                    className={joinClasses("mt-3 h-1 w-12 bg-current opacity-60", accentClass)}
-                    style={sessionTextColor ? { color: sessionTextColor } : undefined}
-                  />
+                  <div className={joinClasses("mt-3 h-1 w-12 bg-current opacity-60", accentClass)} />
                 </div>
                 {timingRows.length > 0 ? (
                   <div
@@ -666,7 +520,6 @@ export default function ScheduleBoard({
       {filteredSessions.map((session, index) => {
         const timingRows = buildSessionTimingRows(session.startTime, session.warmupTime);
         const showSessionClubs = session.clubs.length > 0;
-        const sessionTextColor = resolveScheduleTextColor(session.color);
         return (
           <div
             key={session.id}
@@ -704,10 +557,7 @@ export default function ScheduleBoard({
             <article className={joinClasses("space-y-4", cardClass)}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <span
-                    className="rounded-full border border-current/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] opacity-70"
-                    style={sessionTextColor ? { color: sessionTextColor } : undefined}
-                  >
+                  <span className="rounded-full border border-current/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] opacity-70">
                     {session.label || session.code || "Session"}
                   </span>
                   <h3
@@ -716,11 +566,7 @@ export default function ScheduleBoard({
                       sessionHeadingClass(session.group || session.code || "Session"),
                       sessionTitleClass
                     )}
-                    style={
-                      sessionTextColor
-                        ? { ...(sessionTitleStyle || {}), color: sessionTextColor }
-                        : sessionTitleStyle
-                    }
+                    style={sessionTitleStyle}
                   >
                     {session.group || session.code || "Session"}
                   </h3>
@@ -768,16 +614,7 @@ export default function ScheduleBoard({
           {filteredSessions.map((session) => (
             <tr key={session.id} className={tableRowClass}>
               <td className="px-4 py-4 align-top">
-                <span
-                  className="text-sm font-black"
-                  style={
-                    resolveScheduleTextColor(session.color)
-                      ? { color: resolveScheduleTextColor(session.color) as string }
-                      : undefined
-                  }
-                >
-                  {session.label || session.code || "Session"}
-                </span>
+                <span className="text-sm font-black">{session.label || session.code || "Session"}</span>
               </td>
               <td className="px-4 py-4 align-top">
                 <div className="space-y-1">
@@ -801,16 +638,7 @@ export default function ScheduleBoard({
                 </div>
               </td>
               <td className="px-4 py-4 align-top">
-                <span
-                  className="text-sm font-semibold"
-                  style={
-                    resolveScheduleTextColor(session.color)
-                      ? { color: resolveScheduleTextColor(session.color) as string }
-                      : undefined
-                  }
-                >
-                  {session.group || session.code || "Session"}
-                </span>
+                <span className="text-sm font-semibold">{session.group || session.code || "Session"}</span>
               </td>
               {hasVisibleClubs ? (
                 <td className="px-4 py-4 align-top">
@@ -918,47 +746,6 @@ export default function ScheduleBoard({
           />
         </label>
       </div>
-
-      {showLegend ? (
-        <div
-          className={joinClasses(
-            "flex flex-wrap items-center gap-6 rounded-2xl border p-5",
-            summaryCardClass
-          )}
-        >
-          {(["session", "club"] as const).map((target) => {
-            const targetEntries = legendEntries.filter((entry) => (entry.target || "club") === target);
-            if (!targetEntries.length) return null;
-            return (
-              <div key={target} className="flex flex-wrap items-center gap-4">
-                <span className={joinClasses("opacity-60", legendTextClass)}>
-                  {target === "session" ? "Session Colors" : "Club Colors"}
-                </span>
-                {targetEntries.map((entry, entryIndex) => (
-                  <div
-                    key={buildScheduleLegendEntryKey(entry, entryIndex)}
-                    className={joinClasses("flex items-center gap-3", legendTextClass)}
-                  >
-                    {entry.colorHex ? (
-                      <div
-                        className="h-4 w-4 rounded border border-current/10"
-                        style={{ backgroundColor: entry.colorHex }}
-                      />
-                    ) : (
-                      <div className="h-4 w-4 rounded border-2 border-current/20 bg-white/90" />
-                    )}
-                    <span>{entry.meaning || "Schedule color"}</span>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
-          <div className="flex items-center gap-2 text-xs font-medium normal-case tracking-normal opacity-70 md:ml-auto">
-            <Info size={14} className={accentClass} />
-            Athlete spot counts are shown in parentheses when provided.
-          </div>
-        </div>
-      ) : null}
 
       {filteredSessions.length === 0 ? renderEmptyState() : null}
 

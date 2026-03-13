@@ -2,14 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Globe,
-  Sparkles,
-  Upload,
-  X,
-} from "lucide-react";
+import { Inter, Sora } from "next/font/google";
+import { ArrowRight, CheckCircle2, Globe, LayoutTemplate, Upload, X } from "lucide-react";
+import Hero from "./gymnastics-landing/Hero";
+import HowItWorks from "./gymnastics-landing/HowItWorks";
+import FeatureGrid from "./gymnastics-landing/FeatureGrid";
+import ExampleMeet from "./gymnastics-landing/ExampleMeet";
+import Benefits from "./gymnastics-landing/Benefits";
+import CTA from "./gymnastics-landing/CTA";
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-gym-display",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-gym-body",
+});
 
 type GymnasticsLauncherProps = {
   forwardQueryString?: string;
@@ -18,8 +30,33 @@ type GymnasticsLauncherProps = {
 
 type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
+
 const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
 const PROCESSING_PROGRESS_CAP = 90;
+const SHOW_LIVE_URL_SYNC = false;
+
+const quickFacts = [
+  "Built for meet directors, gyms, and coaches",
+  "Structured for parents, athletes, and spectators",
+  "Designed around gymnastics sessions and logistics",
+];
+
+const organizerOptions = [
+  {
+    title: "Upload meet packet",
+    copy: "Best when you already have the schedule, packet, or PDF ready to go.",
+    action: "Upload file",
+    icon: Upload,
+    tone: "primary" as const,
+  },
+  {
+    title: "Open visual builder",
+    copy: "Use the template builder when you want to shape the page manually.",
+    action: "Open builder",
+    icon: LayoutTemplate,
+    tone: "secondary" as const,
+  },
+];
 
 export default function GymnasticsLauncher({
   forwardQueryString,
@@ -27,9 +64,16 @@ export default function GymnasticsLauncher({
 }: GymnasticsLauncherProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [selectedPath, setSelectedPath] = useState<
-    "upload" | "url" | "scratch"
-  >("upload");
+  const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
+  const ingestAbortRef = useRef<AbortController | null>(null);
+  const parseAbortRef = useRef<AbortController | null>(null);
+  const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancelRequestedRef = useRef(false);
+  const discoveryLogStateRef = useRef<{ status: string; bucket: number }>({
+    status: "",
+    bucket: -1,
+  });
+
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadFileName, setUploadFileName] = useState("");
@@ -38,20 +82,12 @@ export default function GymnasticsLauncher({
   const [urlBusy, setUrlBusy] = useState(false);
   const [urlError, setUrlError] = useState("");
   const [meetUrl, setMeetUrl] = useState("");
+
   const discoveryBusy = uploadBusy || urlBusy;
-  const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
-  const ingestAbortRef = useRef<AbortController | null>(null);
-  const parseAbortRef = useRef<AbortController | null>(null);
-  const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
-  const cancelRequestedRef = useRef(false);
-  const discoveryLogStateRef = useRef<{
-    status: string;
-    bucket: number;
-  }>({ status: "", bucket: -1 });
   const uploadIndeterminate =
-    uploadBusy && uploadStatus === "Processing..." && uploadProgress >= PROCESSING_PROGRESS_CAP;
+    uploadBusy &&
+    uploadStatus === "Processing..." &&
+    uploadProgress >= PROCESSING_PROGRESS_CAP;
 
   const toErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
@@ -141,17 +177,22 @@ export default function GymnasticsLauncher({
     const throwIfCancelled = () => {
       if (cancelRequestedRef.current) throw abortError();
     };
-    log("starting discovery", file
-      ? {
-          inputType: "file",
-          fileName: file.name,
-          sizeBytes: file.size,
-          mimeType: file.type || "application/octet-stream",
-        }
-      : {
-          inputType: "url",
-          url,
-        });
+
+    log(
+      "starting discovery",
+      file
+        ? {
+            inputType: "file",
+            fileName: file.name,
+            sizeBytes: file.size,
+            mimeType: file.type || "application/octet-stream",
+          }
+        : {
+            inputType: "url",
+            url,
+          },
+    );
+
     const formData = new FormData();
     if (file) formData.append("file", file);
     if (url) formData.append("url", url);
@@ -176,13 +217,8 @@ export default function GymnasticsLauncher({
             reportProgress(5 + ratio * 65, "Uploading meet file...");
           };
 
-          xhr.onabort = () => {
-            reject(abortError());
-          };
-
-          xhr.onerror = () => {
-            reject(new Error("Network error while uploading file"));
-          };
+          xhr.onabort = () => reject(abortError());
+          xhr.onerror = () => reject(new Error("Network error while uploading file"));
 
           xhr.onload = () => {
             uploadXhrRef.current = null;
@@ -206,7 +242,7 @@ export default function GymnasticsLauncher({
           };
 
           xhr.send(formData);
-        }
+        },
       );
       throwIfCancelled();
     } else {
@@ -240,7 +276,9 @@ export default function GymnasticsLauncher({
       parseProgress = Math.min(parseProgress + 3, PROCESSING_PROGRESS_CAP);
       reportProgress(
         parseProgress,
-        parseProgress >= PROCESSING_PROGRESS_CAP ? "Processing..." : "Processing meet file..."
+        parseProgress >= PROCESSING_PROGRESS_CAP
+          ? "Processing..."
+          : "Processing meet file...",
       );
     }, 700);
 
@@ -278,15 +316,11 @@ export default function GymnasticsLauncher({
     log("routing to builder", { eventId });
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
-    router.push(
-      `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`
-    );
+    router.push(`/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`);
   };
 
   const handleUploadPick = async (pickedFile: File | null) => {
-    if (discoveryBusy) return;
-    if (!pickedFile) return;
-    setSelectedPath("upload");
+    if (discoveryBusy || !pickedFile) return;
     setUploadError("");
     setUploadBusy(true);
     setUploadFileName(pickedFile.name);
@@ -297,6 +331,7 @@ export default function GymnasticsLauncher({
       sizeBytes: pickedFile.size,
       mimeType: pickedFile.type || "application/octet-stream",
     });
+
     try {
       await startDiscovery({
         file: pickedFile,
@@ -322,7 +357,6 @@ export default function GymnasticsLauncher({
 
   const handleUrlSync = async () => {
     if (discoveryBusy) return;
-    setSelectedPath("url");
     setUrlError("");
     const trimmed = meetUrl.trim();
     if (!trimmed) {
@@ -330,7 +364,6 @@ export default function GymnasticsLauncher({
       return;
     }
     try {
-      // Validate before sending to API for a tighter UX loop.
       new URL(trimmed);
     } catch {
       setUrlError("Enter a valid URL.");
@@ -349,7 +382,6 @@ export default function GymnasticsLauncher({
   };
 
   const openTemplateBuilder = () => {
-    setSelectedPath("scratch");
     const params = new URLSearchParams(forwardQueryString || "");
     if (!forwardQueryString && defaultDateParam) {
       params.set("d", defaultDateParam);
@@ -359,241 +391,175 @@ export default function GymnasticsLauncher({
   };
 
   return (
-    <main className="min-h-screen bg-[#f3f4f8] px-4 py-10 sm:px-6 lg:px-10">
-      <div className="mx-auto w-full max-w-6xl">
-        <h1 className="max-w-3xl text-4xl font-black leading-tight text-[#0f1935] sm:text-5xl md:text-6xl">
-          How would you like to
-          <br />
-          <span className="text-[#6d35f5]">build your gymnast event?</span>
-        </h1>
+    <main
+      className={`${sora.variable} ${inter.variable} min-h-screen bg-[linear-gradient(180deg,#f7f8ff_0%,#f8fafc_50%,#ffffff_100%)] text-[#17153f] [font-family:var(--font-gym-body)]`}
+    >
+      <Hero
+        fileInputRef={fileInputRef}
+        discoveryBusy={discoveryBusy}
+        uploadBusy={uploadBusy}
+        uploadFileName={uploadFileName}
+        uploadProgress={uploadProgress}
+        uploadStatus={uploadStatus}
+        uploadError={uploadError}
+        uploadIndeterminate={uploadIndeterminate}
+        onPickUpload={() => fileInputRef.current?.click()}
+        onCancelDiscovery={cancelDiscovery}
+        onFileChange={(file) => {
+          void handleUploadPick(file);
+        }}
+        onOpenBuilder={openTemplateBuilder}
+      />
 
-        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <section
-            onClick={() => setSelectedPath("upload")}
-            className={`rounded-[2rem] bg-white p-6 transition-all ${
-              selectedPath === "upload"
-                ? "border-2 border-[#7e3af2] shadow-[0_15px_45px_rgba(108,45,232,0.18)]"
-                : "border border-[#e5e6ef]"
-            }`}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <span
-                className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${
-                  selectedPath === "upload"
-                    ? "bg-[#f3ebff] text-[#6d35f5]"
-                    : "bg-[#eef0f5] text-[#8c94a8]"
+      <section className="px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-[2rem] border border-[#dde2f4] bg-white p-6 shadow-[0_18px_40px_rgba(30,27,75,0.05)]">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#4f46e5]">
+              Why this feels different
+            </p>
+            <h2 className="mt-4 font-[var(--font-gym-display)] text-3xl font-bold tracking-[-0.035em] text-[#1e1b4b]">
+              Made for gymnastics movement, timing, and meet-day logistics
+            </h2>
+            <div className="mt-5 space-y-3">
+              {quickFacts.map((fact) => (
+                <div
+                  key={fact}
+                  className="flex items-start gap-3 rounded-[1.25rem] border border-[#edf0fb] bg-[#f9faff] px-4 py-3"
+                >
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 text-[#4f46e5]" />
+                  <p className="text-sm leading-6 text-[#53607d]">{fact}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            {organizerOptions.map(({ title, copy, action, icon: Icon, tone }) => (
+              <article
+                key={title}
+                className={`rounded-[2rem] border p-6 shadow-[0_18px_40px_rgba(30,27,75,0.05)] ${
+                  tone === "primary"
+                    ? "border-[#23205a] bg-[#1e1b4b] text-white"
+                    : "border-[#dde2f4] bg-white text-[#1e1b4b]"
                 }`}
               >
-                <Upload className="h-5 w-5" />
-              </span>
-              {selectedPath === "upload" ? (
-                <CheckCircle2 className="h-5 w-5 text-[#6d35f5]" />
-              ) : null}
-            </div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8d8ba4]">
-              Fastest setup
-            </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">
-              Upload meet file.
-            </h2>
-            <p className="mt-3 text-base text-[#66677f]">
-              Upload your meet packet (PDF/JPG) and let us extract the schedule
-              and rosters.
-            </p>
-
-            <div className="mt-7">
-              {!uploadBusy ? (
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+                    tone === "primary"
+                      ? "bg-white/10 text-[#d4af37]"
+                      : "bg-[#efeeff] text-[#4f46e5]"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="mt-5 font-[var(--font-gym-display)] text-2xl font-bold tracking-[-0.03em]">
+                  {title}
+                </h3>
+                <p
+                  className={`mt-3 text-sm leading-7 ${
+                    tone === "primary" ? "text-[#dee2ff]" : "text-[#586581]"
+                  }`}
+                >
+                  {copy}
+                </p>
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedPath("upload");
-                    fileInputRef.current?.click();
+                  onClick={() => {
+                    if (tone === "primary") {
+                      fileInputRef.current?.click();
+                      return;
+                    }
+                    openTemplateBuilder();
                   }}
                   disabled={discoveryBusy}
-                  className="w-full rounded-2xl border-2 border-dashed border-[#d7d4e5] bg-[#f8f8fc] px-4 py-5 text-left transition hover:border-[#6d35f5] disabled:cursor-not-allowed disabled:opacity-70"
+                  className={`mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                    tone === "primary"
+                      ? "bg-[#d4af37] text-[#3a2f05] hover:bg-[#e0bc50]"
+                      : "bg-[#1e1b4b] text-white hover:bg-[#16133a]"
+                  }`}
                 >
-                  <div className="flex items-center justify-center gap-2 text-sm font-semibold text-[#5530a8]">
-                    <Upload className="h-4 w-4" />
-                    Click to Upload File
-                  </div>
-                  <p className="mt-1 text-center text-xs font-medium text-[#7d7a92]">
-                    PDF, JPG, PNG
-                  </p>
+                  {action}
+                  <ArrowRight className="h-4 w-4" />
                 </button>
-              ) : (
-                <div className="w-full rounded-2xl border-2 border-dashed border-[#d7d4e5] bg-[#f8f8fc] px-4 py-4">
-                  <div className="mx-auto w-full max-w-sm">
-                    <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#5530a8]">
-                      <span>{uploadStatus || "Processing meet file..."}</span>
-                      <div className="flex items-center gap-2">
-                        {!uploadIndeterminate ? <span>{uploadProgress}%</span> : null}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            cancelDiscovery();
-                          }}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d9cdfc] bg-white text-[#6d35f5] hover:bg-[#f3ebff]"
-                          aria-label="Cancel upload"
-                          title="Cancel"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#e6defa]">
-                      {uploadIndeterminate ? (
-                        <div className="relative h-full w-full overflow-hidden">
-                          <div className="launcher-indeterminate-bar absolute inset-y-0 left-0 w-2/5 rounded-full bg-[#6d35f5]" />
-                        </div>
-                      ) : (
-                        <div
-                          className="h-full rounded-full bg-[#6d35f5] transition-[width] duration-300 ease-out"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,image/png,image/jpeg,image/jpg"
-                className="hidden"
-                onChange={(e) => {
-                  const picked = e.target.files?.[0] || null;
-                  void handleUploadPick(picked);
-                  e.currentTarget.value = "";
-                }}
-              />
-              {uploadFileName ? (
-                <p className="mt-2 truncate text-xs text-[#6a6782]">
-                  Selected: {uploadFileName}
-                </p>
-              ) : null}
-              {uploadError ? (
-                <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                  {uploadError}
-                </p>
-              ) : null}
-            </div>
-          </section>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          <section
-            onClick={() => setSelectedPath("url")}
-            className={`flex flex-col rounded-[2rem] bg-[#f9fafc] p-6 transition-all ${
-              selectedPath === "url"
-                ? "border-2 border-[#7e3af2] shadow-[0_15px_45px_rgba(108,45,232,0.18)]"
-                : "border border-[#e5e6ef]"
-            }`}
-          >
-            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef0f5] text-[#8c94a8]">
-              <Globe className="h-5 w-5" />
+      <HowItWorks />
+      <FeatureGrid />
+      <ExampleMeet />
+      <Benefits />
+
+      {SHOW_LIVE_URL_SYNC ? (
+        <section className="px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+          <div className="mx-auto max-w-5xl rounded-[2rem] border border-[#dde2f4] bg-white p-8 shadow-[0_18px_45px_rgba(30,27,75,0.05)]">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#4f46e5]">
+                Live URL Sync
+              </p>
+              <h2 className="mt-4 font-[var(--font-gym-display)] text-3xl font-bold tracking-[-0.035em] text-[#1e1b4b]">
+                Already have a meet page somewhere else?
+              </h2>
+              <p className="mt-4 text-base leading-7 text-[#586581]">
+                Paste a URL and let Envitefy attempt to sync the meet details into a cleaner gymnastics event page.
+              </p>
             </div>
-            {selectedPath === "url" ? (
-              <div className="-mt-16 mb-10 flex justify-end">
-                <CheckCircle2 className="h-5 w-5 text-[#6d35f5]" />
-              </div>
-            ) : null}
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a0a5b6]">
-              External integration
-            </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">
-              Live URL Sync
-            </h2>
-            <p className="mt-3 text-base text-[#66677f]">
-              Paste a link to an existing meet page to sync data.
-            </p>
-            <div className="mt-auto space-y-3 pt-6 pb-2">
-              <input
-                type="url"
-                value={meetUrl}
-                onChange={(e) => setMeetUrl(e.target.value)}
-                onFocus={() => setSelectedPath("url")}
-                placeholder="https://gym-results.com/meet/123"
-                className="w-full rounded-2xl border border-[#d7d9e5] bg-white px-4 py-3 text-sm text-[#1c2040] outline-none ring-[#6d35f5] placeholder:text-[#a3a7b8] focus:ring-2"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void handleUrlSync();
-                }}
-                disabled={discoveryBusy}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-[#0f1935] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0b1430] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {urlBusy ? "Syncing..." : "Sync URL"}
-              </button>
-              {urlBusy ? (
+
+            <div className="mt-8 grid gap-4 md:grid-cols-[1fr_auto]">
+              <label className="rounded-[1.3rem] border border-[#dbe0f1] bg-[#f8f9ff] px-4 py-3">
+                <span className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#7f88a7]">
+                  <Globe className="h-4 w-4" />
+                  Meet URL
+                </span>
+                <input
+                  type="url"
+                  value={meetUrl}
+                  onChange={(e) => setMeetUrl(e.target.value)}
+                  placeholder="https://example-meet.com"
+                  className="w-full bg-transparent text-sm text-[#1e1b4b] outline-none placeholder:text-[#98a1bd]"
+                />
+              </label>
+
+              <div className="flex gap-3 md:flex-col">
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    cancelDiscovery();
+                  onClick={() => {
+                    void handleUrlSync();
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d7d9e5] bg-white px-4 py-2.5 text-xs font-semibold text-[#4c5370] hover:bg-slate-50"
+                  disabled={discoveryBusy}
+                  className="inline-flex items-center justify-center gap-2 rounded-[1.2rem] bg-[#1e1b4b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#16133a] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <X className="h-3.5 w-3.5" />
-                  Cancel Sync
+                  {urlBusy ? "Syncing..." : "Sync URL"}
                 </button>
-              ) : null}
-              {urlError ? (
-                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                  {urlError}
-                </p>
-              ) : null}
-            </div>
-          </section>
-
-          <section
-            onClick={() => setSelectedPath("scratch")}
-            className={`flex flex-col rounded-[2rem] bg-[#f9fafc] p-6 transition-all ${
-              selectedPath === "scratch"
-                ? "border-2 border-[#7e3af2] shadow-[0_15px_45px_rgba(108,45,232,0.18)]"
-                : "border border-[#e5e6ef]"
-            }`}
-          >
-            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef0f5] text-[#8c94a8]">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            {selectedPath === "scratch" ? (
-              <div className="-mt-16 mb-10 flex justify-end">
-                <CheckCircle2 className="h-5 w-5 text-[#6d35f5]" />
+                {urlBusy ? (
+                  <button
+                    type="button"
+                    onClick={cancelDiscovery}
+                    className="inline-flex items-center justify-center gap-2 rounded-[1.2rem] border border-[#dde2f4] bg-white px-5 py-3 text-sm font-semibold text-[#1e1b4b] hover:bg-[#f8f9ff]"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancel
+                  </button>
+                ) : null}
               </div>
-            ) : null}
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a0a5b6]">
-              Custom design
-            </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">
-              Visual Builder
-            </h2>
-            <p className="mt-3 text-base text-[#66677f]">
-              The ultimate control. Design your meet page block-by-block using
-              our template gallery.
-            </p>
-            <div className="mt-auto pt-6 pb-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openTemplateBuilder();
-                }}
-                disabled={discoveryBusy}
-                className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${
-                  selectedPath === "scratch"
-                    ? "bg-[#6d35f5] hover:bg-[#5f2ed7]"
-                    : "bg-[#0f1935] hover:bg-[#0b1430]"
-                }`}
-              >
-                Open Template Builder
-                <ArrowRight className="h-4 w-4" />
-              </button>
             </div>
-          </section>
-        </div>
-      </div>
+
+            {urlError ? (
+              <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {urlError}
+              </p>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      <CTA
+        discoveryBusy={discoveryBusy}
+        onUploadClick={() => fileInputRef.current?.click()}
+      />
+
       <style jsx>{`
         @keyframes launcher-indeterminate {
           0% {

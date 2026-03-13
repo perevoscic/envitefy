@@ -42,7 +42,6 @@ import {
   Mail,
   Search,
   ShieldCheck,
-  Dumbbell,
   FileEdit,
   Footprints,
   GraduationCap,
@@ -70,6 +69,7 @@ type CalendarProviderKey = "google" | "microsoft" | "apple";
 type SidebarPage =
   | "root"
   | "createEvent"
+  | "createEventOther"
   | "myEvents"
   | "invitedEvents"
   | "eventContext";
@@ -118,6 +118,45 @@ function CustomizeIcon({
       aria-hidden="true"
     >
       <path d="M289.17578 0.73828125L54.380859 235.5332L1.0996094 399.26172L165.19336 344.16992L187.53711 321.82617C177.68256 319.88348 158.75128 315.90115 158.21875 315.78906L157.85938 316.14844L84.302734 240.9668L289.17578 36.09375L363.54492 110.46289L316.17773 157.83008L320.19531 189.16797L398.90039 110.46289L289.17578 0.73828125ZM281.83203 163.19336C270.77592 163.19336 269.37826 163.27942 267.94727 164.04688C265.14245 165.55111 264.85252 166.72771 263.74609 181.03125C263.19412 188.16694 262.55189 194.23765 262.32031 194.52148C262.08872 194.8053 260.18213 195.51959 258.08203 196.10742C252.04822 197.79633 246.3826 200.07368 240.19727 203.29883C237.04805 204.9409 234.21892 206.28516 233.91016 206.28516C233.60139 206.28516 229.29567 202.82446 224.34375 198.59375C213.22439 189.09388 212.91077 188.85375 211.04883 188.45898C208.38004 187.89314 206.15654 189.48233 197.63281 198.05664C189.26418 206.47494 187.92021 208.38988 188.49023 211.08203C188.87351 212.89217 189.17315 213.28457 198.61133 224.30664C202.84304 229.24851 206.30469 233.55227 206.30469 233.87109C206.30469 234.18993 204.96238 237.02656 203.32031 240.17578C200.09516 246.36111 197.81585 252.02674 196.12695 258.06055C195.53912 260.16065 194.8268 262.0692 194.54297 262.30078C194.25916 262.53237 188.18842 263.17264 181.05273 263.72461C166.74918 264.83104 165.57065 265.1229 164.06641 267.92773C163.29898 269.35871 163.21289 270.75638 163.21289 281.8125C163.21289 292.86861 163.29896 294.26628 164.06641 295.69727C165.56685 298.495 166.76575 298.79318 180.82031 299.87305C187.82859 300.41151 193.87887 300.94643 194.26562 301.06055C194.70017 301.18876 195.39204 302.81688 196.07617 305.32422C197.74204 311.4296 200.00473 317.0885 203.32031 323.44727C204.96238 326.59647 206.30469 329.43479 206.30469 329.75391C206.30469 330.07307 202.99913 334.19519 198.95898 338.91406C187.30414 352.52676 187.35285 352.44496 189.12109 356.09766C190.51939 358.98616 205.97014 374.16562 208.27539 374.91602C211.2097 375.87112 212.58085 375.0396 223.54688 365.6582L233.74219 356.9375L239.36914 359.89453C246.13777 363.45243 252.99071 366.22091 258.37109 367.57031C261.04072 368.24001 262.41868 368.81502 262.57227 369.32422C262.69797 369.74082 263.23863 375.81602 263.77539 382.82422C264.85185 396.87932 265.15026 398.07803 267.94727 399.57812C269.37826 400.34552 270.77592 400.43164 281.83203 400.43164C292.88815 400.43164 294.2858 400.34562 295.7168 399.57812C298.51381 398.07813 298.81221 396.87932 299.88867 382.82422C300.42542 375.81602 300.96578 369.751 301.08789 369.3457C301.23507 368.857 302.90699 368.18019 306.05078 367.33789C311.91978 365.76539 317.11849 363.65014 323.87891 360.08594C326.74416 358.57534 329.36525 357.33984 329.70312 357.33984C330.04101 357.33984 334.36838 360.8024 339.32031 365.0332C344.27224 369.2638 349.0111 373.2573 349.85156 373.9082C352.02278 375.5888 354.76932 375.58298 357.20898 373.89258C360.31805 371.73818 373.96964 357.62151 374.75 355.75391C376.07812 352.57521 375.58997 351.71735 366.11328 340.59961C361.29867 334.95134 357.35938 330.04628 357.35938 329.69922C357.35938 329.35217 358.59485 326.72464 360.10547 323.85938C363.66968 317.09895 365.78488 311.90025 367.35742 306.03125C368.19976 302.88746 368.8766 301.2136 369.36523 301.06641C369.77059 300.9443 375.83548 300.40589 382.84375 299.86914C396.89881 298.79268 398.09761 298.49428 399.59766 295.69727C400.3651 294.26628 400.45117 292.86861 400.45117 281.8125C400.45117 270.75638 400.36511 269.35871 399.59766 267.92773C398.09245 265.12109 396.91881 264.83106 382.61328 263.73242C374.00527 263.07134 369.43312 262.53903 369.0293 262.15039C368.69455 261.82822 368.01615 259.98367 367.52148 258.05273C366.17059 252.77943 363.67502 246.56088 360.3457 240.17578C358.70363 237.02656 357.35938 234.17822 357.35938 233.8457C357.35938 233.51317 361.19356 228.76372 365.87891 223.29102C375.0543 212.57378 375.89132 211.18414 374.9375 208.25391C374.1919 205.96332 359.00615 190.49851 356.14062 189.11133C352.69841 187.44499 352.05532 187.79341 340.60938 197.5293C334.94838 202.34453 330.06446 206.28516 329.75586 206.28516C329.44726 206.28516 326.60862 204.93527 323.44727 203.28516C317.25857 200.0549 310.0369 197.18463 304.65234 195.81445C302.5931 195.29045 301.21006 194.68372 301.08203 194.25C300.96708 193.86067 300.433 187.80905 299.89453 180.80078C298.81466 166.74621 298.51454 165.54731 295.7168 164.04688C294.28581 163.27944 292.88815 163.19336 281.83203 163.19336ZM283.01172 230.00586C294.06405 230.23279 305.04385 233.9998 314.22266 241.34375C330.35089 254.24794 337.1023 275.01034 331.84961 295.55273C330.51119 300.78705 326.03202 309.55604 322.34766 314.15234C313.97649 324.59547 302.09068 331.30346 288.55078 333.22852C285.58646 333.64994 278.41448 333.79363 276.73633 333.46484C276.35405 333.38996 274.47776 333.07435 272.56641 332.76367C266.07989 331.70922 258.77774 328.75201 252.87305 324.78711C236.71443 313.93697 227.72241 294.03948 230.41602 275.09375C232.18593 262.64488 238.62336 250.60114 247.66602 242.81836C257.86666 234.03893 270.48575 229.74867 283.01172 230.00586ZM70.892578 265.64258L133.67969 328.42969L73.666016 348.71094L51.214844 326.26172L70.892578 265.64258Z" />
+    </svg>
+  );
+}
+
+function GymnasticsIcon({
+  size = 16,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      width={size}
+      height={size}
+      className={className}
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle cx="24" cy="12" r="6" fill="currentColor" />
+      <path
+        d="M8 20C16 30 28 35 40 34C49 33 56 27 60 22"
+        stroke="currentColor"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M31 28C36 33 45 36 56 35"
+        stroke="currentColor"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M31 34C33 42 33 51 31 59"
+        stroke="currentColor"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -221,8 +260,8 @@ const ICON_LOOKUP: Record<string, any> = {
   "Football Season": Trophy,
   "Sport Football Season": Trophy,
   "General Event": CalendarDays,
-  "Gymnastics Schedule": Dumbbell,
-  Gymnastics: Dumbbell,
+  "Gymnastics Schedule": GymnasticsIcon,
+  Gymnastics: GymnasticsIcon,
   Cheerleading: Sparkles,
   "Dance / Ballet": Footprints,
   Soccer: Trophy,
@@ -943,17 +982,44 @@ export default function LeftSidebar() {
       (section) => section.items
     );
   }, [visibleTemplateKeys]);
-  const createMenuOptionCount = useMemo(
-    () => createMenuItems.length,
+  const gymnasticsCreateItem = useMemo(
+    () =>
+      createMenuItems.find((item) => item.label === "Gymnastics") ??
+      null,
+    [createMenuItems]
+  );
+  const otherCreateMenuItems = useMemo(
+    () =>
+      createMenuItems.filter((item) => item.label !== "Gymnastics"),
     [createMenuItems]
   );
   const normalizedSidebarSearchQuery = sidebarSearchQuery.trim().toLowerCase();
+  const hasCreateSearchQuery = normalizedSidebarSearchQuery.length > 0;
   const filteredCreateMenuItems = useMemo(() => {
     if (!normalizedSidebarSearchQuery) return createMenuItems;
     return createMenuItems.filter((item) =>
       item.label.toLowerCase().includes(normalizedSidebarSearchQuery)
     );
   }, [createMenuItems, normalizedSidebarSearchQuery]);
+  const filteredOtherCreateMenuItems = useMemo(() => {
+    if (!normalizedSidebarSearchQuery) return otherCreateMenuItems;
+    return otherCreateMenuItems.filter((item) =>
+      item.label.toLowerCase().includes(normalizedSidebarSearchQuery)
+    );
+  }, [normalizedSidebarSearchQuery, otherCreateMenuItems]);
+  const createMenuOptionCount = useMemo(
+    () =>
+      hasCreateSearchQuery
+        ? filteredCreateMenuItems.length
+        : Number(Boolean(gymnasticsCreateItem)) +
+          Number(otherCreateMenuItems.length > 0),
+    [
+      filteredCreateMenuItems.length,
+      gymnasticsCreateItem,
+      hasCreateSearchQuery,
+      otherCreateMenuItems.length,
+    ]
+  );
 
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const isActiveEventRow = useCallback((row: HistoryRow) => {
@@ -2102,7 +2168,15 @@ export default function LeftSidebar() {
   const rootPanelTransform =
     sidebarPage === "root" ? "translateX(0%)" : "translateX(-2rem)";
   const createEventPanelTransform =
-    sidebarPage === "createEvent" ? "translateX(0%)" : "translateX(100%)";
+    sidebarPage === "createEvent"
+      ? "translateX(0%)"
+      : sidebarPage === "createEventOther"
+      ? "translateX(-2rem)"
+      : "translateX(100%)";
+  const createEventOtherPanelTransform =
+    sidebarPage === "createEventOther"
+      ? "translateX(0%)"
+      : "translateX(100%)";
   const myEventsPanelTransform =
     sidebarPage === "myEvents"
       ? "translateX(0%)"
@@ -2140,6 +2214,34 @@ export default function LeftSidebar() {
       />
     </div>
   );
+  const renderCreateMenuButton = (
+    item: { label: string; href: string },
+    idx: number
+  ) => {
+    const Icon = ICON_LOOKUP[item.label] || Sparkles;
+    const colorClass =
+      CREATE_SECTION_COLORS[idx % CREATE_SECTION_COLORS.length];
+
+    return (
+      <button
+        key={item.label}
+        type="button"
+        className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} group border border-slate-100 bg-white py-3 pl-3 pr-4 hover:bg-slate-50 hover:shadow-md`}
+        onClick={() => handleCreateModalSelect(item.label, item.href)}
+      >
+        <span
+          className={`flex h-11 w-11 items-center justify-center rounded-xl border ${colorClass} shadow-sm`}
+        >
+          <Icon size={17} />
+        </span>
+        <span className="flex-1 truncate">{item.label}</span>
+        <ChevronRight
+          size={16}
+          className="ml-auto text-slate-300 transition-all group-hover:text-indigo-500"
+        />
+      </button>
+    );
+  };
 
   if (isEmbeddedEditMode) return null;
 
@@ -2443,14 +2545,16 @@ export default function LeftSidebar() {
                           type="button"
                           onClick={() => setSidebarPage("createEvent")}
                           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-                            sidebarPage === "createEvent"
+                            sidebarPage === "createEvent" ||
+                            sidebarPage === "createEventOther"
                               ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
                               : "text-slate-500 hover:bg-slate-200/40"
                           } py-3 pl-3 pr-4`}
                         >
                           <span
                             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-                              sidebarPage === "createEvent"
+                              sidebarPage === "createEvent" ||
+                              sidebarPage === "createEventOther"
                                 ? "border-indigo-100 bg-indigo-50 text-indigo-600"
                                 : SIDEBAR_ICON_CHIP_ACCENT_CLASS
                             }`}
@@ -2563,39 +2667,96 @@ export default function LeftSidebar() {
                         {renderPanelSearch("Search create event options...")}
                       </div>
                       <div className="space-y-3">
-                        {filteredCreateMenuItems.length === 0 ? (
+                        {hasCreateSearchQuery ? (
+                          filteredCreateMenuItems.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+                              No event templates match your search.
+                            </div>
+                          ) : (
+                            filteredCreateMenuItems.map((item, idx) =>
+                              renderCreateMenuButton(item, idx)
+                            )
+                          )
+                        ) : (
+                          <>
+                            {gymnasticsCreateItem
+                              ? renderCreateMenuButton(gymnasticsCreateItem, 0)
+                              : null}
+                            {otherCreateMenuItems.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => setSidebarPage("createEventOther")}
+                                className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} group border border-slate-100 bg-white py-3 pl-3 pr-4 hover:bg-slate-50 hover:shadow-md`}
+                              >
+                                <span
+                                  className={`flex h-11 w-11 items-center justify-center rounded-xl border ${
+                                    CREATE_SECTION_COLORS[
+                                      gymnasticsCreateItem ? 1 : 0
+                                    ]
+                                  } shadow-sm`}
+                                >
+                                  <CalendarDays size={17} />
+                                </span>
+                                <span className="flex-1 truncate">
+                                  Other Events
+                                </span>
+                                <span className="ml-auto flex items-center gap-2">
+                                  <span className={SIDEBAR_BADGE_CLASS}>
+                                    {otherCreateMenuItems.length}
+                                  </span>
+                                  <ChevronRight
+                                    size={16}
+                                    className="text-slate-300 transition-all group-hover:text-indigo-500"
+                                  />
+                                </span>
+                              </button>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`${SIDEBAR_PANEL_CLASS} z-[12]`}
+                    style={panelStyle(
+                      createEventOtherPanelTransform,
+                      sidebarPage === "createEventOther"
+                    )}
+                    aria-hidden={sidebarPage !== "createEventOther"}
+                  >
+                    <div className="space-y-3 pt-2">
+                      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+                        <button
+                          type="button"
+                          onClick={() => setSidebarPage("createEvent")}
+                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_BACK_ROW_CLASS}`}
+                        >
+                          <span
+                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+                          >
+                            <ChevronLeft size={16} />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                              Return
+                            </span>
+                            <span className="block truncate text-xl font-extrabold text-slate-900">
+                              Other Events
+                            </span>
+                          </span>
+                        </button>
+                        {renderPanelSearch("Search other event options...")}
+                      </div>
+                      <div className="space-y-3">
+                        {filteredOtherCreateMenuItems.length === 0 ? (
                           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
                             No event templates match your search.
                           </div>
                         ) : (
-                          filteredCreateMenuItems.map((item, idx) => {
-                          const Icon = ICON_LOOKUP[item.label] || Sparkles;
-                          const colorClass =
-                            CREATE_SECTION_COLORS[
-                              idx % CREATE_SECTION_COLORS.length
-                            ];
-                          return (
-                            <button
-                              key={item.label}
-                              type="button"
-                              className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} group border border-slate-100 bg-white py-3 pl-3 pr-4 hover:bg-slate-50 hover:shadow-md`}
-                              onClick={() =>
-                                handleCreateModalSelect(item.label, item.href)
-                              }
-                            >
-                              <span
-                                className={`flex h-11 w-11 items-center justify-center rounded-xl border ${colorClass} shadow-sm`}
-                              >
-                                <Icon size={17} />
-                              </span>
-                              <span className="truncate flex-1">{item.label}</span>
-                              <ChevronRight
-                                size={16}
-                                className="ml-auto text-slate-300 transition-all group-hover:text-indigo-500"
-                              />
-                            </button>
-                          );
-                          })
+                          filteredOtherCreateMenuItems.map((item, idx) =>
+                            renderCreateMenuButton(item, idx)
+                          )
                         )}
                       </div>
                     </div>

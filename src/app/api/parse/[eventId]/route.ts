@@ -334,8 +334,9 @@ export async function POST(
     });
     await updateEventHistoryData(eventId, nextData);
     performance.persistMs = durationMs(persistStartedAt);
-    if (parsed.parseResult.title) {
-      await updateEventHistoryTitle(eventId, parsed.parseResult.title);
+    const persistedTitle = safeString(mapped?.title || parsed.parseResult.title);
+    if (persistedTitle) {
+      await updateEventHistoryTitle(eventId, persistedTitle);
     }
     if (row.user_id) {
       invalidateUserHistory(row.user_id);

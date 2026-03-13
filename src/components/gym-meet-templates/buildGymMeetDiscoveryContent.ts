@@ -9,13 +9,12 @@ import {
   GymMeetDiscoveryContent,
   GymMeetDiscoverySection,
   GymMeetLinkAction,
-  GymMeetScheduleAwardLegend,
-  GymMeetScheduleColorLegendEntry,
-  GymMeetScheduleColorRef,
   GymMeetScheduleInfo,
 } from "./types";
 import {
   collapseRepeatedDisplayText,
+  formatGymMeetDate,
+  sanitizeGymMeetDisplayDateLabel,
   stripLinkedDomainMentions,
 } from "./displayText";
 
@@ -28,20 +27,6 @@ const safeString = (value: unknown): string =>
 
 const countCurrencyAmounts = (value: string) =>
   (safeString(value).match(/\$\s*\d+(?:\.\d{2})?/g) || []).length;
-
-const formatDate = (value: string) => {
-  if (!value) return "";
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(new Date(value));
-  } catch {
-    return value;
-  }
-};
 
 const uniqueTextLines = (items: string[], limit = 20) => {
   const seen = new Set<string>();
@@ -75,17 +60,6 @@ const normalizeScheduleInfo = (
   fallback: Partial<GymMeetScheduleInfo> = {}
 ): GymMeetScheduleInfo => {
   const schedule = (value && typeof value === "object" ? value : {}) as Record<string, any>;
-  const normalizeColorRef = (item: any): GymMeetScheduleColorRef | null => {
-    if (!item || typeof item !== "object") return null;
-    const legendId = safeString(item?.legendId) || undefined;
-    const textColorHex = safeString(item?.textColorHex) || undefined;
-    const confidence =
-      typeof item?.confidence === "number" && Number.isFinite(item.confidence)
-        ? item.confidence
-        : null;
-    if (!legendId && !textColorHex && confidence == null) return null;
-    return { legendId, textColorHex, confidence };
-  };
   const days = (Array.isArray(schedule.days) ? schedule.days : [])
     .map((day: any, dayIndex: number) => {
       const sessions = (Array.isArray(day?.sessions) ? day.sessions : [])
@@ -101,7 +75,6 @@ const normalizeScheduleInfo = (
           startTime: safeString(session?.startTime),
           warmupTime: safeString(session?.warmupTime),
           note: safeString(session?.note),
-          color: normalizeColorRef(session?.color),
           clubs: uniqueBy(
             (Array.isArray(session?.clubs) ? session.clubs : [])
               .map((club: any, clubIndex: number) => ({
@@ -118,7 +91,6 @@ const normalizeScheduleInfo = (
                     ? club.athleteCount
                     : null,
                 divisionLabel: safeString(club?.divisionLabel),
-                color: normalizeColorRef(club?.color),
               }))
               .filter((club) => club.name),
             (club) => [club.name, club.divisionLabel, `${club.athleteCount ?? ""}`].join("|")
@@ -148,54 +120,6 @@ const normalizeScheduleInfo = (
         .map((item) => safeString(item))
         .filter(Boolean),
       (item) => item
-    ),
-    colorLegend: uniqueBy(
-      [
-        ...(Array.isArray(schedule.colorLegend) ? schedule.colorLegend : []),
-        ...(Array.isArray(fallback.colorLegend) ? fallback.colorLegend : []),
-      ]
-        .map(
-          (item: any): GymMeetScheduleColorLegendEntry => ({
-            id: safeString(item?.id) || undefined,
-            target:
-              safeString(item?.target) === "session" || safeString(item?.target) === "club"
-                ? (safeString(item?.target) as "session" | "club")
-                : undefined,
-            colorHex: safeString(item?.colorHex) || null,
-            colorLabel: safeString(item?.colorLabel) || undefined,
-            meaning: safeString(item?.meaning),
-            sourceText: safeString(item?.sourceText) || undefined,
-            teamAwardEligible:
-              typeof item?.teamAwardEligible === "boolean" ? item.teamAwardEligible : null,
-          })
-        )
-        .filter(
-          (item) =>
-            item.meaning ||
-            item.colorHex ||
-            item.colorLabel ||
-            typeof item.teamAwardEligible === "boolean"
-        ),
-      (item) =>
-        `${item.id || ""}|${item.target || ""}|${item.colorHex || ""}|${item.colorLabel || ""}|${item.meaning}|${item.sourceText || ""}|${item.teamAwardEligible ?? ""}`
-    ),
-    awardLegend: uniqueBy(
-      [
-        ...(Array.isArray(schedule.awardLegend) ? schedule.awardLegend : []),
-        ...(Array.isArray(fallback.awardLegend) ? fallback.awardLegend : []),
-      ]
-        .map(
-          (item: any): GymMeetScheduleAwardLegend => ({
-            colorHex: safeString(item?.colorHex) || null,
-            colorLabel: safeString(item?.colorLabel) || undefined,
-            meaning: safeString(item?.meaning),
-            teamAwardEligible:
-              typeof item?.teamAwardEligible === "boolean" ? item.teamAwardEligible : null,
-          })
-        )
-        .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
-      (item) =>
-        `${item.meaning}|${item.colorHex || ""}|${item.colorLabel || ""}|${item.teamAwardEligible ?? ""}`
     ),
     annotations: uniqueBy(
       [
@@ -294,22 +218,7 @@ const toStructuredListItems = (text: string, stripPrefixPattern?: RegExp): strin
   );
 };
 
-const ROTATION_SHEETS_URL = "https://usacompetitions.com/rotation-sheets/";
-const ROTATION_SHEETS_PATTERN =
-  /(rotation sheets?|rotationsheets\.com|master rotation sheet)/i;
-
-const normalizeRotationSheetsLink = (item: any) => {
-  if (!item || typeof item !== "object") return item;
-  const label = safeString(item?.label || item?.title);
-  const url = safeString(item?.url);
-  if (!ROTATION_SHEETS_PATTERN.test(`${label} ${url}`)) return item;
-  return {
-    ...item,
-    label: label || "Rotation Sheets",
-    title: safeString(item?.title) || label || "Rotation Sheets",
-    url: ROTATION_SHEETS_URL,
-  };
-};
+const normalizeRotationSheetsLink = (item: any) => item;
 
 const toAction = (item: any): GymMeetLinkAction | undefined => {
   const normalizedItem = normalizeRotationSheetsLink(item);
@@ -339,6 +248,28 @@ const uniqueLinks = (items: any[], limit = 8) => {
   }
   return out;
 };
+
+const normalizeDiscoveryResourceLinks = (items: any[]) =>
+  uniqueBy(
+    (Array.isArray(items) ? items : [])
+      .map((item: any) => ({
+        kind: safeString(item?.kind || "other"),
+        status: safeString(item?.status || "unknown"),
+        label: safeString(item?.label || item?.title || "Resource link"),
+        url: safeString(item?.url),
+        sourceUrl: safeString(item?.sourceUrl),
+        origin: safeString(item?.origin || "root"),
+        contentType: safeString(item?.contentType),
+        followed: Boolean(item?.followed),
+        matchScore:
+          typeof item?.matchScore === "number" && Number.isFinite(item.matchScore)
+            ? item.matchScore
+            : null,
+        matchReason: safeString(item?.matchReason),
+      }))
+      .filter((item) => /^https?:\/\//i.test(item.url)),
+    (item) => `${item.kind}|${item.url}`
+  );
 
 const ensureUniqueDiscoveryCardKeys = <T extends { key?: string }>(
   items: T[],
@@ -818,8 +749,23 @@ export function buildGymMeetDiscoveryContent({
   const discoveredLinks = Array.isArray(eventData?.discoverySource?.extractionMeta?.discoveredLinks)
     ? eventData.discoverySource.extractionMeta.discoveredLinks
     : [];
+  const resourceLinks = normalizeDiscoveryResourceLinks(
+    eventData?.discoverySource?.extractionMeta?.resourceLinks
+  );
+  const hasStructuredResources = resourceLinks.length > 0;
+  const pickStructuredResourceLinks = (...kinds: string[]) =>
+    resourceLinks.filter((item) => kinds.includes(item.kind));
+  const toResourceActions = (...kinds: string[]) =>
+    uniqueLinks(
+      pickStructuredResourceLinks(...kinds).map((item) => ({
+        label: item.label,
+        url: item.url,
+      })),
+      8
+    );
   const quickLinks = uniqueLinks(
     [
+      ...resourceLinks.map((item) => ({ label: item.label, url: item.url })),
       ...(Array.isArray(eventData?.links) ? eventData.links : []),
       ...parseLinks,
       ...discoveredLinks,
@@ -907,6 +853,8 @@ export function buildGymMeetDiscoveryContent({
     /(rotation|result|score|schedule|meet\s*info|program|packet|official)/i,
     /(arcgis|parking|traffic|parkmobile|garage|rate|wayfinding)/i
   );
+  const structuredRotationHub = pickStructuredResourceLinks("rotation_hub")[0];
+  const structuredRotationSheet = pickStructuredResourceLinks("rotation_sheet")[0];
   const mapDashboardLink = pickLink(
     /(map|dashboard|parking|traffic|arcgis|parkmobile|garage|arrival|route)/i
   );
@@ -926,9 +874,9 @@ export function buildGymMeetDiscoveryContent({
     .filter(Boolean);
 
   const eventDatesLabel =
-    customFields?.meetDateRangeLabel ||
-    eventData?.discoverySource?.parseResult?.dates ||
-    (date ? formatDate(date) : "");
+    sanitizeGymMeetDisplayDateLabel(customFields?.meetDateRangeLabel) ||
+    sanitizeGymMeetDisplayDateLabel(eventData?.discoverySource?.parseResult?.dates) ||
+    (date ? formatGymMeetDate(date, { withWeekday: true }) : "");
   const venueLabel = collapseRepeatedDisplayText(venue || eventData?.venue);
   const addressLabel = collapseRepeatedDisplayText(address || eventData?.address);
   const normalizedDetailsText = safeString(detailsText);
@@ -1148,11 +1096,31 @@ export function buildGymMeetDiscoveryContent({
     }
     return admissionNoteCandidates[0] || "";
   })();
+  const structuredAdmissionLinks = toResourceActions("admission");
+  const structuredResultsLinks = toResourceActions("results_live", "results_hub", "results_pdf");
+  const structuredDocumentLinks = toResourceActions(
+    "packet",
+    "roster",
+    "team_divisions",
+    "rotation_sheet",
+    "photo_video"
+  );
+  const structuredHotelLinks = toResourceActions("hotel_booking");
 
   const resultsLinks = uniqueTextLines(
-    normalizedLinks
-      .filter((item) => /(result|score|meetscoresonline|lightningcity|usacompetitions)/i.test(`${item.label} ${item.url}`))
-      .map((item) => item.url),
+    (
+      structuredResultsLinks.length > 0
+        ? pickStructuredResourceLinks("results_live", "results_hub", "results_pdf").map(
+            (item) => item.url
+          )
+        : normalizedLinks
+            .filter((item) =>
+              /(result|score|meetscoresonline|lightningcity|usacompetitions)/i.test(
+                `${item.label} ${item.url}`
+              )
+            )
+            .map((item) => item.url)
+    ),
     3
   );
   const announcementBody = safeString(firstAnnouncement?.body);
@@ -1798,6 +1766,11 @@ export function buildGymMeetDiscoveryContent({
       ...((parseCoachInfo?.lateFees as any[]) || []),
     ]
   );
+  const structuredCoachLinkUrls = new Set(
+    toResourceActions("rotation_sheet", "rotation_hub", "results_live", "results_hub", "results_pdf").map(
+      (item) => item.url
+    )
+  );
   const coachLinks = normalizeCoachLinks([
     ...((coachesSection?.links as any[]) || []),
     ...((parseCoachInfo?.links as any[]) || []),
@@ -1806,7 +1779,12 @@ export function buildGymMeetDiscoveryContent({
       /(parking|traffic|parkmobile|garage|rate|wayfinding)/i,
       8
     ),
-  ]);
+  ]).filter(
+    (item) =>
+      !hasStructuredResources ||
+      !/(rotation|score|result)/i.test(`${item.label} ${item.url}`) ||
+      structuredCoachLinkUrls.has(item.url)
+  );
   const coachesHasContent =
     Boolean(coachesSection?.enabled) ||
     coachContacts.length > 0 ||
@@ -1874,24 +1852,31 @@ export function buildGymMeetDiscoveryContent({
     8
   );
   const admissionLinks = uniqueLinks(
-    [
-      ...pickLinks(
-        /(admission|ticket|purchase|buy|spectator|sales?)/i,
-        /(parking|traffic|hotel|result|score|rotation|packet|faq)/i,
-        8
-      ),
-      toAction(merchandiseLink),
-    ].filter(Boolean),
+    structuredAdmissionLinks.length > 0
+      ? [
+          ...structuredAdmissionLinks,
+          toAction(merchandiseLink),
+        ].filter(Boolean)
+      : [
+          ...pickLinks(
+            /(admission|ticket|purchase|buy|spectator|sales?)/i,
+            /(parking|traffic|hotel|result|score|rotation|packet|faq)/i,
+            8
+          ),
+          toAction(merchandiseLink),
+        ].filter(Boolean),
     8
   );
   const resultsLinkItems = uniqueLinks(
-    [
-      ...normalizedLinks.filter((item) =>
-        /(result|score|live scoring|meetscoresonline|lightningcity|usacompetitions)/i.test(
-          `${item.label} ${item.url}`
-        )
-      ),
-    ],
+    structuredResultsLinks.length > 0
+      ? structuredResultsLinks
+      : [
+          ...normalizedLinks.filter((item) =>
+            /(result|score|live scoring|meetscoresonline|lightningcity|usacompetitions)/i.test(
+              `${item.label} ${item.url}`
+            )
+          ),
+        ],
     8
   );
   const resultsLinkTargets =
@@ -2020,14 +2005,23 @@ export function buildGymMeetDiscoveryContent({
     4
   );
   const documentLinks = uniqueLinks(
-    [
-      ...normalizedLinks.filter((item) =>
-        /(packet|schedule|info packet|faq|document|program|rotation|roster|waiver)/i.test(
-          `${item.label} ${item.url}`
-        )
-      ),
-      toAction(rotationLink),
-    ].filter(Boolean),
+    structuredDocumentLinks.length > 0 || Boolean(structuredRotationHub)
+      ? [
+          ...structuredDocumentLinks,
+          ...(structuredRotationSheet
+            ? []
+            : structuredRotationHub
+            ? [{ label: structuredRotationHub.label || "Rotation Sheets", url: structuredRotationHub.url }]
+            : [toAction(rotationLink)]),
+        ].filter(Boolean)
+      : [
+          ...normalizedLinks.filter((item) =>
+            /(packet|schedule|info packet|faq|document|program|rotation|roster|waiver)/i.test(
+              `${item.label} ${item.url}`
+            )
+          ),
+          toAction(rotationLink),
+        ].filter(Boolean),
     8
   ).filter(
     (item) =>
@@ -2036,9 +2030,11 @@ export function buildGymMeetDiscoveryContent({
       )
   );
   const hotelLinks = uniqueLinks(
-    normalizedLinks.filter((item) =>
-      /(hotel|travel|visitor|stay|lodging|book)/i.test(`${item.label} ${item.url}`)
-    ),
+    structuredHotelLinks.length > 0
+      ? structuredHotelLinks
+      : normalizedLinks.filter((item) =>
+          /(hotel|travel|visitor|stay|lodging|book)/i.test(`${item.label} ${item.url}`)
+        ),
     8
   );
   const venueLinks = uniqueLinks(
@@ -2051,6 +2047,7 @@ export function buildGymMeetDiscoveryContent({
   );
   const parkingLinks = uniqueLinks(
     [
+      ...toResourceActions("parking"),
       ...normalizedParkingLinks,
       ...normalizedParkingPricingLinks,
       toAction(mapDashboardLink),
@@ -2082,6 +2079,19 @@ export function buildGymMeetDiscoveryContent({
             safeString(meetSection?.rotationSheetsInfo || parseMeetDetails?.rotationSheetsInfo),
             normalizedLinks
           ),
+        }
+      : null,
+    structuredRotationHub?.status === "not_posted" && !structuredRotationSheet
+      ? {
+          key: "rotation-sheets-status",
+          label: "Rotation Sheets",
+          body: "Not yet posted.",
+          action: structuredRotationHub?.url
+            ? {
+                label: structuredRotationHub.label || "Rotation Sheets Hub",
+                url: structuredRotationHub.url,
+              }
+            : undefined,
         }
       : null,
     safeString(meetSection?.awardsInfo || parseMeetDetails?.awardsInfo)
@@ -2124,7 +2134,7 @@ export function buildGymMeetDiscoveryContent({
     ...coachDeadlines.map((item, index) => ({
       key: `deadline-${index}`,
       label: item.label || "Deadline",
-      value: item.date,
+      value: formatGymMeetDate(item.date) || item.date,
       body: item.note,
     })),
   ];
@@ -2680,8 +2690,18 @@ export function buildGymMeetDiscoveryContent({
       label: "Hotels",
       kind: "hotels",
       priority: 80,
-      hasContent: hotelLinks.length > 0,
+      hasContent: hotelLinks.length > 0 || hotelCards.length > 0,
       blocks: [
+        ...(hotelCards.length > 0
+          ? [
+              {
+                id: "hotel-cards",
+                type: "card-grid" as const,
+                columns: 1 as const,
+                cards: hotelCards,
+              },
+            ]
+          : []),
         ...(hotelLinks.length > 0
           ? [
               {

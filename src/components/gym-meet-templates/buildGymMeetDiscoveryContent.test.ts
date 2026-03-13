@@ -203,7 +203,7 @@ test("schedule section renders when only session codes are present", () => {
   assert.ok(findSection(discovery, "schedule"));
 });
 
-test("rotation-sheet links are rewritten to the fixed URL without touching unrelated links", () => {
+test("resource links drive documents, hotels, and results without rewriting event-specific rotation links", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
       discoverySource: {
@@ -230,7 +230,40 @@ test("rotation-sheet links are rewritten to the fixed URL without touching unrel
             { label: "Parking Map", url: "https://example.com/parking-map" },
           ],
         },
-        extractionMeta: {},
+        extractionMeta: {
+          resourceLinks: [
+            {
+              kind: "rotation_sheet",
+              status: "available",
+              label: "Event Rotation Sheet",
+              url: "https://usacompetitions.com/docs/event-rotation-sheet.pdf",
+            },
+            {
+              kind: "results_live",
+              status: "available",
+              label: "Live Scoring",
+              url: "https://results.scorecatonline.com/state-2026",
+            },
+            {
+              kind: "packet",
+              status: "available",
+              label: "State Packet",
+              url: "https://usacompetitions.com/docs/state-packet.pdf",
+            },
+            {
+              kind: "hotel_booking",
+              status: "available",
+              label: "Host Hotel Booking",
+              url: "https://api.groupbook.io/booking/state-host-hotel",
+            },
+            {
+              kind: "photo_video",
+              status: "available",
+              label: "Photo / Video Order Form",
+              url: "https://form.jotform.com/state-photo-video",
+            },
+          ],
+        },
         extractedText: "",
       },
     },
@@ -238,11 +271,13 @@ test("rotation-sheet links are rewritten to the fixed URL without touching unrel
     advancedSections: {
       meet: {
         rotationSheetsInfo: "Rotation sheets will be posted online before the event.",
+        scoresLink: "https://results.scorecatonline.com/state-2026",
       },
       coaches: {
         enabled: true,
       },
       logistics: {
+        hotelInfo: "Book nearby rooms early.",
         parkingLinks: [{ label: "Parking Map", url: "https://example.com/parking-map" }],
       },
     },
@@ -256,18 +291,63 @@ test("rotation-sheet links are rewritten to the fixed URL without touching unrel
   const trafficParking = findSection(discovery, "traffic-parking");
   const allContent = JSON.stringify(discovery.sections);
 
-  assert.ok(documents);
+  assert.ok(findSection(discovery, "meet-details"));
   assert.ok(coaches);
-  assert.ok(admission);
   assert.ok(trafficParking);
-  assert.match(allContent, /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
-  assert.match(JSON.stringify(documents), /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
-  assert.match(JSON.stringify(coaches), /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
-  assert.match(JSON.stringify(admission), /https:\/\/tickets\.example\.com\/admission/i);
+  assert.match(allContent, /https:\/\/usacompetitions\.com\/docs\/event-rotation-sheet\.pdf/i);
+  assert.match(allContent, /https:\/\/usacompetitions\.com\/docs\/state-packet\.pdf/i);
+  assert.match(allContent, /https:\/\/api\.groupbook\.io\/booking\/state-host-hotel/i);
+  assert.match(allContent, /https:\/\/tickets\.example\.com\/admission/i);
   assert.match(JSON.stringify(trafficParking), /https:\/\/example\.com\/parking-map/i);
-  assert.match(allContent, /https:\/\/example\.com\/results/i);
-  assert.doesNotMatch(allContent, /https:\/\/legacy\.example\.com\/rotation-sheets/i);
-  assert.doesNotMatch(allContent, /https:\/\/old\.example\.com\/master-rotation-sheet/i);
+  assert.match(allContent, /https:\/\/results\.scorecatonline\.com\/state-2026/i);
+  assert.doesNotMatch(allContent, /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
+});
+
+test("rotation hub with not_posted shows neutral status instead of a wrong PDF", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          meetDetails: {
+            rotationSheetsInfo: "Rotation sheets will be posted online before the event.",
+          },
+          links: [
+            {
+              label: "Wrong Rotation PDF",
+              url: "https://legacy.example.com/wrong-rotation.pdf",
+            },
+          ],
+        },
+        extractionMeta: {
+          resourceLinks: [
+            {
+              kind: "rotation_hub",
+              status: "not_posted",
+              label: "Rotation Sheets",
+              url: "https://usacompetitions.com/rotation-sheets/",
+            },
+          ],
+        },
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {
+        rotationSheetsInfo: "Rotation sheets will be posted online before the event.",
+      },
+      logistics: {},
+      coaches: {},
+    },
+    venue: "State Arena",
+    address: "123 Main St, Chicago, IL 60601",
+  });
+
+  const allContent = JSON.stringify(discovery.sections);
+
+  assert.match(allContent, /Not yet posted/i);
+  assert.match(allContent, /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
+  assert.doesNotMatch(allContent, /https:\/\/legacy\.example\.com\/wrong-rotation\.pdf/i);
 });
 
 test("lightweight results merge into meet details without leaking into admission", () => {
@@ -513,6 +593,50 @@ test("rich results merge into meet details communication cards", () => {
   assert.ok(meetDetails);
   assert.match(JSON.stringify(meetDetails), /Results 1|Results 2|Results 3/);
   assert.match(JSON.stringify(meetDetails), /results\/1|results\/2|results\/3/);
+});
+
+test("coach deadline cards render month day year instead of raw ISO dates", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          coachInfo: {
+            deadlines: [
+              { label: "Entry deadline", date: "2026-03-01" },
+              { label: "Scratch deadline", date: "2026-03-05" },
+            ],
+          },
+        },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {},
+      logistics: {},
+      coaches: {
+        enabled: true,
+        deadlines: [
+          { label: "Entry deadline", date: "2026-03-01" },
+          { label: "Scratch deadline", date: "2026-03-05" },
+        ],
+      },
+    },
+    venue: "Coral Springs Gymnasium",
+    address: "2501 Coral Springs Drive, Coral Springs, FL 33065",
+  });
+
+  const coaches = findSection(discovery, "coaches");
+  const registrationBlock = (coaches?.blocks || []).find(
+    (block: any) => block.id === "registration-cards"
+  );
+  const values = (registrationBlock?.cards || []).map((card: any) => card.value);
+
+  assert.ok(values.includes("Mar 1, 2026"));
+  assert.ok(values.includes("Mar 5, 2026"));
+  assert.ok(!values.includes("2026-03-01"));
+  assert.ok(!values.includes("2026-03-05"));
 });
 
 test("spectator presale announcements route into admission and linked domains stay out of copy", () => {
@@ -841,19 +965,17 @@ test("venue details stay venue-only and absorb the venue map blocks", () => {
   const gearBlock = findBlock(meetDetails, "gear");
   const venueImageBlock = findBlock(venueDetails, "gym-layout-image");
   const venueMapBlock = findBlock(venueDetails, "venue-map-address");
-  const trafficPrimaryBlock = findBlock(trafficParking, "traffic-primary-cards");
   const allContent = JSON.stringify(discovery.sections);
 
   assert.ok(meetDetails);
   assert.ok(admission);
   assert.ok(venueDetails);
-  assert.ok(trafficParking);
+  assert.equal(trafficParking, undefined);
   assert.equal(venueMap, undefined);
   assert.equal(meetOverviewBlock?.title, undefined);
   assert.equal(gearBlock, undefined);
   assert.ok(venueImageBlock);
   assert.equal(venueMapBlock, undefined);
-  assert.ok(trafficPrimaryBlock);
   assert.match(JSON.stringify(admission), /Admission tickets purchased in advance/i);
   assert.match(JSON.stringify(admission), /credit\/debit card only; cash is not accepted/i);
   assert.match(JSON.stringify(meetDetails), /Athlete card for recording scores after competition/i);
@@ -863,8 +985,6 @@ test("venue details stay venue-only and absorb the venue map blocks", () => {
   assert.doesNotMatch(JSON.stringify(venueDetails), /Athletes check in at registration/i);
   assert.doesNotMatch(JSON.stringify(venueDetails), /temperature inside the venue is chilly/i);
   assert.doesNotMatch(JSON.stringify(venueDetails), /Twisters Canada|Top Gymnastics FL|ZGA/i);
-  assert.match(JSON.stringify(trafficPrimaryBlock), /Parking/i);
-  assert.match(JSON.stringify(trafficPrimaryBlock), /Stay \/ Travel Note/i);
   assert.doesNotMatch(allContent, /360 Gymnastics FL|Alpha Gymnastics|Christi's Gymnastics/i);
   assert.doesNotMatch(allContent, /Twisters Canada|Top Gymnastics FL|ZGA/i);
   assert.doesNotMatch(allContent, /Visit Lauderdale is a sponsor/i);

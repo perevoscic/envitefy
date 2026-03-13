@@ -53,33 +53,33 @@ test("schedule board groups clubs by divisionLabel when schedule sessions contai
   assert.match(source, /const groupSessionClubsByDivision =/);
   assert.match(source, /const hasDivisionGrouping = clubs\.some\(\(club\) => safeString\(club\.divisionLabel\)\)/);
   assert.match(source, /safeString\(club\.divisionLabel\) \|\| "Other"/);
+  assert.match(source, /const orderedGroups = \[\.\.\.groups\.values\(\)\];/);
+  assert.match(source, /orderedGroups\.filter\(\(group\) => !group\.isOther\)/);
+  assert.match(source, /orderedGroups\.filter\(\(group\) => group\.isOther\)/);
+  assert.doesNotMatch(source, /localeCompare/);
   assert.match(source, /if \(!grouped\.hasDivisionGrouping\)/);
   assert.match(source, /grouped\.groups\.map\(\(group\) =>/);
 });
 
-test("schedule board keeps flat rendering for unlabeled clubs and preserves counts and award markers inside grouped sections", () => {
+test("schedule board keeps flat rendering for unlabeled clubs and preserves counts inside grouped sections", () => {
   const source = readSource("src/components/gym-meet-templates/ScheduleBoard.tsx");
 
   assert.match(source, /formatClubName\(club, \{ includeDivisionLabel \}\)/);
   assert.match(source, /formatClubName\(club, \{ includeDivisionLabel: false \}\)/);
-  assert.match(source, /club\.teamAwardEligible === true \? <Trophy size=\{11\} \/> : null/);
-  assert.match(source, /resolveScheduleTextColor\(club\.color\)/);
+  assert.doesNotMatch(source, /Trophy/);
+  assert.doesNotMatch(source, /club\.color/);
   assert.doesNotMatch(source, /border-\[#f472b6\]\/40 bg-\[#f472b6\]\/10 text-\[#f472b6\]/);
 });
 
-test("schedule board resolves dynamic color legends instead of relying on award-only pink styling", () => {
+test("schedule board does not render schedule legends or color helpers", () => {
   const source = readSource("src/components/gym-meet-templates/ScheduleBoard.tsx");
-  const colorSource = readSource("src/components/gym-meet-templates/scheduleColors.ts");
 
-  assert.match(source, /resolveScheduleLegendEntries\(normalizedSchedule, hasTeamAwardTrue, hasTeamAwardFalse\)/);
-  assert.match(source, /buildScheduleLegendEntryKey\(entry, entryIndex\)/);
-  assert.match(source, /\(\["session", "club"\] as const\)\.map/);
-  assert.match(source, /Session Colors/);
-  assert.match(source, /Club Colors/);
-  assert.match(source, /entry\.colorHex \?/);
-  assert.match(colorSource, /export const buildScheduleLegendEntryKey =/);
-  assert.match(colorSource, /const dedupeScheduleLegendEntries =/);
-  assert.match(colorSource, /return dedupeScheduleLegendEntries\(/);
+  assert.doesNotMatch(source, /resolveScheduleLegendEntries/);
+  assert.doesNotMatch(source, /buildScheduleLegendEntryKey/);
+  assert.doesNotMatch(source, /Session Colors/);
+  assert.doesNotMatch(source, /Club Colors/);
+  assert.doesNotMatch(source, /colorHex/);
+  assert.doesNotMatch(source, /scheduleColors/);
 });
 
 test("schedule board formats nav day labels without the year and does not render blank date text", () => {
