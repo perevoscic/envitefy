@@ -1,7 +1,9 @@
 export const HISTORY_VIEWS = ["summary", "sidebar", "calendar", "full"] as const;
+export const HISTORY_TIME_FILTERS = ["all", "upcoming", "past"] as const;
 
 export type HistoryView = (typeof HISTORY_VIEWS)[number];
 export type CacheableHistoryView = Exclude<HistoryView, "full">;
+export type HistoryTimeFilter = (typeof HISTORY_TIME_FILTERS)[number];
 
 export function normalizeHistoryView(value: string | null | undefined): HistoryView {
   const normalized = String(value || "summary").trim().toLowerCase();
@@ -18,6 +20,20 @@ export function normalizeHistoryView(value: string | null | undefined): HistoryV
 
 export function isCacheableHistoryView(view: HistoryView): view is CacheableHistoryView {
   return view !== "full";
+}
+
+export function normalizeHistoryTimeFilter(
+  value: string | null | undefined
+): HistoryTimeFilter {
+  const normalized = String(value || "all").trim().toLowerCase();
+  if (
+    normalized === "all" ||
+    normalized === "upcoming" ||
+    normalized === "past"
+  ) {
+    return normalized;
+  }
+  return "all";
 }
 
 function omitDataUrlBranch(value: unknown): unknown {

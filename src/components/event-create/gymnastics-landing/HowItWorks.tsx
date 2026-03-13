@@ -1,4 +1,5 @@
 import { ArrowRight, CalendarRange, Sparkles, Upload } from "lucide-react";
+import styles from "./gymnastics-landing.module.css";
 
 const steps = [
   {
@@ -24,7 +25,7 @@ const steps = [
 export default function HowItWorks() {
   return (
     <section className="px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
-      <div className="mx-auto max-w-7xl">
+      <div className={styles.container}>
         <div className="max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-[0.26em] text-[#4f46e5]">
             How it works
@@ -34,11 +35,11 @@ export default function HowItWorks() {
           </h2>
         </div>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-3">
+        <div className="mt-12 grid gap-6 xl:grid-cols-3">
           {steps.map(({ icon: Icon, eyebrow, title, copy }, index) => (
             <article
               key={title}
-              className="relative rounded-[2rem] border border-[#dde2f4] bg-white p-7 shadow-[0_18px_45px_rgba(30,27,75,0.06)]"
+              className="relative rounded-[2rem] border border-[#dde2f4] bg-white px-7 pb-7 pt-8 shadow-[0_18px_45px_rgba(30,27,75,0.06)]"
             >
               <div className="flex items-center justify-between">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#efeeff] text-[#4f46e5]">
@@ -54,7 +55,7 @@ export default function HowItWorks() {
               <p className="mt-4 text-base leading-7 text-[#55627f]">{copy}</p>
 
               {index < steps.length - 1 ? (
-                <div className="pointer-events-none absolute -right-4 top-12 hidden h-10 w-10 items-center justify-center rounded-full border border-[#dde2f4] bg-white text-[#8d95b3] shadow-sm lg:flex">
+                <div className="pointer-events-none absolute right-[-1.25rem] top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#dde2f4] bg-white text-[#8d95b3] shadow-sm xl:flex">
                   <ArrowRight className="h-4 w-4" />
                 </div>
               ) : null}

@@ -1,0 +1,122 @@
+.shell {
+  position: relative;
+  overflow: clip;
+  background:
+    radial-gradient(circle at top left, rgba(212, 175, 55, 0.14), transparent 24%),
+    radial-gradient(circle at 92% 8%, rgba(49, 46, 129, 0.14), transparent 22%),
+    linear-gradient(180deg, #f8f8fd 0%, #f5f7fc 44%, #ffffff 100%);
+  color: #1f2447;
+  font-family: var(--font-gym-body), "Inter", system-ui, sans-serif;
+}
+
+.shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(118deg, transparent 0%, transparent 46%, rgba(31, 36, 71, 0.03) 46.3%, transparent 47%),
+    linear-gradient(161deg, transparent 0%, transparent 65%, rgba(212, 175, 55, 0.06) 65.2%, transparent 66%);
+}
+
+.shell :global(h1),
+.shell :global(h2),
+.shell :global(h3),
+.shell :global(h4),
+.shell :global(h5),
+.shell :global(h6) {
+  font-family: var(--font-gym-display), "Outfit", "Inter", system-ui, sans-serif;
+  color: #171b46;
+  letter-spacing: -0.045em;
+}
+
+.shell :global(p),
+.shell :global(span),
+.shell :global(button),
+.shell :global(a),
+.shell :global(li),
+.shell :global(label),
+.shell :global(input) {
+  font-family: var(--font-gym-body), "Inter", system-ui, sans-serif;
+}
+
+.container {
+  position: relative;
+  width: min(100% - 2rem, 1480px);
+  margin: 0 auto;
+}
+
+.heroArc {
+  position: absolute;
+  right: -6rem;
+  top: 2rem;
+  width: 30rem;
+  height: 30rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(31, 36, 71, 0.08);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.heroArc::before,
+.heroArc::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+}
+
+.heroArc::before {
+  inset: 3rem;
+}
+
+.heroArc::after {
+  inset: 6rem;
+}
+
+.beamLine {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.55), transparent);
+  pointer-events: none;
+}
+
+.beamLineLeft {
+  left: 4%;
+  top: 5.75rem;
+  width: 18rem;
+  transform: rotate(8deg);
+}
+
+.beamLineRight {
+  right: 3%;
+  top: 16rem;
+  width: 26rem;
+  transform: rotate(-18deg);
+}
+
+.sectionDivider {
+  position: relative;
+}
+
+.sectionDivider::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -1rem;
+  width: min(92%, 1320px);
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, rgba(23, 27, 70, 0.12), transparent);
+}
+
+@media (max-width: 1023px) {
+  .container {
+    width: min(100% - 1.5rem, 1480px);
+  }
+
+  .heroArc,
+  .beamLine {
+    display: none;
+  }
+}

@@ -15,7 +15,7 @@ type DashboardEventProjectionRow = {
   location_text: string | null;
   location_lat: number | string | null;
   location_lng: number | string | null;
-  cover_image_url: string | null;
+  has_cover_image: boolean | null;
   status: string | null;
   category: string | null;
   updated_at_raw: string | null;
@@ -55,6 +55,29 @@ function buildMapsUrl(locationText: string | null): string | null {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationText)}`;
 }
 
+const DASHBOARD_START_AT_RAW_SQL = `nullif(
+  trim(
+    coalesce(
+      data->>'startAt',
+      data->>'startISO',
+      data->>'start',
+      data->'fieldsGuess'->>'start',
+      data->'event'->>'start',
+      ''
+    )
+  ),
+  ''
+)`;
+
+const DASHBOARD_START_AT_TS_SQL = `case
+  when ${DASHBOARD_START_AT_RAW_SQL} is null then null
+  when pg_input_is_valid(${DASHBOARD_START_AT_RAW_SQL}, 'timestamp with time zone')
+    then (${DASHBOARD_START_AT_RAW_SQL})::timestamptz
+  when pg_input_is_valid(${DASHBOARD_START_AT_RAW_SQL}, 'timestamp without time zone')
+    then (${DASHBOARD_START_AT_RAW_SQL})::timestamp at time zone 'UTC'
+  else null
+end`;
+
 function toDashboardEvent(row: DashboardEventProjectionRow): DashboardEvent | null {
   const startAt = parseIso(row.start_at_raw);
   if (!startAt) return null;
@@ -73,7 +96,7 @@ function toDashboardEvent(row: DashboardEventProjectionRow): DashboardEvent | nu
     locationText,
     locationLat: parseNumber(row.location_lat),
     locationLng: parseNumber(row.location_lng),
-    coverImageUrl: normalizeText(row.cover_image_url),
+    coverImageUrl: row.has_cover_image ? `/api/events/${row.id}/thumbnail` : null,
     status: normalizeText(row.status)?.toLowerCase() || null,
     category: normalizeText(row.category),
     updatedAt,
@@ -85,91 +108,108 @@ function toDashboardEvent(row: DashboardEventProjectionRow): DashboardEvent | nu
 }
 
 const DASHBOARD_EVENTS_SQL = `
+  with projected as (
+    select
+      id,
+      title,
+      created_at,
+      ${DASHBOARD_START_AT_RAW_SQL} as start_at_raw,
+      coalesce(
+        data->>'endAt',
+        data->>'endISO',
+        data->>'end',
+        data->'fieldsGuess'->>'end',
+        data->'event'->>'end'
+      ) as end_at_raw,
+      coalesce(
+        data->>'tz',
+        data->>'timezone',
+        data->'fieldsGuess'->>'timezone',
+        data->'event'->>'timezone'
+      ) as tz,
+      coalesce(
+        data->>'locationText',
+        data->>'location',
+        data->'fieldsGuess'->>'location',
+        data->'event'->>'location'
+      ) as location_text,
+      coalesce(
+        case
+          when (data ? 'locationLat') and (data->>'locationLat') ~ '^-?[0-9]+(\\.[0-9]+)?$'
+            then (data->>'locationLat')::double precision
+        end,
+        case
+          when (data ? 'lat') and (data->>'lat') ~ '^-?[0-9]+(\\.[0-9]+)?$'
+            then (data->>'lat')::double precision
+        end,
+        case
+          when (data->'event' ? 'locationLat') and (data->'event'->>'locationLat') ~ '^-?[0-9]+(\\.[0-9]+)?$'
+            then (data->'event'->>'locationLat')::double precision
+        end
+      ) as location_lat,
+      coalesce(
+        case
+          when (data ? 'locationLng') and (data->>'locationLng') ~ '^-?[0-9]+(\\.[0-9]+)?$'
+            then (data->>'locationLng')::double precision
+        end,
+        case
+          when (data ? 'lng') and (data->>'lng') ~ '^-?[0-9]+(\\.[0-9]+)?$'
+            then (data->>'lng')::double precision
+        end,
+        case
+          when (data->'event' ? 'locationLng') and (data->'event'->>'locationLng') ~ '^-?[0-9]+(\\.[0-9]+)?$'
+            then (data->'event'->>'locationLng')::double precision
+        end
+      ) as location_lng,
+      (
+        nullif(data->>'coverImageUrl', '') is not null
+        or nullif(data->>'thumbnail', '') is not null
+        or nullif(data->>'heroImage', '') is not null
+        or nullif(data->>'customHeroImage', '') is not null
+        or (
+          coalesce(data->'attachment'->>'type', '') like 'image/%'
+          and nullif(data->'attachment'->>'dataUrl', '') is not null
+        )
+      ) as has_cover_image,
+      lower(trim(coalesce(data->>'status', ''))) as status,
+      nullif(trim(coalesce(data->>'category', '')), '') as category,
+      coalesce(data->>'updatedAt', created_at::text) as updated_at_raw,
+      coalesce(
+        case
+          when (data ? 'numberOfGuests') and (data->>'numberOfGuests') ~ '^-?[0-9]+$'
+            then greatest((data->>'numberOfGuests')::integer, 0)
+        end,
+        0
+      ) as number_of_guests,
+      case
+        when jsonb_typeof(data->'reminders') = 'array'
+          then jsonb_array_length(data->'reminders')
+        else 0
+      end as reminder_count,
+      nullif(lower(trim(coalesce(data->>'createdVia', ''))), '') as created_via,
+      ${DASHBOARD_START_AT_TS_SQL} as start_at_ts
+    from event_history
+    where user_id = $1
+  )
   select
     id,
     title,
     created_at,
-    coalesce(
-      data->>'startAt',
-      data->>'startISO',
-      data->>'start',
-      data->'fieldsGuess'->>'start',
-      data->'event'->>'start'
-    ) as start_at_raw,
-    coalesce(
-      data->>'endAt',
-      data->>'endISO',
-      data->>'end',
-      data->'fieldsGuess'->>'end',
-      data->'event'->>'end'
-    ) as end_at_raw,
-    coalesce(
-      data->>'tz',
-      data->>'timezone',
-      data->'fieldsGuess'->>'timezone',
-      data->'event'->>'timezone'
-    ) as tz,
-    coalesce(
-      data->>'locationText',
-      data->>'location',
-      data->'fieldsGuess'->>'location',
-      data->'event'->>'location'
-    ) as location_text,
-    coalesce(
-      case
-        when (data ? 'locationLat') and (data->>'locationLat') ~ '^-?[0-9]+(\\.[0-9]+)?$'
-          then (data->>'locationLat')::double precision
-      end,
-      case
-        when (data ? 'lat') and (data->>'lat') ~ '^-?[0-9]+(\\.[0-9]+)?$'
-          then (data->>'lat')::double precision
-      end,
-      case
-        when (data->'event' ? 'locationLat') and (data->'event'->>'locationLat') ~ '^-?[0-9]+(\\.[0-9]+)?$'
-          then (data->'event'->>'locationLat')::double precision
-      end
-    ) as location_lat,
-    coalesce(
-      case
-        when (data ? 'locationLng') and (data->>'locationLng') ~ '^-?[0-9]+(\\.[0-9]+)?$'
-          then (data->>'locationLng')::double precision
-      end,
-      case
-        when (data ? 'lng') and (data->>'lng') ~ '^-?[0-9]+(\\.[0-9]+)?$'
-          then (data->>'lng')::double precision
-      end,
-      case
-        when (data->'event' ? 'locationLng') and (data->'event'->>'locationLng') ~ '^-?[0-9]+(\\.[0-9]+)?$'
-          then (data->'event'->>'locationLng')::double precision
-      end
-    ) as location_lng,
-    coalesce(
-      data->>'coverImageUrl',
-      data->>'thumbnail',
-      data->>'heroImage',
-      case
-        when coalesce(data->'attachment'->>'type', '') like 'image/%'
-          then data->'attachment'->>'dataUrl'
-      end
-    ) as cover_image_url,
-    lower(trim(coalesce(data->>'status', ''))) as status,
-    nullif(trim(coalesce(data->>'category', '')), '') as category,
-    coalesce(data->>'updatedAt', created_at::text) as updated_at_raw,
-    coalesce(
-      case
-        when (data ? 'numberOfGuests') and (data->>'numberOfGuests') ~ '^-?[0-9]+$'
-          then greatest((data->>'numberOfGuests')::integer, 0)
-      end,
-      0
-    ) as number_of_guests,
-    case
-      when jsonb_typeof(data->'reminders') = 'array'
-        then jsonb_array_length(data->'reminders')
-      else 0
-    end as reminder_count,
-    nullif(lower(trim(coalesce(data->>'createdVia', ''))), '') as created_via
-  from event_history
-  where user_id = $1
+    start_at_raw,
+    end_at_raw,
+    tz,
+    location_text,
+    location_lat,
+    location_lng,
+    has_cover_image,
+    status,
+    category,
+    updated_at_raw,
+    number_of_guests,
+    reminder_count,
+    created_via
+  from projected
+  where status = 'draft' or start_at_ts is null or start_at_ts >= now()
   order by created_at desc nulls last, id desc
   limit $2
 `;

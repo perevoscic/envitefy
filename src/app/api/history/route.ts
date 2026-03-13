@@ -7,6 +7,7 @@ import { createHash } from "crypto";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import {
   isCacheableHistoryView,
+  normalizeHistoryTimeFilter,
   normalizeHistoryView,
   redactHistoryHeavyFields,
 } from "@/lib/history-view";
@@ -20,8 +21,10 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const limitRaw = url.searchParams.get("limit");
     const viewRaw = url.searchParams.get("view");
+    const timeRaw = url.searchParams.get("time");
     const limit = Math.max(1, Math.min(200, Number.parseInt(limitRaw || "40", 10)));
     const view = normalizeHistoryView(viewRaw);
+    const timeFilter = normalizeHistoryTimeFilter(timeRaw);
 
     const session: any = await getServerSession(authOptions as any);
     const sessionUser: any = (session && (session as any).user) || null;
@@ -60,15 +63,15 @@ export async function GET(req: Request) {
       });
 
     const useCache = isCacheableHistoryView(view);
-    const cached = useCache ? getCachedHistory(userId, view, limit) : null;
+    const cached = useCache ? getCachedHistory(userId, view, limit, timeFilter) : null;
     let light: any[];
     if (cached) {
       light = cached;
     } else {
-      const rows = await listHistoryForUser({ userId, view, limit });
+      const rows = await listHistoryForUser({ userId, view, limit, timeFilter });
       light = finalizeItems(rows);
       if (useCache) {
-        setCachedHistory(userId, view, limit, light);
+        setCachedHistory(userId, view, limit, timeFilter, light);
       }
     }
 
@@ -94,6 +97,7 @@ export async function GET(req: Request) {
         top: light?.[0] ? { id: light[0].id, created_at: light[0].created_at } : null,
         view,
         limit,
+        timeFilter,
       });
     }
 

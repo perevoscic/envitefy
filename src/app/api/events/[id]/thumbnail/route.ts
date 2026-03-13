@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server";
-import { getEventHistoryBySlugOrId } from "@/lib/db";
+import {
+  getEventHistoryMediaDataUrlById,
+  resolveEventHistoryIdentityBySlugOrId,
+  type EventHistoryMediaVariant,
+} from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -9,31 +13,29 @@ export async function GET(
 ) {
   try {
     const awaitedParams = await params;
-    const row = await getEventHistoryBySlugOrId({ value: awaitedParams.id });
-    const data: any = row?.data || {};
-    const variant = req.nextUrl.searchParams.get("variant");
-    const preferAttachment = variant === "attachment";
-    const preferThumbnail = variant === "thumbnail";
-
-    const hasThumbnail =
-      typeof data?.thumbnail === "string" && data.thumbnail.length > 0;
-    const hasAttachment =
-      data?.attachment &&
-      typeof data.attachment === "object" &&
-      typeof data.attachment.dataUrl === "string" &&
-      data.attachment.dataUrl.length > 0;
-
-    let imageDataUrl: string | null = null;
-
-    if (preferAttachment && hasAttachment) {
-      imageDataUrl = data.attachment.dataUrl;
-    } else if (preferThumbnail && hasThumbnail) {
-      imageDataUrl = data.thumbnail;
-    } else if (hasThumbnail) {
-      imageDataUrl = data.thumbnail;
-    } else if (hasAttachment) {
-      imageDataUrl = data.attachment.dataUrl;
+    const identity = await resolveEventHistoryIdentityBySlugOrId({
+      value: awaitedParams.id,
+    });
+    if (!identity) {
+      return new Response("No thumbnail found", { status: 404 });
     }
+
+    const variantParam = String(
+      req.nextUrl.searchParams.get("variant") || ""
+    ).trim();
+    const variant: EventHistoryMediaVariant | null =
+      variantParam === "attachment" ||
+      variantParam === "thumbnail" ||
+      variantParam === "profile" ||
+      variantParam === "hero" ||
+      variantParam === "signup-header"
+        ? (variantParam as EventHistoryMediaVariant)
+        : null;
+
+    const imageDataUrl = await getEventHistoryMediaDataUrlById(
+      identity.id,
+      variant
+    );
 
     if (!imageDataUrl) {
       return new Response("No thumbnail found", { status: 404 });

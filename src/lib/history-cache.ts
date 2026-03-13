@@ -1,4 +1,4 @@
-import type { CacheableHistoryView } from "@/lib/history-view";
+import type { CacheableHistoryView, HistoryTimeFilter } from "@/lib/history-view";
 
 /**
  * Simple in-memory cache for projected event history responses.
@@ -16,17 +16,19 @@ const cache = new Map<string, CacheEntry<any>>();
 function getCacheKey(
   userId: string,
   view: CacheableHistoryView,
-  limit: number
+  limit: number,
+  timeFilter: HistoryTimeFilter
 ): string {
-  return `history:v2:${userId}:${view}:${limit}`;
+  return `history:v3:${userId}:${view}:${limit}:${timeFilter}`;
 }
 
 export function getCachedHistory(
   userId: string,
   view: CacheableHistoryView,
-  limit: number
+  limit: number,
+  timeFilter: HistoryTimeFilter
 ): any[] | null {
-  const key = getCacheKey(userId, view, limit);
+  const key = getCacheKey(userId, view, limit, timeFilter);
   const entry = cache.get(key);
   if (!entry) return null;
 
@@ -43,9 +45,10 @@ export function setCachedHistory(
   userId: string,
   view: CacheableHistoryView,
   limit: number,
+  timeFilter: HistoryTimeFilter,
   items: any[]
 ): void {
-  const key = getCacheKey(userId, view, limit);
+  const key = getCacheKey(userId, view, limit, timeFilter);
   cache.set(key, {
     data: items,
     timestamp: Date.now(),
@@ -53,9 +56,9 @@ export function setCachedHistory(
 }
 
 export function invalidateUserHistory(userId: string): void {
-  const prefix = `history:v2:${userId}:`;
+  const prefix = `history:v`;
   for (const key of cache.keys()) {
-    if (key.startsWith(prefix)) {
+    if (key.startsWith(prefix) && key.includes(`:${userId}:`)) {
       cache.delete(key);
     }
   }

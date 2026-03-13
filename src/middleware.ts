@@ -6,7 +6,6 @@ import { getToken } from "next-auth/jwt";
 const PUBLIC_UNAUTH_PATHS = new Set([
   "/",
   "/landing",
-  "/landing-preview",
   "/gymnastics",
   "/event/gymnastics",
   "/open",
@@ -151,7 +150,7 @@ export async function middleware(req: NextRequest) {
         : "dev-build-secret");
 
     try {
-      const token = await getToken({ req: req as any, secret });
+      const token = await getToken({ req, secret });
       if (token) return true;
     } catch {
       // fall through to cookie fallback

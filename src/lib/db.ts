@@ -1,7 +1,7 @@
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
 import { randomBytes, scrypt as nodeScrypt, timingSafeEqual, randomUUID } from "crypto";
 import { promisify } from "util";
-import type { HistoryView } from "@/lib/history-view";
+import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 const scrypt = promisify(nodeScrypt);
 
 type NonEmptyString = string & { _brand: "NonEmptyString" };
@@ -1476,6 +1476,32 @@ export type EventHistoryRow = {
   created_at?: string;
 };
 
+export type EventHistoryIdentityRow = {
+  id: string;
+  user_id?: string | null;
+  title: string;
+  created_at?: string;
+};
+
+export type EventHistoryInlineMedia = {
+  thumbnailInline: boolean;
+  thumbnailSig: string | null;
+  attachmentInline: boolean;
+  attachmentSig: string | null;
+  profileImageInline: boolean;
+  profileImageSig: string | null;
+  heroImageInline: boolean;
+  heroImageSig: string | null;
+  customHeroImageInline: boolean;
+  customHeroImageSig: string | null;
+  signupHeaderInline: boolean;
+  signupHeaderSig: string | null;
+};
+
+export type EventHistoryPublicRow = EventHistoryRow & {
+  media: EventHistoryInlineMedia;
+};
+
 export type EventHistoryInputBlobRow = {
   event_id: string;
   mime_type: string;
@@ -1529,6 +1555,58 @@ function buildHistoryScheduleProjectionSql(dataSql: string): string {
       )
     else null
   end`;
+}
+
+function buildHistoryEventStartRawSql(dataSql: string): string {
+  return `nullif(
+    trim(
+      coalesce(
+        ${dataSql}->>'startAt',
+        ${dataSql}->>'startISO',
+        ${dataSql}->>'start',
+        ${dataSql}->'fieldsGuess'->>'start',
+        ${dataSql}->'event'->>'start',
+        ''
+      )
+    ),
+    ''
+  )`;
+}
+
+function buildHistoryEventStartAtSql(startRawSql: string): string {
+  return `case
+    when ${startRawSql} is null then null
+    when pg_input_is_valid(${startRawSql}, 'timestamp with time zone')
+      then (${startRawSql})::timestamptz
+    when pg_input_is_valid(${startRawSql}, 'timestamp without time zone')
+      then (${startRawSql})::timestamp at time zone 'UTC'
+    else null
+  end`;
+}
+
+function buildHistoryStatusSql(dataSql: string): string {
+  return `lower(trim(coalesce(${dataSql}->>'status', '')))`;
+}
+
+function buildHistoryTimeFilterSql(
+  timeFilter: HistoryTimeFilter,
+  alias: string
+): string {
+  if (timeFilter === "upcoming") {
+    return `(
+      ${alias}.status_text = 'draft'
+      or ${alias}.event_start_at is null
+      or ${alias}.event_start_at >= now()
+    )`;
+  }
+  if (timeFilter === "past") {
+    return `(
+      ${alias}.status_text <> 'draft'
+      and ${alias}.event_start_at is not null
+      and ${alias}.event_start_at < now()
+    )`;
+  }
+  return "true";
 }
 
 function buildHistoryDataProjectionSql(params: {
@@ -1627,9 +1705,14 @@ function buildHistoryDataProjectionSql(params: {
   )`;
 }
 
-function buildHistoryUnionQuery(view: HistoryView): string {
+function buildHistoryUnionQuery(
+  view: HistoryView,
+  timeFilter: HistoryTimeFilter
+): string {
   const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const ownStartRawSql = buildHistoryEventStartRawSql(ownDataSql);
+  const sharedStartRawSql = buildHistoryEventStartRawSql(sharedDataSql);
   const ownProjection = buildHistoryDataProjectionSql({
     view,
     dataSql: ownDataSql,
@@ -1659,7 +1742,9 @@ function buildHistoryUnionQuery(view: HistoryView): string {
         eh.user_id,
         eh.title,
         ${ownProjection} as data,
-        eh.created_at
+        eh.created_at,
+        ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
+        ${buildHistoryStatusSql(ownDataSql)} as status_text
       from event_history eh
       where eh.user_id = $1
     ),
@@ -1669,7 +1754,9 @@ function buildHistoryUnionQuery(view: HistoryView): string {
         eh.user_id,
         eh.title,
         ${sharedProjection} as data,
-        eh.created_at
+        eh.created_at,
+        ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
+        ${buildHistoryStatusSql(sharedDataSql)} as status_text
       from event_shares es
       join event_history eh on eh.id = es.event_id
       where es.recipient_user_id = $1
@@ -1683,13 +1770,18 @@ function buildHistoryUnionQuery(view: HistoryView): string {
     )
     select id, user_id, title, data, created_at
     from combined
+    where ${buildHistoryTimeFilterSql(timeFilter, "combined")}
     order by created_at desc nulls last, id desc
     limit $2
   `;
 }
 
-function buildHistoryOwnOnlyQuery(view: HistoryView): string {
+function buildHistoryOwnOnlyQuery(
+  view: HistoryView,
+  timeFilter: HistoryTimeFilter
+): string {
   const dataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const startRawSql = buildHistoryEventStartRawSql(dataSql);
   const projection = buildHistoryDataProjectionSql({
     view,
     dataSql,
@@ -1699,15 +1791,27 @@ function buildHistoryOwnOnlyQuery(view: HistoryView): string {
   });
 
   return `
+    with own_rows as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${projection} as data,
+        eh.created_at,
+        ${buildHistoryEventStartAtSql(startRawSql)} as event_start_at,
+        ${buildHistoryStatusSql(dataSql)} as status_text
+      from event_history eh
+      where eh.user_id = $1
+    )
     select
-      eh.id,
-      eh.user_id,
-      eh.title,
-      ${projection} as data,
-      eh.created_at
-    from event_history eh
-    where eh.user_id = $1
-    order by eh.created_at desc nulls last, eh.id desc
+      id,
+      user_id,
+      title,
+      data,
+      created_at
+    from own_rows
+    where ${buildHistoryTimeFilterSql(timeFilter, "own_rows")}
+    order by created_at desc nulls last, id desc
     limit $2
   `;
 }
@@ -1760,6 +1864,133 @@ export async function getEventHistoryById(id: string): Promise<EventHistoryRow |
     [id]
   );
   return res.rows[0] || null;
+}
+
+function buildEventHistoryPublicDataProjectionSql(dataSql: string): string {
+  const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText') #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}' #- '{signupForm,header,backgroundImage,dataUrl}')`;
+  const withoutThumbnail = `case
+    when coalesce(${dataSql}->>'thumbnail', '') like 'data:%' then (${base} - 'thumbnail')
+    else ${base}
+  end`;
+  const withoutHero = `case
+    when coalesce(${dataSql}->>'heroImage', '') like 'data:%' then (${withoutThumbnail} - 'heroImage')
+    else ${withoutThumbnail}
+  end`;
+  return `case
+    when coalesce(${dataSql}->>'customHeroImage', '') like 'data:%' then (${withoutHero} - 'customHeroImage')
+    else ${withoutHero}
+  end`;
+}
+
+type EventHistoryPublicQueryRow = EventHistoryRow & {
+  thumbnail_inline: boolean | null;
+  thumbnail_sig: string | null;
+  attachment_inline: boolean | null;
+  attachment_sig: string | null;
+  profile_image_inline: boolean | null;
+  profile_image_sig: string | null;
+  hero_image_inline: boolean | null;
+  hero_image_sig: string | null;
+  custom_hero_image_inline: boolean | null;
+  custom_hero_image_sig: string | null;
+  signup_header_inline: boolean | null;
+  signup_header_sig: string | null;
+};
+
+function mapEventHistoryPublicRow(
+  row: EventHistoryPublicQueryRow | null | undefined
+): EventHistoryPublicRow | null {
+  if (!row) return null;
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    title: row.title,
+    data: row.data,
+    created_at: row.created_at,
+    media: {
+      thumbnailInline: Boolean(row.thumbnail_inline),
+      thumbnailSig: row.thumbnail_sig || null,
+      attachmentInline: Boolean(row.attachment_inline),
+      attachmentSig: row.attachment_sig || null,
+      profileImageInline: Boolean(row.profile_image_inline),
+      profileImageSig: row.profile_image_sig || null,
+      heroImageInline: Boolean(row.hero_image_inline),
+      heroImageSig: row.hero_image_sig || null,
+      customHeroImageInline: Boolean(row.custom_hero_image_inline),
+      customHeroImageSig: row.custom_hero_image_sig || null,
+      signupHeaderInline: Boolean(row.signup_header_inline),
+      signupHeaderSig: row.signup_header_sig || null,
+    },
+  };
+}
+
+export async function getEventHistoryIdentityById(
+  id: string
+): Promise<EventHistoryIdentityRow | null> {
+  const res = await query<EventHistoryIdentityRow>(
+    `select id, user_id, title, created_at
+     from event_history
+     where id = $1
+     limit 1`,
+    [id]
+  );
+  return res.rows[0] || null;
+}
+
+export async function getEventHistoryPublicRenderById(
+  id: string
+): Promise<EventHistoryPublicRow | null> {
+  const dataSql = "data";
+  const projection = buildEventHistoryPublicDataProjectionSql(dataSql);
+  const res = await query<EventHistoryPublicQueryRow>(
+    `select
+       id,
+       user_id,
+       title,
+       ${projection} as data,
+       created_at,
+       (coalesce(${dataSql}->>'thumbnail', '') like 'data:%') as thumbnail_inline,
+       case
+         when coalesce(${dataSql}->>'thumbnail', '') like 'data:%'
+           then md5(${dataSql}->>'thumbnail')
+         else null
+       end as thumbnail_sig,
+       (coalesce(${dataSql}#>>'{attachment,dataUrl}', '') like 'data:%') as attachment_inline,
+       case
+         when coalesce(${dataSql}#>>'{attachment,dataUrl}', '') like 'data:%'
+           then md5(${dataSql}#>>'{attachment,dataUrl}')
+         else null
+       end as attachment_sig,
+       (coalesce(${dataSql}#>>'{profileImage,dataUrl}', '') like 'data:%') as profile_image_inline,
+       case
+         when coalesce(${dataSql}#>>'{profileImage,dataUrl}', '') like 'data:%'
+           then md5(${dataSql}#>>'{profileImage,dataUrl}')
+         else null
+       end as profile_image_sig,
+       (coalesce(${dataSql}->>'heroImage', '') like 'data:%') as hero_image_inline,
+       case
+         when coalesce(${dataSql}->>'heroImage', '') like 'data:%'
+           then md5(${dataSql}->>'heroImage')
+         else null
+       end as hero_image_sig,
+       (coalesce(${dataSql}->>'customHeroImage', '') like 'data:%') as custom_hero_image_inline,
+       case
+         when coalesce(${dataSql}->>'customHeroImage', '') like 'data:%'
+           then md5(${dataSql}->>'customHeroImage')
+         else null
+       end as custom_hero_image_sig,
+       (coalesce(${dataSql}#>>'{signupForm,header,backgroundImage,dataUrl}', '') like 'data:%') as signup_header_inline,
+       case
+         when coalesce(${dataSql}#>>'{signupForm,header,backgroundImage,dataUrl}', '') like 'data:%'
+           then md5(${dataSql}#>>'{signupForm,header,backgroundImage,dataUrl}')
+         else null
+       end as signup_header_sig
+     from event_history
+     where id = $1
+     limit 1`,
+    [id]
+  );
+  return mapEventHistoryPublicRow(res.rows[0]);
 }
 
 export async function updateEventHistoryTitle(id: string, title: string): Promise<EventHistoryRow | null> {
@@ -1835,6 +2066,122 @@ export async function getEventHistoryByUserAndSlug(userId: string, slug: string)
   return null;
 }
 
+export async function getEventHistoryIdentityByUserAndSlug(
+  userId: string,
+  slug: string
+): Promise<EventHistoryIdentityRow | null> {
+  const res = await query<EventHistoryIdentityRow>(
+    `select id, user_id, title, created_at
+     from event_history
+     where user_id = $1
+     order by created_at desc nulls last, id desc
+     limit 200`,
+    [userId]
+  );
+  const rows = res.rows || [];
+  const target = slug.toLowerCase();
+  for (const row of rows) {
+    const current = slugifyTitleForQuery(row.title || "");
+    if (current && current === target) return row;
+  }
+  return null;
+}
+
+export async function resolveEventHistoryIdentityBySlugOrId(params: {
+  value: string;
+  userId?: string | null;
+}): Promise<EventHistoryIdentityRow | null> {
+  const raw = (params.value || "").trim();
+  if (!raw) return null;
+
+  const maybeUuid = raw.replace(
+    /^.*-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i,
+    "$1"
+  );
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      raw
+    );
+  const endsWithUuid =
+    /^[\w-]*-[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      raw
+    );
+
+  if (isUuid) {
+    return await getEventHistoryIdentityById(raw);
+  }
+  if (endsWithUuid) {
+    return await getEventHistoryIdentityById(maybeUuid);
+  }
+
+  const slug = slugifyTitleForQuery(raw);
+  if (!slug) return null;
+  if (params.userId) {
+    const row = await getEventHistoryIdentityByUserAndSlug(params.userId, slug);
+    if (row) return row;
+  }
+  const res = await query<EventHistoryIdentityRow>(
+    `select id, user_id, title, created_at
+     from event_history
+     order by created_at desc
+     limit 500`
+  );
+  const rows = res.rows || [];
+  for (const row of rows) {
+    const current = slugifyTitleForQuery(row.title || "");
+    if (current && current === slug) return row;
+  }
+  return null;
+}
+
+export async function getEventHistoryPublicRenderBySlugOrId(params: {
+  value: string;
+  userId?: string | null;
+}): Promise<EventHistoryPublicRow | null> {
+  const identity = await resolveEventHistoryIdentityBySlugOrId(params);
+  if (!identity) return null;
+  return await getEventHistoryPublicRenderById(identity.id);
+}
+
+export type EventHistoryMediaVariant =
+  | "thumbnail"
+  | "attachment"
+  | "profile"
+  | "hero"
+  | "signup-header";
+
+export async function getEventHistoryMediaDataUrlById(
+  id: string,
+  variant?: EventHistoryMediaVariant | null
+): Promise<string | null> {
+  const normalizedVariant = variant || "__default__";
+  const res = await query<{ data_url: string | null }>(
+    `select case
+       when $2 = 'attachment' then nullif(data#>>'{attachment,dataUrl}', '')
+       when $2 = 'profile' then nullif(data#>>'{profileImage,dataUrl}', '')
+       when $2 = 'hero' then coalesce(
+         nullif(data->>'customHeroImage', ''),
+         nullif(data->>'heroImage', '')
+       )
+       when $2 = 'signup-header' then nullif(data#>>'{signupForm,header,backgroundImage,dataUrl}', '')
+       when $2 = 'thumbnail' then nullif(data->>'thumbnail', '')
+       else coalesce(
+         nullif(data->>'thumbnail', ''),
+         case
+           when coalesce(data->'attachment'->>'type', '') like 'image/%'
+             then nullif(data#>>'{attachment,dataUrl}', '')
+           else null
+         end
+       )
+     end as data_url
+     from event_history
+     where id = $1
+     limit 1`,
+    [id, normalizedVariant]
+  );
+  return res.rows[0]?.data_url || null;
+}
+
 /**
  * Resolve an event by either a UUID id, a plain slug, or a combined slug-id value ("my-event-title-<uuid>").
  * - If `userId` is provided and a plain slug is passed, we attempt to match against recent user events for stability.
@@ -1905,17 +2252,18 @@ export async function listHistoryForUser(params: {
   userId: string;
   view: HistoryView;
   limit: number;
+  timeFilter: HistoryTimeFilter;
 }): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(params.limit || 40)));
   try {
-    const res = await query<EventHistoryRow>(buildHistoryUnionQuery(params.view), [
+    const res = await query<EventHistoryRow>(buildHistoryUnionQuery(params.view, params.timeFilter), [
       params.userId,
       safeLimit,
     ]);
     return res.rows || [];
   } catch (err) {
     if (!isTableMissingError(err)) throw err;
-    const res = await query<EventHistoryRow>(buildHistoryOwnOnlyQuery(params.view), [
+    const res = await query<EventHistoryRow>(buildHistoryOwnOnlyQuery(params.view, params.timeFilter), [
       params.userId,
       safeLimit,
     ]);

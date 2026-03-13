@@ -49,6 +49,15 @@ This document describes the app’s server-side agents (API routes) that extract
 - **Input (JSON)**: `{ eventId: string, recipientUserId?: string }`.
 - **Output**: `{ ok: true, revoked: number }`.
 
+### Event Media Thumbnail — GET `/api/events/[id]/thumbnail`
+
+- **Purpose**: Serve inline event media as cacheable image responses so public pages and dashboards do not need to fetch base64 image payloads inside `event_history.data`.
+- **Auth**: None.
+- **Input**: Route param `id` accepts either the event UUID or slug/slug-id form used by public event URLs.
+- **Query params**: Optional `variant` chooses which inline image to serve: `"thumbnail"` (default event header image), `"attachment"` (image attachment), `"profile"` (birthday/profile image), `"hero"` (custom or fallback hero image), or `"signup-header"` (smart signup header image). Optional `v` is a cache-busting signature.
+- **Output**: Raw image bytes with `Content-Type` derived from the stored data URL, or `404` when the requested inline media is absent.
+- **Env**: None.
+
 ### RSVP Attendance — POST `/api/rsvp/attendance`
 
 - **Purpose**: Update an athlete's attendance status from the RSVP form and sync the Team Roster.
@@ -592,6 +601,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - GET `/api/history` query params:
     - `limit` (optional, `1-200`, default `40`).
     - `view` (optional): `"summary" | "calendar" | "sidebar" | "full"` (default `"summary"`).
+    - `time` (optional): `"all" | "upcoming" | "past"` (default `"all"`). `upcoming` keeps drafts and rows without a parseable start time, while `past` returns only non-draft rows whose saved start parses before `now()`.
   - POST `/api/history`: `{ title?: string, data?: any }`.
   - PATCH `/api/history/[id]`: Either `{ title: string }` or `{ category: string }` or `{ data: object }` to shallow-merge into the JSON `data` (e.g., to fix the saved `category`).
 - **Output**:

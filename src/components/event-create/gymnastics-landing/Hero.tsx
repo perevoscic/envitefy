@@ -1,142 +1,90 @@
 "use client";
 
-import type { RefObject } from "react";
-import {
-  ArrowRight,
-  CheckCircle2,
-  FileText,
-  Hotel,
-  MapPinned,
-  Sparkles,
-  TimerReset,
-  Upload,
-  X,
-} from "lucide-react";
+import { ArrowRight, MoveRight, Upload } from "lucide-react";
+import styles from "./gymnastics-landing.module.css";
 
 type HeroProps = {
-  fileInputRef: RefObject<HTMLInputElement | null>;
-  discoveryBusy: boolean;
-  uploadBusy: boolean;
-  uploadFileName: string;
-  uploadProgress: number;
-  uploadStatus: string;
-  uploadError: string;
-  uploadIndeterminate: boolean;
-  onPickUpload: () => void;
-  onCancelDiscovery: () => void;
-  onFileChange: (file: File | null) => void;
+  onGoToStart: () => void;
   onOpenBuilder: () => void;
 };
 
-const uploadEvidence = [
-  {
-    label: "Session schedule",
-    detail: "Warm-ups, march-in, awards",
-    icon: TimerReset,
-  },
-  {
-    label: "Venue + parking",
-    detail: "Maps, entrances, arrival notes",
-    icon: MapPinned,
-  },
-  {
-    label: "Hotels + docs",
-    detail: "Travel block, packet PDFs, links",
-    icon: Hotel,
-  },
+const heroTabs = ["Sessions", "Rotations", "Venue", "Hotels", "Results"];
+
+const evidenceNotes = [
+  "Session schedule and warm-up times",
+  "Venue notes, doors, and parking",
+  "Hotel block, packet, and documents",
 ];
 
-const heroChips = [
-  "Sessions",
-  "Rotations",
-  "Venue",
-  "Hotels",
-  "Results",
-  "Spectator Info",
+const sessionRows = [
+  ["Coach check-in", "7:20 AM"],
+  ["General stretch", "7:45 AM"],
+  ["Competition starts", "8:00 AM"],
+  ["Awards", "11:40 AM"],
 ];
 
-export default function Hero({
-  fileInputRef,
-  discoveryBusy,
-  uploadBusy,
-  uploadFileName,
-  uploadProgress,
-  uploadStatus,
-  uploadError,
-  uploadIndeterminate,
-  onPickUpload,
-  onCancelDiscovery,
-  onFileChange,
-  onOpenBuilder,
-}: HeroProps) {
+export default function Hero({ onGoToStart, onOpenBuilder }: HeroProps) {
   return (
-    <section className="relative overflow-hidden px-4 pb-24 pt-10 sm:px-6 lg:px-8 lg:pb-28 lg:pt-14">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-8rem] top-12 h-72 w-72 rounded-full bg-[#5b5cf0]/10 blur-3xl" />
-        <div className="absolute right-[-3rem] top-20 h-80 w-80 rounded-full bg-[#d4af37]/10 blur-3xl" />
-        <div className="absolute left-[12%] top-16 hidden h-px w-44 rotate-[16deg] bg-gradient-to-r from-transparent via-[#5b5cf0]/30 to-transparent lg:block" />
-        <div className="absolute right-[15%] top-40 hidden h-px w-56 -rotate-[18deg] bg-gradient-to-r from-transparent via-[#d4af37]/30 to-transparent lg:block" />
-      </div>
+    <section className="relative px-4 pb-18 pt-8 sm:px-6 lg:px-8 lg:pb-24 lg:pt-12">
+      <div className={styles.heroArc} aria-hidden="true" />
+      <div className={`${styles.beamLine} ${styles.beamLineLeft}`} aria-hidden="true" />
+      <div className={`${styles.beamLine} ${styles.beamLineRight}`} aria-hidden="true" />
 
-      <div className="relative mx-auto grid max-w-7xl gap-14 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#c7cfef] bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#4f46e5] shadow-[0_12px_30px_rgba(30,27,75,0.08)]">
-            <Sparkles className="h-4 w-4" />
+      <div className={`${styles.container} grid gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(560px,0.98fr)] lg:items-center xl:gap-16`}>
+        <div className="max-w-[720px]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#d8d9eb] bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#4c4b82] shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <span className="h-2 w-2 rounded-full bg-[#d4af37]" />
             Built for gymnastics meets
           </div>
 
-          <h1 className="mt-6 max-w-3xl font-[var(--font-gym-display)] text-5xl font-extrabold leading-[0.94] tracking-[-0.055em] text-[#17153f] sm:text-6xl lg:text-7xl">
+          <h1 className="mt-7 max-w-[14ch] text-[clamp(3.7rem,7vw,6.6rem)] font-[800] leading-[0.9] text-[#171b46]">
             Turn Gymnastics Meet Information Into a Shareable Event Page
           </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-[#4b5a78] sm:text-xl">
-            Upload your meet schedule and Envitefy generates a clean event hub
-            for parents, athletes, coaches, and spectators. No more pinching
-            through PDFs or chasing updates across emails and group chats.
+          <p className="mt-6 max-w-[60ch] text-lg leading-8 text-[#55607d] sm:text-xl">
+            Upload your meet schedule, sessions, venue details, hotels, and
+            documents once. Envitefy turns them into one polished meet hub for
+            parents, athletes, coaches, and spectators.
           </p>
 
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+          <div className="mt-9 flex flex-col gap-4 sm:flex-row">
             <button
               type="button"
-              onClick={onPickUpload}
-              disabled={discoveryBusy}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1e1b4b] px-6 py-4 text-sm font-semibold text-white shadow-[0_20px_45px_rgba(30,27,75,0.25)] transition hover:-translate-y-0.5 hover:bg-[#16133a] disabled:cursor-not-allowed disabled:opacity-70"
+              onClick={onGoToStart}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#171b46] px-7 py-4 text-sm font-semibold text-white shadow-[0_22px_46px_rgba(23,27,70,0.24)] transition hover:-translate-y-0.5 hover:bg-[#121538]"
             >
               <Upload className="h-4 w-4" />
               Upload Meet Info
             </button>
             <a
               href="#gym-example-meet"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#cad2ee] bg-white px-6 py-4 text-sm font-semibold text-[#1e1b4b] shadow-[0_12px_28px_rgba(30,27,75,0.08)] transition hover:-translate-y-0.5 hover:border-[#8b90ff]"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d8dcec] bg-white px-7 py-4 text-sm font-semibold text-[#171b46] shadow-[0_12px_28px_rgba(23,27,70,0.08)] transition hover:-translate-y-0.5 hover:border-[#b6bfd8]"
             >
               View Example Meet Page
               <ArrowRight className="h-4 w-4" />
             </a>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[#5a6685]">
-            <span className="font-medium text-[#2c3553]">
-              Prefer full manual control?
-            </span>
+          <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[#616d8b]">
+            <span>Prefer full control?</span>
             <button
               type="button"
               onClick={onOpenBuilder}
-              disabled={discoveryBusy}
-              className="inline-flex items-center gap-2 rounded-full border border-transparent px-3 py-1.5 font-semibold text-[#4f46e5] transition hover:border-[#d9dcff] hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 font-semibold text-[#7f5d16] transition hover:text-[#5e440c]"
             >
               Open Visual Builder
-              <ArrowRight className="h-4 w-4" />
+              <MoveRight className="h-4 w-4" />
             </button>
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            {heroChips.map((chip, index) => (
+            {heroTabs.map((chip, index) => (
               <span
                 key={chip}
                 className={`rounded-full px-4 py-2 text-sm font-semibold ${
                   index === 1
-                    ? "bg-[#d4af37] text-[#3a2f05]"
-                    : "border border-[#d7dcf4] bg-white/85 text-[#2c3553]"
+                    ? "bg-[#efe2b7] text-[#6d5210]"
+                    : "border border-[#d9deef] bg-white/80 text-[#30405e]"
                 }`}
               >
                 {chip}
@@ -146,129 +94,53 @@ export default function Hero({
         </div>
 
         <div className="relative">
-          <div className="absolute -left-4 top-10 hidden h-[72%] w-16 rounded-full border border-[#d5daf2] bg-white/55 blur-sm lg:block" />
-          <div className="absolute left-[30%] top-[22%] hidden h-px w-28 rotate-[14deg] bg-gradient-to-r from-transparent via-[#4f46e5]/30 to-transparent lg:block" />
+          <div className="absolute left-6 top-12 hidden h-[82%] w-[24%] rounded-[2rem] border border-[#dfe3f0] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,247,252,0.86))] shadow-[0_18px_48px_rgba(23,27,70,0.08)] lg:block" />
 
-          <div className="grid gap-4 xl:grid-cols-[0.88fr_1.12fr]">
-            <div className="rounded-[2rem] border border-[#dce2f0] bg-white/95 p-5 shadow-[0_24px_60px_rgba(30,27,75,0.1)] backdrop-blur">
+          <div className="relative ml-auto max-w-[760px]">
+            <div className="absolute -left-2 top-6 z-20 w-[34%] rounded-[2rem] border border-[#dfdfeb] bg-white/96 p-5 shadow-[0_18px_50px_rgba(23,27,70,0.1)] backdrop-blur lg:-left-8 lg:top-14">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7a84a3]">
-                    Input
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#8188a2]">
+                    Upload packet
                   </p>
-                  <h2 className="mt-2 font-[var(--font-gym-display)] text-2xl font-bold tracking-[-0.03em] text-[#17153f]">
-                    Meet Information
-                  </h2>
+                  <p className="mt-2 text-xl font-semibold text-[#171b46]">
+                    Meet information
+                  </p>
                 </div>
-                <div className="rounded-2xl bg-[#efeefe] p-3 text-[#4f46e5]">
-                  <Upload className="h-5 w-5" />
+                <div className="rounded-2xl bg-[#f3f1fb] p-3 text-[#4c4b82]">
+                  <Upload className="h-4 w-4" />
                 </div>
               </div>
 
               <div className="mt-5 space-y-3">
-                {uploadEvidence.map(({ label, detail, icon: Icon }) => (
+                {evidenceNotes.map((note) => (
                   <div
-                    key={label}
-                    className="rounded-[1.4rem] border border-[#eaedf6] bg-[#fafbff] p-4"
+                    key={note}
+                    className="rounded-[1.25rem] border border-[#eceef6] bg-[#fafbff] px-4 py-3 text-sm leading-6 text-[#59657f]"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-2xl bg-white p-2.5 text-[#4f46e5] shadow-sm">
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-[#202848]">{label}</p>
-                        <p className="mt-1 text-xs text-[#6c7798]">{detail}</p>
-                      </div>
-                    </div>
+                    {note}
                   </div>
                 ))}
               </div>
 
-              <div className="mt-5 rounded-[1.5rem] border border-dashed border-[#cdd3e8] bg-[#f6f8fd] p-4">
-                {!uploadBusy ? (
-                  <button
-                    type="button"
-                    onClick={onPickUpload}
-                    disabled={discoveryBusy}
-                    className="flex w-full items-center justify-center gap-2 rounded-[1.15rem] bg-[#1e1b4b] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#16133a] disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Upload PDF, JPG, or PNG
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#4f46e5]">
-                      <span>{uploadStatus || "Processing meet info..."}</span>
-                      <div className="flex items-center gap-2">
-                        {!uploadIndeterminate ? <span>{uploadProgress}%</span> : null}
-                        <button
-                          type="button"
-                          onClick={onCancelDiscovery}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#dbdef6] bg-white text-[#4f46e5] hover:bg-[#f2f4ff]"
-                          aria-label="Cancel upload"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#e5e7fb]">
-                      {uploadIndeterminate ? (
-                        <div className="relative h-full w-full overflow-hidden">
-                          <div className="launcher-indeterminate-bar absolute inset-y-0 left-0 w-2/5 rounded-full bg-[#4f46e5]" />
-                        </div>
-                      ) : (
-                        <div
-                          className="h-full rounded-full bg-[#4f46e5] transition-[width] duration-300 ease-out"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,image/png,image/jpeg,image/jpg"
-                  className="hidden"
-                  onChange={(e) => {
-                    onFileChange(e.target.files?.[0] || null);
-                    e.currentTarget.value = "";
-                  }}
-                />
-                {uploadFileName ? (
-                  <p className="mt-3 truncate text-xs text-[#6c7798]">
-                    Selected: {uploadFileName}
-                  </p>
-                ) : (
-                  <p className="mt-3 text-xs text-[#7a84a3]">
-                    Typical upload: meet packet, session grid, hotel sheet, venue doc
-                  </p>
-                )}
-                {uploadError ? (
-                  <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                    {uploadError}
-                  </p>
-                ) : null}
+              <div className="mt-5 rounded-[1.2rem] border border-dashed border-[#d6d9e6] bg-[#f6f7fb] px-4 py-3 text-sm font-semibold text-[#364463]">
+                PDF, JPG, PNG
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-[#23205a] bg-[#1e1b4b] p-5 text-white shadow-[0_28px_80px_rgba(30,27,75,0.22)]">
-              <div className="pointer-events-none absolute -right-12 top-8 h-32 w-32 rounded-full border border-white/10" />
-              <div className="pointer-events-none absolute bottom-10 right-6 h-px w-24 rotate-[-28deg] bg-gradient-to-r from-transparent via-[#d4af37]/70 to-transparent" />
-
-              <div className="flex items-center justify-between">
+            <div className="rounded-[2.4rem] border border-[#25285e] bg-[linear-gradient(180deg,#1e2258_0%,#171b46_100%)] p-5 pl-[24%] shadow-[0_34px_90px_rgba(23,27,70,0.24)] sm:p-6 sm:pl-[22%] lg:pl-[21%]">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#b8c0ff]">
-                    Output
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#c9ceef]">
+                    Generated meet page
                   </p>
-                  <h3 className="mt-2 font-[var(--font-gym-display)] text-2xl font-bold tracking-[-0.03em]">
+                  <h2 className="mt-2 max-w-[12ch] text-3xl font-[750] leading-tight text-white sm:text-[2.1rem]">
                     Gasparilla Classic Gymnastics Meet
-                  </h3>
+                  </h2>
                 </div>
-                <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-[#eef1ff]">
-                  Parent-ready page
-                </div>
+                <span className="rounded-full border border-white/12 bg-white/8 px-3 py-2 text-xs font-semibold text-[#f4f5ff]">
+                  Parent-ready hub
+                </span>
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
@@ -278,8 +150,8 @@ export default function Hero({
                       key={tab}
                       className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                         index === 0
-                          ? "bg-[#d4af37] text-[#3a2f05]"
-                          : "border border-white/10 bg-white/5 text-[#e2e5ff]"
+                          ? "bg-[#d4af37] text-[#3d2f06]"
+                          : "border border-white/10 bg-white/6 text-[#e5e8ff]"
                       }`}
                     >
                       {tab}
@@ -288,69 +160,58 @@ export default function Hero({
                 )}
               </div>
 
-              <div className="mt-5 rounded-[1.55rem] bg-white p-5 text-[#1a2242]">
-                <div className="grid gap-4">
-                  <div className="rounded-[1.3rem] bg-[#f6f7ff] p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7d86a7]">
-                          Session 3
-                        </p>
-                        <p className="mt-1 text-lg font-semibold text-[#1a2242]">
-                          Level 7 and Xcel Platinum
-                        </p>
-                      </div>
-                      <CheckCircle2 className="h-5 w-5 text-[#4f46e5]" />
-                    </div>
-                    <div className="mt-4 space-y-2.5">
-                      {[
-                        ["7:20 AM", "Coach check-in"],
-                        ["7:45 AM", "General stretch"],
-                        ["8:00 AM", "Competition starts"],
-                        ["11:40 AM", "Awards"],
-                      ].map(([time, label]) => (
+              <div className="mt-6 rounded-[1.8rem] bg-white p-5 text-[#1d2447]">
+                <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                  <div className="rounded-[1.45rem] bg-[#f6f7fc] p-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8690ab]">
+                      Session 3
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-[#171b46]">
+                      Level 7 and Xcel Platinum
+                    </p>
+                    <div className="mt-5 space-y-3">
+                      {sessionRows.map(([label, time]) => (
                         <div
-                          key={time}
-                          className="flex items-center justify-between rounded-2xl border border-white bg-white px-4 py-3"
+                          key={label}
+                          className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-[0_6px_18px_rgba(23,27,70,0.05)]"
                         >
-                          <span className="text-sm font-medium text-[#233056]">{label}</span>
-                          <span className="text-sm text-[#667394]">{time}</span>
+                          <span className="text-sm font-medium text-[#34415f]">{label}</span>
+                          <span className="text-sm text-[#667391]">{time}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[1.25rem] bg-[#f6f7ff] p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7d86a7]">
+                  <div className="grid gap-4">
+                    <article className="rounded-[1.35rem] bg-[#f8f8fe] p-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8690ab]">
                         Venue
                       </p>
-                      <p className="mt-2 text-base font-semibold text-[#1a2242]">
+                      <p className="mt-2 text-lg font-semibold text-[#171b46]">
                         Convention Hall B
                       </p>
-                      <p className="mt-2 text-sm leading-6 text-[#667394]">
-                        Parking map, parent entrance, and spectator seating details.
+                      <p className="mt-2 text-sm leading-6 text-[#64708b]">
+                        Parking map, entry doors, and parent seating notes.
                       </p>
-                    </div>
-                    <div className="rounded-[1.25rem] bg-[#fdf7e6] p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#876b15]">
-                        Hotels + Docs
+                    </article>
+                    <article className="rounded-[1.35rem] bg-[#fdf7e8] p-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#92732a]">
+                        Hotels + docs
                       </p>
-                      <p className="mt-2 text-base font-semibold text-[#3f3210]">
+                      <p className="mt-2 text-lg font-semibold text-[#3e3211]">
                         Block closes Jan 18
                       </p>
-                      <p className="mt-2 text-sm leading-6 text-[#6d5d26]">
-                        Hotel sheet, meet packet, and results link in one place.
+                      <p className="mt-2 text-sm leading-6 text-[#75632b]">
+                        Hotel sheet, packet PDF, and results link in one place.
                       </p>
-                    </div>
+                    </article>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-3 text-sm text-[#d7dcff]">
-                <FileText className="h-4 w-4 text-[#d4af37]" />
-                Upload once. Publish one clean page.
-              </div>
+              <p className="mt-4 text-sm text-[#d9def8]">
+                Upload once. Publish one clean meet page.
+              </p>
             </div>
           </div>
         </div>

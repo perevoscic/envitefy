@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import {
-  getEventHistoryBySlugOrId,
+  getEventHistoryPublicRenderBySlugOrId,
   getUserIdByEmail,
   isEventSharedWithUser,
 } from "@/lib/db";
@@ -25,7 +25,7 @@ export default async function SignupPage({
   const session: any = await getServerSession(authOptions as any);
   const sessionEmail = (session?.user?.email as string | undefined) || null;
   const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
-  const row = await getEventHistoryBySlugOrId({
+  const row = await getEventHistoryPublicRenderBySlugOrId({
     value: awaitedParams.id,
     userId,
   });
@@ -37,6 +37,20 @@ export default async function SignupPage({
     ...(rawForm as SignupForm),
     enabled: true,
   });
+  const signupHeaderSig = row.media.signupHeaderSig || null;
+  if (
+    row.media.signupHeaderInline &&
+    signupForm.header?.backgroundImage &&
+    typeof signupForm.header.backgroundImage === "object"
+  ) {
+    const params = new URLSearchParams();
+    params.set("variant", "signup-header");
+    if (signupHeaderSig) params.set("v", signupHeaderSig);
+    signupForm.header.backgroundImage = {
+      ...signupForm.header.backgroundImage,
+      dataUrl: `/api/events/${row.id}/thumbnail?${params.toString()}`,
+    };
+  }
 
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
   const recipientAccepted = userId

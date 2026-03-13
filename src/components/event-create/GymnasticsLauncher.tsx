@@ -2,16 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Inter, Sora } from "next/font/google";
-import { ArrowRight, CheckCircle2, Globe, LayoutTemplate, Upload, X } from "lucide-react";
+import { Inter, Outfit } from "next/font/google";
+import { Globe, X } from "lucide-react";
 import Hero from "./gymnastics-landing/Hero";
+import FitStrip from "./gymnastics-landing/FitStrip";
 import HowItWorks from "./gymnastics-landing/HowItWorks";
-import FeatureGrid from "./gymnastics-landing/FeatureGrid";
 import ExampleMeet from "./gymnastics-landing/ExampleMeet";
-import Benefits from "./gymnastics-landing/Benefits";
-import CTA from "./gymnastics-landing/CTA";
+import MeetModules from "./gymnastics-landing/MeetModules";
+import WhyGymnasticsNeedsThis from "./gymnastics-landing/WhyGymnasticsNeedsThis";
+import StartYourMeet from "./gymnastics-landing/StartYourMeet";
+import FinalCTA from "./gymnastics-landing/FinalCTA";
+import styles from "./gymnastics-landing/gymnastics-landing.module.css";
 
-const sora = Sora({
+const outfit = Outfit({
   subsets: ["latin"],
   weight: ["400", "600", "700", "800"],
   variable: "--font-gym-display",
@@ -35,34 +38,12 @@ const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
 const PROCESSING_PROGRESS_CAP = 90;
 const SHOW_LIVE_URL_SYNC = false;
 
-const quickFacts = [
-  "Built for meet directors, gyms, and coaches",
-  "Structured for parents, athletes, and spectators",
-  "Designed around gymnastics sessions and logistics",
-];
-
-const organizerOptions = [
-  {
-    title: "Upload meet packet",
-    copy: "Best when you already have the schedule, packet, or PDF ready to go.",
-    action: "Upload file",
-    icon: Upload,
-    tone: "primary" as const,
-  },
-  {
-    title: "Open visual builder",
-    copy: "Use the template builder when you want to shape the page manually.",
-    action: "Open builder",
-    icon: LayoutTemplate,
-    tone: "secondary" as const,
-  },
-];
-
 export default function GymnasticsLauncher({
   forwardQueryString,
   defaultDateParam,
 }: GymnasticsLauncherProps) {
   const router = useRouter();
+  const startSectionRef = useRef<HTMLElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
   const ingestAbortRef = useRef<AbortController | null>(null);
@@ -390,11 +371,28 @@ export default function GymnasticsLauncher({
     router.push(`/event/gymnastics/customize${qs ? `?${qs}` : ""}`);
   };
 
+  const scrollToStart = () => {
+    startSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   return (
     <main
-      className={`${sora.variable} ${inter.variable} min-h-screen bg-[linear-gradient(180deg,#f7f8ff_0%,#f8fafc_50%,#ffffff_100%)] text-[#17153f] [font-family:var(--font-gym-body)]`}
+      className={`${outfit.variable} ${inter.variable} ${styles.shell} min-h-screen`}
     >
       <Hero
+        onGoToStart={scrollToStart}
+        onOpenBuilder={openTemplateBuilder}
+      />
+      <FitStrip />
+      <HowItWorks />
+      <ExampleMeet />
+      <MeetModules />
+      <WhyGymnasticsNeedsThis />
+      <StartYourMeet
+        sectionRef={startSectionRef}
         fileInputRef={fileInputRef}
         discoveryBusy={discoveryBusy}
         uploadBusy={uploadBusy}
@@ -411,90 +409,9 @@ export default function GymnasticsLauncher({
         onOpenBuilder={openTemplateBuilder}
       />
 
-      <section className="px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[2rem] border border-[#dde2f4] bg-white p-6 shadow-[0_18px_40px_rgba(30,27,75,0.05)]">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#4f46e5]">
-              Why this feels different
-            </p>
-            <h2 className="mt-4 font-[var(--font-gym-display)] text-3xl font-bold tracking-[-0.035em] text-[#1e1b4b]">
-              Made for gymnastics movement, timing, and meet-day logistics
-            </h2>
-            <div className="mt-5 space-y-3">
-              {quickFacts.map((fact) => (
-                <div
-                  key={fact}
-                  className="flex items-start gap-3 rounded-[1.25rem] border border-[#edf0fb] bg-[#f9faff] px-4 py-3"
-                >
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 text-[#4f46e5]" />
-                  <p className="text-sm leading-6 text-[#53607d]">{fact}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-2">
-            {organizerOptions.map(({ title, copy, action, icon: Icon, tone }) => (
-              <article
-                key={title}
-                className={`rounded-[2rem] border p-6 shadow-[0_18px_40px_rgba(30,27,75,0.05)] ${
-                  tone === "primary"
-                    ? "border-[#23205a] bg-[#1e1b4b] text-white"
-                    : "border-[#dde2f4] bg-white text-[#1e1b4b]"
-                }`}
-              >
-                <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
-                    tone === "primary"
-                      ? "bg-white/10 text-[#d4af37]"
-                      : "bg-[#efeeff] text-[#4f46e5]"
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-                <h3 className="mt-5 font-[var(--font-gym-display)] text-2xl font-bold tracking-[-0.03em]">
-                  {title}
-                </h3>
-                <p
-                  className={`mt-3 text-sm leading-7 ${
-                    tone === "primary" ? "text-[#dee2ff]" : "text-[#586581]"
-                  }`}
-                >
-                  {copy}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (tone === "primary") {
-                      fileInputRef.current?.click();
-                      return;
-                    }
-                    openTemplateBuilder();
-                  }}
-                  disabled={discoveryBusy}
-                  className={`mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
-                    tone === "primary"
-                      ? "bg-[#d4af37] text-[#3a2f05] hover:bg-[#e0bc50]"
-                      : "bg-[#1e1b4b] text-white hover:bg-[#16133a]"
-                  }`}
-                >
-                  {action}
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <HowItWorks />
-      <FeatureGrid />
-      <ExampleMeet />
-      <Benefits />
-
       {SHOW_LIVE_URL_SYNC ? (
         <section className="px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
-          <div className="mx-auto max-w-5xl rounded-[2rem] border border-[#dde2f4] bg-white p-8 shadow-[0_18px_45px_rgba(30,27,75,0.05)]">
+          <div className={`${styles.container} max-w-5xl rounded-[2rem] border border-[#dde2f4] bg-white p-8 shadow-[0_18px_45px_rgba(30,27,75,0.05)]`}>
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#4f46e5]">
                 Live URL Sync
@@ -555,9 +472,9 @@ export default function GymnasticsLauncher({
         </section>
       ) : null}
 
-      <CTA
+      <FinalCTA
         discoveryBusy={discoveryBusy}
-        onUploadClick={() => fileInputRef.current?.click()}
+        onGoToStart={scrollToStart}
       />
 
       <style jsx>{`

@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { createHash } from "crypto";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import nextDynamic from "next/dynamic";
@@ -21,7 +20,7 @@ import {
   revokeEventShare,
 } from "@/lib/db";
 import {
-  getEventHistoryBySlugOrId,
+  getEventHistoryPublicRenderBySlugOrId,
   getUserIdByEmail,
   getUserById,
 } from "@/lib/db";
@@ -101,7 +100,7 @@ const EVENT_PAGE_TIMING_ENV = process.env.EVENT_PAGE_TIMING === "1";
 
 const getCachedEventHistoryBySlugOrId = cache(
   async (value: string, userId?: string | null) =>
-    getEventHistoryBySlugOrId({
+    getEventHistoryPublicRenderBySlugOrId({
       value,
       userId: userId || undefined,
     })
@@ -630,6 +629,48 @@ export default async function EventPage({
     }
     return typeof row.data === "object" ? (row.data as any) : {};
   })();
+  const media = row.media;
+  const buildMediaUrl = (
+    variant?: "thumbnail" | "attachment" | "profile" | "hero" | "signup-header"
+  ) => {
+    const params = new URLSearchParams();
+    if (variant) params.set("variant", variant);
+    const sig =
+      variant === "attachment"
+        ? media.attachmentSig
+        : variant === "profile"
+        ? media.profileImageSig
+        : variant === "hero"
+        ? media.customHeroImageSig || media.heroImageSig
+        : variant === "signup-header"
+        ? media.signupHeaderSig
+        : media.thumbnailSig || media.attachmentSig;
+    if (sig) params.set("v", sig);
+    const qs = params.toString();
+    return `/api/events/${row.id}/thumbnail${qs ? `?${qs}` : ""}`;
+  };
+
+  if (media.thumbnailInline) {
+    (data as any).thumbnail = buildMediaUrl("thumbnail");
+  }
+  if (media.attachmentInline && data?.attachment && typeof data.attachment === "object") {
+    data.attachment = {
+      ...data.attachment,
+      dataUrl: buildMediaUrl("attachment"),
+    };
+  }
+  if (media.profileImageInline && data?.profileImage && typeof data.profileImage === "object") {
+    data.profileImage = {
+      ...data.profileImage,
+      dataUrl: buildMediaUrl("profile"),
+    };
+  }
+  if (media.heroImageInline) {
+    (data as any).heroImage = buildMediaUrl("hero");
+  }
+  if (media.customHeroImageInline) {
+    (data as any).customHeroImage = buildMediaUrl("hero");
+  }
   const requestedTab = String(
     ((awaitedSearchParams as any)?.tab ?? "") as string
   )
@@ -729,26 +770,6 @@ export default async function EventPage({
   const attachmentIsInline =
     typeof attachmentDataUrl === "string" &&
     attachmentDataUrl.trim().startsWith("data:");
-  const thumbnailSignature =
-    thumbnailIsInline && rawThumbnailValue
-      ? createHash("sha1").update(rawThumbnailValue).digest("hex")
-      : null;
-  const attachmentSignature =
-    attachmentIsInline && attachmentDataUrl
-      ? createHash("sha1").update(attachmentDataUrl).digest("hex")
-      : null;
-  const buildMediaUrl = (variant?: "thumbnail" | "attachment") => {
-    const params = new URLSearchParams();
-    if (variant === "attachment") params.set("variant", "attachment");
-    if (variant === "thumbnail") params.set("variant", "thumbnail");
-    const sig =
-      variant === "attachment"
-        ? attachmentSignature
-        : thumbnailSignature || attachmentSignature;
-    if (sig) params.set("v", sig);
-    const qs = params.toString();
-    return `/api/events/${row.id}/thumbnail${qs ? `?${qs}` : ""}`;
-  };
   if (thumbnailIsInline) {
     (data as any).thumbnail = undefined;
   }
