@@ -12,7 +12,17 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import { GymMeetScheduleAwardLegend, GymMeetScheduleInfo } from "./types";
+import {
+  GymMeetScheduleAwardLegend,
+  GymMeetScheduleColorLegendEntry,
+  GymMeetScheduleColorRef,
+  GymMeetScheduleInfo,
+} from "./types";
+import {
+  buildScheduleLegendEntryKey,
+  resolveScheduleLegendEntries,
+  resolveScheduleTextColor,
+} from "./scheduleColors";
 
 const safeString = (value: unknown): string =>
   typeof value === "string"
@@ -31,13 +41,18 @@ const formatScheduleDayLabel = (day: {
     if (!candidate) continue;
     const parsed = new Date(candidate);
     if (Number.isNaN(parsed.getTime())) continue;
-    return new Intl.DateTimeFormat("en-US", {
-      weekday: "long",
+    const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short" })
+      .format(parsed)
+      .replace(".", "")
+      .toUpperCase();
+    const monthDay = new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
     })
       .format(parsed)
-      .replace(",", " •");
+      .replace(",", "")
+      .toUpperCase();
+    return `${weekday} • ${monthDay}`;
   }
   return safeString(day.shortDate || day.date || day.isoDate || "Schedule Day");
 };
@@ -45,6 +60,17 @@ const formatScheduleDayLabel = (day: {
 const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
   const schedule = (value && typeof value === "object" ? value : {}) as Record<string, any>;
   const days = Array.isArray(schedule.days) ? schedule.days : [];
+  const normalizeColorRef = (item: any): GymMeetScheduleColorRef | null => {
+    if (!item || typeof item !== "object") return null;
+    const legendId = safeString(item?.legendId) || undefined;
+    const textColorHex = safeString(item?.textColorHex) || undefined;
+    const confidence =
+      typeof item?.confidence === "number" && Number.isFinite(item.confidence)
+        ? item.confidence
+        : null;
+    if (!legendId && !textColorHex && confidence == null) return null;
+    return { legendId, textColorHex, confidence };
+  };
   return {
     enabled: schedule.enabled !== false,
     venueLabel: safeString(schedule.venueLabel),
@@ -52,9 +78,33 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
     notes: (Array.isArray(schedule.notes) ? schedule.notes : [])
       .map((item) => safeString(item))
       .filter(Boolean),
+    colorLegend: (Array.isArray(schedule.colorLegend) ? schedule.colorLegend : [])
+      .map(
+        (item: any): GymMeetScheduleColorLegendEntry => ({
+          id: safeString(item?.id) || undefined,
+          target:
+            safeString(item?.target) === "session" || safeString(item?.target) === "club"
+              ? (safeString(item?.target) as "session" | "club")
+              : undefined,
+          colorHex: safeString(item?.colorHex) || null,
+          colorLabel: safeString(item?.colorLabel) || undefined,
+          meaning: safeString(item?.meaning),
+          sourceText: safeString(item?.sourceText) || undefined,
+          teamAwardEligible:
+            typeof item?.teamAwardEligible === "boolean" ? item.teamAwardEligible : null,
+        })
+      )
+      .filter(
+        (item) =>
+          item.meaning ||
+          item.colorHex ||
+          item.colorLabel ||
+          typeof item.teamAwardEligible === "boolean"
+      ),
     awardLegend: (Array.isArray(schedule.awardLegend) ? schedule.awardLegend : [])
       .map(
         (item: any): GymMeetScheduleAwardLegend => ({
+          colorHex: safeString(item?.colorHex) || null,
           colorLabel: safeString(item?.colorLabel) || undefined,
           meaning: safeString(item?.meaning),
           teamAwardEligible:
@@ -108,6 +158,7 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
             startTime: safeString(session?.startTime),
             warmupTime: safeString(session?.warmupTime) || undefined,
             note: safeString(session?.note) || undefined,
+            color: normalizeColorRef(session?.color),
             clubs: (Array.isArray(session?.clubs) ? session.clubs : [])
               .map((club: any, clubIndex: number) => ({
                 id:
@@ -123,6 +174,7 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
                     ? club.athleteCount
                     : null,
                 divisionLabel: safeString(club?.divisionLabel) || undefined,
+                color: normalizeColorRef(club?.color),
               }))
               .filter((club: any) => club.name),
           }))
@@ -159,6 +211,7 @@ type ScheduleClubGroup = {
     teamAwardEligible?: boolean | null;
     athleteCount?: number | null;
     divisionLabel?: string;
+    color?: GymMeetScheduleColorRef | null;
   }>;
 };
 
@@ -169,6 +222,7 @@ const groupSessionClubsByDivision = (
     teamAwardEligible?: boolean | null;
     athleteCount?: number | null;
     divisionLabel?: string;
+    color?: GymMeetScheduleColorRef | null;
   }>
 ): { hasDivisionGrouping: boolean; groups: ScheduleClubGroup[] } => {
   const hasDivisionGrouping = clubs.some((club) => safeString(club.divisionLabel));
@@ -204,72 +258,21 @@ const groupSessionClubsByDivision = (
   };
 };
 
-const extractPrimaryTime = (...values: Array<string | undefined>) => {
-  for (const value of values) {
-    const text = safeString(value);
-    if (!text) continue;
-    const match = text.match(/\b\d{1,2}:\d{2}\s*(?:am|pm)?\b/i);
-    if (match?.[0]) return match[0];
-    return text;
-  }
-  return "TBD";
+const extractSessionTimeValue = (value: string | undefined) => {
+  const text = safeString(value);
+  if (!text) return "";
+  const match = text.match(/\b\d{1,2}:\d{2}\s*(?:am|pm)?\b/i);
+  return match?.[0] || text;
 };
 
-const resolveLegendEntries = (
-  schedule: GymMeetScheduleInfo,
-  hasTeamAwardTrue: boolean,
-  hasTeamAwardFalse: boolean
-): Array<{ key: string; meaning: string; teamAwardEligible: boolean | null }> => {
-  const explicitEntries = Array.isArray(schedule.awardLegend) ? schedule.awardLegend : [];
-  if (explicitEntries.length > 0) {
-    return explicitEntries
-      .filter((entry) => entry.meaning || typeof entry.teamAwardEligible === "boolean")
-      .map((entry) => ({
-        key: `${entry.meaning}|${entry.colorLabel || ""}|${entry.teamAwardEligible ?? ""}`,
-        meaning: entry.meaning || "Award category",
-        teamAwardEligible:
-          typeof entry.teamAwardEligible === "boolean" ? entry.teamAwardEligible : null,
-      }));
-  }
-
-  const noteEntries = (Array.isArray(schedule.notes) ? schedule.notes : [])
-    .map((note) => safeString(note))
-    .filter(Boolean)
-    .flatMap((note) => {
-      const lower = note.toLowerCase();
-      if (/individual\s*(?:&|and)\s*team awards?/.test(lower)) {
-        return [{ key: note, meaning: note, teamAwardEligible: true }];
-      }
-      if (/individual awards? only/.test(lower)) {
-        return [{ key: note, meaning: note, teamAwardEligible: false }];
-      }
-      return [];
-    });
-  if (noteEntries.length > 0) return noteEntries;
-
-  const fallbackEntries = [];
-  if (hasTeamAwardTrue) {
-    fallbackEntries.push({
-      key: "team-awards",
-      meaning: "Individual & Team Awards",
-      teamAwardEligible: true,
-    });
-  }
-  if (hasTeamAwardFalse) {
-    fallbackEntries.push({
-      key: "individual-only",
-      meaning: "Individual Only",
-      teamAwardEligible: false,
-    });
-  }
-  return fallbackEntries;
-};
-
-const resolveSessionTimingLabel = (note: string | undefined, startTime: string, warmupTime?: string) => {
-  const explicitNote = safeString(note);
-  if (explicitNote) return explicitNote;
-  if (safeString(startTime) || safeString(warmupTime)) return "Stretch/warmup";
-  return "";
+const buildSessionTimingRows = (startTime: string, warmupTime?: string) => {
+  const stretchTime = extractSessionTimeValue(startTime);
+  const warmup = extractSessionTimeValue(warmupTime);
+  const rows = [];
+  if (stretchTime) rows.push({ label: "Stretch", value: stretchTime });
+  if (warmup) rows.push({ label: "Warm-up", value: warmup });
+  if (rows.length > 0) return rows;
+  return [];
 };
 
 const sessionHeadingClass = (value: string) => {
@@ -353,6 +356,10 @@ export default function ScheduleBoard({
       }))
       .filter((session) => session.clubs.length > 0);
   }, [activeDay, searchQuery]);
+  const hasVisibleClubs = useMemo(
+    () => filteredSessions.some((session) => session.clubs.length > 0),
+    [filteredSessions]
+  );
 
   const hasTeamAwardTrue = useMemo(
     () =>
@@ -372,7 +379,11 @@ export default function ScheduleBoard({
       ),
     [days]
   );
-  const showLegend = hasTeamAwardTrue || hasTeamAwardFalse;
+  const legendEntries = useMemo(
+    () => resolveScheduleLegendEntries(normalizedSchedule, hasTeamAwardTrue, hasTeamAwardFalse),
+    [normalizedSchedule, hasTeamAwardTrue, hasTeamAwardFalse]
+  );
+  const showLegend = legendEntries.length > 0;
 
   if (!normalizedSchedule.enabled || days.length === 0 || !activeDay) {
     return null;
@@ -382,9 +393,6 @@ export default function ScheduleBoard({
     appearance?.cardClass ||
     "rounded-[24px] border border-zinc-800 bg-[#0e0e0e] px-5 py-5 shadow-lg";
   const summaryCardClass = appearance?.summaryCardClass || cardClass;
-  const navShellClass =
-    appearance?.navShellClass ||
-    "rounded-[24px] border border-zinc-800 bg-black px-2 py-2";
   const navActiveClass =
     appearance?.navActiveClass ||
     "rounded-full bg-white/10 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white";
@@ -414,7 +422,6 @@ export default function ScheduleBoard({
     "border-b border-current/10 text-[10px] font-black uppercase tracking-[0.18em] opacity-60";
   const tableRowClass =
     appearance?.tableRowClass || "border-t border-current/10 transition-colors hover:bg-black/5";
-  const legendEntries = resolveLegendEntries(normalizedSchedule, hasTeamAwardTrue, hasTeamAwardFalse);
 
   const renderClubList = (clubs: typeof filteredSessions[number]["clubs"]) => (
     (() => {
@@ -422,23 +429,24 @@ export default function ScheduleBoard({
       const renderClubRow = (
         club: (typeof filteredSessions)[number]["clubs"][number],
         includeDivisionLabel: boolean
-      ) => (
-        <div key={club.id} className="flex items-center justify-between gap-3 py-1">
-          <span
-            className={joinClasses(
-              clubTextClass,
-              club.teamAwardEligible === true ? "text-[#f472b6]" : ""
-            )}
-          >
-            {formatClubName(club, { includeDivisionLabel })}
-          </span>
-          {club.teamAwardEligible === true ? (
-            <span className="rounded bg-[#f472b6]/10 p-1 shadow-sm">
-              <Trophy size={12} className="text-[#f472b6]" />
+      ) => {
+        const clubTextColor = resolveScheduleTextColor(club.color);
+        return (
+          <div key={club.id} className="flex items-center justify-between gap-3 py-1">
+            <span
+              className={clubTextClass}
+              style={clubTextColor ? { color: clubTextColor } : undefined}
+            >
+              {formatClubName(club, { includeDivisionLabel })}
             </span>
-          ) : null}
-        </div>
-      );
+            {club.teamAwardEligible === true ? (
+              <span className="rounded bg-black/5 p-1 shadow-sm">
+                <Trophy size={12} style={clubTextColor ? { color: clubTextColor } : undefined} />
+              </span>
+            ) : null}
+          </div>
+        );
+      };
 
       if (!grouped.hasDivisionGrouping) {
         return <div className="grid gap-y-3">{clubs.map((club) => renderClubRow(club, true))}</div>;
@@ -469,10 +477,12 @@ export default function ScheduleBoard({
           {clubs.map((club) => (
             <div
               key={club.id}
-              className={joinClasses(
-                "flex items-center gap-2 text-xs font-semibold",
-                club.teamAwardEligible === true ? "text-[#f472b6]" : ""
-              )}
+              className="flex items-center gap-2 text-xs font-semibold"
+              style={
+                resolveScheduleTextColor(club.color)
+                  ? { color: resolveScheduleTextColor(club.color) as string }
+                  : undefined
+              }
             >
               <span>{formatClubName(club)}</span>
               {club.teamAwardEligible === true ? <Trophy size={11} /> : null}
@@ -493,10 +503,12 @@ export default function ScheduleBoard({
               {group.clubs.map((club) => (
                 <div
                   key={club.id}
-                  className={joinClasses(
-                    "flex items-center gap-2 text-xs font-semibold",
-                    club.teamAwardEligible === true ? "text-[#f472b6]" : ""
-                  )}
+                  className="flex items-center gap-2 text-xs font-semibold"
+                  style={
+                    resolveScheduleTextColor(club.color)
+                      ? { color: resolveScheduleTextColor(club.color) as string }
+                      : undefined
+                  }
                 >
                   <span>{formatClubName(club, { includeDivisionLabel: false })}</span>
                   {club.teamAwardEligible === true ? <Trophy size={11} /> : null}
@@ -517,12 +529,15 @@ export default function ScheduleBoard({
           {clubs.map((club) => (
             <span
               key={club.id}
-              className={joinClasses(
-                "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]",
-                club.teamAwardEligible === true
-                  ? "border-[#f472b6]/40 bg-[#f472b6]/10 text-[#f472b6]"
-                  : "border-current/10 bg-black/5"
-              )}
+              className="rounded-full border border-current/10 bg-black/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]"
+              style={
+                resolveScheduleTextColor(club.color)
+                  ? {
+                      color: resolveScheduleTextColor(club.color) as string,
+                      borderColor: `${resolveScheduleTextColor(club.color)}66`,
+                    }
+                  : undefined
+              }
             >
               {formatClubName(club)}
             </span>
@@ -542,12 +557,15 @@ export default function ScheduleBoard({
               {group.clubs.map((club) => (
                 <span
                   key={club.id}
-                  className={joinClasses(
-                    "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]",
-                    club.teamAwardEligible === true
-                      ? "border-[#f472b6]/40 bg-[#f472b6]/10 text-[#f472b6]"
-                      : "border-current/10 bg-black/5"
-                  )}
+                  className="rounded-full border border-current/10 bg-black/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]"
+                  style={
+                    resolveScheduleTextColor(club.color)
+                      ? {
+                          color: resolveScheduleTextColor(club.color) as string,
+                          borderColor: `${resolveScheduleTextColor(club.color)}66`,
+                        }
+                      : undefined
+                  }
                 >
                   {formatClubName(club, { includeDivisionLabel: false })}
                 </span>
@@ -562,56 +580,81 @@ export default function ScheduleBoard({
   const renderGridView = () => (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {filteredSessions.map((session) => {
-        const timingLabel = resolveSessionTimingLabel(
-          session.note,
-          session.startTime,
-          session.warmupTime
-        );
-        const timingValue = extractPrimaryTime(session.startTime, session.warmupTime);
+        const timingRows = buildSessionTimingRows(session.startTime, session.warmupTime);
+        const showSessionClubs = session.clubs.length > 0;
+        const sessionTextColor = resolveScheduleTextColor(session.color);
         return (
           <article
             key={session.id}
             className={joinClasses("flex flex-col overflow-hidden transition-colors", cardClass)}
           >
             <div className="border-b border-current/10 p-6">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <span className="rounded-full border border-current/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] opacity-70">
-                  {session.label || session.code || "Session"}
-                </span>
+              <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <span
+                      className="rounded-full border border-current/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] opacity-70"
+                      style={sessionTextColor ? { color: sessionTextColor } : undefined}
+                    >
+                      {session.label || session.code || "Session"}
+                    </span>
+                  </div>
+                  <h3
+                    className={joinClasses(
+                      sessionHeadingClass(session.group || session.code || "Session"),
+                      sessionTitleClass
+                    )}
+                    style={
+                      sessionTextColor
+                        ? { ...(sessionTitleStyle || {}), color: sessionTextColor }
+                        : sessionTitleStyle
+                    }
+                  >
+                    {session.group || session.code || "Session"}
+                  </h3>
+                  <div
+                    className={joinClasses("mt-3 h-1 w-12 bg-current opacity-60", accentClass)}
+                    style={sessionTextColor ? { color: sessionTextColor } : undefined}
+                  />
+                </div>
+                {timingRows.length > 0 ? (
+                  <div
+                    className={joinClasses(
+                      "space-y-2 text-xs font-semibold leading-snug sm:min-w-[148px] sm:text-right md:text-sm",
+                      accentClass
+                    )}
+                  >
+                    {timingRows.map((timingRow, timingIndex) => (
+                      <div
+                        key={`${session.id}-grid-timing-${timingIndex + 1}`}
+                        className="flex items-start gap-2 sm:justify-end"
+                      >
+                        <Clock size={15} strokeWidth={2.5} className="mt-0.5 shrink-0" />
+                        <span className="break-words">
+                          <span className="opacity-75">{timingRow.label}:</span>{" "}
+                          <span className="font-bold">{timingRow.value}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
-              <h3
-                className={joinClasses(
-                  sessionHeadingClass(session.group || session.code || "Session"),
-                  sessionTitleClass
-                )}
-                style={sessionTitleStyle}
-              >
-                {session.group || session.code || "Session"}
-              </h3>
-              <div className={joinClasses("mb-4 mt-3 h-1 w-12 bg-current opacity-60", accentClass)} />
-              {timingLabel ? (
-                <div
-                  className={joinClasses(
-                    "flex items-start gap-2 text-xs font-semibold leading-snug md:text-sm",
-                    accentClass
-                  )}
-                >
-                  <Clock size={15} strokeWidth={2.5} className="mt-0.5 shrink-0" />
-                  <span className="break-words">
-                    <span className="opacity-75">{timingLabel}:</span>{" "}
-                    <span className="font-bold">{timingValue}</span>
-                  </span>
+              {safeString(session.note) ? (
+                <div className="text-sm font-medium leading-snug opacity-70">
+                  {session.note}
                 </div>
               ) : null}
             </div>
 
-            <div className="flex-1 space-y-4 p-6">
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] opacity-60">
-                <Users size={14} />
-                Registered Clubs
+            {showSessionClubs ? (
+              <div className="flex-1 space-y-4 p-6">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] opacity-60">
+                  <Users size={14} />
+                  Registered Clubs
+                </div>
+                {renderClubList(session.clubs)}
               </div>
-              {renderClubList(session.clubs)}
-            </div>
+            ) : null}
           </article>
         );
       })}
@@ -621,22 +664,29 @@ export default function ScheduleBoard({
   const renderTimelineView = () => (
     <div className="space-y-5">
       {filteredSessions.map((session, index) => {
-        const timingValue = extractPrimaryTime(session.startTime, session.warmupTime);
-        const warmupLabel = safeString(session.warmupTime);
+        const timingRows = buildSessionTimingRows(session.startTime, session.warmupTime);
+        const showSessionClubs = session.clubs.length > 0;
+        const sessionTextColor = resolveScheduleTextColor(session.color);
         return (
           <div
             key={session.id}
             className="grid gap-4 md:grid-cols-[112px_24px_minmax(0,1fr)] md:gap-6"
           >
             <div className="space-y-1 md:pt-2 md:text-right">
-              <div className={joinClasses("text-base font-black md:text-lg", accentClass)}>
-                {timingValue}
-              </div>
-              {warmupLabel ? (
-                <div className="text-[10px] font-black uppercase tracking-[0.16em] opacity-55">
-                  Warmup {warmupLabel}
+              {(timingRows.length > 0
+                ? timingRows.map((row) => `${row.label} ${row.value}`)
+                : ["TBD"]
+              ).map((line, timingIndex) => (
+                <div
+                  key={`${session.id}-timing-${timingIndex + 1}`}
+                  className={joinClasses(
+                    timingIndex === 0 ? "text-base font-black md:text-lg" : "text-[10px] font-black uppercase tracking-[0.16em] opacity-55",
+                    accentClass
+                  )}
+                >
+                  {line}
                 </div>
-              ) : null}
+              ))}
             </div>
 
             <div className="relative hidden md:flex justify-center">
@@ -654,7 +704,10 @@ export default function ScheduleBoard({
             <article className={joinClasses("space-y-4", cardClass)}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <span className="rounded-full border border-current/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] opacity-70">
+                  <span
+                    className="rounded-full border border-current/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] opacity-70"
+                    style={sessionTextColor ? { color: sessionTextColor } : undefined}
+                  >
                     {session.label || session.code || "Session"}
                   </span>
                   <h3
@@ -663,7 +716,11 @@ export default function ScheduleBoard({
                       sessionHeadingClass(session.group || session.code || "Session"),
                       sessionTitleClass
                     )}
-                    style={sessionTitleStyle}
+                    style={
+                      sessionTextColor
+                        ? { ...(sessionTitleStyle || {}), color: sessionTextColor }
+                        : sessionTitleStyle
+                    }
                   >
                     {session.group || session.code || "Session"}
                   </h3>
@@ -680,11 +737,15 @@ export default function ScheduleBoard({
                 ) : null}
               </div>
 
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] opacity-60">
-                <Users size={14} />
-                Participating Clubs
-              </div>
-              {renderTimelineClubList(session.clubs)}
+              {showSessionClubs ? (
+                <>
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] opacity-60">
+                    <Users size={14} />
+                    Participating Clubs
+                  </div>
+                  {renderTimelineClubList(session.clubs)}
+                </>
+              ) : null}
             </article>
           </div>
         );
@@ -700,35 +761,62 @@ export default function ScheduleBoard({
             <th className="px-4 py-4">Session</th>
             <th className="px-4 py-4">Time</th>
             <th className="px-4 py-4">Competitive Group</th>
-            <th className="px-4 py-4">Participating Gym Clubs</th>
+            {hasVisibleClubs ? <th className="px-4 py-4">Participating Gym Clubs</th> : null}
           </tr>
         </thead>
         <tbody>
           {filteredSessions.map((session) => (
             <tr key={session.id} className={tableRowClass}>
               <td className="px-4 py-4 align-top">
-                <span className="text-sm font-black">
+                <span
+                  className="text-sm font-black"
+                  style={
+                    resolveScheduleTextColor(session.color)
+                      ? { color: resolveScheduleTextColor(session.color) as string }
+                      : undefined
+                  }
+                >
                   {session.label || session.code || "Session"}
                 </span>
               </td>
               <td className="px-4 py-4 align-top">
-                <div className="text-sm font-semibold">
-                  {extractPrimaryTime(session.startTime, session.warmupTime)}
+                <div className="space-y-1">
+                  {(buildSessionTimingRows(session.startTime, session.warmupTime).length > 0
+                    ? buildSessionTimingRows(session.startTime, session.warmupTime).map(
+                        (row) => `${row.label}: ${row.value}`
+                      )
+                    : ["TBD"]
+                  ).map((line, timingIndex) => (
+                    <div
+                      key={`${session.id}-table-timing-${timingIndex + 1}`}
+                      className={
+                        timingIndex === 0
+                          ? "text-sm font-semibold"
+                          : "text-[10px] font-black uppercase tracking-[0.16em] opacity-55"
+                      }
+                    >
+                      {line}
+                    </div>
+                  ))}
                 </div>
-                {safeString(session.warmupTime) ? (
-                  <div className="text-[10px] font-black uppercase tracking-[0.16em] opacity-55">
-                    Warmup {session.warmupTime}
-                  </div>
-                ) : null}
               </td>
               <td className="px-4 py-4 align-top">
-                <span className="text-sm font-semibold">
+                <span
+                  className="text-sm font-semibold"
+                  style={
+                    resolveScheduleTextColor(session.color)
+                      ? { color: resolveScheduleTextColor(session.color) as string }
+                      : undefined
+                  }
+                >
                   {session.group || session.code || "Session"}
                 </span>
               </td>
-              <td className="px-4 py-4 align-top">
-                {renderCompactClubCell(session.clubs)}
-              </td>
+              {hasVisibleClubs ? (
+                <td className="px-4 py-4 align-top">
+                  {session.clubs.length > 0 ? renderCompactClubCell(session.clubs) : null}
+                </td>
+              ) : null}
             </tr>
           ))}
         </tbody>
@@ -771,8 +859,8 @@ export default function ScheduleBoard({
 
   return (
     <div className="space-y-6">
-      <div className={joinClasses("space-y-3", navShellClass)}>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="overflow-x-auto">
             <div className="flex min-w-max items-center gap-2">
               {days.map((day) => {
@@ -783,7 +871,7 @@ export default function ScheduleBoard({
                     type="button"
                     onClick={() => setActiveDayId(day.id)}
                     className={joinClasses(
-                      "relative min-w-[152px] whitespace-nowrap",
+                      "relative whitespace-nowrap",
                       isActive ? navActiveClass : navIdleClass
                     )}
                   >
@@ -794,41 +882,39 @@ export default function ScheduleBoard({
             </div>
           </div>
 
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          {viewModes.map((mode) => {
-            const Icon = mode.icon;
-            const isActive = viewMode === mode.id;
-            return (
-              <button
-                key={mode.id}
-                type="button"
-                onClick={() => setViewMode(mode.id)}
-                className={isActive ? navActiveClass : navIdleClass}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Icon size={14} />
-                  {mode.label}
-                </span>
-              </button>
-            );
-          })}
+          <div className="flex flex-wrap items-center gap-2">
+            {viewModes.map((mode) => {
+              const Icon = mode.icon;
+              const isActive = viewMode === mode.id;
+              return (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => setViewMode(mode.id)}
+                  aria-label={mode.label}
+                  title={mode.label}
+                  className={isActive ? navActiveClass : navIdleClass}
+                >
+                  <span className="inline-flex items-center">
+                    <Icon size={14} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <label className="relative block w-full lg:max-w-sm">
+        <label className="relative block w-full xl:max-w-[240px]">
           <Search
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 opacity-55"
-            size={18}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-55"
+            size={16}
           />
           <input
             type="text"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search clubs"
-            className="w-full rounded-2xl border border-current/10 bg-black/10 py-4 pl-11 pr-5 text-sm font-medium outline-none transition-colors placeholder:opacity-50 focus:border-current/25"
+            className="w-full rounded-xl border border-current/10 bg-black/10 py-3 pl-9 pr-4 text-sm font-medium outline-none transition-colors placeholder:opacity-50 focus:border-current/25"
           />
         </label>
       </div>
@@ -840,21 +926,33 @@ export default function ScheduleBoard({
             summaryCardClass
           )}
         >
-          {legendEntries.map((entry) => (
-            <div
-              key={entry.key}
-              className={joinClasses("flex items-center gap-3", legendTextClass)}
-            >
-              <div
-                className={
-                  entry.teamAwardEligible === true
-                    ? "h-4 w-4 rounded bg-[#f472b6] shadow-sm shadow-pink-500/20"
-                    : "h-4 w-4 rounded border-2 border-current/20 bg-white/90"
-                }
-              />
-              <span>{entry.meaning}</span>
-            </div>
-          ))}
+          {(["session", "club"] as const).map((target) => {
+            const targetEntries = legendEntries.filter((entry) => (entry.target || "club") === target);
+            if (!targetEntries.length) return null;
+            return (
+              <div key={target} className="flex flex-wrap items-center gap-4">
+                <span className={joinClasses("opacity-60", legendTextClass)}>
+                  {target === "session" ? "Session Colors" : "Club Colors"}
+                </span>
+                {targetEntries.map((entry, entryIndex) => (
+                  <div
+                    key={buildScheduleLegendEntryKey(entry, entryIndex)}
+                    className={joinClasses("flex items-center gap-3", legendTextClass)}
+                  >
+                    {entry.colorHex ? (
+                      <div
+                        className="h-4 w-4 rounded border border-current/10"
+                        style={{ backgroundColor: entry.colorHex }}
+                      />
+                    ) : (
+                      <div className="h-4 w-4 rounded border-2 border-current/20 bg-white/90" />
+                    )}
+                    <span>{entry.meaning || "Schedule color"}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
           <div className="flex items-center gap-2 text-xs font-medium normal-case tracking-normal opacity-70 md:ml-auto">
             <Info size={14} className={accentClass} />
             Athlete spot counts are shown in parentheses when provided.

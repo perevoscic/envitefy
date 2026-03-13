@@ -135,6 +135,11 @@ type ScheduleClub = {
   teamAwardEligible: boolean | null;
   athleteCount: number | null;
   divisionLabel: string;
+  color?: {
+    legendId?: string | null;
+    textColorHex?: string | null;
+    confidence?: number | null;
+  } | null;
 };
 
 type ScheduleSession = {
@@ -145,6 +150,11 @@ type ScheduleSession = {
   startTime: string;
   warmupTime: string;
   note: string;
+  color?: {
+    legendId?: string | null;
+    textColorHex?: string | null;
+    confidence?: number | null;
+  } | null;
   clubs: ScheduleClub[];
 };
 
@@ -161,6 +171,21 @@ type ScheduleInfo = {
   venueLabel: string;
   supportEmail: string;
   notes: string[];
+  colorLegend?: Array<{
+    id?: string;
+    target?: "session" | "club";
+    colorHex?: string | null;
+    colorLabel?: string;
+    meaning: string;
+    sourceText?: string;
+    teamAwardEligible?: boolean | null;
+  }>;
+  awardLegend?: Array<{
+    colorHex?: string | null;
+    colorLabel?: string;
+    meaning: string;
+    teamAwardEligible?: boolean | null;
+  }>;
   days: ScheduleDay[];
 };
 

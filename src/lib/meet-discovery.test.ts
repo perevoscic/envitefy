@@ -11,6 +11,10 @@ import {
 const {
   deriveDateRangeFromText,
   classifyMeetDateCandidates,
+  sanitizeHostGymValue,
+  findBestScheduleSessionColorBox,
+  findBestScheduleClubColorBox,
+  deriveScheduleLegendEntriesFromOcrTextBoxes,
   normalizeParseResult,
   sanitizeDiscoveryParseResult,
   mergeCoachFeesFromAdmission,
@@ -100,6 +104,73 @@ test("sanitizeDiscoveryParseResult suppresses schedule grids and reroutes invali
   assert.ok(
     !sanitized.unmappedFacts.some((fact) => /Visit Lauderdale|360 Gymnastics FL/i.test(fact.detail))
   );
+});
+
+test("sanitizeHostGymValue strips packet intro prose from host gym text", () => {
+  assert.equal(
+    sanitizeHostGymValue(
+      "Team Twisters & USA Competitions is proud to host the 2026 Florida USA Gymnastics Level 7/9/10 State Championships. Please review the following items enclosed in this packet:"
+    ),
+    "Team Twisters & USA Competitions"
+  );
+  assert.equal(
+    sanitizeHostGymValue(
+      "Recognized at the Awards Ceremony following the last L9 session on Sunday"
+    ),
+    null
+  );
+});
+
+test("schedule color OCR matchers prefer exact session and club text boxes", () => {
+  const boxes = [
+    {
+      text: "SESSION FR1",
+      normalizedText: "session fr1",
+      clubLookup: "session fr1",
+      box: { x: 10, y: 10, w: 80, h: 20 },
+      area: 1600,
+    },
+    {
+      text: "Alpha Gym (12)",
+      normalizedText: "alpha gym 12",
+      clubLookup: "alpha gym",
+      box: { x: 20, y: 40, w: 120, h: 18 },
+      area: 2160,
+    },
+  ];
+
+  assert.equal(findBestScheduleSessionColorBox(boxes as any, "FR1")?.text, "SESSION FR1");
+  assert.equal(findBestScheduleClubColorBox(boxes as any, "Alpha Gym")?.text, "Alpha Gym (12)");
+});
+
+test("schedule color OCR legend derivation maps pink and black club legend text", () => {
+  const boxes = [
+    {
+      text: "Clubs in pink = Individual & Team Awards",
+      normalizedText: "clubs in pink individual team awards",
+      clubLookup: "clubs in pink individual team awards",
+      box: { x: 0, y: 0, w: 100, h: 10 },
+      area: 1000,
+    },
+    {
+      text: "Clubs in black = Individual Awards Only",
+      normalizedText: "clubs in black individual awards only",
+      clubLookup: "clubs in black individual awards only",
+      box: { x: 0, y: 20, w: 100, h: 10 },
+      area: 1000,
+    },
+  ];
+
+  const legend = deriveScheduleLegendEntriesFromOcrTextBoxes(boxes as any, [
+    { colorHex: "#f472b6", teamAwardEligible: true },
+    { colorHex: "#111111", teamAwardEligible: false },
+  ]);
+
+  assert.equal(legend.length, 2);
+  assert.equal(legend[0]?.teamAwardEligible, true);
+  assert.equal(legend[0]?.colorLabel, "Pink");
+  assert.equal(legend[1]?.teamAwardEligible, false);
+  assert.equal(legend[1]?.colorLabel, "Black");
 });
 
 const emptyQualitySignals = {
@@ -236,6 +307,166 @@ test("collectDiscoveryCandidates prioritizes packet-style links over site chrome
   assert.ok(topThreeLabels.includes("Rotation Sheets"));
   assert.ok(!topThreeLabels.includes("About Us"));
   assert.ok(!topThreeLabels.includes("Contact"));
+});
+
+test("normalizeParseResult preserves dynamic schedule color legends and per-item color refs", () => {
+  const normalized = normalizeParseResult({
+    eventType: "gymnastics_meet",
+    documentProfile: "meet_overview",
+    title: "Florida Crown Championships",
+    dates: "March 13-15, 2026",
+    startAt: null,
+    endAt: null,
+    timezone: "America/New_York",
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+    hostGym: "USA Competitions",
+    admission: [],
+    athlete: {},
+    meetDetails: {},
+    logistics: {},
+    policies: {},
+    coachInfo: {},
+    contacts: [],
+    deadlines: [],
+    gear: {},
+    volunteers: {},
+    communications: {},
+    links: [],
+    unmappedFacts: [],
+    schedule: {
+      venueLabel: "Main arena",
+      supportEmail: "info@usacompetitions.com",
+      notes: [],
+      colorLegend: [
+        {
+          id: "club-pink",
+          target: "club",
+          colorHex: "#F472B6",
+          colorLabel: "Pink",
+          meaning: "Individual & Team Awards",
+          sourceText: "Clubs in pink are competing for Individual & Team awards.",
+          teamAwardEligible: true,
+        },
+      ],
+      awardLegend: [],
+      annotations: [],
+      assignments: [],
+      days: [
+        {
+          date: "Friday, March 13, 2026",
+          shortDate: "Friday • Mar 13",
+          sessions: [
+            {
+              code: "FR1",
+              group: "Bronze",
+              startTime: "8:00 AM",
+              warmupTime: "8:15 AM",
+              note: null,
+              color: { legendId: "session-bronze", textColorHex: "#c81e78", confidence: 0.91 },
+              clubs: [
+                {
+                  name: "Browns Gym",
+                  teamAwardEligible: true,
+                  athleteCount: 24,
+                  divisionLabel: null,
+                  color: { legendId: "club-pink", textColorHex: "#f472b6", confidence: 0.98 },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.ok(normalized);
+  assert.equal(normalized?.schedule.colorLegend?.[0]?.colorHex, "#f472b6");
+  assert.equal(normalized?.schedule.days[0]?.sessions[0]?.color?.textColorHex, "#c81e78");
+  assert.equal(
+    normalized?.schedule.days[0]?.sessions[0]?.clubs[0]?.color?.legendId,
+    "club-pink"
+  );
+});
+
+test("mergeScheduleWithFallback keeps schedule color metadata alongside club award flags", () => {
+  const merged = mergeScheduleWithFallback(
+    {
+      venueLabel: null,
+      supportEmail: null,
+      notes: [],
+      colorLegend: [
+        {
+          id: "club-pink",
+          target: "club",
+          colorHex: "#f472b6",
+          colorLabel: "Pink",
+          meaning: "Individual & Team Awards",
+          sourceText: null,
+          teamAwardEligible: true,
+        },
+      ],
+      awardLegend: [],
+      annotations: [],
+      assignments: [],
+      days: [
+        {
+          date: "Friday, March 13, 2026",
+          shortDate: "Friday • Mar 13",
+          sessions: [
+            {
+              code: "FR1",
+              group: "Bronze",
+              startTime: "8:00 AM",
+              warmupTime: null,
+              note: null,
+              color: { legendId: "session-bronze", textColorHex: "#c81e78", confidence: 0.9 },
+              clubs: [],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      venueLabel: null,
+      supportEmail: null,
+      notes: [],
+      colorLegend: [],
+      awardLegend: [],
+      annotations: [],
+      assignments: [],
+      days: [
+        {
+          date: "Friday, March 13, 2026",
+          shortDate: "Friday • Mar 13",
+          sessions: [
+            {
+              code: "FR1",
+              group: "Bronze",
+              startTime: "8:00 AM",
+              warmupTime: null,
+              note: null,
+              clubs: [
+                {
+                  name: "Browns Gym",
+                  teamAwardEligible: true,
+                  athleteCount: 24,
+                  divisionLabel: null,
+                  color: { legendId: "club-pink", textColorHex: "#f472b6", confidence: 0.96 },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  );
+
+  assert.equal(merged.colorLegend?.[0]?.id, "club-pink");
+  assert.equal(merged.colorLegend?.[0]?.colorHex, "#f472b6");
+  assert.equal(merged.days[0]?.sessions[0]?.color?.textColorHex, "#c81e78");
+  assert.equal(merged.days[0]?.sessions[0]?.clubs[0]?.color?.textColorHex, "#f472b6");
+  assert.equal(merged.days[0]?.sessions[0]?.clubs[0]?.teamAwardEligible, true);
 });
 
 test("extractDiscoveryText crawls one same-host HTML hop and preserves external links", async (t) => {
@@ -1545,6 +1776,50 @@ test("mapParseResultToGymData preserves schedule annotations and assignments", a
   assert.equal(mapped.advancedSections.schedule.annotations[0]?.sessionCode, "SA1");
   assert.equal(mapped.advancedSections.schedule.assignments[0]?.sessionCode, "SU2");
   assert.equal(mapped.advancedSections.schedule.assignments[0]?.birthDateRange, "7/3/2010 — 10/27/2011");
+});
+
+test("mapParseResultToGymData does not map packet intro prose into host gym fields", async () => {
+  const mapped = await mapParseResultToGymData(
+    normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "meet_overview",
+      title: "State Meet",
+      dates: "March 20-22, 2026",
+      startAt: null,
+      endAt: null,
+      timezone: "America/New_York",
+      venue: "Coral Springs Gymnasium",
+      address: "2501 Coral Springs Drive, Coral Springs, FL 33065",
+      hostGym:
+        "Team Twisters & USA Competitions is proud to host the 2026 Florida USA Gymnastics Level 7/9/10 State Championships. Please review the following items enclosed in this packet:",
+      admission: [],
+      athlete: {},
+      meetDetails: {},
+      logistics: {},
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      schedule: {
+        venueLabel: "",
+        supportEmail: "",
+        notes: [],
+        awardLegend: [],
+        annotations: [],
+        assignments: [],
+        days: [],
+      },
+      links: [],
+      unmappedFacts: [],
+    })!,
+    {}
+  );
+
+  assert.equal(mapped.hostGym, "Team Twisters & USA Competitions");
+  assert.equal(mapped.customFields.team, "Team Twisters & USA Competitions");
 });
 
 test("computeGymBuilderStatuses marks schedule ready when sessions exist", () => {

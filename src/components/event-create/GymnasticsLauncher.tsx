@@ -19,6 +19,7 @@ type GymnasticsLauncherProps = {
 type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
+const PROCESSING_PROGRESS_CAP = 90;
 
 export default function GymnasticsLauncher({
   forwardQueryString,
@@ -49,6 +50,8 @@ export default function GymnasticsLauncher({
     status: string;
     bucket: number;
   }>({ status: "", bucket: -1 });
+  const uploadIndeterminate =
+    uploadBusy && uploadStatus === "Processing..." && uploadProgress >= PROCESSING_PROGRESS_CAP;
 
   const toErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
@@ -123,7 +126,12 @@ export default function GymnasticsLauncher({
     const reportProgress = (progress: number, status: string) => {
       const bucket = Math.floor(progress / 10);
       const lastState = discoveryLogStateRef.current;
-      if (lastState.status !== status || lastState.bucket !== bucket || progress === 96 || progress === 100) {
+      if (
+        lastState.status !== status ||
+        lastState.bucket !== bucket ||
+        progress === PROCESSING_PROGRESS_CAP ||
+        progress === 100
+      ) {
         log(`progress ${progress}%`, { status });
         discoveryLogStateRef.current = { status, bucket };
       }
@@ -229,8 +237,11 @@ export default function GymnasticsLauncher({
     log("starting parse request", { eventId });
     let parseProgress = 72;
     parseProgressTimerRef.current = setInterval(() => {
-      parseProgress = Math.min(parseProgress + 3, 96);
-      reportProgress(parseProgress, "Processing meet file...");
+      parseProgress = Math.min(parseProgress + 3, PROCESSING_PROGRESS_CAP);
+      reportProgress(
+        parseProgress,
+        parseProgress >= PROCESSING_PROGRESS_CAP ? "Processing..." : "Processing meet file..."
+      );
     }, 700);
 
     try {
@@ -416,7 +427,7 @@ export default function GymnasticsLauncher({
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#5530a8]">
                       <span>{uploadStatus || "Processing meet file..."}</span>
                       <div className="flex items-center gap-2">
-                        <span>{uploadProgress}%</span>
+                        {!uploadIndeterminate ? <span>{uploadProgress}%</span> : null}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -432,10 +443,16 @@ export default function GymnasticsLauncher({
                       </div>
                     </div>
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#e6defa]">
-                      <div
-                        className="h-full rounded-full bg-[#6d35f5] transition-[width] duration-300 ease-out"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
+                      {uploadIndeterminate ? (
+                        <div className="relative h-full w-full overflow-hidden">
+                          <div className="launcher-indeterminate-bar absolute inset-y-0 left-0 w-2/5 rounded-full bg-[#6d35f5]" />
+                        </div>
+                      ) : (
+                        <div
+                          className="h-full rounded-full bg-[#6d35f5] transition-[width] duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -577,6 +594,19 @@ export default function GymnasticsLauncher({
           </section>
         </div>
       </div>
+      <style jsx>{`
+        @keyframes launcher-indeterminate {
+          0% {
+            transform: translateX(-120%);
+          }
+          100% {
+            transform: translateX(280%);
+          }
+        }
+        .launcher-indeterminate-bar {
+          animation: launcher-indeterminate 1.15s linear infinite;
+        }
+      `}</style>
     </main>
   );
 }

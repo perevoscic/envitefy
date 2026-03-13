@@ -10,6 +10,8 @@ import {
   GymMeetDiscoverySection,
   GymMeetLinkAction,
   GymMeetScheduleAwardLegend,
+  GymMeetScheduleColorLegendEntry,
+  GymMeetScheduleColorRef,
   GymMeetScheduleInfo,
 } from "./types";
 import {
@@ -73,6 +75,17 @@ const normalizeScheduleInfo = (
   fallback: Partial<GymMeetScheduleInfo> = {}
 ): GymMeetScheduleInfo => {
   const schedule = (value && typeof value === "object" ? value : {}) as Record<string, any>;
+  const normalizeColorRef = (item: any): GymMeetScheduleColorRef | null => {
+    if (!item || typeof item !== "object") return null;
+    const legendId = safeString(item?.legendId) || undefined;
+    const textColorHex = safeString(item?.textColorHex) || undefined;
+    const confidence =
+      typeof item?.confidence === "number" && Number.isFinite(item.confidence)
+        ? item.confidence
+        : null;
+    if (!legendId && !textColorHex && confidence == null) return null;
+    return { legendId, textColorHex, confidence };
+  };
   const days = (Array.isArray(schedule.days) ? schedule.days : [])
     .map((day: any, dayIndex: number) => {
       const sessions = (Array.isArray(day?.sessions) ? day.sessions : [])
@@ -88,6 +101,7 @@ const normalizeScheduleInfo = (
           startTime: safeString(session?.startTime),
           warmupTime: safeString(session?.warmupTime),
           note: safeString(session?.note),
+          color: normalizeColorRef(session?.color),
           clubs: uniqueBy(
             (Array.isArray(session?.clubs) ? session.clubs : [])
               .map((club: any, clubIndex: number) => ({
@@ -104,6 +118,7 @@ const normalizeScheduleInfo = (
                     ? club.athleteCount
                     : null,
                 divisionLabel: safeString(club?.divisionLabel),
+                color: normalizeColorRef(club?.color),
               }))
               .filter((club) => club.name),
             (club) => [club.name, club.divisionLabel, `${club.athleteCount ?? ""}`].join("|")
@@ -134,6 +149,36 @@ const normalizeScheduleInfo = (
         .filter(Boolean),
       (item) => item
     ),
+    colorLegend: uniqueBy(
+      [
+        ...(Array.isArray(schedule.colorLegend) ? schedule.colorLegend : []),
+        ...(Array.isArray(fallback.colorLegend) ? fallback.colorLegend : []),
+      ]
+        .map(
+          (item: any): GymMeetScheduleColorLegendEntry => ({
+            id: safeString(item?.id) || undefined,
+            target:
+              safeString(item?.target) === "session" || safeString(item?.target) === "club"
+                ? (safeString(item?.target) as "session" | "club")
+                : undefined,
+            colorHex: safeString(item?.colorHex) || null,
+            colorLabel: safeString(item?.colorLabel) || undefined,
+            meaning: safeString(item?.meaning),
+            sourceText: safeString(item?.sourceText) || undefined,
+            teamAwardEligible:
+              typeof item?.teamAwardEligible === "boolean" ? item.teamAwardEligible : null,
+          })
+        )
+        .filter(
+          (item) =>
+            item.meaning ||
+            item.colorHex ||
+            item.colorLabel ||
+            typeof item.teamAwardEligible === "boolean"
+        ),
+      (item) =>
+        `${item.id || ""}|${item.target || ""}|${item.colorHex || ""}|${item.colorLabel || ""}|${item.meaning}|${item.sourceText || ""}|${item.teamAwardEligible ?? ""}`
+    ),
     awardLegend: uniqueBy(
       [
         ...(Array.isArray(schedule.awardLegend) ? schedule.awardLegend : []),
@@ -141,6 +186,7 @@ const normalizeScheduleInfo = (
       ]
         .map(
           (item: any): GymMeetScheduleAwardLegend => ({
+            colorHex: safeString(item?.colorHex) || null,
             colorLabel: safeString(item?.colorLabel) || undefined,
             meaning: safeString(item?.meaning),
             teamAwardEligible:
@@ -148,7 +194,8 @@ const normalizeScheduleInfo = (
           })
         )
         .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
-      (item) => `${item.meaning}|${item.colorLabel || ""}|${item.teamAwardEligible ?? ""}`
+      (item) =>
+        `${item.meaning}|${item.colorHex || ""}|${item.colorLabel || ""}|${item.teamAwardEligible ?? ""}`
     ),
     annotations: uniqueBy(
       [

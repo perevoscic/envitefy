@@ -5,6 +5,7 @@ import {
   getEventHistoryById,
   getEventHistoryInputBlob,
   getUserIdByEmail,
+  query,
   updateEventHistoryData,
   updateEventHistoryDataMerge,
   updateEventHistoryTitle,
@@ -18,6 +19,7 @@ import {
   isDiscoveryDebugArtifactsEnabled,
   mapParseResultToGymData,
   resolveDiscoveryBudget,
+  type DiscoveryPerformance,
   type DiscoveryEnrichmentStatus,
   type DiscoverySourceInput,
 } from "@/lib/meet-discovery";
@@ -30,6 +32,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const DISCOVERY_ENRICH_LOG_PREFIX = "[meet-parse-enrich]";
+const DEFAULT_DISCOVERY_ENRICH_STALE_MS = 10 * 60 * 1000;
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -48,6 +51,38 @@ function sanitizeExtractionMetaForPersistence(meta: any, debugArtifacts: boolean
   return next;
 }
 
+function buildPersistedPerformance(
+  performance: Partial<DiscoveryPerformance> | Record<string, any> | null | undefined
+): DiscoveryPerformance {
+  const next = performance && typeof performance === "object" ? performance : {};
+  return {
+    ...createDiscoveryPerformance(),
+    ...next,
+    persistMs: 0,
+  };
+}
+
+function resolveDiscoveryEnrichStaleMs(): number {
+  const parsed = Number.parseInt(
+    process.env.DISCOVERY_ENRICH_STALE_MS || "",
+    10
+  );
+  return Number.isFinite(parsed) && parsed > 0
+    ? parsed
+    : DEFAULT_DISCOVERY_ENRICH_STALE_MS;
+}
+
+function isEnrichmentLeaseStale(
+  enrichment: Record<string, any> | null | undefined,
+  staleMs: number
+) {
+  const startedAt = safeString(enrichment?.startedAt);
+  if (!startedAt) return true;
+  const startedAtMs = Date.parse(startedAt);
+  if (!Number.isFinite(startedAtMs)) return true;
+  return Date.now() - startedAtMs >= staleMs;
+}
+
 function buildEnrichmentStatus(
   overrides: Partial<DiscoveryEnrichmentStatus> = {}
 ): DiscoveryEnrichmentStatus {
@@ -59,6 +94,118 @@ function buildEnrichmentStatus(
     lastError: null,
     performance: createDiscoveryPerformance(),
     ...overrides,
+  };
+}
+
+async function tryAcquireEnrichmentLease(params: {
+  eventId: string;
+  discoverySource: Record<string, any>;
+  performance: DiscoveryPerformance;
+  force: boolean;
+}) {
+  const startedAt = new Date().toISOString();
+  const staleMs = resolveDiscoveryEnrichStaleMs();
+  const staleBefore = new Date(Date.now() - staleMs).toISOString();
+  const runningEnrichment = buildEnrichmentStatus({
+    state: "running",
+    pending: true,
+    startedAt,
+    finishedAt: null,
+    lastError: null,
+    performance: buildPersistedPerformance(params.performance),
+  });
+  const nextDiscoverySource = {
+    ...params.discoverySource,
+    enrichment: runningEnrichment,
+    updatedAt: startedAt,
+  };
+
+  const result = await query<{ id: string }>(
+    `update event_history
+       set data = jsonb_set(
+         coalesce(data, '{}'::jsonb),
+         '{discoverySource}',
+         $2::jsonb,
+         true
+       )
+     where id = $1
+       and (
+         (
+           coalesce(data #>> '{discoverySource,enrichment,state}', '') = 'running'
+           and (
+             nullif(data #>> '{discoverySource,enrichment,startedAt}', '') is null
+             or (nullif(data #>> '{discoverySource,enrichment,startedAt}', ''))::timestamptz <= $4::timestamptz
+           )
+         )
+         or (
+           coalesce(data #>> '{discoverySource,enrichment,state}', '') <> 'running'
+           and (
+             $3::boolean
+             or coalesce(data #>> '{discoverySource,enrichment,state}', '') <> 'completed'
+           )
+         )
+       )
+     returning id`,
+    [params.eventId, JSON.stringify(nextDiscoverySource), params.force, staleBefore]
+  );
+
+  if (result.rows[0]) {
+    return {
+      status: "acquired" as const,
+      discoverySource: nextDiscoverySource,
+      enrichment: runningEnrichment,
+      startedAt,
+      staleMs,
+    };
+  }
+
+  const latestRow = await getEventHistoryById(params.eventId);
+  const latestData = (latestRow?.data || {}) as Record<string, any>;
+  const latestDiscoverySource = (latestData.discoverySource || {}) as Record<
+    string,
+    any
+  >;
+  const latestEnrichment =
+    latestDiscoverySource.enrichment &&
+    typeof latestDiscoverySource.enrichment === "object"
+      ? latestDiscoverySource.enrichment
+      : buildEnrichmentStatus();
+
+  if (
+    safeString(latestEnrichment.state) === "completed" &&
+    !params.force
+  ) {
+    return {
+      status: "completed" as const,
+      row: latestRow,
+      data: latestData,
+      discoverySource: latestDiscoverySource,
+      enrichment: latestEnrichment,
+      staleMs,
+    };
+  }
+
+  if (
+    safeString(latestEnrichment.state) === "running" &&
+    !isEnrichmentLeaseStale(latestEnrichment, staleMs)
+  ) {
+    return {
+      status: "running" as const,
+      row: latestRow,
+      data: latestData,
+      discoverySource: latestDiscoverySource,
+      enrichment: latestEnrichment,
+      staleMs,
+    };
+  }
+
+  return {
+    status: "blocked" as const,
+    row: latestRow,
+    data: latestData,
+    discoverySource: latestDiscoverySource,
+    enrichment: latestEnrichment,
+    staleMs,
   };
 }
 
@@ -85,7 +232,7 @@ async function getSessionUserId() {
 }
 
 export async function POST(
-  _req: Request,
+  req: Request,
   context: { params: Promise<{ eventId: string }> }
 ) {
   const { eventId } = await context.params;
@@ -94,7 +241,12 @@ export async function POST(
   let enrichmentStartedAt: string | null = null;
   const performance = createDiscoveryPerformance();
   try {
-    console.log(`${DISCOVERY_ENRICH_LOG_PREFIX} request started`, { eventId });
+    const url = new URL(req.url);
+    const force = url.searchParams.get("force") === "1";
+    console.log(`${DISCOVERY_ENRICH_LOG_PREFIX} request started`, {
+      eventId,
+      force,
+    });
     const row = await getEventHistoryById(eventId);
     if (!row) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
@@ -132,6 +284,40 @@ export async function POST(
       );
     }
 
+    const lease = await tryAcquireEnrichmentLease({
+      eventId,
+      discoverySource,
+      performance,
+      force,
+    });
+    if (lease.status === "completed" || lease.status === "running") {
+      const responseData = (lease.data || currentData) as Record<string, any>;
+      const enrichmentState =
+        lease.enrichment && typeof lease.enrichment === "object"
+          ? lease.enrichment
+          : buildEnrichmentStatus();
+      const responseStatus = lease.status === "running" ? 202 : 200;
+      return NextResponse.json(
+        {
+          ok: true,
+          eventId,
+          enrichmentState,
+          updatedSections: [],
+          performance: enrichmentState.performance || createDiscoveryPerformance(),
+          statuses: computeGymBuilderStatuses(responseData),
+        },
+        { status: responseStatus }
+      );
+    }
+    if (lease.status === "blocked") {
+      return NextResponse.json(
+        { error: "Could not acquire enrichment lease" },
+        { status: 409 }
+      );
+    }
+    failureSnapshot = lease.discoverySource;
+    enrichmentStartedAt = lease.startedAt;
+
     let hydratedSourceInput = sourceInput;
     if (sourceInput.type === "file" && !safeString(sourceInput.dataUrl || "")) {
       const blob = await getEventHistoryInputBlob(eventId);
@@ -159,21 +345,6 @@ export async function POST(
 
     const debugArtifacts = isDiscoveryDebugArtifactsEnabled();
     const enrichBudgetMs = resolveDiscoveryBudget("enrich");
-    enrichmentStartedAt = new Date().toISOString();
-    await updateEventHistoryDataMerge(eventId, {
-      discoverySource: {
-        ...discoverySource,
-        enrichment: buildEnrichmentStatus({
-          state: "running",
-          pending: true,
-          startedAt: enrichmentStartedAt,
-          finishedAt: null,
-          lastError: null,
-          performance,
-        }),
-        updatedAt: enrichmentStartedAt,
-      },
-    });
 
     const extraction = await extractDiscoveryText(hydratedSourceInput, {
       workflow: "gymnastics",
@@ -227,7 +398,7 @@ export async function POST(
         enrichmentStartedAt,
       finishedAt,
       lastError: null,
-      performance,
+      performance: buildPersistedPerformance(performance),
     });
 
     const nextData = {
@@ -253,15 +424,6 @@ export async function POST(
     const persistStartedAt = Date.now();
     await updateEventHistoryData(eventId, nextData);
     performance.persistMs = durationMs(persistStartedAt);
-    await updateEventHistoryDataMerge(eventId, {
-      discoverySource: {
-        ...nextData.discoverySource,
-        enrichment: {
-          ...enrichmentState,
-          performance,
-        },
-      },
-    });
     if (safeString(enrichedParseResult.title)) {
       await updateEventHistoryTitle(eventId, enrichedParseResult.title);
     }
@@ -274,6 +436,8 @@ export async function POST(
       eventId,
       updatedSections,
       totalDurationMs: durationMs(startedAt),
+      textQuality: extraction.extractionMeta?.textQuality || null,
+      performance,
     });
     return NextResponse.json({
       ok: true,
@@ -307,7 +471,7 @@ export async function POST(
                 enrichmentStartedAt,
               finishedAt,
               lastError: String(err?.message || err || "Enrichment failed"),
-              performance,
+              performance: buildPersistedPerformance(performance),
             }),
             updatedAt: finishedAt,
           },

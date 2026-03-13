@@ -6,7 +6,6 @@ import {
   getEventHistoryInputBlob,
   getUserIdByEmail,
   updateEventHistoryData,
-  updateEventHistoryDataMerge,
   updateEventHistoryTitle,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
@@ -18,6 +17,7 @@ import {
   mapParseResultToGymData,
   parseMeetFromExtractedText,
   resolveDiscoveryBudget,
+  type DiscoveryPerformance,
   type DiscoveryEnrichmentStatus,
   type DiscoverySourceInput,
   type DiscoveryWorkflow,
@@ -55,6 +55,15 @@ function sanitizeExtractionMetaForPersistence(meta: any, debugArtifacts: boolean
     delete next.schedulePageImages;
   }
   return next;
+}
+
+function buildPersistedPerformance(
+  performance: DiscoveryPerformance
+): DiscoveryPerformance {
+  return {
+    ...performance,
+    persistMs: 0,
+  };
 }
 
 function buildEnrichmentStatus(
@@ -310,7 +319,7 @@ export async function POST(
         parseResult: parsed.parseResult,
         rawModelOutput: parsed.rawModelOutput,
         modelUsed: parsed.modelUsed,
-        performance,
+        performance: buildPersistedPerformance(performance),
         enrichment,
         coreUpdatedAt: new Date().toISOString(),
         enrichedAt: null,
@@ -325,12 +334,6 @@ export async function POST(
     });
     await updateEventHistoryData(eventId, nextData);
     performance.persistMs = durationMs(persistStartedAt);
-    await updateEventHistoryDataMerge(eventId, {
-      discoverySource: {
-        ...nextData.discoverySource,
-        performance,
-      },
-    });
     if (parsed.parseResult.title) {
       await updateEventHistoryTitle(eventId, parsed.parseResult.title);
     }
@@ -349,6 +352,8 @@ export async function POST(
       modelUsed: parsed.modelUsed,
       repaired: repairMode,
       phase: "core",
+      textQuality: extraction.extractionMeta?.textQuality || null,
+      performance,
     });
 
     return NextResponse.json({

@@ -16,6 +16,35 @@ const safeString = (value: unknown): string =>
     ? ""
     : String(value).trim();
 
+const DISPLAY_HOST_GYM_PACKET_TEXT_PATTERN =
+  /\b(?:please review|following items enclosed|this packet|info packet|competition to follow|recognized at|award ceremony)\b/i;
+const DISPLAY_HOST_GYM_EVENT_TITLE_PATTERN =
+  /\b(?:state championships?|regional championships?|national championships?|session\s+[A-Z]{2}\d+|schedule|info packet|meet packet)\b/i;
+
+const sanitizeDisplayHostGym = (value: unknown): string => {
+  let text = safeString(value).replace(/\s+/g, " ").trim();
+  if (!text) return "";
+
+  const hostedByMatch = text.match(/^(?:host(?:ed)?\s+by[:\s-]*)(.+)$/i);
+  if (hostedByMatch?.[1]) {
+    text = hostedByMatch[1].replace(/\s+/g, " ").trim();
+  }
+
+  const proudHostMatch = text.match(/^(.+?)\s+is proud to host\b/i);
+  if (proudHostMatch?.[1]) {
+    text = proudHostMatch[1].replace(/\s+/g, " ").trim();
+  }
+
+  text = text.replace(/^host(?:ed)?\s+by[:\s-]*/i, "").replace(/[,:;.\-]+$/g, "").trim();
+  if (!text) return "";
+  if (DISPLAY_HOST_GYM_PACKET_TEXT_PATTERN.test(text)) return "";
+  if (DISPLAY_HOST_GYM_EVENT_TITLE_PATTERN.test(text)) return "";
+  if (/^(?:team award eligible|award category)\b/i.test(text)) return "";
+  if (text.length > 96) return "";
+  if (/[.!?]/.test(text) && text.split(/\s+/).length > 8) return "";
+  return text;
+};
+
 const isQuickLinkUrl = (value: unknown): boolean => {
   const text = safeString(value);
   return (
@@ -389,7 +418,7 @@ export const normalizeGymMeetEventData = ({
     title: safeString(eventData?.eventTitle || eventTitle || "Gymnastics Meet"),
     titleSize: normalizeGymMeetTitleSize(eventData?.fontSize),
     heroImage: safeString(eventData?.heroImage || eventData?.customHeroImage),
-    hostGym: collapseRepeatedDisplayText(eventData?.hostGym),
+    hostGym: collapseRepeatedDisplayText(sanitizeDisplayHostGym(eventData?.hostGym)),
     venue: collapseRepeatedDisplayText(eventData?.venue),
     address: collapseRepeatedDisplayText(eventData?.address),
     headerLocation: collapseRepeatedDisplayText(headerLocation),
@@ -397,7 +426,9 @@ export const normalizeGymMeetEventData = ({
     timeLabel: formatGymMeetTime(eventData?.time),
     detailsText,
     heroSummary: undefined,
-    team: collapseRepeatedDisplayText(customFields?.team || eventData?.extra?.team),
+    team: collapseRepeatedDisplayText(
+      sanitizeDisplayHostGym(customFields?.team || eventData?.extra?.team)
+    ),
     season: collapseRepeatedDisplayText(customFields?.season || eventData?.extra?.season),
     coach: collapseRepeatedDisplayText(customFields?.coach || eventData?.extra?.coach),
     assistantCoach: safeString(

@@ -6,6 +6,12 @@ import { promisify } from "util";
 import { mkdtemp, rm, writeFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
+import {
+  createDiscoveryRequestCache,
+  getOrCreatePdfPageImage,
+  getOrCreateWeakCacheValue,
+  type DiscoveryRequestCache,
+} from "@/lib/meet-discovery/cache";
 import { getVisionClient } from "@/lib/gcp";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import {
@@ -16,6 +22,9 @@ import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
+import { computeGymBuilderStatuses } from "@/lib/meet-discovery/status";
+
+export { computeGymBuilderStatuses };
 
 export type DiscoverySourceInput =
   | {
@@ -30,6 +39,24 @@ export type DiscoverySourceInput =
       type: "url";
       url: string;
     };
+
+type ScheduleColorTarget = "session" | "club";
+
+type ScheduleColorRef = {
+  legendId: string | null;
+  textColorHex: string | null;
+  confidence: number | null;
+};
+
+type ScheduleColorLegendEntry = {
+  id: string | null;
+  target: ScheduleColorTarget | null;
+  colorHex: string | null;
+  colorLabel: string | null;
+  meaning: string | null;
+  sourceText: string | null;
+  teamAwardEligible: boolean | null;
+};
 
 export type ParseResult = {
   eventType: "gymnastics_meet" | "unknown";
@@ -163,7 +190,9 @@ export type ParseResult = {
     venueLabel: string | null;
     supportEmail: string | null;
     notes: string[];
+    colorLegend?: ScheduleColorLegendEntry[];
     awardLegend?: Array<{
+      colorHex?: string | null;
       colorLabel: string | null;
       meaning: string | null;
       teamAwardEligible: boolean | null;
@@ -193,11 +222,13 @@ export type ParseResult = {
         startTime: string | null;
         warmupTime: string | null;
         note: string | null;
+        color?: ScheduleColorRef | null;
         clubs: Array<{
           name: string | null;
           teamAwardEligible: boolean | null;
           athleteCount: number | null;
           divisionLabel: string | null;
+          color?: ScheduleColorRef | null;
         }>;
       }>;
     }>;
@@ -452,7 +483,12 @@ type UrlDiscoveryTestHooks = {
   ) => Promise<{ contentType: string; buffer: Buffer; text: string }>;
   extractTextFromPdf?: (
     buffer: Buffer,
-    options?: { budgetMs?: number; performance?: DiscoveryPerformance }
+    options?: {
+      budgetMs?: number;
+      performance?: DiscoveryPerformance;
+      cache?: DiscoveryRequestCache;
+      mode?: DiscoveryMode;
+    }
   ) => Promise<{
     text: string;
     usedOcr: boolean;
@@ -461,7 +497,10 @@ type UrlDiscoveryTestHooks = {
     qualitySignals: TextQualitySignals;
     pages?: Array<{ num: number; text: string }>;
   }>;
-  extractTextFromImage?: (buffer: Buffer) => Promise<string>;
+  extractTextFromImage?: (
+    buffer: Buffer,
+    cache?: DiscoveryRequestCache
+  ) => Promise<string>;
   extractGymLayoutImageFromPdf?: (
     buffer: Buffer,
     options?: {
@@ -469,6 +508,7 @@ type UrlDiscoveryTestHooks = {
       maxAiCandidates?: number;
       performance?: DiscoveryPerformance;
       budgetMs?: number;
+      cache?: DiscoveryRequestCache;
     }
   ) => Promise<GymLayoutExtraction>;
   openAiExtractGymLayoutZones?: (
@@ -476,7 +516,10 @@ type UrlDiscoveryTestHooks = {
     mimeType?: string,
     performance?: DiscoveryPerformance
   ) => Promise<GymLayoutZone[]>;
-  toOptimizedImageDataUrl?: (buffer: Buffer) => Promise<string | null>;
+  toOptimizedImageDataUrl?: (
+    buffer: Buffer,
+    cache?: DiscoveryRequestCache
+  ) => Promise<string | null>;
 };
 
 const MAX_FETCHED_LINKED_ASSETS = 8;
@@ -630,8 +673,94 @@ type ScheduleRepairResult = {
   fallbackMetadataApplied: boolean;
 };
 
+type NormalizedScheduleColorBox = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+type ScheduleColorPageLegendEntry = {
+  target: ScheduleColorTarget | null;
+  meaning: string | null;
+  colorLabel: string | null;
+  sourceText: string | null;
+  teamAwardEligible: boolean | null;
+  sessionCodes: string[];
+  clubNames: string[];
+};
+
+type ScheduleColorPageSessionItem = {
+  sessionCode: string | null;
+  group: string | null;
+  box: NormalizedScheduleColorBox | null;
+  confidence: number | null;
+};
+
+type ScheduleColorPageClubItem = {
+  sessionCode: string | null;
+  clubName: string | null;
+  teamAwardEligible: boolean | null;
+  box: NormalizedScheduleColorBox | null;
+  confidence: number | null;
+};
+
+type ScheduleColorPageAnalysis = {
+  legendEntries: ScheduleColorPageLegendEntry[];
+  sessions: ScheduleColorPageSessionItem[];
+  clubs: ScheduleColorPageClubItem[];
+};
+
+type ScheduleColorOcrTextBox = {
+  text: string;
+  normalizedText: string;
+  clubLookup: string;
+  box: NormalizedScheduleColorBox;
+  area: number;
+};
+
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+const HOST_GYM_PACKET_TEXT_PATTERN =
+  /\b(?:please review|following items enclosed|this packet|info packet|packet:|competition to follow|recognized at|award ceremony)\b/i;
+const HOST_GYM_EVENT_TITLE_PATTERN =
+  /\b(?:state championships?|regional championships?|national championships?|session\s+[A-Z]{2}\d+|schedule|info packet|meet packet)\b/i;
+
+function sanitizeHostGymValue(value: unknown): string | null {
+  let text = safeString(value).replace(/\s+/g, " ").trim();
+  if (!text) return null;
+
+  const hostedByMatch = text.match(/^(?:host(?:ed)?\s+by[:\s-]*)(.+)$/i);
+  if (hostedByMatch?.[1]) {
+    text = hostedByMatch[1].replace(/\s+/g, " ").trim();
+  }
+
+  const proudHostMatch = text.match(/^(.+?)\s+is proud to host\b/i);
+  if (proudHostMatch?.[1]) {
+    text = proudHostMatch[1].replace(/\s+/g, " ").trim();
+  }
+
+  text = text.replace(/^host(?:ed)?\s+by[:\s-]*/i, "").replace(/[,:;.\-]+$/g, "").trim();
+  if (!text) return null;
+  if (HOST_GYM_PACKET_TEXT_PATTERN.test(text)) return null;
+  if (HOST_GYM_EVENT_TITLE_PATTERN.test(text)) return null;
+  if (/^(?:team award eligible|award category)\b/i.test(text)) return null;
+  if (text.length > 96) return null;
+  if (/[.!?]/.test(text) && text.split(/\s+/).length > 8) return null;
+  return text;
+}
+
+function isProbableHostGymHint(value: unknown): boolean {
+  const original = safeString(value).replace(/\s+/g, " ").trim();
+  const candidate = sanitizeHostGymValue(original);
+  if (!original || !candidate) return false;
+  const hasHostCue = /\bhost(?:ed)?\b/i.test(original);
+  const hasOrgCue = /\b(?:gym|gymnastics|academy|club|team|usa competitions)\b/i.test(candidate);
+  if (!hasHostCue && !hasOrgCue) return false;
+  if (!hasHostCue && HOST_GYM_EVENT_TITLE_PATTERN.test(candidate)) return false;
+  return true;
 }
 
 function toIsoOrNull(value: unknown): string | null {
@@ -672,12 +801,102 @@ function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {
   return out;
 }
 
+function normalizeColorHex(value: unknown): string {
+  const raw = safeString(value).toLowerCase();
+  if (!raw) return "";
+  const match = raw.match(/^#?([0-9a-f]{6})$/i);
+  if (match) return `#${match[1].toLowerCase()}`;
+  return "";
+}
+
+function normalizeScheduleColorRef(value: unknown): ScheduleColorRef | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, any>;
+  const legendId = safeString(raw.legendId) || null;
+  const textColorHex = normalizeColorHex(raw.textColorHex) || null;
+  const confidence =
+    typeof raw.confidence === "number" && Number.isFinite(raw.confidence)
+      ? Math.max(0, Math.min(1, raw.confidence))
+      : null;
+  if (!legendId && !textColorHex && confidence == null) return null;
+  return { legendId, textColorHex, confidence };
+}
+
+function sanitizeScheduleColorLegendEntries(
+  entries: Array<ScheduleColorLegendEntry | Record<string, any>>
+): ScheduleColorLegendEntry[] {
+  return uniqueBy(
+    entries
+      .map((entry, index) => ({
+        id: safeString((entry as any)?.id) || null,
+        target:
+          safeString((entry as any)?.target) === "session" ||
+          safeString((entry as any)?.target) === "club"
+            ? (safeString((entry as any)?.target) as ScheduleColorTarget)
+            : null,
+        colorHex: normalizeColorHex((entry as any)?.colorHex) || null,
+        colorLabel: safeString((entry as any)?.colorLabel) || null,
+        meaning: safeString((entry as any)?.meaning) || null,
+        sourceText: safeString((entry as any)?.sourceText) || null,
+        teamAwardEligible:
+          typeof (entry as any)?.teamAwardEligible === "boolean"
+            ? (entry as any).teamAwardEligible
+            : null,
+      }))
+      .filter((entry) => {
+        if (
+          /(recognized at|competition floor|awards ceremony following|please review|host the|following items enclosed|team awards at approx)/i.test(
+            safeString(entry.meaning)
+          )
+        ) {
+          return false;
+        }
+        return Boolean(
+          entry.id ||
+            entry.meaning ||
+            entry.colorHex ||
+            entry.colorLabel ||
+            entry.sourceText ||
+            typeof entry.teamAwardEligible === "boolean"
+        );
+      })
+      .map((entry, index) => ({
+        ...entry,
+        id:
+          entry.id ||
+          `schedule-color-${entry.target || "unknown"}-${slugifyScheduleToken(
+            entry.meaning || entry.colorHex || entry.colorLabel || `entry-${index + 1}`,
+            `entry-${index + 1}`
+          )}`,
+      })),
+    (entry) =>
+      `${entry.id || ""}|${entry.target || ""}|${entry.colorHex || ""}|${entry.colorLabel || ""}|${entry.meaning || ""}|${entry.sourceText || ""}|${entry.teamAwardEligible ?? ""}`
+  );
+}
+
+function deriveAwardLegendFromColorLegend(entries: ScheduleColorLegendEntry[]): Array<{
+  colorHex: string;
+  colorLabel: string;
+  meaning: string;
+  teamAwardEligible: boolean | null;
+}> {
+  return sanitizeScheduleColorLegendEntries(entries)
+    .filter((entry) => entry.target === "club" && typeof entry.teamAwardEligible === "boolean")
+    .map((entry) => ({
+      colorHex: entry.colorHex || "",
+      colorLabel: entry.colorLabel || "",
+      meaning: entry.meaning || "",
+      teamAwardEligible: entry.teamAwardEligible,
+    }));
+}
+
 type StoredGymMeetScheduleClub = {
   id: string;
   name: string;
   teamAwardEligible: boolean | null;
   athleteCount: number | null;
   divisionLabel: string;
+  color: ScheduleColorRef | null;
 };
 
 type StoredGymMeetScheduleSession = {
@@ -688,6 +907,7 @@ type StoredGymMeetScheduleSession = {
   startTime: string;
   warmupTime: string;
   note: string;
+  color: ScheduleColorRef | null;
   clubs: StoredGymMeetScheduleClub[];
 };
 
@@ -704,7 +924,9 @@ type StoredGymMeetSchedule = {
   venueLabel: string;
   supportEmail: string;
   notes: string[];
+  colorLegend: ScheduleColorLegendEntry[];
   awardLegend: Array<{
+    colorHex: string;
     colorLabel: string;
     meaning: string;
     teamAwardEligible: boolean | null;
@@ -831,6 +1053,7 @@ function normalizeStoredSchedule(
                     ? club.athleteCount
                     : null,
                 divisionLabel: safeString(club?.divisionLabel),
+                color: normalizeScheduleColorRef(club?.color),
               }))
               .filter((club) => club.name),
             (club) => [club.name, club.divisionLabel, `${club.athleteCount ?? ""}`].join("|")
@@ -845,6 +1068,7 @@ function normalizeStoredSchedule(
             startTime: safeString(session?.startTime),
             warmupTime: safeString(session?.warmupTime),
             note: safeString(session?.note),
+            color: normalizeScheduleColorRef(session?.color),
             clubs,
           };
         })
@@ -872,10 +1096,19 @@ function normalizeStoredSchedule(
       ],
       (item) => item
     ),
+    colorLegend: uniqueBy(
+      [
+        ...sanitizeScheduleColorLegendEntries(pickArray(raw.colorLegend) as any),
+        ...sanitizeScheduleColorLegendEntries(pickArray(fallback.colorLegend) as any),
+      ],
+      (item) =>
+        `${item.id || ""}|${item.target || ""}|${item.colorHex || ""}|${item.colorLabel || ""}|${item.meaning || ""}|${item.sourceText || ""}|${item.teamAwardEligible ?? ""}`
+    ),
     awardLegend: uniqueBy(
       [
         ...pickArray(raw.awardLegend)
           .map((item) => ({
+            colorHex: normalizeColorHex(item?.colorHex),
             colorLabel: safeString(item?.colorLabel),
             meaning: safeString(item?.meaning),
             teamAwardEligible:
@@ -884,14 +1117,20 @@ function normalizeStoredSchedule(
           .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
         ...pickArray(fallback.awardLegend)
           .map((item) => ({
+            colorHex: normalizeColorHex(item?.colorHex),
             colorLabel: safeString(item?.colorLabel),
             meaning: safeString(item?.meaning),
             teamAwardEligible:
               typeof item?.teamAwardEligible === "boolean" ? item.teamAwardEligible : null,
           }))
           .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
+        ...deriveAwardLegendFromColorLegend([
+          ...sanitizeScheduleColorLegendEntries(pickArray(raw.colorLegend) as any),
+          ...sanitizeScheduleColorLegendEntries(pickArray(fallback.colorLegend) as any),
+        ]),
       ],
-      (item) => `${item.meaning}|${item.colorLabel}|${item.teamAwardEligible ?? ""}`
+      (item) =>
+        `${item.meaning}|${item.colorHex || ""}|${item.colorLabel}|${item.teamAwardEligible ?? ""}`
     ),
     annotations: uniqueBy(
       [
@@ -1822,7 +2061,18 @@ export function buildDiscoveryEvidence(
     /(convention center|arena|center|hall|gymnasium|gym|sports complex|fieldhouse|venue)/i,
     12
   );
-  const hostGymHints = matchLines(/(host(ed)? by|gymnastics|gym club|academy|host gym|host)/i, 12);
+  const hostGymHints = uniqueLines(
+    lines
+      .filter(
+        (line) =>
+          /(host(ed)? by|gymnastics|gym club|academy|host gym|host|team\b|usa competitions)/i.test(
+            line
+          ) && isProbableHostGymHint(line)
+      )
+      .map((line) => sanitizeHostGymValue(line))
+      .filter((line): line is string => Boolean(line)),
+    12
+  );
   const admissionHints = matchLines(/(admission|ticket|adult|children|cash|weekend pass|door)/i, 12);
   const athleteHints = matchLines(/(athlete|gymnast|level|team|march in|stretch|assigned gym|awards)/i, 14);
   const sessionHints = matchLines(/(session|stretch|march in|warm ?up|rotation|awards)/i, 14);
@@ -2074,6 +2324,18 @@ function resolveDiscoveryVisionModel(): string {
   return safeString(process.env.OPENAI_DISCOVERY_VISION_MODEL) || "gpt-4o-mini";
 }
 
+let openAiClient: OpenAI | null = null;
+function getOpenAiClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY || "";
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured");
+  }
+  if (!openAiClient) {
+    openAiClient = new OpenAI({ apiKey });
+  }
+  return openAiClient;
+}
+
 async function getPdfRenderDeps() {
   if (!pdfRenderDepsPromise) {
     pdfRenderDepsPromise = Promise.all([
@@ -2121,6 +2383,23 @@ async function renderPdfPageToPng(
   }
 }
 
+async function getPdfPageImage(
+  pdfBuffer: Buffer,
+  pageIndex: number,
+  cache?: DiscoveryRequestCache
+): Promise<Buffer | null> {
+  const render = async () => {
+    const sharpPageImage = await sharp(pdfBuffer, { density: 220, page: pageIndex })
+      .png()
+      .toBuffer()
+      .catch(() => null);
+    return sharpPageImage || (await renderPdfPageToPng(pdfBuffer, pageIndex));
+  };
+  return cache
+    ? getOrCreatePdfPageImage(cache, pdfBuffer, pageIndex, render)
+    : render();
+}
+
 function selectSchedulePageNumbersFromPdfPages(pages: Array<{ num: number; text: string }>): number[] {
   return uniqueBy(
     pages
@@ -2146,20 +2425,17 @@ function extractSchedulePageTextsFromPdfPages(
 
 async function extractSchedulePageImagesFromPdf(
   buffer: Buffer,
-  pages: Array<{ num: number; text: string }>
+  pages: Array<{ num: number; text: string }>,
+  cache?: DiscoveryRequestCache
 ): Promise<Array<{ pageNumber: number; dataUrl: string | null }>> {
   const pageNumbers = selectSchedulePageNumbersFromPdfPages(pages).slice(0, 6);
   const images: Array<{ pageNumber: number; dataUrl: string | null }> = [];
   for (const pageNumber of pageNumbers) {
     try {
-      const sharpPageImage = await sharp(buffer, { density: 220, page: pageNumber - 1 })
-        .png()
-        .toBuffer()
-        .catch(() => null);
-      const pageImage = sharpPageImage || (await renderPdfPageToPng(buffer, pageNumber - 1));
+      const pageImage = await getPdfPageImage(buffer, pageNumber - 1, cache);
       images.push({
         pageNumber,
-        dataUrl: pageImage ? await toOptimizedImageDataUrl(pageImage) : null,
+        dataUrl: pageImage ? await toOptimizedImageDataUrl(pageImage, cache) : null,
       });
     } catch {
       images.push({ pageNumber, dataUrl: null });
@@ -2462,22 +2738,41 @@ function parseScheduleDayFromPage(page: { pageNumber: number; text: string }) {
 }
 
 function sanitizeScheduleLegendEntries(
-  entries: Array<{ colorLabel: string | null; meaning: string | null; teamAwardEligible: boolean | null }>
-): Array<{ colorLabel: string | null; meaning: string | null; teamAwardEligible: boolean | null }> {
+  entries: Array<{
+    colorHex?: string | null;
+    colorLabel: string | null;
+    meaning: string | null;
+    teamAwardEligible: boolean | null;
+  }>
+): Array<{
+  colorHex: string | null;
+  colorLabel: string | null;
+  meaning: string | null;
+  teamAwardEligible: boolean | null;
+}> {
   return uniqueBy(
-    entries.filter((entry) => {
-      const meaning = safeString(entry.meaning);
-      if (!meaning) return typeof entry.teamAwardEligible === "boolean";
-      if (
-        /(recognized at|competition floor|awards ceremony following|please review|host the|following items enclosed|team awards at approx)/i.test(
-          meaning
-        )
-      ) {
-        return false;
-      }
-      return true;
-    }),
-    (entry) => `${entry.meaning || ""}|${entry.colorLabel || ""}|${entry.teamAwardEligible ?? ""}`
+    entries
+      .map((entry) => ({
+        colorHex: normalizeColorHex(entry.colorHex) || null,
+        colorLabel: safeString(entry.colorLabel) || null,
+        meaning: safeString(entry.meaning) || null,
+        teamAwardEligible:
+          typeof entry.teamAwardEligible === "boolean" ? entry.teamAwardEligible : null,
+      }))
+      .filter((entry) => {
+        const meaning = safeString(entry.meaning);
+        if (!meaning) return typeof entry.teamAwardEligible === "boolean" || Boolean(entry.colorHex);
+        if (
+          /(recognized at|competition floor|awards ceremony following|please review|host the|following items enclosed|team awards at approx)/i.test(
+            meaning
+          )
+        ) {
+          return false;
+        }
+        return true;
+      }),
+    (entry) =>
+      `${entry.meaning || ""}|${entry.colorHex || ""}|${entry.colorLabel || ""}|${entry.teamAwardEligible ?? ""}`
   );
 }
 
@@ -2523,9 +2818,15 @@ function sanitizeScheduleAssignments(entries: ScheduleAssignment[]): ScheduleAss
 }
 
 function toStoredScheduleLegendEntries(
-  entries: Array<{ colorLabel: string | null; meaning: string | null; teamAwardEligible: boolean | null }>
+  entries: Array<{
+    colorHex?: string | null;
+    colorLabel: string | null;
+    meaning: string | null;
+    teamAwardEligible: boolean | null;
+  }>
 ): StoredGymMeetSchedule["awardLegend"] {
   return sanitizeScheduleLegendEntries(entries).map((entry) => ({
+    colorHex: normalizeColorHex(entry.colorHex),
     colorLabel: safeString(entry.colorLabel),
     meaning: safeString(entry.meaning),
     teamAwardEligible:
@@ -2643,6 +2944,7 @@ function parseNarrativeScheduleSessionsFromPage(
     venueLabel: null,
     supportEmail: null,
     notes: [],
+    colorLegend: [],
     awardLegend: [],
     annotations: [],
     assignments: [],
@@ -2707,7 +3009,7 @@ function parseScheduleAnnotationsFromPages(
           line
         )
       ) {
-        const levelMatch = line.match(/\blevel\s+([0-9a-z/ ]+)/i);
+        const levelMatch = line.match(/\blevel\s+([0-9a-z/]+)(?=\s+schedule|\b)/i);
         annotations.push({
           kind: "schedule_note",
           level: levelMatch ? `Level ${safeString(levelMatch[1]).toUpperCase()}` : null,
@@ -3072,7 +3374,12 @@ async function openAiAnalyzeGymLayoutPage(
 
 async function extractTextFromPdf(
   buffer: Buffer,
-  options?: { budgetMs?: number; performance?: DiscoveryPerformance }
+  options?: {
+    budgetMs?: number;
+    performance?: DiscoveryPerformance;
+    cache?: DiscoveryRequestCache;
+    mode?: DiscoveryMode;
+  }
 ): Promise<{
   text: string;
   usedOcr: boolean;
@@ -3095,6 +3402,12 @@ async function extractTextFromPdf(
       qualitySignals: analyzed.signals,
     };
   };
+  const isStrongNativeCandidate = (candidate: ReturnType<typeof toCandidate>) =>
+    candidate.textQuality !== "poor" &&
+    (candidate.text.length >= 1000 ||
+      (candidate.text.length >= LOW_TEXT_THRESHOLD &&
+        !candidate.qualitySignals.looksLikePdfInternals &&
+        candidate.qualitySignals.englishLikeRatio >= 0.55));
 
   const nativeParseStartedAt = Date.now();
   const workerExtraction = await extractPdfTextWithNodeWorker(buffer);
@@ -3103,7 +3416,7 @@ async function extractTextFromPdf(
   if (options?.performance) {
     options.performance.pdfParseMs += Date.now() - nativeParseStartedAt;
   }
-  if (workerCandidate.text.length >= LOW_TEXT_THRESHOLD && workerCandidate.textQuality === "good") {
+  if (isStrongNativeCandidate(workerCandidate)) {
     return {
       ...workerCandidate,
       coachPageHints: workerCoachPageHints,
@@ -3112,10 +3425,7 @@ async function extractTextFromPdf(
   }
 
   const heuristicCandidate = toCandidate(extractPdfTextHeuristic(buffer), false);
-  if (
-    heuristicCandidate.text.length >= LOW_TEXT_THRESHOLD &&
-    heuristicCandidate.textQuality === "good"
-  ) {
+  if (isStrongNativeCandidate(heuristicCandidate)) {
     return {
       ...heuristicCandidate,
       coachPageHints: workerCoachPageHints,
@@ -3139,19 +3449,24 @@ async function extractTextFromPdf(
   try {
     const ocrStartedAt = Date.now();
     const ocrPages: string[] = [];
-    for (let page = 0; page < 5; page += 1) {
+    const maxOcrPages = options?.mode === "core" ? 3 : 5;
+    for (let page = 0; page < maxOcrPages; page += 1) {
       if (Date.now() >= deadline) break;
-      const sharpPageImage = await sharp(buffer, { density: 220, page })
-        .png()
-        .toBuffer()
-        .catch(() => null);
-      const pageImage = sharpPageImage || (await renderPdfPageToPng(buffer, page));
+      const pageImage = await getPdfPageImage(buffer, page, options?.cache);
       if (!pageImage) break;
       if (options?.performance) {
         options.performance.ocrPageCount += 1;
       }
-      const text = cleanExtractedText(await extractTextFromImage(pageImage));
-      if (text) ocrPages.push(text);
+      const text = cleanExtractedText(
+        await extractTextFromImage(pageImage, options?.cache)
+      );
+      if (text) {
+        ocrPages.push(text);
+        const aggregate = analyzeTextQuality(ocrPages.join("\n\n"));
+        if (aggregate.quality === "good" && aggregate.cleanedText.length >= 800) {
+          break;
+        }
+      }
     }
     if (options?.performance) {
       options.performance.ocrMs += Date.now() - ocrStartedAt;
@@ -3175,7 +3490,10 @@ async function extractTextFromPdf(
       if (options?.performance) {
         options.performance.ocrPageCount += 1;
       }
-      ocrCandidate = toCandidate(await extractTextFromImage(buffer), true);
+      ocrCandidate = toCandidate(
+        await extractTextFromImage(buffer, options?.cache),
+        true
+      );
       if (options?.performance) {
         options.performance.ocrMs += Date.now() - ocrStartedAt;
       }
@@ -3220,16 +3538,26 @@ async function extractTextFromPdf(
   };
 }
 
-async function extractTextFromImage(buffer: Buffer): Promise<string> {
-  const prepared = await sharp(buffer).resize(2200).grayscale().normalize().toBuffer();
-  try {
-    const text = await ocrBuffer(prepared);
-    if (safeString(text)) return cleanExtractedText(text);
-  } catch {
-    // Fall through to OpenAI OCR.
-  }
-  const fallbackText = await openAiOcrTextFromImage(prepared, "image/png");
-  return cleanExtractedText(fallbackText);
+async function extractTextFromImage(
+  buffer: Buffer,
+  cache?: DiscoveryRequestCache
+): Promise<string> {
+  const run = async () => {
+    const prepared = await sharp(buffer)
+      .resize(2200)
+      .grayscale()
+      .normalize()
+      .toBuffer();
+    try {
+      const text = await ocrBuffer(prepared);
+      if (safeString(text)) return cleanExtractedText(text);
+    } catch {
+      // Fall through to OpenAI OCR.
+    }
+    const fallbackText = await openAiOcrTextFromImage(prepared, "image/png");
+    return cleanExtractedText(fallbackText);
+  };
+  return cache ? getOrCreateWeakCacheValue(cache.imageText, buffer, run) : run();
 }
 
 function countPatternMatches(text: string, pattern: RegExp): number {
@@ -3478,36 +3806,42 @@ async function cropGymLayoutImageToAssignedGym(
 }
 
 async function toOptimizedImageDataUrl(
-  buffer: Buffer
+  buffer: Buffer,
+  cache?: DiscoveryRequestCache
 ): Promise<string | null> {
-  try {
-    const variants: Array<{ width: number; quality: number }> = [
-      { width: 1800, quality: 82 },
-      { width: 1600, quality: 76 },
-      { width: 1400, quality: 72 },
-      { width: 1200, quality: 68 },
-      { width: 1000, quality: 64 },
-    ];
-    for (const variant of variants) {
-      const optimized = await sharp(buffer)
-        .resize({ width: variant.width, withoutEnlargement: true })
-        .jpeg({ quality: variant.quality })
-        .toBuffer();
-      if (optimized.length <= 1_800_000) {
-        return `data:image/jpeg;base64,${optimized.toString("base64")}`;
+  const run = async () => {
+    try {
+      const variants: Array<{ width: number; quality: number }> = [
+        { width: 1800, quality: 82 },
+        { width: 1600, quality: 76 },
+        { width: 1400, quality: 72 },
+        { width: 1200, quality: 68 },
+        { width: 1000, quality: 64 },
+      ];
+      for (const variant of variants) {
+        const optimized = await sharp(buffer)
+          .resize({ width: variant.width, withoutEnlargement: true })
+          .jpeg({ quality: variant.quality })
+          .toBuffer();
+        if (optimized.length <= 1_800_000) {
+          return `data:image/jpeg;base64,${optimized.toString("base64")}`;
+        }
       }
+      // Last-resort tiny output to avoid dropping the screenshot entirely.
+      const fallback = await sharp(buffer)
+        .resize({ width: 900, withoutEnlargement: true })
+        .jpeg({ quality: 58 })
+        .toBuffer();
+      return fallback.length <= 2_000_000
+        ? `data:image/jpeg;base64,${fallback.toString("base64")}`
+        : null;
+    } catch {
+      return null;
     }
-    // Last-resort tiny output to avoid dropping the screenshot entirely.
-    const fallback = await sharp(buffer)
-      .resize({ width: 900, withoutEnlargement: true })
-      .jpeg({ quality: 58 })
-      .toBuffer();
-    return fallback.length <= 2_000_000
-      ? `data:image/jpeg;base64,${fallback.toString("base64")}`
-      : null;
-  } catch {
-    return null;
-  }
+  };
+  return cache
+    ? getOrCreateWeakCacheValue(cache.optimizedDataUrl, buffer, run)
+    : run();
 }
 
 async function scoreGymLayoutVisualSignal(buffer: Buffer): Promise<number> {
@@ -3536,6 +3870,7 @@ async function extractGymLayoutImageFromPdf(
     maxAiCandidates?: number;
     performance?: DiscoveryPerformance;
     budgetMs?: number;
+    cache?: DiscoveryRequestCache;
   }
 ): Promise<GymLayoutExtraction> {
   const startedAt = Date.now();
@@ -3579,13 +3914,9 @@ async function extractGymLayoutImageFromPdf(
   for (let page = 0; page < maxPages; page += 1) {
     if (Date.now() >= deadline) break;
     try {
-      const sharpPageImage = await sharp(buffer, { density: 220, page })
-        .png()
-        .toBuffer()
-        .catch(() => null);
-      const pageImage = sharpPageImage || (await renderPdfPageToPng(buffer, page));
+      const pageImage = await getPdfPageImage(buffer, page, options?.cache);
       if (!pageImage) continue;
-      const pageText = await extractTextFromImage(pageImage);
+      const pageText = await extractTextFromImage(pageImage, options?.cache);
       const summary = summarizeGymLayoutText(pageText);
       const textScore = scoreGymLayoutSignals(pageText);
       const visualScore = await scoreGymLayoutVisualSignal(pageImage);
@@ -3722,7 +4053,7 @@ async function extractGymLayoutImageFromPdf(
   }
 
   const selected = acceptedCandidates[0];
-  const dataUrl = await toOptimizedImageDataUrl(selected.image);
+  const dataUrl = await toOptimizedImageDataUrl(selected.image, options?.cache);
   if (!dataUrl) {
     return finalize({
       dataUrl: null,
@@ -4049,6 +4380,7 @@ async function appendFetchedAssetText(
     linkedChunks: string[];
     linkedMeta: Array<{ url: string; contentType: string }>;
     usedOcr: boolean;
+    highConfidencePdfFound: boolean;
     gymLayoutImageDataUrl: string | null;
     gymLayoutPage: number | null;
     gymLayoutFacts: string[];
@@ -4059,14 +4391,20 @@ async function appendFetchedAssetText(
     schedulePageTexts: Array<{ pageNumber: number; text: string }>;
   },
   hooks: Required<UrlDiscoveryTestHooks>,
-  options: Required<DiscoveryExtractionOptions>
+  options: Required<DiscoveryExtractionOptions>,
+  requestCache?: DiscoveryRequestCache
 ) {
   accumulators.linkedMeta.push({ url: assetUrl.toString(), contentType: fetched.contentType });
   if (/pdf/i.test(fetched.contentType) || /\.pdf(\?|#|$)/i.test(assetUrl.pathname)) {
     const parsed = await hooks.extractTextFromPdf(fetched.buffer, {
       budgetMs: options.budgetMs,
       performance: options.performance,
+      cache: requestCache,
+      mode: options.mode,
     });
+    if (parsed.textQuality === "good" && parsed.text.length >= 1500) {
+      accumulators.highConfidencePdfFound = true;
+    }
     accumulators.linkedChunks.push(parsed.text);
     accumulators.usedOcr = accumulators.usedOcr || parsed.usedOcr;
     accumulators.coachPageHints = uniqueBy(
@@ -4083,6 +4421,7 @@ async function appendFetchedAssetText(
         maxAiCandidates: 2,
         performance: options.performance,
         budgetMs: options.budgetMs,
+        cache: requestCache,
       });
       accumulators.gymLayoutImageDataUrl = layout.dataUrl;
       accumulators.gymLayoutPage = layout.page;
@@ -4107,7 +4446,8 @@ async function appendFetchedAssetText(
             num: Number(page?.num) || 0,
             text: safeString(page?.text || ""),
           }))
-          .filter((page) => page.num > 0 && page.text)
+          .filter((page) => page.num > 0 && page.text),
+        requestCache
       );
     }
     if (
@@ -4130,7 +4470,7 @@ async function appendFetchedAssetText(
     /image\/(png|jpe?g|webp)/i.test(fetched.contentType) ||
     /\.(png|jpe?g|webp)(\?|#|$)/i.test(assetUrl.pathname)
   ) {
-    const imageText = await hooks.extractTextFromImage(fetched.buffer);
+    const imageText = await hooks.extractTextFromImage(fetched.buffer, requestCache);
     accumulators.linkedChunks.push(imageText);
     accumulators.usedOcr = true;
     if (
@@ -4139,7 +4479,10 @@ async function appendFetchedAssetText(
       !accumulators.gymLayoutImageDataUrl &&
       looksLikeGymLayoutText(imageText)
     ) {
-      accumulators.gymLayoutImageDataUrl = await hooks.toOptimizedImageDataUrl(fetched.buffer);
+      accumulators.gymLayoutImageDataUrl = await hooks.toOptimizedImageDataUrl(
+        fetched.buffer,
+        requestCache
+      );
       accumulators.gymLayoutZones = await hooks.openAiExtractGymLayoutZones(
         fetched.buffer,
         fetched.contentType || "image/png",
@@ -4280,6 +4623,7 @@ export function buildDefaultGymMeetData() {
         venueLabel: "",
         supportEmail: "",
         notes: [],
+        colorLegend: [],
         awardLegend: [],
         days: [],
       },
@@ -4311,6 +4655,7 @@ export async function extractDiscoveryText(
 ): Promise<ExtractionResult> {
   const resolvedOptions = normalizeDiscoveryExtractionOptions(options);
   const performance = resolvedOptions.performance;
+  const requestCache = createDiscoveryRequestCache();
   if (input.type === "file") {
     const parsed = input.dataUrl ? parseDataUrl(input.dataUrl) : null;
     if (!parsed) throw new Error("Invalid file payload");
@@ -4320,16 +4665,21 @@ export async function extractDiscoveryText(
         await extractTextFromPdf(parsed.buffer, {
           budgetMs: resolvedOptions.budgetMs,
           performance,
+          cache: requestCache,
+          mode: resolvedOptions.mode,
         });
       const shouldRunGymnasticsEnrichment =
         resolvedOptions.workflow === "gymnastics" &&
         resolvedOptions.mode === "enrich";
+      const shouldExtractSchedulePageImages =
+        resolvedOptions.workflow === "gymnastics";
       const gymLayout = shouldRunGymnasticsEnrichment
         ? await extractGymLayoutImageFromPdf(parsed.buffer, {
             maxPages: 4,
             maxAiCandidates: 2,
             performance,
             budgetMs: resolvedOptions.budgetMs,
+            cache: requestCache,
           })
         : {
             dataUrl: null,
@@ -4339,10 +4689,10 @@ export async function extractDiscoveryText(
             selection: undefined,
           };
       const schedulePageImages =
-        shouldRunGymnasticsEnrichment && resolvedOptions.debugArtifacts
-          ? await extractSchedulePageImagesFromPdf(parsed.buffer, pages)
-          : shouldRunGymnasticsEnrichment
-          ? await extractSchedulePageImagesFromPdf(parsed.buffer, pages)
+        shouldExtractSchedulePageImages && resolvedOptions.debugArtifacts
+          ? await extractSchedulePageImagesFromPdf(parsed.buffer, pages, requestCache)
+          : shouldExtractSchedulePageImages
+          ? await extractSchedulePageImagesFromPdf(parsed.buffer, pages, requestCache)
           : [];
       const schedulePageTexts =
         resolvedOptions.workflow === "gymnastics"
@@ -4383,14 +4733,14 @@ export async function extractDiscoveryText(
       };
     }
     if (/image\/(png|jpe?g|webp)/.test(mime)) {
-      const text = await extractTextFromImage(parsed.buffer);
+      const text = await extractTextFromImage(parsed.buffer, requestCache);
       const quality = analyzeTextQuality(text);
       const shouldRunGymnasticsEnrichment =
         resolvedOptions.workflow === "gymnastics" &&
         resolvedOptions.mode === "enrich" &&
         looksLikeGymLayoutText(text);
       const gymLayoutImageDataUrl = shouldRunGymnasticsEnrichment
-        ? await toOptimizedImageDataUrl(parsed.buffer)
+        ? await toOptimizedImageDataUrl(parsed.buffer, requestCache)
         : null;
       const gymLayoutZones = gymLayoutImageDataUrl
         ? await openAiExtractGymLayoutZones(
@@ -4458,6 +4808,7 @@ export async function extractDiscoveryText(
     linkedChunks,
     linkedMeta,
     usedOcr,
+    highConfidencePdfFound: false,
     gymLayoutImageDataUrl,
     gymLayoutPage,
     gymLayoutFacts,
@@ -4484,17 +4835,41 @@ export async function extractDiscoveryText(
         fetched,
         accumulators,
         hooks,
-        resolvedOptions
+        resolvedOptions,
+        requestCache
       );
     } catch {
       // Best-effort linked assets.
     }
   };
 
-  for (const asset of rootCandidates.filter((candidate) => candidate.kind === "asset")) {
-    if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) break;
-    await fetchAssetCandidate(asset);
-  }
+  const shouldContinueFetchingAssets = () => {
+    if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) return false;
+    if (!accumulators.highConfidencePdfFound) return true;
+    if (
+      resolvedOptions.workflow === "gymnastics" &&
+      resolvedOptions.mode === "enrich"
+    ) {
+      return (
+        !accumulators.gymLayoutImageDataUrl ||
+        accumulators.schedulePageImages.length === 0
+      );
+    }
+    return false;
+  };
+
+  const fetchAssetCandidates = async (candidates: CrawlCandidate[]) => {
+    for (let index = 0; index < candidates.length; index += 2) {
+      if (!shouldContinueFetchingAssets()) break;
+      await Promise.all(
+        candidates.slice(index, index + 2).map((candidate) => fetchAssetCandidate(candidate))
+      );
+    }
+  };
+
+  await fetchAssetCandidates(
+    rootCandidates.filter((candidate) => candidate.kind === "asset")
+  );
 
   for (const childPage of rootCandidates.filter((candidate) => candidate.kind === "html")) {
     if (crawledPages.length - 1 >= MAX_FOLLOWED_CHILD_PAGES) break;
@@ -4512,7 +4887,8 @@ export async function extractDiscoveryText(
             fetched,
             accumulators,
             hooks,
-            resolvedOptions
+            resolvedOptions,
+            requestCache
           );
           fetchedAssetUrls.add(childPage.url);
         }
@@ -4531,10 +4907,9 @@ export async function extractDiscoveryText(
       for (const candidate of childCandidates) {
         upsertDiscoveredLink(discoveredLinkMap, candidate);
       }
-      for (const asset of childCandidates.filter((candidate) => candidate.kind === "asset")) {
-        if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) break;
-        await fetchAssetCandidate(asset);
-      }
+      await fetchAssetCandidates(
+        childCandidates.filter((candidate) => candidate.kind === "asset")
+      );
     } catch {
       // Best-effort child pages.
     }
@@ -4807,8 +5182,20 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
       venueLabel: jsonNullable(JSON_STRING),
       supportEmail: jsonNullable(JSON_STRING),
       notes: jsonArray(JSON_STRING),
+      colorLegend: jsonArray(
+        jsonObject({
+          id: jsonNullable(JSON_STRING),
+          target: jsonNullable({ type: "string", enum: ["session", "club"] }),
+          colorHex: jsonNullable(JSON_STRING),
+          colorLabel: jsonNullable(JSON_STRING),
+          meaning: jsonNullable(JSON_STRING),
+          sourceText: jsonNullable(JSON_STRING),
+          teamAwardEligible: jsonNullable(JSON_BOOLEAN),
+        })
+      ),
       awardLegend: jsonArray(
         jsonObject({
+          colorHex: jsonNullable(JSON_STRING),
           colorLabel: jsonNullable(JSON_STRING),
           meaning: jsonNullable(JSON_STRING),
           teamAwardEligible: jsonNullable(JSON_BOOLEAN),
@@ -4845,12 +5232,26 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
               startTime: jsonNullable(JSON_STRING),
               warmupTime: jsonNullable(JSON_STRING),
               note: jsonNullable(JSON_STRING),
+              color: jsonNullable(
+                jsonObject({
+                  legendId: jsonNullable(JSON_STRING),
+                  textColorHex: jsonNullable(JSON_STRING),
+                  confidence: jsonNullable(JSON_NUMBER),
+                })
+              ),
               clubs: jsonArray(
                 jsonObject({
                   name: jsonNullable(JSON_STRING),
                   teamAwardEligible: jsonNullable(JSON_BOOLEAN),
                   athleteCount: jsonNullable(JSON_NUMBER),
                   divisionLabel: jsonNullable(JSON_STRING),
+                  color: jsonNullable(
+                    jsonObject({
+                      legendId: jsonNullable(JSON_STRING),
+                      textColorHex: jsonNullable(JSON_STRING),
+                      confidence: jsonNullable(JSON_NUMBER),
+                    })
+                  ),
                 })
               ),
             })
@@ -5102,7 +5503,7 @@ function normalizeParseResult(value: any): ParseResult | null {
     timezone: safeString(value.timezone) || null,
     venue: safeString(value.venue) || null,
     address: safeString(value.address) || null,
-    hostGym: safeString(value.hostGym) || null,
+    hostGym: sanitizeHostGymValue(value.hostGym),
     admission: pickArray(value.admission).map((item) => ({
       label: safeString(item?.label),
       price: safeString(item?.price),
@@ -5330,16 +5731,19 @@ function normalizeParseResult(value: any): ParseResult | null {
         pickArray(value.schedule?.notes).map((item) => safeString(item)).filter(Boolean),
         (item) => item
       ),
+      colorLegend: sanitizeScheduleColorLegendEntries(pickArray(value.schedule?.colorLegend) as any),
       awardLegend: uniqueBy(
         pickArray(value.schedule?.awardLegend)
           .map((item) => ({
+            colorHex: normalizeColorHex(item?.colorHex) || null,
             colorLabel: safeString(item?.colorLabel) || null,
             meaning: safeString(item?.meaning) || null,
             teamAwardEligible:
               typeof item?.teamAwardEligible === "boolean" ? item.teamAwardEligible : null,
           }))
           .filter((item) => item.meaning || typeof item.teamAwardEligible === "boolean"),
-        (item) => `${item.meaning || ""}|${item.colorLabel || ""}|${item.teamAwardEligible ?? ""}`
+        (item) =>
+          `${item.meaning || ""}|${item.colorHex || ""}|${item.colorLabel || ""}|${item.teamAwardEligible ?? ""}`
       ),
       annotations: uniqueBy(
         pickArray(value.schedule?.annotations)
@@ -5387,6 +5791,7 @@ function normalizeParseResult(value: any): ParseResult | null {
               startTime: safeString(session?.startTime) || null,
               warmupTime: safeString(session?.warmupTime) || null,
               note: safeString(session?.note) || null,
+              color: normalizeScheduleColorRef(session?.color),
               clubs: uniqueBy(
                 pickArray(session?.clubs)
                   .map((club) => ({
@@ -5400,6 +5805,7 @@ function normalizeParseResult(value: any): ParseResult | null {
                         ? club.athleteCount
                         : null,
                     divisionLabel: safeString(club?.divisionLabel) || null,
+                    color: normalizeScheduleColorRef(club?.color),
                   }))
                   .filter((club) => club.name),
                 (club) => [club.name || "", club.divisionLabel || "", `${club.athleteCount ?? ""}`].join("|")
@@ -5415,6 +5821,7 @@ function normalizeParseResult(value: any): ParseResult | null {
 function sanitizeDiscoveryParseResult(value: ParseResult): ParseResult {
   const next: ParseResult = {
     ...value,
+    hostGym: sanitizeHostGymValue(value.hostGym),
     meetDetails: {
       ...value.meetDetails,
       operationalNotes: [...pickArray(value.meetDetails?.operationalNotes)],
@@ -5663,7 +6070,17 @@ const SCHEDULE_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown.
   "venueLabel": string|null,
   "supportEmail": string|null,
   "notes": [string],
+  "colorLegend": [{
+    "id": string|null,
+    "target": "session"|"club"|null,
+    "colorHex": string|null,
+    "colorLabel": string|null,
+    "meaning": string|null,
+    "sourceText": string|null,
+    "teamAwardEligible": boolean|null
+  }],
   "awardLegend": [{
+    "colorHex": string|null,
     "colorLabel": string|null,
     "meaning": string|null,
     "teamAwardEligible": boolean|null
@@ -5693,11 +6110,21 @@ const SCHEDULE_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown.
       "startTime": string|null,
       "warmupTime": string|null,
       "note": string|null,
+      "color": {
+        "legendId": string|null,
+        "textColorHex": string|null,
+        "confidence": number|null
+      }|null,
       "clubs": [{
         "name": string|null,
         "teamAwardEligible": boolean|null,
         "athleteCount": number|null,
-        "divisionLabel": string|null
+        "divisionLabel": string|null,
+        "color": {
+          "legendId": string|null,
+          "textColorHex": string|null,
+          "confidence": number|null
+        }|null
       }]
     }]
   }]
@@ -5707,6 +6134,7 @@ const SCHEDULE_AWARD_FLAGS_SCHEMA = `Return JSON only. Do not wrap in markdown.
 {
   "legendNotes": [string],
   "awardLegend": [{
+    "colorHex": string|null,
     "colorLabel": string|null,
     "meaning": string|null,
     "teamAwardEligible": boolean|null
@@ -5717,7 +6145,12 @@ const SCHEDULE_AWARD_FLAGS_SCHEMA = `Return JSON only. Do not wrap in markdown.
       "code": string|null,
       "clubs": [{
         "name": string|null,
-        "teamAwardEligible": boolean|null
+        "teamAwardEligible": boolean|null,
+        "color": {
+          "legendId": string|null,
+          "textColorHex": string|null,
+          "confidence": number|null
+        }|null
       }]
     }]
   }]
@@ -5728,7 +6161,17 @@ const SCHEDULE_VISUAL_SCHEMA = `Return JSON only. Do not wrap in markdown.
   "venueLabel": string|null,
   "supportEmail": string|null,
   "notes": [string],
+  "colorLegend": [{
+    "id": string|null,
+    "target": "session"|"club"|null,
+    "colorHex": string|null,
+    "colorLabel": string|null,
+    "meaning": string|null,
+    "sourceText": string|null,
+    "teamAwardEligible": boolean|null
+  }],
   "awardLegend": [{
+    "colorHex": string|null,
     "colorLabel": string|null,
     "meaning": string|null,
     "teamAwardEligible": boolean|null
@@ -5758,11 +6201,21 @@ const SCHEDULE_VISUAL_SCHEMA = `Return JSON only. Do not wrap in markdown.
       "startTime": string|null,
       "warmupTime": string|null,
       "note": string|null,
+      "color": {
+        "legendId": string|null,
+        "textColorHex": string|null,
+        "confidence": number|null
+      }|null,
       "clubs": [{
         "name": string|null,
         "teamAwardEligible": boolean|null,
         "athleteCount": number|null,
-        "divisionLabel": string|null
+        "divisionLabel": string|null,
+        "color": {
+          "legendId": string|null,
+          "textColorHex": string|null,
+          "confidence": number|null
+        }|null
       }]
     }]
   }]
@@ -5893,6 +6346,821 @@ async function cropScheduleImageTableBlock(
   } catch {
     return null;
   }
+}
+
+function clampNormalizedScheduleColorBox(value: unknown): NormalizedScheduleColorBox | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, any>;
+  const x = Number(raw.x);
+  const y = Number(raw.y);
+  const w = Number(raw.w);
+  const h = Number(raw.h);
+  if (![x, y, w, h].every((item) => Number.isFinite(item))) return null;
+  const normalized = {
+    x: Math.max(0, Math.min(1000, x)),
+    y: Math.max(0, Math.min(1000, y)),
+    w: Math.max(1, Math.min(1000, w)),
+    h: Math.max(1, Math.min(1000, h)),
+  };
+  if (normalized.x + normalized.w > 1000) normalized.w = 1000 - normalized.x;
+  if (normalized.y + normalized.h > 1000) normalized.h = 1000 - normalized.y;
+  return normalized.w >= 1 && normalized.h >= 1 ? normalized : null;
+}
+
+function normalizeScheduleColorOcrText(value: unknown): string {
+  return safeString(value).replace(/[^a-z0-9]+/gi, " ").trim().toLowerCase();
+}
+
+function toNormalizedScheduleColorBoxFromVertices(
+  vertices: unknown,
+  width: number,
+  height: number
+): NormalizedScheduleColorBox | null {
+  const points = pickArray(vertices)
+    .map((vertex) => ({
+      x: Number((vertex as any)?.x),
+      y: Number((vertex as any)?.y),
+    }))
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+  if (!points.length || width <= 0 || height <= 0) return null;
+  const minX = Math.max(0, Math.min(...points.map((point) => point.x)));
+  const minY = Math.max(0, Math.min(...points.map((point) => point.y)));
+  const maxX = Math.min(width, Math.max(...points.map((point) => point.x)));
+  const maxY = Math.min(height, Math.max(...points.map((point) => point.y)));
+  if (maxX - minX < 2 || maxY - minY < 2) return null;
+  return clampNormalizedScheduleColorBox({
+    x: (minX / width) * 1000,
+    y: (minY / height) * 1000,
+    w: ((maxX - minX) / width) * 1000,
+    h: ((maxY - minY) / height) * 1000,
+  });
+}
+
+async function extractScheduleOcrTextBoxesFromDataUrl(
+  dataUrl: string
+): Promise<ScheduleColorOcrTextBox[]> {
+  const parsed = parseDataUrl(dataUrl);
+  if (!parsed) return [];
+  try {
+    const metadata = await sharp(parsed.buffer).metadata();
+    const width = Number(metadata.width || 0);
+    const height = Number(metadata.height || 0);
+    if (!width || !height) return [];
+    const vision = getVisionClient();
+    const [result] = await vision.documentTextDetection({
+      image: { content: parsed.buffer },
+      imageContext: { languageHints: ["en"] },
+    });
+    const paragraphs =
+      pickArray(result?.fullTextAnnotation?.pages)
+        .flatMap((page: any) => pickArray(page?.blocks))
+        .flatMap((block: any) => pickArray(block?.paragraphs))
+        .map((paragraph: any) => {
+          const words = pickArray(paragraph?.words)
+            .map((word: any) =>
+              pickArray(word?.symbols)
+                .map((symbol: any) => safeString(symbol?.text))
+                .join("")
+            )
+            .filter(Boolean);
+          const text = words.join(" ").replace(/\s+/g, " ").trim();
+          const box = toNormalizedScheduleColorBoxFromVertices(
+            paragraph?.boundingBox?.vertices,
+            width,
+            height
+          );
+          return {
+            text,
+            normalizedText: normalizeScheduleColorOcrText(text),
+            clubLookup: normalizeScheduleClubLookup(text),
+            box,
+            area: box ? box.w * box.h : Number.POSITIVE_INFINITY,
+          };
+        })
+        .filter(
+          (item): item is ScheduleColorOcrTextBox =>
+            Boolean(item.text) && Boolean(item.box)
+        ) || [];
+    if (paragraphs.length > 0) {
+      return uniqueBy(paragraphs, (item) => `${item.normalizedText}|${JSON.stringify(item.box)}`);
+    }
+    const textAnnotations = pickArray(result?.textAnnotations)
+      .slice(1)
+      .map((item: any) => {
+        const text = safeString(item?.description).replace(/\s+/g, " ").trim();
+        const box = toNormalizedScheduleColorBoxFromVertices(
+          item?.boundingPoly?.vertices,
+          width,
+          height
+        );
+        return {
+          text,
+          normalizedText: normalizeScheduleColorOcrText(text),
+          clubLookup: normalizeScheduleClubLookup(text),
+          box,
+          area: box ? box.w * box.h : Number.POSITIVE_INFINITY,
+        };
+      })
+      .filter(
+        (item): item is ScheduleColorOcrTextBox =>
+          Boolean(item.text) && Boolean(item.box)
+      );
+    return uniqueBy(textAnnotations, (item) => `${item.normalizedText}|${JSON.stringify(item.box)}`);
+  } catch {
+    return [];
+  }
+}
+
+function findBestScheduleSessionColorBox(
+  textBoxes: ScheduleColorOcrTextBox[],
+  sessionCode: string
+): ScheduleColorOcrTextBox | null {
+  const code = safeString(sessionCode).toUpperCase();
+  if (!code) return null;
+  const codeLookup = normalizeScheduleColorOcrText(code);
+  const candidates = textBoxes
+    .map((item) => {
+      const text = item.normalizedText;
+      let score = 0;
+      if (new RegExp(`\\bsession\\s+${codeLookup}\\b`, "i").test(text)) score = 5;
+      else if (new RegExp(`\\b${codeLookup}\\b`, "i").test(text)) score = 3;
+      else if (text.includes(codeLookup)) score = 1;
+      return { item, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score || left.item.area - right.item.area);
+  return candidates[0]?.item || null;
+}
+
+function findBestScheduleClubColorBox(
+  textBoxes: ScheduleColorOcrTextBox[],
+  clubName: string
+): ScheduleColorOcrTextBox | null {
+  const lookup = normalizeScheduleClubLookup(clubName);
+  if (!lookup) return null;
+  const candidates = textBoxes
+    .map((item) => {
+      let score = 0;
+      if (item.clubLookup === lookup) score = 5;
+      else if (item.clubLookup.startsWith(`${lookup} `) || item.clubLookup.endsWith(` ${lookup}`))
+        score = 4;
+      else if (item.clubLookup.includes(lookup) || lookup.includes(item.clubLookup)) score = 2;
+      return { item, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score || left.item.area - right.item.area);
+  return candidates[0]?.item || null;
+}
+
+function deriveScheduleLegendEntriesFromOcrTextBoxes(
+  textBoxes: ScheduleColorOcrTextBox[],
+  clubColors: Array<{ colorHex: string | null; teamAwardEligible: boolean | null }>
+): ScheduleColorLegendEntry[] {
+  const lines = uniqueBy(
+    textBoxes.map((item) => safeString(item.text)).filter(Boolean),
+    (item) => normalizeScheduleColorOcrText(item)
+  );
+  const trueColors = clubColors
+    .filter((item) => item.teamAwardEligible === true)
+    .map((item) => item.colorHex || "")
+    .filter(Boolean);
+  const falseColors = clubColors
+    .filter((item) => item.teamAwardEligible === false)
+    .map((item) => item.colorHex || "")
+    .filter(Boolean);
+  const entries: ScheduleColorLegendEntry[] = [];
+  if (lines.some((line) => /clubs in pink .*individual\s*&?\s*team awards/i.test(line))) {
+    entries.push({
+      id: null,
+      target: "club",
+      colorHex: pickDominantLegendColorHex(trueColors),
+      colorLabel: "Pink",
+      meaning: "Individual & Team Awards",
+      sourceText: lines.find((line) => /clubs in pink/i.test(line)) || null,
+      teamAwardEligible: true,
+    });
+  }
+  if (lines.some((line) => /clubs in black .*individual awards only/i.test(line))) {
+    entries.push({
+      id: null,
+      target: "club",
+      colorHex: pickDominantLegendColorHex(falseColors),
+      colorLabel: "Black",
+      meaning: "Individual Only",
+      sourceText: lines.find((line) => /clubs in black/i.test(line)) || null,
+      teamAwardEligible: false,
+    });
+  }
+  return entries;
+}
+
+function hexToRgb(value: string): { r: number; g: number; b: number } | null {
+  const hex = normalizeColorHex(value);
+  if (!hex) return null;
+  return {
+    r: Number.parseInt(hex.slice(1, 3), 16),
+    g: Number.parseInt(hex.slice(3, 5), 16),
+    b: Number.parseInt(hex.slice(5, 7), 16),
+  };
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return `#${[r, g, b]
+    .map((item) => Math.max(0, Math.min(255, Math.round(item))).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function rgbDistance(
+  left: { r: number; g: number; b: number } | null,
+  right: { r: number; g: number; b: number } | null
+): number {
+  if (!left || !right) return Number.POSITIVE_INFINITY;
+  return Math.sqrt(
+    (left.r - right.r) ** 2 + (left.g - right.g) ** 2 + (left.b - right.b) ** 2
+  );
+}
+
+function describeRgbColor(rgb: { r: number; g: number; b: number }): {
+  luminance: number;
+  saturation: number;
+} {
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const saturation = max === 0 ? 0 : (max - min) / max;
+  return { luminance, saturation };
+}
+
+async function sampleScheduleTextColorFromDataUrl(
+  dataUrl: string,
+  box: NormalizedScheduleColorBox | null
+): Promise<ScheduleColorRef | null> {
+  const parsed = parseDataUrl(dataUrl);
+  if (!parsed || !box) return null;
+  try {
+    const base = sharp(parsed.buffer);
+    const metadata = await base.metadata();
+    const width = Number(metadata.width || 0);
+    const height = Number(metadata.height || 0);
+    if (!width || !height) return null;
+    const left = Math.max(0, Math.floor((box.x / 1000) * width));
+    const top = Math.max(0, Math.floor((box.y / 1000) * height));
+    const cropWidth = Math.min(width - left, Math.max(8, Math.ceil((box.w / 1000) * width)));
+    const cropHeight = Math.min(height - top, Math.max(8, Math.ceil((box.h / 1000) * height)));
+    if (cropWidth < 4 || cropHeight < 4) return null;
+    const { data, info } = await base
+      .extract({ left, top, width: cropWidth, height: cropHeight })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const channels = Number(info.channels || 4);
+    const buckets = new Map<
+      string,
+      { count: number; samples: Array<{ r: number; g: number; b: number }> }
+    >();
+    let qualifying = 0;
+    for (let index = 0; index < data.length; index += channels) {
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      const alpha = (data[index + 3] ?? 255) / 255;
+      if (alpha < 0.3) continue;
+      const metrics = describeRgbColor({ r, g, b });
+      if (metrics.luminance > 0.96) continue;
+      if (metrics.luminance < 0.01) continue;
+      if (metrics.saturation < 0.08 && metrics.luminance > 0.35 && metrics.luminance < 0.85) {
+        continue;
+      }
+      qualifying += 1;
+      const key = `${Math.round(r / 16) * 16}|${Math.round(g / 16) * 16}|${Math.round(b / 16) * 16}`;
+      const bucket = buckets.get(key) || { count: 0, samples: [] };
+      bucket.count += 1;
+      bucket.samples.push({ r, g, b });
+      buckets.set(key, bucket);
+    }
+    if (qualifying < 20 || buckets.size === 0) return null;
+    const dominant = [...buckets.values()].sort((a, b) => b.count - a.count)[0];
+    const confidence = dominant.count / qualifying;
+    if (confidence < 0.3) return null;
+    const avg = dominant.samples.reduce(
+      (acc, sample) => ({
+        r: acc.r + sample.r,
+        g: acc.g + sample.g,
+        b: acc.b + sample.b,
+      }),
+      { r: 0, g: 0, b: 0 }
+    );
+    const rgb = {
+      r: avg.r / dominant.samples.length,
+      g: avg.g / dominant.samples.length,
+      b: avg.b / dominant.samples.length,
+    };
+    const metrics = describeRgbColor(rgb);
+    if (metrics.saturation < 0.18 && metrics.luminance > 0.25) return null;
+    return {
+      legendId: null,
+      textColorHex: rgbToHex(rgb.r, rgb.g, rgb.b),
+      confidence: Number(confidence.toFixed(3)),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function openAiExtractScheduleColorBindingsFromImage(
+  dataUrl: string,
+  pageText: string
+): Promise<ScheduleColorPageAnalysis | null> {
+  const parsed = parseDataUrl(dataUrl);
+  const apiKey = safeString(process.env.OPENAI_API_KEY || "");
+  if (!parsed || !apiKey) return null;
+  const model = resolveOpenAiMiniModel();
+  const schema = `Return JSON only. Do not wrap in markdown.
+{
+  "legendEntries": [{
+    "target": "session"|"club"|null,
+    "meaning": string|null,
+    "colorLabel": string|null,
+    "sourceText": string|null,
+    "teamAwardEligible": boolean|null,
+    "sessionCodes": [string],
+    "clubNames": [string]
+  }],
+  "sessions": [{
+    "sessionCode": string|null,
+    "group": string|null,
+    "confidence": number|null,
+    "box": { "x": number, "y": number, "w": number, "h": number }|null
+  }],
+  "clubs": [{
+    "sessionCode": string|null,
+    "clubName": string|null,
+    "teamAwardEligible": boolean|null,
+    "confidence": number|null,
+    "box": { "x": number, "y": number, "w": number, "h": number }|null
+  }]
+}`;
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You inspect gymnastics schedule grid pages and locate session headers and club names that are visible on the page. Return strict JSON only.",
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: [
+                  schema,
+                  "",
+                  "Read the image visually.",
+                  "- Bounding boxes use a 0..1000 coordinate space relative to the full page image.",
+                  "- Include visible session headers and visible club names from the page.",
+                  "- Capture the text box tightly around the colored or styled text itself, not the whole table cell.",
+                  "- If the page contains an explicit legend or prose describing color meaning, return it in `legendEntries` and link it to `sessionCodes` or `clubNames` when possible.",
+                  "- For club items, set `teamAwardEligible` only when the page makes that meaning explicit.",
+                  "- Keep names and session codes as they appear on the page when possible.",
+                  "Auxiliary OCR text:",
+                  safeString(pageText).slice(0, 12000),
+                ].join("\n"),
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${parsed.mimeType};base64,${parsed.buffer.toString("base64")}`,
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const raw = safeString(payload?.choices?.[0]?.message?.content || "");
+    const json = extractJsonObject(raw);
+    if (!json || typeof json !== "object") return null;
+    return {
+      legendEntries: uniqueBy(
+        pickArray((json as any)?.legendEntries)
+          .map((entry) => ({
+            target:
+              safeString(entry?.target) === "session" || safeString(entry?.target) === "club"
+                ? (safeString(entry?.target) as ScheduleColorTarget)
+                : null,
+            meaning: safeString(entry?.meaning) || null,
+            colorLabel: safeString(entry?.colorLabel) || null,
+            sourceText: safeString(entry?.sourceText) || null,
+            teamAwardEligible:
+              typeof entry?.teamAwardEligible === "boolean" ? entry.teamAwardEligible : null,
+            sessionCodes: uniqueBy(
+              pickArray(entry?.sessionCodes)
+                .map((item) => safeString(item).toUpperCase())
+                .filter(Boolean),
+              (item) => item
+            ),
+            clubNames: uniqueBy(
+              pickArray(entry?.clubNames)
+                .map((item) => safeString(item))
+                .filter(Boolean),
+              (item) => item
+            ),
+          }))
+          .filter(
+            (entry) =>
+              entry.meaning ||
+              entry.colorLabel ||
+              entry.sourceText ||
+              entry.sessionCodes.length > 0 ||
+              entry.clubNames.length > 0
+          ),
+        (entry) =>
+          `${entry.target || ""}|${entry.meaning || ""}|${entry.colorLabel || ""}|${entry.sourceText || ""}|${entry.sessionCodes.join(",")}|${entry.clubNames.join(",")}|${entry.teamAwardEligible ?? ""}`
+      ),
+      sessions: uniqueBy(
+        pickArray((json as any)?.sessions)
+          .map((entry) => ({
+            sessionCode: safeString(entry?.sessionCode).toUpperCase() || null,
+            group: safeString(entry?.group) || null,
+            confidence:
+              typeof entry?.confidence === "number" && Number.isFinite(entry.confidence)
+                ? Math.max(0, Math.min(1, entry.confidence))
+                : null,
+            box: clampNormalizedScheduleColorBox(entry?.box),
+          }))
+          .filter((entry) => entry.sessionCode && entry.box),
+        (entry) => `${entry.sessionCode}|${JSON.stringify(entry.box)}`
+      ),
+      clubs: uniqueBy(
+        pickArray((json as any)?.clubs)
+          .map((entry) => ({
+            sessionCode: safeString(entry?.sessionCode).toUpperCase() || null,
+            clubName: safeString(entry?.clubName) || null,
+            teamAwardEligible:
+              typeof entry?.teamAwardEligible === "boolean" ? entry.teamAwardEligible : null,
+            confidence:
+              typeof entry?.confidence === "number" && Number.isFinite(entry.confidence)
+                ? Math.max(0, Math.min(1, entry.confidence))
+                : null,
+            box: clampNormalizedScheduleColorBox(entry?.box),
+          }))
+          .filter((entry) => entry.clubName && entry.box),
+        (entry) =>
+          `${entry.sessionCode || ""}|${normalizeScheduleClubLookup(entry.clubName)}|${JSON.stringify(entry.box)}`
+      ),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function pickDominantLegendColorHex(samples: string[]): string | null {
+  const normalized = samples.map((item) => normalizeColorHex(item)).filter(Boolean);
+  if (!normalized.length) return null;
+  const clusters: Array<{ rgb: { r: number; g: number; b: number }; colors: string[] }> = [];
+  for (const color of normalized) {
+    const rgb = hexToRgb(color);
+    if (!rgb) continue;
+    const cluster = clusters.find((item) => rgbDistance(item.rgb, rgb) <= 18);
+    if (cluster) {
+      cluster.colors.push(color);
+    } else {
+      clusters.push({ rgb, colors: [color] });
+    }
+  }
+  const winner = clusters.sort((a, b) => b.colors.length - a.colors.length)[0];
+  if (!winner) return null;
+  const rgbs = winner.colors.map((item) => hexToRgb(item)).filter(Boolean) as Array<{
+    r: number;
+    g: number;
+    b: number;
+  }>;
+  if (!rgbs.length) return null;
+  return rgbToHex(
+    rgbs.reduce((sum, item) => sum + item.r, 0) / rgbs.length,
+    rgbs.reduce((sum, item) => sum + item.g, 0) / rgbs.length,
+    rgbs.reduce((sum, item) => sum + item.b, 0) / rgbs.length
+  );
+}
+
+function deriveClubLegendFromColoredClubs(
+  days: StoredGymMeetScheduleDay[]
+): ScheduleColorLegendEntry[] {
+  const grouped = new Map<
+    string,
+    { colorHex: string; teamAwardEligible: boolean; count: number }
+  >();
+  days.forEach((day) => {
+    day.sessions.forEach((session) => {
+      session.clubs.forEach((club) => {
+        const colorHex = normalizeColorHex(club.color?.textColorHex);
+        if (!colorHex || typeof club.teamAwardEligible !== "boolean") return;
+        const key = `${colorHex}|${club.teamAwardEligible}`;
+        const existing = grouped.get(key) || {
+          colorHex,
+          teamAwardEligible: club.teamAwardEligible,
+          count: 0,
+        };
+        existing.count += 1;
+        grouped.set(key, existing);
+      });
+    });
+  });
+  return [...grouped.values()]
+    .filter((entry) => entry.count >= 2)
+    .map((entry) => ({
+      id: null,
+      target: "club" as const,
+      colorHex: entry.colorHex,
+      colorLabel: null,
+      meaning: entry.teamAwardEligible ? "Individual & Team Awards" : "Individual Only",
+      sourceText: null,
+      teamAwardEligible: entry.teamAwardEligible,
+    }));
+}
+
+async function applyScheduleColorsFromImages(
+  schedule: ParseResult["schedule"],
+  images: Array<{ pageNumber: number; dataUrl: string | null }>,
+  pageTexts: Array<{ pageNumber: number; text: string }>,
+  performance?: DiscoveryPerformance
+): Promise<ParseResult["schedule"]> {
+  const normalized = normalizeStoredSchedule(schedule || {});
+  const validImages = pickArray(images)
+    .map((item) => ({
+      pageNumber: Number(item?.pageNumber) || 0,
+      dataUrl: safeString(item?.dataUrl || ""),
+    }))
+    .filter((item) => item.pageNumber > 0 && item.dataUrl);
+  if (!normalized.days.length || !validImages.length) {
+    return toParseScheduleShape(normalized);
+  }
+  const textByPage = new Map(
+    pickArray(pageTexts)
+      .map((item) => [Number(item?.pageNumber) || 0, safeString(item?.text || "")] as const)
+      .filter(([pageNumber, text]) => pageNumber > 0 && text)
+  );
+  const uniqueSessionCodes = uniqueBy(
+    normalized.days.flatMap((day) => day.sessions.map((session) => safeString(session.code).toUpperCase())),
+    (item) => item
+  ).filter(Boolean);
+  const uniqueClubNames = uniqueBy(
+    normalized.days.flatMap((day) =>
+      day.sessions.flatMap((session) => session.clubs.map((club) => safeString(club.name)))
+    ),
+    (item) => normalizeScheduleClubLookup(item)
+  ).filter(Boolean);
+  const sessionSamples = new Map<string, ScheduleColorRef>();
+  const clubSamples = new Map<string, ScheduleColorRef>();
+  const clubEligibility = new Map<string, boolean | null>();
+  const explicitLegendEntries: ScheduleColorLegendEntry[] = [];
+  for (const image of validImages) {
+    const pageText = textByPage.get(image.pageNumber) || "";
+    const pageLookup = normalizeScheduleColorOcrText(pageText);
+    const ocrTextBoxes = await extractScheduleOcrTextBoxesFromDataUrl(image.dataUrl);
+    let ocrSampleCount = 0;
+
+    for (const sessionCode of uniqueSessionCodes) {
+      if (pageLookup && !new RegExp(`\\b${normalizeScheduleColorOcrText(sessionCode)}\\b`, "i").test(pageLookup)) {
+        continue;
+      }
+      const matchedBox = findBestScheduleSessionColorBox(ocrTextBoxes, sessionCode);
+      if (!matchedBox) continue;
+      const sampled = await sampleScheduleTextColorFromDataUrl(image.dataUrl, matchedBox.box);
+      if (!sampled?.textColorHex) continue;
+      sessionSamples.set(sessionCode, sampled);
+      ocrSampleCount += 1;
+    }
+
+    for (const clubName of uniqueClubNames) {
+      const clubLookup = normalizeScheduleClubLookup(clubName);
+      if (pageLookup && clubLookup && !pageLookup.includes(clubLookup)) {
+        continue;
+      }
+      const matchedBox = findBestScheduleClubColorBox(ocrTextBoxes, clubName);
+      if (!matchedBox) continue;
+      const sampled = await sampleScheduleTextColorFromDataUrl(image.dataUrl, matchedBox.box);
+      if (!sampled?.textColorHex) continue;
+      normalized.days.forEach((day) => {
+        day.sessions.forEach((session) => {
+          session.clubs.forEach((club) => {
+            if (normalizeScheduleClubLookup(club.name) !== clubLookup) return;
+            const key = `${safeString(session.code).toUpperCase()}|${clubLookup}`;
+            if (!clubSamples.has(key)) {
+              clubSamples.set(key, sampled);
+            }
+            if (typeof club.teamAwardEligible === "boolean" && !clubEligibility.has(key)) {
+              clubEligibility.set(key, club.teamAwardEligible);
+            }
+          });
+        });
+      });
+      ocrSampleCount += 1;
+    }
+
+    if (ocrSampleCount > 0) {
+      explicitLegendEntries.push(
+        ...deriveScheduleLegendEntriesFromOcrTextBoxes(
+          ocrTextBoxes,
+          [...clubSamples.entries()].map(([key, value]) => ({
+            colorHex: value.textColorHex,
+            teamAwardEligible: clubEligibility.get(key) ?? null,
+          }))
+        )
+      );
+    }
+
+    if (ocrSampleCount >= 2) {
+      continue;
+    }
+
+    if (performance) performance.scheduleVisionCalls += 1;
+    const analysis = await openAiExtractScheduleColorBindingsFromImage(image.dataUrl, pageText);
+    if (!analysis) continue;
+    for (const session of analysis.sessions) {
+      if (!session.sessionCode || !session.box || sessionSamples.has(session.sessionCode)) continue;
+      const sampled = await sampleScheduleTextColorFromDataUrl(image.dataUrl, session.box);
+      if (!sampled?.textColorHex) continue;
+      sessionSamples.set(session.sessionCode, sampled);
+    }
+    for (const club of analysis.clubs) {
+      if (!club.clubName || !club.box) continue;
+      const sampled = await sampleScheduleTextColorFromDataUrl(image.dataUrl, club.box);
+      if (!sampled?.textColorHex) continue;
+      const key = `${safeString(club.sessionCode).toUpperCase()}|${normalizeScheduleClubLookup(club.clubName)}`;
+      if (!clubSamples.has(key)) {
+        clubSamples.set(key, sampled);
+      }
+      if (typeof club.teamAwardEligible === "boolean" && !clubEligibility.has(key)) {
+        clubEligibility.set(key, club.teamAwardEligible);
+      }
+    }
+    for (const entry of analysis.legendEntries) {
+      const sampleColors =
+        entry.target === "session"
+          ? entry.sessionCodes
+              .map((code) => sessionSamples.get(safeString(code).toUpperCase())?.textColorHex || "")
+              .filter(Boolean)
+          : entry.clubNames
+              .flatMap((clubName) =>
+                [...clubSamples.entries()]
+                  .filter(([key]) => key.endsWith(`|${normalizeScheduleClubLookup(clubName)}`))
+                  .map(([, value]) => value.textColorHex || "")
+              )
+              .filter(Boolean);
+      explicitLegendEntries.push({
+        id: null,
+        target: entry.target,
+        colorHex: pickDominantLegendColorHex(sampleColors),
+        colorLabel: entry.colorLabel,
+        meaning: entry.meaning,
+        sourceText: entry.sourceText,
+        teamAwardEligible: entry.teamAwardEligible,
+      });
+    }
+  }
+
+  const nextDays = normalized.days.map((day) => ({
+    ...day,
+    sessions: day.sessions.map((session) => {
+      const sessionSample = sessionSamples.get(safeString(session.code).toUpperCase()) || null;
+      const nextClubs = session.clubs.map((club) => {
+        const clubKey = `${safeString(session.code).toUpperCase()}|${normalizeScheduleClubLookup(club.name)}`;
+        const clubSample = clubSamples.get(clubKey) || null;
+        const teamAwardEligible =
+          typeof club.teamAwardEligible === "boolean"
+            ? club.teamAwardEligible
+            : clubEligibility.get(clubKey) ?? null;
+        return {
+          ...club,
+          teamAwardEligible,
+          color: clubSample || club.color || null,
+        };
+      });
+      return {
+        ...session,
+        color: sessionSample || session.color || null,
+        clubs: nextClubs,
+      };
+    }),
+  }));
+
+  const syntheticLegendEntries: ScheduleColorLegendEntry[] = [];
+  const groupedSessions = new Map<string, Array<{ code: string; group: string }>>();
+  nextDays.forEach((day) => {
+    day.sessions.forEach((session) => {
+      const colorHex = normalizeColorHex(session.color?.textColorHex);
+      if (!colorHex) return;
+      const key = pickDominantLegendColorHex([colorHex]) || colorHex;
+      const group = groupedSessions.get(key) || [];
+      group.push({ code: session.code, group: session.group });
+      groupedSessions.set(key, group);
+    });
+  });
+  groupedSessions.forEach((items, colorHex) => {
+    if (items.length < 2) return;
+    const groupLabel = uniqueBy(
+      items.map((item) => safeString(item.group)).filter(Boolean),
+      (item) => item
+    );
+    syntheticLegendEntries.push({
+      id: null,
+      target: "session",
+      colorHex,
+      colorLabel: null,
+      meaning:
+        groupLabel.length === 1
+          ? groupLabel[0]
+          : `Sessions ${items.map((item) => item.code).filter(Boolean).join(", ")}`,
+      sourceText: null,
+      teamAwardEligible: null,
+    });
+  });
+
+  const colorLegend = sanitizeScheduleColorLegendEntries([
+    ...normalized.colorLegend,
+    ...explicitLegendEntries,
+    ...deriveClubLegendFromColoredClubs(nextDays),
+    ...syntheticLegendEntries,
+  ]);
+
+  const legendIdByTargetAndColor = new Map<string, string>();
+  colorLegend.forEach((entry) => {
+    const key = `${entry.target || ""}|${entry.colorHex || ""}|${entry.teamAwardEligible ?? ""}`;
+    if (entry.id && !legendIdByTargetAndColor.has(key)) {
+      legendIdByTargetAndColor.set(key, entry.id);
+    }
+  });
+
+  const finalizedDays = nextDays.map((day) => ({
+    ...day,
+    sessions: day.sessions.map((session) => {
+      const sessionColorHex = normalizeColorHex(session.color?.textColorHex);
+      const sessionLegendId =
+        sessionColorHex
+          ? legendIdByTargetAndColor.get(`session|${sessionColorHex}|`) || session.color?.legendId || null
+          : session.color?.legendId || null;
+      return {
+        ...session,
+        color: session.color
+          ? {
+              ...session.color,
+              legendId: sessionLegendId,
+              textColorHex: sessionColorHex || session.color.textColorHex,
+            }
+          : null,
+        clubs: session.clubs.map((club) => {
+          const clubColorHex = normalizeColorHex(club.color?.textColorHex);
+          const clubLegendId =
+            clubColorHex
+              ? legendIdByTargetAndColor.get(
+                  `club|${clubColorHex}|${club.teamAwardEligible ?? ""}`
+                ) ||
+                legendIdByTargetAndColor.get(`club|${clubColorHex}|`) ||
+                club.color?.legendId ||
+                null
+              : club.color?.legendId || null;
+          return {
+            ...club,
+            color: club.color
+              ? {
+                  ...club.color,
+                  legendId: clubLegendId,
+                  textColorHex: clubColorHex || club.color.textColorHex,
+                }
+              : null,
+          };
+        }),
+      };
+    }),
+  }));
+
+  return finalizeParsedSchedule({
+    ...toParseScheduleShape({
+      ...normalized,
+      colorLegend,
+      awardLegend: toStoredScheduleLegendEntries([
+        ...normalized.awardLegend,
+        ...deriveAwardLegendFromColorLegend(colorLegend),
+      ]),
+      days: finalizedDays,
+    }),
+  });
 }
 
 async function openAiExtractVisualSchedulePage(
@@ -6028,6 +7296,7 @@ async function deriveScheduleFromImages(
         venueLabel: null,
         supportEmail: null,
         notes: [],
+        colorLegend: [],
         awardLegend: [],
         annotations: [],
         assignments: [],
@@ -6048,6 +7317,7 @@ async function deriveScheduleFromImages(
     venueLabel: null,
     supportEmail: null,
     notes: [],
+    colorLegend: [],
     awardLegend: [],
     annotations: [],
     assignments: [],
@@ -6295,8 +7565,7 @@ async function callOpenAiScheduleParse(
   traceId?: string,
   performance?: DiscoveryPerformance
 ): Promise<ParseResult["schedule"] | null> {
-  const apiKey = process.env.OPENAI_API_KEY || "";
-  if (!apiKey) return null;
+  if (!safeString(process.env.OPENAI_API_KEY || "")) return null;
   const sanitizedText = text.replace(/\u0000/g, " ").replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ");
   const prompt = [
     SCHEDULE_SCHEMA_INSTRUCTIONS,
@@ -6321,7 +7590,7 @@ async function callOpenAiScheduleParse(
   ].join("\n");
 
   try {
-    const client = new OpenAI({ apiKey });
+    const client = getOpenAiClient();
     const startedAt = Date.now();
     console.log("[meet-discovery] openai schedule parse request started", {
       traceId: traceId || null,
@@ -6373,6 +7642,7 @@ function deriveScheduleFromTextFallback(
       venueLabel: null,
       supportEmail: null,
       notes: [],
+      colorLegend: [],
       awardLegend: [],
       annotations: [],
       assignments: [],
@@ -6392,6 +7662,7 @@ function deriveScheduleFromTextFallback(
     venueLabel: null,
     supportEmail,
     notes: [],
+    colorLegend: [],
     awardLegend: [],
     annotations: [],
     assignments: [],
@@ -6401,6 +7672,28 @@ function deriveScheduleFromTextFallback(
 
 function countScheduleDaysWithSessions(value: unknown): number {
   return normalizeStoredSchedule(value).days.filter((day) => day.sessions.length > 0).length;
+}
+
+function countDistinctScheduleSessionCodes(value: unknown): number {
+  return new Set(
+    normalizeStoredSchedule(value).days.flatMap((day) =>
+      day.sessions
+        .map((session) => safeString(session.code).toUpperCase())
+        .filter(Boolean)
+    )
+  ).size;
+}
+
+function countDistinctDetectedScheduleCodes(
+  pages: Array<{ pageNumber: number; text: string }>
+): number {
+  return new Set(
+    pages.flatMap((page) =>
+      [...safeString(page.text).matchAll(/session\s+([a-z]{1,3}\d{1,2})/gi)]
+        .map((match) => safeString(match[1]).toUpperCase())
+        .filter(Boolean)
+    )
+  ).size;
 }
 
 function countScheduleSessionsWithAwardFlags(value: unknown): number {
@@ -6415,6 +7708,21 @@ function countScheduleSessionsWithAwardFlags(value: unknown): number {
       ),
     0
   );
+}
+
+function shouldSkipOpenAiScheduleParse(
+  fallbackSchedule: ParseResult["schedule"],
+  selectedPages: Array<{ pageNumber: number; text: string }>,
+  ambiguityNotes: string[]
+): boolean {
+  if (!selectedPages.length || ambiguityNotes.length > 0) return false;
+  const normalizedFallback = normalizeStoredSchedule(fallbackSchedule);
+  if (!normalizedFallback.days.length) return false;
+  if (normalizedFallback.days.some((day) => day.sessions.length === 0)) return false;
+  const detectedSessionCount = countDistinctDetectedScheduleCodes(selectedPages);
+  if (detectedSessionCount === 0) return false;
+  const fallbackSessionCount = countDistinctScheduleSessionCodes(normalizedFallback);
+  return fallbackSessionCount >= Math.ceil(detectedSessionCount * 0.8);
 }
 
 function shouldUseVisualScheduleRepair(
@@ -6451,7 +7759,18 @@ function toParseScheduleShape(schedule: StoredGymMeetSchedule): ParseResult["sch
     venueLabel: schedule.venueLabel || null,
     supportEmail: schedule.supportEmail || null,
     notes: schedule.notes || [],
+    colorLegend: schedule.colorLegend.map((entry) => ({
+      id: entry.id || null,
+      target: entry.target || null,
+      colorHex: entry.colorHex || null,
+      colorLabel: entry.colorLabel || null,
+      meaning: entry.meaning || null,
+      sourceText: entry.sourceText || null,
+      teamAwardEligible:
+        typeof entry.teamAwardEligible === "boolean" ? entry.teamAwardEligible : null,
+    })),
     awardLegend: schedule.awardLegend.map((entry) => ({
+      colorHex: entry.colorHex || null,
       colorLabel: entry.colorLabel || null,
       meaning: entry.meaning || null,
       teamAwardEligible:
@@ -6482,6 +7801,14 @@ function toParseScheduleShape(schedule: StoredGymMeetSchedule): ParseResult["sch
         startTime: session.startTime || null,
         warmupTime: session.warmupTime || null,
         note: session.note || null,
+        color: session.color
+          ? {
+              legendId: session.color.legendId || null,
+              textColorHex: session.color.textColorHex || null,
+              confidence:
+                typeof session.color.confidence === "number" ? session.color.confidence : null,
+            }
+          : null,
         clubs: session.clubs.map((club) => ({
           name: club.name || null,
           teamAwardEligible:
@@ -6491,6 +7818,14 @@ function toParseScheduleShape(schedule: StoredGymMeetSchedule): ParseResult["sch
               ? club.athleteCount
               : null,
           divisionLabel: club.divisionLabel || null,
+          color: club.color
+            ? {
+                legendId: club.color.legendId || null,
+                textColorHex: club.color.textColorHex || null,
+                confidence:
+                  typeof club.color.confidence === "number" ? club.color.confidence : null,
+              }
+            : null,
         })),
       })),
     })),
@@ -6586,6 +7921,10 @@ function mergeStoredScheduleClubs(
           ? club.athleteCount
           : null,
       divisionLabel: existingClub.divisionLabel || club.divisionLabel || "",
+      color:
+        existingClub.color ||
+        club.color ||
+        null,
     };
     merged[existingIndex] = nextClub;
     const nextExactKey = getStoredScheduleClubMergeKey(nextClub);
@@ -6668,6 +8007,7 @@ function mergeScheduleWithFallback(
         startTime: existingSession.startTime || session.startTime,
         warmupTime: existingSession.warmupTime || session.warmupTime,
         note: existingSession.note || session.note,
+        color: existingSession.color || session.color || null,
         clubs: mergeStoredScheduleClubs(existingSession.clubs, session.clubs),
       };
       return false;
@@ -6700,9 +8040,17 @@ function mergeScheduleWithFallback(
     venueLabel: primarySchedule.venueLabel || fallbackSchedule.venueLabel,
     supportEmail: primarySchedule.supportEmail || fallbackSchedule.supportEmail,
     notes: uniqueBy([...primarySchedule.notes, ...fallbackSchedule.notes], (item) => item),
+    colorLegend: sanitizeScheduleColorLegendEntries([
+      ...primarySchedule.colorLegend,
+      ...fallbackSchedule.colorLegend,
+    ]),
     awardLegend: toStoredScheduleLegendEntries([
       ...primarySchedule.awardLegend,
       ...fallbackSchedule.awardLegend,
+      ...deriveAwardLegendFromColorLegend([
+        ...primarySchedule.colorLegend,
+        ...fallbackSchedule.colorLegend,
+      ]),
     ]),
     annotations: toStoredScheduleAnnotations([
       ...primarySchedule.annotations.map((item) => ({
@@ -6775,7 +8123,11 @@ function finalizeParsedSchedule(
   const normalized = normalizeStoredSchedule(schedule || {});
   return toParseScheduleShape({
     ...normalized,
-    awardLegend: toStoredScheduleLegendEntries(normalized.awardLegend),
+    colorLegend: sanitizeScheduleColorLegendEntries(normalized.colorLegend),
+    awardLegend: toStoredScheduleLegendEntries([
+      ...normalized.awardLegend,
+      ...deriveAwardLegendFromColorLegend(normalized.colorLegend),
+    ]),
     annotations: toStoredScheduleAnnotations(
       normalized.annotations.map((item) => ({
         kind: item.kind || null,
@@ -6925,6 +8277,7 @@ function supplementScheduleWithFallback(
         startTime: shouldUseFallbackStartTime ? fallbackSession.startTime : existingSession.startTime,
         warmupTime: existingSession.warmupTime || fallbackSession.warmupTime,
         note: existingSession.note || fallbackSession.note,
+        color: existingSession.color || fallbackSession.color || null,
         clubs: mergedClubs,
       };
     });
@@ -6964,9 +8317,17 @@ function supplementScheduleWithFallback(
       venueLabel: primarySchedule.venueLabel || fallbackSchedule.venueLabel,
       supportEmail: primarySchedule.supportEmail || fallbackSchedule.supportEmail,
       notes: uniqueBy([...primarySchedule.notes, ...fallbackSchedule.notes], (item) => item),
+      colorLegend: sanitizeScheduleColorLegendEntries([
+        ...primarySchedule.colorLegend,
+        ...fallbackSchedule.colorLegend,
+      ]),
       awardLegend: toStoredScheduleLegendEntries([
         ...primarySchedule.awardLegend,
         ...fallbackSchedule.awardLegend,
+        ...deriveAwardLegendFromColorLegend([
+          ...primarySchedule.colorLegend,
+          ...fallbackSchedule.colorLegend,
+        ]),
       ]),
       annotations: toStoredScheduleAnnotations([
         ...primarySchedule.annotations.map((item) => ({
@@ -7057,6 +8418,7 @@ async function deriveScheduleFromExtractedText(
         venueLabel: null,
         supportEmail: null,
         notes: [],
+        colorLegend: [],
         awardLegend: [],
         annotations: [],
         assignments: [],
@@ -7108,15 +8470,27 @@ async function deriveScheduleFromExtractedText(
     pageNumbers: selectedSegments.map((page) => page.pageNumber),
     segmentKinds: selectedSegments.map((segment) => `${segment.pageNumber}:${segment.kind}`),
   });
+  const gridFallback = deriveScheduleFromTextFallback(gridPages);
+  const shouldSkipScheduleTextLlm = shouldSkipOpenAiScheduleParse(
+    gridFallback,
+    gridPages,
+    ambiguityNotes
+  );
+  if (shouldSkipScheduleTextLlm) {
+    console.log("[meet-discovery] schedule text parse skipped", {
+      traceId: traceId || null,
+      detectedSessionCount: countDistinctDetectedScheduleCodes(gridPages),
+      fallbackSessionCount: countDistinctScheduleSessionCodes(gridFallback),
+    });
+  }
   let parsed: ParseResult["schedule"] | null = null;
-  if (scheduleText) {
+  if (scheduleText && !shouldSkipScheduleTextLlm) {
     const scheduleTextStartedAt = Date.now();
     parsed = await callOpenAiScheduleParse(scheduleText, traceId, options?.performance);
     if (options?.performance) {
       options.performance.scheduleTextParseMs += Date.now() - scheduleTextStartedAt;
     }
   }
-  const gridFallback = deriveScheduleFromTextFallback(gridPages);
   const gridTextSchedule =
     countScheduleDaysWithSessions(gridFallback) > 0
       ? mergeScheduleWithFallback(
@@ -7132,6 +8506,7 @@ async function deriveScheduleFromExtractedText(
       venueLabel: null,
       supportEmail: null,
       notes: [],
+      colorLegend: [],
       awardLegend: [],
       annotations: [],
       assignments: [],
@@ -7150,16 +8525,24 @@ async function deriveScheduleFromExtractedText(
     ...textSchedule,
     annotations,
     assignments,
+    colorLegend: pickArray(textSchedule.colorLegend as any),
     awardLegend: sanitizeScheduleLegendEntries([
       ...pickArray(textSchedule.awardLegend as any),
     ]),
   };
+  const gridPageNumbers = new Set(gridPages.map((page) => page.pageNumber));
+  const scheduleImagesForSelectedPages = pickArray(extractionMeta?.schedulePageImages).filter((item) =>
+    gridPageNumbers.has(Number(item?.pageNumber) || 0)
+  );
+  const scheduleTextsForSelectedPages = pickArray(extractionMeta?.schedulePageTexts).filter((item) =>
+    gridPageNumbers.has(Number(item?.pageNumber) || 0)
+  );
   if (
     mode !== "enrich" ||
     !gridPages.length ||
     !shouldUseVisualScheduleRepair(gridTextSchedule, gridFallback, gridPages)
   ) {
-    const finalSchedule = finalizeParsedSchedule({
+    const baseSchedule = finalizeParsedSchedule({
       ...textScheduleWithSegments,
       notes: uniqueBy(
         pickArray(textScheduleWithSegments.notes)
@@ -7168,6 +8551,15 @@ async function deriveScheduleFromExtractedText(
         (item) => item
       ),
     });
+    const finalSchedule =
+      scheduleImagesForSelectedPages.length > 0
+        ? await applyScheduleColorsFromImages(
+            baseSchedule,
+            scheduleImagesForSelectedPages,
+            scheduleTextsForSelectedPages,
+            options?.performance
+          )
+        : baseSchedule;
     return {
       schedule: finalSchedule,
       diagnostics: {
@@ -7192,14 +8584,9 @@ async function deriveScheduleFromExtractedText(
       },
     };
   }
-  const gridPageNumbers = new Set(gridPages.map((page) => page.pageNumber));
   const visualScheduleResult = await deriveScheduleFromImages(
-    pickArray(extractionMeta?.schedulePageImages).filter((item) =>
-      gridPageNumbers.has(Number(item?.pageNumber) || 0)
-    ),
-    pickArray(extractionMeta?.schedulePageTexts).filter((item) =>
-      gridPageNumbers.has(Number(item?.pageNumber) || 0)
-    ),
+    scheduleImagesForSelectedPages,
+    scheduleTextsForSelectedPages,
     {
       maxPages: 2,
       maxTableCropsPerPage: 3,
@@ -7213,7 +8600,7 @@ async function deriveScheduleFromExtractedText(
       : null;
   const repairedGridSchedule = repairedSchedule ? repairedSchedule.schedule : gridTextSchedule;
   const mergedSchedule = mergeScheduleWithFallback(repairedGridSchedule, narrativeSchedule);
-  const finalSchedule = finalizeParsedSchedule({
+  const baseFinalSchedule = finalizeParsedSchedule({
     ...mergedSchedule,
     annotations,
     assignments,
@@ -7224,6 +8611,15 @@ async function deriveScheduleFromExtractedText(
       (item) => item
     ),
   });
+  const finalSchedule =
+    scheduleImagesForSelectedPages.length > 0
+      ? await applyScheduleColorsFromImages(
+          baseFinalSchedule,
+          scheduleImagesForSelectedPages,
+          scheduleTextsForSelectedPages,
+          options?.performance
+        )
+      : baseFinalSchedule;
   const usedImageTableExtraction = countScheduleDaysWithSessions(visualScheduleResult.schedule) > 0;
   const usedImageAwardExtraction = countScheduleSessionsWithAwardFlags(visualScheduleResult.schedule) > 0;
   return {
@@ -7358,6 +8754,7 @@ function buildEmptyParseResult(): ParseResult {
       venueLabel: null,
       supportEmail: null,
       notes: [],
+      colorLegend: [],
       awardLegend: [],
       annotations: [],
       assignments: [],
@@ -7374,9 +8771,7 @@ async function callOpenAiParse(
   traceId?: string,
   performance?: DiscoveryPerformance
 ): Promise<{ result: ParseResult | null; raw: string; usage: any }> {
-  const apiKey = process.env.OPENAI_API_KEY || "";
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
-  const client = new OpenAI({ apiKey });
+  const client = getOpenAiClient();
   const sanitizedText = text.replace(/\u0000/g, " ").replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ");
   const prompt = buildProfessionalParsePrompt(evidence, sanitizedText);
   const startedAt = Date.now();
@@ -8161,11 +9556,18 @@ export async function mapParseResultToGymData(
     timezone: parseResult.timezone || baseData?.timezone || "America/Chicago",
     venue: parseResult.venue || baseData?.venue || "",
     address: parseResult.address || baseData?.address || "",
-    hostGym: parseResult.hostGym || athlete.team || baseData?.hostGym || "",
+    hostGym:
+      sanitizeHostGymValue(parseResult.hostGym) ||
+      sanitizeHostGymValue(athlete.team) ||
+      sanitizeHostGymValue(baseData?.hostGym) ||
+      "",
     location: parseResult.venue || baseData?.location || "",
     customFields: {
       ...(baseData?.customFields || {}),
-      team: parseResult.hostGym || athlete.team || "",
+      team:
+        sanitizeHostGymValue(parseResult.hostGym) ||
+        sanitizeHostGymValue(athlete.team) ||
+        "",
       season: baseData?.customFields?.season || "",
       coach: baseData?.customFields?.coach || derivedCoachName || "",
       assistantCoach:
@@ -8196,177 +9598,13 @@ export async function mapParseResultToGymData(
   };
 }
 
-type Status = "ready" | "in-progress" | "not-started";
-function getStatusFromFlags(required: boolean[]): Status {
-  const filled = required.filter(Boolean).length;
-  if (filled === 0) return "not-started";
-  if (filled === required.length) return "ready";
-  return "in-progress";
-}
-
-export function computeGymBuilderStatuses(data: any) {
-  const adv = data?.advancedSections || {};
-  const roster = adv?.roster || {};
-  const meet = adv?.meet || {};
-  const practice = adv?.practice || {};
-  const logistics = adv?.logistics || {};
-  const coaches = adv?.coaches || {};
-  const schedule = adv?.schedule || {};
-  const gear = adv?.gear || {};
-  const volunteers = adv?.volunteers || {};
-  const announcements = adv?.announcements || {};
-  const startExists = Boolean(data?.date || data?.startISO);
-
-  const statuses = {
-    essentials: {
-      eventBasics: getStatusFromFlags([
-        Boolean(safeString(data?.title)),
-        startExists,
-        Boolean(safeString(data?.timezone)),
-        Boolean(safeString(data?.venue)),
-        Boolean(safeString(data?.address)),
-      ]),
-      details: getStatusFromFlags([
-        Boolean(safeString(data?.details)),
-        Boolean(
-          safeString(
-            meet?.warmUpTime ||
-              meet?.judgingNotes ||
-              meet?.sessionNumber ||
-              meet?.doorsOpen ||
-              meet?.arrivalGuidance ||
-              meet?.registrationInfo ||
-              meet?.facilityLayout ||
-              meet?.scoringInfo ||
-              meet?.resultsInfo ||
-              meet?.rotationSheetsInfo ||
-              meet?.awardsInfo
-          )
-        ),
-      ]),
-      design: "ready" as Status,
-      images: data?.heroImage ? ("ready" as Status) : ("not-started" as Status),
-    },
-    operations: {
-      rosterAttendance:
-        Array.isArray(roster?.athletes) && roster.athletes.length > 0
-          ? ("ready" as Status)
-          : ("not-started" as Status),
-      meetDetails: getStatusFromFlags([
-        Boolean(
-          safeString(
-            meet?.warmUpTime ||
-              meet?.marchInTime ||
-              meet?.doorsOpen ||
-              meet?.arrivalGuidance ||
-              meet?.registrationInfo ||
-              meet?.resultsInfo
-          )
-        ),
-        Boolean(
-          safeString(
-            meet?.facilityLayout ||
-              meet?.scoringInfo ||
-              meet?.judgingNotes ||
-              meet?.rotationSheetsInfo ||
-              meet?.awardsInfo
-          )
-        ),
-        (Array.isArray(meet?.rotationOrder) && meet.rotationOrder.length > 0) ||
-          (Array.isArray(meet?.sessionWindows) && meet.sessionWindows.length > 0) ||
-          (Array.isArray(meet?.operationalNotes) && meet.operationalNotes.length > 0),
-      ]),
-      coaches: getStatusFromFlags([
-        Boolean(
-          safeString(
-            coaches?.signIn ||
-              coaches?.hospitality ||
-              coaches?.floorAccess ||
-              coaches?.rotationSheets ||
-              coaches?.paymentInstructions
-          )
-        ),
-        Boolean(
-          safeString(
-            coaches?.attire ||
-              coaches?.scratches ||
-              coaches?.regionalCommitment ||
-              coaches?.refundPolicy ||
-              coaches?.qualification
-          )
-        ),
-        (Array.isArray(coaches?.entryFees) && coaches.entryFees.length > 0) ||
-          (Array.isArray(coaches?.teamFees) && coaches.teamFees.length > 0) ||
-          (Array.isArray(coaches?.lateFees) && coaches.lateFees.length > 0) ||
-          (Array.isArray(coaches?.deadlines) && coaches.deadlines.length > 0) ||
-          (Array.isArray(coaches?.contacts) && coaches.contacts.length > 0),
-      ]),
-      schedule:
-        hasStoredScheduleContent(schedule)
-          ? ("ready" as Status)
-          : ("not-started" as Status),
-      practicePlanner:
-        Array.isArray(practice?.blocks) && practice.blocks.length > 0
-          ? ("ready" as Status)
-          : ("not-started" as Status),
-      logisticsTravel: getStatusFromFlags([
-        Boolean(safeString(logistics?.hotelName || logistics?.hotelAddress)),
-        Boolean(safeString(logistics?.mealPlan || logistics?.policyFood)),
-        Boolean(
-          safeString(
-            logistics?.feeAmount ||
-              logistics?.parking ||
-              logistics?.trafficAlerts ||
-              logistics?.rideShare ||
-              logistics?.accessibility
-          )
-        ),
-      ]),
-      gearUniform: getStatusFromFlags([
-        Boolean(safeString(gear?.leotardOfDay)),
-        Array.isArray(gear?.items) && gear.items.length > 0,
-      ]),
-      volunteersCarpool: getStatusFromFlags([
-        Boolean(safeString(volunteers?.signupLink)),
-        Boolean(safeString(volunteers?.notes)),
-      ]),
-    },
-    communication: {
-      attendance: data?.rsvpEnabled ? ("ready" as Status) : ("not-started" as Status),
-      passcode:
-        data?.accessControl?.requirePasscode === true
-          ? data?.accessControl?.passcodeHash
-            ? ("ready" as Status)
-            : ("in-progress" as Status)
-          : ("not-started" as Status),
-      announcements:
-        Array.isArray(announcements?.announcements) &&
-        announcements.announcements.length > 0
-          ? ("ready" as Status)
-          : ("not-started" as Status),
-    },
-  };
-
-  const essentialsReady =
-    statuses.essentials.eventBasics === "ready" &&
-    statuses.essentials.details !== "not-started";
-
-  const missingEssentials: string[] = [];
-  if (statuses.essentials.eventBasics !== "ready") missingEssentials.push("Event Basics");
-  if (statuses.essentials.details === "not-started") missingEssentials.push("Details");
-
-  return {
-    ...statuses,
-    beforePublish: {
-      previewPublish: essentialsReady ? ("ready" as Status) : ("in-progress" as Status),
-      missingEssentials,
-    },
-  };
-}
-
 export const __testUtils = {
   deriveDateRangeFromText,
   classifyMeetDateCandidates,
+  sanitizeHostGymValue,
+  findBestScheduleSessionColorBox,
+  findBestScheduleClubColorBox,
+  deriveScheduleLegendEntriesFromOcrTextBoxes,
   normalizeParseResult,
   sanitizeDiscoveryParseResult,
   mergeCoachFeesFromAdmission,

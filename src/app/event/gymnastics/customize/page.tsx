@@ -874,6 +874,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [discoveryEnrichmentState, setDiscoveryEnrichmentState] = useState<
       Record<string, any> | null
     >(null);
+    const [discoveryEnrichmentBusy, setDiscoveryEnrichmentBusy] = useState(false);
     const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(false);
     const [isInIframe, setIsInIframe] = useState(false);
     const [loadVersion, setLoadVersion] = useState(0);
@@ -896,7 +897,74 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     useEffect(() => {
       enrichRequestStartedRef.current = false;
+      setDiscoveryEnrichmentBusy(false);
     }, [editEventId, loadVersion]);
+
+    const runDiscoveryEnrichment = useCallback(
+      async ({ force = false }: { force?: boolean } = {}) => {
+        if (!editEventId) return { ok: false, status: 0 };
+        setDiscoveryEnrichmentBusy(true);
+        try {
+          const enrichRes = await fetch(
+            `/api/parse/${editEventId}/enrich${force ? "?force=1" : ""}`,
+            {
+              method: "POST",
+              credentials: "include",
+            }
+          );
+          const enrichJson = await enrichRes.json().catch(() => ({}));
+          const nextEnrichmentState =
+            enrichJson?.enrichmentState &&
+            typeof enrichJson.enrichmentState === "object"
+              ? enrichJson.enrichmentState
+              : null;
+
+          if (enrichRes.status === 202) {
+            setDiscoveryEnrichmentState(
+              nextEnrichmentState || {
+                state: "running",
+                pending: true,
+                startedAt: new Date().toISOString(),
+                finishedAt: null,
+                lastError: "",
+              }
+            );
+            return { ok: true, status: 202 };
+          }
+
+          if (!enrichRes.ok) {
+            throw new Error(
+              enrichJson?.error || "Failed discovery enrichment"
+            );
+          }
+
+          setDiscoveryEnrichmentState(
+            nextEnrichmentState || {
+              state: "completed",
+              pending: false,
+              lastError: "",
+            }
+          );
+          setLoadVersion((prev) => prev + 1);
+          return { ok: true, status: enrichRes.status };
+        } catch (err) {
+          console.error("[Edit] Discovery enrichment failed", err);
+          setDiscoveryEnrichmentState((prev) => ({
+            ...(prev || {}),
+            state: "failed",
+            pending: false,
+            finishedAt: new Date().toISOString(),
+            lastError: String(
+              (err as any)?.message || err || "Failed discovery enrichment"
+            ),
+          }));
+          return { ok: false, status: 500 };
+        } finally {
+          setDiscoveryEnrichmentBusy(false);
+        }
+      },
+      [editEventId]
+    );
 
     useEffect(() => {
       if (!isEmbed || typeof document === "undefined") return;
@@ -1735,7 +1803,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       if (enrichRequestStartedRef.current) return;
 
       enrichRequestStartedRef.current = true;
-      let cancelled = false;
       setDiscoveryEnrichmentState((prev) =>
         prev && typeof prev === "object"
           ? {
@@ -1750,52 +1817,32 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       );
 
       (async () => {
-        try {
-          const enrichRes = await fetch(`/api/parse/${editEventId}/enrich`, {
-            method: "POST",
-            credentials: "include",
-          });
-          const enrichJson = await enrichRes.json().catch(() => ({}));
-          if (!enrichRes.ok) {
-            throw new Error(enrichJson?.error || "Failed discovery enrichment");
-          }
-          if (!cancelled) {
-            setDiscoveryEnrichmentState(
-              enrichJson?.enrichmentState &&
-                typeof enrichJson.enrichmentState === "object"
-                ? enrichJson.enrichmentState
-                : {
-                    state: "completed",
-                    pending: false,
-                    lastError: "",
-                  }
-            );
-            setLoadVersion((prev) => prev + 1);
-          }
-        } catch (err) {
-          console.error("[Edit] Discovery enrichment failed", err);
-          if (!cancelled) {
-            setDiscoveryEnrichmentState((prev) => ({
-              ...(prev || {}),
-              state: "failed",
-              pending: false,
-              finishedAt: new Date().toISOString(),
-              lastError: String(
-                (err as any)?.message || err || "Failed discovery enrichment"
-              ),
-            }));
-          }
-        }
+        await runDiscoveryEnrichment();
       })();
-
-      return () => {
-        cancelled = true;
-      };
     }, [
       discoveryEnrichmentState,
       editEventId,
       isDiscoveryEdit,
       loadedDiscoverySource,
+      loadingExisting,
+      runDiscoveryEnrichment,
+    ]);
+
+    useEffect(() => {
+      if (!editEventId || !isDiscoveryEdit || loadingExisting) return;
+      if (discoveryEnrichmentState?.state !== "running") return;
+
+      const intervalId = window.setInterval(() => {
+        setLoadVersion((prev) => prev + 1);
+      }, 5000);
+
+      return () => {
+        window.clearInterval(intervalId);
+      };
+    }, [
+      discoveryEnrichmentState?.state,
+      editEventId,
+      isDiscoveryEdit,
       loadingExisting,
     ]);
 
@@ -3224,7 +3271,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const discoveryEnrichmentBanner =
       isDiscoveryEdit && discoveryEnrichmentState ? (
-        discoveryEnrichmentState.pending ? (
+        discoveryEnrichmentState.pending ||
+        discoveryEnrichmentState.state === "running" ? (
           <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
             <p className="text-xs font-bold uppercase tracking-wider text-sky-700">
               Finishing Details
@@ -3241,6 +3289,20 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             <p className="mt-1 text-sm text-amber-800">
               Schedule and venue details could not finish automatically.
             </p>
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  void runDiscoveryEnrichment({ force: true });
+                }}
+                disabled={discoveryEnrichmentBusy}
+                className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {discoveryEnrichmentBusy
+                  ? "Retrying..."
+                  : "Retry finishing details"}
+              </button>
+            </div>
           </div>
         ) : null
       ) : null;
