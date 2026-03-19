@@ -2,9 +2,26 @@
 // @ts-nocheck
 import { GymMeetPageTemplateMeta, GymMeetTemplateId } from "./types";
 
-export const DEFAULT_GYM_MEET_TEMPLATE_ID: GymMeetTemplateId = "elite-athlete";
+export const DEFAULT_GYM_MEET_TEMPLATE_ID: GymMeetTemplateId =
+  "launchpad-editorial";
 
 export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
+  {
+    id: "launchpad-editorial",
+    name: "Launchpad Editorial",
+    style: "Editorial / Light Launch",
+    description: "Landing-page energy with airy panels, soft gradients, and clear hierarchy.",
+    group: "current",
+    layoutFamily: "standard",
+    thumbnailMode: "rendered-card",
+    previewTitle: "Summit Invitational",
+    previewKicker: "Editorial Launchpad",
+    previewClassName:
+      "bg-[linear-gradient(135deg,#ffffff_0%,#f8f7ff_55%,#eef6ff_100%)] text-[#1f2438]",
+    previewAccentClassName: "text-[#61708a]",
+    titleTypographyId: "playfair",
+    previewTitleClassName: "[font-family:'Playfair_Display',Georgia,serif]",
+  },
   {
     id: "elite-athlete",
     name: "Elite Athlete",
@@ -710,9 +727,11 @@ export const resolveGymMeetTemplateId = (data: any): GymMeetTemplateId => {
     return "parent-command";
   }
 
-  if (/bento|mint|lavender|aerial|glitter/.test(themeId) || lightBackground) {
+  if (/bento|mint|lavender|aerial|glitter/.test(themeId)) {
     return "bento-box";
   }
+
+  if (lightBackground) return DEFAULT_GYM_MEET_TEMPLATE_ID;
 
   if (darkBackground) return "elite-athlete";
 

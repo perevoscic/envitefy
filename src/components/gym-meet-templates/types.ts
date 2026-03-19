@@ -3,6 +3,7 @@
 import React from "react";
 
 export type GymMeetTemplateId =
+  | "launchpad-editorial"
   | "elite-athlete"
   | "bento-box"
   | "parent-command"
