@@ -1093,15 +1093,23 @@ export async function mapParseResultToFootballData(
   };
 
   const nextAccessControl = parseResult.communications.passcode
-    ? await normalizeAccessControlPayload({
-        mode: "access-code",
-        requirePasscode: true,
-        passcodePlain: parseResult.communications.passcode,
-      })
-    : await normalizeAccessControlPayload({
-        mode: "public",
-        requirePasscode: false,
-      });
+    ? await normalizeAccessControlPayload(
+        {
+          mode: "access-code",
+          requirePasscode: true,
+          passcodePlain: parseResult.communications.passcode,
+        },
+        baseData?.accessControl || null
+      )
+    : baseData?.accessControl
+      ? await normalizeAccessControlPayload(
+          baseData.accessControl,
+          baseData.accessControl
+        )
+      : await normalizeAccessControlPayload({
+          mode: "public",
+          requirePasscode: false,
+        });
 
   return {
     ...baseData,
@@ -1153,7 +1161,7 @@ export async function mapParseResultToFootballData(
       (item) => item.url
     ),
     advancedSections: nextAdvanced,
-    accessControl: nextAccessControl || baseData?.accessControl || null,
+    accessControl: nextAccessControl,
     templateKey: "football",
     templateId: "football-season",
     category: "sport_football_season",

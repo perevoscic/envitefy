@@ -280,7 +280,7 @@ export default function LoginHero() {
           >
             <span className="inline-flex items-center gap-3">
               <Image
-                src="/E.png"
+                src="/favicon.png"
                 alt="Envitefy emblem"
                 width={150}
                 height={150}

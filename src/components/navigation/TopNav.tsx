@@ -614,7 +614,7 @@ export default function TopNav() {
           suppressHydrationWarning
         >
           <Image
-            src="/navElogo.png"
+            src="/logo.png"
             alt="Envitefy logo"
             width={100}
             height={32}
@@ -648,7 +648,7 @@ export default function TopNav() {
               suppressHydrationWarning
             >
               <Image
-                src="/navElogo.png"
+                src="/logo.png"
                 alt="Envitefy logo"
                 width={112}
                 height={46}

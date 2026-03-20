@@ -109,7 +109,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico?v=v6", sizes: "any" },
+      { url: "/favicon.png?v=v7", sizes: "any", type: "image/png" },
       { url: "/icons/icon-192.png?v=v6", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png?v=v6", sizes: "512x512", type: "image/png" },
       {
@@ -131,7 +131,7 @@ export const metadata: Metadata = {
       { url: "/icons/apple-touch-icon-167.png?v=v6", sizes: "167x167" },
       { url: "/icons/apple-touch-icon-180.png?v=v6", sizes: "180x180" },
     ],
-    shortcut: [{ url: "/favicon.ico?v=v6" }],
+    shortcut: [{ url: "/favicon.png?v=v7" }],
   },
   appleWebApp: {
     capable: true,

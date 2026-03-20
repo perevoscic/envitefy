@@ -97,6 +97,11 @@ type VolunteerSlot = {
   gameDate: string;
 };
 
+type AnnouncementItem = {
+  id: string;
+  text: string;
+};
+
 const genId = () => Math.random().toString(36).substring(2, 9);
 
 const BufferedInput = ({
@@ -231,6 +236,18 @@ const VOLUNTEER_ROLES = [
   "First Aid",
   "Announcer",
 ];
+const splitAnnouncementText = (text: string) => {
+  const normalized = (text || "").trim();
+  if (!normalized) return { title: "", body: "" };
+  const parts = normalized.split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    return {
+      title: parts[0],
+      body: parts.slice(1).join("\n\n"),
+    };
+  }
+  return { title: "", body: normalized };
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION 1: GAME SCHEDULE
@@ -2029,6 +2046,134 @@ const volunteersSection = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SECTION 7: ANNOUNCEMENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const announcementsSection = {
+  id: "announcements",
+  menuTitle: "Announcements",
+  menuDesc: "Game-day notes, updates, reminders, and broadcast links.",
+  initialState: {
+    items: [] as AnnouncementItem[],
+  },
+  renderEditor: ({ state, setState, textareaClass }) => {
+    const items: AnnouncementItem[] = state?.items || [];
+    const addItem = () => {
+      setState((s: any) => ({
+        ...s,
+        items: [
+          ...(s?.items || []),
+          {
+            id: genId(),
+            text: "",
+          },
+        ],
+      }));
+    };
+    const updateItem = (id: string, value: string) => {
+      setState((s: any) => ({
+        ...s,
+        items: (s?.items || []).map((item: AnnouncementItem) =>
+          item.id === id ? { ...item, text: value } : item
+        ),
+      }));
+    };
+    const removeItem = (id: string) => {
+      setState((s: any) => ({
+        ...s,
+        items: (s?.items || []).filter((item: AnnouncementItem) => item.id !== id),
+      }));
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-amber-50 border border-amber-100 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Bell className="text-amber-600 mt-0.5" size={20} />
+            <div>
+              <h4 className="font-semibold text-amber-900">Announcements</h4>
+              <p className="text-sm text-amber-700">
+                Add updates, reminders, links, or game-day notices. Keep each item short and useful.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {items.map((item, idx) => (
+          <div
+            key={item.id}
+            className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-sm"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400 uppercase">
+                Announcement #{idx + 1}
+              </span>
+              <button
+                onClick={() => removeItem(item.id)}
+                className="text-red-400 hover:text-red-600 p-1"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+            <BufferedTextarea
+              className={textareaClass}
+              placeholder="Title line, blank line, then the announcement details."
+              value={item.text}
+              onCommit={(value) => updateItem(item.id, value)}
+              rows={4}
+            />
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={addItem}
+          className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-amber-400 hover:text-amber-600 transition-colors flex items-center justify-center gap-2"
+        >
+          <Plus size={18} />
+          Add Announcement
+        </button>
+      </div>
+    );
+  },
+  renderPreview: ({ state, textClass, accentClass, bodyShadow, headingFontStyle }) => {
+    const items: AnnouncementItem[] = state?.items || [];
+    if (items.length === 0) return null;
+
+    return (
+      <>
+        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
+          Announcements
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {items.map((item) => {
+            const split = splitAnnouncementText(item.text);
+            return (
+              <div
+                key={item.id}
+                className="bg-white/5 border border-white/10 rounded-lg p-4"
+              >
+                {split.title ? (
+                  <div className={`font-semibold ${textClass}`} style={bodyShadow}>
+                    {split.title}
+                  </div>
+                ) : null}
+                <p
+                  className={`mt-2 text-sm whitespace-pre-wrap opacity-80 ${textClass}`}
+                  style={bodyShadow}
+                >
+                  {split.body || item.text || "—"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // CONFIGURATION & EXPORT
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -2291,22 +2436,24 @@ const config: SimpleTemplateConfig = {
   ],
   advancedSections: [
     gameScheduleSection,
-    practiceSection,
     rosterSection,
+    practiceSection,
     logisticsSection,
     gearSection,
     volunteersSection,
+    announcementsSection,
   ],
 };
 
 export {
   config,
   gameScheduleSection,
-  practiceSection,
   rosterSection,
+  practiceSection,
   logisticsSection,
   gearSection,
   volunteersSection,
+  announcementsSection,
 };
 export type {
   PlayerStatus,
@@ -2316,4 +2463,5 @@ export type {
   LogisticsInfo,
   GearItem,
   VolunteerSlot,
+  AnnouncementItem,
 };

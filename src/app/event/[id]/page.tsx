@@ -78,6 +78,10 @@ const SimpleTemplateView = nextDynamic(
   () => import("@/components/SimpleTemplateView"),
   { loading: () => null }
 );
+const FootballDiscoveryContent = nextDynamic(
+  () => import("@/components/football-discovery/FootballDiscoveryContent"),
+  { loading: () => null }
+);
 const BabyShowerTemplateView = nextDynamic(
   () => import("@/components/BabyShowerTemplateView"),
   { loading: () => null }
@@ -712,6 +716,10 @@ export default async function EventPage({
     (discoveryCategory === "sport_football_season" ||
       discoveryTemplateId === "football-season" ||
       discoveryTemplateId === "football");
+  const isFootballSeasonTemplate =
+    discoveryCategory === "sport_football_season" ||
+    discoveryTemplateId === "football-season" ||
+    discoveryTemplateId === "football";
   const discoveryEditConfig:
     | { customizeUrl: string; workflow: "gymnastics" | "football" }
     | null = editParam && isOwner
@@ -1290,6 +1298,9 @@ export default async function EventPage({
     !isBirthdayTemplate &&
     !isWeddingTemplate;
 
+  const shouldRenderFootballPage =
+    Boolean(isFootballDiscoveryTemplate) || Boolean(isFootballSeasonTemplate);
+
   // If it's a birthday template, render the template view
   if (isBirthdayTemplate || (categoryNormalized === "birthdays" && createdVia === "birthday-renderer")) {
     const birthdayTheme = (data.theme && data.theme.id) ? data.theme : (variationId ? BIRTHDAY_THEMES.find(t => t.id === variationId) : null) || BIRTHDAY_THEMES[0];
@@ -1406,6 +1417,26 @@ export default async function EventPage({
         editHref={editHref}
       />
     );
+  }
+
+  if (shouldRenderFootballPage) {
+    const footballEventView = (
+      <FootballDiscoveryContent
+        eventData={clientSafeEventData}
+        eventTitle={title}
+      />
+    );
+    if (discoveryEditConfig) {
+      return (
+        <DiscoveryEventEditLayout
+          eventId={row.id}
+          customizeUrl={discoveryEditConfig.customizeUrl}
+        >
+          {footballEventView}
+        </DiscoveryEventEditLayout>
+      );
+    }
+    return footballEventView;
   }
 
   // If it's a simple template (gymnastics, football practice, etc.), render with SimpleTemplateView

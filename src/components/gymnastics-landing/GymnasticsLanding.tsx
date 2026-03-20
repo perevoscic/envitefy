@@ -1,872 +1,964 @@
+"use client";
+
+import { useState } from "react";
+import GymnasticsHeroBackground from "./GymnasticsHeroBackground";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   CalendarDays,
+  Check,
   ChevronRight,
   Clock3,
   Globe,
   Hotel,
   MapPinned,
-  Route,
+  MessageSquare,
   Sparkles,
   Trophy,
+  Upload,
   Users,
   ClipboardList,
   Share2,
-  Map,
+  Shield,
+  Smartphone,
 } from "lucide-react";
 
-const navLinks = [
-  { label: "Preview", href: "#hero" },
-  { label: "Features", href: "#features" },
-  { label: "Showcase", href: "#showcase" },
-  { label: "Benefits", href: "#benefits" },
+/* ─── trust strip logos (text-based, no images needed) ─── */
+const trustItems = [
+  "Gymnastics parents",
+  "Meet directors",
+  "Coaches & teams",
+  "Club gyms",
+  "USAG events",
 ];
 
-const featureCards = [
+/* ─── feature pillars ─── */
+const features = [
   {
     icon: CalendarDays,
-    title: "Meet Schedule",
-    copy: "Sessions, warm-ups, awards, and rotation timing in a clean layout families can read quickly.",
+    title: "Meet Schedules",
+    copy: "Sessions, warm-ups, rotations, and awards timing in a clean layout that parents can scan in seconds.",
+    backCopy:
+      "Every session is broken down with check-in times, warm-up windows, rotation orders, and awards timing. Parents see exactly when their athlete competes — no more decoding spreadsheets or PDF tables on a tiny phone screen.",
+    accent: "from-indigo-500/10 to-violet-500/10",
+    iconColor: "text-indigo-600",
   },
   {
     icon: Hotel,
     title: "Travel & Hotels",
-    copy: "Keep block links, booking windows, parking notes, and venue maps together on one page.",
+    copy: "Block booking links, parking notes, shuttle info, and venue directions — all in one place.",
+    backCopy:
+      "Attach hotel block links with deadlines, embed venue maps with parking notes, and include shuttle schedules. Families stop hunting through separate docs — everything travel-related lives right on the meet page.",
+    accent: "from-violet-500/10 to-fuchsia-500/10",
+    iconColor: "text-violet-600",
   },
-  {
-    icon: ClipboardList,
-    title: "Spectator Guide",
-    copy: "Surface seating notes, entrance details, and practical venue information in a clean mobile view.",
-  },
-];
-
-const showcasePanels = [
-  {
-    id: "meet-info",
-    title: "Meet Info",
-    eyebrow: "For event hosts",
-    copy:
-      "A polished public home for the meet with dates, venue, entry details, and essential links.",
-    accent: "from-[#efe4ff] via-white to-[#f8f5ff]",
-    badge: "Host-ready",
-    visual: [
-      { label: "Venue", value: "Aurora Convention Hall" },
-      { label: "Doors", value: "Open 7:15 AM" },
-      { label: "Parking", value: "North lot + overflow" },
-    ],
-  },
-  {
-    id: "athlete-dashboard",
-    title: "Athlete Dashboard",
-    eyebrow: "For coaches and teams",
-    copy:
-      "A focused view for session assignments, roster context, and quick links to the right documents.",
-    accent: "from-[#e4f3ff] via-white to-[#f3fbff]",
-    badge: "Team view",
-    visual: [
-      { label: "Session", value: "Level 7 / Xcel Platinum" },
-      { label: "Roster", value: "18 athletes traveling" },
-      { label: "Docs", value: "Packet, roster, map" },
-    ],
-  },
-  {
-    id: "spectator-guide",
-    title: "Spectator Guide",
-    eyebrow: "For families and guests",
-    copy:
-      "A mobile-first guide with seating notes, concessions, venue directions, and the latest announcements.",
-    accent: "from-[#ffe9f0] via-white to-[#fff7fb]",
-    badge: "Guest friendly",
-    visual: [
-      { label: "Entry", value: "West lobby" },
-      { label: "Seating", value: "Upper balcony" },
-      { label: "Updates", value: "Refresh for alerts" },
-    ],
-  },
-];
-
-const benefits = [
   {
     icon: Users,
-    title: "Built for whole meet weekends",
-    copy:
-      "Families, coaches, athletes, and spectators all need different details. Envitefy keeps one source of truth while presenting the right information for each audience.",
+    title: "Team Coordination",
+    copy: "Keep athletes, parents, and coaching staff aligned with a single shared meet hub.",
+    backCopy:
+      "One link keeps the entire team in sync. Coaches post warm-up assignments, parents confirm attendance, and athletes see their rotation details — all from the same page instead of scattered group chats.",
+    accent: "from-fuchsia-500/10 to-pink-500/10",
+    iconColor: "text-fuchsia-600",
   },
   {
-    icon: MapPinned,
-    title: "Venue details that stay usable on mobile",
-    copy:
-      "Travel notes, parking guidance, and map context are surfaced in a clean card stack instead of disappearing in dense packet pages.",
-  },
-  {
-    icon: Route,
-    title: "Schedules with visual hierarchy",
-    copy:
-      "Warm-ups, events, and awards are grouped so the next important moment is obvious at a glance on small screens.",
-  },
-  {
-    icon: Share2,
-    title: "Easy sharing for coaches and parents",
-    copy:
-      "Send one polished link instead of juggling screenshots, texts, and PDF attachments across multiple team chats.",
+    icon: MessageSquare,
+    title: "Updates & Announcements",
+    copy: "Last-minute changes reach everyone instantly instead of getting buried in group chats.",
+    backCopy:
+      "Schedule changes, venue updates, and weather delays are posted once and visible to every family immediately. No more re-sending PDFs or hoping a text chain reaches everyone in time.",
+    accent: "from-pink-500/10 to-rose-500/10",
+    iconColor: "text-pink-600",
   },
 ];
 
-function BrandMark() {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/70 bg-white shadow-[0_10px_30px_rgba(141,151,179,0.18)]">
-        <span className="absolute inset-2 rounded-xl bg-[linear-gradient(135deg,#dcd3ff,#f6d9ea_55%,#d9eefc)]" />
-        <span className="relative h-4 w-4 rounded-full border border-white/90 bg-white/80" />
-      </div>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#7d869d]">
-          Envitefy
-        </p>
-        <p className="text-sm font-medium text-[#1f2438]">Gymnastics</p>
-      </div>
-    </div>
-  );
-}
+/* ─── use cases ─── */
+const useCases = [
+  {
+    eyebrow: "For parents",
+    title: "Know exactly what to expect",
+    copy: "One link with session times, venue directions, parking, and spectator info — no more hunting through PDFs and email threads.",
+    icon: Smartphone,
+  },
+  {
+    eyebrow: "For coaches",
+    title: "Share everything in one place",
+    copy: "Stop resending updated packets. Upload once, publish once, and every family gets the same up-to-date information.",
+    icon: Share2,
+  },
+  {
+    eyebrow: "For meet directors",
+    title: "Present a polished event",
+    copy: "Give your meet a professional public page with schedules, venue maps, hotel blocks, and spectator guidance.",
+    icon: Trophy,
+  },
+];
 
-function GymnastLineArt() {
-  return (
-    <svg
-      viewBox="0 0 320 420"
-      className="h-full w-full"
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7c8cf7" />
-          <stop offset="52%" stopColor="#c48df7" />
-          <stop offset="100%" stopColor="#f5a7c8" />
-        </linearGradient>
-      </defs>
-      <circle cx="186" cy="86" r="22" fill="rgba(255,255,255,0.72)" stroke="url(#lineGrad)" strokeWidth="3" />
-      <path
-        d="M186 110c-12 18-22 38-26 58-4 21 2 44 10 68"
-        fill="none"
-        stroke="url(#lineGrad)"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M188 138c22 8 42 24 62 46"
-        fill="none"
-        stroke="url(#lineGrad)"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M164 168c-28 16-48 36-60 60"
-        fill="none"
-        stroke="url(#lineGrad)"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M154 228c20 18 44 28 73 31"
-        fill="none"
-        stroke="url(#lineGrad)"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M198 220c17 26 36 55 59 83"
-        fill="none"
-        stroke="url(#lineGrad)"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M132 258c-18 17-32 35-40 58"
-        fill="none"
-        stroke="url(#lineGrad)"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M152 210c-22 38-47 68-76 91"
-        fill="none"
-        stroke="url(#lineGrad)"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M219 264c32 4 60 17 84 41"
-        fill="none"
-        stroke="url(#lineGrad)"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <ellipse cx="214" cy="329" rx="74" ry="20" fill="rgba(196,141,247,0.12)" />
-      <path
-        d="M76 355c42-18 90-21 144-11 42 8 71 7 103-4"
-        fill="none"
-        stroke="rgba(122,134,180,0.28)"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
+/* ─── why envitefy stats ─── */
+const whyStats = [
+  { value: "1", label: "page for every meet" },
+  { value: "5x", label: "faster than PDF packets" },
+  { value: "100%", label: "mobile-ready" },
+  { value: "0", label: "app downloads required" },
+];
 
-function RibbonOrbs() {
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-      <div className="absolute -left-10 top-4 h-44 w-44 rounded-full bg-[radial-gradient(circle_at_center,rgba(193,180,255,0.55),rgba(193,180,255,0))] blur-3xl" />
-      <div className="absolute right-0 top-8 h-52 w-52 rounded-full bg-[radial-gradient(circle_at_center,rgba(247,188,216,0.45),rgba(247,188,216,0))] blur-3xl" />
-      <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(150,213,255,0.35),rgba(150,213,255,0))] blur-3xl" />
-      <div className="absolute inset-x-0 top-10 h-px bg-[linear-gradient(90deg,transparent,rgba(124,140,247,0.35),transparent)]" />
-      <div className="absolute bottom-10 left-6 right-6 h-px bg-[linear-gradient(90deg,transparent,rgba(245,167,200,0.45),transparent)]" />
-    </div>
-  );
-}
-
-function SectionHeading({
-  eyebrow,
-  title,
-  copy,
+/* ─── flip card component ─── */
+function FeatureFlipCard({
+  f,
 }: {
-  eyebrow: string;
-  title: string;
-  copy: string;
+  f: (typeof features)[number];
 }) {
-  return (
-    <div className="max-w-3xl">
-      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#7b84a0]">
-        {eyebrow}
-      </p>
-      <h2
-        className="mt-4 text-[clamp(2.1rem,5vw,4.5rem)] leading-[0.96] tracking-[-0.05em] text-[#1f2438]"
-        style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-      >
-        {title}
-      </h2>
-      <p className="mt-5 max-w-2xl text-base leading-8 text-[#61708a] sm:text-lg">
-        {copy}
-      </p>
-    </div>
-  );
-}
+  const [flipped, setFlipped] = useState(false);
 
-function FeatureCard({
-  icon: Icon,
-  title,
-  copy,
-}: {
-  icon: typeof CalendarDays;
-  title: string;
-  copy: string;
-}) {
-  return (
-    <article className="group rounded-[1.75rem] border border-white/70 bg-white/85 p-6 shadow-[0_24px_50px_rgba(120,130,160,0.09)] backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1">
-      <div className="flex items-center justify-between">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(124,140,247,0.16),rgba(245,167,200,0.16))] text-[#4f5bd8]">
-          <Icon className="h-5 w-5" />
-        </div>
-        <ChevronRight className="h-5 w-5 text-[#b8bfd6] transition group-hover:translate-x-0.5 group-hover:text-[#6d75d6]" />
-      </div>
-      <h3
-        className="mt-6 text-xl text-[#1f2438]"
-        style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-      >
-        {title}
-      </h3>
-      <p className="mt-3 text-sm leading-7 text-[#64738f]">{copy}</p>
-    </article>
-  );
-}
-
-function EditorialPanel({
-  panel,
-}: {
-  panel: (typeof showcasePanels)[number];
-}) {
   return (
     <article
-      id={panel.id}
-      className={`relative overflow-hidden rounded-[2.4rem] border border-white/80 bg-gradient-to-br ${panel.accent} p-6 shadow-[0_26px_70px_rgba(111,124,168,0.12)] sm:p-7`}
+      className="group cursor-pointer"
+      style={{ perspective: "1000px" }}
+      onClick={() => setFlipped((prev) => !prev)}
     >
-      <RibbonOrbs />
-      <div className="relative z-10 flex h-full min-h-[430px] flex-col">
-        <div className="flex items-center justify-between gap-4">
-          <span className="inline-flex items-center rounded-full border border-white/80 bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.26em] text-[#7880a0]">
-            {panel.eyebrow}
-          </span>
-          <span className="rounded-full bg-white/75 px-3 py-1 text-xs font-medium text-[#66718c]">
-            {panel.badge}
-          </span>
+      <div
+        className="relative transition-transform duration-600"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          willChange: "transform",
+          transitionTimingFunction: "cubic-bezier(0.4, 0.2, 0.2, 1)",
+          minHeight: "260px",
+        }}
+      >
+        {/* ─── FRONT ─── */}
+        <div
+          className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-shadow duration-300 ease-out hover:shadow-lg hover:shadow-indigo-500/5"
+          style={{ backfaceVisibility: "hidden", minHeight: "260px" }}
+        >
+          {/* accent gradient bg */}
+          <div
+            className={`absolute inset-0 bg-gradient-to-br ${f.accent} opacity-0 transition-opacity duration-300 group-hover:opacity-100`}
+          />
+          <div className="relative">
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${f.accent} ${f.iconColor}`}
+            >
+              <f.icon className="h-5 w-5" />
+            </div>
+            <h3 className="mt-5 text-lg font-semibold text-slate-900" style={{ fontFamily: "inherit" }}>
+              {f.title}
+            </h3>
+            <p className="mt-2.5 text-sm leading-6 text-slate-500">
+              {f.copy}
+            </p>
+            <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-indigo-600 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100">
+              Tap to learn more
+              <ChevronRight className="h-4 w-4" />
+            </div>
+          </div>
         </div>
 
-        <h3
-          className="mt-8 max-w-[10ch] text-[2rem] leading-[0.96] tracking-[-0.05em] text-[#1f2438] sm:text-[2.35rem]"
-          style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+        {/* ─── BACK ─── */}
+        <div
+          className={`absolute inset-0 overflow-hidden rounded-2xl border border-indigo-400/30 bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-700 p-6 text-white shadow-lg`}
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+            minHeight: "260px",
+          }}
         >
-          {panel.title}
-        </h3>
-        <p className="mt-4 max-w-md text-sm leading-7 text-[#627088]">
-          {panel.copy}
-        </p>
-
-        <div className="mt-auto grid gap-3 pt-8">
-          {panel.visual.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center justify-between rounded-[1.2rem] border border-white/70 bg-white/82 px-4 py-3 shadow-[0_14px_24px_rgba(119,132,169,0.08)]"
-            >
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[#8b93ad]">
-                {item.label}
-              </span>
-              <span className="text-sm font-medium text-[#1f2438]">
-                {item.value}
-              </span>
+          <div className="flex h-full flex-col">
+            <div className="flex items-center gap-3">
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-white`}
+              >
+                <f.icon className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-semibold text-white" style={{ color: "#fff", fontFamily: "inherit" }}>
+                {f.title}
+              </h3>
             </div>
-          ))}
+            <p className="mt-4 flex-1 text-sm leading-6 text-white/85">
+              {f.backCopy}
+            </p>
+            <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-white/70">
+              Tap to flip back
+              <ChevronRight className="h-3.5 w-3.5" />
+            </div>
+          </div>
         </div>
       </div>
     </article>
-  );
-}
-
-function MockupShell() {
-  const steps = [
-    "Schedule loaded",
-    "Venue details added",
-    "Travel shared",
-    "Spectator info ready",
-  ];
-
-  return (
-    <div className="relative overflow-hidden rounded-[2.4rem] border border-white/70 bg-[linear-gradient(180deg,rgba(250,251,255,0.95),rgba(239,242,250,0.92))] p-4 shadow-[0_30px_90px_rgba(118,130,162,0.16)] sm:p-6">
-      <RibbonOrbs />
-      <div className="relative z-10 grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
-        <div className="rounded-[2rem] border border-white/80 bg-white/90 p-4 shadow-[0_18px_40px_rgba(120,130,160,0.12)] sm:p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#8a91ab]">
-                Preview screen
-              </p>
-              <h3
-                className="mt-2 text-2xl tracking-[-0.04em] text-[#1f2438]"
-                style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-              >
-                Winter Cup Invitational
-              </h3>
-            </div>
-            <div className="rounded-full bg-[linear-gradient(135deg,#e7ebff,#fff0f5)] px-3 py-1 text-xs font-semibold text-[#59619e]">
-              Updated 2m ago
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-[0.95fr_1.05fr]">
-            <div className="relative overflow-hidden rounded-[1.8rem] border border-[#e6eaf5] bg-[linear-gradient(180deg,#f8f6ff,#fff)] p-4">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(122,140,247,0.16),transparent_35%),radial-gradient(circle_at_70%_30%,rgba(245,167,200,0.18),transparent_40%)]" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between">
-                  <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#7880a0]">
-                    Session A
-                  </span>
-                  <span className="text-sm font-semibold text-[#53607d]">
-                    8:00 AM
-                  </span>
-                </div>
-                <div className="mt-5 aspect-[0.72] rounded-[1.5rem] border border-white/70 bg-white/80 p-4 shadow-[0_18px_50px_rgba(110,123,159,0.1)]">
-                  <div className="h-full rounded-[1.15rem] bg-[linear-gradient(160deg,rgba(201,220,255,0.65),rgba(255,255,255,0.92)_40%,rgba(248,221,236,0.78))] p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-[#7b84a0]">
-                        Morning block
-                      </span>
-                      <Trophy className="h-4 w-4 text-[#c58aef]" />
-                    </div>
-                    <div className="mt-5 h-[70%] rounded-[1.2rem] border border-white/80 bg-white/76 p-3">
-                      <div className="flex h-full flex-col justify-between">
-                        <div>
-                          <p className="text-sm font-semibold text-[#1f2438]">
-                            Level 6 - 10
-                          </p>
-                          <p className="mt-2 text-xs leading-6 text-[#66738f]">
-                            Warm-up, competition order, awards window, and
-                            reminder notes all sit together.
-                          </p>
-                        </div>
-                        <div className="flex items-end justify-between">
-                          <span className="text-xs font-semibold uppercase tracking-[0.24em] text-[#9aa2bb]">
-                            Meet flow
-                          </span>
-                          <div className="h-12 w-12 rounded-full border border-[#dce2f2] bg-[linear-gradient(135deg,#ecefff,#fff)]" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
-              <div className="rounded-[1.6rem] border border-[#e6eaf5] bg-white/85 p-4 shadow-[0_16px_34px_rgba(112,124,160,0.09)]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(124,140,247,0.14),rgba(245,167,200,0.14))] text-[#5963d6]">
-                    <ClipboardList className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b93ad]">
-                      Checklist
-                    </p>
-                    <p className="mt-1 text-lg text-[#1f2438]">What to pack</p>
-                  </div>
-                </div>
-                <div className="mt-4 space-y-3">
-                  {steps.map((step) => (
-                    <div
-                      key={step}
-                      className="flex items-center gap-3 rounded-[1rem] bg-[#f7f8fd] px-3 py-2 text-sm text-[#55627e]"
-                    >
-                      <span className="h-2.5 w-2.5 rounded-full bg-[linear-gradient(135deg,#7c8cf7,#f5a7c8)]" />
-                      {step}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-[1.6rem] border border-[#e6eaf5] bg-[linear-gradient(180deg,#fff7fb,#fff)] p-4 shadow-[0_16px_34px_rgba(112,124,160,0.09)]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(245,167,200,0.18),rgba(124,140,247,0.18))] text-[#b75fa3]">
-                    <Map className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b93ad]">
-                      Venue
-                    </p>
-                    <p className="mt-1 text-lg text-[#1f2438]">Hall B + north lot</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 rounded-[1.2rem] border border-white/70 bg-white/80 p-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#66738f]">Parking map</span>
-                    <span className="font-medium text-[#1f2438]">Open</span>
-                  </div>
-                  <div className="mt-3 h-24 rounded-[1rem] bg-[linear-gradient(135deg,#e7ecff,#fff0f6)] p-3">
-                    <div className="grid h-full grid-cols-[1fr_1.2fr] gap-2">
-                      <div className="rounded-[0.8rem] bg-white/75" />
-                      <div className="rounded-[0.8rem] bg-white/55" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {[
-              "Schedule",
-              "Venue",
-              "Hotels",
-              "Maps",
-              "Spectator info",
-            ].map((item) => (
-              <span
-                key={item}
-                className="rounded-full border border-[#dfe4f2] bg-white/85 px-3 py-1 text-xs font-medium text-[#5b6784]"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-[0_18px_40px_rgba(112,124,160,0.1)]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#8a91ab]">
-              Mobile poster
-            </p>
-            <div className="mt-4 rounded-[1.6rem] border border-[#edf0f8] bg-[linear-gradient(180deg,#ffffff,#f8f8ff)] p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-[#1f2438]">
-                  Spectator guide
-                </span>
-                <span className="rounded-full bg-[linear-gradient(135deg,#e6f1ff,#ffe8f2)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b74af]">
-                  Static
-                </span>
-              </div>
-              <div className="mt-4 space-y-3">
-                <div className="rounded-[1rem] bg-[#f4f6fc] px-3 py-2 text-sm text-[#55627e]">
-                  West lobby entry for spectators and teams
-                </div>
-                <div className="rounded-[1rem] bg-[#f4f6fc] px-3 py-2 text-sm text-[#55627e]">
-                  Upper balcony seating and concessions nearby
-                </div>
-                <div className="rounded-[1rem] bg-[#f4f6fc] px-3 py-2 text-sm text-[#55627e]">
-                  Parking and floor-map details in one place
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-[linear-gradient(180deg,#fff,#f4f6ff)] p-5 shadow-[0_18px_40px_rgba(112,124,160,0.1)]">
-            <div className="absolute right-0 top-0 h-36 w-36 rounded-full bg-[radial-gradient(circle_at_center,rgba(124,140,247,0.18),transparent_65%)]" />
-            <div className="relative z-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#8a91ab]">
-                Editorial motion
-              </p>
-              <div className="mt-4 h-52 rounded-[1.6rem] border border-[#eef1fb] bg-[linear-gradient(135deg,#fbf7ff,#fff7fb)] p-4">
-                <GymnastLineArt />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
 export default function GymnasticsLanding() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f3f5fb_0%,#edf1f8_42%,#f6f8fc_100%)] text-[#1f2438] selection:bg-[#d9e7ff] selection:text-[#13213f]">
-      <div className="mx-auto max-w-7xl px-4 pb-20 pt-4 sm:px-6 lg:px-8 lg:pb-28 lg:pt-6">
-        <header className="sticky top-3 z-50">
-          <nav className="flex items-center justify-between rounded-full border border-white/70 bg-white/72 px-4 py-3 shadow-[0_16px_50px_rgba(113,126,161,0.09)] backdrop-blur-xl sm:px-5">
-            <BrandMark />
+    <main className="relative min-h-screen overflow-hidden bg-[#fafbfe] text-[#0f172a] selection:bg-indigo-200 selection:text-indigo-900">
+      {/* page background sits behind the sticky nav and hero */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[72rem] lg:h-[78rem]"
+      >
+        <GymnasticsHeroBackground />
+      </div>
 
-            <div className="hidden items-center gap-2 lg:flex">
-              {navLinks.map((link) => (
+      {/* ═══ NAV ═══ */}
+      <header className="sticky top-0 z-50">
+        <div className="mx-auto max-w-[1400px] px-4 pt-3 sm:px-6 lg:px-8">
+          <nav className="flex items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-5 py-3 shadow-[0_8px_32px_rgba(99,102,241,0.06)] backdrop-blur-xl">
+            {/* brand */}
+            <Link href="/" className="flex items-center gap-2.5">
+              <Image
+                src="/favicon.png"
+                alt="Envitefy"
+                width={44}
+                height={44}
+                priority
+                unoptimized
+                className="h-11 w-11 rounded-xl shadow-lg shadow-indigo-500/20"
+              />
+              <div className="hidden sm:block">
+                <Image
+                  src="/logo.png"
+                  alt="Envitefy"
+                  width={136}
+                  height={41}
+                  priority
+                  className="h-8 w-auto -ml-1"
+                />
+                <p className="text-sm font-semibold text-slate-900">
+                  Gymnastics
+                </p>
+              </div>
+            </Link>
+
+            {/* center links */}
+            <div className="hidden items-center gap-1 lg:flex">
+              {[
+                { label: "Features", href: "#features" },
+                { label: "How It Works", href: "#how-it-works" },
+                { label: "Use Cases", href: "#use-cases" },
+                { label: "Why Envitefy", href: "#why-envitefy" },
+              ].map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="rounded-full px-4 py-2 text-sm font-medium text-[#627089] transition hover:bg-white/80 hover:text-[#1f2438]"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
                 >
                   {link.label}
                 </Link>
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* right CTA */}
+            <div className="flex items-center gap-2.5">
               <Link
                 href="/event/gymnastics"
-                className="hidden rounded-full border border-[#dbe1f0] bg-white px-4 py-2 text-sm font-medium text-[#1f2438] transition hover:-translate-y-0.5 hover:shadow-md sm:inline-flex"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:-translate-y-px hover:shadow-xl hover:shadow-indigo-500/30"
               >
-                View builder
-              </Link>
-              <Link
-                href="/event/gymnastics"
-                className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#6378f2,#c678f1_56%,#f39bbd)] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(103,117,222,0.22)] transition hover:-translate-y-0.5"
-              >
-                Start a meet
+                Start a Meet
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </nav>
-        </header>
+        </div>
+      </header>
 
-        <section
-          id="hero"
-          className="scroll-mt-28 pb-16 pt-10 sm:pb-20 lg:pb-24 lg:pt-14"
-        >
-          <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-12">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#73809e] shadow-[0_14px_30px_rgba(113,126,161,0.08)]">
-                <Sparkles className="h-3.5 w-3.5 text-[#7d87d7]" />
-                Premium meet pages for gymnastics weekends
-              </div>
-
-              <h1
-                className="mt-7 max-w-[10.5ch] text-[clamp(3.4rem,8vw,6.8rem)] leading-[0.9] tracking-[-0.06em] text-[#1f2438]"
-                style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-              >
-                Elegant gymnastics meet pages, built for mobile.
-              </h1>
-
-              <p className="mt-6 max-w-xl text-lg leading-8 text-[#61708a] sm:text-xl">
-                Envitefy turns meet schedules, venue details, hotel blocks, maps,
-                and a polished spectator guide into one premium experience for families,
-                coaches, athletes, and spectators.
-              </p>
-
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/event/gymnastics"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#6378f2,#f19cc0)] px-6 py-4 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(105,120,220,0.24)] transition hover:-translate-y-0.5"
-                >
-                  Start your meet page
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="#showcase"
-                  className="inline-flex items-center justify-center rounded-full border border-[#dbe1f0] bg-white/80 px-6 py-4 text-sm font-semibold text-[#1f2438] shadow-[0_14px_30px_rgba(113,126,161,0.08)] transition hover:-translate-y-0.5"
-                >
-                  See the layouts
-                </a>
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-2">
-                {["Schedules", "Venue maps", "Hotel blocks", "Spectator info"].map(
-                  (chip) => (
-                    <span
-                      key={chip}
-                      className="rounded-full border border-white/80 bg-white/75 px-3 py-1.5 text-xs font-medium text-[#66738f] shadow-[0_12px_25px_rgba(113,126,161,0.08)]"
-                    >
-                      {chip}
-                    </span>
-                  ),
-                )}
-              </div>
+      {/* ═══ HERO ═══ */}
+      <section id="hero" className="relative z-10 scroll-mt-20 overflow-hidden">
+        <div className="relative z-10 mx-auto max-w-[1400px] px-4 pb-20 pt-16 sm:px-6 lg:px-8 lg:pb-28 lg:pt-24">
+          {/* centered hero content */}
+          <div className="mx-auto max-w-4xl text-center">
+            {/* social proof chip */}
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-indigo-100 bg-white px-4 py-2 shadow-sm">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-500">
+                <span className="inline-flex h-2 w-2 animate-ping rounded-full bg-emerald-400 opacity-75" />
+              </span>
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Trusted by gymnastics families nationwide
+              </span>
             </div>
 
-            <div className="relative">
-              <div className="absolute -left-4 top-10 h-20 w-20 rounded-full bg-[radial-gradient(circle_at_center,rgba(124,140,247,0.25),transparent_70%)] blur-2xl" />
-              <div className="absolute -right-2 bottom-8 h-28 w-28 rounded-full bg-[radial-gradient(circle_at_center,rgba(245,167,200,0.25),transparent_70%)] blur-2xl" />
+            {/* headline */}
+            <h1 className="mx-auto mt-8 max-w-[18ch] text-[clamp(2.8rem,6.5vw,5.5rem)] font-extrabold leading-[0.95] tracking-[-0.04em] text-slate-900" style={{ fontFamily: "inherit" }}>
+              Organize every{" "}
+              <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 bg-clip-text text-transparent">
+                gymnastics meet
+              </span>{" "}
+              in one place
+            </h1>
 
-              <div className="relative overflow-hidden rounded-[2.8rem] border border-white/80 bg-[linear-gradient(160deg,#fff 0%,#f8f7ff 55%,#eef6ff 100%)] p-5 shadow-[0_34px_90px_rgba(118,130,162,0.18)] sm:p-6">
-                <RibbonOrbs />
-                <div className="relative z-10 flex min-h-[620px] flex-col rounded-[2.2rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(249,250,255,0.9))] p-5 shadow-[0_20px_60px_rgba(112,124,160,0.1)] sm:p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#8b93ad]">
-                        Event preview
-                      </p>
-                      <h2
-                        className="mt-2 max-w-[12ch] text-3xl leading-[0.95] tracking-[-0.05em] text-[#1f2438] sm:text-[2.5rem]"
-                        style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-                      >
-                        Summit Invitational
-                      </h2>
-                    </div>
-                    <div className="rounded-full bg-[linear-gradient(135deg,#eef1ff,#fff1f7)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#6670a8]">
-                      April 18-20
-                    </div>
-                  </div>
+            {/* subheadline */}
+            <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-slate-500 sm:text-xl sm:leading-9">
+              Envitefy turns meet schedules, venue details, hotel blocks, and
+              team updates into one polished page that parents, coaches, and
+              athletes can actually rely on.
+            </p>
 
-                  <div className="mt-6 grid gap-4">
-                    <div className="rounded-[1.8rem] border border-white/80 bg-white/82 p-4 shadow-[0_18px_40px_rgba(112,124,160,0.08)]">
+            {/* CTA row */}
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/event/gymnastics"
+                className="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-4.5 text-base font-semibold text-white shadow-xl shadow-indigo-500/25 transition hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-indigo-500/30"
+              >
+                Start Your Meet Page
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
+              </Link>
+              <a
+                href="#how-it-works"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-8 py-4.5 text-base font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+              >
+                See How It Works
+              </a>
+            </div>
+
+            {/* feature chips */}
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
+              {["Schedules", "Venue Maps", "Hotel Blocks", "Team Updates", "Spectator Info"].map(
+                (chip) => (
+                  <span
+                    key={chip}
+                    className="rounded-full border border-slate-100 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-500 shadow-sm"
+                  >
+                    {chip}
+                  </span>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* ─── product preview mockup ─── */}
+          <div className="relative mx-auto mt-16 max-w-[1200px] lg:mt-20">
+            {/* subtle glow behind mockup */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-0 -top-8 h-[120%] rounded-[3rem] bg-gradient-to-b from-indigo-50/80 via-white/40 to-transparent"
+            />
+
+            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/60 bg-white p-1.5 shadow-2xl shadow-slate-900/8 sm:rounded-[2.5rem] sm:p-2">
+              {/* browser chrome bar */}
+              <div className="flex items-center gap-2 rounded-t-[1.75rem] bg-slate-50 px-4 py-3 sm:rounded-t-[2rem] sm:px-6">
+                <div className="flex gap-1.5">
+                  <div className="h-3 w-3 rounded-full bg-slate-200" />
+                  <div className="h-3 w-3 rounded-full bg-slate-200" />
+                  <div className="h-3 w-3 rounded-full bg-slate-200" />
+                </div>
+                <div className="mx-auto flex max-w-md flex-1 items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-xs text-slate-400 shadow-sm">
+                  <Globe className="h-3 w-3" />
+                  envitefy.com/meet/summit-invitational
+                </div>
+              </div>
+
+              {/* dashboard content */}
+              <div className="rounded-b-[1.75rem] bg-gradient-to-b from-slate-50 to-white p-4 sm:rounded-b-[2rem] sm:p-6 lg:p-8">
+                <div className="grid gap-5 lg:grid-cols-[1fr_0.42fr]">
+                  {/* main panel */}
+                  <div className="space-y-5">
+                    {/* event header */}
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
+                          Public Meet Page
+                        </p>
+                        <h3 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl" style={{ fontFamily: "inherit" }}>
+                          Summit Invitational
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Aurora Convention Hall · April 18–20, 2026
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* session schedule card */}
+                    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(124,140,247,0.12),rgba(245,167,200,0.12))] text-[#6070d6]">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                             <CalendarDays className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b93ad]">
-                              Meet schedule
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                              Session 2
                             </p>
-                            <p className="mt-1 text-lg text-[#1f2438]">
-                              Session 2 - Level 8 and Xcel Gold
+                            <p className="text-base font-semibold text-slate-900">
+                              Level 7 & Xcel Gold
                             </p>
                           </div>
                         </div>
-                        <Clock3 className="h-5 w-5 text-[#9da5bd]" />
+                        <Clock3 className="hidden h-5 w-5 text-slate-300 sm:block" />
                       </div>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+
+                      <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
                         {[
                           ["Check-in", "7:10 AM"],
                           ["Warm-up", "7:35 AM"],
                           ["Awards", "11:40 AM"],
-                        ].map(([label, value]) => (
+                        ].map(([label, time]) => (
                           <div
                             key={label}
-                            className="rounded-[1.2rem] bg-[#f7f8fc] px-3 py-3"
+                            className="rounded-xl bg-slate-50 px-3.5 py-3"
                           >
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8b93ad]">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                               {label}
                             </p>
-                            <p className="mt-2 text-sm font-medium text-[#1f2438]">
-                              {value}
+                            <p className="mt-1.5 text-sm font-semibold text-slate-800">
+                              {time}
                             </p>
                           </div>
                         ))}
                       </div>
                     </div>
 
+                    {/* venue + travel row */}
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-[1.6rem] border border-white/80 bg-[linear-gradient(180deg,#fff7fb,#fff)] p-4 shadow-[0_16px_34px_rgba(112,124,160,0.08)]">
+                      <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(245,167,200,0.16),rgba(124,140,247,0.16))] text-[#b05e98]">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
                             <MapPinned className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b93ad]">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                               Venue
                             </p>
-                            <p className="mt-1 text-base text-[#1f2438]">
+                            <p className="text-sm font-semibold text-slate-900">
                               Aurora Convention Hall
                             </p>
                           </div>
                         </div>
-                        <p className="mt-4 text-sm leading-7 text-[#65728b]">
-                          Entrance map, spectator seating, and lot guidance in
-                          one place.
+                        <p className="mt-3 text-sm leading-6 text-slate-500">
+                          West lobby entry · Upper balcony seating
                         </p>
                       </div>
 
-                      <div className="rounded-[1.6rem] border border-white/80 bg-[linear-gradient(180deg,#eef7ff,#fff)] p-4 shadow-[0_16px_34px_rgba(112,124,160,0.08)]">
+                      <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(104,157,255,0.16),rgba(124,140,247,0.16))] text-[#496ed8]">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-600">
                             <Hotel className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b93ad]">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                               Travel
                             </p>
-                            <p className="mt-1 text-base text-[#1f2438]">
-                              Hotel block closes March 26
+                            <p className="text-sm font-semibold text-slate-900">
+                              Block closes March 26
                             </p>
                           </div>
                         </div>
-                        <p className="mt-4 text-sm leading-7 text-[#65728b]">
-                          Share booking links, shuttles, and local tips without
-                          burying them in the packet.
+                        <p className="mt-3 text-sm leading-6 text-slate-500">
+                          Booking link · Shuttle schedule
                         </p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.6rem] border border-white/80 bg-[linear-gradient(135deg,#f7f7ff,#fff6fb)] p-4 shadow-[0_16px_34px_rgba(112,124,160,0.08)]">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(124,140,247,0.14),rgba(245,167,200,0.14))] text-[#5c68ce]">
-                          <ClipboardList className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b93ad]">
-                            Spectator guide
-                          </p>
-                          <p className="mt-1 text-base text-[#1f2438]">
-                            Seating, entrances, and what guests need to know
-                          </p>
-                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-auto pt-5">
-                    <div className="flex items-center justify-between rounded-full border border-[#e6eaf5] bg-white/85 px-4 py-3">
-                      <div className="flex items-center gap-2 text-sm text-[#627089]">
-                        <Globe className="h-4 w-4 text-[#6670c9]" />
-                        Shareable public meet page
+                  {/* side panel */}
+                  <div className="hidden space-y-4 lg:block">
+                    {/* spectator guide card */}
+                    <div className="rounded-2xl border border-slate-100 bg-gradient-to-b from-white to-slate-50 p-5 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-pink-600">
+                          <ClipboardList className="h-5 w-5" />
+                        </div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          Spectator Guide
+                        </p>
                       </div>
-                      <button className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#6378f2,#f19cc0)] px-4 py-2 text-sm font-semibold text-white">
-                        View details
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
+                      <div className="mt-4 space-y-2.5">
+                        {[
+                          "West lobby entry",
+                          "Upper balcony seating",
+                          "Concessions level 2",
+                        ].map((note) => (
+                          <div
+                            key={note}
+                            className="rounded-xl bg-white px-3 py-2.5 text-sm text-slate-500 shadow-sm"
+                          >
+                            {note}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* quick info */}
+                    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        Quick share
+                      </p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <p className="text-sm text-slate-500">
+                          One link for all families
+                        </p>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                          <Share2 className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* tag chips */}
+                    <div className="flex flex-wrap gap-2">
+                      {["Schedule", "Venue", "Hotels", "Maps"].map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-lg border border-slate-100 bg-white px-2.5 py-1 text-xs font-medium text-slate-500 shadow-sm"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* bottom bar */}
+                <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <Globe className="h-4 w-4 text-indigo-500" />
+                    Shareable public meet page
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3.5 py-2 text-xs font-semibold text-white">
+                    View Meet
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ TRUST STRIP ═══ */}
+      <section className="border-y border-slate-100 bg-white/60 py-6 backdrop-blur-sm">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Built for
+            </p>
+            {trustItems.map((item) => (
+              <span
+                key={item}
+                className="text-sm font-semibold text-slate-400 transition hover:text-slate-600"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ FEATURES ═══ */}
+      <section id="features" className="scroll-mt-20 py-20 lg:py-28">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+          {/* section header */}
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+              Core Features
+            </p>
+            <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900" style={{ fontFamily: "inherit" }}>
+              Everything gymnastics families actually need, in one page
+            </h2>
+            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-500 sm:text-lg">
+              No more hunting through PDF packets, email threads, and group
+              chats. Envitefy surfaces the right details for every audience.
+            </p>
+          </div>
+
+          {/* feature grid (flip cards) */}
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((f) => (
+              <FeatureFlipCard key={f.title} f={f} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ HOW IT WORKS ═══ */}
+      <section
+        id="how-it-works"
+        className="scroll-mt-20 bg-gradient-to-b from-slate-50 to-white py-20 lg:py-28"
+      >
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+              How It Works
+            </p>
+            <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900" style={{ fontFamily: "inherit" }}>
+              Three steps to a polished meet page
+            </h2>
+            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-500">
+              Upload once. Organize automatically. Share one link with every
+              family, coach, and spectator.
+            </p>
+          </div>
+
+          <div className="relative mt-14 grid gap-6 lg:grid-cols-3">
+            {/* connector line */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 right-0 top-[3.5rem] hidden h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent lg:block"
+            />
+
+            {[
+              {
+                step: "01",
+                icon: Upload,
+                title: "Upload Meet Info",
+                copy: "Bring in your meet packet, session schedule, venue details, hotel sheet, and documents.",
+              },
+              {
+                step: "02",
+                icon: Sparkles,
+                title: "Envitefy Organizes It",
+                copy: "We structure everything into the sections gymnasts families need: sessions, venue, travel, and updates.",
+              },
+              {
+                step: "03",
+                icon: Share2,
+                title: "Share One Link",
+                copy: "Parents, coaches, athletes, and spectators all use the same polished page — no app download needed.",
+              },
+            ].map((item) => (
+              <article
+                key={item.step}
+                className="relative rounded-2xl border border-slate-100 bg-white p-7 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 text-indigo-600">
+                    <item.icon className="h-6 w-6" />
+                  </div>
+                  <span className="text-3xl font-bold text-slate-100">
+                    {item.step}
+                  </span>
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-slate-900" style={{ fontFamily: "inherit" }}>
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-slate-500">
+                  {item.copy}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ PRODUCT SHOWCASE ═══ */}
+      <section className="py-20 lg:py-28">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+            {/* left: text */}
+            <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+                Platform Preview
+              </p>
+              <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900" style={{ fontFamily: "inherit" }}>
+                A meet page that feels like a real product, not a PDF
+              </h2>
+              <p className="mt-5 text-base leading-7 text-slate-500 sm:text-lg">
+                Every detail is structured, searchable, and mobile-first.
+                Families get the information they need without zooming into
+                packets or scrolling through documents.
+              </p>
+
+              <div className="mt-8 space-y-4">
+                {[
+                  {
+                    icon: Shield,
+                    title: "Always accessible",
+                    desc: "No app required. Works on any phone, tablet, or computer.",
+                  },
+                  {
+                    icon: Smartphone,
+                    title: "Mobile-first design",
+                    desc: "Built for parents checking times while walking into the venue.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {item.title}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* right: mockup */}
+            <div className="relative">
+              {/* glow */}
+              <div
+                aria-hidden="true"
+                className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-indigo-100/50 via-violet-50/40 to-fuchsia-100/30 blur-2xl"
+              />
+
+              <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-xl sm:p-6">
+                {/* mobile frame */}
+                <div className="mx-auto max-w-[340px] overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-lg">
+                  {/* status bar */}
+                  <div className="flex items-center justify-center bg-slate-900 px-4 py-2">
+                    <span className="text-[11px] font-medium text-white/70">
+                      envitefy.com
+                    </span>
+                  </div>
+
+                  {/* mobile content */}
+                  <div className="space-y-3 p-4">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Gymnastics Meet
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-slate-900">
+                        Summit Invitational
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        April 18–20 · Aurora Convention Hall
+                      </p>
+                    </div>
+
+                    {/* tabs */}
+                    <div className="flex gap-1.5 overflow-x-auto">
+                      {["Sessions", "Venue", "Hotels", "Info"].map(
+                        (tab, i) => (
+                          <span
+                            key={tab}
+                            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold ${i === 0 ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"}`}
+                          >
+                            {tab}
+                          </span>
+                        )
+                      )}
+                    </div>
+
+                    {/* session card */}
+                    <div className="rounded-xl bg-slate-50 p-3.5">
+                      <p className="text-xs font-semibold text-slate-600">
+                        Session 2 · Level 7 & Xcel Gold
+                      </p>
+                      <div className="mt-2 space-y-1.5">
+                        {[
+                          ["Check-in", "7:10 AM"],
+                          ["Warm-up", "7:35 AM"],
+                          ["Awards", "11:40 AM"],
+                        ].map(([lbl, val]) => (
+                          <div
+                            key={lbl}
+                            className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs"
+                          >
+                            <span className="text-slate-400">{lbl}</span>
+                            <span className="font-semibold text-slate-700">
+                              {val}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* venue snippet */}
+                    <div className="rounded-xl bg-violet-50 p-3.5">
+                      <div className="flex items-center gap-2">
+                        <MapPinned className="h-4 w-4 text-violet-500" />
+                        <p className="text-xs font-semibold text-slate-700">
+                          Aurora Convention Hall
+                        </p>
+                      </div>
+                      <p className="mt-1.5 text-[11px] text-slate-500">
+                        West lobby · Upper balcony seating
+                      </p>
+                    </div>
+
+                    {/* hotel snippet */}
+                    <div className="rounded-xl bg-fuchsia-50 p-3.5">
+                      <div className="flex items-center gap-2">
+                        <Hotel className="h-4 w-4 text-fuchsia-500" />
+                        <p className="text-xs font-semibold text-slate-700">
+                          Hotel block closes March 26
+                        </p>
+                      </div>
+                      <p className="mt-1.5 text-[11px] text-slate-500">
+                        Booking link · Shuttle schedule
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="features" className="scroll-mt-28 pb-16 sm:pb-20 lg:pb-24">
-          <SectionHeading
-            eyebrow="Three essentials"
-            title="The fastest way to publish the details gymnastics families actually need."
-            copy="Every card is intentionally small, clear, and touch-friendly so the page feels elegant on mobile first, then expansive on larger screens."
-          />
-
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {featureCards.map((card) => (
-              <FeatureCard key={card.title} {...card} />
-            ))}
+      {/* ═══ USE CASES ═══ */}
+      <section
+        id="use-cases"
+        className="scroll-mt-20 bg-gradient-to-b from-white to-slate-50 py-20 lg:py-28"
+      >
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+              Use Cases
+            </p>
+            <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900" style={{ fontFamily: "inherit" }}>
+              Built for everyone at the meet
+            </h2>
+            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-500">
+              Parents, coaches, and meet directors all need different details.
+              Envitefy keeps one source of truth while presenting the right
+              information for each audience.
+            </p>
           </div>
-        </section>
 
-        <section id="showcase" className="scroll-mt-28 pb-16 sm:pb-20 lg:pb-24">
-          <SectionHeading
-            eyebrow="Editorial panels"
-            title="Tall, gallery-like panels that make the page feel premium instead of corporate."
-            copy="Each panel behaves like a magazine spread for a specific audience, with the right details pushed to the foreground."
-          />
-
-          <div className="mt-10 grid gap-4 lg:grid-cols-3">
-            {showcasePanels.map((panel) => (
-              <EditorialPanel key={panel.id} panel={panel} />
-            ))}
-          </div>
-        </section>
-
-        <section id="benefits" className="scroll-mt-28 pb-16 sm:pb-20 lg:pb-24">
-          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-            <SectionHeading
-              eyebrow="Why Envitefy"
-              title="Designed for the realities of gymnastics weekends."
-              copy="From early arrivals to last-minute schedule changes, the page gives meet hosts a polished presentation layer and gives families a reliable place to look."
-            />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {benefits.map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-[1.8rem] border border-white/80 bg-white/82 p-6 shadow-[0_22px_50px_rgba(118,130,162,0.1)]"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(124,140,247,0.14),rgba(245,167,200,0.14))] text-[#5963d6]">
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <h3
-                    className="mt-5 text-xl text-[#1f2438]"
-                    style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-                  >
-                    {item.title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-7 text-[#63718b]">
-                    {item.copy}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="mockup" className="scroll-mt-28 pb-16 sm:pb-20 lg:pb-24">
-          <SectionHeading
-            eyebrow="Screenshot mockup"
-            title="A mobile-poster aesthetic that still feels like a real product."
-            copy="Layered panels, soft gradients, and airy spacing give the page a premium editorial finish while keeping the interface practical."
-          />
-
-          <div className="mt-10">
-            <MockupShell />
-          </div>
-        </section>
-
-        <section id="cta" className="scroll-mt-28 pb-8 sm:pb-0">
-          <div className="relative overflow-hidden rounded-[2.8rem] border border-white/80 bg-[linear-gradient(135deg,#6378f2_0%,#c678f1_55%,#f39bbd_100%)] p-8 text-white shadow-[0_30px_90px_rgba(103,117,222,0.26)] sm:p-10 lg:p-12">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.16),transparent_28%)]" />
-            <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div className="max-w-2xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-white/80">
-                  Final CTA
+          <div className="mt-14 grid gap-6 lg:grid-cols-3">
+            {useCases.map((uc) => (
+              <article
+                key={uc.title}
+                className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-7 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-indigo-500/5"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 text-indigo-600 transition-colors group-hover:from-indigo-100 group-hover:to-violet-100">
+                  <uc.icon className="h-5 w-5" />
+                </div>
+                <p className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">
+                  {uc.eyebrow}
                 </p>
-                <h2
-                  className="mt-4 text-[clamp(2.2rem,5vw,4.4rem)] leading-[0.95] tracking-[-0.05em]"
-                  style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-                >
-                  Make the next gymnastics meet feel polished from the first tap.
+                <h3 className="mt-2 text-xl font-semibold text-slate-900" style={{ fontFamily: "inherit" }}>
+                  {uc.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-slate-500">
+                  {uc.copy}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ WHY ENVITEFY ═══ */}
+      <section id="why-envitefy" className="scroll-mt-20 py-20 lg:py-28">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/60 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-8 text-white shadow-2xl sm:p-12 lg:p-16">
+            {/* subtle radial highlights */}
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute right-0 top-0 h-[450px] w-[450px] rounded-full bg-[radial-gradient(circle,rgba(99,102,241,0.15),transparent_70%)]" />
+              <div className="absolute bottom-0 left-0 h-[350px] w-[350px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.1),transparent_70%)]" />
+            </div>
+
+            <div className="relative">
+              <div className="mx-auto max-w-2xl text-center">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-400">
+                  Why Envitefy
+                </p>
+                <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-white" style={{ color: "#fff", fontFamily: "inherit" }}>
+                  The meet page gymnastics deserves
                 </h2>
-                <p className="mt-5 max-w-xl text-base leading-8 text-white/88 sm:text-lg">
-                  Build one premium page for schedules, hotels, maps, and live
-                  updates so every parent, athlete, and coach lands in the same
-                  place.
+                <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-400">
+                  Gymnastics meet information is too important to live in messy
+                  files. Envitefy gives it a home that families, coaches, and
+                  organizers can trust.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+              {/* stats grid */}
+              <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {whyStats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-2xl border border-white/8 bg-white/5 p-6 text-center backdrop-blur-sm"
+                  >
+                    <p className="text-4xl font-extrabold text-white">
+                      {stat.value}
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-slate-400">
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* checklist */}
+              <div className="mx-auto mt-12 grid max-w-3xl gap-4 sm:grid-cols-2">
+                {[
+                  "Replace PDF packets with a clean meeting page",
+                  "Works on every phone — no app download",
+                  "Schedule changes reach everyone instantly",
+                  "Venue maps and hotel info in one view",
+                  "Share one link across all team channels",
+                  "Professional presentation for your organization",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400">
+                      <Check className="h-3 w-3" />
+                    </span>
+                    <p className="text-sm leading-6 text-slate-300">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ FINAL CTA ═══ */}
+      <section className="pb-20 pt-4 lg:pb-28">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 p-8 text-center text-white shadow-2xl shadow-indigo-500/20 sm:p-12 lg:p-16">
+            {/* refracted glow */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.1),transparent_35%)]"
+            />
+
+            <div className="relative mx-auto max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
+                Ready to get started?
+              </p>
+              <h2 className="mt-4 text-[clamp(2rem,4.5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-white" style={{ color: "#fff", fontFamily: "inherit" }}>
+                Make the next gymnastics meet feel polished from the first tap
+              </h2>
+              <p className="mt-5 text-base leading-7 text-white/80 sm:text-lg">
+                Build one premium page for schedules, hotels, maps, and updates
+                so every parent, athlete, and coach lands in the same place.
+              </p>
+
+              <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link
                   href="/event/gymnastics"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-4 text-sm font-semibold text-[#3e4fd0] shadow-[0_18px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-8 py-4.5 text-base font-semibold text-indigo-700 shadow-xl shadow-black/10 transition hover:-translate-y-0.5 hover:shadow-2xl"
                 >
-                  Start your gymnastics page
+                  Start Your Meet Page
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <a
                   href="#hero"
-                  className="inline-flex items-center justify-center rounded-full border border-white/28 bg-white/12 px-6 py-4 text-sm font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/18"
+                  className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-8 py-4.5 text-base font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/15"
                 >
-                  Back to top
+                  Back to Top
                 </a>
               </div>
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      {/* ═══ FOOTER ═══ */}
+      <footer className="border-t border-slate-100 py-10">
+        <div className="mx-auto max-w-[1400px] px-4 text-center sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center gap-2.5">
+            <Image
+              src="/favicon.png"
+              alt="Envitefy"
+              width={28}
+              height={28}
+              unoptimized
+              className="h-7 w-7 rounded-lg"
+            />
+            <span className="text-sm font-semibold text-slate-400">
+              Envitefy Gymnastics
+            </span>
+          </div>
+          <p className="mt-3 text-xs text-slate-400">
+            © {new Date().getFullYear()} Envitefy. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </main>
   );
 }

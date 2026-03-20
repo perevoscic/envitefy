@@ -131,7 +131,7 @@ export function createEmailTemplate(params: {
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
                     <tr>
                       <td style="vertical-align: middle; padding-right: 8px;">
-                        <img src="${baseUrl}/E.png" width="40" height="40" alt="E" style="display:block; max-width: 100%;" />
+                        <img src="${baseUrl}/favicon.png" width="40" height="40" alt="Envitefy emblem" style="display:block; max-width: 100%;" />
                       </td>
                       <td style="vertical-align: middle;">
                         <span style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 28px; font-weight: 400; color: #8A78F8; letter-spacing: 0.02em;">nvitefy</span>
@@ -189,5 +189,3 @@ ${socialIconsRow}
   </body>
 </html>`;
 }
-
-

@@ -77,29 +77,23 @@ export default function ReadOnlyEventLogo() {
         className="inline-flex items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 overflow-visible"
       >
         <Image
-          src="/E.png"
-          alt="E"
+          src="/favicon.png"
+          alt="Envitefy emblem"
           width={48}
           height={48}
           className="h-12 w-12"
           quality={100}
           unoptimized
         />
-        <span
-          className="text-3xl leading-relaxed overflow-visible"
-          style={{
-            fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-            background: "linear-gradient(180deg, #d4ae51 0%, #9a7b2f 100%)",
-            backgroundClip: "text",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            lineHeight: "1.2",
-            display: "inline-block",
-            paddingBottom: "0.1em",
-          }}
-        >
-          nvitefy
-        </span>
+        <Image
+          src="/logo.png"
+          alt="Envitefy"
+          width={156}
+          height={64}
+          className="h-8 w-auto"
+          quality={100}
+          unoptimized
+        />
       </Link>
     </div>
   );

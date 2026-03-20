@@ -91,7 +91,7 @@ export default function AuthModal({
             <p className="wedding-kicker">{heroKicker}</p>
             <div>
               <Image
-                src="/E.png"
+                src="/favicon.png"
                 alt="Envitefy emblem"
                 width={92}
                 height={48}

@@ -47,7 +47,7 @@ export default function LandingNav() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <Image
-              src="/navElogo.png"
+              src="/logo.png"
               alt="Envitefy logo"
               width={156}
               height={64}
