@@ -1,4 +1,4 @@
-import { ArrowRight, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import styles from "./gymnastics-landing.module.css";
 
 type FinalCTAProps = {
@@ -22,7 +22,7 @@ export default function FinalCTA({ discoveryBusy, onGoToStart }: FinalCTAProps) 
             meet information once and publish one clean page.
           </p>
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-8 flex items-center justify-center">
             <button
               type="button"
               onClick={onGoToStart}
@@ -32,13 +32,6 @@ export default function FinalCTA({ discoveryBusy, onGoToStart }: FinalCTAProps) 
               <Upload className="h-4 w-4" />
               Upload Meet Info
             </button>
-            <a
-              href="#gym-example-meet"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/8 px-6 py-4 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/12"
-            >
-              View Example Meet Page
-              <ArrowRight className="h-4 w-4" />
-            </a>
           </div>
         </div>
       </div>

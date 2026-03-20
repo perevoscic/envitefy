@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, MoveRight, Upload } from "lucide-react";
+import { MoveRight, Upload } from "lucide-react";
 import styles from "./gymnastics-landing.module.css";
 
 type HeroProps = {
@@ -47,7 +47,7 @@ export default function Hero({ onGoToStart, onOpenBuilder }: HeroProps) {
             parents, athletes, coaches, and spectators.
           </p>
 
-          <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+          <div className="mt-9">
             <button
               type="button"
               onClick={onGoToStart}
@@ -56,13 +56,6 @@ export default function Hero({ onGoToStart, onOpenBuilder }: HeroProps) {
               <Upload className="h-4 w-4" />
               Upload Meet Info
             </button>
-            <a
-              href="#gym-example-meet"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d8dcec] bg-white px-7 py-4 text-sm font-semibold text-[#171b46] shadow-[0_12px_28px_rgba(23,27,70,0.08)] transition hover:-translate-y-0.5 hover:border-[#b6bfd8]"
-            >
-              View Example Meet Page
-              <ArrowRight className="h-4 w-4" />
-            </a>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[#616d8b]">
