@@ -11,6 +11,7 @@ export type AuthModalProps = {
   mode: "login" | "signup";
   onClose: () => void;
   onModeChange?: (m: "login" | "signup") => void;
+  successRedirectUrl?: string;
 };
 
 export default function AuthModal({
@@ -18,6 +19,7 @@ export default function AuthModal({
   mode,
   onClose,
   onModeChange,
+  successRedirectUrl = "/",
 }: AuthModalProps) {
   const isLogin = mode === "login";
   const heroKicker = isLogin ? "Welcome back" : "You're invited";
@@ -109,6 +111,7 @@ export default function AuthModal({
             <SignupForm
               onSuccess={onClose}
               onSwitchMode={() => onModeChange?.("login")}
+              successRedirectUrl={successRedirectUrl}
             />
           )}
         </div>

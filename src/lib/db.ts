@@ -2036,6 +2036,20 @@ export async function updateEventHistoryData(
   return res.rows[0] || null;
 }
 
+export async function claimEventHistoryById(
+  id: string,
+  userId: string
+): Promise<EventHistoryRow | null> {
+  const res = await query<EventHistoryRow>(
+    `update event_history
+     set user_id = $2
+     where id = $1 and user_id is null
+     returning id, user_id, title, data, created_at`,
+    [id, userId]
+  );
+  return res.rows[0] || null;
+}
+
 export async function deleteEventHistoryById(id: string): Promise<void> {
   await query(`delete from event_history where id = $1`, [id]);
 }

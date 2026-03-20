@@ -1261,6 +1261,10 @@ export function buildGymMeetDiscoveryContent({
           ))
       );
     })(safeString(line));
+  const isPaymentLine = (line: string) =>
+    /^(payment|payment instructions?:|checks?\s+payable|check:\s*make payable|make payable to|payable to)/i.test(
+      safeString(line)
+    );
   const isSpectatorLogisticsLine = (line: string) =>
     /^(doors open|arrival guidance|registration):/i.test(safeString(line));
   const isMeetDateLine = (line: string) => {
@@ -1278,6 +1282,7 @@ export function buildGymMeetDiscoveryContent({
   const isMeetDetailsExcludedLine = (line: string) =>
     isMeetDateLine(line) ||
     isAdmissionLine(line) ||
+    isPaymentLine(line) ||
     isSpectatorLogisticsLine(line) ||
     isHydrationLine(line) ||
     isMerchandiseLine(line) ||

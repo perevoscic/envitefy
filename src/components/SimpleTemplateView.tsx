@@ -88,6 +88,8 @@ type SimpleTemplateViewProps = {
   };
   /** When true, hide Edit / Delete / Share / Email so the edit sidebar is the only action surface (e.g. discovery edit mode). */
   hideOwnerActions?: boolean;
+  /** When true, suppress shared compact action strips inside the template renderer. */
+  suppressActionStrip?: boolean;
   /** When true, render a neutral page surface instead of theme background fills (used by editor previews). */
   disableThemeBackground?: boolean;
   /** Optional neutral preview tuning for editor surfaces. */
@@ -322,6 +324,7 @@ export default function SimpleTemplateView({
   protectSensitiveSections: protectSensitiveSectionsProp = false,
   protectedSectionFlags: protectedSectionFlagsProp = {},
   hideOwnerActions = false,
+  suppressActionStrip = false,
   disableThemeBackground = false,
   neutralPreview,
 }: SimpleTemplateViewProps) {
@@ -3095,6 +3098,7 @@ export default function SimpleTemplateView({
           isOwner={isOwner}
           isReadOnly={isReadOnly}
           hideOwnerActions={hideOwnerActions}
+          suppressActionStrip={suppressActionStrip}
           onShare={handleShare}
           onCalendar={handleCalendar}
           onGoogleCalendar={handleGoogleCalendar}

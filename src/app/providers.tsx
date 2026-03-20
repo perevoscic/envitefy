@@ -1,6 +1,6 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import type { ReactNode } from "react";
 import {
@@ -8,9 +8,10 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useMemo,
 } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
 import GlobalSmartSignup from "./GlobalSmartSignup";
@@ -26,6 +27,8 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY =
+  "envitefy:gymnastics-demo-draft:v1";
 
 type ThemeProviderProps = {
   children: ReactNode;
@@ -93,6 +96,7 @@ export default function Providers({
         <ThemeProvider>
           <RegisterServiceWorker />
           <PwaInstallToast />
+          <GymnasticsDemoDraftClaimListener />
           {children}
           <GlobalEventCreate />
           <GlobalSmartSignup />
@@ -101,6 +105,61 @@ export default function Providers({
       </SidebarProvider>
     </SessionProvider>
   );
+}
+
+function GymnasticsDemoDraftClaimListener() {
+  const { status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const claimedEventIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    if (typeof window === "undefined") return;
+
+    const raw = window.localStorage.getItem(
+      GYMNASTICS_DEMO_DRAFT_STORAGE_KEY
+    );
+    const eventId = typeof raw === "string" ? raw.trim() : "";
+    if (!eventId) return;
+    if (claimedEventIdRef.current === eventId) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/history/${encodeURIComponent(eventId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ claim: true }),
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          if (res.status === 403 || res.status === 404) {
+            window.localStorage.removeItem(GYMNASTICS_DEMO_DRAFT_STORAGE_KEY);
+          }
+          return;
+        }
+
+        claimedEventIdRef.current = eventId;
+        window.localStorage.removeItem(GYMNASTICS_DEMO_DRAFT_STORAGE_KEY);
+        const targetUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(
+          eventId
+        )}`;
+        if (pathname !== targetUrl) {
+          router.replace(targetUrl);
+        }
+      } catch {
+        // Retry on the next authenticated render if the network is transiently unavailable.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, router, status]);
+
+  return null;
 }
 
 function RegisterServiceWorker() {

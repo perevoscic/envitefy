@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -20,12 +21,15 @@ type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
 const PROCESSING_PROGRESS_CAP = 90;
+const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY =
+  "envitefy:gymnastics-demo-draft:v1";
 
 export default function GymnasticsLauncher({
   forwardQueryString,
   defaultDateParam,
 }: GymnasticsLauncherProps) {
   const router = useRouter();
+  const { status } = useSession();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedPath, setSelectedPath] = useState<
     "upload" | "url" | "scratch"
@@ -288,9 +292,20 @@ export default function GymnasticsLauncher({
     log("routing to builder", { eventId });
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
-    router.push(
-      `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`
-    );
+    const baseUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(
+      eventId
+    )}`;
+    if (status === "authenticated") {
+      router.push(baseUrl);
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(GYMNASTICS_DEMO_DRAFT_STORAGE_KEY, eventId);
+    } catch {
+      // best effort only
+    }
+    router.push(`${baseUrl}&demo=1`);
   };
 
   const handleUploadPick = async (pickedFile: File | null) => {

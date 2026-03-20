@@ -22,6 +22,8 @@ const DISPLAY_HOST_GYM_PACKET_TEXT_PATTERN =
   /\b(?:please review|following items enclosed|this packet|info packet|competition to follow|recognized at|award ceremony)\b/i;
 const DISPLAY_HOST_GYM_EVENT_TITLE_PATTERN =
   /\b(?:state championships?|regional championships?|national championships?|session\s+[A-Z]{2}\d+|schedule|info packet|meet packet)\b/i;
+const DISPLAY_HOST_GYM_PAYMENT_LINE_PATTERN =
+  /^(?:payment|payment instructions?:|checks?\s+payable|check:\s*make payable|make payable to|payable to)/i;
 
 const sanitizeDisplayHostGym = (value: unknown): string => {
   let text = safeString(value).replace(/\s+/g, " ").trim();
@@ -39,6 +41,7 @@ const sanitizeDisplayHostGym = (value: unknown): string => {
 
   text = text.replace(/^host(?:ed)?\s+by[:\s-]*/i, "").replace(/[,:;.\-]+$/g, "").trim();
   if (!text) return "";
+  if (DISPLAY_HOST_GYM_PAYMENT_LINE_PATTERN.test(text)) return "";
   if (DISPLAY_HOST_GYM_PACKET_TEXT_PATTERN.test(text)) return "";
   if (DISPLAY_HOST_GYM_EVENT_TITLE_PATTERN.test(text)) return "";
   if (/^(?:team award eligible|award category)\b/i.test(text)) return "";
@@ -190,9 +193,9 @@ const shouldRenderAnnouncement = (item: any) => {
 };
 
 const DISCOVERY_GENERATED_DETAILS_PREFIX =
-  /^(meet dates?:|doors open:|arrival guidance:|registration:|facility layout:|scoring:|results:|rotation sheets?:|awards:|hall layout:|food policy:|hydration:|safety:|animals:)/i;
+  /^(meet dates?:|doors open:|arrival guidance:|registration:|facility layout:|scoring:|results:|rotation sheets?:|awards:|hall layout:|food policy:|hydration:|safety:|animals:|payment(?: instructions?)?:)/i;
 const DISCOVERY_GENERATED_DETAILS_INLINE =
-  /(spectator admission|on-site adult|on-site senior|on-site child|weekend pass|pre[-\s]?sale|ticket(?:s)?|credit\/debit|debit\/credit|credit card|debit card|cash is not accepted|cash not accepted|no cash)/i;
+  /(spectator admission|on-site adult|on-site senior|on-site child|weekend pass|pre[-\s]?sale|ticket(?:s)?|credit\/debit|debit\/credit|credit card|debit card|cash is not accepted|cash not accepted|no cash|checks? payable|make payable to|payable to)/i;
 const DISCOVERY_GENERATED_DATE_LINE =
   /^(?:(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s*[-–]\s*\d{1,2})?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}(?:\s*[-–]\s*\d{1,2}\/\d{1,2}\/\d{2,4})?)$/i;
 

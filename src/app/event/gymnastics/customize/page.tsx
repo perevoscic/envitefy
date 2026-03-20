@@ -4,6 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import AuthModal from "@/components/auth/AuthModal";
 import {
   ChevronLeft,
   Edit2,
@@ -800,8 +801,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const search = useSearchParams();
     const router = useRouter();
     const editEventId = search?.get("edit") ?? undefined;
+    const demoMode = search?.get("demo") === "1";
     const isEmbed = search?.get("embed") === "1";
     const defaultDate = search?.get("d") ?? undefined;
+    const [demoAuthOpen, setDemoAuthOpen] = useState(false);
+    const [demoAuthMode, setDemoAuthMode] = useState<"login" | "signup">(
+      "signup"
+    );
     const initialDate = useMemo(() => {
       if (!defaultDate) {
         const d = new Date();
@@ -1713,6 +1719,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, [editEventId, loadVersion]);
 
     useEffect(() => {
+      if (demoMode) return;
       if (!editEventId || !isDiscoveryEdit || loadingExisting) return;
       if (repairAttemptedRef.current) return;
       if (!loadedDiscoverySource?.input) return;
@@ -1808,9 +1815,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       isDiscoveryEdit,
       loadedDiscoverySource,
       loadingExisting,
+      demoMode,
     ]);
 
     useEffect(() => {
+      if (demoMode) return;
       if (!editEventId || !isDiscoveryEdit || loadingExisting) return;
       if (!loadedDiscoverySource?.input) return;
       if (!discoveryEnrichmentState?.pending) return;
@@ -1840,9 +1849,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       loadedDiscoverySource,
       loadingExisting,
       runDiscoveryEnrichment,
+      demoMode,
     ]);
 
     useEffect(() => {
+      if (demoMode) return;
       if (!editEventId || !isDiscoveryEdit || loadingExisting) return;
       if (discoveryEnrichmentState?.state !== "running") return;
 
@@ -1858,6 +1869,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       editEventId,
       isDiscoveryEdit,
       loadingExisting,
+      demoMode,
     ]);
 
     useEffect(() => {
@@ -3251,6 +3263,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       locationParts,
     ]);
     const previewEventId = editEventId || `preview-${config.slug}`;
+    const previewDisplayId = demoMode
+      ? "demo-gymnastic"
+      : previewEventId;
+    const isDemoPreview = demoMode;
 
     useEffect(() => {
       if (!isEmbed || !editEventId) return;
@@ -3468,6 +3484,93 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </div>
         </div>
     );
+
+    if (isDemoPreview) {
+      return (
+        <div className="min-h-screen bg-[#f0f2f5] px-4 py-4 sm:px-6 lg:px-8">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+            <div className="rounded-[1.75rem] border border-[#d9dde9] bg-white/90 px-4 py-4 shadow-sm backdrop-blur sm:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#6d35f5]">
+                    Demo preview
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black text-[#0f1935]">
+                    {data.title || config.displayName}
+                  </h2>
+                  <p className="mt-1 text-sm text-[#667085]">
+                    Preview URL: <span className="font-semibold text-[#0f1935]">demo-gymnastic</span>
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDemoAuthMode("signup");
+                      setDemoAuthOpen(true);
+                    }}
+                    className="inline-flex items-center justify-center rounded-full bg-[#6d35f5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#5d2ed6]"
+                  >
+                    Create account to claim
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDemoAuthMode("login");
+                      setDemoAuthOpen(true);
+                    }}
+                    className="inline-flex items-center justify-center rounded-full border border-[#d7dbea] bg-white px-4 py-2 text-sm font-semibold text-[#0f1935] transition hover:bg-[#f7f8fb]"
+                  >
+                    I already have an account
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-[#d9dde9] bg-white shadow-[0_20px_70px_rgba(15,25,53,0.12)] overflow-hidden">
+              {editEventId && loadingExisting ? (
+                <div className="flex min-h-[780px] items-center justify-center bg-white text-center">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">
+                      Loading demo preview...
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Preparing your uploaded meet content.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <SimpleTemplateView
+                  key={`preview-${previewDisplayId}`}
+                  eventId={previewDisplayId}
+                  eventData={previewEventData}
+                  eventTitle={data.title || config.displayName}
+                  isOwner={false}
+                  isReadOnly={true}
+                  viewerKind="readonly"
+                  shareUrl=""
+                  sessionEmail={null}
+                  disableProtectedSectionLocks={true}
+                  hideOwnerActions={true}
+                  suppressActionStrip={true}
+                  disableThemeBackground={true}
+                  neutralPreview={{
+                    surface: "light-gradient",
+                    suppressTextShadows: true,
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          <AuthModal
+            open={demoAuthOpen}
+            mode={demoAuthMode}
+            onClose={() => setDemoAuthOpen(false)}
+          />
+        </div>
+      );
+    }
 
     if (isEmbed) {
       return (

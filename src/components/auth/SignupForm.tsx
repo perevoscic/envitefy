@@ -2,24 +2,32 @@
 
 import { FormEvent, useRef, useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
 declare global {
+  interface GrecaptchaClient {
+    execute: (
+      siteKey: string,
+      options: { action: string }
+    ) => Promise<string>;
+    ready?: (cb: () => void) => void;
+  }
+
   interface Window {
-    grecaptcha: any;
+    grecaptcha?: GrecaptchaClient;
   }
 }
 
 export type SignupFormProps = {
   onSuccess?: () => void;
   onSwitchMode?: (mode: "login" | "signup") => void;
+  successRedirectUrl?: string;
 };
 
 export default function SignupForm({
   onSuccess,
   onSwitchMode,
+  successRedirectUrl = "/",
 }: SignupFormProps) {
-  const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -164,7 +172,7 @@ export default function SignupForm({
         email,
         password,
         redirect: false,
-        callbackUrl: "/",
+        callbackUrl: successRedirectUrl,
       });
       if (result?.ok) {
         try {
@@ -172,7 +180,7 @@ export default function SignupForm({
         } catch {}
         onSuccess?.();
         // Force a full page reload to ensure session is available
-        window.location.href = "/";
+        window.location.href = successRedirectUrl;
         return;
       }
       setMessage("Account created, please log in");
@@ -184,7 +192,7 @@ export default function SignupForm({
   const onGoogleSignUp = async () => {
     setSubmitting(true);
     try {
-      await signIn("google", { callbackUrl: "/" });
+      await signIn("google", { callbackUrl: successRedirectUrl });
     } catch (err) {
       console.error("Google sign-up error:", err);
       setMessage("Failed to sign up with Google");

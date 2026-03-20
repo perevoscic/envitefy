@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import AuthModal from "@/components/auth/AuthModal";
 
 export default function LandingNav() {
@@ -29,6 +29,7 @@ export default function LandingNav() {
   };
 
   const navLinks = [
+    { name: "Gymnastics", href: "#gymnastics-hero" },
     { name: "How it works", href: "#how-it-works" },
     { name: "Features", href: "#features" },
     { name: "FAQ", href: "#faq" },

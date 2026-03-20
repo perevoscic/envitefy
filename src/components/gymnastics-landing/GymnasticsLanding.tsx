@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import GymnasticsHeroBackground from "./GymnasticsHeroBackground";
 import Link from "next/link";
 import Image from "next/image";
+import AuthModal from "@/components/auth/AuthModal";
 import {
   ArrowRight,
   CalendarDays,
@@ -104,11 +107,7 @@ const whyStats = [
 ];
 
 /* ─── flip card component ─── */
-function FeatureFlipCard({
-  f,
-}: {
-  f: (typeof features)[number];
-}) {
+function FeatureFlipCard({ f }: { f: (typeof features)[number] }) {
   const [flipped, setFlipped] = useState(false);
 
   return (
@@ -142,12 +141,13 @@ function FeatureFlipCard({
             >
               <f.icon className="h-5 w-5" />
             </div>
-            <h3 className="mt-5 text-lg font-semibold text-slate-900" style={{ fontFamily: "inherit" }}>
+            <h3
+              className="mt-5 text-lg font-semibold text-slate-900"
+              style={{ fontFamily: "inherit" }}
+            >
               {f.title}
             </h3>
-            <p className="mt-2.5 text-sm leading-6 text-slate-500">
-              {f.copy}
-            </p>
+            <p className="mt-2.5 text-sm leading-6 text-slate-500">{f.copy}</p>
             <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-indigo-600 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100">
               Tap to learn more
               <ChevronRight className="h-4 w-4" />
@@ -171,7 +171,10 @@ function FeatureFlipCard({
               >
                 <f.icon className="h-5 w-5" />
               </div>
-              <h3 className="text-base font-semibold text-white" style={{ color: "#fff", fontFamily: "inherit" }}>
+              <h3
+                className="text-base font-semibold text-white"
+                style={{ color: "#fff", fontFamily: "inherit" }}
+              >
                 {f.title}
               </h3>
             </div>
@@ -190,6 +193,25 @@ function FeatureFlipCard({
 }
 
 export default function GymnasticsLanding() {
+  const router = useRouter();
+  const { status } = useSession();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
+
+  const openSignup = () => {
+    setAuthMode("signup");
+    setAuthModalOpen(true);
+  };
+
+  const handleStartMeet = () => {
+    if (status === "authenticated") {
+      router.push("/event/gymnastics");
+      return;
+    }
+
+    openSignup();
+  };
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#fafbfe] text-[#0f172a] selection:bg-indigo-200 selection:text-indigo-900">
       {/* page background sits behind the sticky nav and hero */}
@@ -206,23 +228,14 @@ export default function GymnasticsLanding() {
           <nav className="flex items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-5 py-3 shadow-[0_8px_32px_rgba(99,102,241,0.06)] backdrop-blur-xl">
             {/* brand */}
             <Link href="/" className="flex items-center gap-2.5">
-              <Image
-                src="/favicon.png"
-                alt="Envitefy"
-                width={44}
-                height={44}
-                priority
-                unoptimized
-                className="h-11 w-11 rounded-xl shadow-lg shadow-indigo-500/20"
-              />
               <div className="hidden sm:block">
                 <Image
                   src="/logo.png"
                   alt="Envitefy"
                   width={136}
-                  height={41}
+                  height={37}
                   priority
-                  className="h-8 w-auto -ml-1"
+                  className="h-10 w-auto -ml-1"
                 />
                 <p className="text-sm font-semibold text-slate-900">
                   Gymnastics
@@ -250,13 +263,14 @@ export default function GymnasticsLanding() {
 
             {/* right CTA */}
             <div className="flex items-center gap-2.5">
-              <Link
-                href="/event/gymnastics"
+              <button
+                type="button"
+                onClick={handleStartMeet}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:-translate-y-px hover:shadow-xl hover:shadow-indigo-500/30"
               >
                 Start a Meet
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </button>
             </div>
           </nav>
         </div>
@@ -278,7 +292,10 @@ export default function GymnasticsLanding() {
             </div>
 
             {/* headline */}
-            <h1 className="mx-auto mt-8 max-w-[18ch] text-[clamp(2.8rem,6.5vw,5.5rem)] font-extrabold leading-[0.95] tracking-[-0.04em] text-slate-900" style={{ fontFamily: "inherit" }}>
+            <h1
+              className="mx-auto mt-8 max-w-[18ch] text-[clamp(2.8rem,6.5vw,5.5rem)] font-extrabold leading-[0.95] tracking-[-0.04em] text-slate-900"
+              style={{ fontFamily: "inherit" }}
+            >
               Organize every{" "}
               <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 bg-clip-text text-transparent">
                 gymnastics meet
@@ -312,16 +329,20 @@ export default function GymnasticsLanding() {
 
             {/* feature chips */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-              {["Schedules", "Venue Maps", "Hotel Blocks", "Team Updates", "Spectator Info"].map(
-                (chip) => (
-                  <span
-                    key={chip}
-                    className="rounded-full border border-slate-100 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-500 shadow-sm"
-                  >
-                    {chip}
-                  </span>
-                )
-              )}
+              {[
+                "Schedules",
+                "Venue Maps",
+                "Hotel Blocks",
+                "Team Updates",
+                "Spectator Info",
+              ].map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full border border-slate-100 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-500 shadow-sm"
+                >
+                  {chip}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -358,7 +379,10 @@ export default function GymnasticsLanding() {
                         <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
                           Public Meet Page
                         </p>
-                        <h3 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl" style={{ fontFamily: "inherit" }}>
+                        <h3
+                          className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl"
+                          style={{ fontFamily: "inherit" }}
+                        >
                           Summit Invitational
                         </h3>
                         <p className="mt-1 text-sm text-slate-500">
@@ -550,7 +574,10 @@ export default function GymnasticsLanding() {
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
               Core Features
             </p>
-            <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900" style={{ fontFamily: "inherit" }}>
+            <h2
+              className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900"
+              style={{ fontFamily: "inherit" }}
+            >
               Everything gymnastics families actually need, in one page
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-500 sm:text-lg">
@@ -578,7 +605,10 @@ export default function GymnasticsLanding() {
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
               How It Works
             </p>
-            <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900" style={{ fontFamily: "inherit" }}>
+            <h2
+              className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900"
+              style={{ fontFamily: "inherit" }}
+            >
               Three steps to a polished meet page
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-500">
@@ -626,7 +656,10 @@ export default function GymnasticsLanding() {
                     {item.step}
                   </span>
                 </div>
-                <h3 className="mt-6 text-xl font-semibold text-slate-900" style={{ fontFamily: "inherit" }}>
+                <h3
+                  className="mt-6 text-xl font-semibold text-slate-900"
+                  style={{ fontFamily: "inherit" }}
+                >
                   {item.title}
                 </h3>
                 <p className="mt-3 text-sm leading-7 text-slate-500">
@@ -647,7 +680,10 @@ export default function GymnasticsLanding() {
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
                 Platform Preview
               </p>
-              <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900" style={{ fontFamily: "inherit" }}>
+              <h2
+                className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900"
+                style={{ fontFamily: "inherit" }}
+              >
                 A meet page that feels like a real product, not a PDF
               </h2>
               <p className="mt-5 text-base leading-7 text-slate-500 sm:text-lg">
@@ -718,16 +754,18 @@ export default function GymnasticsLanding() {
 
                     {/* tabs */}
                     <div className="flex gap-1.5 overflow-x-auto">
-                      {["Sessions", "Venue", "Hotels", "Info"].map(
-                        (tab, i) => (
-                          <span
-                            key={tab}
-                            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold ${i === 0 ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"}`}
-                          >
-                            {tab}
-                          </span>
-                        )
-                      )}
+                      {["Sessions", "Venue", "Hotels", "Info"].map((tab, i) => (
+                        <span
+                          key={tab}
+                          className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                            i === 0
+                              ? "bg-indigo-600 text-white"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {tab}
+                        </span>
+                      ))}
                     </div>
 
                     {/* session card */}
@@ -797,7 +835,10 @@ export default function GymnasticsLanding() {
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
               Use Cases
             </p>
-            <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900" style={{ fontFamily: "inherit" }}>
+            <h2
+              className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900"
+              style={{ fontFamily: "inherit" }}
+            >
               Built for everyone at the meet
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-500">
@@ -819,7 +860,10 @@ export default function GymnasticsLanding() {
                 <p className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">
                   {uc.eyebrow}
                 </p>
-                <h3 className="mt-2 text-xl font-semibold text-slate-900" style={{ fontFamily: "inherit" }}>
+                <h3
+                  className="mt-2 text-xl font-semibold text-slate-900"
+                  style={{ fontFamily: "inherit" }}
+                >
                   {uc.title}
                 </h3>
                 <p className="mt-3 text-sm leading-7 text-slate-500">
@@ -846,7 +890,10 @@ export default function GymnasticsLanding() {
                 <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-400">
                   Why Envitefy
                 </p>
-                <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-white" style={{ color: "#fff", fontFamily: "inherit" }}>
+                <h2
+                  className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-white"
+                  style={{ color: "#fff", fontFamily: "inherit" }}
+                >
                   The meet page gymnastics deserves
                 </h2>
                 <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-400">
@@ -910,7 +957,10 @@ export default function GymnasticsLanding() {
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
                 Ready to get started?
               </p>
-              <h2 className="mt-4 text-[clamp(2rem,4.5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-white" style={{ color: "#fff", fontFamily: "inherit" }}>
+              <h2
+                className="mt-4 text-[clamp(2rem,4.5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-white"
+                style={{ color: "#fff", fontFamily: "inherit" }}
+              >
                 Make the next gymnastics meet feel polished from the first tap
               </h2>
               <p className="mt-5 text-base leading-7 text-white/80 sm:text-lg">
@@ -959,6 +1009,14 @@ export default function GymnasticsLanding() {
           </p>
         </div>
       </footer>
+
+      <AuthModal
+        open={authModalOpen}
+        mode={authMode}
+        onClose={() => setAuthModalOpen(false)}
+        onModeChange={setAuthMode}
+        successRedirectUrl="/event/gymnastics"
+      />
     </main>
   );
 }

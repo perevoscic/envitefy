@@ -172,6 +172,7 @@ export default function ShowcaseGymMeetTemplate({
   rsvpProps,
   isReadOnly,
   hideOwnerActions = false,
+  suppressActionStrip = false,
   onShare,
   onCalendar,
   onGoogleCalendar,
@@ -359,12 +360,14 @@ export default function ShowcaseGymMeetTemplate({
           </header>
 
           <div className="relative z-20 -mt-6 px-3 sm:px-5">
-            <FloatingActionStrip
-              buttonClass={theme.ctaSecondaryClass}
-              onShare={onShare}
-              onCalendar={onCalendar}
-              resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
-            />
+            {!suppressActionStrip ? (
+              <FloatingActionStrip
+                buttonClass={theme.ctaSecondaryClass}
+                onShare={onShare}
+                onCalendar={onCalendar}
+                resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
+              />
+            ) : null}
           </div>
 
           <main className="space-y-5 px-3 pb-5 pt-6 sm:px-5 sm:pb-6 sm:pt-7">

@@ -8,6 +8,7 @@ import {
   getUserIdByEmail,
   updateEventHistoryDataMerge,
   updateEventHistoryData,
+  claimEventHistoryById,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
@@ -44,12 +45,31 @@ export async function PATCH(
   if (existing.user_id && existing.user_id !== userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const claimRequested = body?.claim === true;
+  let claimedRow = existing;
+  let claimed = false;
+  if (claimRequested) {
+    if (!existing.user_id) {
+      const claimedAttempt = await claimEventHistoryById(id, userId);
+      const refreshed = claimedAttempt || (await getEventHistoryById(id));
+      if (!refreshed || refreshed.user_id !== userId) {
+        return NextResponse.json(
+          { error: "Unable to claim this draft right now." },
+          { status: 409 }
+        );
+      }
+      claimedRow = refreshed;
+      claimed = true;
+    } else if (existing.user_id === userId) {
+      claimed = true;
+    }
+  }
   const titleInput =
     typeof body.title === "string" ? body.title.trim() : undefined;
   const hasTitleUpdate = Boolean(titleInput);
   const hasDataUpdate = body && (body.category != null || body.data != null);
 
-  let updatedRow = existing;
+  let updatedRow = claimedRow;
   let changed = false;
 
   if (hasDataUpdate) {
@@ -137,10 +157,17 @@ export async function PATCH(
   }
 
   if (changed) {
-    // Invalidate cache for the owner
+    // Invalidate cache for the previous owner, or the new owner when a claim was performed.
     if (existing.user_id) {
       invalidateUserHistory(existing.user_id);
+    } else if (claimed) {
+      invalidateUserHistory(userId);
     }
+    return NextResponse.json(updatedRow);
+  }
+
+  if (claimed) {
+    invalidateUserHistory(userId);
     return NextResponse.json(updatedRow);
   }
 

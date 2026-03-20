@@ -82,6 +82,24 @@ test("mixed packet content keeps rich operational sections separate but merges l
   assert.match(JSON.stringify(findSection(discovery, "traffic-parking")), /Host Hotel/);
 });
 
+test("payment instructions do not leak into the hero header", () => {
+  const model = normalizeGymMeetEventData({
+    eventData: {
+      createdVia: "meet-discovery",
+      title: "38th Annual Gasparilla Classic",
+      hostGym: "PAYMENT: Check: Make Payable to Lightning City Gymnastics",
+      details:
+        "PAYMENT: Check: Make Payable to Lightning City Gymnastics, 1284 NW 87th Ct. Rd, Ocala, FL",
+    },
+    eventTitle: "38th Annual Gasparilla Classic",
+    navItems: [],
+    rosterAthletes: [],
+  });
+
+  assert.equal(model.hostGym, "");
+  assert.equal(model.detailsText, "");
+});
+
 test("schedule section renders between coaches and venue details when populated", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {

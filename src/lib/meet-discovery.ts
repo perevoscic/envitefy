@@ -786,6 +786,8 @@ const HOST_GYM_PACKET_TEXT_PATTERN =
   /\b(?:please review|following items enclosed|this packet|info packet|packet:|competition to follow|recognized at|award ceremony)\b/i;
 const HOST_GYM_EVENT_TITLE_PATTERN =
   /\b(?:state championships?|regional championships?|national championships?|session\s+[A-Z]{2}\d+|schedule|info packet|meet packet)\b/i;
+const HOST_GYM_PAYMENT_LINE_PATTERN =
+  /^(?:payment|payment instructions?:|checks?\s+payable|check:\s*make payable|make payable to|payable to)/i;
 
 function sanitizeHostGymValue(value: unknown): string | null {
   let text = safeString(value).replace(/\s+/g, " ").trim();
@@ -803,6 +805,7 @@ function sanitizeHostGymValue(value: unknown): string | null {
 
   text = text.replace(/^host(?:ed)?\s+by[:\s-]*/i, "").replace(/[,:;.\-]+$/g, "").trim();
   if (!text) return null;
+  if (HOST_GYM_PAYMENT_LINE_PATTERN.test(text)) return null;
   if (HOST_GYM_PACKET_TEXT_PATTERN.test(text)) return null;
   if (HOST_GYM_EVENT_TITLE_PATTERN.test(text)) return null;
   if (/^(?:team award eligible|award category)\b/i.test(text)) return null;
@@ -815,6 +818,7 @@ function isProbableHostGymHint(value: unknown): boolean {
   const original = safeString(value).replace(/\s+/g, " ").trim();
   const candidate = sanitizeHostGymValue(original);
   if (!original || !candidate) return false;
+  if (HOST_GYM_PAYMENT_LINE_PATTERN.test(original)) return false;
   const hasHostCue = /\bhost(?:ed)?\b/i.test(original);
   const hasOrgCue = /\b(?:gym|gymnastics|academy|club|team|usa competitions)\b/i.test(candidate);
   if (!hasHostCue && !hasOrgCue) return false;

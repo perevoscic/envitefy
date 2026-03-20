@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export type LoginFormProps = {
@@ -11,7 +10,6 @@ export type LoginFormProps = {
 };
 
 export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -190,7 +188,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
         {submitting ? "Signing in..." : "Sign in"}
       </button>
       <p className="text-center text-sm text-muted-foreground">
-        Don't have an account yet?{" "}
+        Don&apos;t have an account yet?{" "}
         <button
           type="button"
           onClick={() => onSwitchMode?.("signup")}
