@@ -7,6 +7,7 @@ import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   resolveGymMeetTemplateId,
 } from "./registry";
+import LaunchpadEditorialTemplate from "./renderers/LaunchpadEditorialTemplate";
 import BentoBoxTemplate from "./renderers/BentoBoxTemplate";
 import BlueprintTechTemplate from "./renderers/BlueprintTechTemplate";
 import ChalkStrikeTemplate from "./renderers/ChalkStrikeTemplate";
@@ -51,6 +52,8 @@ export default function GymMeetTemplateRenderer(props: any) {
     DEFAULT_GYM_MEET_TEMPLATE_ID;
 
   switch (pageTemplateId) {
+    case "launchpad-editorial":
+      return <LaunchpadEditorialTemplate {...props} />;
     case "bento-box":
       return <BentoBoxTemplate {...props} />;
     case "cyber-athlete":

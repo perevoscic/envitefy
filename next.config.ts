@@ -11,8 +11,9 @@ const nextConfig = (phase: string): NextConfig => ({
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Produce a minimal standalone server for Docker/App Runner
-  output: "standalone",
+  // Only enable standalone output for production builds.
+  // `next dev` is more stable when it runs without standalone packaging artifacts.
+  ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "standalone" }),
 
   // Keep heavy server deps out of the serverless bundle (stays under Vercel 300MB limit)
   serverExternalPackages: [

@@ -231,6 +231,8 @@ html {
   /* Allow scrolling */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  /* Smooth anchor link scrolling */
+  scroll-behavior: smooth;
 }
 
 html.embedded-editor,

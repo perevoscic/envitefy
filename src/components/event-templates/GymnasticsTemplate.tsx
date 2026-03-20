@@ -3989,6 +3989,17 @@ const config = {
   ],
   themes: [
     {
+      id: "launchpad_editorial",
+      name: "Launchpad Editorial",
+      bg: "bg-[linear-gradient(180deg,#f3f5fb_0%,#edf1f8_42%,#f6f8fc_100%)]",
+      text: "text-[#1f2438]",
+      accent: "text-[#61708a]",
+      preview:
+        "bg-[linear-gradient(135deg,#ffffff_0%,#f8f7ff_55%,#eef6ff_100%)]",
+      previewFrom: "bg-[#f3f5fb]",
+      previewTo: "bg-[#d9e7ff]",
+    },
+    {
       id: "electric_teal",
       name: "Electric Teal",
       bg: "bg-gradient-to-br from-slate-950 to-teal-500",

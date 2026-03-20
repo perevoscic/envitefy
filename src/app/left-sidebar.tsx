@@ -294,7 +294,7 @@ const SIDEBAR_BADGE_CLASS =
   "inline-flex min-w-[24px] items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500";
 const SIDEBAR_WIDTH_REM = "21.25rem";
 const SIDEBAR_COLLAPSED_REM = "5.25rem";
-const SIDEBAR_WORDMARK_SRC = "/navElogo.png";
+const SIDEBAR_WORDMARK_SRC = "/logo.png";
 const SUBPAGE_STICKY_HEADER_CLASS =
   "sticky top-0 z-20 -mx-6 bg-[#f8f9fb]/95 px-6 pb-4 pt-2 backdrop-blur";
 const SIDEBAR_SECTION_LABEL_CLASS =
@@ -342,7 +342,7 @@ export default function LeftSidebar() {
   const isEmbeddedEditMode = searchParams?.get("embed") === "1";
   // Event page with inline edit sidebar (discovery gymnastics)
   const isEventPageWithEditSidebar = Boolean(
-    pathname?.startsWith("/event/") && searchParams?.get("edit")
+    pathname?.startsWith("/event/") && searchParams?.get("edit"),
   );
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
@@ -358,7 +358,7 @@ export default function LeftSidebar() {
   const [defaultCalendarProvider, setDefaultCalendarProvider] =
     useState<CalendarProviderKey | null>(null);
   const [lastCreateSelection, setLastCreateSelection] = useState<string | null>(
-    null
+    null,
   );
   const [forcedCreateActiveLabel, setForcedCreateActiveLabel] = useState<
     string | null
@@ -375,7 +375,7 @@ export default function LeftSidebar() {
         window.localStorage.setItem(CALENDAR_DEFAULT_STORAGE_KEY, provider);
       } catch {}
     },
-    []
+    [],
   );
 
   const saveCalendarDefault = useCallback(
@@ -390,7 +390,7 @@ export default function LeftSidebar() {
         });
       } catch {}
     },
-    [status]
+    [status],
   );
 
   const toggleCalendarDefault = useCallback(
@@ -414,7 +414,7 @@ export default function LeftSidebar() {
       handleCalendarConnect,
       mirrorLocalCalendarDefault,
       saveCalendarDefault,
-    ]
+    ],
   );
 
   const {
@@ -444,13 +444,13 @@ export default function LeftSidebar() {
   const sidebarTransform = isDesktop
     ? "translateX(0)"
     : isOpen
-    ? "translateX(0)"
-    : "translateX(-100%)";
+      ? "translateX(0)"
+      : "translateX(-100%)";
   const pointerClass = isDesktop
     ? "pointer-events-auto"
     : isOpen
-    ? "pointer-events-auto"
-    : "pointer-events-none";
+      ? "pointer-events-auto"
+      : "pointer-events-none";
   const isEventMenuActive = Boolean(selectedEventId);
   const overflowClass = "overflow-hidden";
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -467,7 +467,7 @@ export default function LeftSidebar() {
   const showMobileTopBar = Boolean(!isOpen && isScrolled);
   const showFloatingOpenButton = Boolean(!isOpen && !isScrolled);
   const showFloatingCustomizeButton = Boolean(
-    !isOpen && showEditTopBar && !isScrolled
+    !isOpen && showEditTopBar && !isScrolled,
   );
   const openSidebarFromTrigger = useCallback(
     (viaTouch: boolean) => {
@@ -477,7 +477,7 @@ export default function LeftSidebar() {
       }
       setIsCollapsed(false);
     },
-    [setIsCollapsed]
+    [setIsCollapsed],
   );
 
   useEffect(() => {
@@ -732,7 +732,7 @@ export default function LeftSidebar() {
   // Deprecated scanCredits removed; use unified credits state
   const [credits, setCredits] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(
-    Boolean((session?.user as any)?.isAdmin)
+    Boolean((session?.user as any)?.isAdmin),
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
   const footerMenuItems = useMemo(
@@ -777,7 +777,7 @@ export default function LeftSidebar() {
         colorClass: string;
         bgClass: string;
       }>,
-    [isAdmin]
+    [isAdmin],
   );
 
   useEffect(() => {
@@ -785,7 +785,7 @@ export default function LeftSidebar() {
 
     const applyProfile = (
       plan: SubscriptionPlan,
-      creditsValue: number | null
+      creditsValue: number | null,
     ) => {
       setCredits(plan === "FF" ? Infinity : creditsValue);
     };
@@ -812,13 +812,13 @@ export default function LeftSidebar() {
             plan === "FF"
               ? Infinity
               : typeof json.credits === "number"
-              ? (json.credits as number)
-              : null;
+                ? (json.credits as number)
+                : null;
           applyProfile(plan, nextCredits === Infinity ? null : nextCredits);
           writeProfileCache(
             profileEmailRef.current || profileEmail,
             plan,
-            nextCredits
+            nextCredits,
           );
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
@@ -834,7 +834,7 @@ export default function LeftSidebar() {
             }));
           }
           setDefaultCalendarProvider(
-            normalizeCalendarProvider(json.preferredProvider)
+            normalizeCalendarProvider(json.preferredProvider),
           );
         }
       } catch {
@@ -961,7 +961,7 @@ export default function LeftSidebar() {
   const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
   const visibleTemplateLinks = useMemo(
     () => getTemplateLinks(visibleTemplateKeys),
-    [visibleTemplateKeys]
+    [visibleTemplateKeys],
   );
 
   const templateHrefMap = useMemo(() => {
@@ -1012,29 +1012,38 @@ export default function LeftSidebar() {
 
   const createMenuItems = useMemo(() => {
     return getCreateEventSections(visibleTemplateKeys).flatMap(
-      (section) => section.items
+      (section) => section.items,
     );
   }, [visibleTemplateKeys]);
   const gymnasticsCreateItem = useMemo(
     () => createMenuItems.find((item) => item.label === "Gymnastics") ?? null,
-    [createMenuItems]
+    [createMenuItems],
+  );
+  const footballCreateItem = useMemo(
+    () =>
+      createMenuItems.find((item) => item.label === "Football Season") ?? null,
+    [createMenuItems],
   );
   const otherCreateMenuItems = useMemo(
-    () => createMenuItems.filter((item) => item.label !== "Gymnastics"),
-    [createMenuItems]
+    () =>
+      createMenuItems.filter(
+        (item) =>
+          item.label !== "Gymnastics" && item.label !== "Football Season",
+      ),
+    [createMenuItems],
   );
   const normalizedSidebarSearchQuery = sidebarSearchQuery.trim().toLowerCase();
   const hasCreateSearchQuery = normalizedSidebarSearchQuery.length > 0;
   const filteredCreateMenuItems = useMemo(() => {
     if (!normalizedSidebarSearchQuery) return createMenuItems;
     return createMenuItems.filter((item) =>
-      item.label.toLowerCase().includes(normalizedSidebarSearchQuery)
+      item.label.toLowerCase().includes(normalizedSidebarSearchQuery),
     );
   }, [createMenuItems, normalizedSidebarSearchQuery]);
   const filteredOtherCreateMenuItems = useMemo(() => {
     if (!normalizedSidebarSearchQuery) return otherCreateMenuItems;
     return otherCreateMenuItems.filter((item) =>
-      item.label.toLowerCase().includes(normalizedSidebarSearchQuery)
+      item.label.toLowerCase().includes(normalizedSidebarSearchQuery),
     );
   }, [normalizedSidebarSearchQuery, otherCreateMenuItems]);
   const isCreateItemActive = useCallback(
@@ -1045,15 +1054,15 @@ export default function LeftSidebar() {
       if (baseHref === "/") return pathname === "/";
       return pathname === baseHref || pathname.startsWith(`${baseHref}/`);
     },
-    [pathname]
+    [pathname],
   );
   const activeCreateItem = useMemo(
     () => createMenuItems.find((item) => isCreateItemActive(item)) ?? null,
-    [createMenuItems, isCreateItemActive]
+    [createMenuItems, isCreateItemActive],
   );
   const isOtherEventsActive = useMemo(
     () => sidebarPage === "createEventOther",
-    [sidebarPage]
+    [sidebarPage],
   );
   const createMenuOptionCount = useMemo(
     () =>
@@ -1066,7 +1075,7 @@ export default function LeftSidebar() {
       gymnasticsCreateItem,
       hasCreateSearchQuery,
       otherCreateMenuItems.length,
-    ]
+    ],
   );
 
   useEffect(() => {
@@ -1092,7 +1101,7 @@ export default function LeftSidebar() {
       if (lastCreateSelection) {
         window.sessionStorage.setItem(
           CREATE_ACTIVE_STORAGE_KEY,
-          lastCreateSelection
+          lastCreateSelection,
         );
       } else {
         window.sessionStorage.removeItem(CREATE_ACTIVE_STORAGE_KEY);
@@ -1122,7 +1131,7 @@ export default function LeftSidebar() {
         data?.start ||
         data?.event?.start ||
         row?.created_at ||
-        ""
+        "",
     );
     const parsedDateMs = dateRaw ? new Date(dateRaw).getTime() : NaN;
     if (!Number.isFinite(parsedDateMs)) return true;
@@ -1203,10 +1212,10 @@ export default function LeftSidebar() {
       { icon: User, label: "Profile", href: "/profile" },
       { icon: Settings, label: "Settings", href: "/settings" },
     ],
-    [createdEventsCount, smartSignupCount]
+    [createdEventsCount, smartSignupCount],
   );
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
-    {}
+    {},
   );
   // Per Smart sign-up item gradient selections (keyed by history id)
   const [signupItemColors, setSignupItemColors] = useState<
@@ -1261,7 +1270,7 @@ export default function LeftSidebar() {
 
   // Normalize freeform/variant labels to our canonical sidebar categories
   const normalizeCategoryLabel = (
-    raw: string | null | undefined
+    raw: string | null | undefined,
   ): string | null => {
     const s = String(raw || "").trim();
     if (!s) return null;
@@ -1329,7 +1338,7 @@ export default function LeftSidebar() {
     if (/playdate|play\s*day|kids?\s*play/.test(s)) return "Play Days";
     if (
       /(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/.test(
-        s
+        s,
       )
     )
       return "Car Pool";
@@ -1355,16 +1364,16 @@ export default function LeftSidebar() {
     } catch {}
     try {
       const rawMyEvents = localStorage.getItem(
-        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY
+        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
       );
       setShowPastMyEvents(rawMyEvents === "1" || rawMyEvents === "true");
     } catch {}
     try {
       const rawInvitedEvents = localStorage.getItem(
-        INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY
+        INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
       );
       setShowPastInvitedEvents(
-        rawInvitedEvents === "1" || rawInvitedEvents === "true"
+        rawInvitedEvents === "1" || rawInvitedEvents === "true",
       );
     } catch {}
   }, []);
@@ -1404,8 +1413,8 @@ export default function LeftSidebar() {
               }`;
               return guessCategoryFromText(blob);
             })
-            .filter((c): c is string => Boolean(c))
-        )
+            .filter((c): c is string => Boolean(c)),
+        ),
       );
       if (categories.length === 0) return;
       setCategoryColors((prev) => {
@@ -1420,7 +1429,7 @@ export default function LeftSidebar() {
   }, [history]);
 
   const colorClasses = (
-    color: string
+    color: string,
   ): { swatch: string; badge: string; tint: string; hoverTint: string } => {
     switch (color) {
       case "lime":
@@ -1642,7 +1651,7 @@ export default function LeftSidebar() {
           row?.data?.start ||
           row?.data?.event?.start ||
           row?.created_at ||
-          ""
+          "",
       );
     const formatDate = (raw: string) => {
       if (!raw) return "No date";
@@ -1682,8 +1691,8 @@ export default function LeftSidebar() {
       const normalizedCategoryRaw = normalizeCategoryLabel(
         (data?.category as string | null) ||
           guessCategoryFromText(
-            `${row.title || ""} ${String(data?.description || "")}`
-          )
+            `${row.title || ""} ${String(data?.description || "")}`,
+          ),
       );
       const normalizedCategory =
         isInvited &&
@@ -1704,7 +1713,7 @@ export default function LeftSidebar() {
       const dateLabel = formatDate(dateRaw);
       const href = buildEventPath(row.id, row.title);
       const openMode: GroupedEventItem["openMode"] = isSportsPreviewFirstEvent(
-        data
+        data,
       )
         ? "preview"
         : "dashboard";
@@ -1747,7 +1756,7 @@ export default function LeftSidebar() {
     }
 
     const sortGroups = (
-      source: Map<string, GroupedEventItem[]>
+      source: Map<string, GroupedEventItem[]>,
     ): GroupedEventSection[] =>
       Array.from(source.entries())
         .map(([category, items]) => ({
@@ -1795,23 +1804,23 @@ export default function LeftSidebar() {
         }))
         .filter((section) => section.items.length > 0);
     },
-    [normalizedSidebarSearchQuery]
+    [normalizedSidebarSearchQuery],
   );
   const filteredMyEventsUpcoming = useMemo(
     () => filterGroupedSections(myEventsGrouped.upcoming),
-    [filterGroupedSections, myEventsGrouped.upcoming]
+    [filterGroupedSections, myEventsGrouped.upcoming],
   );
   const filteredMyEventsPast = useMemo(
     () => filterGroupedSections(myEventsGrouped.past),
-    [filterGroupedSections, myEventsGrouped.past]
+    [filterGroupedSections, myEventsGrouped.past],
   );
   const filteredInvitedEventsUpcoming = useMemo(
     () => filterGroupedSections(invitedEventsGrouped.upcoming),
-    [filterGroupedSections, invitedEventsGrouped.upcoming]
+    [filterGroupedSections, invitedEventsGrouped.upcoming],
   );
   const filteredInvitedEventsPast = useMemo(
     () => filterGroupedSections(invitedEventsGrouped.past),
-    [filterGroupedSections, invitedEventsGrouped.past]
+    [filterGroupedSections, invitedEventsGrouped.past],
   );
   // Shared Events gradient palette (8 options)
   const SHARED_GRADIENTS: {
@@ -1924,7 +1933,7 @@ export default function LeftSidebar() {
         ({
           ...prev,
           [category]: color,
-        } as Record<string, string>)
+        }) as Record<string, string>,
     );
     setColorMenuFor(null);
     setColorMenuPos(null);
@@ -1939,7 +1948,7 @@ export default function LeftSidebar() {
     } catch {}
     try {
       window.dispatchEvent(
-        new CustomEvent("categoryColorsUpdated", { detail: categoryColors })
+        new CustomEvent("categoryColorsUpdated", { detail: categoryColors }),
       );
     } catch {}
     try {
@@ -1954,7 +1963,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         "signupItemColors",
-        JSON.stringify(signupItemColors)
+        JSON.stringify(signupItemColors),
       );
     } catch {}
   }, [signupItemColors]);
@@ -1963,7 +1972,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
-        showPastMyEvents ? "1" : "0"
+        showPastMyEvents ? "1" : "0",
       );
     } catch {}
   }, [showPastMyEvents]);
@@ -1972,7 +1981,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
-        showPastInvitedEvents ? "1" : "0"
+        showPastInvitedEvents ? "1" : "0",
       );
     } catch {}
   }, [showPastInvitedEvents]);
@@ -1983,7 +1992,7 @@ export default function LeftSidebar() {
       title: string;
       created_at?: string;
       data?: any;
-    }>
+    }>,
   ) => {
     return [...(rows || [])].sort((a, b) => {
       const at = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -2078,7 +2087,7 @@ export default function LeftSidebar() {
     (
       baseHref: string | null | undefined,
       eventId: string,
-      tab: EventContextTab
+      tab: EventContextTab,
     ) => {
       const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
       try {
@@ -2093,7 +2102,7 @@ export default function LeftSidebar() {
         return `${fallbackPath}?tab=${encodeURIComponent(tab)}`;
       }
     },
-    []
+    [],
   );
 
   const buildEventGuestHref = useCallback(
@@ -2111,7 +2120,7 @@ export default function LeftSidebar() {
         return `${fallbackPath}?tab=preview`;
       }
     },
-    []
+    [],
   );
 
   const blurActiveElement = useCallback(() => {
@@ -2161,7 +2170,7 @@ export default function LeftSidebar() {
       setSelectedEventId,
       setSelectedEventTitle,
       setSidebarPage,
-    ]
+    ],
   );
 
   const openGuestEventContext = useCallback(
@@ -2177,7 +2186,7 @@ export default function LeftSidebar() {
       } catch {}
       router.push(nextHref);
     },
-    [buildEventGuestHref, clearEventContext, router, setSidebarPage]
+    [buildEventGuestHref, clearEventContext, router, setSidebarPage],
   );
 
   const isHistoryRowActive = useCallback(
@@ -2192,7 +2201,7 @@ export default function LeftSidebar() {
         currentPath.endsWith(`-${rowId}`)
       );
     },
-    [pathname, selectedEventId]
+    [pathname, selectedEventId],
   );
 
   const handleEventTabChange = useCallback(
@@ -2203,7 +2212,7 @@ export default function LeftSidebar() {
           if (!selectedEventId) return;
           const nextHref = buildEventGuestHref(
             selectedEventHref,
-            selectedEventId
+            selectedEventId,
           );
           router.push(nextHref);
         } catch {}
@@ -2217,7 +2226,7 @@ export default function LeftSidebar() {
         const nextHref = buildEventOwnerHref(
           selectedEventHref,
           selectedEventId,
-          tab
+          tab,
         );
         router.push(nextHref);
       } catch {}
@@ -2234,7 +2243,7 @@ export default function LeftSidebar() {
       selectedEventId,
       setActiveEventTab,
       setSidebarPage,
-    ]
+    ],
   );
 
   const handleSidebarBackToEvents = useCallback(() => {
@@ -2256,23 +2265,23 @@ export default function LeftSidebar() {
     sidebarPage === "createEvent"
       ? "translateX(0%)"
       : sidebarPage === "createEventOther"
-      ? "translateX(-2rem)"
-      : "translateX(100%)";
+        ? "translateX(-2rem)"
+        : "translateX(100%)";
   const createEventOtherPanelTransform =
     sidebarPage === "createEventOther" ? "translateX(0%)" : "translateX(100%)";
   const myEventsPanelTransform =
     sidebarPage === "myEvents"
       ? "translateX(0%)"
       : sidebarPage === "eventContext" && eventContextSourcePage === "myEvents"
-      ? "translateX(-2rem)"
-      : "translateX(100%)";
+        ? "translateX(-2rem)"
+        : "translateX(100%)";
   const invitedEventsPanelTransform =
     sidebarPage === "invitedEvents"
       ? "translateX(0%)"
       : sidebarPage === "eventContext" &&
-        eventContextSourcePage === "invitedEvents"
-      ? "translateX(-2rem)"
-      : "translateX(100%)";
+          eventContextSourcePage === "invitedEvents"
+        ? "translateX(-2rem)"
+        : "translateX(100%)";
   const eventPanelTransform =
     sidebarPage === "eventContext" ? "translateX(0%)" : "translateX(100%)";
   const panelStyle = (transform: string, isActive: boolean): CSSProperties => ({
@@ -2299,7 +2308,7 @@ export default function LeftSidebar() {
   );
   const renderCreateMenuButton = (
     item: { label: string; href: string },
-    idx: number
+    idx: number,
   ) => {
     const Icon = ICON_LOOKUP[item.label] || Sparkles;
     const colorClass =
@@ -2397,7 +2406,7 @@ export default function LeftSidebar() {
                 onClick={() => {
                   if (typeof window === "undefined") return;
                   window.dispatchEvent(
-                    new CustomEvent("envitefy:open-discovery-editor")
+                    new CustomEvent("envitefy:open-discovery-editor"),
                   );
                 }}
                 className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
@@ -2442,14 +2451,14 @@ export default function LeftSidebar() {
             <Link
               href="/"
               onClick={goHomeFromSidebar}
-              className="inline-flex items-center"
+              className="flex h-11 items-center justify-center"
             >
               <Image
-                src="/navElogo.png"
+                src="/logo.png"
                 alt="Envitefy logo"
-                width={100}
-                height={32}
-                className="drop-shadow-sm"
+                width={140}
+                height={44}
+                className="block h-11 w-[140px] translate-y-[3px] object-contain drop-shadow-sm"
               />
             </Link>
             {showEditTopBar ? (
@@ -2458,7 +2467,7 @@ export default function LeftSidebar() {
                 onClick={() => {
                   if (typeof window === "undefined") return;
                   window.dispatchEvent(
-                    new CustomEvent("envitefy:open-discovery-editor")
+                    new CustomEvent("envitefy:open-discovery-editor"),
                   );
                 }}
                 className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
@@ -2604,14 +2613,14 @@ export default function LeftSidebar() {
                   <Link
                     href="/"
                     onClick={goHomeFromSidebar}
-                    className="inline-flex max-w-[140px] items-center pr-12"
+                    className="inline-flex max-w-[160px] items-center pr-12"
                   >
                     <Image
                       src={SIDEBAR_WORDMARK_SRC}
                       alt="Envitefy"
-                      width={106}
-                      height={28}
-                      className="h-auto w-[106px]"
+                      width={136}
+                      height={37}
+                      className="h-auto w-[136px] translate-y-[3px]"
                     />
                   </Link>
                 </div>
@@ -2627,7 +2636,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[5]`}
                     style={panelStyle(
                       rootPanelTransform,
-                      sidebarPage === "root"
+                      sidebarPage === "root",
                     )}
                     aria-hidden={sidebarPage !== "root"}
                   >
@@ -2760,7 +2769,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[10]`}
                     style={panelStyle(
                       createEventPanelTransform,
-                      sidebarPage === "createEvent"
+                      sidebarPage === "createEvent",
                     )}
                     aria-hidden={sidebarPage !== "createEvent"}
                   >
@@ -2798,13 +2807,16 @@ export default function LeftSidebar() {
                             </div>
                           ) : (
                             filteredCreateMenuItems.map((item, idx) =>
-                              renderCreateMenuButton(item, idx)
+                              renderCreateMenuButton(item, idx),
                             )
                           )
                         ) : (
                           <>
                             {gymnasticsCreateItem
                               ? renderCreateMenuButton(gymnasticsCreateItem, 0)
+                              : null}
+                            {footballCreateItem
+                              ? renderCreateMenuButton(footballCreateItem, 1)
                               : null}
                             {otherCreateMenuItems.length > 0 ? (
                               <button
@@ -2823,7 +2835,7 @@ export default function LeftSidebar() {
                                         backgroundColor: "#F3E8FF",
                                         borderColor: "#E9D5FF",
                                         boxShadow:
-                                          "0 16px 30px rgba(147, 51, 234, 0.12), inset 0 0 0 1px rgba(147, 51, 234, 0.18)",
+                                        "0 16px 30px rgba(147, 51, 234, 0.12), inset 0 0 0 1px rgba(147, 51, 234, 0.18)",
                                       }
                                     : undefined
                                 }
@@ -2833,7 +2845,11 @@ export default function LeftSidebar() {
                                     isOtherEventsActive
                                       ? "border-purple-200 bg-white text-purple-700"
                                       : CREATE_SECTION_COLORS[
-                                          gymnasticsCreateItem ? 1 : 0
+                                          gymnasticsCreateItem && footballCreateItem
+                                            ? 2
+                                            : gymnasticsCreateItem || footballCreateItem
+                                              ? 1
+                                              : 0
                                         ]
                                   }`}
                                 >
@@ -2867,7 +2883,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[12]`}
                     style={panelStyle(
                       createEventOtherPanelTransform,
-                      sidebarPage === "createEventOther"
+                      sidebarPage === "createEventOther",
                     )}
                     aria-hidden={sidebarPage !== "createEventOther"}
                   >
@@ -2904,7 +2920,7 @@ export default function LeftSidebar() {
                           </div>
                         ) : (
                           filteredOtherCreateMenuItems.map((item, idx) =>
-                            renderCreateMenuButton(item, idx)
+                            renderCreateMenuButton(item, idx),
                           )
                         )}
                       </div>
@@ -2915,7 +2931,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[15]`}
                     style={panelStyle(
                       myEventsPanelTransform,
-                      sidebarPage === "myEvents"
+                      sidebarPage === "myEvents",
                     )}
                     aria-hidden={sidebarPage !== "myEvents"}
                   >
@@ -3105,7 +3121,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
-                      sidebarPage === "invitedEvents"
+                      sidebarPage === "invitedEvents",
                     )}
                     aria-hidden={sidebarPage !== "invitedEvents"}
                   >
@@ -3168,7 +3184,7 @@ export default function LeftSidebar() {
                                       onClick={() =>
                                         openGuestEventContext(
                                           item.row,
-                                          item.href
+                                          item.href,
                                         )
                                       }
                                       className={`${SIDEBAR_ITEM_CARD_CLASS} ${
@@ -3209,7 +3225,7 @@ export default function LeftSidebar() {
                                       type="button"
                                       onClick={() =>
                                         setShowPastInvitedEvents(
-                                          (prev) => !prev
+                                          (prev) => !prev,
                                         )
                                       }
                                       className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-slate-600 shadow-sm transition hover:bg-slate-50"
@@ -3260,7 +3276,7 @@ export default function LeftSidebar() {
                                             onClick={() =>
                                               openGuestEventContext(
                                                 item.row,
-                                                item.href
+                                                item.href,
                                               )
                                             }
                                             className={`${SIDEBAR_ITEM_CARD_CLASS} ${
@@ -3301,7 +3317,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_EVENT_PANEL_CLASS} z-[30]`}
                     style={panelStyle(
                       eventPanelTransform,
-                      sidebarPage === "eventContext"
+                      sidebarPage === "eventContext",
                     )}
                     aria-hidden={sidebarPage !== "eventContext"}
                   >
@@ -3403,7 +3419,7 @@ export default function LeftSidebar() {
                                 {label}
                               </span>
                             </Link>
-                          )
+                          ),
                         )}
 
                         <div className="mx-2 my-1 h-px bg-slate-100" />
@@ -3484,7 +3500,7 @@ export default function LeftSidebar() {
               <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
                 {SHARED_GRADIENTS.map((g) => {
                   const historyId = String(
-                    (colorMenuFor || "").split(":")[1] || ""
+                    (colorMenuFor || "").split(":")[1] || "",
                   );
                   const selected = getSignupItemGradientId(historyId) === g.id;
                   return (
@@ -3500,7 +3516,7 @@ export default function LeftSidebar() {
                         e.preventDefault();
                         e.stopPropagation();
                         const hid = String(
-                          (colorMenuFor || "").split(":")[1] || ""
+                          (colorMenuFor || "").split(":")[1] || "",
                         );
                         setSignupItemColor(hid, g.id);
                       }}
@@ -3554,7 +3570,7 @@ export default function LeftSidebar() {
               </div>
             )}
           </div>,
-          document.body
+          document.body,
         )}
     </>
   );

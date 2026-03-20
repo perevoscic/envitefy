@@ -76,7 +76,7 @@ export default function ResetPasswordPageClient() {
       <section className="w-full max-w-md rounded-2xl bg-white/80 backdrop-blur-lg border border-white/60 p-8 shadow-xl">
         <Link href="/" className="mb-6 block text-center">
           <Image
-            src="/navElogo.png"
+            src="/logo.png"
             alt="Envitefy logo"
             width={156}
             height={64}

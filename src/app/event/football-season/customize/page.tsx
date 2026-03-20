@@ -869,7 +869,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           { id: "logistics", label: "Logistics", enabled: hasLogistics },
           { id: "gear", label: "Gear", enabled: hasGear },
           { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
-          { id: "rsvp", label: "RSVP", enabled: hasRsvpSection },
+          { id: "rsvp", label: "Attendance", enabled: hasRsvpSection },
           { id: "passcode", label: "Passcode", enabled: true },
         ].filter((item) => item.enabled),
       [
@@ -957,14 +957,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, []);
 
     const rsvpCopy = {
-      menuTitle: config.rsvpCopy?.menuTitle || "RSVP",
-      menuDesc: config.rsvpCopy?.menuDesc || "RSVP settings.",
-      editorTitle: config.rsvpCopy?.editorTitle || "RSVP",
-      toggleLabel: config.rsvpCopy?.toggleLabel || "Enable RSVP",
-      deadlineLabel: config.rsvpCopy?.deadlineLabel || "RSVP Deadline",
+      menuTitle: config.rsvpCopy?.menuTitle || "Attendance",
+      menuDesc: config.rsvpCopy?.menuDesc || "Attendance settings.",
+      editorTitle: config.rsvpCopy?.editorTitle || "Attendance",
+      toggleLabel: config.rsvpCopy?.toggleLabel || "Enable attendance tracking",
+      deadlineLabel:
+        config.rsvpCopy?.deadlineLabel || "Attendance response deadline",
       helperText:
         config.rsvpCopy?.helperText ||
-        "The RSVP card in the preview updates with these settings.",
+        "The attendance card in the preview updates with these settings.",
     };
 
     const handlePublish = useCallback(async () => {
@@ -1336,7 +1337,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
           {!isDiscoveryEdit && (
             <MenuCard
-              title="Upload"
+              title="Upload & Prefill"
               desc="Prefill from a football packet, schedule, or roster file."
               icon={<Upload size={18} />}
               onClick={() => setActiveView("discover")}
@@ -1366,6 +1367,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<Edit2 size={18} />}
             onClick={() => setActiveView("details")}
           />
+          {config.advancedSections?.map((section) => (
+            <MenuCard
+              key={section.id}
+              title={section.menuTitle}
+              desc={section.menuDesc}
+              icon={<Edit2 size={18} />}
+              onClick={() => setActiveView(section.id)}
+            />
+          ))}
           <MenuCard
             title={rsvpCopy.menuTitle}
             desc={rsvpCopy.menuDesc}
@@ -1378,15 +1388,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             icon={<LinkIcon size={18} />}
             onClick={() => setActiveView("passcode")}
           />
-          {config.advancedSections?.map((section) => (
-            <MenuCard
-              key={section.id}
-              title={section.menuTitle}
-              desc={section.menuDesc}
-              icon={<Edit2 size={18} />}
-              onClick={() => setActiveView(section.id)}
-            />
-          ))}
         </div>
       </div>
     );
@@ -2055,13 +2056,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       {!rsvpSubmitted ? (
                         <div className="space-y-6">
                           <div className="text-center mb-4">
-                            <p className="opacity-80">
+                              <p className="opacity-80">
                               {data.rsvpDeadline
                                 ? `Kindly respond by ${new Date(
                                     data.rsvpDeadline
                                   ).toLocaleDateString()}`
-                                : "Please RSVP"}
-                            </p>
+                                : "Please confirm attendance"}
+                              </p>
                           </div>
                           <div>
                             <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
@@ -2079,7 +2080,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                             }}
                             className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg"
                           >
-                            Send RSVP
+                            Send Attendance
                           </button>
                         </div>
                       ) : (
@@ -2088,7 +2089,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                           <h3 className="text-2xl font-serif mb-2">
                             Thank you!
                           </h3>
-                          <p className="opacity-70">Your RSVP has been sent.</p>
+                          <p className="opacity-70">Your attendance response has been sent.</p>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -2358,11 +2359,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 import {
   config,
   gameScheduleSection,
-  practiceSection,
   rosterSection,
+  practiceSection,
   logisticsSection,
   gearSection,
   volunteersSection,
+  announcementsSection,
 } from "@/components/event-templates/FootballSeasonTemplate";
 
 const Page = createSimpleCustomizePage(config);

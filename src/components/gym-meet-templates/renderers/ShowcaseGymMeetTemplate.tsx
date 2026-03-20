@@ -83,6 +83,16 @@ const HeroDecor = ({ theme }: { theme: ShowcaseThemeConfig }) => {
       return (
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.3),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(239,68,68,0.2),transparent_22%),radial-gradient(#ffffff_1.5px,transparent_1.5px)] [background-size:auto,auto,14px_14px]" />
       );
+    case "gymnastics":
+      return (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -left-10 top-4 h-44 w-44 rounded-full bg-[radial-gradient(circle_at_center,rgba(193,180,255,0.55),rgba(193,180,255,0))] blur-3xl" />
+          <div className="absolute right-0 top-8 h-52 w-52 rounded-full bg-[radial-gradient(circle_at_center,rgba(247,188,216,0.45),rgba(247,188,216,0))] blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(150,213,255,0.35),rgba(150,213,255,0))] blur-3xl" />
+          <div className="absolute inset-x-0 top-10 h-px bg-[linear-gradient(90deg,transparent,rgba(124,140,247,0.35),transparent)]" />
+          <div className="absolute bottom-10 left-6 right-6 h-px bg-[linear-gradient(90deg,transparent,rgba(245,167,200,0.45),transparent)]" />
+        </div>
+      );
     case "swiss":
       return (
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(220,38,38,0.08)_0,rgba(220,38,38,0.08)_18%,transparent_18%,transparent_100%),linear-gradient(rgba(15,23,42,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.05)_1px,transparent_1px)] bg-[size:100%_100%,28px_28px,28px_28px]" />

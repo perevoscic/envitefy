@@ -12,12 +12,15 @@ import { getGymMeetTitleTypography } from "./titleTypography";
 import { GymMeetTemplateGroup, GymMeetTemplateId } from "./types";
 
 const FEATURED_TEMPLATE_IDS: GymMeetTemplateId[] = [
+  "launchpad-editorial",
   "glitch-sport",
   "organic-flow",
   "pixel-arena",
   "architect-clean",
   "noir-silhouette",
 ];
+
+const HIDDEN_TEMPLATE_IDS: GymMeetTemplateId[] = ["elite-athlete"];
 
 const GROUP_ORDER: GymMeetTemplateGroup[] = [
   "current",
@@ -98,11 +101,16 @@ export default function TemplateSelector({
 }) {
   const active = getGymMeetTemplateMeta(value);
   const templates = GROUP_ORDER.flatMap((group) =>
-    GYM_MEET_TEMPLATE_LIBRARY.filter((template) => template.group === group)
+    GYM_MEET_TEMPLATE_LIBRARY.filter(
+      (template) =>
+        template.group === group && !HIDDEN_TEMPLATE_IDS.includes(template.id)
+    )
   );
   const featuredTemplates = FEATURED_TEMPLATE_IDS.map((id) =>
     GYM_MEET_TEMPLATE_LIBRARY.find((template) => template.id === id)
-  ).filter(Boolean);
+  ).filter((template): template is (typeof GYM_MEET_TEMPLATE_LIBRARY)[number] =>
+    Boolean(template) && !HIDDEN_TEMPLATE_IDS.includes(template.id)
+  );
   const remainingTemplates = templates.filter(
     (template) => !FEATURED_TEMPLATE_IDS.includes(template.id)
   );
@@ -130,7 +138,7 @@ export default function TemplateSelector({
                 New Showcase Templates
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                The five new gymnastics looks are pinned here.
+                The editorial launchpad is pinned first for new events.
               </p>
             </div>
             <div className="grid grid-cols-1 gap-3">

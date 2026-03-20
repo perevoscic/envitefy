@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="180" viewBox="0 0 600 180">
+  <style>
+    .brand-text {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-weight: 700;
+      font-size: 160px;
+      fill: #4FACF6;
+      letter-spacing: -6px;
+    }
+  </style>
+  <text x="50%" y="53%" text-anchor="middle" dominant-baseline="middle" class="brand-text">envitefy</text>
+</svg>

@@ -5,6 +5,7 @@ import { GymMeetTemplateId } from "./types";
 
 export type ShowcaseThemeId = Extract<
   GymMeetTemplateId,
+  | "launchpad-editorial"
   | "cyber-athlete"
   | "paper-proto"
   | "sunset-arena"
@@ -59,6 +60,7 @@ export type ShowcaseThemeConfig = {
     | "paper"
     | "spotlight"
     | "burst"
+    | "gymnastics"
     | "swiss"
     | "deco"
     | "concrete"
@@ -77,6 +79,7 @@ export type ShowcaseThemeConfig = {
 };
 
 export const SHOWCASE_THEME_ORDER: ShowcaseThemeId[] = [
+  "launchpad-editorial",
   "cyber-athlete",
   "paper-proto",
   "sunset-arena",
@@ -100,6 +103,53 @@ export const SHOWCASE_THEME_ORDER: ShowcaseThemeId[] = [
 ];
 
 export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
+  "launchpad-editorial": {
+    id: "launchpad-editorial",
+    name: "Launchpad Editorial",
+    pageClass:
+      "min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f3f5fb_0%,#edf1f8_42%,#f6f8fc_100%)] text-[#1f2438] selection:bg-[#d9e7ff] selection:text-[#13213f]",
+    shellClass:
+      "overflow-hidden rounded-[2.8rem] border border-white/80 bg-[linear-gradient(160deg,#fff_0%,#f8f7ff_55%,#eef6ff_100%)] shadow-[0_34px_90px_rgba(118,130,162,0.18)]",
+    headerClass:
+      "relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f8f7ff_55%,#eef6ff_100%)] px-5 py-12 sm:px-8 sm:py-16",
+    headerOverlayClass:
+      "bg-[radial-gradient(circle_at_top_left,rgba(124,140,247,0.14),transparent_30%),radial-gradient(circle_at_top_right,rgba(245,167,200,0.14),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(150,213,255,0.12),transparent_24%)]",
+    titleClass:
+      "max-w-5xl text-5xl font-[800] leading-[0.9] tracking-[-0.06em] text-[#1f2438] sm:text-6xl lg:text-8xl [font-family:'Playfair_Display',Georgia,serif]",
+    titleStyle: { color: "#171b46" },
+    subtitleClass: "text-[#61708a]",
+    metaClass: "text-[#61708a]",
+    heroBadgeClass:
+      "inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#73809e] shadow-[0_14px_30px_rgba(113,126,161,0.08)]",
+    navShellClass:
+      "rounded-full border border-white/70 bg-white/72 px-2 py-2 shadow-[0_16px_50px_rgba(113,126,161,0.09)] backdrop-blur-xl",
+    navActiveClass:
+      "rounded-full bg-[linear-gradient(135deg,#6378f2,#f19cc0)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white shadow-[0_20px_50px_rgba(105,120,220,0.24)]",
+    navIdleClass:
+      "rounded-full px-4 py-3 text-[11px] font-medium text-[#627089] transition hover:bg-white/80 hover:text-[#1f2438]",
+    panelClass:
+      "rounded-[2.4rem] border border-white/80 bg-white/90 px-5 py-5 shadow-[0_16px_34px_rgba(112,124,160,0.08)]",
+    cardClass:
+      "rounded-[1.6rem] border border-white/80 bg-white/82 px-4 py-4 shadow-[0_16px_34px_rgba(112,124,160,0.08)]",
+    summaryCardClass:
+      "rounded-[1.6rem] border border-white/80 bg-white/82 px-4 py-4 shadow-[0_16px_34px_rgba(112,124,160,0.08)]",
+    sectionClass:
+      "rounded-[2.4rem] border border-white/80 bg-white px-5 py-5 shadow-[0_16px_34px_rgba(112,124,160,0.08)]",
+    sectionTitleClass: "text-[#1f2438]",
+    sectionTitleStyle: { color: "#1f2438" },
+    sectionCardClass:
+      "rounded-[1.35rem] border border-white/80 bg-[#f8f8fe] px-4 py-4 shadow-[0_16px_34px_rgba(112,124,160,0.08)]",
+    sectionMutedClass: "bg-[linear-gradient(135deg,#eef1ff,#fff1f7)] text-[#6670a8]",
+    accentClass: "text-[#7d87d7]",
+    ctaPrimaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#6378f2,#f19cc0)] px-4 py-3 text-xs font-semibold text-white shadow-[0_20px_50px_rgba(105,120,220,0.24)] transition hover:-translate-y-0.5",
+    ctaSecondaryClass:
+      "inline-flex items-center justify-center gap-2 rounded-full border border-[#dbe1f0] bg-white/80 px-4 py-3 text-xs font-semibold text-[#1f2438] shadow-[0_14px_30px_rgba(113,126,161,0.08)] transition hover:-translate-y-0.5",
+    headerAlign: "left",
+    heroDecor: "gymnastics",
+    cardRadiusMode: "soft",
+    navRadiusMode: "pill",
+  },
   "cyber-athlete": {
     id: "cyber-athlete",
     name: "Cyber Athlete",
