@@ -57,6 +57,7 @@ import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 import { cache } from "react";
+import { resolveEventThemeColor } from "@/lib/theme-color";
 import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
 import {
   getEventAccessCookieName,
@@ -207,6 +208,17 @@ export async function generateMetadata(props: {
     alternates: {
       canonical: url,
     },
+  };
+}
+
+export async function generateViewport(props: {
+  params: Promise<{ id: string }>;
+}) {
+  const awaitedParams = await props.params;
+  const row = await getCachedEventHistoryBySlugOrId(awaitedParams.id, null);
+
+  return {
+    themeColor: resolveEventThemeColor(row?.data || null),
   };
 }
 
@@ -1141,6 +1153,7 @@ export default async function EventPage({
     imageColors?.headerLight ||
     headerGradientCss ||
     (eventTheme.headerLight as string);
+  const eventPageThemeColor = resolveEventThemeColor(data);
 
   const themeStyleVars = {
     "--event-header-gradient-light": themedHeaderGradient,
@@ -1540,6 +1553,7 @@ export default async function EventPage({
           ? "pb-[calc(1em+env(safe-area-inset-bottom))]"
           : "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-[calc(1em+env(safe-area-inset-bottom))]"
       }`}
+      data-theme-color={eventPageThemeColor}
       style={
         {
           // Keep page chrome in the white/purple family for scanned event views.

@@ -1,16 +1,25 @@
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Camera, ChevronLeft } from "lucide-react";
 import UploadDropCard from "./UploadDropCard";
+import { themeColorPalette } from "@/lib/theme-color";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Snap or upload invite · Envitefy",
   description:
     "Scan a flyer with your camera or upload an image to create your event.",
 };
 
+export const viewport: Viewport = {
+  themeColor: themeColorPalette.eventFallback,
+};
+
 export default function EventSnapLandingPage() {
   return (
-    <main className="min-h-screen bg-[#f5f6f7] px-4 py-10 sm:px-6 lg:px-10">
+    <main
+      className="min-h-screen bg-[#f5f6f7] px-4 py-10 sm:px-6 lg:px-10"
+      data-theme-color={themeColorPalette.eventFallback}
+    >
       <div className="mx-auto w-full max-w-5xl">
         <Link
           href="/"

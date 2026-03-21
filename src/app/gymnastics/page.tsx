@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import GymnasticsLanding from "@/components/gymnastics-landing/GymnasticsLanding";
+import { themeColorPalette } from "@/lib/theme-color";
 
 export const metadata: Metadata = {
   title: "Envitefy Gymnastics | Premium meet pages for families and coaches",
@@ -19,6 +20,10 @@ export const metadata: Metadata = {
     description:
       "Premium gymnastics meet pages with editorial layouts, live updates, hotel details, and mobile-first presentation.",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: themeColorPalette.gymnastics,
 };
 
 export default function GymnasticsPage() {
