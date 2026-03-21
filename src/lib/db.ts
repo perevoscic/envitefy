@@ -1609,8 +1609,9 @@ function buildHistoryTimeFilterSql(
  * covering far more rows than the API ever returns.
  */
 const HISTORY_OWN_ROW_CAP = 600;
-const HISTORY_FAST_SIDEBAR_ROW_CAP = 200;
-const HISTORY_DASHBOARD_ROW_CAP = 5000;
+const HISTORY_FAST_SIDEBAR_ROW_CAP = 100;
+const HISTORY_DASHBOARD_ROW_CAP = 800;
+const HISTORY_DASHBOARD_BATCH_SIZE = 8;
 
 function buildHistoryDataProjectionSql(params: {
   view: HistoryView;
@@ -1705,6 +1706,61 @@ function buildHistoryDataProjectionSql(params: {
     'category', ${categorySql},
     'shared', ${sharedSql},
     'sharedOut', ${sharedOutSql}
+  )`;
+}
+
+function buildDashboardDataProjectionSql(dataSql: string): string {
+  return `jsonb_build_object(
+    'startAt', ${dataSql}->'startAt',
+    'startISO', ${dataSql}->'startISO',
+    'start', ${dataSql}->'start',
+    'endAt', ${dataSql}->'endAt',
+    'endISO', ${dataSql}->'endISO',
+    'end', ${dataSql}->'end',
+    'tz', ${dataSql}->'tz',
+    'timezone', ${dataSql}->'timezone',
+    'locationText', ${dataSql}->'locationText',
+    'location', ${dataSql}->'location',
+    'locationLat', ${dataSql}->'locationLat',
+    'lat', ${dataSql}->'lat',
+    'locationLng', ${dataSql}->'locationLng',
+    'lng', ${dataSql}->'lng',
+    'coverImageUrl', ${dataSql}->'coverImageUrl',
+    'thumbnail', ${dataSql}->'thumbnail',
+    'heroImage', ${dataSql}->'heroImage',
+    'status', ${dataSql}->'status',
+    'category', ${dataSql}->'category',
+    'updatedAt', ${dataSql}->'updatedAt',
+    'numberOfGuests', ${dataSql}->'numberOfGuests',
+    'reminders', case
+      when jsonb_typeof(${dataSql}->'reminders') = 'array' then ${dataSql}->'reminders'
+      else '[]'::jsonb
+    end,
+    'createdVia', ${dataSql}->'createdVia',
+    'fieldsGuess', case
+      when jsonb_typeof(${dataSql}->'fieldsGuess') = 'object' then
+        jsonb_build_object(
+          'title', ${dataSql}#>'{fieldsGuess,title}',
+          'start', ${dataSql}#>'{fieldsGuess,start}',
+          'end', ${dataSql}#>'{fieldsGuess,end}',
+          'location', ${dataSql}#>'{fieldsGuess,location}',
+          'timezone', ${dataSql}#>'{fieldsGuess,timezone}'
+        )
+      else null
+    end,
+    'event', case
+      when jsonb_typeof(${dataSql}->'event') = 'object' then
+        jsonb_build_object(
+          'title', ${dataSql}#>'{event,title}',
+          'start', ${dataSql}#>'{event,start}',
+          'end', ${dataSql}#>'{event,end}',
+          'location', ${dataSql}#>'{event,location}',
+          'timezone', ${dataSql}#>'{event,timezone}',
+          'locationLat', ${dataSql}#>'{event,locationLat}',
+          'locationLng', ${dataSql}#>'{event,locationLng}'
+        )
+      else null
+    end
   )`;
 }
 
@@ -1841,30 +1897,81 @@ function buildHistoryOwnOnlyQuery(
   `;
 }
 
-function buildHistorySidebarAllFastQuery(): string {
+function buildHistorySidebarAllFastQuery(candidateCap: number): string {
   const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
-  const ownProjection = buildHistoryDataProjectionSql({
-    view: "sidebar",
-    dataSql: ownDataSql,
-    categorySql: `${ownDataSql}->'category'`,
-    sharedSql: "false",
-    sharedOutSql: `exists(
-      select 1
-      from event_shares es2
-      where es2.owner_user_id = $1
-        and es2.event_id = eh.id
-        and es2.revoked_at is null
-        and es2.status in ('pending', 'accepted')
-    )`,
-  });
-  const sharedProjection = buildHistoryDataProjectionSql({
-    view: "sidebar",
-    dataSql: sharedDataSql,
-    categorySql: "to_jsonb('Shared events'::text)",
-    sharedSql: "true",
-    sharedOutSql: "false",
-  });
+  const ownProjection = `jsonb_build_object(
+    'category', ${ownDataSql}->'category',
+    'shared', false,
+    'sharedOut', false,
+    'status', ${ownDataSql}->'status',
+    'description', ${ownDataSql}->'description',
+    'startISO', ${ownDataSql}->'startISO',
+    'start', ${ownDataSql}->'start',
+    'createdVia', ${ownDataSql}->'createdVia',
+    'color', ${ownDataSql}->'color',
+    'event', case
+      when jsonb_typeof(${ownDataSql}->'event') = 'object' then
+        jsonb_build_object(
+          'start', ${ownDataSql}#>'{event,start}',
+          'color', ${ownDataSql}#>'{event,color}'
+        )
+      else null
+    end,
+    'signupForm', case
+      when jsonb_typeof(${ownDataSql}->'signupForm') = 'object' then
+        jsonb_build_object('responses', '[]'::jsonb)
+      else null
+    end
+  )`;
+  const sharedProjection = `jsonb_build_object(
+    'category', to_jsonb('Shared events'::text),
+    'shared', true,
+    'sharedOut', false,
+    'status', ${sharedDataSql}->'status',
+    'description', ${sharedDataSql}->'description',
+    'startISO', ${sharedDataSql}->'startISO',
+    'start', ${sharedDataSql}->'start',
+    'createdVia', ${sharedDataSql}->'createdVia',
+    'color', ${sharedDataSql}->'color',
+    'event', case
+      when jsonb_typeof(${sharedDataSql}->'event') = 'object' then
+        jsonb_build_object(
+          'start', ${sharedDataSql}#>'{event,start}',
+          'color', ${sharedDataSql}#>'{event,color}'
+        )
+      else null
+    end,
+    'signupForm', case
+      when jsonb_typeof(${sharedDataSql}->'signupForm') = 'object' then
+        jsonb_build_object(
+          'responses',
+          (
+            select coalesce(
+              jsonb_agg(
+                jsonb_build_object(
+                  'userId', response_item->'userId',
+                  'email', response_item->'email',
+                  'status', response_item->'status',
+                  'name', response_item->'name',
+                  'calendar', response_item->'calendar'
+                )
+              ),
+              '[]'::jsonb
+            )
+            from (
+              select response_item
+              from jsonb_array_elements(
+                ${jsonbArrayOrEmpty(`${sharedDataSql}#>'{signupForm,responses}'`)}
+              ) as response_item
+              where coalesce(response_item->>'userId', '') = $1::text
+              limit 3
+            ) matched_responses
+          )
+        )
+      else null
+    end
+  )`;
 
   return `
     with own_candidates as (
@@ -1872,7 +1979,7 @@ function buildHistorySidebarAllFastQuery(): string {
       from event_history eh
       where eh.user_id = $1
       order by eh.created_at desc nulls last, eh.id desc
-      limit ${HISTORY_FAST_SIDEBAR_ROW_CAP}
+      limit ${candidateCap}
     ),
     own_rows as (
       select
@@ -1892,7 +1999,7 @@ function buildHistorySidebarAllFastQuery(): string {
         and es.status = 'accepted'
         and es.revoked_at is null
       order by eh.created_at desc nulls last, eh.id desc
-      limit ${HISTORY_FAST_SIDEBAR_ROW_CAP}
+      limit ${candidateCap}
     ),
     shared_rows as (
       select
@@ -2354,15 +2461,44 @@ export async function listDashboardHistoryWindowForUser(
   userId: string,
   limit: number = HISTORY_DASHBOARD_ROW_CAP
 ): Promise<EventHistoryRow[]> {
-  const res = await query<EventHistoryRow>(
-    `select id, user_id, title, (data - 'attachment' - 'ocrText') as data, created_at
+  const safeLimit = Math.max(1, Math.min(HISTORY_DASHBOARD_ROW_CAP, limit));
+  const identityRows = await query<EventHistoryIdentityRow>(
+    `select id, user_id, title, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
      limit $2`,
-    [userId, Math.max(1, Math.min(HISTORY_DASHBOARD_ROW_CAP, limit))]
+    [userId, safeLimit]
   );
-  return res.rows || [];
+  const ids = (identityRows.rows || []).map((row) => row.id).filter(Boolean);
+  if (!ids.length) return [];
+
+  const dataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const projection = buildDashboardDataProjectionSql(dataSql);
+  const collected: EventHistoryRow[] = [];
+  for (let i = 0; i < ids.length; i += HISTORY_DASHBOARD_BATCH_SIZE) {
+    const batchIds = ids.slice(i, i + HISTORY_DASHBOARD_BATCH_SIZE);
+    const res = await query<EventHistoryRow>(
+      `with requested_ids as (
+         select requested_id, ord
+         from unnest($1::uuid[]) with ordinality as ids(requested_id, ord)
+       )
+       select
+         eh.id,
+         eh.user_id,
+         eh.title,
+         ${projection} as data,
+         eh.created_at
+       from requested_ids r
+       join event_history eh on eh.id = r.requested_id
+       order by r.ord`,
+      [batchIds]
+    );
+    if (res.rows?.length) {
+      collected.push(...res.rows);
+    }
+  }
+  return collected;
 }
 
 export async function listRecentEventHistory(limit: number = 20): Promise<EventHistoryRow[]> {
@@ -2431,7 +2567,8 @@ export async function listSidebarHistoryForUserFast(
   limit = 200
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(limit || 40)));
-  const res = await query<EventHistoryRow>(buildHistorySidebarAllFastQuery(), [
+  const candidateCap = Math.max(1, Math.min(HISTORY_FAST_SIDEBAR_ROW_CAP, safeLimit));
+  const res = await query<EventHistoryRow>(buildHistorySidebarAllFastQuery(candidateCap), [
     userId,
     safeLimit,
   ]);

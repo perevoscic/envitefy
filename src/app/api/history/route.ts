@@ -8,7 +8,12 @@ import {
   listSidebarHistoryForUserFast,
   upsertSignupForm,
 } from "@/lib/db";
-import { getCachedHistory, setCachedHistory, invalidateUserHistory } from "@/lib/history-cache";
+import {
+  getCachedHistory,
+  getCachedHistoryStale,
+  setCachedHistory,
+  invalidateUserHistory,
+} from "@/lib/history-cache";
 import { createHash } from "crypto";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import {
@@ -82,13 +87,31 @@ export async function GET(req: Request) {
 
     const useCache = isCacheableHistoryView(view);
     const cached = useCache ? getCachedHistory(userId, view, limit, timeFilter) : null;
-    let light: any[];
+    const staleCached =
+      useCache ? getCachedHistoryStale(userId, view, limit, timeFilter) : null;
+    let light: any[] | null = null;
     if (cached) {
       light = cached;
     } else {
-      let rows;
+      let rows: any[] = [];
       if (view === "sidebar" && timeFilter === "all") {
-        rows = await listSidebarHistoryForUserFast(userId, limit);
+        try {
+          rows = await listSidebarHistoryForUserFast(userId, limit);
+        } catch (err) {
+          if (!isStatementTimeoutError(err)) throw err;
+          if (Array.isArray(staleCached)) {
+            light = staleCached;
+            rows = [];
+          } else {
+            return new Response(null, {
+              status: 204,
+              headers: {
+                "Cache-Control": "private, no-store",
+                "X-History-Degraded": "statement-timeout",
+              },
+            });
+          }
+        }
       } else {
         try {
           rows = await listHistoryForUser({ userId, view, limit, timeFilter });
@@ -101,11 +124,29 @@ export async function GET(req: Request) {
           if (process.env.NODE_ENV !== "production") {
             console.warn("[history] falling back to fast sidebar query after statement timeout");
           }
-          rows = await listSidebarHistoryForUserFast(userId, limit);
+          try {
+            rows = await listSidebarHistoryForUserFast(userId, limit);
+          } catch (fastErr) {
+            if (!isStatementTimeoutError(fastErr)) throw fastErr;
+            if (Array.isArray(staleCached)) {
+              light = staleCached;
+              rows = [];
+            } else {
+              return new Response(null, {
+                status: 204,
+                headers: {
+                  "Cache-Control": "private, no-store",
+                  "X-History-Degraded": "statement-timeout",
+                },
+              });
+            }
+          }
         }
       }
-      light = finalizeItems(rows);
-      if (useCache) {
+      if (!light) {
+        light = finalizeItems(rows);
+      }
+      if (useCache && light !== staleCached) {
         setCachedHistory(userId, view, limit, timeFilter, light);
       }
     }

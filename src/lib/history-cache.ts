@@ -41,6 +41,17 @@ export function getCachedHistory(
   return entry.data;
 }
 
+export function getCachedHistoryStale(
+  userId: string,
+  view: CacheableHistoryView,
+  limit: number,
+  timeFilter: HistoryTimeFilter
+): any[] | null {
+  const key = getCacheKey(userId, view, limit, timeFilter);
+  const entry = cache.get(key);
+  return entry?.data ?? null;
+}
+
 export function setCachedHistory(
   userId: string,
   view: CacheableHistoryView,

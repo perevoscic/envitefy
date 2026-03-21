@@ -6,14 +6,12 @@ import {
 } from "@/lib/dashboard-data";
 import {
   listDashboardHistoryWindowForUser,
-  listEventHistoryByUser,
-  listRecentEventHistory,
   type EventHistoryRow,
 } from "@/lib/db";
 
-const DASHBOARD_HISTORY_ROW_CAP = 600;
-const DASHBOARD_HISTORY_EXPANDED_ROW_CAP = 5000;
-const DASHBOARD_FALLBACK_RECENT_ROW_CAP = 1200;
+const DASHBOARD_HISTORY_ROW_CAP = 40;
+const DASHBOARD_HISTORY_EXPANDED_ROW_CAP = 200;
+const DASHBOARD_EXPAND_QUERY_MAX_MS = 2000;
 
 function isStatementTimeoutError(err: unknown): boolean {
   const anyErr = err as { code?: unknown; message?: unknown } | null;
@@ -57,10 +55,20 @@ export async function listDashboardEventsForOwner(
   limit = 200
 ): Promise<DashboardEvent[]> {
   const rowLimit = Math.max(1, Math.min(DASHBOARD_HISTORY_ROW_CAP, Math.floor(limit)));
+  const startedAt = Date.now();
+  const rows = await listDashboardHistoryWindowForUser(
+    userId,
+    Math.max(rowLimit, DASHBOARD_HISTORY_ROW_CAP)
+  );
+  const initialQueryMs = Date.now() - startedAt;
+  const events = rowsToDashboardEvents(rows);
+  if (
+    !needsExpandedDashboardScan(rows, events) ||
+    initialQueryMs > DASHBOARD_EXPAND_QUERY_MAX_MS
+  ) {
+    return events;
+  }
   try {
-    const rows = await listEventHistoryByUser(userId, Math.max(rowLimit, DASHBOARD_HISTORY_ROW_CAP));
-    const events = rowsToDashboardEvents(rows);
-    if (!needsExpandedDashboardScan(rows, events)) return events;
     const expandedRows = await listDashboardHistoryWindowForUser(
       userId,
       DASHBOARD_HISTORY_EXPANDED_ROW_CAP
@@ -68,12 +76,7 @@ export async function listDashboardEventsForOwner(
     return rowsToDashboardEvents(expandedRows);
   } catch (err) {
     if (!isStatementTimeoutError(err)) throw err;
-    const rows = await listRecentEventHistory(DASHBOARD_FALLBACK_RECENT_ROW_CAP);
-    return rowsToDashboardEvents(
-      rows
-        .filter((row) => String(row.user_id || "") === userId)
-        .slice(0, DASHBOARD_HISTORY_ROW_CAP)
-    );
+    return events;
   }
 }
 
