@@ -1644,14 +1644,26 @@ function buildHistoryDataProjectionSql(params: {
   categorySql: string;
   sharedSql: string;
   sharedOutSql: string;
+  ownershipSql: string;
+  shareStatusSql: string;
 }): string {
-  const { view, dataSql, categorySql, sharedSql, sharedOutSql } = params;
+  const {
+    view,
+    dataSql,
+    categorySql,
+    sharedSql,
+    sharedOutSql,
+    ownershipSql,
+    shareStatusSql,
+  } = params;
 
   if (view === "summary") {
     return `jsonb_build_object(
       'category', ${categorySql},
       'shared', ${sharedSql},
-      'sharedOut', ${sharedOutSql}
+      'sharedOut', ${sharedOutSql},
+      'ownership', ${ownershipSql},
+      'shareStatus', ${shareStatusSql}
     )`;
   }
 
@@ -1660,8 +1672,11 @@ function buildHistoryDataProjectionSql(params: {
       'category', ${categorySql},
       'shared', ${sharedSql},
       'sharedOut', ${sharedOutSql},
+      'ownership', ${ownershipSql},
+      'shareStatus', ${shareStatusSql},
       'status', ${dataSql}->'status',
       'description', ${dataSql}->'description',
+      'startAt', ${dataSql}->'startAt',
       'startISO', ${dataSql}->'startISO',
       'start', ${dataSql}->'start',
       'createdVia', ${dataSql}->'createdVia',
@@ -1706,6 +1721,8 @@ function buildHistoryDataProjectionSql(params: {
       'category', ${categorySql},
       'shared', ${sharedSql},
       'sharedOut', ${sharedOutSql},
+      'ownership', ${ownershipSql},
+      'shareStatus', ${shareStatusSql},
       'timezone', ${dataSql}->'timezone',
       'venue', ${dataSql}->'venue',
       'location', ${dataSql}->'location',
@@ -1730,11 +1747,17 @@ function buildHistoryDataProjectionSql(params: {
   return `${dataSql} || jsonb_build_object(
     'category', ${categorySql},
     'shared', ${sharedSql},
-    'sharedOut', ${sharedOutSql}
+    'sharedOut', ${sharedOutSql},
+    'ownership', ${ownershipSql},
+    'shareStatus', ${shareStatusSql}
   )`;
 }
 
-function buildDashboardDataProjectionSql(dataSql: string): string {
+function buildDashboardDataProjectionSql(
+  dataSql: string,
+  ownershipSql: string,
+  shareStatusSql: string
+): string {
   return `jsonb_build_object(
     'startAt', ${dataSql}->'startAt',
     'startISO', ${dataSql}->'startISO',
@@ -1762,6 +1785,8 @@ function buildDashboardDataProjectionSql(dataSql: string): string {
       else '[]'::jsonb
     end,
     'createdVia', ${dataSql}->'createdVia',
+    'ownership', ${ownershipSql},
+    'shareStatus', ${shareStatusSql},
     'fieldsGuess', case
       when jsonb_typeof(${dataSql}->'fieldsGuess') = 'object' then
         jsonb_build_object(
@@ -2127,6 +2152,8 @@ function buildHistoryUnionQuery(
     dataSql: ownDataSql,
     categorySql: `${ownDataSql}->'category'`,
     sharedSql: "false",
+    ownershipSql: "to_jsonb('owned'::text)",
+    shareStatusSql: "null",
     sharedOutSql: `exists(
       select 1
       from event_shares es2
@@ -2141,6 +2168,8 @@ function buildHistoryUnionQuery(
     dataSql: sharedDataSql,
     categorySql: "to_jsonb('Shared events'::text)",
     sharedSql: "true",
+    ownershipSql: "to_jsonb('invited'::text)",
+    shareStatusSql: "to_jsonb(es.status)",
     sharedOutSql: "false",
   });
 
@@ -2180,7 +2209,7 @@ function buildHistoryUnionQuery(
       from event_shares es
       join event_history eh on eh.id = es.event_id
       where es.recipient_user_id = $1
-        and es.status = 'accepted'
+        and es.status in ('pending', 'accepted')
         and es.revoked_at is null
     ),
     combined as (
@@ -2207,6 +2236,8 @@ function buildHistoryOwnOnlyQuery(
     dataSql,
     categorySql: `${dataSql}->'category'`,
     sharedSql: "false",
+    ownershipSql: "to_jsonb('owned'::text)",
+    shareStatusSql: "null",
     sharedOutSql: "false",
   });
 
@@ -2682,21 +2713,250 @@ export async function listEventHistoryByUser(userId: string, limit: number = 50)
   return res.rows;
 }
 
+function buildDashboardFastHistoryQuery(includeShared: boolean): string {
+  const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const ownProjection = buildDashboardDataProjectionSql(
+    ownDataSql,
+    "to_jsonb('owned'::text)",
+    "null"
+  );
+
+  if (!includeShared) {
+    return `
+      with own_candidates as (
+        select
+          eh.id,
+          eh.user_id,
+          eh.title,
+          eh.created_at
+        from event_history eh
+        where eh.user_id = $1
+        order by eh.created_at desc nulls last, eh.id desc
+        limit $2
+      )
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${ownProjection} as data,
+        eh.created_at
+      from own_candidates c
+      join event_history eh on eh.id = c.id
+      order by c.created_at desc nulls last, c.id desc
+      limit $2
+    `;
+  }
+
+  const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const sharedProjection = buildDashboardDataProjectionSql(
+    sharedDataSql,
+    "to_jsonb('invited'::text)",
+    "to_jsonb(es.status)"
+  );
+
+  return `
+    with own_candidates as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        eh.created_at
+      from event_history eh
+      where eh.user_id = $1
+      order by eh.created_at desc nulls last, eh.id desc
+      limit $2
+    ),
+    own_rows as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${ownProjection} as data,
+        eh.created_at
+      from own_candidates c
+      join event_history eh on eh.id = c.id
+    ),
+    shared_candidates as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        eh.created_at,
+        es.status
+      from event_shares es
+      join event_history eh on eh.id = es.event_id
+      where es.recipient_user_id = $1
+        and es.status in ('pending', 'accepted')
+        and es.revoked_at is null
+      order by eh.created_at desc nulls last, eh.id desc
+      limit $2
+    ),
+    shared_rows as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${sharedProjection} as data,
+        eh.created_at
+      from shared_candidates es
+      join event_history eh on eh.id = es.id
+    ),
+    combined as (
+      select * from own_rows
+      union all
+      select * from shared_rows
+    )
+    select id, user_id, title, data, created_at
+    from combined
+    order by created_at desc nulls last, id desc
+    limit $2
+  `;
+}
+
+function buildSidebarFastHistoryQuery(includeShared: boolean): string {
+  const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const ownProjection = buildHistoryDataProjectionSql({
+    view: "sidebar",
+    dataSql: ownDataSql,
+    categorySql: `${ownDataSql}->'category'`,
+    sharedSql: "false",
+    sharedOutSql: `exists(
+      select 1
+      from event_shares es2
+      where es2.owner_user_id = $1
+        and es2.event_id = eh.id
+        and es2.revoked_at is null
+        and es2.status in ('pending', 'accepted')
+    )`,
+    ownershipSql: "to_jsonb('owned'::text)",
+    shareStatusSql: "null",
+  });
+
+  if (!includeShared) {
+    return `
+      with own_candidates as (
+        select
+          eh.id,
+          eh.user_id,
+          eh.title,
+          eh.created_at
+        from event_history eh
+        where eh.user_id = $1
+        order by eh.created_at desc nulls last, eh.id desc
+        limit $2
+      )
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${ownProjection} as data,
+        eh.created_at
+      from own_candidates c
+      join event_history eh on eh.id = c.id
+      order by c.created_at desc nulls last, c.id desc
+      limit $2
+    `;
+  }
+
+  const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const sharedProjection = buildHistoryDataProjectionSql({
+    view: "sidebar",
+    dataSql: sharedDataSql,
+    categorySql: "to_jsonb('Shared events'::text)",
+    sharedSql: "true",
+    sharedOutSql: "false",
+    ownershipSql: "to_jsonb('invited'::text)",
+    shareStatusSql: "to_jsonb(es.status)",
+  });
+
+  return `
+    with own_candidates as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        eh.created_at
+      from event_history eh
+      where eh.user_id = $1
+      order by eh.created_at desc nulls last, eh.id desc
+      limit $2
+    ),
+    own_rows as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${ownProjection} as data,
+        eh.created_at
+      from own_candidates c
+      join event_history eh on eh.id = c.id
+    ),
+    shared_candidates as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        eh.created_at,
+        es.status
+      from event_shares es
+      join event_history eh on eh.id = es.event_id
+      where es.recipient_user_id = $1
+        and es.status in ('pending', 'accepted')
+        and es.revoked_at is null
+      order by eh.created_at desc nulls last, eh.id desc
+      limit $2
+    ),
+    shared_rows as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${sharedProjection} as data,
+        eh.created_at
+      from shared_candidates es
+      join event_history eh on eh.id = es.id
+    ),
+    combined as (
+      select * from own_rows
+      union all
+      select * from shared_rows
+    )
+    select id, user_id, title, data, created_at
+    from combined
+    order by created_at desc nulls last, id desc
+    limit $2
+  `;
+}
+
 export async function listDashboardHistoryWindowForUser(
   userId: string,
   limit: number = HISTORY_DASHBOARD_ROW_CAP
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(HISTORY_DASHBOARD_ROW_CAP, limit));
-  return await withStatementTimeout(
-    HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
-    async (client) => {
-      const candidates = await listOwnedHistoryCandidatesForUser(client, userId, safeLimit);
-      return await listProjectedDashboardHistoryRowsByIds(
-        client,
-        candidates.map((row) => row.id)
-      );
-    }
-  );
+  try {
+    return await withStatementTimeout(
+      HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
+      async (client) => {
+        const res = await client.query<EventHistoryRow>(
+          buildDashboardFastHistoryQuery(true),
+          [userId, safeLimit]
+        );
+        return res.rows || [];
+      }
+    );
+  } catch (err) {
+    if (!isTableMissingError(err)) throw err;
+    return await withStatementTimeout(
+      HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
+      async (client) => {
+        const res = await client.query<EventHistoryRow>(
+          buildDashboardFastHistoryQuery(false),
+          [userId, safeLimit]
+        );
+        return res.rows || [];
+      }
+    );
+  }
 }
 
 export async function listDashboardHistoryFallbackForUser(
@@ -2704,18 +2964,36 @@ export async function listDashboardHistoryFallbackForUser(
   ownLimit: number = HISTORY_OWN_ROW_CAP,
   sharedLimit: number = 200
 ): Promise<EventHistoryRow[]> {
-  void sharedLimit;
-  const ownRows = await withStatementTimeout(
-    HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
-    async (client) => {
-      const candidates = await listOwnedHistoryCandidatesForUser(client, userId, ownLimit);
-      return await listProjectedDashboardHistoryRowsByIds(
-        client,
-        candidates.map((row) => row.id)
-      );
-    }
+  const safeLimit = Math.max(
+    1,
+    Math.min(HISTORY_OWN_ROW_CAP, Math.max(ownLimit, sharedLimit))
   );
-  return sortAndDedupeEventHistoryRows(ownRows);
+  try {
+    const rows = await withStatementTimeout(
+      HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
+      async (client) => {
+        const res = await client.query<EventHistoryRow>(
+          buildDashboardFastHistoryQuery(true),
+          [userId, safeLimit]
+        );
+        return res.rows || [];
+      }
+    );
+    return sortAndDedupeEventHistoryRows(rows, safeLimit);
+  } catch (err) {
+    if (!isTableMissingError(err)) throw err;
+    const rows = await withStatementTimeout(
+      HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
+      async (client) => {
+        const res = await client.query<EventHistoryRow>(
+          buildDashboardFastHistoryQuery(false),
+          [userId, safeLimit]
+        );
+        return res.rows || [];
+      }
+    );
+    return sortAndDedupeEventHistoryRows(rows, safeLimit);
+  }
 }
 
 export async function listRecentEventHistory(limit: number = 20): Promise<EventHistoryRow[]> {
@@ -2784,14 +3062,32 @@ export async function listSidebarHistoryForUserFast(
   limit = 200
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(limit || 40)));
-  const rows = await withStatementTimeout(HISTORY_SIDEBAR_QUERY_TIMEOUT_MS, async (client) => {
-    const candidates = await listOwnedHistoryCandidatesForUser(client, userId, safeLimit);
-    return await listProjectedSidebarHistoryRowsByIds(
-      client,
-      candidates.map((row) => row.id)
+  try {
+    const rows = await withStatementTimeout(
+      HISTORY_SIDEBAR_QUERY_TIMEOUT_MS,
+      async (client) => {
+        const res = await client.query<EventHistoryRow>(
+          buildSidebarFastHistoryQuery(true),
+          [userId, safeLimit]
+        );
+        return res.rows || [];
+      }
     );
-  });
-  return sortAndDedupeEventHistoryRows(rows, safeLimit);
+    return sortAndDedupeEventHistoryRows(rows, safeLimit);
+  } catch (err) {
+    if (!isTableMissingError(err)) throw err;
+    const rows = await withStatementTimeout(
+      HISTORY_SIDEBAR_QUERY_TIMEOUT_MS,
+      async (client) => {
+        const res = await client.query<EventHistoryRow>(
+          buildSidebarFastHistoryQuery(false),
+          [userId, safeLimit]
+        );
+        return res.rows || [];
+      }
+    );
+    return sortAndDedupeEventHistoryRows(rows, safeLimit);
+  }
 }
 
 async function ensureEventHistoryInputBlobsTable(): Promise<void> {
@@ -3070,6 +3366,21 @@ export async function listShareRecipientsForEvent(ownerUserId: string, eventId: 
     }
   }
   return out;
+}
+
+export async function listShareRecipientUserIdsForEvent(
+  eventId: string
+): Promise<string[]> {
+  const res = await query<{ recipient_user_id: string }>(
+    `select distinct recipient_user_id
+     from event_shares
+     where event_id = $1
+       and revoked_at is null`,
+    [eventId]
+  );
+  return (res.rows || [])
+    .map((row) => String(row.recipient_user_id || "").trim())
+    .filter(Boolean);
 }
 
 export async function revokeShareByOwner(eventShareId: string, ownerUserId: string): Promise<boolean> {

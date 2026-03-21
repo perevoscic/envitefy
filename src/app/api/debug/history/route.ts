@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, listEventHistoryByUser, listRecentEventHistory } from "@/lib/db";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { listEventHistoryByUser, listRecentEventHistory } from "@/lib/db";
 import { redactHistoryHeavyFields } from "@/lib/history-view";
 
 export const runtime = "nodejs";
@@ -11,10 +11,7 @@ export async function GET() {
   try {
     const session: any = await getServerSession(authOptions as any);
     const sessionUser: any = (session && (session as any).user) || null;
-    let userId: string | null = (sessionUser?.id as string | undefined) || null;
-    if (!userId && sessionUser?.email) {
-      userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
-    }
+    const userId = await resolveSessionUserId(session);
 
     const mine = userId ? await listEventHistoryByUser(userId, 10) : [];
     const recent = await listRecentEventHistory(10);
@@ -30,10 +27,16 @@ export async function GET() {
 
     return NextResponse.json({
       user: sessionUser ? { id: userId, email: sessionUser.email || null } : null,
+      sessionEmail: sessionUser?.email || null,
+      rawSessionUserId:
+        typeof sessionUser?.id === "string" ? sessionUser.id : null,
+      resolvedUserId: userId,
       mineCount: mine.length,
       recentCount: recent.length,
+      recentAnonymousCount: recent.filter((row) => !row?.user_id).length,
       mine: scrub(mine),
       recent: scrub(recent),
+      recentAnonymous: scrub(recent.filter((row) => !row?.user_id)),
     });
   } catch (err: any) {
     return NextResponse.json(

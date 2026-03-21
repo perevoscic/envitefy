@@ -298,5 +298,50 @@ export const BIRTHDAY_THEMES = [
         decorations: {
             graphicType: "neon"
         }
+    },
+    {
+        id: "editorial_ballerina_bloom",
+        name: "Editorial Ballerina Bloom",
+        defaultHeadline: "Birthday Celebration",
+        category: "Editorial",
+        family: "luxury",
+        layout: "editorial-feature",
+        primaryColor: "#fdf4f7",
+        secondaryColor: "#b91964",
+        headlineFont: "Playfair Display",
+        heroImage: "/themes/pink-princess-main.jpg",
+        decorations: {
+            graphicType: "ballerina"
+        }
+    },
+    {
+        id: "editorial_blue_allstar",
+        name: "Editorial Blue All-Star",
+        defaultHeadline: "Birthday Celebration",
+        category: "Editorial",
+        family: "modern",
+        layout: "editorial-feature",
+        primaryColor: "#eef6ff",
+        secondaryColor: "#0b63ce",
+        headlineFont: "Montserrat",
+        heroImage: "/themes/little-mvp-main.jpg",
+        decorations: {
+            graphicType: "sports"
+        }
+    },
+    {
+        id: "editorial_confetti_neutral",
+        name: "Editorial Confetti Neutral",
+        defaultHeadline: "Birthday Celebration",
+        category: "Editorial",
+        family: "modern",
+        layout: "editorial-feature",
+        primaryColor: "#fff8f2",
+        secondaryColor: "#d14d2f",
+        headlineFont: "Playfair Display",
+        heroImage: "/themes/gummy-bear-main.jpg",
+        decorations: {
+            graphicType: "confetti"
+        }
     }
 ];

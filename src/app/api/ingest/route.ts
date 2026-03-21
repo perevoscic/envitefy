@@ -2,10 +2,9 @@ import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { getVisionClient } from "@/lib/gcp";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import {
   deleteEventHistoryById,
-  getUserIdByEmail,
   incrementCreditsByEmail,
   incrementUserScanCounters,
   insertEventHistory,
@@ -24,12 +23,7 @@ export function OPTIONS(request: Request) {
 
 async function getSessionUserId() {
   const session: any = await getServerSession(authOptions);
-  const sessionUser: any = (session && (session as any).user) || null;
-  let userId: string | null = (sessionUser?.id as string | undefined) || null;
-  if (!userId && sessionUser?.email) {
-    userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
-  }
-  return userId;
+  return await resolveSessionUserId(session);
 }
 
 async function handleDiscoveryIngest(

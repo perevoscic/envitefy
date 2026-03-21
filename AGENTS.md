@@ -177,6 +177,7 @@ This document describes the app’s server-side agents (API routes) that extract
   1. **Primary**: OpenAI Vision API (direct image analysis, best for cursive/decorative fonts)
   2. **Enhancement**: Heuristic parsing and text-based LLM cleanup as needed
 - **Output**: JSON with extracted text and best-guess fields. Includes a heuristic `category` when detectable, plus `ocrSource` indicating which OCR method was used (currently `"openai"`; older responses may also include `"google-sdk"` or `"google-rest"`).
+- **Birthday template hinting**: When the OCR result is a birthday invite, the response now also includes `birthdayTemplateHint` so clients can route the scanned event into the correct birthday renderer automatically. Detection uses text/theme cues only. Girl-coded cues (for example `ballerina`, `ballet`, `tutu`, `princess`, `bows`, `she/her`) map to `audience: "girl"` and theme `editorial_ballerina_bloom`. Boy-coded cues (for example `all-star`, `sports`, `mvp`, `superhero`, `trucks`, `he/him`) map to `audience: "boy"` and theme `editorial_blue_allstar`. If the scan is clearly a birthday but the audience is ambiguous, the route returns `audience: "neutral"` and theme `editorial_confetti_neutral`. The OCR route does not infer girl/boy from a face alone or from the honoree name alone.
 - **Gymnastics schedules**: Detects season schedule flyers (e.g., "2026 Gymnastics Schedule"). Returns an `events` array of all-day meets with `title` like `NIU Gymnastics: vs Central Michigan` or `NIU Gymnastics: at Illinois State`. Home meets use the flyer address; away meets leave location empty when unknown (no external geocoding).
 - **Practice schedules**: Recognizes weekly team practice tables (groups vs. days). The response adds a `practiceSchedule` object with the detected groups, their weekly sessions, and pre-built normalized events that include `RRULE:FREQ=WEEKLY` recurrences for each day/time block. When multiple groups are present, clients should prompt the user to pick one group before saving events.
 
@@ -200,6 +201,15 @@ curl -X POST \
     "rsvp": "RSVP: Jennifer 555-895-9741"
   },
   "category": "Birthdays",
+  "birthdayTemplateHint": {
+    "detected": true,
+    "audience": "girl",
+    "confidence": "high",
+    "reasons": ["ballerina", "tutu"],
+    "honoreeName": "Alice",
+    "age": 8,
+    "themeId": "editorial_ballerina_bloom"
+  },
   "ocrSource": "openai",
   "practiceSchedule": {
     "detected": false,
@@ -234,6 +244,7 @@ curl -X POST \
 - Time parsing improved to detect spelled-out phrases like "four o'clock in the afternoon" and merge with detected dates; afternoon/evening keywords bias to PM.
 - LLM prompt now prioritizes decorative/cursive text (names) on invitation cards and ignores boilerplate like "Invitation"/"Invitation Card" when forming titles. It also classifies wedding/marriage invites and can surface an LLM-provided `category` when present.
 - Prompt enforces contextual reading of the flyer: venue values must come from the section labelled as venue/address (e.g., `US Gold Gym` in the attached example), while repeated activity strings (e.g., `Ninja Warrior Course, the Ninja Warrior Course`) stay in the event title/description. When venue and activity names conflict, prefer the location text paired with the address block, and only duplicate the activity wording if it actually appears inside that block.
+- Birthday OCR-created events may now be persisted by clients as `createdVia: "ocr-birthday-renderer"` with the selected `variationId` from `birthdayTemplateHint.themeId`, which routes the public page into the birthday renderer instead of the generic OCR event page.
 - Wedding rewrite prompt now forbids templated phrases (e.g., "together with their parents", "Dinner and dancing to follow") unless they appear verbatim on the card. It uses only facts present on the invite.
 - **Medical and dental appointments** extract only the clinical information actually visible on the scanned image - no templates, no invented information. The LLM reads the content and outputs only what it sees: appointment type, provider (if shown), facility (if shown), time, or other relevant details. Each fact appears on its own line. Patient name and DOB are excluded. Invitation phrases like "You're invited", "Join", "for his/her", "please" are explicitly forbidden. Example output based on actual content:
   ```
@@ -511,13 +522,13 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 ### Dashboard Data — GET `/api/dashboard`
 
-- **Purpose**: Return DB-only home dashboard payload for the signed-in owner (no external API calls).
-- **Auth**: NextAuth session required; only the caller's own `event_history` rows are queried.
-- **Behavior**: Resolves `nextEvent` (earliest future event excluding archived/canceled), upcoming list (up to 12), schedule snapshot counts (30 days + 7 days), RSVP snapshot (going/maybe/declined/pending + last 3 updates), setup-health flags, derived checklist items (from setup-health warnings), and drafts summary. Uses a lightweight scalar projection from `event_history.data` (instead of returning full JSON payloads) to reduce transfer and parse cost. The owner history selector first tries a bounded recent window with a shorter local statement timeout, then falls back to the simpler owner/shared history reads if that fast path times out, so older upcoming/draft rows can still surface without reopening the old 800-row expansion. If `event_metrics_cache` exists, cached travel/weather metrics are returned but never recomputed here.
+- **Purpose**: Return DB-only home dashboard payload for the signed-in user (no external API calls).
+- **Auth**: NextAuth session required.
+- **Behavior**: Resolves `nextEvent` (earliest future event excluding archived/canceled) across the caller's own events plus invited shared events (`pending` and `accepted` shares), upcoming list (up to 12), schedule snapshot counts (30 days + 7 days), RSVP snapshot (going/maybe/declined/pending + last 3 updates), setup-health flags, derived checklist items (from setup-health warnings), and drafts summary. Drafts, setup-health flags, and derived checklist items remain owner-only; invited events can still be selected as `nextEvent` and appear in `upcoming`. Uses a lightweight scalar projection from `event_history.data` (instead of returning full JSON payloads) to reduce transfer and parse cost. The dashboard history selector first tries a bounded recent window with a shorter local statement timeout, then falls back to a broader owner+shared scan if that fast path times out. If `event_metrics_cache` exists, cached travel/weather metrics are returned but never recomputed here.
 - **Caching**: In-memory TTL cache (`15s`) with stale-while-refresh behavior up to `60s`, plus in-flight request coalescing per user to avoid duplicate recomputation under concurrent calls.
 - **Query params**: Optional `refresh=1` bypasses the in-memory cache for the signed-in user so clients can reload immediately after creating/updating events.
 - **Diagnostics**: Optional `?timing=1` adds a `timings` object to JSON and a `Server-Timing` response header.
-- **Output**: `{ ok, nextEvent, snapshot, upcoming, rsvp, setupHealth, checklist, drafts, metricsCache, metricsEligibility }`.
+- **Output**: `{ ok, nextEvent, snapshot, upcoming, rsvp, setupHealth, checklist, drafts, metricsCache, metricsEligibility }` where `nextEvent` and `upcoming[]` now include additive relation fields `ownership: "owned"|"invited"` and `shareStatus: "pending"|"accepted"|null`.
 - **Env**: `DATABASE_URL`.
 
 ### Dashboard Next-Event Enrichment — POST `/api/dashboard/enrich-next-event`
@@ -595,7 +606,8 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Purpose**: Store and manage extracted events/history items for users.
 - **Auth**:
   - List (GET `/api/history`) requires session to return user items; returns `{ items: [] }` when unauthenticated.
-  - Create (POST `/api/history`) associates the row to the signed-in user when available; still accepts unauthenticated writes.
+  - Create (POST `/api/history`) resolves the canonical app user from the signed-in session email and attaches the row to that `users.id`.
+  - Signed-in creates fail closed with HTTP `409` / `{ error: "Unable to resolve signed-in account" }` when the session cannot be resolved to a DB user. The route no longer silently falls back to anonymous writes for signed-in dashboard/customizer saves.
   - Read single (GET `/api/history/[id]`) is public.
   - Update title (PATCH) and Delete (DELETE) require session and ownership.
 - **Input**:
@@ -607,10 +619,10 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - PATCH `/api/history/[id]`: Either `{ title: string }` or `{ category: string }` or `{ data: object }` to shallow-merge into the JSON `data` (e.g., to fix the saved `category`).
 - **Output**:
   - GET list: `{ items: Array<HistoryRow> }`.
-    - Includes accepted shared events for the user (annotated with `data.shared=true` and default category `Shared events`).
+    - Includes invited shared events for the user when the share is `pending` or `accepted` (annotated with `data.shared=true`, `data.ownership="invited"`, `data.shareStatus`, and default category `Shared events`).
     - Response payload is view-dependent:
-      - `view=summary`: only lightweight `category/shared/sharedOut` flags.
-      - `view=sidebar`: compact fields used by the left sidebar (`status`, `description`, `start/startISO`, compact `event`, compact `signupForm.responses`).
+      - `view=summary`: only lightweight `category/shared/sharedOut/ownership/shareStatus` flags.
+      - `view=sidebar`: compact fields used by the left sidebar (`status`, `description`, `startAt/start/startISO`, `ownership`, `shareStatus`, compact `event`, compact `signupForm.responses`).
       - `view=calendar`: same as standard lightweight mode with heavy blobs removed.
       - `view=full`: full `data` JSON (includes heavy fields when present).
   - GET single: `HistoryRow` or `{ error }` with 404.
@@ -618,8 +630,9 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
   - PATCH: updated `HistoryRow`.
   - DELETE: `{ ok: true }`.
 - **Notes**:
+  - When debugging future events in Postgres, filter on `event_history.data->>'startAt'` or `event_history.data->>'startISO'`, not `event_history.created_at`. `created_at` is save time, not event date.
   - PATCH now supports combined title + data updates in one request and preserves full template state (themes, fonts, advanced sections) when present. When `data` contains `themeId|theme|fontId|fontSize|advancedSections`, the route performs a full replace/merge that overwrites previous theme/font fields instead of a shallow merge, ensuring edited gymnastics/sports templates retain the saved theme color and typography. Cache for the owner’s history list is invalidated after successful update.
-  - The `view=sidebar&time=all` fast path is intentionally capped to a smaller bounded candidate window for responsiveness on large accounts. It keeps the lightweight shared-item handling, uses a shorter local statement timeout than the pool default, and falls back to the simpler owner/shared history reads if the fast path times out before finally degrading to HTTP 204 with `X-History-Degraded: statement-timeout` when nothing can be returned. Cache still wins when available, and stale cache still wins on timeout.
+  - The `view=sidebar&time=all` fast path is intentionally capped to a smaller bounded candidate window for responsiveness on large accounts. It now uses a lightweight owner+shared union (including pending invites), uses a shorter local statement timeout than the pool default, and falls back to the simpler owner/shared history reads if the fast path times out before finally degrading to HTTP 204 with `X-History-Degraded: statement-timeout` when nothing can be returned. Cache still wins when available, and stale cache still wins on timeout.
   - Custom builders (e.g., baby showers) now persist their selected `templateBackgroundCss`/`header*` fields alongside `titleStyle` when publishing so the public view can rehydrate the same hero gradient, card background, and section layout that was shown in the editor.
   - Gymnastics template publish flow posts `themeId`, full `theme` object, `fontId`, `fontFamily`, and `fontSizeClass` plus all advanced sections (`roster`, `meet`, `practice`, `logistics`, `gear`, `volunteers`, `announcements`) into `event_history.data`. Editing uses `/api/history/[id]` to reload those fields so the preview and the saved event stay visually identical (section headings inherit the chosen font; background/accents come from the saved theme palette).
   - Football-season template workflow (customize → publish → view/edit):
@@ -726,7 +739,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 ### Debug: History — GET `/api/debug/history`
 
 - **Purpose**: Inspect recent `event_history` inserts and whether the current session has user-linked rows.
-- **Output**: `{ user: { id, email }|null, mineCount, recentCount, mine: HistoryRow[], recent: HistoryRow[] }`.
+- **Output**: `{ user: { id, email }|null, sessionEmail, rawSessionUserId, resolvedUserId, mineCount, recentCount, recentAnonymousCount, mine: HistoryRow[], recent: HistoryRow[], recentAnonymous: HistoryRow[] }`.
 
 ### Debug: Egress — GET `/api/debug-egress`
 
@@ -820,6 +833,7 @@ Payload used by the authenticated calendar agents.
 ## Changelog
 
 - 2026-03-20: **Dashboard home**: The main dashboard now calls `GET /api/dashboard` when signed in (it previously never loaded server data, so upcoming events stayed empty). `GET /api/dashboard?refresh=1` skips the server response cache. The left sidebar loads `/api/history?view=sidebar` on sign-in so Invited/My Events counts survive refresh and navigation. To avoid Postgres `statement_timeout` (default pool `PG_STATEMENT_TIMEOUT_MS` 15s) on large accounts, the dashboard now uses a bounded recent-window scan first, then falls back to the simpler owner/shared history reads if that fast path times out, so older upcoming/draft rows can still surface without bringing back the old 800-row expansion. The dashboard history read uses a slim dashboard-specific JSON projection instead of the broader history payload, and both the dashboard and sidebar hot paths now use shorter local statement timeouts so they degrade before hitting the pool-wide 15s limit. The sidebar `view=sidebar&time=all` path now bypasses the generic history projection and uses a dedicated summary loader (`listSidebarHistoryForUserFast`) built from lightweight own rows plus accepted shared rows, trims shared sign-up response projection to the current user, and keeps the candidate window intentionally capped for responsiveness while still falling back to the simpler owner/shared history reads before returning HTTP 204 or stale cache on timeout. The client now keeps prior dashboard/sidebar state on transient failures and avoids clearing sidebar rows on cache revalidation. `/api/dashboard` still returns a degraded empty payload instead of HTTP 500 when a statement timeout occurs. Ensure `idx_event_history_user_created_id` from `prisma/manual_sql/20251130_add_event_history_user_created_id_idx.sql` is applied for best performance.
+- 2026-03-21: **Dashboard + invited-event visibility**: `GET /api/dashboard` now considers both owned events and invited shared events (`pending` and `accepted`) when resolving `nextEvent` and the `upcoming` list, and returns additive relation metadata on each event (`ownership`, `shareStatus`). `/api/history?view=sidebar&time=all` now uses the same owner+shared model instead of the old owner-only fast path, so invited events reliably appear in the left sidebar even when opened from the event page first. Sidebar compact payloads now include `startAt` plus the same relation metadata so upcoming/past bucketing matches dashboard/event-page date parsing. Share create/accept/remove and core history/event mutation routes now invalidate the dashboard response cache alongside the history cache so Home refreshes immediately after invitation-state changes.
 - 2026-03-01: Added gymnastics meet discovery flow: `POST /api/ingest?mode=meet_discovery` (upload or URL to scaffold event), `POST /api/parse/[eventId]` (OpenAI-first strict parse with one retry, Gemini fallback), and `GET/PUT /api/meet/[eventId]` (meet JSON + grouped builder statuses). Discovery now supports URL readable-text extraction plus linked same-domain PDF/image assets and stores parse/source audit metadata.
 - 2026-02-28: Dashboard next-event enrichment now uses Mapbox Directions + Geocoding fallback for travel ETA/distance and WeatherAPI (`WEATHERAPI_KEY` or `WEATHERAPI_API_KEY`) for nearest-time hourly forecast within a 3-day window. Updated `/api/dashboard` eligibility flags and `/api/dashboard/enrich-next-event` env requirements accordingly.
 - 2026-02-28: `/api/dashboard/enrich-next-event` now accepts optional request-origin coordinates (`originLat`/`originLng` + `originLabel`) so clients can calculate travel from current device location when no saved home origin exists.

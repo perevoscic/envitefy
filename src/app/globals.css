@@ -1,5 +1,23 @@
-@import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Amita:wght@400;700&family=Arizonia&family=Cookie&family=Courgette&family=Dancing+Script:wght@400;700&family=Euphoria+Script&family=Great+Vibes&family=Indie+Flower&family=Kalam:wght@400;700&family=Kaushan+Script&family=La+Belle+Aurore&family=MonteCarlo&family=Montserrat:wght@400;600;700&family=Pacifico&family=Parisienne&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600;700&family=Redressed&family=Sacramento&family=Satisfy&family=Shadows+Into+Light&family=Sofia&family=Sonsie+One&family=Style+Script&family=Tangerine:wght@400;700&family=Yellowtail&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Amita:wght@400;700&family=Arizonia&family=Cookie&family=Courgette&family=Dancing+Script:wght@400;700&family=Euphoria+Script&family=Great+Vibes&family=Indie+Flower&family=Josefin+Slab:wght@100;200;300;400;500;600;700&family=Kalam:wght@400;700&family=Kaushan+Script&family=La+Belle+Aurore&family=MonteCarlo&family=Montserrat:wght@400;600;700&family=Pacifico&family=Parisienne&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600;700&family=Redressed&family=Sacramento&family=Satisfy&family=Shadows+Into+Light&family=Sofia&family=Sonsie+One&family=Style+Script&family=Tangerine:wght@400;700&family=Yellowtail&display=swap");
 @import "tailwindcss";
+
+@font-face {
+  font-family: "Josefin Sans";
+  src: url("/fonts/Josefin_Sans/JosefinSans-VariableFont_wght.ttf")
+    format("truetype");
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Josefin Sans";
+  src: url("/fonts/Josefin_Sans/JosefinSans-Italic-VariableFont_wght.ttf")
+    format("truetype");
+  font-weight: 100 700;
+  font-style: italic;
+  font-display: swap;
+}
 
 :root {
   --background: #F8F5FF;
@@ -73,6 +91,8 @@
   --font-poppins: "Poppins", "Inter", system-ui, sans-serif;
   --font-raleway: "Raleway", "Inter", system-ui, sans-serif;
   --font-playfair: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-josefin-sans: "Josefin Sans", "Inter", system-ui, sans-serif;
+  --font-josefin-slab: "Josefin Slab", Georgia, "Times New Roman", serif;
   --font-dancing: "Dancing Script", "Comic Sans MS", cursive;
   --font-parisienne: "Parisienne", "Brush Script MT", cursive;
   --font-alex-brush: "Alex Brush", "Brush Script MT", cursive;
@@ -290,6 +310,22 @@ h5 {
 }
 
 @layer utilities {
+  .josefin-sans-variable {
+    font-family: "Josefin Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-variation-settings: "wght" 600;
+    font-synthesis: none;
+  }
+
+  .josefin-slab-variable {
+    font-family: "Josefin Slab", serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-weight: 600;
+    font-synthesis: none;
+  }
+
   /* Adds only iOS notch safe-area insets horizontally (no base padding). */
   .safe-inset-x {
     padding-left: max(env(safe-area-inset-left), constant(safe-area-inset-left));

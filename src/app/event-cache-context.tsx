@@ -13,6 +13,7 @@ import {
 import { useSession } from "next-auth/react";
 
 export const EVENT_CACHE_INVALIDATE_EVENT = "envitefy:events:invalidate";
+export const EVENT_CACHE_RESET_EVENT = "envitefy:events:reset";
 
 type HistoryRow = {
   id: string;
@@ -118,8 +119,23 @@ export function emitEventCacheInvalidation(detail?: EventCacheInvalidateDetail) 
   );
 }
 
+export function emitEventCacheReset() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(EVENT_CACHE_RESET_EVENT));
+}
+
+function normalizeIdentityPart(value: unknown, lowercase = false): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return lowercase ? trimmed.toLowerCase() : trimmed;
+}
+
 export function EventCacheProvider({ children }: { children: ReactNode }) {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
+  const sessionUser = (session?.user || null) as
+    | { email?: string | null; id?: string | null }
+    | null;
   const [historySidebarItems, setHistorySidebarItems] = useState<HistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(
@@ -133,6 +149,15 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const isHydratedRef = useRef(false);
   const refreshTimerRef = useRef<number | null>(null);
   const refreshPromiseRef = useRef<Promise<void> | null>(null);
+  const identityKeyRef = useRef<string | null>(null);
+  const sessionIdentityKey =
+    status === "authenticated"
+      ? (
+          normalizeIdentityPart(sessionUser?.email, true) ||
+          normalizeIdentityPart(sessionUser?.id) ||
+          null
+        )
+      : null;
 
   useEffect(() => {
     historyRef.current = historySidebarItems;
@@ -145,6 +170,22 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     isHydratedRef.current = isHydrated;
   }, [isHydrated]);
+
+  const resetCacheState = useCallback(() => {
+    if (typeof window !== "undefined" && refreshTimerRef.current != null) {
+      window.clearTimeout(refreshTimerRef.current);
+    }
+    refreshTimerRef.current = null;
+    refreshPromiseRef.current = null;
+    historyRef.current = [];
+    dashboardRef.current = null;
+    isHydratedRef.current = false;
+    setHistorySidebarItems([]);
+    setDashboardData(null);
+    setHistoryLoading(false);
+    setDashboardLoading(false);
+    setIsHydrated(false);
+  }, []);
 
   const refreshHistory = useCallback(async (_opts?: { force?: boolean }) => {
     setHistoryLoading(true);
@@ -256,13 +297,15 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      setHistorySidebarItems([]);
-      setDashboardData(null);
-      setHistoryLoading(false);
-      setDashboardLoading(false);
-      setIsHydrated(false);
+    const previousIdentity = identityKeyRef.current;
+    if (status !== "authenticated") {
+      identityKeyRef.current = null;
+      resetCacheState();
       return;
+    }
+    if (previousIdentity !== sessionIdentityKey) {
+      identityKeyRef.current = sessionIdentityKey;
+      resetCacheState();
     }
     if (status !== "authenticated" || isHydratedRef.current) return;
     let cancelled = false;
@@ -275,7 +318,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [refreshDashboard, refreshHistory, status]);
+  }, [refreshDashboard, refreshHistory, resetCacheState, sessionIdentityKey, status]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -324,6 +367,10 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       queueRefresh({ force: true, source: "history:updated" });
     };
 
+    const onReset = () => {
+      resetCacheState();
+    };
+
     window.addEventListener("history:created", onCreated as EventListener);
     window.addEventListener("history:deleted", onDeleted as EventListener);
     window.addEventListener("history:updated", onUpdated as EventListener);
@@ -331,6 +378,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       EVENT_CACHE_INVALIDATE_EVENT,
       onInvalidate as EventListener,
     );
+    window.addEventListener(EVENT_CACHE_RESET_EVENT, onReset as EventListener);
     return () => {
       window.removeEventListener("history:created", onCreated as EventListener);
       window.removeEventListener("history:deleted", onDeleted as EventListener);
@@ -339,8 +387,9 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
         EVENT_CACHE_INVALIDATE_EVENT,
         onInvalidate as EventListener,
       );
+      window.removeEventListener(EVENT_CACHE_RESET_EVENT, onReset as EventListener);
     };
-  }, [queueRefresh]);
+  }, [queueRefresh, resetCacheState]);
 
   const value = useMemo<EventCacheContextValue>(
     () => ({

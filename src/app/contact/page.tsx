@@ -1,6 +1,7 @@
 "use client";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import ThankYouModal from "@/components/ThankYouModal";
 
 export default function ContactPage() {
@@ -18,16 +19,18 @@ export default function ContactPage() {
     <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-foreground flex items-center justify-center p-6">
       <section className="w-full max-w-2xl">
         <div className="rounded-3xl bg-white/95 backdrop-blur-sm p-8 border border-[#e5dcff] shadow-[0_20px_60px_rgba(127,140,255,0.12)]">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[1.18] tracking-tight pb-1 overflow-visible text-center">
-            <span
-              className="text-foreground"
-              style={{
-                fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-              }}
-            >
-              Contact
-              <span> </span>
-              <span style={{ color: "#8a78f8" }}>Envitefy</span>
+          <h1 className="overflow-visible text-center text-[clamp(2.4rem,6vw,4.5rem)] font-extrabold leading-[1.24] tracking-tight pb-4 pt-2">
+            <span className="inline-flex flex-nowrap whitespace-nowrap items-center justify-center gap-x-2 sm:gap-x-3">
+              <span
+                className="text-[#6c5fd6]"
+                style={{
+                  fontFamily: 'var(--font-poppins), "Poppins", sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: "-0.085em",
+                }}
+              >
+                Contact <EnvitefyWordmark className="text-[1em]" />
+              </span>
             </span>
           </h1>
           <p className="mt-3 text-foreground/80 text-center">

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, query } from "@/lib/db";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { query } from "@/lib/db";
 import { extractHomeOrigin } from "@/lib/dashboard-data";
 import {
   buildDashboardCollections,
-  listDashboardEventsForOwner,
+  listDashboardEventsForUser,
 } from "@/lib/dashboard-query";
 import {
   createServerTimingTracker,
@@ -385,9 +385,7 @@ export async function POST(req: Request) {
         : { error: "Unauthorized" };
       return respondWithTiming(timing, body, { status: 401 });
     }
-    const userId = session?.user?.id
-      ? String(session.user.id)
-      : await timing.time("user_lookup", () => getUserIdByEmail(email));
+    const userId = await timing.time("user_lookup", () => resolveSessionUserId(session));
     if (!userId) {
       const body = timing.enabled
         ? { error: "Unauthorized", timings: timing.toObject() }
@@ -402,7 +400,7 @@ export async function POST(req: Request) {
     const requestedEventId =
       typeof body.eventId === "string" && body.eventId.trim() ? body.eventId.trim() : null;
 
-    const events = await timing.time("events", () => listDashboardEventsForOwner(userId, 200));
+    const events = await timing.time("events", () => listDashboardEventsForUser(userId, 200));
     const { nextEvent } = buildDashboardCollections(events);
 
     if (!nextEvent) {

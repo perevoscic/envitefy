@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import {
   getEventHistoryById,
-  getUserIdByEmail,
   updateEventHistoryData,
   updateEventHistoryTitle,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { computeGymBuilderStatuses } from "@/lib/meet-discovery";
 
 export const runtime = "nodejs";
@@ -15,12 +15,7 @@ export const dynamic = "force-dynamic";
 
 async function getSessionUserId() {
   const session: any = await getServerSession(authOptions as any);
-  const sessionUser: any = (session && (session as any).user) || null;
-  let userId: string | null = (sessionUser?.id as string | undefined) || null;
-  if (!userId && sessionUser?.email) {
-    userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
-  }
-  return userId;
+  return await resolveSessionUserId(session);
 }
 
 function deepMerge(base: any, patch: any): any {
@@ -100,6 +95,7 @@ export async function PUT(
 
     if (row.user_id) {
       invalidateUserHistory(row.user_id);
+      invalidateUserDashboard(row.user_id);
     }
 
     return NextResponse.json({

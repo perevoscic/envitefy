@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, query } from "@/lib/db";
-import { isDraftStatus, type DashboardEvent } from "@/lib/dashboard-data";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { query } from "@/lib/db";
+import {
+  isDraftStatus,
+  isScannedInviteCreatedVia,
+  type DashboardEvent,
+} from "@/lib/dashboard-data";
 import {
   buildDashboardCollections,
-  listDashboardEventsForOwner,
+  listDashboardEventsForUser,
 } from "@/lib/dashboard-query";
+import {
+  getDashboardRefreshInflight,
+  getDashboardResponseCache,
+} from "@/lib/dashboard-cache";
 import {
   createServerTimingTracker,
   isTimingRequested,
@@ -40,11 +48,8 @@ type SessionLike = {
 } | null;
 
 let metricsCacheTableExists: boolean | null = null;
-const dashboardResponseCache = new Map<
-  string,
-  { at: number; payload: DashboardPayload }
->();
-const dashboardRefreshInflight = new Map<string, Promise<DashboardPayload>>();
+const dashboardResponseCache = getDashboardResponseCache();
+const dashboardRefreshInflight = getDashboardRefreshInflight();
 
 function hoursUntil(iso: string): number {
   return (new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60);
@@ -142,10 +147,10 @@ async function getCachedMetrics(
 
 function buildSetupHealth(nextEvent: DashboardEvent | null, rsvpTotalForEvent: number) {
   if (!nextEvent) return [];
+  if (nextEvent.ownership === "invited") return [];
   const flags: Array<{ key: string; label: string }> = [];
   const createdVia = String(nextEvent.createdVia || "").toLowerCase();
-  const isScannedOrUploaded =
-    createdVia === "ocr" || createdVia.includes("scan") || createdVia.includes("upload");
+  const isScannedOrUploaded = isScannedInviteCreatedVia(createdVia);
   if (!nextEvent.locationText) {
     flags.push({ key: "location", label: "Location not resolved" });
   }
@@ -170,8 +175,8 @@ async function computeDashboardPayload(
   timing?: ServerTimingTracker
 ): Promise<DashboardPayload> {
   const events = timing
-    ? await timing.time("events", () => listDashboardEventsForOwner(userId, 200))
-    : await listDashboardEventsForOwner(userId, 200);
+    ? await timing.time("events", () => listDashboardEventsForUser(userId, 200))
+    : await listDashboardEventsForUser(userId, 200);
   const now = Date.now();
   const {
     allDrafts,
@@ -383,9 +388,7 @@ export async function GET(req: Request) {
       return withTiming(timing, body, { status: 401 });
     }
 
-    const userId = session?.user?.id
-      ? String(session.user.id)
-      : await timing.time("user_lookup", () => getUserIdByEmail(email));
+    const userId = await timing.time("user_lookup", () => resolveSessionUserId(session));
     if (!userId) {
       const body = timing.enabled
         ? {

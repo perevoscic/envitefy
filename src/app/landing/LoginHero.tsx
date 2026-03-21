@@ -1,10 +1,10 @@
 "use client";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BackgroundSlider from "@/components/BackgroundSlider";
 import AuthModal from "@/components/auth/AuthModal";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 
 export default function LoginHero() {
   const { status } = useSession();
@@ -104,18 +104,18 @@ export default function LoginHero() {
   // Listen for global auth modal open/close to pause background slider
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const onOpen = () =>
+    const onOpen: EventListener = () =>
       setAuthModalOpenCount((c) => (Number.isFinite(c) ? c + 1 : 1));
-    const onClose = () =>
+    const onClose: EventListener = () =>
       setAuthModalOpenCount((c) => {
         const next = (Number.isFinite(c) ? c : 1) - 1;
         return next > 0 ? next : 0;
       });
-    window.addEventListener("smd-auth-modal-open", onOpen as any);
-    window.addEventListener("smd-auth-modal-close", onClose as any);
+    window.addEventListener("smd-auth-modal-open", onOpen);
+    window.addEventListener("smd-auth-modal-close", onClose);
     return () => {
-      window.removeEventListener("smd-auth-modal-open", onOpen as any);
-      window.removeEventListener("smd-auth-modal-close", onClose as any);
+      window.removeEventListener("smd-auth-modal-open", onOpen);
+      window.removeEventListener("smd-auth-modal-close", onClose);
     };
   }, []);
 
@@ -173,8 +173,8 @@ export default function LoginHero() {
     window.addEventListener("wheel", markInteracted, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("touchstart", markInteracted as any);
-      window.removeEventListener("wheel", markInteracted as any);
+      window.removeEventListener("touchstart", markInteracted);
+      window.removeEventListener("wheel", markInteracted);
     };
   }, []);
 
@@ -279,15 +279,7 @@ export default function LoginHero() {
             aria-level={1}
           >
             <span className="inline-flex items-center gap-3">
-              <Image
-                src="/favicon.png"
-                alt="Envitefy emblem"
-                width={150}
-                height={150}
-                quality={100}
-                priority
-                unoptimized
-              />
+              <EnvitefyWordmark className="text-[3.6rem] md:text-[5.6rem] leading-none drop-shadow-[0_12px_36px_rgba(0,0,0,0.35)]" />
             </span>
           </p>
           <div className="flex flex-row items-center justify-center gap-3">

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
+import { useState, FormEvent, useEffect, useCallback } from "react";
 import { useTheme } from "@/app/providers";
 
-type RsvpResponse = "yes" | "no" | "maybe" | null;
+export type RsvpResponse = "yes" | "no" | "maybe" | null;
 
 interface GuestRsvpModalProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface GuestRsvpModalProps {
   eventId: string;
   eventTitle: string;
   rsvpDeadline?: string;
+  initialResponse?: Exclude<RsvpResponse, null> | null;
   themeColors?: {
     primary: string;
     secondary: string;
@@ -34,6 +35,7 @@ export default function GuestRsvpModal({
   eventId,
   eventTitle,
   rsvpDeadline,
+  initialResponse,
   themeColors,
 }: GuestRsvpModalProps) {
   const { theme } = useTheme();
@@ -47,6 +49,11 @@ export default function GuestRsvpModal({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const closeModal = useCallback(() => {
+    setError(null);
+    onClose();
+  }, [onClose]);
+
   // Pre-fill from local storage if available
   useEffect(() => {
     if (isOpen) {
@@ -59,8 +66,21 @@ export default function GuestRsvpModal({
           setPhone(data.phone || "");
         } catch (e) {}
       }
+      setResponse(initialResponse || null);
+      setError(null);
     }
-  }, [isOpen]);
+  }, [initialResponse, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeModal();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [closeModal, isOpen]);
 
   if (!isOpen) return null;
 
@@ -105,7 +125,7 @@ export default function GuestRsvpModal({
         
         // Close after delay
         setTimeout(() => {
-          onClose();
+          closeModal();
           // Reset state
           setTimeout(() => {
              setResponse(null);
@@ -127,128 +147,153 @@ export default function GuestRsvpModal({
   const primaryColor = themeColors?.primary || "#4f46e5"; // Indigo-600 default
   const secondaryColor = themeColors?.secondary || "#ec4899"; // Pink-500 default
 
+  const responseLabel =
+    response === "yes"
+      ? "Yes, I'm in"
+      : response === "maybe"
+      ? "Maybe"
+      : response === "no"
+      ? "No"
+      : "";
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm animate-in fade-in duration-300"
+      onClick={closeModal}
+    >
       <div 
-        className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 animate-in zoom-in-95 duration-300"
+        className="relative w-full max-w-xl overflow-hidden rounded-[2.25rem] border border-white/20 bg-white shadow-2xl animate-in zoom-in-95 duration-300 dark:bg-slate-900"
         style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
+        onClick={(event) => event.stopPropagation()}
       >
-        {/* Animated Background Blob */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-3xl" style={{ backgroundColor: `${primaryColor}1a` }}></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/10 rounded-full blur-3xl" style={{ backgroundColor: `${secondaryColor}1a` }}></div>
+        <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full blur-3xl" style={{ backgroundColor: `${primaryColor}16` }}></div>
+        <div className="absolute -bottom-24 -left-20 h-56 w-56 rounded-full blur-3xl" style={{ backgroundColor: `${secondaryColor}14` }}></div>
 
         <button 
-          onClick={onClose}
-          className="absolute top-6 right-6 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors z-10"
+          type="button"
+          onClick={closeModal}
+          aria-label="Close RSVP dialog"
+          className="absolute right-5 top-5 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-white"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
 
-        <div className="p-8 md:p-10 relative z-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div className="relative z-10 max-h-[90vh] overflow-y-auto p-8 md:p-10 custom-scrollbar">
           {!success ? (
             <form onSubmit={handleSubmit} className="space-y-6">
-              <header className="mb-6">
-                <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-1 text-slate-900 dark:text-white leading-tight">
+              <header className="mb-2 space-y-3">
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                  RSVP
+                </p>
+                <h2 className="text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white md:text-4xl">
                   RSVP for {eventTitle}
                 </h2>
                 {rsvpDeadline && (
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                    Deadline: {formatDate(rsvpDeadline)}
+                  <p className="text-sm font-medium text-slate-500">
+                    Please reply by {formatDate(rsvpDeadline)}.
                   </p>
                 )}
               </header>
 
-              <div className="space-y-4">
-                <p className="text-base text-slate-600 dark:text-slate-300 font-bold ml-1">
-                  Will you be joining us?
-                </p>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: 'yes', label: 'Yes!', icon: '✨' },
-                    { id: 'maybe', label: 'Maybe', icon: '🤔' },
-                    { id: 'no', label: 'No', icon: '😔' }
-                  ].map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setResponse(opt.id as any)}
-                      className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-2xl border-2 transition-all duration-200 ${
-                        response === opt.id 
-                          ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-500/10' 
-                          : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-800/50'
-                      }`}
+              <div className="space-y-2">
+                <label className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                  Response
+                </label>
+                {initialResponse ? (
+                  <div
+                    className="rounded-[1.4rem] border px-4 py-4"
+                    style={{
+                      borderColor: `${primaryColor}3d`,
+                      backgroundColor: `${primaryColor}0f`,
+                    }}
+                  >
+                    <p className="text-sm font-semibold text-slate-500">
+                      Selected from the event page
+                    </p>
+                    <p className="mt-1 text-lg font-black text-slate-900 dark:text-white">
+                      {responseLabel}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                    <select
+                      required
+                      value={response || ""}
+                      onChange={(event) =>
+                        setResponse((event.target.value as Exclude<RsvpResponse, null>) || null)
+                      }
+                      className="w-full bg-transparent text-base font-semibold text-slate-900 outline-none dark:text-white"
                     >
-                      <span className="text-lg sm:text-xl mb-1">{opt.icon}</span>
-                      <span className={`text-[10px] sm:text-sm font-black uppercase tracking-tight ${response === opt.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200'}`}>
-                        {opt.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                      <option value="">Select your response</option>
+                      <option value="yes">Yes, I&apos;m in</option>
+                      <option value="maybe">Maybe</option>
+                      <option value="no">No</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">First Name</label>
+                    <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">First Name</label>
                     <input
                       required
                       type="text"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       placeholder="John"
-                      className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all outline-none font-bold text-sm"
+                      className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 p-3.5 text-sm font-semibold text-slate-900 outline-none transition-all focus:border-slate-300 focus:bg-white dark:border-slate-800 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Last Name</label>
+                    <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Last Name</label>
                     <input
                       required
                       type="text"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       placeholder="Doe"
-                      className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all outline-none font-bold text-sm"
+                      className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 p-3.5 text-sm font-semibold text-slate-900 outline-none transition-all focus:border-slate-300 focus:bg-white dark:border-slate-800 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Phone Number</label>
+                  <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Phone Number</label>
                   <input
                     required
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="(555) 000-0000"
-                    className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all outline-none font-bold text-sm"
+                    className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 p-3.5 text-sm font-semibold text-slate-900 outline-none transition-all focus:border-slate-300 focus:bg-white dark:border-slate-800 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Leave a Message (Optional)</label>
+                  <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Leave a Message</label>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="We're so excited! See you there!"
                     rows={3}
-                    className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all outline-none font-bold text-sm resize-none"
+                    className="w-full resize-none rounded-[1.15rem] border border-slate-200 bg-slate-50 p-3.5 text-sm font-semibold text-slate-900 outline-none transition-all focus:border-slate-300 focus:bg-white dark:border-slate-800 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
                   />
                 </div>
               </div>
 
               {error && (
-                <p className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-500/10 p-3 rounded-xl border border-red-100 dark:border-red-500/20">
-                  ⚠️ {error}
-                </p>
+                <div className="rounded-[1.15rem] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 dark:border-red-500/20 dark:bg-red-500/10">
+                  {error}
+                </div>
               )}
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4.5 rounded-2xl font-black text-lg shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-70 disabled:scale-100 mt-2"
-                style={{ backgroundColor: primaryColor, color: '#fff', height: '60px' }}
+                className="mt-2 flex h-[58px] w-full items-center justify-center gap-3 rounded-full text-lg font-black text-white shadow-xl transition-all hover:scale-[1.01] active:scale-[0.98] disabled:scale-100 disabled:opacity-70"
+                style={{ backgroundColor: primaryColor, color: "#fff" }}
               >
                 {isSubmitting ? (
                   <>
@@ -256,19 +301,19 @@ export default function GuestRsvpModal({
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    SENDING...
+                    Sending RSVP...
                   </>
-                ) : 'CONFIRM RSVP'}
+                ) : "Confirm RSVP"}
               </button>
             </form>
           ) : (
-            <div className="py-20 text-center space-y-6 animate-in zoom-in-95 duration-500">
-              <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="space-y-6 py-20 text-center animate-in zoom-in-95 duration-500">
+              <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
               </div>
-              <h2 className="text-4xl font-black text-slate-900 dark:text-white">RSVP Sent!</h2>
-              <p className="text-xl text-slate-500 dark:text-slate-400 font-medium">
-                Awesome! The host has been notified. <br/> See you there! 🎉
+              <h2 className="text-4xl font-black text-slate-900 dark:text-white">RSVP Sent</h2>
+              <p className="text-xl font-medium text-slate-500 dark:text-slate-400">
+                The host has been notified.
               </p>
             </div>
           )}

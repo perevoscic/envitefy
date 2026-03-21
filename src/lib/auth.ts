@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken } from "@/lib/db";
+import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken, getUserIdByEmail } from "@/lib/db";
 
 function isTransientDbError(err: unknown): boolean {
   const anyErr = err as any;
@@ -11,6 +11,38 @@ function isTransientDbError(err: unknown): boolean {
     ["ENOTFOUND", "ETIMEDOUT", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETUNREACH"].includes(code) ||
     /getaddrinfo|timeout|refused|not known/i.test(message)
   );
+}
+
+type SessionUserLike = {
+  id?: string | null;
+  email?: string | null;
+} | null | undefined;
+
+export async function resolveSessionUserId(sessionLike: {
+  user?: SessionUserLike;
+} | null | undefined): Promise<string | null> {
+  const sessionUser = sessionLike?.user || null;
+  const email =
+    typeof sessionUser?.email === "string" ? sessionUser.email.trim().toLowerCase() : "";
+  if (email) {
+    try {
+      const userId = await getUserIdByEmail(email);
+      if (userId) return userId;
+      return null;
+    } catch (err) {
+      const message = (err as any)?.message || String(err);
+      if (isTransientDbError(err)) {
+        console.warn("[auth] resolveSessionUserId email lookup skipped: database unavailable", message);
+      } else {
+        console.error("[auth] resolveSessionUserId email lookup failed", message);
+      }
+      return null;
+    }
+  }
+  if (typeof sessionUser?.id === "string" && sessionUser.id.trim()) {
+    return sessionUser.id.trim();
+  }
+  return null;
 }
 
 export function getAuthOptions(): NextAuthOptions {
@@ -141,6 +173,14 @@ export function getAuthOptions(): NextAuthOptions {
           const email = (user?.email as string) || (token?.email as string) || null;
           const tokenAny = token as any;
           tokenAny.providers = tokenAny.providers || {};
+          if (email) {
+            const resolvedUserId =
+              (await getUserIdByEmail(email).catch(() => null)) ||
+              (typeof user?.id === "string" && user.id.trim() ? user.id.trim() : null);
+            if (resolvedUserId) {
+              tokenAny.userId = resolvedUserId;
+            }
+          }
 
           // Keep admin claims in sync with DB changes (e.g. user promoted while still logged in).
           // We refresh periodically instead of only once to avoid stale JWT claims.
@@ -267,6 +307,10 @@ export function getAuthOptions(): NextAuthOptions {
       async session({ session, token }) {
         try {
           if (session?.user) {
+            (session.user as any).id =
+              (typeof (token as any)?.userId === "string" && (token as any).userId.trim()) ||
+              (typeof (session.user as any)?.id === "string" && (session.user as any).id.trim()) ||
+              null;
             (session.user as any).isAdmin = Boolean((token as any)?.isAdmin);
             (session.user as any).provider = (token as any)?.provider || "credentials";
           }

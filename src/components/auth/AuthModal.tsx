@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { useSidebar } from "@/app/sidebar-context";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 
@@ -92,14 +92,7 @@ export default function AuthModal({
           <div className="flex flex-col items-center gap-3 pb-7 text-center">
             <p className="wedding-kicker">{heroKicker}</p>
             <div>
-              <Image
-                src="/favicon.png"
-                alt="Envitefy emblem"
-                width={92}
-                height={48}
-                quality={100}
-                unoptimized
-              />
+              <EnvitefyWordmark className="text-[2.7rem] leading-none" />
             </div>
           </div>
           {isLogin ? (

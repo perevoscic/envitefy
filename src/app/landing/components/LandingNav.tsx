@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import AuthModal from "@/components/auth/AuthModal";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 
 export default function LandingNav() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,21 +40,14 @@ export default function LandingNav() {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out bg-white ${
           isScrolled || mobileMenuOpen
-            ? "backdrop-blur-md border-b border-white/60 shadow-sm py-3"
-            : "py-5"
+            ? "backdrop-blur-md border-b border-white/60 shadow-sm pt-6 pb-3"
+            : "pt-8 pb-5"
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <Image
-              src="/logo.png"
-              alt="Envitefy logo"
-              width={156}
-              height={64}
-              priority
-              className="transition-transform duration-300 group-hover:scale-105"
-            />
+            <EnvitefyWordmark className="text-[2.2rem] leading-none transition-transform duration-300 group-hover:scale-105" />
           </Link>
 
           {/* Desktop Nav */}

@@ -24,6 +24,8 @@ import {
   getUserIdByEmail,
   getUserById,
 } from "@/lib/db";
+import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -60,6 +62,11 @@ import {
   getEventAccessCookieName,
   verifyEventAccessCookieValue,
 } from "@/lib/event-access";
+import {
+  isOcrBirthdayRenderer,
+  selectBirthdayOcrThemeId,
+} from "@/lib/birthday-ocr-template";
+import { isScannedInviteCreatedVia } from "@/lib/dashboard-data";
 import {
   createServerTimingTracker,
 } from "@/lib/server-timing";
@@ -585,6 +592,7 @@ export default async function EventPage({
   let isReadOnly = false; // Read-only mode for non-authenticated users
   const isShared = Boolean((row.data as any)?.shared);
   const isSharedOut = Boolean((row.data as any)?.sharedOut);
+  let hasShareRelation = isShared;
   if (!isOwner) {
     if (!userId) {
       // Allow viewing in read-only mode for non-authenticated users
@@ -596,12 +604,14 @@ export default async function EventPage({
       if (access === true) {
         // ok
         recipientAccepted = true;
+        hasShareRelation = true;
       } else if (access === false) {
         const pending = await timing.time("share_pending_lookup", () =>
           isEventSharePendingForUser(row.id, userId)
         );
         if (pending) {
           recipientPending = true;
+          hasShareRelation = true;
           if (autoAccept) {
             try {
               await fetch(`/api/events/share/accept`, {
@@ -697,6 +707,8 @@ export default async function EventPage({
     ((awaitedSearchParams as any)?.edit ?? "") as string
   ).trim();
   const discoveryCreatedVia = String((data as any)?.createdVia || "").toLowerCase();
+  const isScannedInviteEvent = isScannedInviteCreatedVia(discoveryCreatedVia);
+  const canManageCreatedEvent = isOwner && !isScannedInviteEvent;
   const discoveryWorkflow = String(
     (data as any)?.discoverySource?.workflow || ""
   ).toLowerCase();
@@ -732,7 +744,7 @@ export default async function EventPage({
     : null;
   const discoveryEditConfig:
     | { customizeUrl: string; workflow: "gymnastics" | "football" }
-    | null = editParam && isOwner
+    | null = editParam && canManageCreatedEvent
     ? (() => {
       if (isGymnasticsDiscoveryTemplate) {
         return {
@@ -755,12 +767,12 @@ export default async function EventPage({
       return null;
     })()
     : null;
-  if (editParam && isOwner && !discoveryEditConfig) {
+  if (editParam && canManageCreatedEvent && !discoveryEditConfig) {
     const editUrl = resolveEditHref(row.id, data, title);
     redirect(editUrl);
   }
 
-  if (isOwner && ownerWorkspaceTab) {
+  if (canManageCreatedEvent && ownerWorkspaceTab) {
     return (
       <EventOwnerWorkspace
         eventId={row.id}
@@ -863,7 +875,7 @@ export default async function EventPage({
     typeof data?.numberOfGuests === "number" && data.numberOfGuests > 0
       ? data.numberOfGuests
       : 0;
-  const isOcrEvent = (data as any)?.createdVia === "ocr";
+  const isOcrEvent = isScannedInviteCreatedVia((data as any)?.createdVia);
   const attachmentInfo = (() => {
     const raw = data?.attachment;
     if (!raw || typeof raw !== "object") return null;
@@ -1240,7 +1252,7 @@ export default async function EventPage({
         })
       : null;
 
-  const viewerKind: "owner" | "guest" | "readonly" = isOwner
+  const viewerKind: "owner" | "guest" | "readonly" = canManageCreatedEvent
     ? "owner"
     : isReadOnly
     ? "readonly"
@@ -1296,6 +1308,9 @@ export default async function EventPage({
     variationId &&
     categoryNormalized === "birthdays" &&
     createdVia !== "simple-template";
+  const isBirthdayRendererEvent =
+    categoryNormalized === "birthdays" &&
+    (createdVia === "birthday-renderer" || isOcrBirthdayRenderer(createdVia));
   const isWeddingTemplate =
     templateId && variationId && categoryNormalized === "weddings";
   const isDiscoverySimpleTemplate =
@@ -1312,14 +1327,39 @@ export default async function EventPage({
     Boolean(isFootballDiscoveryTemplate) || Boolean(isFootballSeasonTemplate);
 
   // If it's a birthday template, render the template view
-  if (isBirthdayTemplate || (categoryNormalized === "birthdays" && createdVia === "birthday-renderer")) {
-    const birthdayTheme = (data.theme && data.theme.id) ? data.theme : (variationId ? BIRTHDAY_THEMES.find(t => t.id === variationId) : null) || BIRTHDAY_THEMES[0];
+  if (isBirthdayTemplate || isBirthdayRendererEvent) {
+    const birthdayAudience =
+      typeof (data as any)?.birthdayAudience === "string"
+        ? ((data as any).birthdayAudience as string)
+        : null;
+    const birthdayHintThemeId =
+      typeof (data as any)?.birthdayTemplateHint?.themeId === "string"
+        ? ((data as any).birthdayTemplateHint.themeId as string)
+        : null;
+    const birthdayThemeId =
+      variationId ||
+      birthdayHintThemeId ||
+      selectBirthdayOcrThemeId(
+        birthdayAudience === "girl" || birthdayAudience === "boy"
+          ? birthdayAudience
+          : "neutral"
+      );
+    const birthdayTheme =
+      (data.theme && data.theme.id)
+        ? data.theme
+        : BIRTHDAY_THEMES.find((t) => t.id === birthdayThemeId) ||
+          BIRTHDAY_THEMES[0];
     
-    if (createdVia === "birthday-renderer" || (data.theme && data.theme.layout)) {
+    if (isBirthdayRendererEvent || (data.theme && data.theme.layout)) {
         return (
             <BirthdayRenderer
                 template={birthdayTheme}
                 eventId={row.id}
+                heroImageUrl={
+                  isOcrBirthdayRenderer(createdVia)
+                    ? attachmentInfo?.dataUrl || headerImageUrl || null
+                    : null
+                }
                 event={{
                     headlineTitle: title || data.headlineTitle,
                     date: data.startISO || (data.date && data.time ? `${data.date}T${data.time}` : data.date),
@@ -1327,7 +1367,9 @@ export default async function EventPage({
                     story: data.story || data.description || (data.partyDetails && data.partyDetails.notes),
                     schedule: data.schedule,
                     registries: data.registries,
-                    rsvpEnabled: data.rsvpEnabled || (data.rsvp && data.rsvp.isEnabled),
+                    rsvpEnabled:
+                      Boolean(data.rsvpEnabled) ||
+                      Boolean((data.rsvp && data.rsvp.isEnabled) || data.rsvp),
                     rsvpLink: "#rsvp",
                     birthdayName: data.birthdayName || data.childName || "Birthday Star",
                     age: data.age,
@@ -1338,9 +1380,13 @@ export default async function EventPage({
                     rsvpDeadline: data.rsvpDeadline || (data.rsvp && data.rsvp.deadline),
                     numberOfGuests: data.numberOfGuests || 0
                 }}
-                isOwner={isOwner}
+                isOwner={canManageCreatedEvent}
+                calendarLinks={calendarLinks}
+                coordinates={data?.coordinates || null}
+                venueText={typeof data?.venue === "string" ? data.venue : null}
+                locationText={typeof data?.location === "string" ? data.location : null}
                 actions={
-                  !isReadOnly && isOwner && (
+                  !isReadOnly && canManageCreatedEvent && (
                     <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 sm:px-3 py-1.5 shadow">
                       <Link
                         href={buildEditLink(row.id, data, title)}
@@ -1385,7 +1431,7 @@ export default async function EventPage({
         eventTitle={title}
         templateId={templateId || "party-pop"}
         variationId={variationId || "classic"}
-        isOwner={isOwner}
+        isOwner={canManageCreatedEvent}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
         shareUrl={shareUrl}
@@ -1403,7 +1449,7 @@ export default async function EventPage({
         eventTitle={title}
         templateId={templateId}
         variationId={variationId}
-        isOwner={isOwner}
+        isOwner={canManageCreatedEvent}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
         shareUrl={shareUrl}
@@ -1422,7 +1468,7 @@ export default async function EventPage({
         eventTitle={title}
         eventData={clientSafeEventData}
         shareUrl={shareUrl}
-        isOwner={isOwner}
+        isOwner={canManageCreatedEvent}
         isReadOnly={isReadOnly}
         editHref={editHref}
       />
@@ -1609,7 +1655,7 @@ export default async function EventPage({
           {/* Actions pinned to bottom-right of header */}
           <div className="absolute bottom-3 right-3 z-40 hidden md:block">
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium rounded-xl border border-[#ddd4f8] bg-white/92 backdrop-blur px-2 sm:px-3 py-1.5 shadow-[0_12px_26px_rgba(76,55,134,0.22)]">
-              {!isReadOnly && isOwner && !isOcrEvent && (
+              {!isReadOnly && canManageCreatedEvent && !isOcrEvent && (
                 <Link
                   href={buildEditLink(row.id, data, title)}
                   className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f6f1ff] hover:text-[#2f2550]"
@@ -1631,7 +1677,7 @@ export default async function EventPage({
                   <span className="hidden sm:inline">Edit</span>
                 </Link>
               )}
-              {!isReadOnly && isOwner && (
+              {!isReadOnly && canManageCreatedEvent && (
                 <EventDeleteModal eventId={row.id} eventTitle={title} />
               )}
               <EventActions
@@ -1910,7 +1956,7 @@ export default async function EventPage({
           )}
 
           {/* Sponsored supplies block: show to owner right after creation */}
-          {!isReadOnly && isOwner && createdParam && (
+          {!isReadOnly && canManageCreatedEvent && createdParam && (
             <SponsoredSupplies
               placement="confirm"
               category={categoryRaw}
@@ -1920,7 +1966,7 @@ export default async function EventPage({
             />
           )}
           {/* Sponsored supplies block for guests (always visible to non-owners) */}
-          {!isOwner && (
+          {!canManageCreatedEvent && (
             <SponsoredSupplies
               placement="confirm"
               category={categoryRaw}
@@ -1998,7 +2044,7 @@ export default async function EventPage({
       </div>
 
       <div className="mt-6 flex flex-col gap-3">
-        {isOwner && numberOfGuests > 0 && (
+        {canManageCreatedEvent && numberOfGuests > 0 && (
           <EventRsvpDashboard
             eventId={row.id}
             initialNumberOfGuests={numberOfGuests}
@@ -2020,6 +2066,12 @@ export default async function EventPage({
                         eventId: row.id,
                         byUserId: userId!,
                       });
+                      invalidateUserHistory(userId!);
+                      invalidateUserDashboard(userId!);
+                      if (ownerUserId) {
+                        invalidateUserHistory(ownerUserId);
+                        invalidateUserDashboard(ownerUserId);
+                      }
                     } catch {}
                     try {
                       revalidatePath(canonical);
@@ -2069,6 +2121,12 @@ export default async function EventPage({
                           eventId: row.id,
                           recipientUserId: userId!,
                         });
+                        invalidateUserHistory(userId!);
+                        invalidateUserDashboard(userId!);
+                        if (ownerUserId) {
+                          invalidateUserHistory(ownerUserId);
+                          invalidateUserDashboard(ownerUserId);
+                        }
                       } catch {}
                       try {
                         revalidatePath(canonical);
@@ -2089,6 +2147,20 @@ export default async function EventPage({
             </ul>
           </section>
         ) : null}
+        {isReadOnly && !isOwner ? (
+          <section className="rounded border border-border bg-surface p-3 text-sm text-foreground/70">
+            <h3 className="text-sm font-semibold text-foreground/80">
+              View-only access
+            </h3>
+            <p className="mt-2">
+              {hasShareRelation
+                ? "This event is available in view-only mode right now."
+                : "This event was opened from a direct link, so it is view-only right now."}{" "}
+              It will only appear on Home or under Invited Events after it is
+              shared to this account.
+            </p>
+          </section>
+        ) : null}
       </div>
       {!isReadOnly && (
         <div className="event-modern-mobile-bar md:hidden">
@@ -2101,7 +2173,7 @@ export default async function EventPage({
                 RSVP
               </a>
             )}
-            {isOwner && !isOcrEvent && (
+            {canManageCreatedEvent && !isOcrEvent && (
               <Link
                 href={buildEditLink(row.id, data, title)}
                 className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"

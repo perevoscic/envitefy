@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { acceptEventShare, getUserIdByEmail, getEventHistoryById } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 
 export const runtime = "nodejs";
 
@@ -23,12 +24,14 @@ export async function POST(request: NextRequest) {
     
     // Invalidate recipient's cache (they now see the shared event)
     invalidateUserHistory(recipientUserId);
+    invalidateUserDashboard(recipientUserId);
     
     // Also invalidate owner's cache (share status changed)
     try {
       const event = await getEventHistoryById(eventId);
       if (event?.user_id) {
         invalidateUserHistory(event.user_id);
+        invalidateUserDashboard(event.user_id);
       }
     } catch {}
     

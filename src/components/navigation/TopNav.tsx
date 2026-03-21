@@ -3,8 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { signOut } from "next-auth/react";
 import { useSidebar } from "@/app/sidebar-context";
+import { secureSignOut } from "@/utils/secureSignOut";
 import {
   CalendarIconGoogle,
   CalendarIconOutlook,
@@ -397,7 +397,9 @@ export function ProfileMenu({
         <div className="h-px w-full bg-gradient-to-r from-transparent via-[#ece9ff] to-transparent my-1"></div>
 
         <button
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={() => {
+            void secureSignOut("/");
+          }}
           className="flex items-center gap-3 px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 transition font-medium"
         >
           <svg

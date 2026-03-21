@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import {
-  getUserIdByEmail,
   insertEventHistory,
   listHistoryForUser,
   listSidebarHistoryForUserFast,
@@ -14,6 +13,7 @@ import {
   setCachedHistory,
   invalidateUserHistory,
 } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { createHash } from "crypto";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import {
@@ -51,10 +51,7 @@ export async function GET(req: Request) {
 
     const session: any = await getServerSession(authOptions as any);
     const sessionUser: any = (session && (session as any).user) || null;
-    let userId: string | null = (sessionUser?.id as string | undefined) || null;
-    if (!userId && sessionUser?.email) {
-      userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
-    }
+    const userId = await resolveSessionUserId(session);
     if (!userId) {
       if (HISTORY_DEBUG) {
         console.log("[history] GET: no userId resolved", {
@@ -198,9 +195,19 @@ export async function POST(req: Request) {
   try {
     const session: any = await getServerSession(authOptions as any);
     const sessionUser: any = (session && (session as any).user) || null;
-    let userId: string | null = (sessionUser?.id as string | undefined) || null;
-    if (!userId && sessionUser?.email) {
-      userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
+    const userId = await resolveSessionUserId(session);
+    if (sessionUser && !userId) {
+      if (HISTORY_DEBUG) {
+        console.warn("[history] POST: unable to resolve signed-in account", {
+          sessionEmail: sessionUser?.email || null,
+          rawSessionUserId:
+            typeof sessionUser?.id === "string" ? sessionUser.id : null,
+        });
+      }
+      return NextResponse.json(
+        { error: "Unable to resolve signed-in account" },
+        { status: 409 },
+      );
     }
     const body = await req.json().catch(() => ({}));
     const rawTitle = (body.title as string) || "Event";
@@ -220,8 +227,13 @@ export async function POST(req: Request) {
         {
           resolvedUserId: userId,
           sessionEmail: sessionUser?.email || null,
+          rawSessionUserId:
+            typeof sessionUser?.id === "string" ? sessionUser.id : null,
           title,
           category: data?.category || null,
+          createdVia: data?.createdVia || null,
+          startISO: data?.startISO || null,
+          startAt: data?.startAt || null,
           payloadBytes: dataPayloadBytes,
         }
       );
@@ -231,6 +243,7 @@ export async function POST(req: Request) {
     // Invalidate cache for this user since we just added a new event
     if (userId) {
       invalidateUserHistory(userId);
+      invalidateUserDashboard(userId);
     }
     
     // Only upsert into signup_forms when payload clearly includes a signup form

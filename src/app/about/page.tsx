@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 
 export const metadata: Metadata = {
   title: "About — Envitefy",
@@ -70,11 +71,19 @@ export default function AboutPage() {
         <div className="text-center mb-16">
           <div className="bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] rounded-3xl p-1 mb-8">
             <div className="rounded-3xl bg-white/95 backdrop-blur-sm p-10 sm:p-12 border border-[#e5dcff]">
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.18] tracking-tight pb-4">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#5a56d6] via-[#7F8CFF] to-[#9a84ff]">
-                  About
-                  <span> </span>
-                  <span className="font-pacifico inline-block">Envitefy</span>
+              <h1 className="overflow-visible text-[clamp(2.9rem,7vw,5.25rem)] font-extrabold leading-[1.24] tracking-tight pb-10 pt-3">
+                <span className="inline-flex flex-nowrap whitespace-nowrap items-center justify-center gap-x-2 sm:gap-x-3">
+                  <span
+                    className="text-[#6c5fd6]"
+                    style={{
+                      fontFamily: 'var(--font-poppins), "Poppins", sans-serif',
+                      fontWeight: 700,
+                      letterSpacing: "-0.085em",
+                    }}
+                  >
+                    About
+                  </span>
+                  <EnvitefyWordmark className="text-[1em]" />
                 </span>
               </h1>
               <p className="mt-4 text-base sm:text-lg uppercase tracking-[0.2em] text-foreground/60 font-medium">
@@ -237,7 +246,10 @@ export default function AboutPage() {
               </h3>
               <ul className="space-y-3 text-foreground/80">
                 <li>• Reads names in cursive and decorative fonts</li>
-                <li>• Understands spelled-out times (&quot;four o&apos;clock&quot;)</li>
+                <li>
+                  • Understands spelled-out times (&quot;four
+                  o&apos;clock&quot;)
+                </li>
                 <li>• Distinguishes home vs. away games</li>
                 <li>• Extracts RSVP contact information</li>
                 <li>• Recognizes event categories automatically</li>
@@ -326,7 +338,8 @@ export default function AboutPage() {
             <p>
               We obsessed over accuracy — script names, spelled-out times, home
               vs. away — so the saved event feels like the original. Every
-              detail matters when you&apos;re coordinating a busy family schedule.
+              detail matters when you&apos;re coordinating a busy family
+              schedule.
             </p>
             <p>
               Today, families, coaches, and club organizers use Envitefy to stay

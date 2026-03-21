@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
+import { isScannedInviteCreatedVia } from "@/lib/dashboard-data";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import {
   readProfileCache,
   writeProfileCache,
@@ -20,12 +21,13 @@ import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useSidebar, type EventContextTab } from "./sidebar-context";
 import { useEventCache } from "@/app/event-cache-context";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import {
   CalendarIconGoogle,
   CalendarIconOutlook,
   CalendarIconApple,
 } from "@/components/CalendarIcons";
+import { secureSignOut } from "@/utils/secureSignOut";
 import { buildEventPath } from "@/utils/event-url";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
@@ -50,7 +52,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
-  Settings,
   Menu,
   Music,
   PartyPopper,
@@ -96,6 +97,7 @@ type GroupedEventItem = {
   title: string;
   dateLabel: string;
   dateMs: number;
+  shareStatus: "accepted" | "pending" | null;
   tintClass: string;
   hoverTintClass: string;
   activeTintClass: string;
@@ -206,11 +208,79 @@ function SidebarFootballMenuIcon({
   );
 }
 
+function SidebarMyEventsMenuIcon({
+  size = 22,
+  className,
+  active = false,
+}: {
+  size?: number;
+  className?: string;
+  active?: boolean;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={[
+        "shrink-0",
+        active ? "text-indigo-600" : "text-slate-500",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M8 2.75V5.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16 2.75V5.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.75 4.5H17.25C19.0449 4.5 20.5 5.95507 20.5 7.75V17.25C20.5 19.0449 19.0449 20.5 17.25 20.5H6.75C4.95507 20.5 3.5 19.0449 3.5 17.25V7.75C3.5 5.95507 4.95507 4.5 6.75 4.5Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M3.75 8.5H20.25"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 11.25L15.5 14.1V18H13.25V15.7H10.75V18H8.5V14.1L12 11.25Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 function isInvitedHistoryEvent(data: unknown): boolean {
   if (!data || typeof data !== "object") return false;
   const record = data as Record<string, unknown>;
+  if (
+    String(record.ownership || "")
+      .trim()
+      .toLowerCase() === "invited"
+  ) {
+    return true;
+  }
   if (Boolean(record.shared)) return true;
   if (Boolean(record.invitedFromScan)) return true;
+  if (isScannedInviteCreatedVia(record.createdVia)) return true;
   return false;
 }
 
@@ -364,7 +434,6 @@ const SIDEBAR_BADGE_CLASS =
   "inline-flex min-w-[24px] items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500";
 const SIDEBAR_WIDTH_REM = "21.25rem";
 const SIDEBAR_COLLAPSED_REM = "5.25rem";
-const SIDEBAR_WORDMARK_SRC = "/logo.png";
 const SUBPAGE_STICKY_HEADER_CLASS =
   "sticky top-0 z-20 -mx-6 bg-[#f8f9fb]/95 px-6 pb-4 pt-2 backdrop-blur";
 const SIDEBAR_SECTION_LABEL_CLASS =
@@ -385,7 +454,7 @@ const SIDEBAR_EVENT_PANEL_CLASS =
 const SIDEBAR_TOGGLE_CLASS =
   "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-200/60 p-2.5 text-slate-500 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-700";
 const SIDEBAR_FOOTER_TRIGGER_CLASS =
-  "w-full inline-flex items-center justify-between gap-3 rounded-[20px] border border-indigo-100 bg-white p-2.5 text-slate-700 shadow-lg transition-all duration-200 hover:shadow-xl active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-50/50";
+  "w-full inline-flex items-center justify-between gap-3 rounded-[20px] border border-indigo-100 bg-white px-3 py-3 text-slate-700 shadow-lg transition-all duration-200 hover:shadow-xl active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-50/50";
 const MY_EVENTS_PAST_EXPANDED_STORAGE_KEY = "sidebar:my-events:past-expanded";
 const INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY =
   "sidebar:invited-events:past-expanded";
@@ -413,7 +482,7 @@ export default function LeftSidebar() {
   const isEmbeddedEditMode = searchParams?.get("embed") === "1";
   // Event page with inline edit sidebar (discovery gymnastics)
   const isEventPageWithEditSidebar = Boolean(
-    pathname?.startsWith("/event/") && searchParams?.get("edit"),
+    pathname?.startsWith("/event/") && searchParams?.get("edit")
   );
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
@@ -428,7 +497,7 @@ export default function LeftSidebar() {
   const [defaultCalendarProvider, setDefaultCalendarProvider] =
     useState<CalendarProviderKey | null>(null);
   const [lastCreateSelection, setLastCreateSelection] = useState<string | null>(
-    null,
+    null
   );
   const [forcedCreateActiveLabel, setForcedCreateActiveLabel] = useState<
     string | null
@@ -445,7 +514,7 @@ export default function LeftSidebar() {
         window.localStorage.setItem(CALENDAR_DEFAULT_STORAGE_KEY, provider);
       } catch {}
     },
-    [],
+    []
   );
 
   const saveCalendarDefault = useCallback(
@@ -460,7 +529,7 @@ export default function LeftSidebar() {
         });
       } catch {}
     },
-    [status],
+    [status]
   );
 
   const toggleCalendarDefault = useCallback(
@@ -484,7 +553,7 @@ export default function LeftSidebar() {
       handleCalendarConnect,
       mirrorLocalCalendarDefault,
       saveCalendarDefault,
-    ],
+    ]
   );
 
   const {
@@ -514,13 +583,13 @@ export default function LeftSidebar() {
   const sidebarTransform = isDesktop
     ? "translateX(0)"
     : isOpen
-      ? "translateX(0)"
-      : "translateX(-100%)";
+    ? "translateX(0)"
+    : "translateX(-100%)";
   const pointerClass = isDesktop
     ? "pointer-events-auto"
     : isOpen
-      ? "pointer-events-auto"
-      : "pointer-events-none";
+    ? "pointer-events-auto"
+    : "pointer-events-none";
   const isEventMenuActive = Boolean(selectedEventId);
   const overflowClass = "overflow-hidden";
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -537,7 +606,7 @@ export default function LeftSidebar() {
   const showMobileTopBar = Boolean(!isOpen && isScrolled);
   const showFloatingOpenButton = Boolean(!isOpen && !isScrolled);
   const showFloatingCustomizeButton = Boolean(
-    !isOpen && showEditTopBar && !isScrolled,
+    !isOpen && showEditTopBar && !isScrolled
   );
   const openSidebarFromTrigger = useCallback(
     (viaTouch: boolean) => {
@@ -547,7 +616,7 @@ export default function LeftSidebar() {
       }
       setIsCollapsed(false);
     },
-    [setIsCollapsed],
+    [setIsCollapsed]
   );
 
   useEffect(() => {
@@ -798,7 +867,7 @@ export default function LeftSidebar() {
   // Deprecated scanCredits removed; use unified credits state
   const [credits, setCredits] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(
-    Boolean((session?.user as any)?.isAdmin),
+    Boolean((session?.user as any)?.isAdmin)
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
   const footerMenuItems = useMemo(
@@ -843,7 +912,7 @@ export default function LeftSidebar() {
         colorClass: string;
         bgClass: string;
       }>,
-    [isAdmin],
+    [isAdmin]
   );
 
   useEffect(() => {
@@ -851,7 +920,7 @@ export default function LeftSidebar() {
 
     const applyProfile = (
       plan: SubscriptionPlan,
-      creditsValue: number | null,
+      creditsValue: number | null
     ) => {
       setCredits(plan === "FF" ? Infinity : creditsValue);
     };
@@ -878,13 +947,13 @@ export default function LeftSidebar() {
             plan === "FF"
               ? Infinity
               : typeof json.credits === "number"
-                ? (json.credits as number)
-                : null;
+              ? (json.credits as number)
+              : null;
           applyProfile(plan, nextCredits === Infinity ? null : nextCredits);
           writeProfileCache(
             profileEmailRef.current || profileEmail,
             plan,
-            nextCredits,
+            nextCredits
           );
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
@@ -900,7 +969,7 @@ export default function LeftSidebar() {
             }));
           }
           setDefaultCalendarProvider(
-            normalizeCalendarProvider(json.preferredProvider),
+            normalizeCalendarProvider(json.preferredProvider)
           );
         }
       } catch {
@@ -991,20 +1060,23 @@ export default function LeftSidebar() {
       if (isTouch) setIsCollapsed(true);
     } catch {}
   }, [setIsCollapsed]);
-  const triggerCreateEvent = () => {
+  const triggerCreateEvent = useCallback(() => {
     collapseSidebarOnTouch();
     try {
       router.push("/event/new");
     } catch {}
-  };
+  }, [collapseSidebarOnTouch, router]);
 
-  const openSnapFromSidebar = (mode: "camera" | "upload") => {
-    try {
-      router.push(`/?action=${mode}`);
-      return;
-    } catch {}
-    triggerCreateEvent();
-  };
+  const openSnapFromSidebar = useCallback(
+    (mode: "camera" | "upload") => {
+      try {
+        router.push(`/?action=${mode}`);
+        return;
+      } catch {}
+      triggerCreateEvent();
+    },
+    [router, triggerCreateEvent]
+  );
 
   const launchSnapFromMenu = (mode: "camera" | "upload") => {
     const win = window as any;
@@ -1027,7 +1099,7 @@ export default function LeftSidebar() {
   const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
   const visibleTemplateLinks = useMemo(
     () => getTemplateLinks(visibleTemplateKeys),
-    [visibleTemplateKeys],
+    [visibleTemplateKeys]
   );
 
   const templateHrefMap = useMemo(() => {
@@ -1080,25 +1152,25 @@ export default function LeftSidebar() {
 
   const createMenuItems = useMemo(() => {
     return getCreateEventSections(visibleTemplateKeys).flatMap(
-      (section) => section.items,
+      (section) => section.items
     );
   }, [visibleTemplateKeys]);
   const gymnasticsCreateItem = useMemo(
     () => createMenuItems.find((item) => item.label === "Gymnastics") ?? null,
-    [createMenuItems],
+    [createMenuItems]
   );
   const footballCreateItem = useMemo(
     () =>
       createMenuItems.find((item) => item.label === "Football Season") ?? null,
-    [createMenuItems],
+    [createMenuItems]
   );
   const otherCreateMenuItems = useMemo(
     () =>
       createMenuItems.filter(
         (item) =>
-          item.label !== "Gymnastics" && item.label !== "Football Season",
+          item.label !== "Gymnastics" && item.label !== "Football Season"
       ),
-    [createMenuItems],
+    [createMenuItems]
   );
   const isCreateItemActive = useCallback(
     (item: { href: string }) => {
@@ -1108,22 +1180,22 @@ export default function LeftSidebar() {
       if (baseHref === "/") return pathname === "/";
       return pathname === baseHref || pathname.startsWith(`${baseHref}/`);
     },
-    [pathname],
+    [pathname]
   );
   const activeCreateItem = useMemo(
     () => createMenuItems.find((item) => isCreateItemActive(item)) ?? null,
-    [createMenuItems, isCreateItemActive],
+    [createMenuItems, isCreateItemActive]
   );
   const isOtherEventsActive = useMemo(
     () => sidebarPage === "createEventOther",
-    [sidebarPage],
+    [sidebarPage]
   );
   const createMenuOptionCount = useMemo(
     () =>
       Number(Boolean(gymnasticsCreateItem)) +
       Number(Boolean(footballCreateItem)) +
       Number(otherCreateMenuItems.length > 0),
-    [gymnasticsCreateItem, footballCreateItem, otherCreateMenuItems.length],
+    [gymnasticsCreateItem, footballCreateItem, otherCreateMenuItems.length]
   );
 
   useEffect(() => {
@@ -1156,7 +1228,7 @@ export default function LeftSidebar() {
       if (lastCreateSelection) {
         window.sessionStorage.setItem(
           CREATE_ACTIVE_STORAGE_KEY,
-          lastCreateSelection,
+          lastCreateSelection
         );
       } else {
         window.sessionStorage.removeItem(CREATE_ACTIVE_STORAGE_KEY);
@@ -1209,62 +1281,63 @@ export default function LeftSidebar() {
     }, 0);
   }, [history, isActiveEventRow]);
   const calendarEventsCount = createdEventsCount + invitedEventsCount;
-  const smartSignupCount = useMemo(() => {
-    const myEmail = profileEmail || profileEmailRef.current || null;
-    const myUserId = ((session as any)?.user?.id as string | undefined) || null;
-    return history.reduce((acc, row) => {
-      if (!row || typeof row !== "object") return acc;
-      const data: any = row?.data;
-      if (!data || typeof data !== "object") return acc;
-      const form = (data as any)?.signupForm;
-      if (!form || typeof form !== "object") return acc;
-
-      // If it's the owner's item (not invited/shared), always count it as a created form
-      if (!isInvitedHistoryEvent(data)) return acc + 1;
-
-      // For shared items, count only if the current user has an active (non-cancelled) response
-      const responses: any[] = Array.isArray(form.responses)
-        ? form.responses
-        : [];
-      const hasMyActiveResponse = responses.some((r) => {
-        if (!r || typeof r !== "object") return false;
-        if (String(r.status || "").toLowerCase() === "cancelled") return false;
-        const emailMatches =
-          myEmail &&
-          typeof r.email === "string" &&
-          r.email.toLowerCase() === myEmail;
-        const userIdMatches =
-          myUserId && typeof r.userId === "string" && r.userId === myUserId;
-        return Boolean(emailMatches || userIdMatches);
-      });
-      if (hasMyActiveResponse) return acc + 1;
-      return acc;
-    }, 0);
-  }, [history, profileEmail, session]);
+  const openCompactEventsPage = useCallback(
+    (page: "myEvents" | "invitedEvents") => {
+      clearEventContext();
+      setIsCollapsed(false);
+      setSidebarPage(page);
+    },
+    [clearEventContext, setIsCollapsed, setSidebarPage]
+  );
+  const openCreateEventPage = useCallback(() => {
+    setIsCollapsed(false);
+    setSidebarPage("createEvent");
+  }, [setIsCollapsed, setSidebarPage]);
   const compactNavItems = useMemo(
     () => [
-      { icon: Home, label: "Home", href: "/" },
-      { icon: Camera, label: "Snap event", href: "/event" },
+      { icon: Home, label: "Home", onClick: goHomeFromSidebar },
       {
-        icon: FileEdit,
-        label: "Sign up",
-        href: "/smart-signup-form",
-        badge: smartSignupCount,
+        icon: Camera,
+        label: "Snap event",
+        onClick: () => {
+          clearEventContext();
+          setSidebarPage("root");
+          collapseSidebarOnTouch();
+          openSnapFromSidebar("camera");
+        },
       },
-      { icon: Plus, label: "Create Event", action: "create" },
       {
-        icon: Trophy,
-        label: "My Events",
-        href: "/history",
+        icon: Plus,
+        label: "Create event",
+        onClick: openCreateEventPage,
+      },
+      {
+        icon: SidebarMyEventsMenuIcon,
+        label: "My events",
+        onClick: () => openCompactEventsPage("myEvents"),
         badge: createdEventsCount,
       },
-      { icon: User, label: "Profile", href: "/profile" },
-      { icon: Settings, label: "Settings", href: "/settings" },
+      {
+        icon: Users,
+        label: "Invited events",
+        onClick: () => openCompactEventsPage("invitedEvents"),
+        badge: invitedEventsCount,
+      },
     ],
-    [createdEventsCount, smartSignupCount],
+    [
+      clearEventContext,
+      collapseSidebarOnTouch,
+      createdEventsCount,
+      invitedEventsCount,
+      goHomeFromSidebar,
+      openCompactEventsPage,
+      openCreateEventPage,
+      openSnapFromSidebar,
+      setSidebarPage,
+    ]
   );
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
-    {},
+    {}
   );
   // Per Smart sign-up item gradient selections (keyed by history id)
   const [signupItemColors, setSignupItemColors] = useState<
@@ -1319,7 +1392,7 @@ export default function LeftSidebar() {
 
   // Normalize freeform/variant labels to our canonical sidebar categories
   const normalizeCategoryLabel = (
-    raw: string | null | undefined,
+    raw: string | null | undefined
   ): string | null => {
     const s = String(raw || "").trim();
     if (!s) return null;
@@ -1387,7 +1460,7 @@ export default function LeftSidebar() {
     if (/playdate|play\s*day|kids?\s*play/.test(s)) return "Play Days";
     if (
       /(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/.test(
-        s,
+        s
       )
     )
       return "Car Pool";
@@ -1413,16 +1486,16 @@ export default function LeftSidebar() {
     } catch {}
     try {
       const rawMyEvents = localStorage.getItem(
-        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
+        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY
       );
       setShowPastMyEvents(rawMyEvents === "1" || rawMyEvents === "true");
     } catch {}
     try {
       const rawInvitedEvents = localStorage.getItem(
-        INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
+        INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY
       );
       setShowPastInvitedEvents(
-        rawInvitedEvents === "1" || rawInvitedEvents === "true",
+        rawInvitedEvents === "1" || rawInvitedEvents === "true"
       );
     } catch {}
   }, []);
@@ -1462,8 +1535,8 @@ export default function LeftSidebar() {
               }`;
               return guessCategoryFromText(blob);
             })
-            .filter((c): c is string => Boolean(c)),
-        ),
+            .filter((c): c is string => Boolean(c))
+        )
       );
       if (categories.length === 0) return;
       setCategoryColors((prev) => {
@@ -1478,7 +1551,7 @@ export default function LeftSidebar() {
   }, [history]);
 
   const colorClasses = (
-    color: string,
+    color: string
   ): { swatch: string; badge: string; tint: string; hoverTint: string } => {
     switch (color) {
       case "lime":
@@ -1695,13 +1768,7 @@ export default function LeftSidebar() {
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
     const resolveDateRaw = (row: { created_at?: string; data?: any }) =>
-      String(
-        row?.data?.startISO ||
-          row?.data?.start ||
-          row?.data?.event?.start ||
-          row?.created_at ||
-          "",
-      );
+      getEventStartIso(row?.data) || String(row?.created_at || "");
     const formatDate = (raw: string) => {
       if (!raw) return "No date";
       const dt = new Date(raw);
@@ -1740,8 +1807,8 @@ export default function LeftSidebar() {
       const normalizedCategoryRaw = normalizeCategoryLabel(
         (data?.category as string | null) ||
           guessCategoryFromText(
-            `${row.title || ""} ${String(data?.description || "")}`,
-          ),
+            `${row.title || ""} ${String(data?.description || "")}`
+          )
       );
       const normalizedCategory =
         isInvited &&
@@ -1762,10 +1829,20 @@ export default function LeftSidebar() {
       const dateLabel = formatDate(dateRaw);
       const href = buildEventPath(row.id, row.title);
       const openMode: GroupedEventItem["openMode"] = isSportsPreviewFirstEvent(
-        data,
+        data
       )
         ? "preview"
         : "dashboard";
+      const shareStatus =
+        String(data?.shareStatus || "")
+          .trim()
+          .toLowerCase() === "accepted"
+          ? "accepted"
+          : String(data?.shareStatus || "")
+              .trim()
+              .toLowerCase() === "pending"
+          ? "pending"
+          : null;
 
       const categoryColor =
         categoryColors[category] || defaultCategoryColor(category);
@@ -1780,13 +1857,14 @@ export default function LeftSidebar() {
             }
           : undefined;
 
-      const entry = {
+      const entry: GroupedEventItem = {
         row,
         href,
         openMode,
         title: row.title || "Untitled event",
         dateLabel,
         dateMs,
+        shareStatus,
         tintClass: palette.tint,
         hoverTintClass: palette.hoverTint,
         activeTintClass: activePalette.tint,
@@ -1805,7 +1883,7 @@ export default function LeftSidebar() {
     }
 
     const sortGroups = (
-      source: Map<string, GroupedEventItem[]>,
+      source: Map<string, GroupedEventItem[]>
     ): GroupedEventSection[] =>
       Array.from(source.entries())
         .map(([category, items]) => ({
@@ -1948,7 +2026,7 @@ export default function LeftSidebar() {
         ({
           ...prev,
           [category]: color,
-        }) as Record<string, string>,
+        } as Record<string, string>)
     );
     setColorMenuFor(null);
     setColorMenuPos(null);
@@ -1963,7 +2041,7 @@ export default function LeftSidebar() {
     } catch {}
     try {
       window.dispatchEvent(
-        new CustomEvent("categoryColorsUpdated", { detail: categoryColors }),
+        new CustomEvent("categoryColorsUpdated", { detail: categoryColors })
       );
     } catch {}
     try {
@@ -1978,7 +2056,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         "signupItemColors",
-        JSON.stringify(signupItemColors),
+        JSON.stringify(signupItemColors)
       );
     } catch {}
   }, [signupItemColors]);
@@ -1987,7 +2065,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
-        showPastMyEvents ? "1" : "0",
+        showPastMyEvents ? "1" : "0"
       );
     } catch {}
   }, [showPastMyEvents]);
@@ -1996,7 +2074,7 @@ export default function LeftSidebar() {
     try {
       localStorage.setItem(
         INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
-        showPastInvitedEvents ? "1" : "0",
+        showPastInvitedEvents ? "1" : "0"
       );
     } catch {}
   }, [showPastInvitedEvents]);
@@ -2030,7 +2108,7 @@ export default function LeftSidebar() {
     (
       baseHref: string | null | undefined,
       eventId: string,
-      tab: EventContextTab,
+      tab: EventContextTab
     ) => {
       const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
       try {
@@ -2045,7 +2123,7 @@ export default function LeftSidebar() {
         return `${fallbackPath}?tab=${encodeURIComponent(tab)}`;
       }
     },
-    [],
+    []
   );
 
   const buildEventGuestHref = useCallback(
@@ -2063,7 +2141,7 @@ export default function LeftSidebar() {
         return `${fallbackPath}?tab=preview`;
       }
     },
-    [],
+    []
   );
 
   const blurActiveElement = useCallback(() => {
@@ -2113,7 +2191,7 @@ export default function LeftSidebar() {
       setSelectedEventId,
       setSelectedEventTitle,
       setSidebarPage,
-    ],
+    ]
   );
 
   const openGuestEventContext = useCallback(
@@ -2129,7 +2207,7 @@ export default function LeftSidebar() {
       } catch {}
       router.push(nextHref);
     },
-    [buildEventGuestHref, clearEventContext, router, setSidebarPage],
+    [buildEventGuestHref, clearEventContext, router, setSidebarPage]
   );
 
   const isHistoryRowActive = useCallback(
@@ -2144,7 +2222,7 @@ export default function LeftSidebar() {
         currentPath.endsWith(`-${rowId}`)
       );
     },
-    [pathname, selectedEventId],
+    [pathname, selectedEventId]
   );
 
   const handleEventTabChange = useCallback(
@@ -2155,7 +2233,7 @@ export default function LeftSidebar() {
           if (!selectedEventId) return;
           const nextHref = buildEventGuestHref(
             selectedEventHref,
-            selectedEventId,
+            selectedEventId
           );
           router.push(nextHref);
         } catch {}
@@ -2169,7 +2247,7 @@ export default function LeftSidebar() {
         const nextHref = buildEventOwnerHref(
           selectedEventHref,
           selectedEventId,
-          tab,
+          tab
         );
         router.push(nextHref);
       } catch {}
@@ -2186,7 +2264,7 @@ export default function LeftSidebar() {
       selectedEventId,
       setActiveEventTab,
       setSidebarPage,
-    ],
+    ]
   );
 
   const handleSidebarBackToEvents = useCallback(() => {
@@ -2208,23 +2286,23 @@ export default function LeftSidebar() {
     sidebarPage === "createEvent"
       ? "translateX(0%)"
       : sidebarPage === "createEventOther"
-        ? "translateX(-2rem)"
-        : "translateX(100%)";
+      ? "translateX(-2rem)"
+      : "translateX(100%)";
   const createEventOtherPanelTransform =
     sidebarPage === "createEventOther" ? "translateX(0%)" : "translateX(100%)";
   const myEventsPanelTransform =
     sidebarPage === "myEvents"
       ? "translateX(0%)"
       : sidebarPage === "eventContext" && eventContextSourcePage === "myEvents"
-        ? "translateX(-2rem)"
-        : "translateX(100%)";
+      ? "translateX(-2rem)"
+      : "translateX(100%)";
   const invitedEventsPanelTransform =
     sidebarPage === "invitedEvents"
       ? "translateX(0%)"
       : sidebarPage === "eventContext" &&
-          eventContextSourcePage === "invitedEvents"
-        ? "translateX(-2rem)"
-        : "translateX(100%)";
+        eventContextSourcePage === "invitedEvents"
+      ? "translateX(-2rem)"
+      : "translateX(100%)";
   const eventPanelTransform =
     sidebarPage === "eventContext" ? "translateX(0%)" : "translateX(100%)";
   const panelStyle = (transform: string, isActive: boolean): CSSProperties => ({
@@ -2235,7 +2313,7 @@ export default function LeftSidebar() {
   });
   const renderCreateMenuButton = (
     item: { label: string; href: string },
-    idx: number,
+    idx: number
   ) => {
     const Icon = ICON_LOOKUP[item.label] || Sparkles;
     const colorClass =
@@ -2332,7 +2410,7 @@ export default function LeftSidebar() {
                 onClick={() => {
                   if (typeof window === "undefined") return;
                   window.dispatchEvent(
-                    new CustomEvent("envitefy:open-discovery-editor"),
+                    new CustomEvent("envitefy:open-discovery-editor")
                   );
                 }}
                 className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
@@ -2377,15 +2455,9 @@ export default function LeftSidebar() {
             <Link
               href="/"
               onClick={goHomeFromSidebar}
-              className="flex h-11 items-center justify-center"
+              className="flex h-11 min-w-0 flex-1 items-center justify-end pr-1"
             >
-              <Image
-                src="/logo.png"
-                alt="Envitefy logo"
-                width={170}
-                height={53}
-                className="block h-11 w-[170px] translate-y-[3px] object-contain drop-shadow-sm"
-              />
+              <EnvitefyWordmark className="text-[1.55rem] leading-none drop-shadow-sm sm:text-[1.65rem]" />
             </Link>
             {showEditTopBar ? (
               <button
@@ -2393,7 +2465,7 @@ export default function LeftSidebar() {
                 onClick={() => {
                   if (typeof window === "undefined") return;
                   window.dispatchEvent(
-                    new CustomEvent("envitefy:open-discovery-editor"),
+                    new CustomEvent("envitefy:open-discovery-editor")
                   );
                 }}
                 className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
@@ -2450,39 +2522,18 @@ export default function LeftSidebar() {
             >
               <ChevronRight size={18} />
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsCollapsed(false);
-                setSidebarPage("createEvent");
-              }}
-              className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
-              title="Create event"
-            >
-              <Plus size={18} />
-            </button>
             <div className="flex-1 flex flex-col items-center gap-3">
               {compactNavItems.map((item) => {
                 const Icon = item.icon;
                 const badgeCount = item.badge || 0;
                 return (
                   <button
-                    key={item.href || item.label}
+                    key={item.label}
                     type="button"
-                    onClick={() => {
-                      setIsCollapsed(false);
-                      if (item.action === "create") {
-                        setSidebarPage("createEvent");
-                        return;
-                      }
-                      if (item.href) {
-                        try {
-                          router.push(item.href);
-                        } catch {}
-                      }
-                    }}
+                    onClick={item.onClick}
                     className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-900 hover:shadow-md"
                     title={item.label}
+                    aria-label={item.label}
                   >
                     <Icon size={18} />
                     {badgeCount > 0 && (
@@ -2496,7 +2547,9 @@ export default function LeftSidebar() {
             </div>
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={() => {
+                void secureSignOut("/");
+              }}
               className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-red-500 transition hover:bg-[#e8e8e8]"
               title="Log out"
             >
@@ -2517,7 +2570,7 @@ export default function LeftSidebar() {
             <div className="absolute inset-0 z-[1] flex h-full flex-col bg-[#f8f9fb]">
               {/* Header with close button */}
               <div className="relative z-10 flex-shrink-0 px-5 pb-3 pt-5">
-                <div className={`${SIDEBAR_CARD_CLASS} px-5 py-4`}>
+                <div className={`relative ${SIDEBAR_CARD_CLASS} px-5 py-4`}>
                   <button
                     type="button"
                     aria-label={
@@ -2532,19 +2585,15 @@ export default function LeftSidebar() {
                       <ChevronLeft size={16} />
                     )}
                   </button>
-                  <Link
-                    href="/"
-                    onClick={goHomeFromSidebar}
-                    className="inline-flex max-w-[190px] items-center pr-12"
-                  >
-                    <Image
-                      src={SIDEBAR_WORDMARK_SRC}
-                      alt="Envitefy"
-                      width={166}
-                      height={45}
-                      className="h-auto w-[166px] translate-y-[3px]"
-                    />
-                  </Link>
+                  <div className="flex w-full justify-start pr-12">
+                    <Link
+                      href="/"
+                      onClick={goHomeFromSidebar}
+                      className="inline-flex max-w-[190px] translate-y-1 items-center pl-6"
+                    >
+                      <EnvitefyWordmark className="text-[1.75rem] leading-none" />
+                    </Link>
+                  </div>
                 </div>
               </div>
               {/* Middle: Navigation area */}
@@ -2558,7 +2607,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[5]`}
                     style={panelStyle(
                       rootPanelTransform,
-                      sidebarPage === "root",
+                      sidebarPage === "root"
                     )}
                     aria-hidden={sidebarPage !== "root"}
                   >
@@ -2610,7 +2659,7 @@ export default function LeftSidebar() {
                         </Link>
                         <button
                           type="button"
-                          onClick={() => setSidebarPage("createEvent")}
+                          onClick={openCreateEventPage}
                           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
                             sidebarPage === "createEvent" ||
                             sidebarPage === "createEventOther"
@@ -2660,7 +2709,14 @@ export default function LeftSidebar() {
                                 : SIDEBAR_ICON_CHIP_ACCENT_CLASS
                             }`}
                           >
-                            <Trophy size={18} />
+                            <SidebarMyEventsMenuIcon
+                              size={18}
+                              active={
+                                sidebarPage === "myEvents" ||
+                                (sidebarPage === "eventContext" &&
+                                  eventContextSourcePage === "myEvents")
+                              }
+                            />
                           </span>
                           <span className="truncate">My Events</span>
                           <span className="ml-auto flex items-center gap-2">
@@ -2715,7 +2771,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[10]`}
                     style={panelStyle(
                       createEventPanelTransform,
-                      sidebarPage === "createEvent",
+                      sidebarPage === "createEvent"
                     )}
                     aria-hidden={sidebarPage !== "createEvent"}
                   >
@@ -2745,67 +2801,66 @@ export default function LeftSidebar() {
                         </button>
                       </div>
                       <div className="space-y-3">
-                            {gymnasticsCreateItem
-                              ? renderCreateMenuButton(gymnasticsCreateItem, 0)
-                              : null}
-                            {footballCreateItem
-                              ? renderCreateMenuButton(footballCreateItem, 1)
-                              : null}
-                            {otherCreateMenuItems.length > 0 ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setSidebarPage("createEventOther")
-                                }
-                                className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} group border py-3 pl-3 pr-4 ${
+                        {gymnasticsCreateItem
+                          ? renderCreateMenuButton(gymnasticsCreateItem, 0)
+                          : null}
+                        {footballCreateItem
+                          ? renderCreateMenuButton(footballCreateItem, 1)
+                          : null}
+                        {otherCreateMenuItems.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setSidebarPage("createEventOther")}
+                            className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} group border py-3 pl-3 pr-4 ${
+                              isOtherEventsActive
+                                ? "border-purple-200 bg-purple-50 text-purple-800 shadow-[0_16px_30px_rgba(147,51,234,0.12),inset_0_0_0_1px_rgba(147,51,234,0.18)]"
+                                : "border-slate-100 bg-white hover:bg-slate-50 hover:shadow-md"
+                            }`}
+                            style={
+                              isOtherEventsActive
+                                ? {
+                                    backgroundColor: "#F3E8FF",
+                                    borderColor: "#E9D5FF",
+                                    boxShadow:
+                                      "0 16px 30px rgba(147, 51, 234, 0.12), inset 0 0 0 1px rgba(147, 51, 234, 0.18)",
+                                  }
+                                : undefined
+                            }
+                          >
+                            <span
+                              className={`flex h-11 w-11 items-center justify-center rounded-xl border shadow-sm ${
+                                isOtherEventsActive
+                                  ? "border-purple-200 bg-white text-purple-700"
+                                  : CREATE_SECTION_COLORS[
+                                      gymnasticsCreateItem && footballCreateItem
+                                        ? 2
+                                        : gymnasticsCreateItem ||
+                                          footballCreateItem
+                                        ? 1
+                                        : 0
+                                    ]
+                              }`}
+                            >
+                              <CalendarDays size={17} />
+                            </span>
+                            <span className="flex-1 truncate">
+                              Other Events
+                            </span>
+                            <span className="ml-auto flex items-center gap-2">
+                              <span className={SIDEBAR_BADGE_CLASS}>
+                                {otherCreateMenuItems.length}
+                              </span>
+                              <ChevronRight
+                                size={16}
+                                className={`transition-all ${
                                   isOtherEventsActive
-                                    ? "border-purple-200 bg-purple-50 text-purple-800 shadow-[0_16px_30px_rgba(147,51,234,0.12),inset_0_0_0_1px_rgba(147,51,234,0.18)]"
-                                    : "border-slate-100 bg-white hover:bg-slate-50 hover:shadow-md"
+                                    ? "text-purple-400"
+                                    : "text-slate-300 group-hover:text-indigo-500"
                                 }`}
-                                style={
-                                  isOtherEventsActive
-                                    ? {
-                                        backgroundColor: "#F3E8FF",
-                                        borderColor: "#E9D5FF",
-                                        boxShadow:
-                                        "0 16px 30px rgba(147, 51, 234, 0.12), inset 0 0 0 1px rgba(147, 51, 234, 0.18)",
-                                      }
-                                    : undefined
-                                }
-                              >
-                                <span
-                                  className={`flex h-11 w-11 items-center justify-center rounded-xl border shadow-sm ${
-                                    isOtherEventsActive
-                                      ? "border-purple-200 bg-white text-purple-700"
-                                      : CREATE_SECTION_COLORS[
-                                          gymnasticsCreateItem && footballCreateItem
-                                            ? 2
-                                            : gymnasticsCreateItem || footballCreateItem
-                                              ? 1
-                                              : 0
-                                        ]
-                                  }`}
-                                >
-                                  <CalendarDays size={17} />
-                                </span>
-                                <span className="flex-1 truncate">
-                                  Other Events
-                                </span>
-                                <span className="ml-auto flex items-center gap-2">
-                                  <span className={SIDEBAR_BADGE_CLASS}>
-                                    {otherCreateMenuItems.length}
-                                  </span>
-                                  <ChevronRight
-                                    size={16}
-                                    className={`transition-all ${
-                                      isOtherEventsActive
-                                        ? "text-purple-400"
-                                        : "text-slate-300 group-hover:text-indigo-500"
-                                    }`}
-                                  />
-                                </span>
-                              </button>
-                            ) : null}
+                              />
+                            </span>
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -2814,7 +2869,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[12]`}
                     style={panelStyle(
                       createEventOtherPanelTransform,
-                      sidebarPage === "createEventOther",
+                      sidebarPage === "createEventOther"
                     )}
                     aria-hidden={sidebarPage !== "createEventOther"}
                   >
@@ -2845,7 +2900,7 @@ export default function LeftSidebar() {
                       </div>
                       <div className="space-y-3">
                         {otherCreateMenuItems.map((item, idx) =>
-                          renderCreateMenuButton(item, idx),
+                          renderCreateMenuButton(item, idx)
                         )}
                       </div>
                     </div>
@@ -2855,7 +2910,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[15]`}
                     style={panelStyle(
                       myEventsPanelTransform,
-                      sidebarPage === "myEvents",
+                      sidebarPage === "myEvents"
                     )}
                     aria-hidden={sidebarPage !== "myEvents"}
                   >
@@ -3042,7 +3097,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
-                      sidebarPage === "invitedEvents",
+                      sidebarPage === "invitedEvents"
                     )}
                     aria-hidden={sidebarPage !== "invitedEvents"}
                   >
@@ -3102,7 +3157,7 @@ export default function LeftSidebar() {
                                       onClick={() =>
                                         openGuestEventContext(
                                           item.row,
-                                          item.href,
+                                          item.href
                                         )
                                       }
                                       className={`${SIDEBAR_ITEM_CARD_CLASS} ${
@@ -3114,8 +3169,15 @@ export default function LeftSidebar() {
                                     >
                                       <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
                                       <span className="min-w-0 flex-1">
-                                        <span className="block truncate text-sm md:text-base font-semibold">
-                                          {item.title}
+                                        <span className="flex items-center gap-2">
+                                          <span className="block truncate text-sm md:text-base font-semibold">
+                                            {item.title}
+                                          </span>
+                                          {item.shareStatus === "pending" ? (
+                                            <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
+                                              Pending
+                                            </span>
+                                          ) : null}
                                         </span>
                                         <span className="mt-0.5 block truncate text-xs text-slate-500">
                                           {item.dateLabel}
@@ -3143,7 +3205,7 @@ export default function LeftSidebar() {
                                       type="button"
                                       onClick={() =>
                                         setShowPastInvitedEvents(
-                                          (prev) => !prev,
+                                          (prev) => !prev
                                         )
                                       }
                                       className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-slate-600 shadow-sm transition hover:bg-slate-50"
@@ -3194,7 +3256,7 @@ export default function LeftSidebar() {
                                             onClick={() =>
                                               openGuestEventContext(
                                                 item.row,
-                                                item.href,
+                                                item.href
                                               )
                                             }
                                             className={`${SIDEBAR_ITEM_CARD_CLASS} ${
@@ -3206,8 +3268,16 @@ export default function LeftSidebar() {
                                           >
                                             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
                                             <span className="min-w-0 flex-1">
-                                              <span className="block truncate text-sm md:text-base font-semibold">
-                                                {item.title}
+                                              <span className="flex items-center gap-2">
+                                                <span className="block truncate text-sm md:text-base font-semibold">
+                                                  {item.title}
+                                                </span>
+                                                {item.shareStatus ===
+                                                "pending" ? (
+                                                  <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
+                                                    Pending
+                                                  </span>
+                                                ) : null}
                                               </span>
                                               <span className="mt-0.5 block truncate text-xs text-slate-500">
                                                 {item.dateLabel}
@@ -3235,7 +3305,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_EVENT_PANEL_CLASS} z-[30]`}
                     style={panelStyle(
                       eventPanelTransform,
-                      sidebarPage === "eventContext",
+                      sidebarPage === "eventContext"
                     )}
                     aria-hidden={sidebarPage !== "eventContext"}
                   >
@@ -3275,16 +3345,16 @@ export default function LeftSidebar() {
                       menuOpen ? "ring-2 ring-indigo-50/60 shadow-xl" : ""
                     }`}
                   >
-                    <div className="min-w-0 flex-1 inline-flex items-center gap-3">
-                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-sm font-bold text-indigo-700">
+                    <div className="min-w-0 flex-1 inline-flex items-center gap-3.5">
+                      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-[15px] font-bold text-indigo-700">
                         {profileInitials}
                       </span>
                       <div className="min-w-0 flex-1 text-left">
-                        <div className="truncate text-[13px] font-bold leading-tight text-slate-700">
+                        <div className="truncate text-[14px] font-bold leading-tight text-slate-700">
                           {displayName}
                         </div>
                         {userEmail && (
-                          <div className="truncate text-[11px] text-slate-400">
+                          <div className="truncate text-[12px] text-slate-400">
                             {userEmail}
                           </div>
                         )}
@@ -3301,7 +3371,7 @@ export default function LeftSidebar() {
                       }`}
                       aria-hidden="true"
                     >
-                      <ChevronUp size={16} />
+                      <ChevronUp size={18} />
                     </span>
                   </button>
 
@@ -3326,30 +3396,32 @@ export default function LeftSidebar() {
                               onClick={() => {
                                 setMenuOpen(false);
                               }}
-                              className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-slate-50"
+                              className="group flex w-full items-center gap-3.5 rounded-xl px-2.5 py-2.5 text-left transition-colors hover:bg-slate-50"
                             >
                               <span
-                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${bgClass} ${colorClass} transition-transform group-hover:scale-105`}
+                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${bgClass} ${colorClass} transition-transform group-hover:scale-105`}
                               >
-                                <Icon size={14} />
+                                <Icon size={16} />
                               </span>
-                              <span className="text-[12px] font-medium text-slate-600">
+                              <span className="text-[13px] font-medium text-slate-600">
                                 {label}
                               </span>
                             </Link>
-                          ),
+                          )
                         )}
 
                         <div className="mx-2 my-1 h-px bg-slate-100" />
 
                         <button
-                          onClick={() => signOut({ callbackUrl: "/" })}
-                          className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-red-50"
+                          onClick={() => {
+                            void secureSignOut("/");
+                          }}
+                          className="group flex w-full items-center gap-3.5 rounded-xl px-2.5 py-2.5 text-left transition-colors hover:bg-red-50"
                         >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-400 transition-transform group-hover:scale-105">
-                            <LogOut size={14} />
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-400 transition-transform group-hover:scale-105">
+                            <LogOut size={16} />
                           </span>
-                          <span className="text-[12px] font-medium text-red-400">
+                          <span className="text-[13px] font-medium text-red-400">
                             Log out
                           </span>
                         </button>
@@ -3418,7 +3490,7 @@ export default function LeftSidebar() {
               <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
                 {SHARED_GRADIENTS.map((g) => {
                   const historyId = String(
-                    (colorMenuFor || "").split(":")[1] || "",
+                    (colorMenuFor || "").split(":")[1] || ""
                   );
                   const selected = getSignupItemGradientId(historyId) === g.id;
                   return (
@@ -3434,7 +3506,7 @@ export default function LeftSidebar() {
                         e.preventDefault();
                         e.stopPropagation();
                         const hid = String(
-                          (colorMenuFor || "").split(":")[1] || "",
+                          (colorMenuFor || "").split(":")[1] || ""
                         );
                         setSignupItemColor(hid, g.id);
                       }}
@@ -3488,7 +3560,7 @@ export default function LeftSidebar() {
               </div>
             )}
           </div>,
-          document.body,
+          document.body
         )}
     </>
   );

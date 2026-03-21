@@ -65,6 +65,8 @@ import {
 import { useSidebar, type EventContextTab } from "@/app/sidebar-context";
 import { useEventCache } from "@/app/event-cache-context";
 import { useMenuOptional } from "@/contexts/MenuContext";
+import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
+import { isScannedInviteCreatedVia } from "@/lib/dashboard-data";
 
 type EventFields = {
   title: string;
@@ -95,7 +97,22 @@ type SubmitScannedEventParams = {
   mode: "manual" | "auto";
   sourceFile?: File | null;
   rememberAutoAdd?: boolean;
+  ocrMeta?: {
+    category?: string | null;
+    birthdayTemplateHint?: BirthdayTemplateHint | null;
+  };
 };
+
+type SaveHistoryResult =
+  | {
+      ok: true;
+      eventId: string;
+      savedTitle?: string;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 type DashboardEventItem = {
   id: string;
@@ -112,6 +129,8 @@ type DashboardEventItem = {
   reminderCount?: number;
   mapsUrl?: string | null;
   createdVia?: string | null;
+  ownership?: "owned" | "invited";
+  shareStatus?: "accepted" | "pending" | null;
 };
 
 type DashboardMetricsCache = {
@@ -302,6 +321,8 @@ export default function Dashboard({
   const [, setOcrText] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [ocrCategory, setOcrCategory] = useState<string | null>(null);
+  const [ocrBirthdayTemplateHint, setOcrBirthdayTemplateHint] =
+    useState<BirthdayTemplateHint | null>(null);
   const [autoAddPreference, setAutoAddPreference] = useState<AutoAddPreference>(
     DEFAULT_AUTO_ADD_PREFERENCE
   );
@@ -895,6 +916,7 @@ export default function Dashboard({
     setOcrText("");
     setUploadedFile(null);
     setOcrCategory(null);
+    setOcrBirthdayTemplateHint(null);
     if (cameraInputRef.current) cameraInputRef.current.value = "";
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [resetScanUi]);
@@ -1128,6 +1150,7 @@ export default function Dashboard({
         setOcrText(data.ocrText || "");
         setUploadedFile(fileToUpload);
         setOcrCategory(data?.category || null);
+        setOcrBirthdayTemplateHint(data?.birthdayTemplateHint || null);
         if (adjusted) {
           setModalOpen(false);
           const created = await submitScannedEventRef.current({
@@ -1135,6 +1158,10 @@ export default function Dashboard({
             provider: "envitefy",
             mode: "auto",
             sourceFile: fileToUpload,
+            ocrMeta: {
+              category: data?.category || null,
+              birthdayTemplateHint: data?.birthdayTemplateHint || null,
+            },
           });
           if (!created) {
             resetScanUi();
@@ -1313,13 +1340,13 @@ export default function Dashboard({
       eventInput,
       ready,
       sourceFile,
+      ocrMeta,
     }: {
       eventInput: EventFields;
       ready: EventFields;
       sourceFile?: File | null;
-    }) => {
-      let eventId: string | undefined;
-      let savedTitle: string | undefined;
+      ocrMeta?: SubmitScannedEventParams["ocrMeta"];
+    }): Promise<SaveHistoryResult> => {
       try {
         const timezone =
           eventInput.timezone ||
@@ -1348,10 +1375,22 @@ export default function Dashboard({
           }
         }
 
+        const normalizedOcrCategory =
+          typeof ocrMeta?.category === "string" && ocrMeta.category.trim()
+            ? ocrMeta.category
+            : ocrCategory;
+        const normalizedBirthdayTemplateHint =
+          ocrMeta?.birthdayTemplateHint || ocrBirthdayTemplateHint;
+        const isBirthdayOcrEvent =
+          normalizedBirthdayTemplateHint?.detected &&
+          (normalizedOcrCategory || "").toLowerCase() === "birthdays";
+
         const payload: any = {
           title: eventInput.title || "Event",
           data: {
-            category: ocrCategory || undefined,
+            ownership: "invited",
+            invitedFromScan: true,
+            category: normalizedOcrCategory || undefined,
             startISO: ready.start,
             endISO: ready.end,
             location: ready.location || undefined,
@@ -1360,9 +1399,25 @@ export default function Dashboard({
             timezone,
             numberOfGuests: eventInput.numberOfGuests || 0,
             reminders: eventInput.reminders || undefined,
-            createdVia: "ocr",
+            createdVia: isBirthdayOcrEvent ? "ocr-birthday-renderer" : "ocr",
             thumbnail,
             attachment,
+            templateId: isBirthdayOcrEvent ? "party-pop" : undefined,
+            variationId: isBirthdayOcrEvent
+              ? normalizedBirthdayTemplateHint.themeId || undefined
+              : undefined,
+            birthdayAudience: isBirthdayOcrEvent
+              ? normalizedBirthdayTemplateHint.audience || "neutral"
+              : undefined,
+            birthdayTemplateHint: isBirthdayOcrEvent
+              ? normalizedBirthdayTemplateHint
+              : undefined,
+            birthdayName: isBirthdayOcrEvent
+              ? normalizedBirthdayTemplateHint.honoreeName || undefined
+              : undefined,
+            age: isBirthdayOcrEvent
+              ? normalizedBirthdayTemplateHint.age || undefined
+              : undefined,
           },
         };
 
@@ -1374,12 +1429,27 @@ export default function Dashboard({
         });
 
         const historyData: any = await historyRes.json().catch(() => ({}));
-        eventId = (historyData as any)?.id as string | undefined;
-        if (typeof historyData?.title === "string") {
-          savedTitle = historyData.title as string;
+        const eventId =
+          typeof historyData?.id === "string" && historyData.id.trim()
+            ? historyData.id.trim()
+            : undefined;
+        const savedTitle =
+          typeof historyData?.title === "string" ? historyData.title : undefined;
+
+        if (!historyRes.ok || !eventId) {
+          const serverError =
+            typeof historyData?.error === "string" && historyData.error.trim()
+              ? historyData.error.trim()
+              : null;
+          return {
+            ok: false,
+            error:
+              serverError ||
+              "We couldn't save this event to your account. Please try again.",
+          };
         }
 
-        if (eventId && typeof window !== "undefined") {
+        if (typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("history:created", {
               detail: {
@@ -1387,22 +1457,23 @@ export default function Dashboard({
                 title: historyData?.title || payload.title,
                 created_at: historyData?.created_at || new Date().toISOString(),
                 start: ready.start,
-                category: ocrCategory || null,
+                category: normalizedOcrCategory || null,
                 data: payload.data,
               },
             })
           );
         }
-        if (historyRes.ok && eventId) {
-          invalidateEventCache({ force: true, source: "dashboard-create" });
-        }
+        invalidateEventCache({ force: true, source: "dashboard-create" });
+        return { ok: true, eventId, savedTitle };
       } catch (err) {
         console.error("Failed to save to Envitefy history:", err);
+        return {
+          ok: false,
+          error: "We couldn't save this event to your account. Please try again.",
+        };
       }
-
-      return { eventId, savedTitle };
     },
-    [invalidateEventCache, ocrCategory, uploadedFile]
+    [invalidateEventCache, ocrBirthdayTemplateHint, ocrCategory, uploadedFile]
   );
 
   const connectGoogle = useCallback(() => {
@@ -1447,6 +1518,7 @@ export default function Dashboard({
       mode,
       sourceFile,
       rememberAutoAdd = false,
+      ocrMeta,
     }: SubmitScannedEventParams) => {
       if (isSubmittingRef.current) return false;
       isSubmittingRef.current = true;
@@ -1462,11 +1534,25 @@ export default function Dashboard({
           return false;
         }
 
-        const { eventId, savedTitle } = await saveToEnvitefyHistory({
+        const saveResult = await saveToEnvitefyHistory({
           eventInput,
           ready,
           sourceFile,
+          ocrMeta,
         });
+        if (!saveResult.ok) {
+          setError(
+            saveResult.error === "Unable to resolve signed-in account"
+              ? "We couldn't verify your signed-in account. Sign out and sign back in, then try again."
+              : saveResult.error
+          );
+          if (mode === "auto") {
+            setEvent(eventInput);
+            setModalOpen(true);
+          }
+          return false;
+        }
+        const { eventId, savedTitle } = saveResult;
 
         try {
           if (provider === "envitefy") {
@@ -1528,12 +1614,8 @@ export default function Dashboard({
           persistAutoAddPreference({ enabled: true, provider });
         }
 
-        if (eventId) {
-          const eventTitle = savedTitle || eventInput.title || "Event";
-          router.push(buildEventPath(eventId, eventTitle, { created: true }));
-        } else {
-          resetForm();
-        }
+        const eventTitle = savedTitle || eventInput.title || "Event";
+        router.push(buildEventPath(eventId, eventTitle, { created: true }));
         return true;
       } finally {
         isSubmittingRef.current = false;
@@ -2041,6 +2123,14 @@ function eventGlyph(item: DashboardEventItem): string {
   return "EV";
 }
 
+function eventRelationLabel(item: DashboardEventItem | null | undefined): string {
+  if (!item) return "My Event";
+  if (item.ownership === "invited") {
+    return item.shareStatus === "pending" ? "Pending Invite" : "Invited";
+  }
+  return "My Event";
+}
+
 function parseSafeDate(value: string | null | undefined): Date | null {
   if (!value) return null;
   const parsed = new Date(value);
@@ -2254,16 +2344,16 @@ function UpcomingEventsPanel({
       : `In ${daysUntilNext} days`;
   const statusNormalized = String(nextEvent?.status || "").toLowerCase();
   const createdVia = String(nextEvent?.createdVia || "").toLowerCase();
-  const isScannedOrUploaded =
-    createdVia === "ocr" ||
-    createdVia.includes("scan") ||
-    createdVia.includes("upload");
+  const nextEventRelationLabel = eventRelationLabel(nextEvent);
+  const isOwnedNextEvent = nextEvent?.ownership !== "invited";
+  const isScannedOrUploaded = isScannedInviteCreatedVia(createdVia);
   const nextBadges: string[] = [];
-  if (statusNormalized === "draft") nextBadges.push("Draft");
-  if (!nextEvent?.locationText) {
+  if (isOwnedNextEvent && statusNormalized === "draft") nextBadges.push("Draft");
+  if (isOwnedNextEvent && !nextEvent?.locationText) {
     nextBadges.push("Missing Location");
   }
   if (
+    isOwnedNextEvent &&
     !isScannedOrUploaded &&
     (!nextEvent?.numberOfGuests || nextEvent.numberOfGuests <= 0)
   ) {
@@ -2306,9 +2396,14 @@ function UpcomingEventsPanel({
             <div className="relative">
               <div className="mb-8 flex flex-col items-start justify-between gap-5 md:flex-row">
                 <div className="space-y-3">
-                  <span className="inline-flex items-center rounded-full border border-white/30 bg-white/20 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-white/90 backdrop-blur-sm">
-                    Next Event
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-full border border-white/30 bg-white/20 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-white/90 backdrop-blur-sm">
+                      Next Event
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-indigo-100">
+                      {nextEventRelationLabel}
+                    </span>
+                  </div>
                   <h3 className="text-4xl font-serif italic font-semibold leading-tight !text-white md:text-5xl">
                     {nextEvent.title}
                   </h3>
@@ -2642,7 +2737,7 @@ function UpcomingEventsPanel({
                         {eventGlyph(item)}
                       </span>
                       <span className="rounded-full bg-[#f1efff] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#6660a0]">
-                        Upcoming
+                        {eventRelationLabel(item)}
                       </span>
                     </div>
                     <h4 className="mt-4 line-clamp-2 text-lg font-semibold leading-tight text-[#27204a]">

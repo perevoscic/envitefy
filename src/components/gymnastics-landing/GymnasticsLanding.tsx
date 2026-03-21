@@ -7,6 +7,7 @@ import GymnasticsHeroBackground from "./GymnasticsHeroBackground";
 import Link from "next/link";
 import Image from "next/image";
 import AuthModal from "@/components/auth/AuthModal";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import {
   ArrowRight,
   CalendarDays,
@@ -229,14 +230,7 @@ export default function GymnasticsLanding() {
             {/* brand */}
             <Link href="/" className="flex items-center gap-2.5">
               <div className="hidden sm:block">
-                <Image
-                  src="/logo.png"
-                  alt="Envitefy"
-                  width={136}
-                  height={37}
-                  priority
-                  className="h-10 w-auto -ml-1"
-                />
+                <EnvitefyWordmark className="text-[2.5rem] -ml-0.5" />
                 <p className="text-sm font-semibold text-slate-900">
                   Gymnastics
                 </p>

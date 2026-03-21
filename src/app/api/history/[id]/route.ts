@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import {
   getEventHistoryById,
   updateEventHistoryTitle,
   deleteEventHistoryById,
-  getUserIdByEmail,
   updateEventHistoryDataMerge,
   updateEventHistoryData,
   claimEventHistoryById,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 
 export const runtime = "nodejs";
@@ -31,11 +31,7 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   const session: any = await getServerSession(authOptions as any);
-  const sessionUser: any = (session && (session as any).user) || null;
-  let userId: string | null = (sessionUser?.id as string | undefined) || null;
-  if (!userId && sessionUser?.email) {
-    userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
-  }
+  const userId = await resolveSessionUserId(session);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await context.params;
@@ -160,14 +156,17 @@ export async function PATCH(
     // Invalidate cache for the previous owner, or the new owner when a claim was performed.
     if (existing.user_id) {
       invalidateUserHistory(existing.user_id);
+      invalidateUserDashboard(existing.user_id);
     } else if (claimed) {
       invalidateUserHistory(userId);
+      invalidateUserDashboard(userId);
     }
     return NextResponse.json(updatedRow);
   }
 
   if (claimed) {
     invalidateUserHistory(userId);
+    invalidateUserDashboard(userId);
     return NextResponse.json(updatedRow);
   }
 
@@ -179,11 +178,7 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   const session: any = await getServerSession(authOptions as any);
-  const sessionUser: any = (session && (session as any).user) || null;
-  let userId: string | null = (sessionUser?.id as string | undefined) || null;
-  if (!userId && sessionUser?.email) {
-    userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
-  }
+  const userId = await resolveSessionUserId(session);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await context.params;
@@ -196,6 +191,7 @@ export async function DELETE(
   // Invalidate cache for the owner
   if (existing.user_id) {
     invalidateUserHistory(existing.user_id);
+    invalidateUserDashboard(existing.user_id);
   }
   return NextResponse.json({ ok: true });
 }

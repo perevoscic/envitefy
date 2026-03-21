@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, revokeEventShare, getEventHistoryById } from "@/lib/db";
+import {
+  getUserIdByEmail,
+  revokeEventShare,
+  getEventHistoryById,
+  listShareRecipientUserIdsForEvent,
+} from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 
 export const runtime = "nodejs";
 
@@ -23,14 +29,26 @@ export async function POST(request: NextRequest) {
     const existing = await getEventHistoryById(eventId);
     if (!existing) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
+    const affectedRecipientIds =
+      recipientUserId || existing.user_id !== byUserId
+        ? []
+        : await listShareRecipientUserIdsForEvent(eventId).catch(() => []);
     const count = await revokeEventShare({ eventId, byUserId, recipientUserId });
     
     // Invalidate cache for both owner and recipient (if specified)
     if (existing.user_id) {
       invalidateUserHistory(existing.user_id);
+      invalidateUserDashboard(existing.user_id);
     }
+    invalidateUserHistory(byUserId);
+    invalidateUserDashboard(byUserId);
     if (recipientUserId) {
       invalidateUserHistory(recipientUserId);
+      invalidateUserDashboard(recipientUserId);
+    }
+    for (const affectedRecipientId of affectedRecipientIds) {
+      invalidateUserHistory(affectedRecipientId);
+      invalidateUserDashboard(affectedRecipientId);
     }
     
     return NextResponse.json({ ok: true, revoked: count });

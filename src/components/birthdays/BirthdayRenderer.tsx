@@ -1,9 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { Share2, MapPin, Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, MapPin, Navigation, Share2 } from "lucide-react";
 import Image from "next/image";
-import GuestRsvpModal from "../GuestRsvpModal";
+import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
+import EventMap from "../EventMap";
+import AppleCalendarLink from "../AppleCalendarLink";
+import EnvitefyWordmark from "../branding/EnvitefyWordmark";
+import {
+  CalendarIconApple,
+  CalendarIconGoogle,
+  CalendarIconOutlook,
+} from "../CalendarIcons";
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return "";
@@ -110,13 +118,46 @@ interface Props {
   actions?: React.ReactNode;
   eventId?: string;
   isOwner?: boolean;
+  heroImageUrl?: string | null;
+  calendarLinks?: {
+    appleInline: string;
+    google: string;
+    outlook: string;
+  } | null;
+  coordinates?: { latitude: number; longitude: number } | null;
+  venueText?: string | null;
+  locationText?: string | null;
 }
 
 import EventRsvpDashboard from "../EventRsvpDashboard";
 
-export default function BirthdayRenderer({ template, event, actions, eventId, isOwner }: Props) {
+type BirthdayRendererChrome = {
+  heroImageUrl?: string | null;
+  calendarLinks?: Props["calendarLinks"];
+  coordinates?: Props["coordinates"];
+  venueText?: string | null;
+  locationText?: string | null;
+};
+
+type RsvpIntent = Exclude<RsvpResponse, null>;
+
+export default function BirthdayRenderer({
+  template,
+  event,
+  actions,
+  eventId,
+  isOwner,
+  heroImageUrl,
+  calendarLinks,
+  coordinates,
+  venueText,
+  locationText,
+}: Props) {
   const { layout } = template;
   const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
+  const [selectedResponse, setSelectedResponse] = useState<RsvpIntent | null>(
+    null
+  );
   
   // Normalize theme config from the template object
   const theme: ThemeConfig = {
@@ -148,7 +189,23 @@ export default function BirthdayRenderer({ template, event, actions, eventId, is
         backgroundColor: theme.colors.primary,
       }}
     >
-      {renderLayout(layout, theme, event, actions, () => setIsRsvpModalOpen(true))}
+      {renderLayout(
+        layout,
+        theme,
+        event,
+        actions,
+        (response) => {
+          setSelectedResponse((response as RsvpIntent | null) || null);
+          setIsRsvpModalOpen(true);
+        },
+        {
+          heroImageUrl,
+          calendarLinks,
+          coordinates,
+          venueText,
+          locationText,
+        }
+      )}
       
       {isOwner && eventId && (
         <div className="max-w-4xl mx-auto w-full px-6 pb-20 mt-12">
@@ -163,6 +220,7 @@ export default function BirthdayRenderer({ template, event, actions, eventId, is
           eventId={eventId}
           eventTitle={event.headlineTitle || "Birthday Party"}
           rsvpDeadline={event.rsvpDeadline}
+          initialResponse={selectedResponse}
           themeColors={{
             primary: theme.colors.secondary,
             secondary: theme.colors.primary,
@@ -173,7 +231,14 @@ export default function BirthdayRenderer({ template, event, actions, eventId, is
   );
 }
 
-function renderLayout(layout: string, theme: ThemeConfig, event: EventData, actions?: React.ReactNode, onRsvpClick?: () => void) {
+function renderLayout(
+  layout: string,
+  theme: ThemeConfig,
+  event: EventData,
+  actions?: React.ReactNode,
+  onRsvpClick?: (response?: RsvpIntent) => void,
+  chrome?: BirthdayRendererChrome
+) {
   switch (layout) {
     case "confetti-splash":
       return <ConfettiSplashLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
@@ -203,6 +268,16 @@ function renderLayout(layout: string, theme: ThemeConfig, event: EventData, acti
       return <GlamorousSparkleLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "sports-stadium":
       return <SportsStadiumLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
+    case "editorial-feature":
+      return (
+        <EditorialFeatureLayout
+          theme={theme}
+          event={event}
+          actions={actions}
+          onRsvpClick={onRsvpClick}
+          chrome={chrome}
+        />
+      );
     case "luxury-royal":
       return <LuxuryRoyalLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />;
     case "island-paradise":
@@ -1025,6 +1100,325 @@ function BirthdayContentSections({ theme, event, backgroundColor, darkMode = fal
                 </section>
             )}
         </main>
+    );
+}
+
+function EditorialFeatureLayout({
+    theme,
+    event,
+    actions,
+    onRsvpClick,
+    chrome,
+}: {
+    theme: ThemeConfig;
+    event: EventData;
+    actions?: React.ReactNode;
+    onRsvpClick?: (response?: RsvpIntent) => void;
+    chrome?: BirthdayRendererChrome;
+}) {
+    const formattedDate = formatDate(event.date);
+    const formattedTime = formatTime(event.date);
+    const venueText = chrome?.venueText || "";
+    const locationText = chrome?.locationText || event.location || "";
+    const directionsHref = locationText
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([venueText, locationText].filter(Boolean).join(", "))}`
+        : null;
+    const summary =
+        event.story ||
+        (formattedDate
+            ? `Celebrate with us on ${formattedDate}${formattedTime ? ` at ${formattedTime}` : ""}${venueText ? ` at ${venueText}` : ""}.`
+            : "Celebrate with us for a special birthday gathering.");
+    const noteCopy =
+        event.thingsToDo ||
+        event.party?.notes ||
+        event.partyDetails?.notes ||
+        "Bring your party spirit and check the flyer for any extra host notes.";
+    const rsvpEnabled = Boolean(event.rsvpEnabled && onRsvpClick);
+    const heroImage = chrome?.heroImageUrl || theme.decorations?.heroImage || theme.heroImage;
+    const useUploadedFlyerHero = Boolean(chrome?.heroImageUrl);
+
+    return (
+        <div
+            className="min-h-screen bg-[#f5f6f7] text-[#2c2f30]"
+            style={{
+                backgroundImage:
+                    "radial-gradient(circle at top left, rgba(183,0,73,0.08), transparent 28%), radial-gradient(circle at top right, rgba(80,225,249,0.18), transparent 26%), linear-gradient(180deg, #f5f6f7 0%, #fdfdfe 48%, #eef3f8 100%)",
+            }}
+        >
+            <nav className="sticky top-0 z-20 border-b border-white/70 bg-white/80 backdrop-blur-xl">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
+                    <div className="px-1 py-1">
+                        <EnvitefyWordmark className="text-[2.2rem] -ml-0.5 leading-none" />
+                        <p className="text-base font-semibold text-slate-900">
+                            Birthdays
+                        </p>
+                    </div>
+                    <div className="hidden md:block">{actions}</div>
+                </div>
+            </nav>
+
+            <main className="mx-auto max-w-7xl space-y-8 px-4 pb-12 pt-6 md:px-8 md:pt-10">
+                <header className="overflow-hidden rounded-[2rem] bg-white shadow-[0_22px_60px_rgba(120,110,160,0.12)] md:grid md:grid-cols-2">
+                    <div className="relative flex flex-col justify-center space-y-5 px-6 py-10 md:px-12 md:py-14">
+                        <div
+                            className="inline-flex w-fit items-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.22em]"
+                            style={{
+                                backgroundColor: `${theme.colors.secondary}14`,
+                                color: theme.colors.secondary,
+                            }}
+                        >
+                            Special Celebration
+                        </div>
+                        <h1
+                            className="text-4xl font-black leading-tight md:text-6xl"
+                            style={{ fontFamily: theme.fonts.headline }}
+                        >
+                            {event.headlineTitle || theme.defaultHeadline || "Birthday Celebration"}
+                        </h1>
+                        <p className="max-w-xl text-base leading-7 text-slate-600 md:text-lg">
+                            {summary}
+                        </p>
+                        <div className="md:hidden">{actions}</div>
+                    </div>
+
+                    <div
+                        className={`relative overflow-hidden ${useUploadedFlyerHero ? "min-h-[320px] p-6 md:flex md:min-h-full md:items-center md:justify-center md:p-10" : "min-h-[280px] md:min-h-full"}`}
+                    >
+                        <div
+                            className="absolute inset-0"
+                            style={{
+                                background:
+                                    theme.id === "editorial_blue_allstar"
+                                        ? "linear-gradient(135deg, rgba(11,99,206,0.22), rgba(65,196,255,0.12))"
+                                        : theme.id === "editorial_ballerina_bloom"
+                                        ? "linear-gradient(135deg, rgba(185,25,100,0.16), rgba(80,225,249,0.12))"
+                                        : "linear-gradient(135deg, rgba(209,77,47,0.12), rgba(255,206,96,0.12))",
+                            }}
+                        />
+                        {heroImage ? (
+                            useUploadedFlyerHero ? (
+                                <div className="relative z-10 mx-auto aspect-square w-full max-w-[440px] overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_70px_rgba(120,110,160,0.2)] ring-1 ring-white/70">
+                                    <img
+                                        src={heroImage}
+                                        alt={theme.name}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                            ) : (
+                                <img
+                                    src={heroImage}
+                                    alt={theme.name}
+                                    className="h-full w-full object-cover"
+                                />
+                            )
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400">
+                                <Share2 className="h-10 w-10" />
+                            </div>
+                        )}
+                    </div>
+                </header>
+
+                <section className="grid gap-6 md:grid-cols-12">
+                    <div className="space-y-6 md:col-span-8">
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            <EditorialStatCard
+                                icon={<Calendar className="h-7 w-7" />}
+                                label="Date"
+                                value={formattedDate || "Date TBD"}
+                                accent={theme.colors.secondary}
+                            />
+                            <EditorialStatCard
+                                icon={<Clock className="h-7 w-7" />}
+                                label="Time"
+                                value={formattedTime || "All day"}
+                                accent={theme.colors.secondary}
+                            />
+                            <EditorialStatCard
+                                icon={<MapPin className="h-7 w-7" />}
+                                label="Venue"
+                                value={venueText || locationText || "Location TBD"}
+                                accent={theme.colors.secondary}
+                            />
+                        </div>
+
+                        <div className="relative overflow-hidden rounded-[2rem] bg-white p-8 shadow-[0_18px_48px_rgba(120,110,160,0.1)] md:p-10">
+                            <div
+                                className="absolute -right-12 -top-12 h-32 w-32 rounded-full blur-3xl"
+                                style={{ backgroundColor: `${theme.colors.secondary}14` }}
+                            />
+                            <h2
+                                className="text-3xl font-black tracking-tight"
+                                style={{ fontFamily: theme.fonts.headline }}
+                            >
+                                Will you be joining us?
+                            </h2>
+                            <p className="mt-2 text-sm font-medium text-slate-500">
+                                {rsvpEnabled
+                                    ? `Tap a response below to RSVP${event.rsvpDeadline ? ` by ${formatDate(event.rsvpDeadline)}` : ""}.`
+                                    : "RSVP details will be shared by the host."}
+                            </p>
+                            <div className="mt-8 flex flex-wrap gap-3">
+                                {[
+                                    { label: "Yes, I'm In!", response: "yes" as const },
+                                    { label: "Maybe", response: "maybe" as const },
+                                    { label: "No", response: "no" as const },
+                                ].map((option) => (
+                                    <button
+                                        key={option.label}
+                                        type="button"
+                                        onClick={
+                                            rsvpEnabled
+                                                ? () => onRsvpClick?.(option.response)
+                                                : undefined
+                                        }
+                                        disabled={!rsvpEnabled}
+                                        className={`min-w-[140px] flex-1 rounded-full border-2 px-5 py-4 text-sm font-black transition ${rsvpEnabled ? "bg-white hover:-translate-y-0.5" : "cursor-not-allowed bg-slate-50 text-slate-400"}`}
+                                        style={{
+                                            borderColor:
+                                                option.label === "Yes, I'm In!"
+                                                    ? theme.colors.secondary
+                                                    : "rgba(148,163,184,0.35)",
+                                            color:
+                                                option.label === "Yes, I'm In!" && rsvpEnabled
+                                                    ? theme.colors.secondary
+                                                    : undefined,
+                                        }}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {chrome?.calendarLinks ? (
+                            <div className="rounded-[2rem] bg-[#eef3f8] p-8 shadow-[0_14px_36px_rgba(120,110,160,0.08)]">
+                                <h3
+                                    className="text-2xl font-black tracking-tight"
+                                    style={{ fontFamily: theme.fonts.headline }}
+                                >
+                                    Save the Date
+                                </h3>
+                                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                                    <AppleCalendarLink
+                                        href={chrome.calendarLinks.appleInline}
+                                        className="flex items-center justify-center gap-3 rounded-2xl bg-white px-4 py-4 font-bold text-slate-700 shadow-sm"
+                                    >
+                                        <CalendarIconApple className="h-5 w-5" />
+                                        Apple
+                                    </AppleCalendarLink>
+                                    <a
+                                        href={chrome.calendarLinks.google}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center gap-3 rounded-2xl bg-white px-4 py-4 font-bold text-slate-700 shadow-sm"
+                                    >
+                                        <CalendarIconGoogle className="h-5 w-5" />
+                                        Google
+                                    </a>
+                                    <a
+                                        href={chrome.calendarLinks.outlook}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center gap-3 rounded-2xl bg-white px-4 py-4 font-bold text-slate-700 shadow-sm"
+                                    >
+                                        <CalendarIconOutlook className="h-5 w-5" />
+                                        Outlook
+                                    </a>
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
+
+                    <div className="space-y-6 md:col-span-4">
+                        <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_48px_rgba(120,110,160,0.1)]">
+                            <div className="h-64 bg-slate-100">
+                                {locationText ? (
+                                    <EventMap
+                                        coordinates={chrome?.coordinates || null}
+                                        venue={venueText || null}
+                                        location={locationText}
+                                        className="h-full w-full"
+                                        mapWidth={640}
+                                        mapHeight={360}
+                                    />
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-slate-400">
+                                        <MapPin className="h-10 w-10" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="space-y-4 p-7">
+                                <h3
+                                    className="text-xl font-black"
+                                    style={{ fontFamily: theme.fonts.headline }}
+                                >
+                                    {venueText || "Party Location"}
+                                </h3>
+                                <p className="text-sm leading-6 text-slate-600">
+                                    {locationText || "Location details will be shared soon."}
+                                </p>
+                                {directionsHref ? (
+                                    <a
+                                        href={directionsHref}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-black text-white"
+                                        style={{ backgroundColor: theme.colors.secondary }}
+                                    >
+                                        <Navigation className="h-4 w-4" />
+                                        Get Directions
+                                    </a>
+                                ) : null}
+                            </div>
+                        </div>
+
+                        <div
+                            className="rounded-[2rem] p-8 text-white shadow-[0_18px_48px_rgba(120,110,160,0.12)]"
+                            style={{
+                                background:
+                                    theme.id === "editorial_blue_allstar"
+                                        ? "linear-gradient(135deg, #0b63ce, #41c4ff)"
+                                        : theme.id === "editorial_ballerina_bloom"
+                                        ? "linear-gradient(135deg, #b91964, #50e1f9)"
+                                        : "linear-gradient(135deg, #d14d2f, #ffce60)",
+                            }}
+                        >
+                            <div className="mb-3 text-sm font-black uppercase tracking-[0.22em] opacity-80">
+                                Good To Know
+                            </div>
+                            <p className="text-sm leading-7 text-white/90">{noteCopy}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <footer className="border-t border-white/70 px-1 pt-6 text-center text-sm text-slate-500">
+                    <p>Created with Envitefy.</p>
+                </footer>
+            </main>
+        </div>
+    );
+}
+
+function EditorialStatCard({
+    icon,
+    label,
+    value,
+    accent,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    accent: string;
+}) {
+    return (
+        <div className="rounded-[1.5rem] bg-[#eef3f8] p-6 shadow-[0_10px_26px_rgba(120,110,160,0.08)]">
+            <div style={{ color: accent }}>{icon}</div>
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+                {label}
+            </p>
+            <p className="mt-2 text-lg font-black leading-6 text-slate-800">{value}</p>
+        </div>
     );
 }
 

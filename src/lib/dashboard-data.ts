@@ -1,3 +1,6 @@
+export type DashboardEventOwnership = "owned" | "invited";
+export type DashboardEventShareStatus = "accepted" | "pending" | null;
+
 export type DashboardEvent = {
   id: string;
   title: string;
@@ -15,6 +18,8 @@ export type DashboardEvent = {
   reminderCount: number;
   mapsUrl: string | null;
   createdVia: string | null;
+  ownership: DashboardEventOwnership;
+  shareStatus: DashboardEventShareStatus;
 };
 
 type HistoryRow = {
@@ -62,6 +67,31 @@ function normalizeCreatedVia(createdViaRaw: unknown): string | null {
     .trim()
     .toLowerCase();
   return normalized || null;
+}
+
+export function isScannedInviteCreatedVia(createdViaRaw: unknown): boolean {
+  const normalized = normalizeCreatedVia(createdViaRaw);
+  return normalized === "ocr" || Boolean(normalized?.startsWith("ocr-"));
+}
+
+export function normalizeDashboardEventOwnership(
+  ownershipRaw: unknown,
+  createdViaRaw?: unknown
+): DashboardEventOwnership {
+  return String(ownershipRaw || "").trim().toLowerCase() === "invited" ||
+    isScannedInviteCreatedVia(createdViaRaw)
+    ? "invited"
+    : "owned";
+}
+
+export function normalizeDashboardEventShareStatus(
+  shareStatusRaw: unknown
+): DashboardEventShareStatus {
+  const normalized = String(shareStatusRaw || "").trim().toLowerCase();
+  if (normalized === "accepted" || normalized === "pending") {
+    return normalized;
+  }
+  return null;
 }
 
 export function isArchivedOrCanceled(statusRaw: unknown): boolean {
@@ -124,6 +154,11 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     reminderCount,
     mapsUrl: buildMapsUrl(locationText),
     createdVia: normalizeCreatedVia(data?.createdVia),
+    ownership: normalizeDashboardEventOwnership(
+      data?.ownership,
+      data?.createdVia
+    ),
+    shareStatus: normalizeDashboardEventShareStatus(data?.shareStatus),
   };
 }
 

@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { parse as parseCookie } from "cookie";
 import {
   getEventHistoryById,
-  getUserIdByEmail,
   isEventSharedWithUser,
   updateEventHistoryData,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   getEventAccessCookieName,
   verifyEventAccessCookieValue,
@@ -44,11 +44,7 @@ function normalizeStatus(input: any): AttendanceStatus | null {
 export async function POST(req: Request) {
   try {
     const session: any = await getServerSession(authOptions as any);
-    const sessionUser: any = (session && (session as any).user) || null;
-    let userId: string | null = (sessionUser?.id as string | undefined) || null;
-    if (!userId && sessionUser?.email) {
-      userId = (await getUserIdByEmail(String(sessionUser.email))) || null;
-    }
+    const userId = await resolveSessionUserId(session);
     const body = await req.json().catch(() => ({}));
     const eventId = typeof body.eventId === "string" ? body.eventId : null;
     const requestedStatus = normalizeStatus(body.status);
@@ -199,6 +195,7 @@ export async function POST(req: Request) {
 
     if (existing.user_id) {
       invalidateUserHistory(existing.user_id);
+      invalidateUserDashboard(existing.user_id);
     }
 
     return NextResponse.json({

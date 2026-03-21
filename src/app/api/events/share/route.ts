@@ -5,6 +5,7 @@ import { createOrUpdateEventShare, getEventHistoryById, getUserIdByEmail, increm
 import { sendShareEventEmail } from "@/lib/email";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 
 export const runtime = "nodejs";
 
@@ -43,6 +44,11 @@ export async function POST(request: NextRequest) {
         await incrementUserSharesSent({ userId: ownerUserId, delta: 1 });
         // Invalidate owner's cache since share status changed
         invalidateUserHistory(ownerUserId);
+        invalidateUserDashboard(ownerUserId);
+        if (share.recipient_user_id) {
+          invalidateUserHistory(share.recipient_user_id);
+          invalidateUserDashboard(share.recipient_user_id);
+        }
       }
     } catch (err: any) {
       // If event_shares table is not present yet, bypass DB share and still email the recipient

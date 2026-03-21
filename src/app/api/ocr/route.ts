@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
 import { corsJson, corsPreflight } from "@/lib/cors";
+import { normalizeBirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 
 /** Ensure this runs on Node (not Edge) and isn’t cached */
 export const runtime = "nodejs";
@@ -93,6 +94,10 @@ async function llmExtractEventFromImage(
   category?: string;
   rsvp?: string | null;
   yearVisible?: boolean | null;
+  birthdayAudience?: "girl" | "boy" | "neutral" | null;
+  birthdaySignals?: string[] | null;
+  birthdayName?: string | null;
+  birthdayAge?: number | string | null;
 } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -118,6 +123,8 @@ async function llmExtractEventFromImage(
   • Convert the age to an ORDINAL (e.g., 7th, 10th, 5th) and include it in the title.
   • If an age is visually present but missing from your title, recompute the title to include the age before returning JSON.
   • Never put months/dates/times in the title.
+  • Also classify birthdayAudience as "girl", "boy", or "neutral" from text/theme cues only. Use "girl" for cues like ballerina, ballet, tutu, princess, bows, tea party, she/her. Use "boy" for cues like all-star, sports, mvp, superhero, trucks, he/him. If unclear, use "neutral".
+  • Return birthdaySignals as a short array of the exact cues you used, birthdayName when you can see the honoree, and birthdayAge when visible.
   
   TITLE (never include date/time or location; keep under 120 chars):
   • Always include the occasion and honoree(s) when present.
@@ -147,12 +154,13 @@ async function llmExtractEventFromImage(
   • Clinical tone only. Title is the appointment type (e.g., "Dental Cleaning"). Never invitation wording. Never include DOB.
   
   OUTPUT (strict JSON only, no extra text):
-  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "yearVisible": boolean }
+  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null }
   `;
   
   const userText = `
-  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,yearVisible}.
+  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge}.
   If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include it in the title. Do not include dates/times in the title.
+  For birthdayAudience, use text/theme cues only. Do not infer from a face or from the honoree name alone.
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
   The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
   Keep RSVP only in rsvp (not in description).
@@ -3056,6 +3064,15 @@ export async function POST(request: Request) {
     // Category is derived strictly from OCR text (words only); ignore any image-only LLM labels
     let category: string | null = detectCategory(raw, schedule, fieldsGuess);
     if (practiceSchedule.detected) category = "Sport Events";
+    const birthdayTemplateHint = normalizeBirthdayTemplateHint({
+      category,
+      rawText: raw,
+      title: finalTitle,
+      birthdayAudience: (llmImage as any)?.birthdayAudience,
+      birthdaySignals: (llmImage as any)?.birthdaySignals,
+      birthdayName: (llmImage as any)?.birthdayName,
+      birthdayAge: (llmImage as any)?.birthdayAge,
+    });
 
     // Non-blocking metering: do not hold the OCR response while profile/credits update.
     const requestOrigin = new URL(request.url).origin;
@@ -3112,6 +3129,7 @@ export async function POST(request: Request) {
       schedule,
       events,
       category,
+      birthdayTemplateHint,
       ocrSource,
     };
     if (includeTimings) {

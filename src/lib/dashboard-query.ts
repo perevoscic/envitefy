@@ -35,6 +35,13 @@ export async function listDashboardEventsForOwner(
   userId: string,
   limit = 200
 ): Promise<DashboardEvent[]> {
+  return listDashboardEventsForUser(userId, limit);
+}
+
+export async function listDashboardEventsForUser(
+  userId: string,
+  limit = 200
+): Promise<DashboardEvent[]> {
   const rowLimit = Math.max(1, Math.min(DASHBOARD_HISTORY_ROW_CAP, Math.floor(limit)));
   try {
     const rows = await listDashboardHistoryWindowForUser(userId, rowLimit);
@@ -65,7 +72,10 @@ export function buildDashboardCollections(
   nextEventInDays: number | null;
 } {
   const allDrafts = events
-    .filter((event) => isDraftStatus(event.status))
+    .filter(
+      (event) =>
+        event.ownership === "owned" && isDraftStatus(event.status)
+    )
     .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
 
   const upcoming = events
@@ -73,9 +83,24 @@ export function buildDashboardCollections(
       const startMs = new Date(event.startAt).getTime();
       return startMs > nowMs && !isArchivedOrCanceled(event.status);
     })
-    .sort(
-      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
-    );
+    .sort((a, b) => {
+      const startDiff = new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
+      if (startDiff !== 0) return startDiff;
+      const aPriority =
+        a.ownership === "owned"
+          ? 0
+          : a.shareStatus === "accepted"
+          ? 1
+          : 2;
+      const bPriority =
+        b.ownership === "owned"
+          ? 0
+          : b.shareStatus === "accepted"
+          ? 1
+          : 2;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      return a.title.localeCompare(b.title);
+    });
 
   const nextEvent = upcoming[0] || null;
   const upcomingIn30DaysCount = upcoming.filter((event) => {
