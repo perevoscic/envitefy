@@ -16,6 +16,7 @@ import GlobalEventCreate from "./GlobalEventCreate";
 import GlobalSmartSignup from "./GlobalSmartSignup";
 import PwaInstallButton from "@/components/PwaInstallButton";
 import PwaInstallToast from "@/components/PwaInstallToast";
+import ThemeColorSync from "@/components/ThemeColorSync";
 import { ThemeKey, ThemeVariant, resolveThemeCssVariables } from "@/themes";
 
 type ThemeContextValue = {
@@ -90,6 +91,7 @@ export default function Providers({
         <ThemeProvider>
           <RegisterServiceWorker />
           <PwaInstallToast />
+          <ThemeColorSync />
           <GymnasticsDemoDraftClaimListener />
           {children}
           <GlobalEventCreate />

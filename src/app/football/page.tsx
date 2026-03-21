@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import FootballLanding from "@/components/football-landing/FootballLanding";
+import { themeColorPalette } from "@/lib/theme-color";
 
 export const metadata: Metadata = {
   title: "Envitefy Football | Premium season pages for teams and families",
@@ -19,6 +20,10 @@ export const metadata: Metadata = {
     description:
       "Premium football season pages with editorial layouts, live updates, travel details, and mobile-first presentation.",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: themeColorPalette.football,
 };
 
 export default function FootballPage() {

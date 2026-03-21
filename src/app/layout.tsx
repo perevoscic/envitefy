@@ -5,6 +5,7 @@ import Providers from "./providers";
 import AppShell from "./AppShell";
 import "./globals.css";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
+import { themeColorPalette } from "@/lib/theme-color";
 import { Suspense } from "react";
 import type { CSSProperties } from "react";
 
@@ -135,7 +136,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Envitefy",
   },
   openGraph: {
@@ -160,10 +161,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F8F5FF" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0b0f" },
-  ],
+  themeColor: themeColorPalette.brand,
 };
 
 export default function RootLayout({
@@ -183,16 +181,11 @@ export default function RootLayout({
       lang="en"
       data-theme={`${themeKey}-${htmlVariant}`}
       data-theme-key={themeKey}
-      style={{ ...htmlStyle, backgroundColor: "#F8F5FF" }}
+      style={{ ...htmlStyle, backgroundColor: themeColorPalette.background }}
       suppressHydrationWarning
     >
       <head>
         <title>Envitefy | Create. Share. Enjoy.</title>
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
         <Script
           id="ld-website"
           type="application/ld+json"
