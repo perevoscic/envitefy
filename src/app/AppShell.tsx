@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { MenuProvider } from "@/contexts/MenuContext";
 import { EventCacheProvider } from "@/app/event-cache-context";
@@ -17,8 +18,19 @@ export default function AppShell({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
+  const isLightweightLanding = pathname === "/event";
+
+  if (isLightweightLanding) {
+    return (
+      <MainContentWrapper isAuthenticated={true} reserveSidebarSpace={false}>
+        <div className="flex-1 min-w-0">{children}</div>
+        <ConditionalFooter />
+      </MainContentWrapper>
+    );
+  }
 
   return (
     <EventCacheProvider>

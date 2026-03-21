@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { isScannedInviteCreatedVia } from "@/lib/dashboard-data";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import {
   readProfileCache,
@@ -280,7 +279,6 @@ function isInvitedHistoryEvent(data: unknown): boolean {
   }
   if (Boolean(record.shared)) return true;
   if (Boolean(record.invitedFromScan)) return true;
-  if (isScannedInviteCreatedVia(record.createdVia)) return true;
   return false;
 }
 
@@ -603,11 +601,8 @@ export default function LeftSidebar() {
   const invitedNavigationPendingRef = useRef(false);
   const prevSidebarPageRef = useRef<SidebarPage>("root");
   const showEditTopBar = isEventPageWithEditSidebar;
-  const showMobileTopBar = Boolean(!isOpen && isScrolled);
-  const showFloatingOpenButton = Boolean(!isOpen && !isScrolled);
-  const showFloatingCustomizeButton = Boolean(
-    !isOpen && showEditTopBar && !isScrolled
-  );
+  const showMobileTopBar = Boolean(!isOpen);
+  const showFloatingCustomizeButton = false;
   const openSidebarFromTrigger = useCallback(
     (viaTouch: boolean) => {
       lastSidebarOpenAtRef.current = Date.now();
@@ -1236,50 +1231,24 @@ export default function LeftSidebar() {
     } catch {}
   }, [lastCreateSelection]);
   const history = historySidebarItems as HistoryRow[];
-  const isActiveEventRow = useCallback((row: HistoryRow) => {
-    if (!row || typeof row !== "object") return false;
-    const data: any = row?.data;
-    if (!data || typeof data !== "object" || data.signupForm) return false;
-
-    const status = String(data?.status || "")
-      .trim()
-      .toLowerCase();
-    if (
-      status === "draft" ||
-      status === "cancelled" ||
-      status === "canceled" ||
-      status === "archived"
-    ) {
-      return false;
-    }
-
-    const startIso = getEventStartIso(data);
-    const dateRaw = startIso || String(row?.created_at || "");
-    const parsedDateMs = dateRaw ? new Date(dateRaw).getTime() : NaN;
-    if (!Number.isFinite(parsedDateMs)) return true;
-
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    return parsedDateMs >= startOfToday.getTime();
-  }, []);
   const createdEventsCount = useMemo(() => {
     return history.reduce((acc, row) => {
       if (!row || typeof row !== "object") return acc;
       const data: any = row?.data;
       if (!data || typeof data !== "object") return acc;
-      if (isInvitedHistoryEvent(data) || !isActiveEventRow(row)) return acc;
+      if (isInvitedHistoryEvent(data)) return acc;
       return acc + 1;
     }, 0);
-  }, [history, isActiveEventRow]);
+  }, [history]);
   const invitedEventsCount = useMemo(() => {
     return history.reduce((acc, row) => {
       if (!row || typeof row !== "object") return acc;
       const data: any = row?.data;
       if (!data || typeof data !== "object") return acc;
-      if (!isInvitedHistoryEvent(data) || !isActiveEventRow(row)) return acc;
+      if (!isInvitedHistoryEvent(data)) return acc;
       return acc + 1;
     }, 0);
-  }, [history, isActiveEventRow]);
+  }, [history]);
   const calendarEventsCount = createdEventsCount + invitedEventsCount;
   const openCompactEventsPage = useCallback(
     (page: "myEvents" | "invitedEvents") => {
@@ -1797,8 +1766,8 @@ export default function LeftSidebar() {
     for (const row of history) {
       if (!row || typeof row !== "object") continue;
       const data = (row as any)?.data || {};
-      if (data?.signupForm) continue;
       const isInvited = isInvitedHistoryEvent(data);
+      if (data?.signupForm && !isInvited) continue;
       const targetList: EventListPage = isInvited
         ? "invitedEvents"
         : "myEvents";
@@ -2371,67 +2340,17 @@ export default function LeftSidebar() {
     <>
       {!isOpen && (
         <>
-          {showFloatingOpenButton && (
-            <div className="fixed top-3 left-3 z-[6500] transform transition-all duration-500 lg:hidden scale-100 opacity-100">
-              <button
-                ref={openButtonRef}
-                type="button"
-                className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openSidebarFromTrigger(false);
-                }}
-                onPointerDown={(e) => {
-                  // Fire immediately on pointer down for reliable mobile touch (iOS Safari
-                  // often drops click on fixed elements after scroll). Pointer events unify
-                  // touch and mouse, so this works across devices.
-                  if (e.pointerType === "touch") {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openSidebarFromTrigger(true);
-                  }
-                }}
-                onTouchStart={(e) => {
-                  // Fallback for browsers/devices that don't consistently emit PointerEvents.
-                  e.preventDefault();
-                  e.stopPropagation();
-                  openSidebarFromTrigger(true);
-                }}
-                aria-label="Open navigation"
-              >
-                <Menu size={20} />
-              </button>
-            </div>
-          )}
-          {showFloatingCustomizeButton && (
-            <div className="fixed top-3 right-3 z-[6500] transform transition-all duration-500 lg:hidden scale-100 opacity-100">
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof window === "undefined") return;
-                  window.dispatchEvent(
-                    new CustomEvent("envitefy:open-discovery-editor")
-                  );
-                }}
-                className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
-                aria-label="Customize your meet"
-              >
-                <CustomizeIcon size={16} />
-              </button>
-            </div>
-          )}
-
           <header
             className={`fixed inset-x-0 top-0 z-[6500] flex items-center justify-between px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
               showMobileTopBar
-                ? "translate-y-0 opacity-100 pointer-events-auto bg-[#efefef]/95 backdrop-blur-md"
+                ? "translate-y-0 opacity-100 pointer-events-auto bg-[#F8F5FF]/95 backdrop-blur-md shadow-sm"
                 : "-translate-y-full opacity-0 pointer-events-none border-transparent bg-transparent"
             }`}
           >
             <button
               ref={openBarButtonRef}
               type="button"
-              className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm touch-manipulation cursor-pointer"
+              className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center text-slate-700 touch-manipulation cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 openSidebarFromTrigger(false);
@@ -2450,7 +2369,20 @@ export default function LeftSidebar() {
               }}
               aria-label="Open navigation"
             >
-              <Menu size={19} />
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="4" cy="5" r="2" />
+                <rect x="9" y="3" width="13" height="4" rx="2" />
+                <circle cx="4" cy="12" r="2" />
+                <rect x="9" y="10" width="13" height="4" rx="2" />
+                <circle cx="4" cy="19" r="2" />
+                <rect x="9" y="17" width="13" height="4" rx="2" />
+              </svg>
             </button>
             <Link
               href="/"

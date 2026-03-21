@@ -6,7 +6,7 @@ import Image from "next/image";
 import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
 import EventMap from "../EventMap";
 import AppleCalendarLink from "../AppleCalendarLink";
-import EnvitefyWordmark from "../branding/EnvitefyWordmark";
+
 import {
   CalendarIconApple,
   CalendarIconGoogle,
@@ -1145,18 +1145,6 @@ function EditorialFeatureLayout({
                     "radial-gradient(circle at top left, rgba(183,0,73,0.08), transparent 28%), radial-gradient(circle at top right, rgba(80,225,249,0.18), transparent 26%), linear-gradient(180deg, #f5f6f7 0%, #fdfdfe 48%, #eef3f8 100%)",
             }}
         >
-            <nav className="sticky top-0 z-20 border-b border-white/70 bg-white/80 backdrop-blur-xl">
-                <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
-                    <div className="px-1 py-1">
-                        <EnvitefyWordmark className="text-[2.2rem] -ml-0.5 leading-none" />
-                        <p className="text-base font-semibold text-slate-900">
-                            Birthdays
-                        </p>
-                    </div>
-                    <div className="hidden md:block">{actions}</div>
-                </div>
-            </nav>
-
             <main className="mx-auto max-w-7xl space-y-8 px-4 pb-12 pt-6 md:px-8 md:pt-10">
                 <header className="overflow-hidden rounded-[2rem] bg-white shadow-[0_22px_60px_rgba(120,110,160,0.12)] md:grid md:grid-cols-2">
                     <div className="relative flex flex-col justify-center space-y-5 px-6 py-10 md:px-12 md:py-14">
@@ -1221,7 +1209,7 @@ function EditorialFeatureLayout({
 
                 <section className="grid gap-6 md:grid-cols-12">
                     <div className="space-y-6 md:col-span-8">
-                        <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                             <EditorialStatCard
                                 icon={<Calendar className="h-7 w-7" />}
                                 label="Date"
@@ -1239,6 +1227,7 @@ function EditorialFeatureLayout({
                                 label="Venue"
                                 value={venueText || locationText || "Location TBD"}
                                 accent={theme.colors.secondary}
+                                className="col-span-2 sm:col-span-1"
                             />
                         </div>
 
@@ -1405,19 +1394,21 @@ function EditorialStatCard({
     label,
     value,
     accent,
+    className,
 }: {
     icon: React.ReactNode;
     label: string;
     value: string;
     accent: string;
+    className?: string;
 }) {
     return (
-        <div className="rounded-[1.5rem] bg-[#eef3f8] p-6 shadow-[0_10px_26px_rgba(120,110,160,0.08)]">
+        <div className={`rounded-[1.2rem] sm:rounded-[1.5rem] bg-[#eef3f8] p-4 sm:p-6 shadow-[0_10px_26px_rgba(120,110,160,0.08)] ${className ?? ""}`}>
             <div style={{ color: accent }}>{icon}</div>
-            <p className="mt-4 text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+            <p className="mt-2 sm:mt-4 text-xs font-black uppercase tracking-[0.22em] text-slate-400">
                 {label}
             </p>
-            <p className="mt-2 text-lg font-black leading-6 text-slate-800">{value}</p>
+            <p className="mt-1 sm:mt-2 text-base sm:text-lg font-black leading-6 text-slate-800">{value}</p>
         </div>
     );
 }

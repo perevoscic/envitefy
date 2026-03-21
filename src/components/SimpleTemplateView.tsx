@@ -5425,7 +5425,7 @@ export default function SimpleTemplateView({
 
                 {/* Custom Fields Grid */}
                 {detailFields.length > 0 && (
-                  <ul className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ul className="mt-6 grid grid-cols-2 gap-3 md:gap-4">
                     {detailFields.map((field: any) => {
                       const val =
                         customFields[field.key] ??

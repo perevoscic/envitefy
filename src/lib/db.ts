@@ -3,6 +3,7 @@ import { randomBytes, scrypt as nodeScrypt, timingSafeEqual, randomUUID } from "
 import { promisify } from "util";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
+import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
 const scrypt = promisify(nodeScrypt);
 
 type NonEmptyString = string & { _brand: "NonEmptyString" };
@@ -1603,6 +1604,41 @@ function buildHistoryTimeFilterSql(
   return "true";
 }
 
+function buildFastHistoryStateBucketSql(alias: string): string {
+  return `case
+    when ${alias}.status_text in ('archived', 'canceled', 'cancelled') then 4
+    when ${alias}.status_text = 'draft' then 3
+    when ${alias}.event_start_at is not null and ${alias}.event_start_at >= now() then 0
+    when ${alias}.event_start_at is null then 1
+    else 2
+  end`;
+}
+
+function buildFastHistoryUpcomingOrderSql(alias: string): string {
+  return `case
+    when ${alias}.event_start_at is not null and ${alias}.event_start_at >= now()
+      then ${alias}.event_start_at
+    else null
+  end`;
+}
+
+function buildFastHistoryPastOrderSql(alias: string): string {
+  return `case
+    when ${alias}.event_start_at is not null and ${alias}.event_start_at < now()
+      then ${alias}.event_start_at
+    else null
+  end`;
+}
+
+function buildFastHistoryOrderBySql(alias: string): string {
+  return `${buildFastHistoryStateBucketSql(alias)} asc,
+    ${buildFastHistoryUpcomingOrderSql(alias)} asc nulls last,
+    ${buildFastHistoryPastOrderSql(alias)} desc nulls last,
+    ${alias}.relation_rank asc,
+    ${alias}.created_at desc nulls last,
+    ${alias}.id desc`;
+}
+
 /**
  * Bound owned-history scans before expensive JSON/timestamp projection. This
  * keeps sidebar/history reads responsive for large accounts while still
@@ -1612,8 +1648,8 @@ const HISTORY_OWN_ROW_CAP = 600;
 const HISTORY_DASHBOARD_ROW_CAP = 200;
 const HISTORY_DASHBOARD_BATCH_SIZE = 8;
 const HISTORY_SIDEBAR_BATCH_SIZE = 15;
-const HISTORY_DASHBOARD_QUERY_TIMEOUT_MS = 2500;
-const HISTORY_SIDEBAR_QUERY_TIMEOUT_MS = 1500;
+const HISTORY_DASHBOARD_QUERY_TIMEOUT_MS = 4000;
+const HISTORY_SIDEBAR_QUERY_TIMEOUT_MS = 4000;
 
 async function withStatementTimeout<T>(
   timeoutMs: number,
@@ -1681,6 +1717,17 @@ function buildHistoryDataProjectionSql(params: {
       'start', ${dataSql}->'start',
       'createdVia', ${dataSql}->'createdVia',
       'color', ${dataSql}->'color',
+      'fieldsGuess', case
+        when jsonb_typeof(${dataSql}->'fieldsGuess') = 'object' then
+          jsonb_build_object(
+            'title', ${dataSql}#>'{fieldsGuess,title}',
+            'start', ${dataSql}#>'{fieldsGuess,start}',
+            'end', ${dataSql}#>'{fieldsGuess,end}',
+            'location', ${dataSql}#>'{fieldsGuess,location}',
+            'timezone', ${dataSql}#>'{fieldsGuess,timezone}'
+          )
+        else null
+      end,
       'event', case
         when jsonb_typeof(${dataSql}->'event') = 'object' then
           jsonb_build_object(
@@ -2139,6 +2186,21 @@ function sortAndDedupeEventHistoryRows(
   return typeof limit === "number" ? deduped.slice(0, limit) : deduped;
 }
 
+function dedupeEventHistoryRowsInOrder(
+  rows: EventHistoryRow[],
+  limit?: number
+): EventHistoryRow[] {
+  const seen = new Set<string>();
+  const deduped: EventHistoryRow[] = [];
+  for (const row of rows) {
+    if (!row?.id || seen.has(row.id)) continue;
+    seen.add(row.id);
+    deduped.push(row);
+    if (typeof limit === "number" && deduped.length >= limit) break;
+  }
+  return deduped;
+}
+
 function buildHistoryUnionQuery(
   view: HistoryView,
   timeFilter: HistoryTimeFilter
@@ -2308,6 +2370,9 @@ export async function insertEventHistory(params: {
 }): Promise<EventHistoryRow> {
   const id = randomUUID();
   const safeData = sanitizeJsonValueForPostgres(params.data ?? {});
+  if (safeData && typeof safeData === "object") {
+    normalizeCanonicalStartFields(safeData);
+  }
   const res = await query<EventHistoryRow>(
     `insert into event_history (id, user_id, title, data, created_at)
      values ($1, $2, $3, $4, coalesce(now(), now()))
@@ -2480,7 +2545,19 @@ export async function updateEventHistoryDataMerge(
      returning id, user_id, title, data, created_at`,
     [id, JSON.stringify(safePatch)]
   );
-  return res.rows[0] || null;
+  const row = res.rows[0] || null;
+  if (!row) return null;
+  const merged =
+    row.data && typeof row.data === "object" ? { ...row.data } : {};
+  normalizeCanonicalStartFields(merged);
+  try {
+    if (JSON.stringify(merged) !== JSON.stringify(row.data)) {
+      return (await updateEventHistoryData(id, merged)) || row;
+    }
+  } catch {
+    return row;
+  }
+  return row;
 }
 
 export async function updateEventHistoryData(
@@ -2488,6 +2565,7 @@ export async function updateEventHistoryData(
   data: any
 ): Promise<EventHistoryRow | null> {
   const safeData = sanitizeJsonValueForPostgres(data ?? {});
+  normalizeCanonicalStartFields(safeData);
   const res = await query<EventHistoryRow>(
     `update event_history
      set data = $2::jsonb
@@ -2715,6 +2793,8 @@ export async function listEventHistoryByUser(userId: string, limit: number = 50)
 
 function buildDashboardFastHistoryQuery(includeShared: boolean): string {
   const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const ownStartRawSql = buildHistoryEventStartRawSql(ownDataSql);
+  const ownStatusSql = buildHistoryStatusSql(ownDataSql);
   const ownProjection = buildDashboardDataProjectionSql(
     ownDataSql,
     "to_jsonb('owned'::text)",
@@ -2733,21 +2813,30 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         where eh.user_id = $1
         order by eh.created_at desc nulls last, eh.id desc
         limit $2
+      ),
+      own_rows as (
+        select
+          eh.id,
+          eh.user_id,
+          eh.title,
+          ${ownProjection} as data,
+          eh.created_at,
+          ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
+          ${ownStatusSql} as status_text,
+          0 as relation_rank
+        from own_candidates c
+        join event_history eh on eh.id = c.id
       )
-      select
-        eh.id,
-        eh.user_id,
-        eh.title,
-        ${ownProjection} as data,
-        eh.created_at
-      from own_candidates c
-      join event_history eh on eh.id = c.id
-      order by c.created_at desc nulls last, c.id desc
+      select id, user_id, title, data, created_at
+      from own_rows
+      order by ${buildFastHistoryOrderBySql("own_rows")}
       limit $2
     `;
   }
 
   const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const sharedStartRawSql = buildHistoryEventStartRawSql(sharedDataSql);
+  const sharedStatusSql = buildHistoryStatusSql(sharedDataSql);
   const sharedProjection = buildDashboardDataProjectionSql(
     sharedDataSql,
     "to_jsonb('invited'::text)",
@@ -2772,23 +2861,32 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         eh.user_id,
         eh.title,
         ${ownProjection} as data,
-        eh.created_at
+        eh.created_at,
+        ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
+        ${ownStatusSql} as status_text,
+        0 as relation_rank
       from own_candidates c
       join event_history eh on eh.id = c.id
     ),
     shared_candidates as (
-      select
-        eh.id,
-        eh.user_id,
-        eh.title,
-        eh.created_at,
-        es.status
-      from event_shares es
-      join event_history eh on eh.id = es.event_id
-      where es.recipient_user_id = $1
-        and es.status in ('pending', 'accepted')
-        and es.revoked_at is null
-      order by eh.created_at desc nulls last, eh.id desc
+      select *
+      from (
+        select
+          eh.id,
+          eh.user_id,
+          eh.title,
+          eh.created_at,
+          es.status,
+          ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
+          ${sharedStatusSql} as status_text,
+          case when es.status = 'accepted' then 1 else 2 end as relation_rank
+        from event_shares es
+        join event_history eh on eh.id = es.event_id
+        where es.recipient_user_id = $1
+          and es.status in ('pending', 'accepted')
+          and es.revoked_at is null
+      ) shared_candidates
+      order by ${buildFastHistoryOrderBySql("shared_candidates")}
       limit $2
     ),
     shared_rows as (
@@ -2797,7 +2895,10 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         eh.user_id,
         eh.title,
         ${sharedProjection} as data,
-        eh.created_at
+        eh.created_at,
+        es.event_start_at,
+        es.status_text,
+        es.relation_rank
       from shared_candidates es
       join event_history eh on eh.id = es.id
     ),
@@ -2808,13 +2909,15 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
     )
     select id, user_id, title, data, created_at
     from combined
-    order by created_at desc nulls last, id desc
+    order by ${buildFastHistoryOrderBySql("combined")}
     limit $2
   `;
 }
 
 function buildSidebarFastHistoryQuery(includeShared: boolean): string {
   const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const ownStartRawSql = buildHistoryEventStartRawSql(ownDataSql);
+  const ownStatusSql = buildHistoryStatusSql(ownDataSql);
   const ownProjection = buildHistoryDataProjectionSql({
     view: "sidebar",
     dataSql: ownDataSql,
@@ -2844,21 +2947,30 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         where eh.user_id = $1
         order by eh.created_at desc nulls last, eh.id desc
         limit $2
+      ),
+      own_rows as (
+        select
+          eh.id,
+          eh.user_id,
+          eh.title,
+          ${ownProjection} as data,
+          eh.created_at,
+          ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
+          ${ownStatusSql} as status_text,
+          0 as relation_rank
+        from own_candidates c
+        join event_history eh on eh.id = c.id
       )
-      select
-        eh.id,
-        eh.user_id,
-        eh.title,
-        ${ownProjection} as data,
-        eh.created_at
-      from own_candidates c
-      join event_history eh on eh.id = c.id
-      order by c.created_at desc nulls last, c.id desc
+      select id, user_id, title, data, created_at
+      from own_rows
+      order by ${buildFastHistoryOrderBySql("own_rows")}
       limit $2
     `;
   }
 
   const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const sharedStartRawSql = buildHistoryEventStartRawSql(sharedDataSql);
+  const sharedStatusSql = buildHistoryStatusSql(sharedDataSql);
   const sharedProjection = buildHistoryDataProjectionSql({
     view: "sidebar",
     dataSql: sharedDataSql,
@@ -2887,23 +2999,32 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         eh.user_id,
         eh.title,
         ${ownProjection} as data,
-        eh.created_at
+        eh.created_at,
+        ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
+        ${ownStatusSql} as status_text,
+        0 as relation_rank
       from own_candidates c
       join event_history eh on eh.id = c.id
     ),
     shared_candidates as (
-      select
-        eh.id,
-        eh.user_id,
-        eh.title,
-        eh.created_at,
-        es.status
-      from event_shares es
-      join event_history eh on eh.id = es.event_id
-      where es.recipient_user_id = $1
-        and es.status in ('pending', 'accepted')
-        and es.revoked_at is null
-      order by eh.created_at desc nulls last, eh.id desc
+      select *
+      from (
+        select
+          eh.id,
+          eh.user_id,
+          eh.title,
+          eh.created_at,
+          es.status,
+          ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
+          ${sharedStatusSql} as status_text,
+          case when es.status = 'accepted' then 1 else 2 end as relation_rank
+        from event_shares es
+        join event_history eh on eh.id = es.event_id
+        where es.recipient_user_id = $1
+          and es.status in ('pending', 'accepted')
+          and es.revoked_at is null
+      ) shared_candidates
+      order by ${buildFastHistoryOrderBySql("shared_candidates")}
       limit $2
     ),
     shared_rows as (
@@ -2912,7 +3033,10 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         eh.user_id,
         eh.title,
         ${sharedProjection} as data,
-        eh.created_at
+        eh.created_at,
+        es.event_start_at,
+        es.status_text,
+        es.relation_rank
       from shared_candidates es
       join event_history eh on eh.id = es.id
     ),
@@ -2923,7 +3047,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
     )
     select id, user_id, title, data, created_at
     from combined
-    order by created_at desc nulls last, id desc
+    order by ${buildFastHistoryOrderBySql("combined")}
     limit $2
   `;
 }
@@ -2979,7 +3103,7 @@ export async function listDashboardHistoryFallbackForUser(
         return res.rows || [];
       }
     );
-    return sortAndDedupeEventHistoryRows(rows, safeLimit);
+    return dedupeEventHistoryRowsInOrder(rows, safeLimit);
   } catch (err) {
     if (!isTableMissingError(err)) throw err;
     const rows = await withStatementTimeout(
@@ -2992,7 +3116,7 @@ export async function listDashboardHistoryFallbackForUser(
         return res.rows || [];
       }
     );
-    return sortAndDedupeEventHistoryRows(rows, safeLimit);
+    return dedupeEventHistoryRowsInOrder(rows, safeLimit);
   }
 }
 
@@ -3073,7 +3197,7 @@ export async function listSidebarHistoryForUserFast(
         return res.rows || [];
       }
     );
-    return sortAndDedupeEventHistoryRows(rows, safeLimit);
+    return dedupeEventHistoryRowsInOrder(rows, safeLimit);
   } catch (err) {
     if (!isTableMissingError(err)) throw err;
     const rows = await withStatementTimeout(
@@ -3086,7 +3210,7 @@ export async function listSidebarHistoryForUserFast(
         return res.rows || [];
       }
     );
-    return sortAndDedupeEventHistoryRows(rows, safeLimit);
+    return dedupeEventHistoryRowsInOrder(rows, safeLimit);
   }
 }
 

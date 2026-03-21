@@ -20,6 +20,7 @@ export type DashboardEvent = {
   createdVia: string | null;
   ownership: DashboardEventOwnership;
   shareStatus: DashboardEventShareStatus;
+  userRsvpResponse: "yes" | "no" | "maybe" | null;
 };
 
 type HistoryRow = {
@@ -76,12 +77,16 @@ export function isScannedInviteCreatedVia(createdViaRaw: unknown): boolean {
 
 export function normalizeDashboardEventOwnership(
   ownershipRaw: unknown,
-  createdViaRaw?: unknown
+  _createdViaRaw?: unknown,
+  invitedFromScanRaw?: unknown
 ): DashboardEventOwnership {
-  return String(ownershipRaw || "").trim().toLowerCase() === "invited" ||
-    isScannedInviteCreatedVia(createdViaRaw)
-    ? "invited"
-    : "owned";
+  if (String(ownershipRaw || "").trim().toLowerCase() === "invited") {
+    return "invited";
+  }
+  if (Boolean(invitedFromScanRaw)) {
+    return "invited";
+  }
+  return "owned";
 }
 
 export function normalizeDashboardEventShareStatus(
@@ -108,6 +113,34 @@ export function getEventStartIso(data: any): string | null {
   return parseIso(
     data?.startAt ?? data?.startISO ?? data?.start ?? data?.fieldsGuess?.start ?? data?.event?.start
   );
+}
+
+/**
+ * Copy nested OCR/event start into canonical `startAt` when top-level fields are
+ * missing so dashboard/history projections and indexes stay consistent.
+ */
+export function normalizeCanonicalStartFields(data: any): void {
+  if (!data || typeof data !== "object") return;
+  const hasTop =
+    (typeof data.startAt === "string" && data.startAt.trim()) ||
+    (typeof data.startISO === "string" && data.startISO.trim()) ||
+    (typeof data.start === "string" && data.start.trim());
+  if (hasTop) return;
+  const fg = data.fieldsGuess;
+  if (fg && typeof fg === "object" && fg.start != null) {
+    const s = String(fg.start).trim();
+    if (s) {
+      data.startAt = s;
+      return;
+    }
+  }
+  const ev = data.event;
+  if (ev && typeof ev === "object" && ev.start != null) {
+    const s = String(ev.start).trim();
+    if (s) {
+      data.startAt = s;
+    }
+  }
 }
 
 export function getEventEndIso(data: any): string | null {
@@ -156,9 +189,11 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     createdVia: normalizeCreatedVia(data?.createdVia),
     ownership: normalizeDashboardEventOwnership(
       data?.ownership,
-      data?.createdVia
+      data?.createdVia,
+      data?.invitedFromScan
     ),
     shareStatus: normalizeDashboardEventShareStatus(data?.shareStatus),
+    userRsvpResponse: null,
   };
 }
 

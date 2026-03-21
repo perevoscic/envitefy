@@ -1,5 +1,5 @@
 /*
-  Generate PWA icons from src/assets/LogoEonly.png
+  Generate PWA icons from public/favicon.png
   Requires: sharp (already in dependencies)
 */
 
@@ -12,11 +12,11 @@ async function ensureDir(dir) {
 }
 
 async function generate() {
-  const srcPath = path.resolve(__dirname, "../src/assets/LogoEonly.png");
+  const srcPath = path.resolve(__dirname, "../public/favicon.png");
   const outDir = path.resolve(__dirname, "../public/icons");
 
   if (!fs.existsSync(srcPath)) {
-    console.error("[icons] Source logo not found at src/assets/LogoEonly.png");
+    console.error("[icons] Source logo not found at public/favicon.png");
     process.exit(0);
   }
 

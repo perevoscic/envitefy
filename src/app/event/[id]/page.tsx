@@ -1704,9 +1704,9 @@ export default async function EventPage({
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Left column: Event details */}
             <div className="lg:col-span-1">
-              <dl className="grid grid-cols-1 gap-5 text-sm sm:grid-cols-2">
+              <dl className="grid grid-cols-2 gap-4 text-sm">
                 {data?.allDay && (
-                  <div className="sm:col-span-2">
+                  <div className="col-span-2">
                     <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                       When
                     </dt>
@@ -1730,7 +1730,7 @@ export default async function EventPage({
                     );
 
                     return (
-                      <div className="sm:col-span-2">
+                      <div className="col-span-2">
                         <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                           When
                         </dt>
@@ -1827,7 +1827,7 @@ export default async function EventPage({
             </div>
           </div>
           {/* Second row: RSVP (left) and Add to calendar (right) */}
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="mt-4 grid grid-cols-2 gap-4">
             {(rsvpName || rsvpPhone || rsvpEmail) && (
               <div id="event-rsvp">
                 <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">

@@ -194,6 +194,8 @@ export async function GET(request: Request) {
             userId,
             title: normalized.title || "Event",
             data: {
+              ownership: "invited",
+              invitedFromScan: true,
               category: category || undefined,
               startISO: normalized.start,
               endISO: normalized.end,

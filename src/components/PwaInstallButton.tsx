@@ -886,14 +886,15 @@ export default function PwaInstallButton({
     return "Keep Envitefy handy on your device.";
   })();
   const fallbackGuideClassName = [
-    "rounded-xl",
+    "rounded-[22px]",
     "border",
-    "border-border",
-    "bg-surface/80",
-    "p-3",
+    "border-[#e8e2ff]",
+    "bg-[linear-gradient(180deg,#faf8ff_0%,#f4f1ff_100%)]",
+    "p-4",
     "text-sm",
-    "shadow-inner",
-    guidePulse ? "ring-2 ring-primary/60 animate-pulse" : "",
+    "text-[#2b3150]",
+    "shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_12px_30px_rgba(103,87,255,0.12)]",
+    guidePulse ? "ring-2 ring-[#7b61ff]/45 animate-pulse" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -909,7 +910,7 @@ export default function PwaInstallButton({
             setWasManuallyClosed(false);
             setExpanded(true);
           }}
-          className="h-11 w-11 rounded-full flex items-center justify-center border border-white/40 bg-[#7F8CFF] text-white shadow-lg shadow-[#7F8CFF]/40 transition hover:-translate-y-0.5"
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-white/70 bg-[linear-gradient(135deg,#6b3cff_0%,#6757ff_40%,#5a7dff_100%)] text-white shadow-[0_20px_40px_rgba(103,87,255,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(103,87,255,0.42)]"
           aria-label="Open install options"
         >
           <svg
@@ -932,161 +933,189 @@ export default function PwaInstallButton({
         </button>
       )}
       {expanded && (
-        <div className="relative w-[min(92vw,320px)]">
-          <div className="rounded-2xl bg-surface text-foreground border border-border shadow-2xl p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="font-semibold text-base">{headingText}</div>
-                {subheadingText ? (
-                  <div className="text-xs opacity-70">{subheadingText}</div>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setExpanded(false);
-                  setWasManuallyClosed(true);
-                }}
-                className="p-1 rounded-full text-muted-foreground hover:text-foreground transition"
-                aria-label="Collapse install options"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            {showInstallCta && (
-              <button
-                onClick={async () => {
-                  const w = window as SnapWindow;
-                  const promptEvent =
-                    deferredPromptRef.current ??
-                    deferred ??
-                    w.__snapInstallDeferredPrompt ??
-                    null;
-
-                  if (promptEvent && typeof promptEvent.prompt === "function") {
-                    deferredPromptRef.current = promptEvent;
-                    setDeferred(promptEvent);
-                    try {
-                      pushDebug("install CTA prompt triggered");
-                      await promptEvent.prompt();
-                      let choice: {
-                        outcome: "accepted" | "dismissed";
-                        platform: string;
-                      } | null = null;
-                      try {
-                        choice = await (promptEvent as any).userChoice;
-                      } catch {
-                        choice = null;
-                      }
-                      pushDebug("install CTA user choice resolved", {
-                        outcome: choice?.outcome ?? "unknown",
-                        platform: choice?.platform ?? "unknown",
-                      });
-                      if (choice?.outcome === "accepted") {
-                        setShowIosTip(false);
-                        setMaybeInstallable(false);
-                        setExpanded(false);
-                        setHideUi(true);
-                      } else {
-                        // Prompt dismissed or unavailable; surface fallback instructions.
-                        setGuidePulse(true);
-                        setExpanded(true);
-                      }
-                    } catch (error) {
-                      pushDebug("install CTA prompt error", {
-                        message:
-                          error instanceof Error
-                            ? error.message
-                            : String(error),
-                      });
-                      setGuidePulse(true);
-                      setExpanded(true);
-                    } finally {
-                      deferredPromptRef.current = null;
-                      setDeferred(null);
-                      setCanInstall(false);
-                      setShowIosTip(false);
-                      try {
-                        w.__snapInstallDeferredPrompt = null;
-                      } catch {}
-                    }
-                    return;
-                  }
-                  pushDebug(
-                    "install CTA prompt missing; switching to fallback"
-                  );
-                  deferredPromptRef.current = null;
-                  setDeferred(null);
-                  setCanInstall(false);
-                  setShowIosTip(false);
-                  setGuidePulse(true);
-                  setExpanded(true);
-                }}
-                className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 shadow-lg"
-              >
-                Install app
-              </button>
-            )}
-            {/* Show fallback guide card if active, or if it's an iOS fallback */}
-            {(showFallbackGuideCard || showIosFallback) && fallbackGuide && (
-              <div className={fallbackGuideClassName}>
+        <div className="relative w-[min(92vw,336px)]">
+          <div className="relative overflow-hidden rounded-[28px] border border-[#e7e1ff] bg-white/96 p-4 text-[#1f2340] shadow-[0_28px_80px_rgba(103,87,255,0.18)] backdrop-blur-xl">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(123,97,255,0.14),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(55,168,255,0.1),transparent_34%)]" />
+            <div className="relative space-y-4">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] text-[#6b3cff] shadow-[0_10px_24px_rgba(103,87,255,0.12)]">
                     <svg
-                      width="20"
-                      height="20"
+                      width="22"
+                      height="22"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      xmlns="http://www.w3.org/2000/svg"
                       aria-hidden
                     >
-                      <path d="M12 16V3" />
-                      <path d="M7 8l5-5 5 5" />
-                      <rect x="4" y="12" width="16" height="8" rx="2" ry="2" />
+                      <path
+                        d="M12.5535 16.5061C12.4114 16.6615 12.2106 16.75 12 16.75C11.7894 16.75 11.5886 16.6615 11.4465 16.5061L7.44648 12.1311C7.16698 11.8254 7.18822 11.351 7.49392 11.0715C7.79963 10.792 8.27402 10.8132 8.55352 11.1189L11.25 14.0682V3C11.25 2.58579 11.5858 2.25 12 2.25C12.4142 2.25 12.75 2.58579 12.75 3V14.0682L15.4465 11.1189C15.726 10.8132 16.2004 10.792 16.5061 11.0715C16.8118 11.351 16.833 11.8254 16.5535 12.1311L12.5535 16.5061Z"
+                        fill="currentColor"
+                      />
+                      <path
+                        d="M3.75 15C3.75 14.5858 3.41422 14.25 3 14.25C2.58579 14.25 2.25 14.5858 2.25 15V15.0549C2.24998 16.4225 2.24996 17.5248 2.36652 18.3918C2.48754 19.2919 2.74643 20.0497 3.34835 20.6516C3.95027 21.2536 4.70814 21.5125 5.60825 21.6335C6.47522 21.75 7.57754 21.75 8.94513 21.75H15.0549C16.4225 21.75 17.5248 21.75 18.3918 21.6335C19.2919 21.5125 20.0497 21.2536 20.6517 20.6516C21.2536 20.0497 21.5125 19.2919 21.6335 18.3918C21.75 17.5248 21.75 16.4225 21.75 15.0549V15C21.75 14.5858 21.4142 14.25 21 14.25C20.5858 14.25 20.25 14.5858 20.25 15C20.25 16.4354 20.2484 17.4365 20.1469 18.1919C20.0482 18.9257 19.8678 19.3142 19.591 19.591C19.3142 19.8678 18.9257 20.0482 18.1919 20.1469C17.4365 20.2484 16.4354 20.25 15 20.25H9C7.56459 20.25 6.56347 20.2484 5.80812 20.1469C5.07435 20.0482 4.68577 19.8678 4.40901 19.591C4.13225 19.3142 3.9518 18.9257 3.85315 18.1919C3.75159 17.4365 3.75 16.4354 3.75 15Z"
+                        fill="currentColor"
+                      />
                     </svg>
                   </div>
-                  <div className="space-y-2">
-                    <div className="font-medium">
-                      {fallbackGuide.browserLabel} on {fallbackGuide.osLabel}
+                  <div>
+                    <div className="text-base font-semibold text-[#1f2340]">
+                      {headingText}
                     </div>
-                    {fallbackGuide.supported &&
-                    fallbackGuide.steps.length > 0 ? (
-                      <ol className="list-decimal ml-5 space-y-1">
-                        {fallbackGuide.steps.map((step, idx) => (
-                          <li key={idx}>{step}</li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <div className="opacity-80">
-                        {fallbackGuide.unsupportedMessage ??
-                          "We couldn't detect an install option for this combination."}
+                    {subheadingText ? (
+                      <div className="mt-1 text-xs leading-5 text-[#6b7390]">
+                        {subheadingText}
                       </div>
-                    )}
-                    {fallbackGuide.note && (
-                      <div className="text-xs opacity-70">
-                        {fallbackGuide.note}
-                      </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExpanded(false);
+                    setWasManuallyClosed(true);
+                  }}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ece8ff] bg-white/85 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]"
+                  aria-label="Collapse install options"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
               </div>
-            )}
+              {showInstallCta && (
+                <button
+                  onClick={async () => {
+                    const w = window as SnapWindow;
+                    const promptEvent =
+                      deferredPromptRef.current ??
+                      deferred ??
+                      w.__snapInstallDeferredPrompt ??
+                      null;
+
+                    if (promptEvent && typeof promptEvent.prompt === "function") {
+                      deferredPromptRef.current = promptEvent;
+                      setDeferred(promptEvent);
+                      try {
+                        pushDebug("install CTA prompt triggered");
+                        await promptEvent.prompt();
+                        let choice: {
+                          outcome: "accepted" | "dismissed";
+                          platform: string;
+                        } | null = null;
+                        try {
+                          choice = await (promptEvent as any).userChoice;
+                        } catch {
+                          choice = null;
+                        }
+                        pushDebug("install CTA user choice resolved", {
+                          outcome: choice?.outcome ?? "unknown",
+                          platform: choice?.platform ?? "unknown",
+                        });
+                        if (choice?.outcome === "accepted") {
+                          setShowIosTip(false);
+                          setMaybeInstallable(false);
+                          setExpanded(false);
+                          setHideUi(true);
+                        } else {
+                          // Prompt dismissed or unavailable; surface fallback instructions.
+                          setGuidePulse(true);
+                          setExpanded(true);
+                        }
+                      } catch (error) {
+                        pushDebug("install CTA prompt error", {
+                          message:
+                            error instanceof Error
+                              ? error.message
+                              : String(error),
+                        });
+                        setGuidePulse(true);
+                        setExpanded(true);
+                      } finally {
+                        deferredPromptRef.current = null;
+                        setDeferred(null);
+                        setCanInstall(false);
+                        setShowIosTip(false);
+                        try {
+                          w.__snapInstallDeferredPrompt = null;
+                        } catch {}
+                      }
+                      return;
+                    }
+                    pushDebug(
+                      "install CTA prompt missing; switching to fallback"
+                    );
+                    deferredPromptRef.current = null;
+                    setDeferred(null);
+                    setCanInstall(false);
+                    setShowIosTip(false);
+                    setGuidePulse(true);
+                    setExpanded(true);
+                  }}
+                  className="w-full rounded-full bg-[linear-gradient(96deg,#6b3cff_0%,#6757ff_40%,#5a7dff_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(103,87,255,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_34px_rgba(103,87,255,0.35)]"
+                >
+                  Install app
+                </button>
+              )}
+              {/* Show fallback guide card if active, or if it's an iOS fallback */}
+              {(showFallbackGuideCard || showIosFallback) && fallbackGuide && (
+                <div className={fallbackGuideClassName}>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#ddd4ff] bg-white text-[#6b3cff] shadow-sm">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M12 16V3" />
+                        <path d="M7 8l5-5 5 5" />
+                        <rect x="4" y="12" width="16" height="8" rx="2" ry="2" />
+                      </svg>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="font-semibold text-[#1f2340]">
+                        {fallbackGuide.browserLabel} on {fallbackGuide.osLabel}
+                      </div>
+                      {fallbackGuide.supported &&
+                      fallbackGuide.steps.length > 0 ? (
+                        <ol className="ml-5 list-decimal space-y-2 text-[13px] leading-5 marker:text-[#6b3cff]">
+                          {fallbackGuide.steps.map((step, idx) => (
+                            <li key={idx}>{step}</li>
+                          ))}
+                        </ol>
+                      ) : (
+                        <div className="text-[13px] leading-5 text-[#505979]">
+                          {fallbackGuide.unsupportedMessage ??
+                            "We couldn't detect an install option for this combination."}
+                        </div>
+                      )}
+                      {fallbackGuide.note && (
+                        <div className="rounded-2xl bg-white/75 px-3 py-2 text-xs leading-5 text-[#68708d]">
+                          {fallbackGuide.note}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

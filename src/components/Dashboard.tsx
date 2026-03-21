@@ -25,27 +25,13 @@ import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import * as chrono from "chrono-node";
 import {
-  ArrowRight,
-  Calendar,
   Car,
-  Clock,
-  Cloud,
-  CloudFog,
-  CloudLightning,
-  CloudRain,
-  CloudSnow,
-  CloudSun,
   Eye,
   Mail,
-  MapPin,
-  MapPinned,
-  Navigation,
   Pencil,
   Share2,
-  Sun,
   Trash2,
   UserPlus,
-  Wind,
 } from "lucide-react";
 import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
@@ -57,6 +43,7 @@ import {
   type SnapPreviewKind,
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
+import HomeOverviewDashboard from "@/components/dashboard/HomeOverviewDashboard";
 import {
   TEMPLATE_DEFINITIONS,
   TEMPLATE_KEYS,
@@ -66,7 +53,6 @@ import { useSidebar, type EventContextTab } from "@/app/sidebar-context";
 import { useEventCache } from "@/app/event-cache-context";
 import { useMenuOptional } from "@/contexts/MenuContext";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
-import { isScannedInviteCreatedVia } from "@/lib/dashboard-data";
 
 type EventFields = {
   title: string;
@@ -89,6 +75,11 @@ type AutoAddPreference = {
 
 type ProviderActionOptions = {
   enableAutoAdd?: boolean;
+};
+
+type PendingSnapUpload = {
+  file: File;
+  previewUrl: string | null;
 };
 
 type SubmitScannedEventParams = {
@@ -264,6 +255,7 @@ declare global {
     __openCreateEvent?: () => void;
     __openSnapCamera?: () => void;
     __openSnapUpload?: () => void;
+    __pendingSnapUpload?: PendingSnapUpload | null;
   }
 }
 
@@ -337,7 +329,7 @@ export default function Dashboard({
   const submitScannedEventRef = useRef<
     (params: SubmitScannedEventParams) => Promise<boolean>
   >(async () => false);
-  const currentPreviewUrlRef = useRef<string | null>(null);
+  const previewLoadIdRef = useRef(0);
   const scanStartedAtRef = useRef<number | null>(null);
   const scanStatusRef = useRef<SnapProcessingStatus>("idle");
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
@@ -430,10 +422,7 @@ export default function Dashboard({
       setUploadProgress(0);
       scanStartedAtRef.current = null;
       if (clearPreview) {
-        if (currentPreviewUrlRef.current) {
-          URL.revokeObjectURL(currentPreviewUrlRef.current);
-        }
-        currentPreviewUrlRef.current = null;
+        previewLoadIdRef.current += 1;
         setPreviewUrl(null);
         setPreviewKind(null);
       }
@@ -442,14 +431,11 @@ export default function Dashboard({
   );
 
   const startScanUi = useCallback(
-    (selected: File) => {
+    (selected: File, previewOverride?: string | null) => {
       clearScanTimers();
       scanStartedAtRef.current = null;
-
-      if (currentPreviewUrlRef.current) {
-        URL.revokeObjectURL(currentPreviewUrlRef.current);
-      }
-      currentPreviewUrlRef.current = null;
+      previewLoadIdRef.current += 1;
+      const previewLoadId = previewLoadIdRef.current;
 
       const nextPreviewKind: SnapPreviewKind = selected.type.startsWith(
         "image/"
@@ -460,9 +446,20 @@ export default function Dashboard({
         : "file";
       setPreviewKind(nextPreviewKind);
       if (nextPreviewKind === "image") {
-        const nextPreviewUrl = URL.createObjectURL(selected);
-        currentPreviewUrlRef.current = nextPreviewUrl;
-        setPreviewUrl(nextPreviewUrl);
+        if (previewOverride) {
+          setPreviewUrl(previewOverride);
+        } else {
+          setPreviewUrl(null);
+          void readFileAsDataUrl(selected)
+            .then((nextPreviewUrl) => {
+              if (previewLoadIdRef.current !== previewLoadId) return;
+              setPreviewUrl(nextPreviewUrl);
+            })
+            .catch(() => {
+              if (previewLoadIdRef.current !== previewLoadId) return;
+              setPreviewUrl(null);
+            });
+        }
       } else {
         setPreviewUrl(null);
       }
@@ -797,7 +794,11 @@ export default function Dashboard({
     (pathname?.startsWith("/event/") ?? false) || Boolean(initialEventContext);
   const hasEventContextOnPage = Boolean(selectedEventId) && isEventRoute;
   const showEventHeaderActions = hasEventContextOnPage;
-  const showWelcomeMessage = isSignedIn && pathname === "/";
+  const viewerName =
+    (session?.user?.name as string) ||
+    (session?.user?.email as string)?.split("@")[0] ||
+    "there";
+  const showWelcomeMessage = false;
   const showHeaderRow =
     isSignedIn && (showWelcomeMessage || showEventHeaderActions);
   const selectedEventLabel = selectedEventTitle || "Untitled event";
@@ -926,10 +927,7 @@ export default function Dashboard({
       activeOcrAbortRef.current?.abort();
       activeOcrAbortRef.current = null;
       clearScanTimers();
-      if (currentPreviewUrlRef.current) {
-        URL.revokeObjectURL(currentPreviewUrlRef.current);
-      }
-      currentPreviewUrlRef.current = null;
+      previewLoadIdRef.current += 1;
     },
     [clearScanTimers]
   );
@@ -1210,12 +1208,12 @@ export default function Dashboard({
   );
 
   const onFile = useCallback(
-    (selected: File | null) => {
+    (selected: File | null, previewOverride?: string | null) => {
       if (!selected) {
         // User cancelled file selection - silently return
         return;
       }
-      startScanUi(selected);
+      startScanUi(selected, previewOverride);
       void ingest(selected);
     },
     [ingest, startScanUi]
@@ -1252,6 +1250,13 @@ export default function Dashboard({
     }, 0);
   }, [resetForm, setError]);
 
+  const takePendingUpload = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    const pending = window.__pendingSnapUpload ?? null;
+    delete window.__pendingSnapUpload;
+    return pending;
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const w = window as any;
@@ -1286,13 +1291,18 @@ export default function Dashboard({
         openCamera();
         cleanup();
       } else if (action === "upload") {
-        openUpload();
+        const pendingUpload = takePendingUpload();
+        if (pendingUpload) {
+          onFile(pendingUpload.file, pendingUpload.previewUrl);
+        } else {
+          openUpload();
+        }
         cleanup();
       }
     } catch {
       // noop
     }
-  }, [openCamera, openUpload]);
+  }, [onFile, openCamera, openUpload, takePendingUpload]);
 
   useEffect(() => {
     if (!event && modalOpen) {
@@ -1860,7 +1870,8 @@ export default function Dashboard({
           ) : showOwnerTabPlaceholder ? (
             <EventOwnerTabPlaceholder tab={activeEventTab} />
           ) : (
-            <UpcomingEventsPanel
+            <HomeOverviewDashboard
+              viewerName={viewerName}
               data={dashboardData}
               metrics={nextEventMetrics}
               enrichMeta={enrichMeta}
@@ -2106,708 +2117,6 @@ function OnboardingModal({
         </div>
       </div>
     </div>
-  );
-}
-
-function eventGlyph(item: DashboardEventItem): string {
-  const haystack = `${item.title} ${item.category || ""}`.toLowerCase();
-  if (haystack.includes("birthday")) return "BD";
-  if (haystack.includes("wedding")) return "WD";
-  if (haystack.includes("baby")) return "BB";
-  if (haystack.includes("appointment")) return "AP";
-  if (haystack.includes("doctor")) return "AP";
-  if (haystack.includes("sport")) return "SP";
-  if (haystack.includes("soccer")) return "SP";
-  if (haystack.includes("football")) return "SP";
-  if (haystack.includes("gymnastics")) return "SP";
-  return "EV";
-}
-
-function eventRelationLabel(item: DashboardEventItem | null | undefined): string {
-  if (!item) return "My Event";
-  if (item.ownership === "invited") {
-    return item.shareStatus === "pending" ? "Pending Invite" : "Invited";
-  }
-  return "My Event";
-}
-
-function parseSafeDate(value: string | null | undefined): Date | null {
-  if (!value) return null;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed;
-}
-
-function formatEventTimeRange(startRaw: string, endRaw: string | null): string {
-  const start = parseSafeDate(startRaw);
-  if (!start) return "Date pending";
-  const dayPart = new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(start);
-  const startTime = new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(start);
-  const end = parseSafeDate(endRaw);
-  if (!end || end.getTime() <= start.getTime()) {
-    return `${dayPart}, ${startTime}`;
-  }
-  const endTime = new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(end);
-  return `${dayPart}, ${startTime} - ${endTime}`;
-}
-
-function toMiles(km: number): number {
-  return km * 0.621371;
-}
-
-function WeatherIcon({
-  summary,
-  className = "h-5 w-5 text-white",
-}: {
-  summary: string | null | undefined;
-  className?: string;
-}) {
-  const normalized = String(summary || "").toLowerCase();
-  if (normalized.includes("thunder")) {
-    return <CloudLightning className={className} aria-hidden="true" />;
-  }
-  if (
-    normalized.includes("snow") ||
-    normalized.includes("sleet") ||
-    normalized.includes("ice")
-  ) {
-    return <CloudSnow className={className} aria-hidden="true" />;
-  }
-  if (
-    normalized.includes("fog") ||
-    normalized.includes("mist") ||
-    normalized.includes("haze")
-  ) {
-    return <CloudFog className={className} aria-hidden="true" />;
-  }
-  if (
-    normalized.includes("rain") ||
-    normalized.includes("drizzle") ||
-    normalized.includes("shower")
-  ) {
-    return <CloudRain className={className} aria-hidden="true" />;
-  }
-  if (normalized.includes("overcast") || normalized.includes("cloud")) {
-    return <Cloud className={className} aria-hidden="true" />;
-  }
-  if (normalized.includes("wind")) {
-    return <Wind className={className} aria-hidden="true" />;
-  }
-  if (!normalized) {
-    return <CloudSun className={className} aria-hidden="true" />;
-  }
-  return <Sun className={className} aria-hidden="true" />;
-}
-
-function UpcomingEventsPanel({
-  data,
-  metrics,
-  enrichMeta,
-  metricsLoading,
-  loading,
-  onForceTravel,
-  onCreateEvent,
-}: {
-  data: DashboardResponse | null;
-  metrics: DashboardMetricsCache | null;
-  enrichMeta: DashboardEnrichMeta | null;
-  metricsLoading: boolean;
-  loading: boolean;
-  onForceTravel: () => void;
-  onCreateEvent: () => void;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [cardsPerRow, setCardsPerRow] = useState(4);
-  const [firstCardHeight, setFirstCardHeight] = useState(236);
-  const [now, setNow] = useState(() => Date.now());
-  const firstScheduleCardRef = useRef<HTMLAnchorElement | null>(null);
-  const nextEvent = data?.nextEvent ?? null;
-  const scheduleEvents = data?.upcoming ?? [];
-  const hasOverflow = scheduleEvents.length > cardsPerRow;
-  const showCollapsedTeaser = hasOverflow && !isExpanded;
-  const previewLimit = cardsPerRow * 2;
-  const visibleScheduleEvents = showCollapsedTeaser
-    ? scheduleEvents.slice(0, previewLimit)
-    : scheduleEvents;
-  const teaserHeightPx = 96;
-  const gridGapPx = 12;
-  const collapsedMaxHeight = firstCardHeight + gridGapPx + teaserHeightPx;
-  const showCreateTile = isExpanded || scheduleEvents.length === 0;
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mobileQuery = window.matchMedia("(max-width: 639px)");
-    const desktopQuery = window.matchMedia("(min-width: 1280px)");
-    const syncCardsPerRow = () => {
-      if (desktopQuery.matches) {
-        setCardsPerRow(4);
-        return;
-      }
-      if (mobileQuery.matches) {
-        setCardsPerRow(1);
-        return;
-      }
-      setCardsPerRow(2);
-    };
-    syncCardsPerRow();
-
-    const onChange = () => syncCardsPerRow();
-    const addListener = (query: MediaQueryList) => {
-      if (typeof query.addEventListener === "function") {
-        query.addEventListener("change", onChange);
-        return () => query.removeEventListener("change", onChange);
-      }
-      query.addListener(onChange);
-      return () => query.removeListener(onChange);
-    };
-    const cleanupMobile = addListener(mobileQuery);
-    const cleanupDesktop = addListener(desktopQuery);
-
-    return () => {
-      cleanupMobile();
-      cleanupDesktop();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasOverflow && isExpanded) {
-      setIsExpanded(false);
-    }
-  }, [hasOverflow, isExpanded]);
-
-  useEffect(() => {
-    if (!showCollapsedTeaser) return;
-    const el = firstScheduleCardRef.current;
-    if (!el) return;
-
-    const syncHeight = () => {
-      const measured = Math.ceil(el.getBoundingClientRect().height);
-      if (Number.isFinite(measured) && measured > 0) {
-        setFirstCardHeight(measured);
-      }
-    };
-
-    syncHeight();
-    if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", syncHeight);
-      return () => window.removeEventListener("resize", syncHeight);
-    }
-
-    const observer = new ResizeObserver(syncHeight);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [showCollapsedTeaser, visibleScheduleEvents.length, cardsPerRow]);
-
-  const nextStart = parseSafeDate(nextEvent?.startAt);
-  const daysUntilNext = nextStart
-    ? Math.ceil((nextStart.getTime() - now) / (24 * 60 * 60 * 1000))
-    : null;
-  const msUntilNext = nextStart ? nextStart.getTime() - now : null;
-  const countdown =
-    msUntilNext != null && msUntilNext > 0
-      ? (() => {
-          const totalSeconds = Math.floor(msUntilNext / 1000);
-          const days = Math.floor(totalSeconds / (24 * 60 * 60));
-          const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
-          const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
-          const seconds = totalSeconds % 60;
-          return `${String(days).padStart(2, "0")}d : ${String(hours).padStart(
-            2,
-            "0"
-          )}h : ${String(minutes).padStart(2, "0")}m : ${String(
-            seconds
-          ).padStart(2, "0")}s`;
-        })()
-      : "00d : 00h : 00m : 00s";
-  const daysMessage =
-    daysUntilNext === null
-      ? "Add your next event"
-      : daysUntilNext <= 0
-      ? "Happening today"
-      : daysUntilNext === 1
-      ? "Tomorrow"
-      : `In ${daysUntilNext} days`;
-  const statusNormalized = String(nextEvent?.status || "").toLowerCase();
-  const createdVia = String(nextEvent?.createdVia || "").toLowerCase();
-  const nextEventRelationLabel = eventRelationLabel(nextEvent);
-  const isOwnedNextEvent = nextEvent?.ownership !== "invited";
-  const isScannedOrUploaded = isScannedInviteCreatedVia(createdVia);
-  const nextBadges: string[] = [];
-  if (isOwnedNextEvent && statusNormalized === "draft") nextBadges.push("Draft");
-  if (isOwnedNextEvent && !nextEvent?.locationText) {
-    nextBadges.push("Missing Location");
-  }
-  if (
-    isOwnedNextEvent &&
-    !isScannedOrUploaded &&
-    (!nextEvent?.numberOfGuests || nextEvent.numberOfGuests <= 0)
-  ) {
-    nextBadges.push("No Guests");
-  }
-  // Temporary preview mode: always render weather card for next event.
-  const showWeather = Boolean(nextEvent);
-  const weatherEligible = Boolean(data?.metricsEligibility?.weatherEligible);
-  const hasTravelMetrics =
-    metrics?.travelMinutes != null || metrics?.travelDistanceKm != null;
-  const travelMiles =
-    metrics?.travelDistanceKm != null
-      ? toMiles(metrics.travelDistanceKm)
-      : null;
-  const travelMissingOrigin =
-    enrichMeta?.hasDestination && enrichMeta?.hasOrigin === false;
-  const weatherHasData = Boolean(
-    metrics?.weatherSummary || metrics?.weatherTemp != null
-  );
-  const weatherNormalized = String(metrics?.weatherSummary || "").toLowerCase();
-  const weatherSunny =
-    !weatherNormalized ||
-    weatherNormalized.includes("sun") ||
-    weatherNormalized.includes("clear");
-
-  return (
-    <section className="relative overflow-hidden rounded-[32px] border border-[#ddd5ff] bg-gradient-to-br from-[#f4f1ff] via-[#ffffff] to-[#eef9ff] p-4 shadow-[0_22px_60px_rgba(94,76,166,0.15)] sm:p-6">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#b6a9ff]/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-[#7ed7c8]/15 blur-3xl" />
-      <div className="relative z-10 grid gap-4 xl:grid-cols-[1.7fr_1fr]">
-        <article className="relative overflow-hidden rounded-[2.5rem] border border-[#8e92ff]/35 bg-gradient-to-br from-[#6366f1] via-[#4f46e5] to-[#3730a3] p-6 text-white shadow-[0_24px_60px_rgba(71,52,150,0.35)] sm:p-8 md:p-10">
-          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-          {loading ? (
-            <div className="relative space-y-3">
-              <div className="h-8 w-3/4 animate-pulse rounded bg-white/25" />
-              <div className="h-4 w-2/3 animate-pulse rounded bg-white/20" />
-              <div className="h-4 w-1/2 animate-pulse rounded bg-white/20" />
-            </div>
-          ) : nextEvent ? (
-            <div className="relative">
-              <div className="mb-8 flex flex-col items-start justify-between gap-5 md:flex-row">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-full border border-white/30 bg-white/20 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-white/90 backdrop-blur-sm">
-                      Next Event
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-indigo-100">
-                      {nextEventRelationLabel}
-                    </span>
-                  </div>
-                  <h3 className="text-4xl font-serif italic font-semibold leading-tight !text-white md:text-5xl">
-                    {nextEvent.title}
-                  </h3>
-                </div>
-              </div>
-
-              <div className="mb-9 space-y-3">
-                <div className="flex items-center gap-3 text-indigo-100/90">
-                  <Calendar className="h-5 w-5" />
-                  <span className="text-base font-medium md:text-lg">
-                    {formatEventTimeRange(nextEvent.startAt, nextEvent.endAt)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-indigo-100/80">
-                  <MapPin className="h-5 w-5" />
-                  <span className="text-sm md:text-base">
-                    {nextEvent.locationText || daysMessage}
-                  </span>
-                </div>
-                <div className="pt-2">
-                  <p className="text-2xl font-light tracking-wide tabular-nums text-white md:text-3xl">
-                    {countdown}
-                  </p>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.3em] text-indigo-200/70">
-                    Starts In
-                  </p>
-                </div>
-              </div>
-
-              {nextBadges.length > 0 && (
-                <div className="mb-6 flex flex-wrap gap-2">
-                  {nextBadges.map((badge) => (
-                    <span
-                      key={badge}
-                      className="rounded-full border border-white/35 bg-white/15 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-white"
-                    >
-                      {badge}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="mb-8">
-                <Link
-                  href={`/event/${nextEvent.id}`}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-indigo-900 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-white/10"
-                >
-                  Open Event
-                  <ArrowRight className="h-5 w-5" />
-                </Link>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <article className="group rounded-3xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-colors hover:bg-white/15">
-                  <div className="mb-4 flex items-start justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
-                      Travel
-                    </span>
-                    <Navigation
-                      className="h-4 w-4 text-white/55"
-                      aria-hidden="true"
-                    />
-                  </div>
-                  {metricsLoading ? (
-                    <div className="h-8 w-32 animate-pulse rounded bg-white/25" />
-                  ) : hasTravelMetrics ? (
-                    <>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-white">
-                          {metrics?.travelMinutes != null
-                            ? metrics.travelMinutes
-                            : "--"}
-                        </span>
-                        <span className="text-lg text-indigo-200">min</span>
-                        <span className="mx-1 h-6 w-px bg-white/20" />
-                        <span className="text-3xl font-bold text-white">
-                          {travelMiles != null ? travelMiles.toFixed(1) : "--"}
-                        </span>
-                        <span className="text-lg text-indigo-200">mi</span>
-                      </div>
-                      <p className="mt-2 text-xs text-indigo-200/65">
-                        Estimated driving time from origin
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-xs text-indigo-200/75">
-                        {travelMissingOrigin
-                          ? "Add your home location to estimate travel."
-                          : "Travel estimate is not ready yet."}
-                      </p>
-                      <div className="mt-3 flex items-center gap-2">
-                        {nextEvent.mapsUrl ? (
-                          <Link
-                            href={nextEvent.mapsUrl}
-                            target="_blank"
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-white underline underline-offset-2"
-                          >
-                            <MapPinned
-                              className="h-3.5 w-3.5"
-                              aria-hidden="true"
-                            />
-                            Open in Maps
-                          </Link>
-                        ) : (
-                          <span className="text-xs text-white/80">
-                            Open in Maps
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={onForceTravel}
-                          className="inline-flex items-center rounded-full border border-white/35 px-2.5 py-1 text-[0.65rem] font-semibold text-white"
-                        >
-                          Calculate travel
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </article>
-
-                {showWeather ? (
-                  <article className="group rounded-3xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-colors hover:bg-white/15">
-                    <div className="mb-4 flex items-start justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
-                        Weather
-                      </span>
-                      <Clock
-                        className="h-4 w-4 text-white/55"
-                        aria-hidden="true"
-                      />
-                    </div>
-                    {metricsLoading ? (
-                      <div className="h-8 w-24 animate-pulse rounded bg-white/25" />
-                    ) : weatherHasData ? (
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <WeatherIcon
-                            summary={metrics?.weatherSummary}
-                            className={`h-12 w-12 ${
-                              weatherSunny
-                                ? "animate-[spin_8s_linear_infinite] text-yellow-300"
-                                : "text-white"
-                            }`}
-                          />
-                          <div className="pointer-events-none absolute inset-0 rounded-full bg-yellow-400/20 blur-lg transition-opacity group-hover:bg-yellow-400/35" />
-                        </div>
-                        <div>
-                          <p className="text-3xl font-bold text-white">
-                            {metrics?.weatherTemp != null
-                              ? `${Math.round(metrics.weatherTemp)}°F`
-                              : "--"}
-                          </p>
-                          <p className="font-medium text-indigo-200">
-                            {metrics?.weatherSummary || "Forecast"}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-indigo-200/75">
-                        {weatherEligible
-                          ? "Forecast pending"
-                          : "Weather available 72h before event"}
-                      </p>
-                    )}
-                  </article>
-                ) : null}
-              </div>
-            </div>
-          ) : (
-            <>
-              <h3 className="mt-4 text-3xl font-serif italic font-semibold leading-tight text-white sm:text-4xl">
-                No upcoming events yet
-              </h3>
-              <p className="mt-3 text-sm text-white/85 sm:text-base">
-                Start with a new event and this dashboard will highlight what is
-                next.
-              </p>
-              <div className="mt-7">
-                <button
-                  type="button"
-                  onClick={onCreateEvent}
-                  className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#40349b] shadow-[0_10px_24px_rgba(21,16,56,0.28)] transition hover:-translate-y-0.5 hover:bg-[#f6f3ff]"
-                >
-                  Book First Event
-                </button>
-              </div>
-            </>
-          )}
-        </article>
-
-        <aside className="rounded-[28px] border border-[#d8dbff] bg-white/88 p-6 shadow-[0_18px_36px_rgba(70,56,120,0.12)] backdrop-blur-sm">
-          <h3 className="text-xl font-semibold text-[#221b45]">
-            Schedule Snapshot
-          </h3>
-          <div className="mt-5 text-center">
-            <p className="text-4xl font-bold tracking-tight text-[#31275e]">
-              {data?.snapshot?.upcomingCount30Days ?? 0}
-            </p>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#6e629f]">
-              Upcoming (30 days)
-            </p>
-          </div>
-          <div className="mt-5 space-y-2 border-b border-[#e9e3ff] pb-4">
-            <div className="flex items-center justify-between text-sm text-[#62588f]">
-              <span>Next 7 days</span>
-              <span className="font-semibold text-[#3a2f6f]">
-                {data?.snapshot.upcomingCount7Days ?? 0} planned
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-[#62588f]">
-              <span>Next event in</span>
-              <span className="font-semibold text-[#3a2f6f]">
-                {data?.snapshot.nextEventInDays != null
-                  ? `${data.snapshot?.nextEventInDays} days`
-                  : "--"}
-              </span>
-            </div>
-            <p className="text-xs text-[#7a71a7]">{daysMessage}</p>
-          </div>
-
-          <h4 className="mt-4 text-lg font-semibold text-[#221b45]">
-            RSVP Snapshot
-          </h4>
-          {nextEvent && data?.rsvp ? (
-            <>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <p className="rounded-xl bg-[#eefcf4] px-3 py-2 text-[#1f7d52]">
-                  Going:{" "}
-                  <span className="font-semibold">{data.rsvp.going}</span>
-                </p>
-                <p className="rounded-xl bg-[#fff8e9] px-3 py-2 text-[#9c6b00]">
-                  Maybe:{" "}
-                  <span className="font-semibold">{data.rsvp.maybe}</span>
-                </p>
-                <p className="rounded-xl bg-[#fff1f4] px-3 py-2 text-[#a33d56]">
-                  Declined:{" "}
-                  <span className="font-semibold">{data.rsvp.declined}</span>
-                </p>
-                <p className="rounded-xl bg-[#f3f2fd] px-3 py-2 text-[#4b437f]">
-                  Pending:{" "}
-                  <span className="font-semibold">{data.rsvp.pending}</span>
-                </p>
-              </div>
-              <div className="mt-3 space-y-1.5">
-                {data.rsvp.recent.length > 0 ? (
-                  data.rsvp.recent.slice(0, 3).map((row) => (
-                    <p key={row.id} className="text-sm text-[#5a4f87]">
-                      <span className="font-semibold text-[#2d2555]">
-                        {row.name}
-                      </span>{" "}
-                      - {row.status}
-                    </p>
-                  ))
-                ) : (
-                  <p className="text-sm text-[#7a71a8]">No recent RSVPs yet.</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-[#7a71a8]">
-              No next event selected.
-            </p>
-          )}
-          <div className="mt-5 border-t border-[#e9e3ff] pt-4">
-            <h4 className="text-lg font-semibold text-[#221b45]">Drafts</h4>
-            <p className="mt-1 text-sm text-[#6a6196]">
-              {data?.drafts?.count ?? 0} draft
-              {(data?.drafts?.count ?? 0) === 1 ? "" : "s"}
-            </p>
-            <div className="mt-2 space-y-1.5">
-              {(data?.drafts?.items || []).length > 0 ? (
-                data?.drafts?.items.slice(0, 3).map((draft) => (
-                  <Link
-                    key={draft.id}
-                    href={`/event/${draft.id}`}
-                    className="block text-sm font-medium text-[#3f3691] hover:underline"
-                  >
-                    {draft.title}
-                  </Link>
-                ))
-              ) : (
-                <p className="text-sm text-[#7a71a8]">No drafts right now.</p>
-              )}
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      <div className="relative z-10 mt-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-2xl font-semibold text-[#201942]">My Schedule</h3>
-        </div>
-        <div className="relative">
-          <div
-            className={showCollapsedTeaser ? "overflow-hidden" : ""}
-            style={
-              showCollapsedTeaser
-                ? { maxHeight: `${collapsedMaxHeight}px` }
-                : undefined
-            }
-          >
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {visibleScheduleEvents.map((item, index) => {
-                const start = parseSafeDate(item.startAt);
-                const month = start
-                  ? new Intl.DateTimeFormat("en-US", { month: "short" })
-                      .format(start)
-                      .toUpperCase()
-                  : "--";
-                const day = start
-                  ? new Intl.DateTimeFormat("en-US", { day: "2-digit" }).format(
-                      start
-                    )
-                  : "--";
-                const time = start
-                  ? new Intl.DateTimeFormat("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    }).format(start)
-                  : "Time TBD";
-                return (
-                  <Link
-                    key={item.id}
-                    ref={index === 0 ? firstScheduleCardRef : undefined}
-                    href={`/event/${item.id}`}
-                    className="group min-h-[236px] rounded-[24px] border border-[#e5e0ff] bg-white/90 p-4 shadow-[0_10px_26px_rgba(64,47,124,0.08)] transition hover:-translate-y-1 hover:border-[#d4cbff] hover:shadow-[0_20px_36px_rgba(64,47,124,0.12)]"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f2eefe] text-[0.66rem] font-bold tracking-[0.08em] text-[#4f4293]">
-                        {eventGlyph(item)}
-                      </span>
-                      <span className="rounded-full bg-[#f1efff] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#6660a0]">
-                        {eventRelationLabel(item)}
-                      </span>
-                    </div>
-                    <h4 className="mt-4 line-clamp-2 text-lg font-semibold leading-tight text-[#27204a]">
-                      {item.title}
-                    </h4>
-                    <p className="mt-1 line-clamp-1 text-sm text-[#7a71a8]">
-                      {item.locationText || item.category || "Event details"}
-                    </p>
-                    <div className="mt-6 border-t border-[#efecff] pt-3">
-                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#8f86ba]">
-                        {month}
-                      </p>
-                      <div className="flex items-baseline justify-between">
-                        <p className="text-3xl font-bold tracking-tight text-[#231c47]">
-                          {day}
-                        </p>
-                        <p className="text-sm font-semibold text-[#3e3384]">
-                          {time}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-              {showCreateTile && (
-                <button
-                  type="button"
-                  onClick={onCreateEvent}
-                  className="group flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#c9c1f6] bg-white/45 px-4 text-center transition hover:-translate-y-1 hover:border-[#a7a0e9] hover:bg-white/70"
-                >
-                  <span className="text-5xl font-light leading-none text-[#6a61b2]">
-                    +
-                  </span>
-                  <span className="mt-2 text-lg font-semibold text-[#4b437f]">
-                    Book New Event
-                  </span>
-                  <span className="mt-1 text-sm text-[#7a71a8]">
-                    Create a fresh invite in seconds
-                  </span>
-                </button>
-              )}
-            </div>
-          </div>
-          {showCollapsedTeaser && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-b from-[#f4f1ff00] via-[#f5f2ffde] to-[#f4f1ffff]">
-              <div className="pointer-events-auto absolute inset-x-0 bottom-4 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setIsExpanded(true)}
-                  className="inline-flex items-center justify-center rounded-full border border-[#cfc8f8] bg-white/95 px-5 py-2 text-sm font-semibold text-[#433c9f] shadow-[0_8px_22px_rgba(75,60,148,0.18)] transition hover:-translate-y-0.5 hover:border-[#bcb3ee]"
-                >
-                  Load more
-                </button>
-              </div>
-            </div>
-          )}
-          {hasOverflow && isExpanded && (
-            <div className="mt-4 flex justify-center">
-              <button
-                type="button"
-                onClick={() => setIsExpanded(false)}
-                className="inline-flex items-center justify-center rounded-full border border-[#d3cbf8] bg-white/95 px-5 py-2 text-sm font-semibold text-[#433c9f] shadow-[0_8px_20px_rgba(75,60,148,0.12)] transition hover:-translate-y-0.5 hover:border-[#bcb3ee]"
-              >
-                Show less
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
   );
 }
 

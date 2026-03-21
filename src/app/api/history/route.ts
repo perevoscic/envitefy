@@ -59,7 +59,15 @@ export async function GET(req: Request) {
           sessionEmail: sessionUser?.email || null,
         });
       }
-      return NextResponse.json({ items: [] });
+      return NextResponse.json({
+        items: [],
+        diagnostics: {
+          emptyReason: "no-resolved-user",
+          view,
+          timeFilter,
+          hasSession: Boolean(sessionUser),
+        },
+      });
     }
 
     const finalizeItems = (rows: any[]) =>
@@ -94,11 +102,13 @@ export async function GET(req: Request) {
     let light: any[] | null = null;
     let degradedReason: string | null = null;
     let shouldCacheResponse = true;
+    let responseSource = cached ? "cache" : "query";
     if (cached) {
       light = cached;
     } else {
       let rows: any[] = [];
       if (view === "sidebar" && timeFilter === "all") {
+        responseSource = "fast-sidebar";
         try {
           rows = await listSidebarHistoryForUserFast(userId, limit);
         } catch (err) {
@@ -106,13 +116,16 @@ export async function GET(req: Request) {
           if (Array.isArray(staleCached)) {
             light = staleCached;
             rows = [];
+            responseSource = "stale-cache";
           } else {
             light = [];
+            responseSource = "degraded-empty";
           }
           degradedReason = "statement-timeout";
           shouldCacheResponse = false;
         }
       } else {
+        responseSource = "history-union";
         try {
           rows = await listHistoryForUser({ userId, view, limit, timeFilter });
         } catch (err) {
@@ -126,13 +139,16 @@ export async function GET(req: Request) {
           }
           try {
             rows = await listSidebarHistoryForUserFast(userId, limit);
+            responseSource = "fast-sidebar-fallback";
           } catch (fastErr) {
             if (!isStatementTimeoutError(fastErr)) throw fastErr;
             if (Array.isArray(staleCached)) {
               light = staleCached;
               rows = [];
+              responseSource = "stale-cache";
             } else {
               light = [];
+              responseSource = "degraded-empty";
             }
             degradedReason = "statement-timeout";
             shouldCacheResponse = false;
@@ -146,6 +162,19 @@ export async function GET(req: Request) {
         setCachedHistory(userId, view, limit, timeFilter, light);
       }
     }
+    const diagnostics = {
+      itemCount: Array.isArray(light) ? light.length : 0,
+      degradedReason,
+      source: responseSource,
+      emptyReason:
+        Array.isArray(light) && light.length === 0
+          ? degradedReason
+            ? "query-degraded-empty"
+            : "no-matching-rows"
+          : null,
+      view,
+      timeFilter,
+    };
 
     // Conditional response with ETag/Last-Modified
     const seed = JSON.stringify(light);
@@ -176,7 +205,7 @@ export async function GET(req: Request) {
       });
     }
 
-    return NextResponse.json({ items: light }, { headers });
+    return NextResponse.json({ items: light, diagnostics }, { headers });
   } catch (err: any) {
     if (!HISTORY_DEBUG && process.env.NODE_ENV !== "production") {
       console.error("[history] GET error", err);

@@ -256,97 +256,100 @@ export default function PwaInstallToast() {
     >
       <div className="max-w-7xl mx-auto">
         <div
-          className="bg-surface/98 backdrop-blur-lg border border-border/50 rounded-2xl shadow-2xl p-4 flex items-center gap-4 transition-all duration-300 ease-out"
+          className="relative overflow-hidden rounded-[28px] border border-[#e7e1ff] bg-white/95 p-4 shadow-[0_24px_70px_rgba(103,87,255,0.16)] backdrop-blur-xl transition-all duration-300 ease-out"
           style={{
             opacity: isAnimating ? 1 : 0,
             transform: isAnimating ? "translateY(0)" : "translateY(-20px)",
           }}
         >
-          {/* App Icon */}
-          <div className="flex-shrink-0">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center border border-border/30">
-              <img
-                src="/icons/icon-192.png"
-                alt="Envitefy"
-                className="w-10 h-10 rounded-lg"
-                onError={(e) => {
-                  // Fallback to SVG if image fails
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = "none";
-                  const svg = target.nextElementSibling as SVGElement;
-                  if (svg) svg.style.display = "block";
-                }}
-              />
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="text-primary hidden"
-                style={{ display: "none" }}
-              >
-                <path
-                  d="M12 2L2 7L12 12L22 7L12 2Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(123,97,255,0.14),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(55,168,255,0.1),transparent_32%)]" />
+          <div className="relative flex items-center gap-4">
+            {/* App Icon */}
+            <div className="flex-shrink-0">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[20px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] shadow-[0_12px_30px_rgba(103,87,255,0.12)]">
+                <img
+                  src="/icons/icon-192.png"
+                  alt="Envitefy"
+                  className="h-10 w-10 rounded-lg"
+                  onError={(e) => {
+                    // Fallback to SVG if image fails
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                    const svg = target.nextElementSibling as SVGElement;
+                    if (svg) svg.style.display = "block";
+                  }}
                 />
-                <path
-                  d="M2 17L12 22L22 17"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 12L12 17L22 12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="hidden text-[#6b3cff]"
+                  style={{ display: "none" }}
+                >
+                  <path
+                    d="M12 2L2 7L12 12L22 7L12 2Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M2 17L12 22L22 17"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M2 12L12 17L22 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
             </div>
-          </div>
 
-          {/* Text Content */}
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-foreground text-base leading-tight">
-              Install Envitefy
+            {/* Text Content */}
+            <div className="min-w-0 flex-1">
+              <div className="text-base font-semibold leading-tight text-[#1f2340]">
+                Install Envitefy
+              </div>
+              <div className="mt-0.5 text-xs text-[#6b7390]">
+                envitefy.com
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              envitefy.com
-            </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={handleDismiss}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-surface-alt"
-              aria-label="Dismiss"
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {/* Action Buttons */}
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <button
+                onClick={handleDismiss}
+                className="rounded-full border border-[#ece8ff] bg-white/85 p-2 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]"
+                aria-label="Dismiss"
               >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-            <button
-              onClick={handleInstall}
-              className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg"
-            >
-              Install
-            </button>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+              <button
+                onClick={handleInstall}
+                className="rounded-full bg-[linear-gradient(96deg,#6b3cff_0%,#6757ff_42%,#5a7dff_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(103,87,255,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_34px_rgba(103,87,255,0.34)] active:scale-95"
+              >
+                Install
+              </button>
+            </div>
           </div>
         </div>
       </div>

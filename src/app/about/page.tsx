@@ -83,7 +83,7 @@ export default function AboutPage() {
                   >
                     About
                   </span>
-                  <EnvitefyWordmark className="text-[1em]" scaled={false} />
+                  <EnvitefyWordmark className="text-[1.50em]" scaled={false} />
                 </span>
               </h1>
               <p className="mt-4 text-base sm:text-lg uppercase tracking-[0.2em] text-foreground/60 font-medium">

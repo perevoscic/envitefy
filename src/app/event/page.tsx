@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Camera, ChevronLeft, Upload } from "lucide-react";
+import { Camera, ChevronLeft } from "lucide-react";
+import UploadDropCard from "./UploadDropCard";
 
 export const metadata = {
   title: "Snap or upload invite · Envitefy",
@@ -93,23 +94,7 @@ export default function EventSnapLandingPage() {
             </span>
           </Link>
 
-          <Link
-            href="/?action=upload"
-            className="group flex flex-col rounded-[2rem] border border-[#e5e6ef] bg-white p-8 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_18px_48px_rgba(99,102,241,0.1)]"
-          >
-            <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 ring-1 ring-slate-200 transition group-hover:bg-indigo-50 group-hover:text-indigo-600">
-              <Upload className="h-7 w-7" strokeWidth={2} aria-hidden />
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 group-hover:text-indigo-500">
-              From device
-            </span>
-            <span className="mt-2 text-xl font-bold text-[#0f1935]">
-              Upload file
-            </span>
-            <span className="mt-2 text-sm text-[#66677f]">
-              Choose a photo, screenshot, or PDF from your phone or computer.
-            </span>
-          </Link>
+          <UploadDropCard />
         </div>
       </div>
     </main>

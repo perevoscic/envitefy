@@ -69,6 +69,7 @@ const getSessionCookie = (req: NextRequest) =>
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const normalizedPathname = stripTrailingSlash(pathname);
 
   // helper to return with a marker header
   const ok = () => {
@@ -138,6 +139,17 @@ export async function middleware(req: NextRequest) {
     const url = req.nextUrl.clone();
     url.pathname = "/";
     return redirectWithMarker(url, 308);
+  }
+
+  // The snap landing itself does not expose private data, so the route only
+  // needs a session cookie presence check instead of full JWT parsing.
+  if (normalizedPathname === "/event") {
+    if (!getSessionCookie(req)?.value) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      return redirectWithMarker(url, 302);
+    }
+    return ok();
   }
 
   const resolveHasSession = async () => {

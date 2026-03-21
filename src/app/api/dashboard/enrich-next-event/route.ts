@@ -400,7 +400,10 @@ export async function POST(req: Request) {
     const requestedEventId =
       typeof body.eventId === "string" && body.eventId.trim() ? body.eventId.trim() : null;
 
-    const events = await timing.time("events", () => listDashboardEventsForUser(userId, 200));
+    const eventResult = await timing.time("events", () =>
+      listDashboardEventsForUser(userId, 200)
+    );
+    const events = eventResult.events;
     const { nextEvent } = buildDashboardCollections(events);
 
     if (!nextEvent) {

@@ -9,6 +9,7 @@ import {
 } from "@/lib/dashboard-data";
 import {
   buildDashboardCollections,
+  type DashboardEventQueryDiagnostics,
   listDashboardEventsForUser,
 } from "@/lib/dashboard-query";
 import {
@@ -96,7 +97,31 @@ function buildEmptyDashboardPayload(): DashboardPayload {
       travelWindowEligible: false,
     },
     degraded: true,
+    diagnostics: {
+      emptyReason: "statement-timeout",
+      degradedReason: "statement_timeout",
+    },
   };
+}
+
+function buildDashboardEmptyReason(params: {
+  sourceRowCount: number;
+  returnedEventCount: number;
+  droppedMissingStartCount: number;
+  nextEvent: DashboardEvent | null;
+  upcomingCount: number;
+}): string | null {
+  if (params.nextEvent) return null;
+  if (params.sourceRowCount <= 0) return "no-history-rows";
+  if (
+    params.returnedEventCount <= 0 &&
+    params.droppedMissingStartCount >= params.sourceRowCount
+  ) {
+    return "row-filtered-no-start";
+  }
+  if (params.returnedEventCount <= 0) return "no-parseable-dashboard-events";
+  if (params.upcomingCount <= 0) return "no-upcoming-events";
+  return "no-next-event";
 }
 
 async function getCachedMetrics(
@@ -172,11 +197,13 @@ function buildSetupHealth(nextEvent: DashboardEvent | null, rsvpTotalForEvent: n
 
 async function computeDashboardPayload(
   userId: string,
+  userEmail: string,
   timing?: ServerTimingTracker
 ): Promise<DashboardPayload> {
-  const events = timing
+  const eventResult = timing
     ? await timing.time("events", () => listDashboardEventsForUser(userId, 200))
     : await listDashboardEventsForUser(userId, 200);
+  const events = eventResult.events;
   const now = Date.now();
   const {
     allDrafts,
@@ -187,6 +214,19 @@ async function computeDashboardPayload(
     upcomingIn7DaysCount,
     nextEventInDays,
   } = buildDashboardCollections(events, now);
+  const emptyReason = buildDashboardEmptyReason({
+    sourceRowCount: eventResult.diagnostics.sourceRowCount,
+    returnedEventCount: eventResult.diagnostics.returnedEventCount,
+    droppedMissingStartCount: eventResult.diagnostics.droppedMissingStartCount,
+    nextEvent,
+    upcomingCount: upcoming.length,
+  });
+  const diagnostics: DashboardEventQueryDiagnostics & {
+    emptyReason: string | null;
+  } = {
+    ...eventResult.diagnostics,
+    emptyReason,
+  };
 
   const rsvp = {
     going: 0,
@@ -276,6 +316,46 @@ async function computeDashboardPayload(
     }
   }
 
+  // Per-user RSVP lookup: check if the signed-in user has RSVP'd to any dashboard events.
+  const allEventIds = [
+    ...(nextEvent ? [nextEvent.id] : []),
+    ...upcoming.map((e) => e.id),
+  ].filter((id, i, arr) => arr.indexOf(id) === i);
+
+  const userRsvpMap = new Map<string, "yes" | "no" | "maybe">();
+  if (allEventIds.length > 0) {
+    const loadUserRsvp = async () => {
+      try {
+        const res = await query<{ event_id: string; response: string }>(
+          `select distinct on (event_id) event_id::text as event_id, response
+           from rsvp_responses
+           where event_id = ANY($1)
+             and (user_id = $2 OR lower(email) = lower($3))
+           order by event_id, updated_at desc nulls last`,
+          [allEventIds, userId, userEmail]
+        );
+        for (const row of res.rows || []) {
+          const r = String(row.response || "").toLowerCase();
+          if (r === "yes" || r === "no" || r === "maybe") {
+            userRsvpMap.set(row.event_id, r);
+          }
+        }
+      } catch {}
+    };
+    if (timing) {
+      await timing.time("user_rsvp", loadUserRsvp);
+    } else {
+      await loadUserRsvp();
+    }
+  }
+
+  if (nextEvent) {
+    nextEvent.userRsvpResponse = userRsvpMap.get(nextEvent.id) ?? null;
+  }
+  for (const ev of upcoming) {
+    ev.userRsvpResponse = userRsvpMap.get(ev.id) ?? null;
+  }
+
   const setupHealthFlags = buildSetupHealth(
     nextEvent,
     rsvp.going + rsvp.maybe + rsvp.declined
@@ -344,14 +424,15 @@ async function computeDashboardPayload(
         nextEvent && nextEventHours != null && nextEventHours <= 72
       ),
     },
+    diagnostics,
   };
 }
 
-function getOrCreateRefresh(userId: string): Promise<DashboardPayload> {
+function getOrCreateRefresh(userId: string, userEmail: string): Promise<DashboardPayload> {
   const existing = dashboardRefreshInflight.get(userId);
   if (existing) return existing;
   const promise = (async () => {
-    const payload = await computeDashboardPayload(userId);
+    const payload = await computeDashboardPayload(userId, userEmail);
     dashboardResponseCache.set(userId, { at: Date.now(), payload });
     return payload;
   })().finally(() => {
@@ -421,7 +502,7 @@ export async function GET(req: Request) {
 
     if (cached && cacheAgeMs != null && cacheAgeMs < DASHBOARD_STALE_TTL_MS) {
       // Serve stale immediately, refresh in background, and avoid duplicate refresh calls.
-      void getOrCreateRefresh(userId).catch(() => undefined);
+      void getOrCreateRefresh(userId, email).catch(() => undefined);
       const body = timing.enabled
         ? {
             ...cached.payload,
@@ -437,7 +518,7 @@ export async function GET(req: Request) {
       timing.addStep("coalesced_wait", 0);
     }
     const payload = await timing.time("dashboard_compute", () =>
-      getOrCreateRefresh(userId)
+      getOrCreateRefresh(userId, email)
     );
 
     const body = timing.enabled

@@ -371,6 +371,10 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       resetCacheState();
     };
 
+    const onRsvpSubmitted = () => {
+      queueRefresh({ force: true, source: "rsvp-submitted" });
+    };
+
     window.addEventListener("history:created", onCreated as EventListener);
     window.addEventListener("history:deleted", onDeleted as EventListener);
     window.addEventListener("history:updated", onUpdated as EventListener);
@@ -379,6 +383,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       onInvalidate as EventListener,
     );
     window.addEventListener(EVENT_CACHE_RESET_EVENT, onReset as EventListener);
+    window.addEventListener("rsvp-submitted", onRsvpSubmitted);
     return () => {
       window.removeEventListener("history:created", onCreated as EventListener);
       window.removeEventListener("history:deleted", onDeleted as EventListener);
@@ -388,6 +393,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
         onInvalidate as EventListener,
       );
       window.removeEventListener(EVENT_CACHE_RESET_EVENT, onReset as EventListener);
+      window.removeEventListener("rsvp-submitted", onRsvpSubmitted);
     };
   }, [queueRefresh, resetCacheState]);
 

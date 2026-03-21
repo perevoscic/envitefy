@@ -1,5 +1,5 @@
 /*
-  Generate a multi-size favicon.ico from src/assets/LogoEonly.png
+  Generate a multi-size favicon.ico from public/favicon.png
 */
 
 const fs = require("fs");
@@ -12,12 +12,12 @@ async function ensureDir(dir) {
 
 async function main() {
   const { default: toIco } = await import("png-to-ico");
-  const srcPath = path.resolve(__dirname, "../src/assets/LogoEonly.png");
+  const srcPath = path.resolve(__dirname, "../public/favicon.png");
   const outDir = path.resolve(__dirname, "../src/app");
   const sizes = [16, 24, 32, 48, 64];
 
   if (!fs.existsSync(srcPath)) {
-    console.error("[favicon] Source logo not found at src/assets/LogoEonly.png");
+    console.error("[favicon] Source logo not found at public/favicon.png");
     process.exit(1);
   }
 

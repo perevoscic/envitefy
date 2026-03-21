@@ -1,6 +1,6 @@
 "use client";
 import { Calendar, Clock, MapPin, Sparkles, Upload, User, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 export type SnapProcessingStatus = "idle" | "uploading" | "scanning";
 export type SnapPreviewKind = "image" | "pdf" | "file" | null;
@@ -20,6 +20,12 @@ export function SnapProcessingCard({
   previewKind,
   onCancel,
 }: SnapProcessingCardProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [previewUrl]);
+
   if (status === "idle") return null;
 
   return (
@@ -35,7 +41,7 @@ export function SnapProcessingCard({
 
         <div className="relative flex flex-col items-center">
           <div className="relative mb-5 aspect-[3/4] w-full overflow-hidden rounded-2xl border border-[#d8cff5] bg-[#f9f5ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
-            {previewKind === "image" && previewUrl ? (
+            {previewKind === "image" && previewUrl && !imageFailed ? (
               <img
                 src={previewUrl}
                 alt="Flyer preview"
@@ -44,6 +50,7 @@ export function SnapProcessingCard({
                     ? "brightness-[0.65] saturate-[0.9]"
                     : ""
                 }`}
+                onError={() => setImageFailed(true)}
               />
             ) : (
               <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#fbf9ff] via-[#f5eeff] to-[#eef5ff] text-[#5c4c83]">

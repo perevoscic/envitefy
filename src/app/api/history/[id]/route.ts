@@ -121,15 +121,7 @@ export async function PATCH(
       if (incomingCategory != null) {
         mergedData.category = String(incomingCategory);
       }
-      
-      console.log("[API] Full update with meet design fields:", {
-        pageTemplateId: mergedData.pageTemplateId,
-        themeId: mergedData.themeId,
-        theme: mergedData.theme?.name,
-        fontId: mergedData.fontId,
-        fontSize: mergedData.fontSize,
-      });
-      
+
       updatedRow = (await updateEventHistoryData(id, mergedData)) || updatedRow;
     } else {
       // For partial updates, use merge

@@ -5,14 +5,21 @@ import { useEffect, useState } from "react";
 
 const SIDEBAR_WIDTH_REM = "20rem";
 const SIDEBAR_COLLAPSED_REM = "4.5rem";
+/** Must match the mobile <header> in left-sidebar.tsx:
+ *  pt-[max(0.5rem,env(safe-area-inset-top))] + h-10 button + pb-2
+ *  = max(0.5rem, safe-area) + 3rem */
+const MOBILE_TOPBAR_PT =
+  "calc(3rem + max(0.5rem, env(safe-area-inset-top, 0px)))";
 
 export function MainContentWrapper({
   children,
   isAuthenticated,
+  reserveSidebarSpace = isAuthenticated,
   className = "",
 }: {
   children: React.ReactNode;
   isAuthenticated: boolean;
+  reserveSidebarSpace?: boolean;
   className?: string;
 }) {
   const { isCollapsed } = useSidebar();
@@ -28,11 +35,16 @@ export function MainContentWrapper({
   }, []);
 
   const paddingLeft =
-    isAuthenticated && isDesktop
+    reserveSidebarSpace && isDesktop
       ? isCollapsed
         ? SIDEBAR_COLLAPSED_REM
         : SIDEBAR_WIDTH_REM
       : "0";
+
+  const paddingTop =
+    !isDesktop && isAuthenticated
+      ? MOBILE_TOPBAR_PT
+      : "max(0px, env(safe-area-inset-top))";
 
   return (
     <div
@@ -41,7 +53,7 @@ export function MainContentWrapper({
       } ${className}`}
       style={{
         minHeight: "100dvh",
-        paddingTop: "max(0px, env(safe-area-inset-top))",
+        paddingTop,
         paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
         transition: "padding-left 200ms ease-out",
