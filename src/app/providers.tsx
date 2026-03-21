@@ -10,7 +10,7 @@ import {
   useRef,
   useMemo,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
 import GlobalSmartSignup from "./GlobalSmartSignup";
@@ -84,9 +84,6 @@ export default function Providers({
 }: {
   children: ReactNode;
 }) {
-  const pathname = usePathname();
-  const installStartExpanded = pathname?.startsWith("/landing") ?? false;
-
   return (
     <SessionProvider>
       <SidebarProvider>
@@ -97,7 +94,7 @@ export default function Providers({
           {children}
           <GlobalEventCreate />
           <GlobalSmartSignup />
-          <PwaInstallButton startExpanded={installStartExpanded} />
+          <PwaInstallButton />
         </ThemeProvider>
       </SidebarProvider>
     </SessionProvider>

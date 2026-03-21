@@ -44,10 +44,13 @@ export default function LandingNav() {
             : "pt-8 pb-5"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <EnvitefyWordmark className="text-[2.2rem] leading-none transition-transform duration-300 group-hover:scale-105" />
+          <Link
+            href="/"
+            className="group order-2 ml-auto flex min-w-0 items-center justify-end gap-2 md:order-none md:ml-0"
+          >
+            <EnvitefyWordmark className="max-w-full text-[1.65rem] leading-none transition-transform duration-300 group-hover:scale-105 sm:text-[1.85rem] md:text-[2.2rem]" />
           </Link>
 
           {/* Desktop Nav */}
@@ -92,7 +95,7 @@ export default function LandingNav() {
 
           {/* Mobile Toggle */}
           <button
-            className="md:hidden p-2 text-gray-700"
+            className="order-1 md:hidden p-2 text-gray-700"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
