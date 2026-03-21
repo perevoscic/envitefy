@@ -1,5 +1,6 @@
 type EnvitefyWordmarkProps = {
   className?: string;
+  scaled?: boolean;
 };
 
 const WORDMARK_GRADIENT =
@@ -7,11 +8,14 @@ const WORDMARK_GRADIENT =
 
 export default function EnvitefyWordmark({
   className = "",
+  scaled = true,
 }: EnvitefyWordmarkProps) {
   return (
     <span
       aria-label="envitefy"
-      className="inline-block shrink-0 origin-center scale-[1.80]"
+      className={`inline-block shrink-0 origin-center ${
+        scaled ? "scale-[1.80]" : ""
+      }`.trim()}
     >
       <span
         aria-hidden

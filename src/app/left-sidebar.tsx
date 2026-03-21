@@ -2589,7 +2589,7 @@ export default function LeftSidebar() {
                     <Link
                       href="/"
                       onClick={goHomeFromSidebar}
-                      className="inline-flex max-w-[190px] translate-y-1 items-center pl-6"
+                      className="inline-flex max-w-[190px] translate-y-1 items-center pl-8"
                     >
                       <EnvitefyWordmark className="text-[1.75rem] leading-none" />
                     </Link>

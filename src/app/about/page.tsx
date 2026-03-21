@@ -72,7 +72,7 @@ export default function AboutPage() {
           <div className="bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] rounded-3xl p-1 mb-8">
             <div className="rounded-3xl bg-white/95 backdrop-blur-sm p-10 sm:p-12 border border-[#e5dcff]">
               <h1 className="overflow-visible text-[clamp(2.9rem,7vw,5.25rem)] font-extrabold leading-[1.24] tracking-tight pb-10 pt-3">
-                <span className="inline-flex flex-nowrap whitespace-nowrap items-center justify-center gap-x-2 sm:gap-x-3">
+                <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-2 sm:gap-x-3">
                   <span
                     className="text-[#6c5fd6]"
                     style={{
@@ -83,7 +83,7 @@ export default function AboutPage() {
                   >
                     About
                   </span>
-                  <EnvitefyWordmark className="text-[1em]" />
+                  <EnvitefyWordmark className="text-[1em]" scaled={false} />
                 </span>
               </h1>
               <p className="mt-4 text-base sm:text-lg uppercase tracking-[0.2em] text-foreground/60 font-medium">

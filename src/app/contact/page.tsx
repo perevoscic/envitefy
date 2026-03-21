@@ -29,7 +29,7 @@ export default function ContactPage() {
                   letterSpacing: "-0.085em",
                 }}
               >
-                Contact <EnvitefyWordmark className="text-[1em]" />
+                Contact <EnvitefyWordmark className="text-[1em]" scaled={false} />
               </span>
             </span>
           </h1>
