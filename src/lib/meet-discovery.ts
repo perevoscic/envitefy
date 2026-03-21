@@ -23,6 +23,7 @@ import {
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
 import { computeGymBuilderStatuses } from "@/lib/meet-discovery/status";
+import { parseDataUrlBase64 } from "@/utils/data-url";
 
 export { computeGymBuilderStatuses };
 
@@ -5229,12 +5230,12 @@ async function resolveHubResourceLinks(
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } | null {
-  const match = dataUrl.match(/^data:([^;,]+);base64,([\s\S]*)$/);
-  if (!match) return null;
+  const parsed = parseDataUrlBase64(dataUrl);
+  if (!parsed) return null;
   try {
     return {
-      mimeType: match[1],
-      buffer: Buffer.from(match[2], "base64"),
+      mimeType: parsed.mimeType,
+      buffer: Buffer.from(parsed.base64Payload, "base64"),
     };
   } catch {
     return null;

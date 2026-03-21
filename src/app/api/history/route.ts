@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserIdByEmail, insertEventHistory, listHistoryForUser, upsertSignupForm } from "@/lib/db";
+import {
+  getUserIdByEmail,
+  insertEventHistory,
+  listHistoryForUser,
+  listSidebarHistoryForUserFast,
+  upsertSignupForm,
+} from "@/lib/db";
 import { getCachedHistory, setCachedHistory, invalidateUserHistory } from "@/lib/history-cache";
 import { createHash } from "crypto";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
@@ -15,6 +21,18 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const HISTORY_DEBUG = process.env.HISTORY_DEBUG === "1";
+
+function isStatementTimeoutError(err: unknown): boolean {
+  const anyErr = err as { code?: unknown; message?: unknown } | null;
+  const code = String(anyErr?.code || "");
+  const message = String(anyErr?.message || "");
+  return (
+    code === "57014" ||
+    /statement timeout|canceling statement due to statement timeout/i.test(
+      message
+    )
+  );
+}
 
 export async function GET(req: Request) {
   try {
@@ -68,7 +86,24 @@ export async function GET(req: Request) {
     if (cached) {
       light = cached;
     } else {
-      const rows = await listHistoryForUser({ userId, view, limit, timeFilter });
+      let rows;
+      if (view === "sidebar" && timeFilter === "all") {
+        rows = await listSidebarHistoryForUserFast(userId, limit);
+      } else {
+        try {
+          rows = await listHistoryForUser({ userId, view, limit, timeFilter });
+        } catch (err) {
+          const canUseFastSidebarFallback =
+            view === "sidebar" &&
+            timeFilter === "all" &&
+            isStatementTimeoutError(err);
+          if (!canUseFastSidebarFallback) throw err;
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("[history] falling back to fast sidebar query after statement timeout");
+          }
+          rows = await listSidebarHistoryForUserFast(userId, limit);
+        }
+      }
       light = finalizeItems(rows);
       if (useCache) {
         setCachedHistory(userId, view, limit, timeFilter, light);
@@ -103,6 +138,9 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ items: light }, { headers });
   } catch (err: any) {
+    if (!HISTORY_DEBUG && process.env.NODE_ENV !== "production") {
+      console.error("[history] GET error", err);
+    }
     if (HISTORY_DEBUG) {
       console.error("[history] GET error", err);
     }

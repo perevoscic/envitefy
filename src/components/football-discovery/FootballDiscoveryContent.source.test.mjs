@@ -23,3 +23,19 @@ test("football discovery content renders attendance before generic cards", () =>
     "attendance branch must be evaluated before the generic cards branch"
   );
 });
+
+test("football public renderer uses saved template chrome and keeps the legacy fallback", () => {
+  const source = readSource(
+    "src/components/football-discovery/FootballDiscoveryContent.tsx"
+  );
+
+  assert.match(source, /templateChrome\.titleTypography\.heroClassName/);
+  assert.match(source, /templateChrome\.navShellClass/);
+  assert.match(source, /templateChrome\.sectionClass/);
+  assert.match(source, /data-page-template-id/);
+  assert.match(source, /EventActions/);
+  assert.match(source, /EventDeleteModal/);
+  assert.match(source, /buildEditLink/);
+  assert.match(source, /Football discovery/);
+  assert.match(source, /min-h-screen bg-\[radial-gradient\(circle_at_top_left/);
+});

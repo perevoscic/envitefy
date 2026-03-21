@@ -2,6 +2,7 @@ import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
 import { randomBytes, scrypt as nodeScrypt, timingSafeEqual, randomUUID } from "crypto";
 import { promisify } from "util";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
+import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
 const scrypt = promisify(nodeScrypt);
 
 type NonEmptyString = string & { _brand: "NonEmptyString" };
@@ -1574,14 +1575,7 @@ function buildHistoryEventStartRawSql(dataSql: string): string {
 }
 
 function buildHistoryEventStartAtSql(startRawSql: string): string {
-  return `case
-    when ${startRawSql} is null then null
-    when pg_input_is_valid(${startRawSql}, 'timestamp with time zone')
-      then (${startRawSql})::timestamptz
-    when pg_input_is_valid(${startRawSql}, 'timestamp without time zone')
-      then (${startRawSql})::timestamp at time zone 'UTC'
-    else null
-  end`;
+  return buildEventStartAtTsSql(startRawSql);
 }
 
 function buildHistoryStatusSql(dataSql: string): string {
@@ -1608,6 +1602,15 @@ function buildHistoryTimeFilterSql(
   }
   return "true";
 }
+
+/**
+ * Bound owned-history scans before expensive JSON/timestamp projection. This
+ * keeps sidebar/history reads responsive for large accounts while still
+ * covering far more rows than the API ever returns.
+ */
+const HISTORY_OWN_ROW_CAP = 600;
+const HISTORY_FAST_SIDEBAR_ROW_CAP = 200;
+const HISTORY_DASHBOARD_ROW_CAP = 5000;
 
 function buildHistoryDataProjectionSql(params: {
   view: HistoryView;
@@ -1736,7 +1739,18 @@ function buildHistoryUnionQuery(
   });
 
   return `
-    with own_rows as (
+    with own_candidates as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        eh.created_at
+      from event_history eh
+      where eh.user_id = $1
+      order by eh.created_at desc nulls last, eh.id desc
+      limit ${HISTORY_OWN_ROW_CAP}
+    ),
+    own_rows as (
       select
         eh.id,
         eh.user_id,
@@ -1745,8 +1759,8 @@ function buildHistoryUnionQuery(
         eh.created_at,
         ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
         ${buildHistoryStatusSql(ownDataSql)} as status_text
-      from event_history eh
-      where eh.user_id = $1
+      from own_candidates c
+      join event_history eh on eh.id = c.id
     ),
     shared_rows as (
       select
@@ -1791,7 +1805,18 @@ function buildHistoryOwnOnlyQuery(
   });
 
   return `
-    with own_rows as (
+    with own_candidates as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        eh.created_at
+      from event_history eh
+      where eh.user_id = $1
+      order by eh.created_at desc nulls last, eh.id desc
+      limit ${HISTORY_OWN_ROW_CAP}
+    ),
+    own_rows as (
       select
         eh.id,
         eh.user_id,
@@ -1800,8 +1825,8 @@ function buildHistoryOwnOnlyQuery(
         eh.created_at,
         ${buildHistoryEventStartAtSql(startRawSql)} as event_start_at,
         ${buildHistoryStatusSql(dataSql)} as status_text
-      from event_history eh
-      where eh.user_id = $1
+      from own_candidates c
+      join event_history eh on eh.id = c.id
     )
     select
       id,
@@ -1811,6 +1836,80 @@ function buildHistoryOwnOnlyQuery(
       created_at
     from own_rows
     where ${buildHistoryTimeFilterSql(timeFilter, "own_rows")}
+    order by created_at desc nulls last, id desc
+    limit $2
+  `;
+}
+
+function buildHistorySidebarAllFastQuery(): string {
+  const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
+  const ownProjection = buildHistoryDataProjectionSql({
+    view: "sidebar",
+    dataSql: ownDataSql,
+    categorySql: `${ownDataSql}->'category'`,
+    sharedSql: "false",
+    sharedOutSql: `exists(
+      select 1
+      from event_shares es2
+      where es2.owner_user_id = $1
+        and es2.event_id = eh.id
+        and es2.revoked_at is null
+        and es2.status in ('pending', 'accepted')
+    )`,
+  });
+  const sharedProjection = buildHistoryDataProjectionSql({
+    view: "sidebar",
+    dataSql: sharedDataSql,
+    categorySql: "to_jsonb('Shared events'::text)",
+    sharedSql: "true",
+    sharedOutSql: "false",
+  });
+
+  return `
+    with own_candidates as (
+      select eh.id, eh.user_id, eh.title, eh.created_at
+      from event_history eh
+      where eh.user_id = $1
+      order by eh.created_at desc nulls last, eh.id desc
+      limit ${HISTORY_FAST_SIDEBAR_ROW_CAP}
+    ),
+    own_rows as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${ownProjection} as data,
+        eh.created_at
+      from own_candidates c
+      join event_history eh on eh.id = c.id
+    ),
+    shared_candidates as (
+      select eh.id, eh.user_id, eh.title, eh.created_at
+      from event_shares es
+      join event_history eh on eh.id = es.event_id
+      where es.recipient_user_id = $1
+        and es.status = 'accepted'
+        and es.revoked_at is null
+      order by eh.created_at desc nulls last, eh.id desc
+      limit ${HISTORY_FAST_SIDEBAR_ROW_CAP}
+    ),
+    shared_rows as (
+      select
+        eh.id,
+        eh.user_id,
+        eh.title,
+        ${sharedProjection} as data,
+        eh.created_at
+      from shared_candidates c
+      join event_history eh on eh.id = c.id
+    )
+    select id, user_id, title, data, created_at
+    from (
+      select * from own_rows
+      union all
+      select * from shared_rows
+    ) combined
     order by created_at desc nulls last, id desc
     limit $2
   `;
@@ -2246,18 +2345,60 @@ export async function listEventHistoryByUser(userId: string, limit: number = 50)
      where user_id = $1
      order by created_at desc nulls last, id desc
      limit $2`,
-    [userId, Math.max(1, Math.min(200, limit))]
+    [userId, Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, limit))]
   );
   return res.rows;
 }
 
+export async function listDashboardHistoryWindowForUser(
+  userId: string,
+  limit: number = HISTORY_DASHBOARD_ROW_CAP
+): Promise<EventHistoryRow[]> {
+  const res = await query<EventHistoryRow>(
+    `select id, user_id, title, (data - 'attachment' - 'ocrText') as data, created_at
+     from event_history
+     where user_id = $1
+     order by created_at desc nulls last, id desc
+     limit $2`,
+    [userId, Math.max(1, Math.min(HISTORY_DASHBOARD_ROW_CAP, limit))]
+  );
+  return res.rows || [];
+}
+
 export async function listRecentEventHistory(limit: number = 20): Promise<EventHistoryRow[]> {
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, created_at
+    `select id, user_id, title, (data - 'attachment' - 'ocrText') as data, created_at
      from event_history
      order by created_at desc nulls last, id desc
      limit $1`,
-    [Math.max(1, Math.min(200, limit))]
+    [Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, limit))]
+  );
+  return res.rows || [];
+}
+
+export async function listSharedEventHistoryByRecipient(
+  userId: string,
+  limit: number = 50
+): Promise<EventHistoryRow[]> {
+  const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
+  const dataSql = buildEventHistoryPublicDataProjectionSql(
+    "coalesce(eh.data, '{}'::jsonb)"
+  );
+  const res = await query<EventHistoryRow>(
+    `select
+       eh.id,
+       eh.user_id,
+       eh.title,
+       (${dataSql} || jsonb_build_object('shared', true, 'sharedOut', false)) as data,
+       eh.created_at
+     from event_shares es
+     join event_history eh on eh.id = es.event_id
+     where es.recipient_user_id = $1
+       and es.status = 'accepted'
+       and es.revoked_at is null
+     order by eh.created_at desc nulls last, eh.id desc
+     limit $2`,
+    [userId, safeLimit]
   );
   return res.rows || [];
 }
@@ -2283,6 +2424,18 @@ export async function listHistoryForUser(params: {
     ]);
     return res.rows || [];
   }
+}
+
+export async function listSidebarHistoryForUserFast(
+  userId: string,
+  limit = 200
+): Promise<EventHistoryRow[]> {
+  const safeLimit = Math.max(1, Math.min(200, Math.floor(limit || 40)));
+  const res = await query<EventHistoryRow>(buildHistorySidebarAllFastQuery(), [
+    userId,
+    safeLimit,
+  ]);
+  return res.rows || [];
 }
 
 async function ensureEventHistoryInputBlobsTable(): Promise<void> {

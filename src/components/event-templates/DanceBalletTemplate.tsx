@@ -15,6 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { buildEventPath } from "@/utils/event-url";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 
 type DanceEvent = {
   id: string;
@@ -1996,12 +1997,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const handleAppleCalendar = () => {
       const details = buildEventDetails();
-      const icsPath = buildIcsUrl(details);
-      const absoluteIcs =
-        typeof window !== "undefined"
-          ? `${window.location.origin}${icsPath}`
-          : icsPath;
-      window.location.href = absoluteIcs;
+      openAppleCalendarIcs(buildIcsUrl(details));
     };
 
     const renderMainMenu = () => (

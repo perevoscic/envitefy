@@ -1,7 +1,6 @@
 "use client";
 
 import { SessionProvider, useSession } from "next-auth/react";
-import type { Session } from "next-auth";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -82,16 +81,14 @@ export function useTheme() {
 
 export default function Providers({
   children,
-  session,
 }: {
   children: ReactNode;
-  session?: Session | null;
 }) {
   const pathname = usePathname();
   const installStartExpanded = pathname?.startsWith("/landing") ?? false;
 
   return (
-    <SessionProvider session={session}>
+    <SessionProvider>
       <SidebarProvider>
         <ThemeProvider>
           <RegisterServiceWorker />

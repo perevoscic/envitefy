@@ -56,6 +56,44 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+function isStatementTimeoutError(err: unknown): boolean {
+  const anyErr = err as { code?: unknown; message?: unknown } | null;
+  const code = String(anyErr?.code || "");
+  const message = String(anyErr?.message || "");
+  return code === "57014" || /statement timeout|canceling statement due to statement timeout/i.test(message);
+}
+
+function buildEmptyDashboardPayload(): DashboardPayload {
+  return {
+    ok: true,
+    nextEvent: null,
+    snapshot: {
+      upcomingCount30Days: 0,
+      upcomingCount7Days: 0,
+      nextEventInDays: null,
+    },
+    upcoming: [],
+    rsvp: null,
+    setupHealth: {
+      flags: [],
+    },
+    checklist: {
+      source: "derived",
+      items: [],
+    },
+    drafts: {
+      count: 0,
+      items: [],
+    },
+    metricsCache: null,
+    metricsEligibility: {
+      weatherEligible: false,
+      travelWindowEligible: false,
+    },
+    degraded: true,
+  };
+}
+
 async function getCachedMetrics(
   eventId: string,
   timing?: ServerTimingTracker
@@ -358,6 +396,11 @@ export async function GET(req: Request) {
       return withTiming(timing, body, { status: 401 });
     }
 
+    const refresh = url.searchParams.get("refresh") === "1";
+    if (refresh) {
+      dashboardResponseCache.delete(userId);
+    }
+
     const cached = dashboardResponseCache.get(userId);
     const cacheAgeMs = cached ? Date.now() - cached.at : null;
 
@@ -408,13 +451,34 @@ export async function GET(req: Request) {
 
     return withTiming(timing, body);
   } catch (err: unknown) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[api/dashboard] GET failed", err);
+    }
+    const timedOut = isStatementTimeoutError(err);
     const message = errorMessage(err, "Failed to load dashboard");
-    const body = timing.enabled
-      ? {
-          error: message,
-          timings: timing.toObject(),
-        }
-      : { error: message };
-    return withTiming(timing, body, { status: 500 });
+    const body = timedOut
+      ? timing.enabled
+        ? {
+            ...buildEmptyDashboardPayload(),
+            error: message,
+            timings: timing.toObject({
+              degraded: { reason: "statement_timeout" },
+            }),
+          }
+        : {
+            ...buildEmptyDashboardPayload(),
+            error: message,
+          }
+      : timing.enabled
+        ? {
+            error: message,
+            timings: timing.toObject(),
+          }
+        : { error: message };
+    return withTiming(
+      timing,
+      body,
+      timedOut ? { status: 200 } : { status: 500 }
+    );
   }
 }

@@ -753,6 +753,20 @@ export default function BabyShowersCreate({
         j = await r.json().catch(() => ({}));
         id = (j as any)?.id as string | undefined;
       }
+      if (typeof window !== "undefined" && id) {
+        window.dispatchEvent(
+          new CustomEvent(editEventId ? "history:updated" : "history:created", {
+            detail: editEventId
+              ? { id }
+              : {
+                  id,
+                  title: payload.title,
+                  created_at: (j as any)?.created_at || new Date().toISOString(),
+                  data: payload.data,
+                },
+          })
+        );
+      }
       const timezone =
         Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const normalizedEvent: NormalizedEvent = {

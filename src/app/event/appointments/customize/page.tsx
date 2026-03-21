@@ -23,6 +23,7 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 
 type FieldSpec = {
   key: string;
@@ -438,6 +439,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         const json = await res.json().catch(() => ({}));
         const id = (json as any)?.id as string | undefined;
         if (!id) throw new Error("Failed to create event");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("history:created", {
+              detail: {
+                id,
+                title: payload.title,
+                created_at: (json as any)?.created_at || new Date().toISOString(),
+                data: payload.data,
+              },
+            })
+          );
+        }
         router.push(buildEventPath(id, payload.title, { created: true }));
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
@@ -591,12 +604,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const handleAppleCalendar = () => {
       const details = buildEventDetails();
-      const icsPath = buildIcsUrl(details);
-      const absoluteIcs =
-        typeof window !== "undefined"
-          ? `${window.location.origin}${icsPath}`
-          : icsPath;
-      window.location.href = absoluteIcs;
+      openAppleCalendarIcs(buildIcsUrl(details));
     };
 
     const renderMainMenu = () => (

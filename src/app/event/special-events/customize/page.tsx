@@ -33,6 +33,7 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 
 // Google Fonts URL for all special event fonts
 const SPECIAL_EVENTS_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Anton&family=Oswald:wght@400;600;700&family=League+Spartan:wght@600;700&family=Inter+Tight:wght@500;600;700&family=Archivo+Black&family=Alfa+Slab+One&family=Bungee+Shade&family=Patua+One&family=Rubik+Mono+One&family=Exo+2:wght@500;600;700&family=Archivo:wght@500;600;700&family=Teko:wght@500;700&family=Barlow+Condensed:wght@500;600;700&family=Maven+Pro:wght@500;600;700&family=Righteous&family=Black+Ops+One&family=Press+Start+2P&family=Ultra&family=Comfortaa:wght@500;600;700&family=Varela+Round&family=Saira+Semi+Condensed:wght@500;600;700&family=Fjalla+One&family=Changa+One&family=Jomhuria&family=Russo+One&family=Titillium+Web:wght@600;700&family=Staatliches&family=Lilita+One&family=Amatic+SC:wght@700&display=swap`;
@@ -818,12 +819,7 @@ export default function SpecialEventsCustomizePage() {
 
   const handleAppleCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const icsPath = buildIcsUrl(buildCalendarDetails());
-    const absolute =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${icsPath}`
-        : icsPath;
-    window.location.href = absolute;
+    openAppleCalendarIcs(buildIcsUrl(buildCalendarDetails()));
   };
 
   const updateData = useCallback((field: string, value: any) => {
@@ -1098,6 +1094,20 @@ export default function SpecialEventsCustomizePage() {
       }
 
       if (id) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent(editEventId ? "history:updated" : "history:created", {
+              detail: editEventId
+                ? { id }
+                : {
+                    id,
+                    title: payload.title,
+                    created_at: new Date().toISOString(),
+                    data: payload.data,
+                  },
+            })
+          );
+        }
         const params = editEventId ? { updated: true } : { created: true };
         router.push(buildEventPath(id, payload.title, params));
       } else {

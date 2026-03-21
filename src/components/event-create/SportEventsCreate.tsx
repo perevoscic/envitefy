@@ -374,6 +374,19 @@ export default function SportEventsCreate({ defaultDate }: Props) {
       });
       const j = await r.json().catch(() => ({}));
       const id = (j as any)?.id as string | undefined;
+      if (!id) throw new Error("Failed to create event");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("history:created", {
+            detail: {
+              id,
+              title: payload.title,
+              created_at: (j as any)?.created_at || new Date().toISOString(),
+              data: payload.data,
+            },
+          })
+        );
+      }
       const timezone =
         Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const normalizedEvent: NormalizedEvent = {

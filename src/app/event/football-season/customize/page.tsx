@@ -6,15 +6,11 @@ import React, {
   useMemo,
   useState,
   useEffect,
-  memo,
-  useRef,
 } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
-  ChevronDown,
-  ChevronUp,
   Edit2,
   Image as ImageIcon,
   Menu,
@@ -54,21 +50,20 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
+import {
+  DEFAULT_GYM_MEET_TEMPLATE_ID,
+  getGymMeetTemplateMeta,
+  isGymMeetTemplateId,
+} from "@/components/gym-meet-templates/registry";
+import { resolveFootballSeasonTemplateChrome } from "./footballSeasonTemplateTheme";
 
 type FieldSpec = {
   key: string;
   label: string;
   placeholder?: string;
   type?: "text" | "textarea";
-};
-
-type ThemeSpec = {
-  id: string;
-  name: string;
-  bg: string;
-  text: string;
-  accent: string;
-  preview: string;
 };
 
 type AdvancedSectionRenderContext = {
@@ -83,6 +78,12 @@ type AdvancedSectionPreviewContext = {
   state: any;
   textClass: string;
   accentClass: string;
+  titleTypographyClassName?: string;
+  sectionTitleClass?: string;
+  sectionTitleStyle?: React.CSSProperties;
+  sectionCardClass?: string;
+  sectionMutedClass?: string;
+  summaryCardClass?: string;
   headingShadow?: React.CSSProperties;
   bodyShadow?: React.CSSProperties;
   titleColor?: React.CSSProperties;
@@ -105,8 +106,6 @@ type SimpleTemplateConfig = {
   categoryLabel?: string;
   defaultHero: string;
   detailFields: FieldSpec[];
-  themes: ThemeSpec[];
-  themesExpandedByDefault?: boolean;
   rsvpCopy?: {
     menuTitle?: string;
     menuDesc?: string;
@@ -130,133 +129,6 @@ type SimpleTemplateConfig = {
   };
   advancedSections?: AdvancedSectionSpec[];
 };
-
-const FOOTBALL_FONTS = [
-  {
-    id: "anton",
-    name: "Anton",
-    css: "'Anton', 'Impact', 'Arial Black', sans-serif",
-  },
-  {
-    id: "bebas",
-    name: "Bebas Neue",
-    css: "'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif",
-  },
-  {
-    id: "oswald",
-    name: "Oswald",
-    css: "'Oswald', 'Bebas Neue', 'Roboto Condensed', sans-serif",
-  },
-  {
-    id: "teko",
-    name: "Teko",
-    css: "'Teko', 'Bebas Neue', 'Arial Narrow', sans-serif",
-  },
-  {
-    id: "russo-one",
-    name: "Russo One",
-    css: "'Russo One', 'Anton', 'Impact', sans-serif",
-  },
-  {
-    id: "bangers",
-    name: "Bangers",
-    css: "'Bangers', 'Titan One', 'Comic Sans MS', cursive",
-  },
-  {
-    id: "black-ops-one",
-    name: "Black Ops One",
-    css: "'Black Ops One', 'Russo One', 'Anton', sans-serif",
-  },
-  {
-    id: "archivo-black",
-    name: "Archivo Black (Impact-like)",
-    css: "'Archivo Black', 'Impact', 'Anton', sans-serif",
-  },
-  {
-    id: "chakra-petch",
-    name: "Chakra Petch",
-    css: "'Chakra Petch', 'Rajdhani', 'Barlow Condensed', sans-serif",
-  },
-  {
-    id: "rajdhani",
-    name: "Rajdhani",
-    css: "'Rajdhani', 'Barlow Condensed', 'Roboto Condensed', sans-serif",
-  },
-  {
-    id: "barlow-condensed",
-    name: "Barlow Condensed",
-    css: "'Barlow Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif",
-  },
-  {
-    id: "league-spartan",
-    name: "League Spartan",
-    css: "'League Spartan', 'Montserrat', 'Arial Black', sans-serif",
-  },
-
-  {
-    id: "black-han-sans",
-    name: "Black Han Sans",
-    css: "'Black Han Sans', 'Anton', sans-serif",
-  },
-  { id: "bungee", name: "Bungee", css: "'Bungee', 'Bebas Neue', cursive" },
-  {
-    id: "bungee-shade",
-    name: "Bungee Shade",
-    css: "'Bungee Shade', 'Bungee', cursive",
-  },
-  { id: "anton-sc", name: "Anton SC", css: "'Anton SC', 'Anton', sans-serif" },
-  { id: "aldrich", name: "Aldrich", css: "'Aldrich', 'Oswald', sans-serif" },
-  {
-    id: "smooch-sans",
-    name: "Smooch Sans Black",
-    css: "'Smooch Sans', 'Inter', sans-serif",
-  },
-  { id: "rowdies", name: "Rowdies", css: "'Rowdies', 'Baloo', cursive" },
-  {
-    id: "russo-one-expanded",
-    name: "Russo One Expanded",
-    css: "'Russo One', 'Montserrat', sans-serif",
-  },
-  {
-    id: "tomorrow",
-    name: "Tomorrow ExtraBold",
-    css: "'Tomorrow', 'Manrope', sans-serif",
-  },
-  {
-    id: "teko-semibold",
-    name: "Teko SemiBold",
-    css: "'Teko', 'Bebas Neue', sans-serif",
-  },
-  {
-    id: "magra",
-    name: "Magra ExtraBold",
-    css: "'Magra', 'Poppins', sans-serif",
-  },
-  {
-    id: "michroma",
-    name: "Michroma",
-    css: "'Michroma', 'Orbitron', sans-serif",
-  },
-];
-
-const FOOTBALL_GOOGLE_FONT_FAMILIES = [
-  "Anton",
-  "Bebas+Neue",
-  "Oswald:wght@400;600;700",
-  "Teko:wght@500;700",
-  "Russo+One",
-  "Bangers",
-  "Black+Ops+One",
-  "Archivo+Black",
-  "Chakra+Petch:wght@600;700",
-  "Rajdhani:wght@500;600;700",
-  "Barlow+Condensed:wght@500;700",
-  "League+Spartan:wght@600;700",
-];
-
-const FOOTBALL_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=${FOOTBALL_GOOGLE_FONT_FAMILIES.join(
-  "&family="
-)}&display=swap`;
 
 const FONT_SIZE_OPTIONS = [
   { id: "small", label: "Small", className: "text-3xl md:text-4xl" },
@@ -357,29 +229,234 @@ const InputGroup = ({
 
 InputGroup.displayName = "InputGroup";
 
-const ThemeSwatch = ({
+const FootballSeasonMutedBadge = ({
   theme,
-  active,
-  onClick,
+  children,
+  className = "",
 }: {
-  theme: ThemeSpec;
-  active: boolean;
-  onClick: () => void;
+  theme: any;
+  children: React.ReactNode;
+  className?: string;
 }) => (
-  <button
-    onClick={onClick}
-    className={`relative overflow-hidden rounded-lg border text-left transition-all ${
-      active
-        ? "border-indigo-600 ring-1 ring-indigo-600 shadow-md"
-        : "border-slate-200 hover:border-slate-400 hover:shadow-sm"
-    }`}
+  <span
+    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${theme.sectionMutedClass} ${className}`}
   >
-    <div className={`h-12 w-full ${theme.preview} border-b border-black/5`} />
-    <div className="p-3">
-      <div className="text-sm font-semibold text-slate-700">{theme.name}</div>
-      <div className="text-xs text-slate-400">Palette preset</div>
+    {children}
+  </span>
+);
+
+const FootballSeasonSectionCard = ({
+  theme,
+  className = "",
+  children,
+}: {
+  theme: any;
+  className?: string;
+  children: React.ReactNode;
+}) => (
+  <div className={`${theme.sectionCardClass} ${className}`}>{children}</div>
+);
+
+const FootballSeasonSectionNav = ({
+  theme,
+  navItems,
+  activeSection,
+  onSelect,
+}: {
+  theme: any;
+  navItems: Array<{ id: string; label: string }>;
+  activeSection: string;
+  onSelect: (sectionId: string) => void;
+}) => (
+  <div className={`${theme.navShellClass} backdrop-blur-2xl`}>
+    <div className="overflow-x-auto pb-1">
+      <div className="flex min-w-max items-center justify-center gap-2">
+        {navItems.map((item) => {
+          const isActive = activeSection === item.id;
+          return (
+            <a
+              key={item.id}
+              href={`#${item.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onSelect(item.id);
+              }}
+              className={`group relative inline-flex items-center gap-2 whitespace-nowrap ${
+                isActive ? theme.navActiveClass : theme.navIdleClass
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full transition-all ${
+                  isActive ? "bg-current" : "bg-current opacity-40"
+                }`}
+              />
+              {item.label}
+            </a>
+          );
+        })}
+      </div>
     </div>
-  </button>
+  </div>
+);
+
+const FootballSeasonHeader = ({
+  theme,
+  title,
+  infoLine,
+  addressLine,
+  heroSrc,
+  headingSizeClass,
+  headingFontStyle,
+  bodyShadow,
+  selectedSizeLabel,
+  templateName,
+  isDiscoveryEdit,
+}: {
+  theme: any;
+  title: string;
+  infoLine: React.ReactNode;
+  addressLine: string;
+  heroSrc: string;
+  headingSizeClass: string;
+  headingFontStyle?: React.CSSProperties;
+  bodyShadow?: React.CSSProperties;
+  selectedSizeLabel: string;
+  templateName: string;
+  isDiscoveryEdit: boolean;
+}) => (
+  <div className={`relative overflow-hidden px-5 py-6 md:px-8 md:py-8 ${theme.headerClass}`}>
+    <div className={`absolute inset-0 opacity-60 ${theme.headerOverlayClass}`} />
+    <div className="absolute -left-24 top-0 h-56 w-56 rounded-full bg-white/70 blur-3xl" />
+    <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-slate-200/60 blur-3xl" />
+    <div className="relative grid gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] md:items-stretch">
+      <div className="space-y-4">
+        <div className="space-y-3">
+          <h1
+            className={`${headingSizeClass} leading-[0.92] ${theme.titleTypography.cardClassName} ${theme.titleClass}`}
+            style={headingFontStyle}
+          >
+            {title}
+          </h1>
+          <p
+            className={`max-w-2xl text-sm leading-relaxed md:text-base ${theme.mutedClass}`}
+            style={bodyShadow}
+          >
+            A gym-style builder shell with the same template selector pipeline
+            and side-panel editing flow as the gymnastics builder.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {infoLine}
+          {addressLine && (
+            <div
+              className={`flex items-center gap-2 text-sm opacity-80 ${theme.mutedClass}`}
+              style={bodyShadow}
+            >
+              <MapPin size={14} />
+              <span className="truncate">{addressLine}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <FootballSeasonMutedBadge theme={theme}>
+            Theme: {templateName}
+          </FootballSeasonMutedBadge>
+          <FootballSeasonMutedBadge theme={theme}>
+            Size: {selectedSizeLabel}
+          </FootballSeasonMutedBadge>
+          <FootballSeasonMutedBadge theme={theme}>
+            {isDiscoveryEdit ? "Discovery edit" : "Builder draft"}
+          </FootballSeasonMutedBadge>
+        </div>
+      </div>
+
+      <div className="relative">
+        <div className={`${theme.summaryCardClass} p-3 shadow-2xl backdrop-blur-xl`}>
+          <div
+            className={`relative aspect-[4/5] overflow-hidden rounded-[22px] ${theme.shellClass}`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-white/35 via-transparent to-white/5" />
+            {heroSrc ? (
+              <img
+                src={heroSrc}
+                alt="Hero"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center bg-white/40">
+                <div className="text-center">
+                  <div className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-600">
+                    Hero preview
+                  </div>
+                  <div className="mt-2 text-xs text-slate-500">
+                    Upload a banner image to anchor the preview shell.
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white/55 to-transparent" />
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <FootballSeasonSectionCard theme={theme} className="px-3 py-3 text-center text-xs font-semibold">
+              Theme
+              <div className="mt-1 text-[11px] font-medium text-slate-500">
+                {templateName}
+              </div>
+            </FootballSeasonSectionCard>
+            <FootballSeasonSectionCard theme={theme} className="px-3 py-3 text-center text-xs font-semibold">
+              Typography
+              <div className="mt-1 text-[11px] font-medium text-slate-500">
+                {selectedSizeLabel}
+              </div>
+            </FootballSeasonSectionCard>
+            <FootballSeasonSectionCard theme={theme} className="px-3 py-3 text-center text-xs font-semibold">
+              Preview
+              <div className="mt-1 text-[11px] font-medium text-slate-500">
+                Live update
+              </div>
+            </FootballSeasonSectionCard>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const FootballSeasonPreviewFrame = ({
+  theme,
+  children,
+}: {
+  theme: any;
+  children: React.ReactNode;
+}) => (
+  <div
+    className={`relative min-h-[780px] w-full overflow-hidden rounded-[32px] transition-all duration-500 ${theme.pageClass} ${theme.shellClass}`}
+  >
+    <div className={`absolute inset-0 opacity-20 ${theme.headerOverlayClass}`} />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.85),_transparent_38%)]" />
+    <div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-white/80 blur-3xl" />
+    <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-slate-200/50 blur-3xl" />
+    <div className="relative z-10">{children}</div>
+  </div>
+);
+
+const FootballSeasonPreviewSection = ({
+  theme,
+  id,
+  children,
+}: {
+  theme: any;
+  id: string;
+  children: React.ReactNode;
+}) => (
+  <section
+    id={id}
+    className={`relative overflow-hidden scroll-mt-28 ${theme.sectionClass}`}
+  >
+    <div className="relative">{children}</div>
+  </section>
 );
 
 const MenuCard = ({
@@ -454,8 +531,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           d.setDate(d.getDate() + 10);
           return d.toISOString().split("T")[0];
         })(),
-      fontId:
-        (config as any)?.prefill?.fontId || FOOTBALL_FONTS[0]?.id || "anton",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
       passcodeRequired: false,
       passcode: "",
@@ -474,16 +549,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         ]) || [];
       return Object.fromEntries(entries);
     });
-    const [themeId, setThemeId] = useState(
-      config.themes[0]?.id ?? "default-theme"
+    const [pageTemplateId, setPageTemplateId] = useState(
+      DEFAULT_GYM_MEET_TEMPLATE_ID
     );
     const [activeView, setActiveView] = useState<string>("main");
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
-    const [themesExpanded, setThemesExpanded] = useState(
-      config.themesExpandedByDefault ?? false
-    );
     const [initializingEdit, setInitializingEdit] = useState(
       Boolean(editEventId)
     );
@@ -501,8 +573,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       previewTouchHandlers,
       drawerTouchHandlers,
     } = useMobileDrawer();
-    const fontListRef = useRef<HTMLDivElement | null>(null);
-    const [fontScrollTop, setFontScrollTop] = useState(0);
     const updateData = useCallback((field: string, value: any) => {
       setData((prev) => {
         const next = cloneState(prev || {});
@@ -518,13 +588,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         return { ...prev, [id]: next };
       });
     }, []);
-
-    // Expand themes when Design view is opened
-    useEffect(() => {
-      if (activeView === "design") {
-        setThemesExpanded(true);
-      }
-    }, [activeView]);
 
     // Load existing event data when editing
     useEffect(() => {
@@ -584,7 +647,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 ? existing.rsvpEnabled
                 : prev.rsvpEnabled,
             rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
-            fontId: existing.fontId || prev.fontId,
             fontSize: existing.fontSize || prev.fontSize,
             passcodeRequired: hasPasscode,
             passcode: "", // Never load plain passcode for security
@@ -609,36 +671,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             }));
           }
 
-          const incomingThemeId =
-            existing.themeId ||
-            existing.theme?.id ||
-            existing.theme?.slug ||
-            existing.templateConfig?.themeId;
-
-          if (incomingThemeId) {
-            const themeExists = config.themes.find(
-              (t) => t.id === incomingThemeId
-            );
-            setThemeId(themeExists ? incomingThemeId : config.themes[0]?.id);
-          }
-
-          // Validate font + size after state settles
-          setTimeout(() => {
-            setData((prev) => {
-              const fontExists = FOOTBALL_FONTS.find(
-                (f) => f.id === prev.fontId
-              );
-              const sizeExists = FONT_SIZE_OPTIONS.find(
-                (o) => o.id === prev.fontSize
-              );
-              if (fontExists && sizeExists) return prev;
-              return {
-                ...prev,
-                fontId: fontExists ? prev.fontId : FOOTBALL_FONTS[0]?.id,
-                fontSize: sizeExists ? prev.fontSize : "medium",
-              };
-            });
-          }, 100);
+          const incomingTemplateId =
+            existing.pageTemplateId ||
+            existing.templateConfig?.pageTemplateId ||
+            existing.templateConfig?.themeId ||
+            existing.themeId;
+          setPageTemplateId(
+            isGymMeetTemplateId(incomingTemplateId)
+              ? incomingTemplateId
+              : DEFAULT_GYM_MEET_TEMPLATE_ID
+          );
         } catch {
           // ignore to keep edit usable
         } finally {
@@ -649,46 +691,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editEventId]);
 
-    // Ensure headline fonts are available in the designer/preview
-    useEffect(() => {
-      let link =
-        document.querySelector<HTMLLinkElement>(
-          'link[data-football-fonts="true"]'
-        ) || null;
-      let added = false;
-
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.setAttribute("data-football-fonts", "true");
-        added = true;
-      }
-
-      link.href = FOOTBALL_GOOGLE_FONTS_URL;
-
-      if (added) {
-        document.head.appendChild(link);
-      }
-
-      return () => {
-        if (added && link?.parentElement) {
-          link.parentElement.removeChild(link);
-        }
-      };
-    }, []);
-
-    // restore scroll inside font list after selection
-    useEffect(() => {
-      if (fontListRef.current) {
-        fontListRef.current.scrollTop = fontScrollTop;
-      }
-    }, [fontScrollTop, data.fontId]);
-
-    const currentTheme =
-      config.themes.find((t) => t.id === themeId) || config.themes[0];
-
-    const selectedFont =
-      FOOTBALL_FONTS.find((f) => f.id === data.fontId) || FOOTBALL_FONTS[0];
+    const currentTemplate = useMemo(
+      () => getGymMeetTemplateMeta(pageTemplateId),
+      [pageTemplateId]
+    );
+    const templateTheme = useMemo(
+      () => resolveFootballSeasonTemplateChrome(pageTemplateId),
+      [pageTemplateId]
+    );
+    const templateTypography = templateTheme.titleTypography;
     const selectedSize =
       FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
       FONT_SIZE_OPTIONS[1];
@@ -716,11 +727,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               time: data.time,
               rsvpEnabled: data.rsvpEnabled,
               rsvpDeadline: data.rsvpDeadline,
-              themeId,
-              theme: currentTheme,
-              fontId: data.fontId,
+              pageTemplateId,
+              themeId: pageTemplateId,
+              theme: currentTemplate,
+              fontId: templateTypography.id,
               fontSize: data.fontSize,
-              fontFamily: selectedFont?.css,
+              fontFamily: templateTypography.fontFamilyName,
               fontSizeClass: selectedSize?.className,
               advancedSections: normalizedAdvanced,
               customFields: {
@@ -742,7 +754,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.date,
       data.details,
       data.extra,
-      data.fontId,
       data.fontSize,
       data.hero,
       data.rsvpDeadline,
@@ -750,36 +761,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.time,
       data.title,
       data.venue,
-      currentTheme,
-      selectedFont,
+      currentTemplate,
+      templateTypography,
       selectedSize,
-      themeId,
+      pageTemplateId,
     ]);
 
-    const isDarkBackground = useMemo(() => {
-      const bg = currentTheme?.bg?.toLowerCase() ?? "";
-      const id = currentTheme?.id?.toLowerCase() ?? "";
-      const darkTokens = [
-        "black",
-        "slate-9",
-        "stone-9",
-        "neutral-9",
-        "gray-9",
-        "grey-9",
-        "indigo-9",
-        "purple-9",
-        "violet-9",
-        "emerald-9",
-        "teal-9",
-        "blue-9",
-        "navy",
-        "midnight",
-      ];
-      const hasDarkToken = darkTokens.some((token) => bg.includes(token));
-      const hasDarkHex = /#0[0-9a-f]{5,}/i.test(bg);
-      const idHintsDark = /(night|dark)/i.test(id);
-      return hasDarkToken || hasDarkHex || idHintsDark;
-    }, [currentTheme]);
+    const isDarkBackground = templateTheme.isDark;
 
     const EditorLayout = ({
       title,
@@ -815,18 +803,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
-    const rawTextClass = currentTheme?.text || "";
-    const forceLightText =
-      isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
-    const textClass = forceLightText
-      ? "text-white"
-      : rawTextClass || "text-white";
-    const accentClass = forceLightText
-      ? "text-white"
-      : currentTheme?.accent || textClass;
-    const usesLightText = /text-(white|slate-50|neutral-50|gray-50)/.test(
-      textClass
-    );
+    const textClass = templateTheme.textClass;
+    const accentClass =
+      templateTheme.accentClass || (isDarkBackground ? "text-white" : "text-slate-700");
+    const usesLightText =
+      /text-(white|slate-50|neutral-50|gray-50|amber-50|cyan-50|indigo-50|emerald-50|sky-50|stone-50|zinc-50)/.test(
+        textClass
+      ) || isDarkBackground;
     const headingShadow = usesLightText
       ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" }
       : undefined;
@@ -834,13 +817,76 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
       : undefined;
     const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
-    const headingFontStyle = {
-      fontFamily: selectedFont?.css,
+    const heroHeadingFontStyle = {
+      ...templateTypography.fontStyle,
+      ...(templateTheme.titleStyle || {}),
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
+    const sectionHeadingFontStyle = {
+      ...templateTypography.fontStyle,
+      ...(templateTheme.sectionTitleStyle || {}),
+      ...(headingShadow || {}),
+    };
     const headingSizeClass =
       selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
+
+    const advancedSectionPreviewContext = useMemo(
+      () => ({
+        textClass,
+        accentClass,
+        titleTypographyClassName: templateTypography.cardClassName,
+        sectionTitleClass: templateTheme.sectionTitleClass || accentClass,
+        sectionTitleStyle: templateTheme.sectionTitleStyle,
+        sectionCardClass: templateTheme.sectionCardClass,
+        sectionMutedClass: templateTheme.sectionMutedClass,
+        summaryCardClass: templateTheme.summaryCardClass,
+        headingShadow,
+        bodyShadow,
+        titleColor,
+        headingFontStyle: sectionHeadingFontStyle,
+      }),
+      [
+        accentClass,
+        bodyShadow,
+        headingShadow,
+        sectionHeadingFontStyle,
+        templateTheme.sectionCardClass,
+        templateTheme.sectionMutedClass,
+        templateTheme.sectionTitleClass,
+        templateTheme.sectionTitleStyle,
+        templateTheme.summaryCardClass,
+        templateTypography.cardClassName,
+        textClass,
+        titleColor,
+      ]
+    );
+
+    const advancedSectionPreviews = useMemo(
+      () =>
+        (config.advancedSections || [])
+          .map((section) => {
+            if (!section.renderPreview) return null;
+            const previewNode = section.renderPreview({
+              state: advancedState?.[section.id],
+              ...advancedSectionPreviewContext,
+            });
+            if (previewNode == null) return null;
+            return {
+              section,
+              previewNode,
+            };
+          })
+          .filter(
+            (
+              entry
+            ): entry is {
+              section: AdvancedSectionSpec;
+              previewNode: React.ReactNode;
+            } => entry !== null
+          ),
+      [advancedSectionPreviewContext, advancedState, config.advancedSections]
+    );
 
     const locationParts = [data.venue, data.city, data.state]
       .filter(Boolean)
@@ -938,6 +984,23 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return () => observer.disconnect();
     }, [navItems]);
 
+    const handleSectionSelect = useCallback(
+      (sectionId: string) => {
+        const el = document.getElementById(sectionId);
+        if (el) {
+          el.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+        setActiveSection(sectionId);
+        if (typeof window !== "undefined") {
+          window.history.replaceState(null, "", `#${sectionId}`);
+        }
+      },
+      []
+    );
+
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
@@ -1004,19 +1067,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           return data.hero;
         })();
 
-        const validThemeId =
-          themeId && config.themes.find((t) => t.id === themeId)
-            ? themeId
-            : config.themes[0]?.id;
-        const themeToSave =
-          config.themes.find((t) => t.id === validThemeId) || config.themes[0];
-        const currentSelectedFont =
-          FOOTBALL_FONTS.find((f) => f.id === data.fontId) || FOOTBALL_FONTS[0];
         const currentSelectedSize =
           FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
           FONT_SIZE_OPTIONS[1];
-        const validFontId = currentSelectedFont?.id || data.fontId;
+        const derivedFontId = templateTypography.id;
         const validFontSize = currentSelectedSize?.id || data.fontSize;
+        const themeToSave = {
+          id: pageTemplateId,
+          name: currentTemplate?.name || "Launchpad Editorial",
+          bg: currentTemplate?.previewClassName || "",
+          text: currentTemplate?.previewAccentClassName || "",
+          accent: currentTemplate?.previewAccentClassName || "",
+          preview: currentTemplate?.previewClassName || "",
+        };
         const addressToSave =
           data.extra?.stadiumAddress ||
           data.extra?.address ||
@@ -1030,7 +1093,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           detailFields: config.detailFields,
           advancedSectionIds: config.advancedSections?.map((s) => s.id) || [],
           rsvpCopy,
-          fontHref: FOOTBALL_GOOGLE_FONTS_URL,
+          pageTemplateId,
         };
 
         const normalizedAdvancedSections =
@@ -1058,13 +1121,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             numberOfGuests: 0,
             templateId: config.slug,
             templateConfig: templateConfigForSave,
-            themeId: validThemeId,
+            pageTemplateId,
+            themeId: pageTemplateId,
             theme: themeToSave,
-            fontId: validFontId,
+            fontId: derivedFontId,
             fontSize: validFontSize,
-            fontFamily: currentSelectedFont?.css,
+            fontFamily: templateTypography.fontFamilyName,
             fontSizeClass: currentSelectedSize?.className,
-            fontHref: FOOTBALL_GOOGLE_FONTS_URL,
             ...(loadedDiscoverySource && {
               discoverySource: {
                 ...loadedDiscoverySource,
@@ -1107,6 +1170,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             body: JSON.stringify({ title: payload.title, data: payload.data }),
           });
           if (!res.ok) throw new Error("Failed to update event");
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("history:updated", {
+                detail: { id: editEventId },
+              })
+            );
+          }
           const redirectUrl = buildEventPath(editEventId, payload.title, {
             updated: true,
             t: Date.now(),
@@ -1139,6 +1209,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const json = await res.json().catch(() => ({}));
           const id = (json as any)?.id as string | undefined;
           if (!id) throw new Error("Failed to create event");
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("history:created", {
+                detail: {
+                  id,
+                  title: payload.title,
+                  created_at: (json as any)?.created_at || new Date().toISOString(),
+                  data: payload.data,
+                },
+              })
+            );
+          }
           router.push(buildEventPath(id, payload.title, { created: true }));
         }
       } catch (err: any) {
@@ -1159,12 +1241,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.rsvpEnabled,
       data.rsvpDeadline,
       data.extra,
-      data.fontId,
       data.fontSize,
       data.passcodeRequired,
       data.passcode,
       advancedState,
-      themeId,
+      pageTemplateId,
+      templateTypography,
       locationParts,
       config.category,
       config.displayName,
@@ -1293,12 +1375,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const handleAppleCalendar = () => {
       const details = buildEventDetails();
-      const icsPath = buildIcsUrl(details);
-      const absoluteIcs =
-        typeof window !== "undefined"
-          ? `${window.location.origin}${icsPath}`
-          : icsPath;
-      window.location.href = absoluteIcs;
+      openAppleCalendarIcs(buildIcsUrl(details));
     };
 
     const renderMainMenu = () => (
@@ -1351,7 +1428,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           />
           <MenuCard
             title="Design"
-            desc="Theme presets and typography."
+            desc="Gym page templates and title size."
             icon={<Palette size={18} />}
             onClick={() => setActiveView("design")}
           />
@@ -1507,99 +1584,45 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         onBack={() => setActiveView("main")}
         showBack
       >
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <button
-              onClick={() => setThemesExpanded(!themesExpanded)}
-              className="w-full flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-700 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Palette size={16} /> Theme ({config.themes.length})
+        <div className="space-y-4">
+          <TemplateSelector
+            value={pageTemplateId}
+            onChange={setPageTemplateId}
+          />
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                  Title Size
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Controls the preview title hierarchy.
+                </p>
               </div>
-              {themesExpanded ? (
-                <ChevronUp size={16} />
-              ) : (
-                <ChevronDown size={16} />
-              )}
-            </button>
-            {themesExpanded && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-none overflow-visible pr-1">
-                {config.themes.map((theme) => (
-                  <ThemeSwatch
-                    key={theme.id}
-                    theme={theme}
-                    active={themeId === theme.id}
-                    onClick={() => setThemeId(theme.id)}
-                  />
-                ))}
+              <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {selectedSize.label}
               </div>
-            )}
-            {!themesExpanded && (
-              <div className="flex items-center gap-2 text-sm text-slate-600">
-                <div
-                  className={`w-3 h-3 rounded-full border shadow-sm ${
-                    currentTheme.preview?.split(" ")[0] || "bg-slate-200"
-                  }`}
-                ></div>
-                <span>Current theme: {currentTheme.name}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="pt-2 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Typography
-              </p>
             </div>
-            <div
-              ref={fontListRef}
-              className="grid grid-cols-2 gap-3 max-h-none overflow-visible pr-1"
-            >
-              {FOOTBALL_FONTS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => {
-                    setFontScrollTop(fontListRef.current?.scrollTop || 0);
-                    setData((p) => ({ ...p, fontId: f.id }));
-                  }}
-                  className={`border rounded-lg p-3 text-left transition-colors ${
-                    data.fontId === f.id
-                      ? "border-indigo-600 bg-indigo-50"
-                      : "border-slate-200 hover:border-indigo-300"
-                  }`}
-                >
-                  <div
-                    className="text-base font-semibold"
-                    style={{ fontFamily: f.css }}
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {FONT_SIZE_OPTIONS.map((option) => {
+                const active = option.id === selectedSize.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => updateData("fontSize", option.id)}
+                    className={`rounded-xl border px-3 py-3 text-sm font-semibold transition ${
+                      active
+                        ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
+                    }`}
                   >
-                    {f.name}
-                  </div>
-                </button>
-              ))}
+                    {option.label}
+                  </button>
+                );
+              })}
             </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">
-              Text Size
-            </label>
-            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
-              {["small", "medium", "large"].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setData((p) => ({ ...p, fontSize: size }))}
-                  className={`py-2 text-sm font-medium rounded-md transition-all capitalize ${
-                    data.fontSize === size
-                      ? "bg-white text-indigo-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
+          </section>
         </div>
       </EditorLayout>
     );
@@ -1892,350 +1915,290 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               overscrollBehavior: "contain",
             }}
           >
-          <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
-            <div
-              className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
-            >
-              <div className="relative z-10">
-                <div
-                  className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
+          <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1120px] my-4 md:my-8 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
+              <div className="mt-4 md:mt-6">
+                <FootballSeasonPreviewFrame
+                  theme={templateTheme}
                 >
-                  <div>
-                    <h1
-                      className={`${headingSizeClass} font-serif mb-2 leading-tight ${textClass}`}
-                      style={headingFontStyle}
-                    >
-                      {data.title || config.displayName}
-                    </h1>
-                    {infoLine}
-                    {addressLine && (
-                      <div
-                        className={`mt-2 text-sm opacity-80 flex items-center gap-2 ${textClass}`}
-                        style={bodyShadow}
-                      >
-                        <MapPin size={14} />
-                        <span className="truncate">{addressLine}</span>
-                      </div>
-                    )}
-                    {navItems.length > 1 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {navItems.map((item) => {
-                          const isActive = activeSection === item.id;
-                          return (
-                            <a
-                              key={item.id}
-                              href={`#${item.id}`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                const el = document.getElementById(item.id);
-                                if (el) {
-                                  el.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "start",
-                                  });
-                                  setActiveSection(item.id);
-                                  window.history.replaceState(
-                                    null,
-                                    "",
-                                    `#${item.id}`
-                                  );
-                                }
-                              }}
-                              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
-                                isActive
-                                  ? "bg-white/85 text-slate-900 border-white shadow"
-                                  : "bg-white/10 text-inherit border-white/20 hover:bg-white/20"
-                              }`}
-                            >
-                              {item.label}
-                            </a>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  <FootballSeasonHeader
+                    theme={templateTheme}
+                    title={data.title || config.displayName}
+                    infoLine={infoLine}
+                    addressLine={addressLine}
+                    heroSrc={data.hero}
+                    headingSizeClass={headingSizeClass}
+                    headingFontStyle={heroHeadingFontStyle}
+                    bodyShadow={bodyShadow}
+                    selectedSizeLabel={selectedSize.label}
+                    templateName={currentTemplate.name}
+                    isDiscoveryEdit={isDiscoveryEdit}
+                  />
 
-                <div className="relative w-full aspect-video bg-black/10">
-                  {data.hero ? (
-                    <img
-                      src={data.hero}
-                      alt="Hero"
-                      className="w-full h-full object-cover"
+                  <div className="px-5 pb-2 pt-5 md:px-8">
+                    <FootballSeasonSectionNav
+                      theme={templateTheme}
+                      navItems={navItems}
+                      activeSection={activeSection}
+                      onSelect={handleSectionSelect}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-slate-200/50">
-                      <span className="text-slate-400 text-sm">Hero Image</span>
-                    </div>
-                  )}
-                </div>
-
-                <section
-                  id="details"
-                  className="py-10 border-t border-white/10 px-6 md:px-10"
-                >
-                  <h2
-                    className={`text-2xl mb-3 ${accentClass}`}
-                    style={headingFontStyle}
-                  >
-                    Details
-                  </h2>
-                  {data.details ? (
-                    <p
-                      className={`text-base leading-relaxed opacity-90 whitespace-pre-wrap ${textClass}`}
-                      style={bodyShadow}
-                    >
-                      {data.details}
-                    </p>
-                  ) : (
-                    <p
-                      className={`text-sm opacity-70 ${textClass}`}
-                      style={bodyShadow}
-                    >
-                      Add a short description so guests know what to expect.
-                    </p>
-                  )}
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {config.detailFields.map((field) => {
-                      const val = data.extra[field.key];
-                      return (
-                        <div
-                          key={field.key}
-                          className="bg-white/5 border border-white/10 rounded-lg p-4"
-                        >
-                          <div
-                            className={`text-xs uppercase tracking-wide opacity-80 ${textClass}`}
-                            style={bodyShadow}
-                          >
-                            {field.label}
-                          </div>
-                          <div
-                            className={`mt-2 text-base font-semibold opacity-90 ${textClass}`}
-                            style={bodyShadow}
-                          >
-                            {val || "—"}
-                          </div>
-                        </div>
-                      );
-                    })}
                   </div>
-                </section>
 
-                {config.advancedSections?.map((section) =>
-                  section.renderPreview ? (
-                    <section
-                      key={section.id}
-                      id={section.id}
-                      className="py-8 border-t border-white/10 px-6 md:px-10"
-                    >
-                      {section.renderPreview({
-                        state: advancedState?.[section.id],
-                        textClass,
-                        accentClass,
-                        headingShadow,
-                        bodyShadow,
-                        titleColor,
-                        headingFontStyle,
-                      })}
-                    </section>
-                  ) : null
-                )}
-
-                {data.rsvpEnabled && (
-                  <section
-                    id="rsvp"
-                    className="max-w-2xl mx-auto text-center p-6 md:p-10"
+                  <FootballSeasonPreviewSection
+                    theme={templateTheme}
+                    id="details"
                   >
                     <h2
-                      className={`text-2xl mb-6 ${accentClass}`}
-                      style={headingFontStyle}
+                      className={`${templateTypography.cardClassName} mb-3 text-2xl ${templateTheme.sectionTitleClass || accentClass}`}
+                      style={sectionHeadingFontStyle}
                     >
-                      {rsvpCopy.editorTitle}
+                      Details
                     </h2>
-                    <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
-                      {!rsvpSubmitted ? (
-                        <div className="space-y-6">
-                          <div className="text-center mb-4">
-                              <p className="opacity-80">
-                              {data.rsvpDeadline
-                                ? `Kindly respond by ${new Date(
-                                    data.rsvpDeadline
-                                  ).toLocaleDateString()}`
-                                : "Please confirm attendance"}
-                              </p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                              Full Name
-                            </label>
-                            <input
-                              className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                              placeholder="Guest Name"
-                            />
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRsvpSubmitted(true);
-                            }}
-                            className="w-full py-4 mt-2 bg-white text-slate-900 font-bold uppercase tracking-widest text-sm rounded-lg hover:bg-slate-200 transition-colors shadow-lg"
+                    {data.details ? (
+                      <p
+                        className={`whitespace-pre-wrap text-base leading-relaxed opacity-90 ${textClass}`}
+                        style={bodyShadow}
+                      >
+                        {data.details}
+                      </p>
+                    ) : (
+                      <p
+                        className={`text-sm opacity-70 ${textClass}`}
+                        style={bodyShadow}
+                      >
+                        Add a short description so guests know what to expect.
+                      </p>
+                    )}
+                    <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {config.detailFields.map((field) => {
+                        const val = data.extra[field.key];
+                        return (
+                          <FootballSeasonSectionCard
+                            key={field.key}
+                            theme={templateTheme}
                           >
-                            Send Attendance
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="text-4xl mb-4">🎉</div>
-                          <h3 className="text-2xl font-serif mb-2">
-                            Thank you!
-                          </h3>
-                          <p className="opacity-70">Your attendance response has been sent.</p>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRsvpSubmitted(false);
-                              setRsvpAttending("yes");
-                            }}
-                            className="text-sm underline mt-6 opacity-50 hover:opacity-100"
-                          >
-                            Send another response
-                          </button>
-                        </div>
-                      )}
+                            <div
+                              className={`text-xs uppercase tracking-wide opacity-80 ${textClass}`}
+                              style={bodyShadow}
+                            >
+                              {field.label}
+                            </div>
+                            <div
+                              className={`mt-2 text-base font-semibold opacity-90 ${textClass}`}
+                              style={bodyShadow}
+                            >
+                              {val || "—"}
+                            </div>
+                          </FootballSeasonSectionCard>
+                        );
+                      })}
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-3 justify-center">
-                      <button
-                        onClick={() => handleShare()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Share2 size={16} />
-                        <span className="hidden sm:inline">Share link</span>
-                      </button>
-                      <button
-                        onClick={() => handleGoogleCalendar()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Image
-                          src="/brands/google-white.svg"
-                          alt="Google"
-                          width={16}
-                          height={16}
-                          className="w-4 h-4"
-                        />
-                        <span className="hidden sm:inline">Google Cal</span>
-                      </button>
-                      <button
-                        onClick={() => handleAppleCalendar()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Image
-                          src="/brands/apple-white.svg"
-                          alt="Apple"
-                          width={16}
-                          height={16}
-                          className="w-4 h-4"
-                        />
-                        <span className="hidden sm:inline">Apple Cal</span>
-                      </button>
-                      <button
-                        onClick={() => handleOutlookCalendar()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Image
-                          src="/brands/microsoft-white.svg"
-                          alt="Microsoft"
-                          width={16}
-                          height={16}
-                          className="w-4 h-4"
-                        />
-                        <span className="hidden sm:inline">Outlook</span>
-                      </button>
-                    </div>
-                  </section>
-                )}
+                  </FootballSeasonPreviewSection>
 
-                <footer
-                  className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}
-                >
-                  <a
-                    href="https://envitefy.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="space-y-1 inline-block no-underline"
+                  {advancedSectionPreviews.map(({ section, previewNode }) => (
+                    <FootballSeasonPreviewSection
+                      theme={templateTheme}
+                      key={section.id}
+                      id={section.id}
+                    >
+                      {previewNode}
+                    </FootballSeasonPreviewSection>
+                  ))}
+
+                  {data.rsvpEnabled && (
+                    <FootballSeasonPreviewSection
+                      theme={templateTheme}
+                      id="rsvp"
+                    >
+                      <h2
+                        className={`${templateTypography.cardClassName} mb-6 text-2xl ${templateTheme.sectionTitleClass || accentClass}`}
+                        style={sectionHeadingFontStyle}
+                      >
+                        {rsvpCopy.editorTitle}
+                      </h2>
+                      <div className={`${templateTheme.sectionCardClass} p-8 text-left md:p-10`}>
+                        {!rsvpSubmitted ? (
+                          <div className="space-y-6">
+                            <div className="mb-4 text-center">
+                              <p className={`opacity-80 ${textClass}`}>
+                                {data.rsvpDeadline
+                                  ? `Kindly respond by ${new Date(
+                                      data.rsvpDeadline
+                                    ).toLocaleDateString()}`
+                                  : "Please confirm attendance"}
+                              </p>
+                            </div>
+                            <div>
+                              <label className={`mb-2 block text-xs font-bold uppercase tracking-wider opacity-70 ${textClass}`}>
+                                Full Name
+                              </label>
+                              <input
+                                className="w-full rounded-lg border border-white/20 bg-white/10 p-4 text-inherit placeholder:text-inherit/30 outline-none transition-colors focus:border-white/50"
+                                placeholder="Guest Name"
+                              />
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRsvpSubmitted(true);
+                              }}
+                              className="mt-2 w-full rounded-lg bg-white py-4 text-sm font-bold uppercase tracking-widest text-slate-900 shadow-lg transition-colors hover:bg-slate-200"
+                            >
+                              Send Attendance
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="py-12 text-center">
+                            <div className="mb-4 text-4xl">🎉</div>
+                            <h3 className={`mb-2 text-2xl font-serif ${textClass}`}>Thank you!</h3>
+                            <p className={`opacity-70 ${textClass}`}>
+                              Your attendance response has been sent.
+                            </p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRsvpSubmitted(false);
+                                setRsvpAttending("yes");
+                              }}
+                              className="mt-6 text-sm underline opacity-50 hover:opacity-100"
+                            >
+                              Send another response
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-4 flex flex-wrap justify-center gap-3">
+                        <button
+                          onClick={() => handleShare()}
+                          className="flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm transition-colors hover:bg-white/20"
+                        >
+                          <Share2 size={16} />
+                          <span className="hidden sm:inline">Share link</span>
+                        </button>
+                        <button
+                          onClick={() => handleGoogleCalendar()}
+                          className="flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm transition-colors hover:bg-white/20"
+                        >
+                          <Image
+                            src="/brands/google-white.svg"
+                            alt="Google"
+                            width={16}
+                            height={16}
+                            className="h-4 w-4"
+                          />
+                          <span className="hidden sm:inline">Google Cal</span>
+                        </button>
+                        <button
+                          onClick={() => handleAppleCalendar()}
+                          className="flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm transition-colors hover:bg-white/20"
+                        >
+                          <Image
+                            src="/brands/apple-white.svg"
+                            alt="Apple"
+                            width={16}
+                            height={16}
+                            className="h-4 w-4"
+                          />
+                          <span className="hidden sm:inline">Apple Cal</span>
+                        </button>
+                        <button
+                          onClick={() => handleOutlookCalendar()}
+                          className="flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm transition-colors hover:bg-white/20"
+                        >
+                          <Image
+                            src="/brands/microsoft-white.svg"
+                            alt="Microsoft"
+                            width={16}
+                            height={16}
+                            className="h-4 w-4"
+                          />
+                          <span className="hidden sm:inline">Outlook</span>
+                        </button>
+                      </div>
+                    </FootballSeasonPreviewSection>
+                  )}
+
+                  <footer
+                    className={`mt-1 border-t border-white/10 py-8 text-center ${textClass}`}
                   >
-                    <p className="text-sm opacity-60" style={bodyShadow}>
-                      Powered By Envitefy. Create. Share. Enjoy.
-                    </p>
-                    <p className="text-xs opacity-50" style={bodyShadow}>
-                      Create yours now.
-                    </p>
-                  </a>
-                  <div className="flex items-center justify-center gap-4 mt-4">
                     <a
-                      href="https://www.facebook.com/envitefy"
+                      href="https://envitefy.com"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="opacity-60 hover:opacity-100 transition-opacity"
-                      aria-label="Facebook"
+                      className="inline-block space-y-1 no-underline"
                     >
-                      <Image
-                        src="/email/social-facebook.svg"
-                        alt="Facebook"
-                        width={24}
-                        height={24}
-                        className="w-6 h-6"
-                      />
+                      <p className="text-sm opacity-60" style={bodyShadow}>
+                        Powered By Envitefy. Create. Share. Enjoy.
+                      </p>
+                      <p className="text-xs opacity-50" style={bodyShadow}>
+                        Create yours now.
+                      </p>
                     </a>
-                    <a
-                      href="https://www.instagram.com/envitefy/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="opacity-60 hover:opacity-100 transition-opacity"
-                      aria-label="Instagram"
-                    >
-                      <Image
-                        src="/email/social-instagram.svg"
-                        alt="Instagram"
-                        width={24}
-                        height={24}
-                        className="w-6 h-6"
-                      />
-                    </a>
-                    <a
-                      href="https://www.tiktok.com/@envitefy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="opacity-60 hover:opacity-100 transition-opacity"
-                      aria-label="TikTok"
-                    >
-                      <Image
-                        src="/email/social-tiktok.svg"
-                        alt="TikTok"
-                        width={24}
-                        height={24}
-                        className="w-6 h-6"
-                      />
-                    </a>
-                    <a
-                      href="https://www.youtube.com/@Envitefy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="opacity-60 hover:opacity-100 transition-opacity"
-                      aria-label="YouTube"
-                    >
-                      <Image
-                        src="/email/social-youtube.svg"
-                        alt="YouTube"
-                        width={24}
-                        height={24}
-                        className="w-6 h-6"
-                      />
-                    </a>
-                  </div>
-                </footer>
+                    <div className="mt-4 flex items-center justify-center gap-4">
+                      <a
+                        href="https://www.facebook.com/envitefy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="opacity-60 transition-opacity hover:opacity-100"
+                        aria-label="Facebook"
+                      >
+                        <Image
+                          src="/email/social-facebook.svg"
+                          alt="Facebook"
+                          width={24}
+                          height={24}
+                          className="h-6 w-6"
+                        />
+                      </a>
+                      <a
+                        href="https://www.instagram.com/envitefy/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="opacity-60 transition-opacity hover:opacity-100"
+                        aria-label="Instagram"
+                      >
+                        <Image
+                          src="/email/social-instagram.svg"
+                          alt="Instagram"
+                          width={24}
+                          height={24}
+                          className="h-6 w-6"
+                        />
+                      </a>
+                      <a
+                        href="https://www.tiktok.com/@envitefy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="opacity-60 transition-opacity hover:opacity-100"
+                        aria-label="TikTok"
+                      >
+                        <Image
+                          src="/email/social-tiktok.svg"
+                          alt="TikTok"
+                          width={24}
+                          height={24}
+                          className="h-6 w-6"
+                        />
+                      </a>
+                      <a
+                        href="https://www.youtube.com/@Envitefy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="opacity-60 transition-opacity hover:opacity-100"
+                        aria-label="YouTube"
+                      >
+                        <Image
+                          src="/email/social-youtube.svg"
+                          alt="YouTube"
+                          width={24}
+                          height={24}
+                          className="h-6 w-6"
+                        />
+                      </a>
+                    </div>
+                  </footer>
+                </FootballSeasonPreviewFrame>
               </div>
             </div>
-          </div>
           </div>
         )}
 

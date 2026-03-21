@@ -249,6 +249,15 @@ const splitAnnouncementText = (text: string) => {
   return { title: "", body: normalized };
 };
 
+const buildPreviewTitleClass = (
+  titleTypographyClassName: string | undefined,
+  sectionTitleClass: string | undefined,
+  accentClass: string
+) =>
+  [titleTypographyClassName, sectionTitleClass || accentClass]
+    .filter(Boolean)
+    .join(" ");
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION 1: GAME SCHEDULE
 // ═══════════════════════════════════════════════════════════════════════════
@@ -491,6 +500,10 @@ const gameScheduleSection = {
     state,
     textClass,
     accentClass,
+    titleTypographyClassName,
+    sectionTitleClass,
+    sectionCardClass,
+    sectionMutedClass,
     headingShadow,
     bodyShadow,
     titleColor,
@@ -498,6 +511,10 @@ const gameScheduleSection = {
   }) => {
     const games: Game[] = state?.games || [];
     if (games.length === 0) return null;
+    const cardClass =
+      sectionCardClass || "bg-white/5 border border-white/10 rounded-lg p-4";
+    const mutedBadgeClass =
+      sectionMutedClass || "bg-white/10 text-white/60";
 
     const formatDate = (d: string) => {
       if (!d) return "";
@@ -517,41 +534,35 @@ const gameScheduleSection = {
 
     return (
       <>
-        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
+        <h2
+          className={`text-2xl mb-4 ${buildPreviewTitleClass(
+            titleTypographyClassName,
+            sectionTitleClass,
+            accentClass
+          )}`}
+          style={headingFontStyle}
+        >
           Game Schedule
         </h2>
         <div className="space-y-3">
           {games.map((game) => (
-            <div
-              key={game.id}
-              className="bg-white/5 border border-white/10 rounded-lg p-4"
-            >
+            <div key={game.id} className={cardClass}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      game.homeAway === "home"
-                        ? "bg-green-500/20 text-green-200"
-                        : "bg-blue-500/20 text-blue-200"
-                    }`}
+                    className={`${mutedBadgeClass} rounded`}
                   >
                     {game.homeAway === "home" ? "HOME" : "AWAY"}
                   </span>
                   {game.conference && (
-                    <span className="px-2 py-0.5 bg-purple-500/20 text-purple-200 rounded text-xs">
+                    <span className={`${mutedBadgeClass} rounded`}>
                       CONF
                     </span>
                   )}
                 </div>
                 {game.result && (
                   <span
-                    className={`px-2 py-1 rounded text-sm font-bold ${
-                      game.result === "W"
-                        ? "bg-green-500/20 text-green-200"
-                        : game.result === "L"
-                        ? "bg-red-500/20 text-red-200"
-                        : "bg-yellow-500/20 text-yellow-200"
-                    }`}
+                    className={`${mutedBadgeClass} rounded px-2 py-1 text-sm font-bold`}
                   >
                     {game.result} {game.score}
                   </span>
@@ -573,13 +584,10 @@ const gameScheduleSection = {
             </div>
           ))}
         </div>
-        <div
-          className="mt-4 flex items-center gap-4 text-sm opacity-70"
-          style={bodyShadow}
-        >
-          <span className={textClass}>
-            {games.filter((g) => g.result === "W").length}W
-          </span>
+      <div className="mt-4 flex items-center gap-4 text-sm opacity-70" style={bodyShadow}>
+        <span className={textClass}>
+          {games.filter((g) => g.result === "W").length}W
+        </span>
           <span className={textClass}>
             {games.filter((g) => g.result === "L").length}L
           </span>
@@ -889,6 +897,10 @@ const rosterSection = {
     state,
     textClass,
     accentClass,
+    titleTypographyClassName,
+    sectionTitleClass,
+    sectionCardClass,
+    sectionMutedClass,
     headingShadow,
     bodyShadow,
     titleColor,
@@ -896,6 +908,10 @@ const rosterSection = {
   }) => {
     const players: Player[] = state?.players || [];
     if (players.length === 0) return null;
+    const cardClass =
+      sectionCardClass || "bg-white/5 border border-white/10 rounded-lg p-4";
+    const mutedBadgeClass =
+      sectionMutedClass || "bg-white/10 text-white/60";
 
     const statusIcon = (s: PlayerStatus) => {
       switch (s) {
@@ -909,30 +925,22 @@ const rosterSection = {
           return "⏳";
       }
     };
-    const statusColor = (s: PlayerStatus) => {
-      switch (s) {
-        case "active":
-          return "bg-green-500/20 text-green-200";
-        case "injured":
-          return "bg-red-500/20 text-red-200";
-        case "ineligible":
-          return "bg-yellow-500/20 text-yellow-200";
-        default:
-          return "bg-white/10 text-white/60";
-      }
-    };
 
     return (
       <>
-        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
+        <h2
+          className={`text-2xl mb-4 ${buildPreviewTitleClass(
+            titleTypographyClassName,
+            sectionTitleClass,
+            accentClass
+          )}`}
+          style={headingFontStyle}
+        >
           Team Roster
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {players.map((player) => (
-            <div
-              key={player.id}
-              className="bg-white/5 border border-white/10 rounded-lg p-4"
-            >
+            <div key={player.id} className={cardClass}>
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
@@ -956,9 +964,7 @@ const rosterSection = {
                   </div>
                 </div>
                 <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${statusColor(
-                    player.status
-                  )}`}
+                  className={`${mutedBadgeClass} rounded px-2 py-1 text-xs font-medium`}
                 >
                   {statusIcon(player.status)}
                 </span>
@@ -966,10 +972,7 @@ const rosterSection = {
             </div>
           ))}
         </div>
-        <div
-          className="mt-4 flex items-center gap-4 text-sm opacity-70"
-          style={bodyShadow}
-        >
+        <div className="mt-4 flex items-center gap-4 text-sm opacity-70" style={bodyShadow}>
           <span className={textClass}>
             {players.filter((p) => p.status === "active").length} Active
           </span>
@@ -1261,6 +1264,10 @@ const practiceSection = {
     state,
     textClass,
     accentClass,
+    titleTypographyClassName,
+    sectionTitleClass,
+    sectionCardClass,
+    sectionMutedClass,
     headingShadow,
     bodyShadow,
     titleColor,
@@ -1268,6 +1275,10 @@ const practiceSection = {
   }) => {
     const blocks: PracticeBlock[] = state?.blocks || [];
     if (blocks.length === 0) return null;
+    const cardClass =
+      sectionCardClass || "bg-white/5 border border-white/10 rounded-lg p-4";
+    const mutedBadgeClass =
+      sectionMutedClass || "bg-white/10 text-white/60";
 
     const formatTime = (t: string) => {
       if (!t) return "";
@@ -1282,15 +1293,19 @@ const practiceSection = {
 
     return (
       <>
-        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
+        <h2
+          className={`text-2xl mb-4 ${buildPreviewTitleClass(
+            titleTypographyClassName,
+            sectionTitleClass,
+            accentClass
+          )}`}
+          style={headingFontStyle}
+        >
           Practice Schedule
         </h2>
         <div className="space-y-3">
           {blocks.map((block) => (
-            <div
-              key={block.id}
-              className="bg-white/5 border border-white/10 rounded-lg p-4"
-            >
+            <div key={block.id} className={cardClass}>
               <div className="flex items-center justify-between mb-2">
                 <div
                   className={`font-semibold ${textClass}`}
@@ -1298,7 +1313,7 @@ const practiceSection = {
                 >
                   {block.day}
                 </div>
-                <span className="px-2 py-0.5 bg-white/10 rounded text-xs">
+                <span className={`${mutedBadgeClass} rounded text-xs`}>
                   {typeLabel(block.type)}
                 </span>
               </div>
@@ -1318,7 +1333,7 @@ const practiceSection = {
                 </div>
               )}
               {block.film && (
-                <div className="mt-2 px-2 py-1 bg-blue-500/20 text-blue-200 rounded text-xs inline-block">
+                <div className={`${mutedBadgeClass} mt-2 rounded px-2 py-1 text-xs inline-block`}>
                   📹 Film Session Before
                 </div>
               )}
@@ -1466,6 +1481,10 @@ const logisticsSection = {
     state,
     textClass,
     accentClass,
+    titleTypographyClassName,
+    sectionTitleClass,
+    sectionCardClass,
+    sectionMutedClass,
     headingShadow,
     bodyShadow,
     titleColor,
@@ -1474,6 +1493,10 @@ const logisticsSection = {
     const info: LogisticsInfo = state || {};
     const hasData = info.travelMode || info.callTime || info.weatherPolicy;
     if (!hasData) return null;
+    const cardClass =
+      sectionCardClass || "bg-white/5 border border-white/10 rounded-lg p-4";
+    const mutedBadgeClass =
+      sectionMutedClass || "bg-white/10 text-white/60";
 
     const formatTime = (t: string) => {
       if (!t) return "";
@@ -1492,12 +1515,19 @@ const logisticsSection = {
 
     return (
       <>
-        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
+        <h2
+          className={`text-2xl mb-4 ${buildPreviewTitleClass(
+            titleTypographyClassName,
+            sectionTitleClass,
+            accentClass
+          )}`}
+          style={headingFontStyle}
+        >
           Travel & Logistics
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           {info.travelMode && (
-            <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
+            <div className={`${cardClass} p-3 text-center`}>
               <div className="text-2xl">
                 {modeIcon[info.travelMode] || "🚐"}
               </div>
@@ -1516,7 +1546,7 @@ const logisticsSection = {
             </div>
           )}
           {info.callTime && (
-            <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
+            <div className={`${cardClass} p-3 text-center`}>
               <div
                 className={`text-xs uppercase tracking-wide opacity-70 ${textClass}`}
                 style={bodyShadow}
@@ -1532,7 +1562,7 @@ const logisticsSection = {
             </div>
           )}
           {info.departureTime && (
-            <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
+            <div className={`${cardClass} p-3 text-center`}>
               <div
                 className={`text-xs uppercase tracking-wide opacity-70 ${textClass}`}
                 style={bodyShadow}
@@ -1565,7 +1595,7 @@ const logisticsSection = {
           </div>
         )}
         {info.weatherPolicy && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mt-4">
+          <div className={`${mutedBadgeClass} mt-4 rounded-lg p-4`}>
             <h3
               className={`font-semibold mb-2 ${textClass}`}
               style={bodyShadow}
@@ -1785,6 +1815,10 @@ const gearSection = {
     state,
     textClass,
     accentClass,
+    titleTypographyClassName,
+    sectionTitleClass,
+    sectionCardClass,
+    sectionMutedClass,
     headingShadow,
     bodyShadow,
     titleColor,
@@ -1794,14 +1828,25 @@ const gearSection = {
     if (items.length === 0) return null;
     const gameGear = items.filter((i) => i.forGames);
     const practiceGear = items.filter((i) => i.forPractice);
+    const cardClass =
+      sectionCardClass || "bg-white/5 border border-white/10 rounded-lg p-4";
+    const mutedBadgeClass =
+      sectionMutedClass || "bg-white/10 text-white/60";
 
     return (
       <>
-        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
+        <h2
+          className={`text-2xl mb-4 ${buildPreviewTitleClass(
+            titleTypographyClassName,
+            sectionTitleClass,
+            accentClass
+          )}`}
+          style={headingFontStyle}
+        >
           Equipment Checklist
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+          <div className={cardClass}>
             <h3
               className={`font-semibold mb-3 ${textClass}`}
               style={bodyShadow}
@@ -1820,7 +1865,7 @@ const gearSection = {
                     {item.name}
                   </span>
                   {item.required && (
-                    <span className="text-xs bg-red-500/20 text-red-200 px-1 rounded">
+                    <span className={`${mutedBadgeClass} rounded px-1 text-xs`}>
                       REQ
                     </span>
                   )}
@@ -1828,7 +1873,7 @@ const gearSection = {
               ))}
             </ul>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+          <div className={cardClass}>
             <h3
               className={`font-semibold mb-3 ${textClass}`}
               style={bodyShadow}
@@ -1847,7 +1892,7 @@ const gearSection = {
                     {item.name}
                   </span>
                   {item.required && (
-                    <span className="text-xs bg-red-500/20 text-red-200 px-1 rounded">
+                    <span className={`${mutedBadgeClass} rounded px-1 text-xs`}>
                       REQ
                     </span>
                   )}
@@ -1985,6 +2030,10 @@ const volunteersSection = {
     state,
     textClass,
     accentClass,
+    titleTypographyClassName,
+    sectionTitleClass,
+    sectionCardClass,
+    sectionMutedClass,
     headingShadow,
     bodyShadow,
     titleColor,
@@ -1994,20 +2043,28 @@ const volunteersSection = {
     if (slots.length === 0) return null;
     const filledCount = slots.filter((s) => s.filled).length;
     const neededCount = slots.filter((s) => !s.filled).length;
+    const cardClass =
+      sectionCardClass || "bg-white/5 border border-white/10 rounded-lg p-4";
+    const mutedBadgeClass =
+      sectionMutedClass || "bg-white/10 text-white/60";
 
     return (
       <>
-        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
+        <h2
+          className={`text-2xl mb-4 ${buildPreviewTitleClass(
+            titleTypographyClassName,
+            sectionTitleClass,
+            accentClass
+          )}`}
+          style={headingFontStyle}
+        >
           Volunteers Needed
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {slots
             .filter((s) => !s.filled)
             .map((slot) => (
-              <div
-                key={slot.id}
-                className="bg-white/5 border border-white/10 rounded-lg p-3 flex items-center justify-between"
-              >
+              <div key={slot.id} className={`${cardClass} p-3 flex items-center justify-between`}>
                 <div>
                   <div
                     className={`font-medium ${textClass}`}
@@ -2027,7 +2084,7 @@ const volunteersSection = {
                       : "TBD"}
                   </div>
                 </div>
-                <span className="px-2 py-1 bg-yellow-500/20 text-yellow-200 rounded text-xs">
+                <span className={`${mutedBadgeClass} rounded px-2 py-1 text-xs`}>
                   NEEDED
                 </span>
               </div>
@@ -2136,23 +2193,38 @@ const announcementsSection = {
       </div>
     );
   },
-  renderPreview: ({ state, textClass, accentClass, bodyShadow, headingFontStyle }) => {
+  renderPreview: ({
+    state,
+    textClass,
+    accentClass,
+    titleTypographyClassName,
+    sectionTitleClass,
+    sectionCardClass,
+    bodyShadow,
+    headingFontStyle,
+  }) => {
     const items: AnnouncementItem[] = state?.items || [];
     if (items.length === 0) return null;
+    const cardClass =
+      sectionCardClass || "bg-white/5 border border-white/10 rounded-lg p-4";
 
     return (
       <>
-        <h2 className={`text-2xl mb-4 ${accentClass}`} style={headingFontStyle}>
+        <h2
+          className={`text-2xl mb-4 ${buildPreviewTitleClass(
+            titleTypographyClassName,
+            sectionTitleClass,
+            accentClass
+          )}`}
+          style={headingFontStyle}
+        >
           Announcements
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {items.map((item) => {
             const split = splitAnnouncementText(item.text);
             return (
-              <div
-                key={item.id}
-                className="bg-white/5 border border-white/10 rounded-lg p-4"
-              >
+              <div key={item.id} className={cardClass}>
                 {split.title ? (
                   <div className={`font-semibold ${textClass}`} style={bodyShadow}>
                     {split.title}

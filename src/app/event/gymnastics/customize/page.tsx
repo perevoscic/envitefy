@@ -44,6 +44,7 @@ import {
 import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
@@ -2083,6 +2084,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             throw new Error("Failed to update event");
           }
 
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("history:updated", {
+                detail: { id: editEventId },
+              })
+            );
+          }
+
           const result = await res.json().catch(() => ({}));
           console.log("[Publish] Update successful, response:", {
             pageTemplateId: result?.data?.pageTemplateId,
@@ -2118,6 +2127,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const json = await res.json().catch(() => ({}));
           const id = (json as any)?.id as string | undefined;
           if (!id) throw new Error("Failed to create event");
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("history:created", {
+                detail: {
+                  id,
+                  title: payload.title,
+                  created_at: (json as any)?.created_at || new Date().toISOString(),
+                  data: payload.data,
+                },
+              })
+            );
+          }
           router.push(buildEventPath(id, payload.title, { created: true }));
         }
       } catch (err: any) {
@@ -2233,20 +2254,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     };
 
-    const buildAbsoluteIcsUrl = (
-      details: ReturnType<typeof buildEventDetails>
-    ) => {
-      const icsPath = buildIcsUrl(details);
-      return typeof window !== "undefined"
-        ? `${window.location.origin}${icsPath}`
-        : icsPath;
-    };
-
-    const buildWebcalUrl = (details: ReturnType<typeof buildEventDetails>) => {
-      const absoluteIcs = buildAbsoluteIcsUrl(details);
-      return absoluteIcs.replace(/^https?/i, "webcal");
-    };
-
     const handleShare = () => {
       const details = buildEventDetails();
       const shareUrl =
@@ -2313,11 +2320,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const handleAppleCalendar = () => {
       const details = buildEventDetails();
-      const absoluteIcs = buildAbsoluteIcsUrl(details);
-      const webcalUrl = buildWebcalUrl(details);
-      openWithFallback(webcalUrl, () => {
-        window.location.href = absoluteIcs;
-      });
+      openAppleCalendarIcs(buildIcsUrl(details));
     };
 
     const renderMainMenu = () => (

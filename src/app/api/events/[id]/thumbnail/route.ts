@@ -4,6 +4,7 @@ import {
   resolveEventHistoryIdentityBySlugOrId,
   type EventHistoryMediaVariant,
 } from "@/lib/db";
+import { parseDataUrlBase64 } from "@/utils/data-url";
 
 export const runtime = "nodejs";
 
@@ -41,22 +42,19 @@ export async function GET(
       return new Response("No thumbnail found", { status: 404 });
     }
 
-    const base64Match = imageDataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
-    if (!base64Match) {
+    const parsed = parseDataUrlBase64(imageDataUrl);
+    if (!parsed || !parsed.mimeType.startsWith("image/")) {
+      return new Response("Invalid image format", { status: 400 });
+    }
+    const imageBuffer = Buffer.from(parsed.base64Payload, "base64");
+    if (!imageBuffer.length) {
       return new Response("Invalid image format", { status: 400 });
     }
 
-    const [, mimeType, base64Data] = base64Match;
-    const imageBuffer = Buffer.from(base64Data, "base64");
-
-    const contentType =
-      mimeType === "png"
-        ? "image/png"
-        : mimeType === "jpeg" || mimeType === "jpg"
-        ? "image/jpeg"
-        : mimeType === "webp"
-        ? "image/webp"
-        : "image/jpeg";
+    const mediaType = parsed.mimeType.split(";")[0].trim();
+    const contentType = /^image\/[\w.+-]+$/i.test(mediaType)
+      ? mediaType
+      : "image/jpeg";
 
     return new Response(imageBuffer, {
       status: 200,

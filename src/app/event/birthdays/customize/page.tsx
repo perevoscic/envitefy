@@ -32,6 +32,7 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import BirthdayRenderer, { type EventData } from "@/components/birthdays/BirthdayRenderer";
 import BirthdayDesignThemes from "./_components/BirthdayDesignThemes";
 import { BIRTHDAY_THEMES } from "./birthdayThemes";
@@ -545,12 +546,7 @@ export default function BirthdayTemplateCustomizePage() {
 
   const handleAppleCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const icsPath = buildIcsUrl(buildCalendarDetails());
-    const absolute =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${icsPath}`
-        : icsPath;
-    window.location.href = absolute;
+    openAppleCalendarIcs(buildIcsUrl(buildCalendarDetails()));
   };
 
   const updateData = (field, value) => {
@@ -1210,6 +1206,20 @@ export default function BirthdayTemplateCustomizePage() {
       }
 
       if (id) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent(editEventId ? "history:updated" : "history:created", {
+              detail: editEventId
+                ? { id }
+                : {
+                    id,
+                    title: payload.title,
+                    created_at: new Date().toISOString(),
+                    data: payload.data,
+                  },
+            })
+          );
+        }
         const params = editEventId
           ? { updated: true, t: Date.now() }
           : { created: true };

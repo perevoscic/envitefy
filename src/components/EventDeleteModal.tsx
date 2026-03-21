@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
+import { emitEventCacheInvalidation } from "@/app/event-cache-context";
 
 interface EventDeleteModalProps {
   eventId: string;
@@ -42,6 +43,10 @@ export default function EventDeleteModal({
           window.dispatchEvent(
             new CustomEvent("history:deleted", { detail: { id: eventId } })
           );
+          emitEventCacheInvalidation({
+            force: true,
+            source: "event-delete-modal",
+          });
         }
       } catch {}
 

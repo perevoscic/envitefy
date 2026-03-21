@@ -57,6 +57,7 @@ import GymMeetTemplateRenderer from "@/components/gym-meet-templates/GymMeetTemp
 import { normalizeGymMeetEventData } from "@/components/gym-meet-templates/normalizeGymMeetEventData";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 
 type ThemeSpec = {
   id: string;
@@ -1058,11 +1059,7 @@ export default function SimpleTemplateView({
 
   const handleAppleCalendar = () => {
     const details = buildEventDetails();
-    const absoluteIcs = buildAbsoluteIcsUrl(details);
-    const webcalUrl = buildWebcalUrl(details);
-    openWithFallback(webcalUrl, () => {
-      window.location.href = absoluteIcs;
-    });
+    openAppleCalendarIcs(buildIcsUrl(details));
   };
 
   const handleCalendar = () => {

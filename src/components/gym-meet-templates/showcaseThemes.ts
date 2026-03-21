@@ -116,7 +116,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
       "bg-[radial-gradient(circle_at_top_left,rgba(124,140,247,0.14),transparent_30%),radial-gradient(circle_at_top_right,rgba(245,167,200,0.14),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(150,213,255,0.12),transparent_24%)]",
     titleClass:
       "max-w-5xl text-5xl font-[800] leading-[0.9] tracking-[-0.06em] text-[#1f2438] sm:text-6xl lg:text-8xl [font-family:'Playfair_Display',Georgia,serif]",
-    titleStyle: { color: "#171b46" },
+    titleStyle: { color: "#171b46", textShadow: "none" },
     subtitleClass: "text-[#61708a]",
     metaClass: "text-[#61708a]",
     heroBadgeClass:
@@ -136,7 +136,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     sectionClass:
       "rounded-[2.4rem] border border-white/80 bg-white px-5 py-5 shadow-[0_16px_34px_rgba(112,124,160,0.08)]",
     sectionTitleClass: "text-[#1f2438]",
-    sectionTitleStyle: { color: "#1f2438" },
+    sectionTitleStyle: { color: "#1f2438", textShadow: "none" },
     sectionCardClass:
       "rounded-[1.35rem] border border-white/80 bg-[#f8f8fe] px-4 py-4 shadow-[0_16px_34px_rgba(112,124,160,0.08)]",
     sectionMutedClass: "bg-[linear-gradient(135deg,#eef1ff,#fff1f7)] text-[#6670a8]",

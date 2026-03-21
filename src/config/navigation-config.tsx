@@ -37,7 +37,7 @@ const ALL_TEMPLATE_LINKS: TemplateLink[] = TEMPLATE_DEFINITIONS.map((t) => ({
 }));
 
 const QUICK_ACCESS_ITEMS: CreateEventSection["items"] = [
-  { label: "Snap Event", href: "/?action=camera", icon: "📸" },
+  { label: "Snap Event", href: "/event", icon: "📸" },
   { label: "Upload Event", href: "/?action=upload", icon: "📤" },
   {
     label: "Sign up",

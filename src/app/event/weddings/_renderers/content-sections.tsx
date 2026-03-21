@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { Share2 } from "lucide-react";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 
 export type ThemeConfig = {
   colors: {
@@ -400,12 +401,7 @@ export function Footer({
 
   const handleAppleCalendar = () => {
     const details = buildEventDetails();
-    const icsPath = buildIcsUrl(details);
-    const absoluteIcs =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${icsPath}`
-        : icsPath;
-    window.location.href = absoluteIcs;
+    openAppleCalendarIcs(buildIcsUrl(details));
   };
 
   return (

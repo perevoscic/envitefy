@@ -910,6 +910,13 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         } catch {}
         id = editEventId;
         j = { id };
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("history:updated", {
+              detail: { id },
+            })
+          );
+        }
       } else {
         const r = await fetch("/api/history", {
           method: "POST",

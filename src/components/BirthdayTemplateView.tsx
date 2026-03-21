@@ -23,6 +23,7 @@ import {
   CalendarIconGoogle,
   CalendarIconOutlook,
 } from "@/components/CalendarIcons";
+import AppleCalendarLink from "@/components/AppleCalendarLink";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail } from "@/utils/contact";
@@ -973,14 +974,13 @@ export default function BirthdayTemplateView({
                   </a>
                 )}
                 {calendarLinks.appleInline && (
-                  <a
+                  <AppleCalendarLink
                     href={calendarLinks.appleInline}
                     className="inline-flex items-center gap-2 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-300"
-                    download
                   >
                     <CalendarIconApple className="h-5 w-5" />
                     Apple
-                  </a>
+                  </AppleCalendarLink>
                 )}
               </div>
             </section>

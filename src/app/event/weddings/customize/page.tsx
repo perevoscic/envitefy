@@ -41,6 +41,7 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import Link from "next/link";
 import etherealClassic from "../../../../../templates/weddings/ethereal-classic/config.json" assert { type: "json" };
@@ -1943,12 +1944,7 @@ const App = () => {
 
   const handleAppleCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const icsPath = buildIcsUrl(buildCalendarDetails());
-    const absolute =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${icsPath}`
-        : icsPath;
-    window.location.href = absolute;
+    openAppleCalendarIcs(buildIcsUrl(buildCalendarDetails()));
   };
 
   const handleImageUpload = (field, e) => {
@@ -2148,6 +2144,20 @@ const App = () => {
       }
 
       if (id) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent(editEventId ? "history:updated" : "history:created", {
+              detail: editEventId
+                ? { id }
+                : {
+                    id,
+                    title: payload.title,
+                    created_at: new Date().toISOString(),
+                    data: payload.data,
+                  },
+            })
+          );
+        }
         const params = editEventId ? { updated: true } : { created: true };
         router.push(buildEventPath(id, payload.title, params));
       } else {
@@ -2180,6 +2190,13 @@ const App = () => {
             data: payload.data,
           }),
         });
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("history:updated", {
+              detail: { id },
+            })
+          );
+        }
       } else {
         const res = await fetch("/api/history", {
           method: "POST",
@@ -2190,6 +2207,18 @@ const App = () => {
         const body = await res.json().catch(() => ({}));
         id = (body as any)?.id as string | undefined;
         if (id) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("history:created", {
+                detail: {
+                  id,
+                  title: payload.title,
+                  created_at: (body as any)?.created_at || new Date().toISOString(),
+                  data: payload.data,
+                },
+              })
+            );
+          }
           const params = new URLSearchParams(search?.toString() || "");
           params.set("edit", id);
           params.delete("templateId");

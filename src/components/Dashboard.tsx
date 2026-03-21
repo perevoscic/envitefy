@@ -51,6 +51,7 @@ import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { findFirstEmail } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import {
   SnapProcessingCard,
   type SnapPreviewKind,
@@ -62,6 +63,7 @@ import {
   type TemplateKey,
 } from "@/config/feature-visibility";
 import { useSidebar, type EventContextTab } from "@/app/sidebar-context";
+import { useEventCache } from "@/app/event-cache-context";
 import { useMenuOptional } from "@/contexts/MenuContext";
 
 type EventFields = {
@@ -170,29 +172,6 @@ type DashboardResponse = {
     travelWindowEligible: boolean;
   };
 };
-
-function isDashboardResponsePayload(
-  value: unknown
-): value is DashboardResponse {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<DashboardResponse> & { ok?: unknown };
-  if (candidate.ok !== true) return false;
-  if (!candidate.snapshot || typeof candidate.snapshot !== "object")
-    return false;
-  if (!Array.isArray(candidate.upcoming)) return false;
-  if (!candidate.setupHealth || typeof candidate.setupHealth !== "object")
-    return false;
-  if (!candidate.checklist || typeof candidate.checklist !== "object")
-    return false;
-  if (!candidate.drafts || typeof candidate.drafts !== "object") return false;
-  if (
-    !candidate.metricsEligibility ||
-    typeof candidate.metricsEligibility !== "object"
-  ) {
-    return false;
-  }
-  return true;
-}
 
 type DashboardEnrichMeta = {
   hasDestination?: boolean;
@@ -342,10 +321,6 @@ export default function Dashboard({
   const scanStatusRef = useRef<SnapProcessingStatus>("idle");
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const [softPromptDismissed, setSoftPromptDismissed] = useState(false);
-  const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(
-    null
-  );
-  const [dashboardLoading, setDashboardLoading] = useState(false);
   const [nextEventMetrics, setNextEventMetrics] =
     useState<DashboardMetricsCache | null>(null);
   const [enrichMeta, setEnrichMeta] = useState<DashboardEnrichMeta | null>(
@@ -354,10 +329,32 @@ export default function Dashboard({
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [ownerDashboardData, setOwnerDashboardData] =
     useState<OwnerDashboardData | null>(null);
+  const {
+    dashboardData: cachedDashboardData,
+    dashboardLoading,
+    invalidateEventCache,
+    setDashboardMetricsCache,
+  } = useEventCache();
+  const dashboardData = (cachedDashboardData as DashboardResponse | null) ?? null;
 
   useEffect(() => {
     scanStatusRef.current = scanStatus;
   }, [scanStatus]);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setNextEventMetrics(null);
+      setEnrichMeta(null);
+      return;
+    }
+    const nextEventId = dashboardData?.nextEvent?.id || null;
+    if (!nextEventId) {
+      setNextEventMetrics(null);
+      setEnrichMeta(null);
+      return;
+    }
+    setNextEventMetrics(dashboardData?.metricsCache ?? null);
+  }, [dashboardData, isSignedIn]);
 
   const persistAutoAddPreference = useCallback((next: AutoAddPreference) => {
     setAutoAddPreference(next);
@@ -542,13 +539,6 @@ export default function Dashboard({
   };
 
   useEffect(() => {
-    setDashboardLoading(false);
-    setDashboardData(null);
-    setNextEventMetrics(null);
-    setEnrichMeta(null);
-  }, [isSignedIn]);
-
-  useEffect(() => {
     if (!isSignedIn) return;
     if (!dashboardData?.nextEvent?.id) return;
     let cancelled = false;
@@ -599,7 +589,9 @@ export default function Dashboard({
         const json = await res.json().catch(() => null);
         if (cancelled) return;
         if (json?.metrics) {
-          setNextEventMetrics(json.metrics as DashboardMetricsCache);
+          const metrics = json.metrics as DashboardMetricsCache;
+          setNextEventMetrics(metrics);
+          setDashboardMetricsCache(metrics);
         }
         setEnrichMeta((json?.meta || null) as DashboardEnrichMeta | null);
       } catch {
@@ -759,7 +751,9 @@ export default function Dashboard({
       });
       const json = await res.json().catch(() => null);
       if (json?.metrics) {
-        setNextEventMetrics(json.metrics as DashboardMetricsCache);
+        const metrics = json.metrics as DashboardMetricsCache;
+        setNextEventMetrics(metrics);
+        setDashboardMetricsCache(metrics);
       }
       setEnrichMeta((json?.meta || null) as DashboardEnrichMeta | null);
     } catch {
@@ -863,6 +857,7 @@ export default function Dashboard({
       window.dispatchEvent(
         new CustomEvent("history:deleted", { detail: { id: selectedEventId } })
       );
+      invalidateEventCache({ force: true, source: "dashboard-delete" });
       clearEventContext();
       const currentPath =
         typeof window !== "undefined" ? window.location.pathname : pathname;
@@ -1398,13 +1393,16 @@ export default function Dashboard({
             })
           );
         }
+        if (historyRes.ok && eventId) {
+          invalidateEventCache({ force: true, source: "dashboard-create" });
+        }
       } catch (err) {
         console.error("Failed to save to Envitefy history:", err);
       }
 
       return { eventId, savedTitle };
     },
-    [ocrCategory, uploadedFile]
+    [invalidateEventCache, ocrCategory, uploadedFile]
   );
 
   const connectGoogle = useCallback(() => {
@@ -1507,13 +1505,7 @@ export default function Dashboard({
             }
           } else {
             const q = buildIcsQuery(ready, true);
-            const url = `${window.location.origin}/api/ics?${q}`;
-            const popup = window.open(url, "_blank");
-            if (!popup) {
-              throw new Error(
-                "Popup was blocked while opening Apple Calendar. Allow popups and try again."
-              );
-            }
+            openAppleCalendarIcs(`/api/ics?${q}`);
           }
         } catch (providerErr: any) {
           const label = providerLabel(provider);

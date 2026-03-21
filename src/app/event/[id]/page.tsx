@@ -49,11 +49,13 @@ import {
   CalendarIconOutlook,
   CalendarIconApple,
 } from "@/components/CalendarIcons";
+import AppleCalendarLink from "@/components/AppleCalendarLink";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 import { cache } from "react";
+import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
 import {
   getEventAccessCookieName,
   verifyEventAccessCookieValue,
@@ -61,6 +63,7 @@ import {
 import {
   createServerTimingTracker,
 } from "@/lib/server-timing";
+import { resolveFootballSeasonTemplateChrome } from "../football-season/customize/footballSeasonTemplateTheme";
 
 const SignupViewer = nextDynamic(
   () => import("@/components/smart-signup-form/SignupViewer"),
@@ -720,6 +723,13 @@ export default async function EventPage({
     discoveryCategory === "sport_football_season" ||
     discoveryTemplateId === "football-season" ||
     discoveryTemplateId === "football";
+  const rawFootballPageTemplateId = (data as any)?.pageTemplateId;
+  const footballPageTemplateId = isGymMeetTemplateId(rawFootballPageTemplateId)
+    ? rawFootballPageTemplateId
+    : null;
+  const footballPublicChrome = footballPageTemplateId
+    ? resolveFootballSeasonTemplateChrome(footballPageTemplateId)
+    : null;
   const discoveryEditConfig:
     | { customizeUrl: string; workflow: "gymnastics" | "football" }
     | null = editParam && isOwner
@@ -1424,6 +1434,15 @@ export default async function EventPage({
       <FootballDiscoveryContent
         eventData={clientSafeEventData}
         eventTitle={title}
+        eventId={row.id}
+        pageTemplateId={footballPageTemplateId}
+        shareUrl={shareUrl}
+        sessionEmail={sessionEmail}
+        isOwner={isOwner}
+        isReadOnly={isReadOnly}
+        editHref={editHref}
+        hideOwnerActions={Boolean(discoveryEditConfig)}
+        chrome={footballPublicChrome}
       />
     );
     if (discoveryEditConfig) {
@@ -1787,14 +1806,14 @@ export default async function EventPage({
                 </dt>
                 <dd className="mt-1  space-y-1">
                   <div className="flex flex-wrap items-center gap-3">
-                    <a
+                    <AppleCalendarLink
                       href={calendarLinks.appleInline}
                       className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d5c9f7] bg-white text-[#433468] shadow-sm transition hover:border-[#beaee8] hover:bg-[#f7f2ff]"
                       aria-label="Add to Apple Calendar"
                       title="Apple Calendar"
                     >
                       <CalendarIconApple className="h-5 w-5" />
-                    </a>
+                    </AppleCalendarLink>
                     <a
                       href={calendarLinks.google}
                       target="_blank"

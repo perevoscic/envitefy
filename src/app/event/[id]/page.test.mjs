@@ -17,6 +17,14 @@ test("event route branches football discovery/template events into the football 
     ),
     "FootballDiscoveryContent should be dynamically imported"
   );
+  assert.match(source, /isGymMeetTemplateId/);
+  assert.match(source, /resolveFootballSeasonTemplateChrome/);
+  assert.match(source, /const footballPageTemplateId =/);
+  assert.match(source, /const footballPublicChrome =/);
+  assert.match(source, /isGymMeetTemplateId\(\(data as any\)\?\.pageTemplateId\)/);
+  assert.match(source, /chrome=\{footballPublicChrome\}/);
+  assert.match(source, /pageTemplateId=\{footballPageTemplateId\}/);
+  assert.match(source, /hideOwnerActions=\{Boolean\(discoveryEditConfig\)\}/);
   assert.ok(
     source.includes("const shouldRenderFootballPage ="),
     "football renderer gate is missing"

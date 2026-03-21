@@ -5,6 +5,7 @@ import { combineVenueAndLocation } from "@/lib/mappers";
 import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { useSession } from "next-auth/react";
 
 try {
@@ -110,8 +111,6 @@ export default function EventActions({
     useState<CalendarProvider | null>(null);
   const [connectedCalendars, setConnectedCalendars] =
     useState<CalendarConnectionStatus | null>(null);
-  const [calendarPreferenceHydrated, setCalendarPreferenceHydrated] =
-    useState(false);
   const firstCalendarOptionRef = useRef<HTMLButtonElement | null>(null);
   const lastCalendarOpenRef = useRef<{ href: string; ts: number } | null>(null);
   const absoluteUrl = useMemo(() => {
@@ -307,32 +306,17 @@ export default function EventActions({
   }, []);
 
   useEffect(() => {
-    let active = true;
-
     const localProvider = readLocalCalendarDefault();
     if (localProvider) {
       setDefaultCalendarProvider(localProvider);
-      setCalendarPreferenceHydrated(true);
-      return () => {
-        active = false;
-      };
+      return;
     }
 
     if (!isSignedIn) {
-      setCalendarPreferenceHydrated(true);
-      return () => {
-        active = false;
-      };
+      return;
     }
 
-    (async () => {
-      await hydrateDefaultFromProfile();
-      if (active) setCalendarPreferenceHydrated(true);
-    })();
-
-    return () => {
-      active = false;
-    };
+    void hydrateDefaultFromProfile();
   }, [hydrateDefaultFromProfile, isSignedIn, readLocalCalendarDefault]);
 
   useEffect(() => {
@@ -555,6 +539,10 @@ export default function EventActions({
     }
     lastCalendarOpenRef.current = { href, ts: now };
 
+    if (provider === "apple") {
+      openAppleCalendarIcs(href);
+      return;
+    }
     window.open(href, "_blank", "noopener,noreferrer");
   };
 
@@ -576,38 +564,8 @@ export default function EventActions({
     setCalendarModalOpen(true);
   };
 
-  const onCalendarPrimaryClick = async () => {
+  const onCalendarPrimaryClick = () => {
     if (!calendarLinks) return;
-
-    if (defaultCalendarProvider) {
-      if (isProviderValid(defaultCalendarProvider, connectedCalendars)) {
-        openCalendarProvider(defaultCalendarProvider);
-        return;
-      }
-      if (isSignedIn) {
-        const fetched = await fetchConnectedCalendars();
-        if (isProviderValid(defaultCalendarProvider, fetched)) {
-          openCalendarProvider(defaultCalendarProvider);
-          return;
-        }
-      }
-    }
-
-    if (!calendarPreferenceHydrated && isSignedIn) {
-      const profileDefault = await hydrateDefaultFromProfile();
-      setCalendarPreferenceHydrated(true);
-      const status = connectedCalendars || (await fetchConnectedCalendars());
-      if (profileDefault && isProviderValid(profileDefault, status)) {
-        openCalendarProvider(profileDefault);
-        return;
-      }
-      if (profileDefault) {
-        setDefaultCalendarProvider(null);
-        writeLocalCalendarDefault(null);
-        void syncProfileCalendarDefault(null);
-      }
-    }
-
     openCalendarModal();
   };
 
@@ -636,107 +594,41 @@ export default function EventActions({
       : "inline-flex items-center gap-2 text-neutral-900 hover:text-black";
 
   const labelClassName = showLabels ? "inline" : "hidden sm:inline";
-  const hasSelectedDefaultProvider = Boolean(defaultCalendarProvider);
-
-  const calendarSplitClassName =
-    variant === "compact"
-      ? tone === "light"
-        ? "inline-flex items-stretch overflow-hidden rounded-lg border border-white/35 bg-white/10 text-white shadow-sm"
-        : "inline-flex items-stretch overflow-hidden rounded-lg border border-[#ddd4f8] bg-white/90 text-[#4f3f7a] shadow-sm"
-      : "inline-flex items-stretch overflow-hidden rounded-lg border border-[#ddd4f8] bg-white/90 text-[#4f3f7a] shadow-sm";
-
-  const calendarPrimaryClassName =
-    "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition hover:bg-[#f7f2ff]";
-
-  const calendarChevronClassName =
-    "inline-flex items-center justify-center border-l border-[#ddd4f8] px-2 py-1.5 transition hover:bg-[#f7f2ff]";
 
   return (
     <div className={className}>
       <div className={innerClassName}>
-        {calendarLinks &&
-          (hasSelectedDefaultProvider ? (
-            <button
-              type="button"
-              onClick={() => void onCalendarPrimaryClick()}
-              className={buttonClassName}
-              aria-label="Add to calendar"
-              title="Add to calendar"
+        {calendarLinks && (
+          <button
+            type="button"
+            onClick={onCalendarPrimaryClick}
+            className={buttonClassName}
+            aria-label="Add to calendar"
+            title="Add to calendar"
+            aria-haspopup="dialog"
+            aria-expanded={calendarModalOpen}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+              aria-hidden="true"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-                <line x1="12" y1="14" x2="12" y2="20" />
-                <line x1="9" y1="17" x2="15" y2="17" />
-              </svg>
-              <span className={labelClassName}>Calendar</span>
-            </button>
-          ) : (
-            <div className={calendarSplitClassName}>
-              <button
-                type="button"
-                onClick={() => void onCalendarPrimaryClick()}
-                className={calendarPrimaryClassName}
-                aria-label="Add to calendar"
-                title="Add to calendar"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                  <line x1="12" y1="14" x2="12" y2="20" />
-                  <line x1="9" y1="17" x2="15" y2="17" />
-                </svg>
-                <span className={labelClassName}>Calendar</span>
-              </button>
-              <button
-                type="button"
-                onClick={openCalendarModal}
-                className={calendarChevronClassName}
-                aria-label="Choose calendar provider"
-                title="Choose calendar provider"
-                aria-haspopup="dialog"
-                aria-expanded={calendarModalOpen}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-            </div>
-          ))}
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+              <line x1="12" y1="14" x2="12" y2="20" />
+              <line x1="9" y1="17" x2="15" y2="17" />
+            </svg>
+            <span className={labelClassName}>Calendar</span>
+          </button>
+        )}
 
         <button type="button" onClick={onShareLink} className={buttonClassName}>
           <svg

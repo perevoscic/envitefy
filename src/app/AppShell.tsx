@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { MenuProvider } from "@/contexts/MenuContext";
+import { EventCacheProvider } from "@/app/event-cache-context";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import { MainContentWrapper } from "@/components/MainContentWrapper";
 
@@ -19,24 +20,22 @@ export default function AppShell({
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
 
-  if (isAuthenticated) {
-    return (
-      <MenuProvider>
-        <LeftSidebar />
-        <MainContentWrapper isAuthenticated={true}>
+  return (
+    <EventCacheProvider>
+      {isAuthenticated ? (
+        <MenuProvider>
+          <LeftSidebar />
+          <MainContentWrapper isAuthenticated={true}>
+            <div className="flex-1 min-w-0">{children}</div>
+            <ConditionalFooter />
+          </MainContentWrapper>
+        </MenuProvider>
+      ) : (
+        <MainContentWrapper isAuthenticated={false}>
           <div className="flex-1 min-w-0">{children}</div>
           <ConditionalFooter />
         </MainContentWrapper>
-      </MenuProvider>
-    );
-  }
-
-  return (
-    <>
-      <MainContentWrapper isAuthenticated={false}>
-        <div className="flex-1 min-w-0">{children}</div>
-        <ConditionalFooter />
-      </MainContentWrapper>
-    </>
+      )}
+    </EventCacheProvider>
   );
 }

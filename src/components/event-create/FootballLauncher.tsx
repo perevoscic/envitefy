@@ -445,7 +445,7 @@ export default function FootballLauncher({
 
           <section
             onClick={openTemplateBuilder}
-            className={`rounded-[2rem] bg-white p-6 transition-all ${
+            className={`flex flex-col rounded-[2rem] bg-white p-6 transition-all ${
               selectedPath === "scratch"
                 ? "border-2 border-[#d44f19] shadow-[0_15px_45px_rgba(212,79,25,0.18)]"
                 : "border border-[#e5e6ef]"
@@ -475,17 +475,19 @@ export default function FootballLauncher({
               Build the page manually with game schedule, roster, travel,
               equipment, and volunteer sections.
             </p>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openTemplateBuilder();
-              }}
-              className="mt-7 inline-flex items-center gap-2 rounded-2xl border border-[#d7d4e5] px-4 py-3 text-sm font-semibold text-[#0f1935] transition hover:border-[#d44f19] hover:text-[#d44f19]"
-            >
-              Open Builder
-              <ArrowRight className="h-4 w-4" />
-            </button>
+            <div className="mt-7 flex flex-1 flex-col">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openTemplateBuilder();
+                }}
+                className="mt-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d44f19] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#ba4313] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                Open Builder
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
           </section>
         </div>
       </div>

@@ -38,6 +38,7 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 
 function getTemplateById(id?: string | null): GenderRevealTemplateDefinition {
   if (!id) return genderRevealTemplateCatalog[0];
@@ -636,12 +637,7 @@ export default function GenderRevealTemplateCustomizePage() {
 
   const handleAppleCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const icsPath = buildIcsUrl(buildCalendarDetails());
-    const absolute =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${icsPath}`
-        : icsPath;
-    window.location.href = absolute;
+    openAppleCalendarIcs(buildIcsUrl(buildCalendarDetails()));
   };
 
   const updateData = (field, value) => {
@@ -923,6 +919,20 @@ export default function GenderRevealTemplateCustomizePage() {
       }
 
       if (id) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent(editEventId ? "history:updated" : "history:created", {
+              detail: editEventId
+                ? { id }
+                : {
+                    id,
+                    title: payload.title,
+                    created_at: new Date().toISOString(),
+                    data: payload.data,
+                  },
+            })
+          );
+        }
         const params = editEventId ? { updated: true } : { created: true };
         router.push(buildEventPath(id, payload.title, params));
       } else {
