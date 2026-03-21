@@ -295,7 +295,7 @@ const resolveInstallGuide = (win: Window): InstallGuide => {
   );
 };
 
-const BRIDGE_EVENT_NAME = "snapmydate:beforeinstallprompt";
+const BRIDGE_EVENT_NAME = "envitefy:beforeinstallprompt";
 const DEBUG_STORE_KEY = "__snapInstallDebugLog";
 const INSTALLED_FLAG_KEY = "snapmydate:pwa-installed";
 const MAX_DEBUG_ENTRIES = 50;
