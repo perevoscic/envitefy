@@ -5,20 +5,12 @@ import {
   type DashboardEvent,
 } from "@/lib/dashboard-data";
 import {
+  listDashboardHistoryFallbackForUser,
   listDashboardHistoryWindowForUser,
   type EventHistoryRow,
 } from "@/lib/db";
 
 const DASHBOARD_HISTORY_ROW_CAP = 40;
-const DASHBOARD_HISTORY_EXPANDED_ROW_CAP = 200;
-const DASHBOARD_EXPAND_QUERY_MAX_MS = 2000;
-
-function isStatementTimeoutError(err: unknown): boolean {
-  const anyErr = err as { code?: unknown; message?: unknown } | null;
-  const code = String(anyErr?.code || "");
-  const message = String(anyErr?.message || "");
-  return code === "57014" || /statement timeout|canceling statement due to statement timeout/i.test(message);
-}
 
 function rowsToDashboardEvents(rows: EventHistoryRow[]): DashboardEvent[] {
   const seen = new Set<string>();
@@ -39,44 +31,24 @@ function rowsToDashboardEvents(rows: EventHistoryRow[]): DashboardEvent[] {
     });
 }
 
-function needsExpandedDashboardScan(rows: EventHistoryRow[], events: DashboardEvent[]): boolean {
-  if (rows.length < DASHBOARD_HISTORY_ROW_CAP) return false;
-  const now = Date.now();
-  const hasDraft = events.some((event) => isDraftStatus(event.status));
-  const hasUpcoming = events.some((event) => {
-    const startMs = new Date(event.startAt).getTime();
-    return startMs > now && !isArchivedOrCanceled(event.status);
-  });
-  return !hasDraft && !hasUpcoming;
-}
-
 export async function listDashboardEventsForOwner(
   userId: string,
   limit = 200
 ): Promise<DashboardEvent[]> {
   const rowLimit = Math.max(1, Math.min(DASHBOARD_HISTORY_ROW_CAP, Math.floor(limit)));
-  const startedAt = Date.now();
-  const rows = await listDashboardHistoryWindowForUser(
-    userId,
-    Math.max(rowLimit, DASHBOARD_HISTORY_ROW_CAP)
-  );
-  const initialQueryMs = Date.now() - startedAt;
-  const events = rowsToDashboardEvents(rows);
-  if (
-    !needsExpandedDashboardScan(rows, events) ||
-    initialQueryMs > DASHBOARD_EXPAND_QUERY_MAX_MS
-  ) {
-    return events;
-  }
   try {
-    const expandedRows = await listDashboardHistoryWindowForUser(
-      userId,
-      DASHBOARD_HISTORY_EXPANDED_ROW_CAP
-    );
-    return rowsToDashboardEvents(expandedRows);
+    const rows = await listDashboardHistoryWindowForUser(userId, rowLimit);
+    return rowsToDashboardEvents(rows);
   } catch (err) {
-    if (!isStatementTimeoutError(err)) throw err;
-    return events;
+    const anyErr = err as { code?: unknown; message?: unknown } | null;
+    const code = String(anyErr?.code || "");
+    const message = String(anyErr?.message || "");
+    const isTimeout =
+      code === "57014" ||
+      /statement timeout|canceling statement due to statement timeout/i.test(message);
+    if (!isTimeout) throw err;
+    const fallbackRows = await listDashboardHistoryFallbackForUser(userId, 200, 200);
+    return rowsToDashboardEvents(fallbackRows);
   }
 }
 

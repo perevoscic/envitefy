@@ -86,10 +86,17 @@ export async function GET(req: Request) {
       });
 
     const useCache = isCacheableHistoryView(view);
-    const cached = useCache ? getCachedHistory(userId, view, limit, timeFilter) : null;
+    const allowEmptySidebarCache = !(view === "sidebar" && timeFilter === "all");
+    const cachedRaw = useCache ? getCachedHistory(userId, view, limit, timeFilter) : null;
+    const cached =
+      !allowEmptySidebarCache && Array.isArray(cachedRaw) && cachedRaw.length === 0
+        ? null
+        : cachedRaw;
     const staleCached =
       useCache ? getCachedHistoryStale(userId, view, limit, timeFilter) : null;
     let light: any[] | null = null;
+    let degradedReason: string | null = null;
+    let shouldCacheResponse = true;
     if (cached) {
       light = cached;
     } else {
@@ -103,14 +110,10 @@ export async function GET(req: Request) {
             light = staleCached;
             rows = [];
           } else {
-            return new Response(null, {
-              status: 204,
-              headers: {
-                "Cache-Control": "private, no-store",
-                "X-History-Degraded": "statement-timeout",
-              },
-            });
+            light = [];
           }
+          degradedReason = "statement-timeout";
+          shouldCacheResponse = false;
         }
       } else {
         try {
@@ -132,21 +135,17 @@ export async function GET(req: Request) {
               light = staleCached;
               rows = [];
             } else {
-              return new Response(null, {
-                status: 204,
-                headers: {
-                  "Cache-Control": "private, no-store",
-                  "X-History-Degraded": "statement-timeout",
-                },
-              });
+              light = [];
             }
+            degradedReason = "statement-timeout";
+            shouldCacheResponse = false;
           }
         }
       }
       if (!light) {
         light = finalizeItems(rows);
       }
-      if (useCache && light !== staleCached) {
+      if (useCache && shouldCacheResponse && light !== staleCached) {
         setCachedHistory(userId, view, limit, timeFilter, light);
       }
     }
@@ -160,6 +159,9 @@ export async function GET(req: Request) {
       "Last-Modified": lastModifiedIso.toUTCString(),
       "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
     };
+    if (degradedReason) {
+      headers["X-History-Degraded"] = degradedReason;
+    }
 
     const ifNoneMatch = req.headers.get("if-none-match");
     if (ifNoneMatch && ifNoneMatch === etag) {

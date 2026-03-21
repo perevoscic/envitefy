@@ -1609,9 +1609,34 @@ function buildHistoryTimeFilterSql(
  * covering far more rows than the API ever returns.
  */
 const HISTORY_OWN_ROW_CAP = 600;
-const HISTORY_FAST_SIDEBAR_ROW_CAP = 100;
-const HISTORY_DASHBOARD_ROW_CAP = 800;
+const HISTORY_DASHBOARD_ROW_CAP = 200;
 const HISTORY_DASHBOARD_BATCH_SIZE = 8;
+const HISTORY_SIDEBAR_BATCH_SIZE = 15;
+const HISTORY_DASHBOARD_QUERY_TIMEOUT_MS = 2500;
+const HISTORY_SIDEBAR_QUERY_TIMEOUT_MS = 1500;
+
+async function withStatementTimeout<T>(
+  timeoutMs: number,
+  callback: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const timeoutValue = `${Math.max(1, Math.floor(timeoutMs))}ms`;
+  return withClient(async (client) => {
+    await client.query("begin");
+    try {
+      await client.query(`select set_config('statement_timeout', $1, true)`, [
+        timeoutValue,
+      ]);
+      const result = await callback(client);
+      await client.query("commit");
+      return result;
+    } catch (err) {
+      try {
+        await client.query("rollback");
+      } catch {}
+      throw err;
+    }
+  });
+}
 
 function buildHistoryDataProjectionSql(params: {
   view: HistoryView;
@@ -1764,6 +1789,331 @@ function buildDashboardDataProjectionSql(dataSql: string): string {
   )`;
 }
 
+type DashboardProjectionQueryRow = {
+  id: string;
+  user_id?: string | null;
+  title: string;
+  created_at?: string | null;
+  start_at: any;
+  start_iso: any;
+  start: any;
+  end_at: any;
+  end_iso: any;
+  end: any;
+  tz: any;
+  timezone: any;
+  location_text: any;
+  location: any;
+  location_lat: any;
+  lat: any;
+  location_lng: any;
+  lng: any;
+  cover_image_url: any;
+  thumbnail: any;
+  hero_image: any;
+  status: any;
+  category: any;
+  updated_at: any;
+  number_of_guests: any;
+  reminders: any;
+  created_via: any;
+  fields_guess_title: any;
+  fields_guess_start: any;
+  fields_guess_end: any;
+  fields_guess_location: any;
+  fields_guess_timezone: any;
+  event_title: any;
+  event_start: any;
+  event_end: any;
+  event_location: any;
+  event_timezone: any;
+  event_location_lat: any;
+  event_location_lng: any;
+};
+
+type SidebarProjectionQueryRow = {
+  id: string;
+  user_id?: string | null;
+  title: string;
+  created_at?: string | null;
+  category: any;
+  status: any;
+  description: any;
+  start_iso: any;
+  start: any;
+  created_via: any;
+  color: any;
+  event_start: any;
+  event_color: any;
+  has_signup_form: boolean;
+};
+
+function buildObjectOrNull(
+  entries: Array<[string, any]>,
+): Record<string, any> | null {
+  const out: Record<string, any> = {};
+  let hasValue = false;
+  for (const [key, value] of entries) {
+    out[key] = value ?? null;
+    if (value != null) hasValue = true;
+  }
+  return hasValue ? out : null;
+}
+
+function mapDashboardProjectionRowToEventHistoryRow(
+  row: DashboardProjectionQueryRow,
+): EventHistoryRow {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    title: row.title,
+    created_at: row.created_at || undefined,
+    data: {
+      startAt: row.start_at ?? null,
+      startISO: row.start_iso ?? null,
+      start: row.start ?? null,
+      endAt: row.end_at ?? null,
+      endISO: row.end_iso ?? null,
+      end: row.end ?? null,
+      tz: row.tz ?? null,
+      timezone: row.timezone ?? null,
+      locationText: row.location_text ?? null,
+      location: row.location ?? null,
+      locationLat: row.location_lat ?? null,
+      lat: row.lat ?? null,
+      locationLng: row.location_lng ?? null,
+      lng: row.lng ?? null,
+      coverImageUrl: row.cover_image_url ?? null,
+      thumbnail: row.thumbnail ?? null,
+      heroImage: row.hero_image ?? null,
+      status: row.status ?? null,
+      category: row.category ?? null,
+      updatedAt: row.updated_at ?? null,
+      numberOfGuests: row.number_of_guests ?? null,
+      reminders: Array.isArray(row.reminders) ? row.reminders : [],
+      createdVia: row.created_via ?? null,
+      fieldsGuess: buildObjectOrNull([
+        ["title", row.fields_guess_title],
+        ["start", row.fields_guess_start],
+        ["end", row.fields_guess_end],
+        ["location", row.fields_guess_location],
+        ["timezone", row.fields_guess_timezone],
+      ]),
+      event: buildObjectOrNull([
+        ["title", row.event_title],
+        ["start", row.event_start],
+        ["end", row.event_end],
+        ["location", row.event_location],
+        ["timezone", row.event_timezone],
+        ["locationLat", row.event_location_lat],
+        ["locationLng", row.event_location_lng],
+      ]),
+    },
+  };
+}
+
+function mapSidebarProjectionRowToEventHistoryRow(
+  row: SidebarProjectionQueryRow,
+): EventHistoryRow {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    title: row.title,
+    created_at: row.created_at || undefined,
+    data: {
+      category: row.category ?? null,
+      shared: false,
+      sharedOut: false,
+      status: row.status ?? null,
+      description: row.description ?? null,
+      startISO: row.start_iso ?? null,
+      start: row.start ?? null,
+      createdVia: row.created_via ?? null,
+      color: row.color ?? null,
+      event: buildObjectOrNull([
+        ["start", row.event_start],
+        ["color", row.event_color],
+      ]),
+      signupForm: row.has_signup_form ? { responses: [] } : null,
+    },
+  };
+}
+
+async function listOwnedHistoryCandidatesForUser(
+  client: PoolClient,
+  userId: string,
+  limit: number
+): Promise<EventHistoryIdentityRow[]> {
+  const safeLimit = Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, Math.floor(limit || 1)));
+  const nonNullRes = await client.query<EventHistoryIdentityRow>(
+    `select id, user_id, title, created_at
+     from event_history
+     where user_id = $1
+       and created_at is not null
+     order by created_at desc, id desc
+     limit $2`,
+    [userId, safeLimit]
+  );
+  const nonNullRows = nonNullRes.rows || [];
+  if (nonNullRows.length >= safeLimit) {
+    return nonNullRows;
+  }
+
+  const remaining = safeLimit - nonNullRows.length;
+  const nullRes = await client.query<EventHistoryIdentityRow>(
+    `select id, user_id, title, created_at
+     from event_history
+     where user_id = $1
+       and created_at is null
+     order by id desc
+     limit $2`,
+    [userId, remaining]
+  );
+  return [...nonNullRows, ...(nullRes.rows || [])];
+}
+
+async function listProjectedDashboardHistoryRowsByIds(
+  client: PoolClient,
+  ids: string[]
+): Promise<EventHistoryRow[]> {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (!uniqueIds.length) return [];
+
+  const collected: EventHistoryRow[] = [];
+
+  for (let i = 0; i < uniqueIds.length; i += HISTORY_DASHBOARD_BATCH_SIZE) {
+    const batchIds = uniqueIds.slice(i, i + HISTORY_DASHBOARD_BATCH_SIZE);
+    const res = await client.query<DashboardProjectionQueryRow>(
+      `with requested_ids as (
+         select requested_id, ord
+         from unnest($1::uuid[]) with ordinality as ids(requested_id, ord)
+       )
+       select
+         eh.id,
+         eh.user_id,
+         eh.title,
+         eh.created_at,
+         coalesce(eh.data, '{}'::jsonb)->'startAt' as start_at,
+         coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,
+         coalesce(eh.data, '{}'::jsonb)->'start' as start,
+         coalesce(eh.data, '{}'::jsonb)->'endAt' as end_at,
+         coalesce(eh.data, '{}'::jsonb)->'endISO' as end_iso,
+         coalesce(eh.data, '{}'::jsonb)->'end' as end,
+         coalesce(eh.data, '{}'::jsonb)->'tz' as tz,
+         coalesce(eh.data, '{}'::jsonb)->'timezone' as timezone,
+         coalesce(eh.data, '{}'::jsonb)->'locationText' as location_text,
+         coalesce(eh.data, '{}'::jsonb)->'location' as location,
+         coalesce(eh.data, '{}'::jsonb)->'locationLat' as location_lat,
+         coalesce(eh.data, '{}'::jsonb)->'lat' as lat,
+         coalesce(eh.data, '{}'::jsonb)->'locationLng' as location_lng,
+         coalesce(eh.data, '{}'::jsonb)->'lng' as lng,
+         coalesce(eh.data, '{}'::jsonb)->'coverImageUrl' as cover_image_url,
+         coalesce(eh.data, '{}'::jsonb)->'thumbnail' as thumbnail,
+         coalesce(eh.data, '{}'::jsonb)->'heroImage' as hero_image,
+         coalesce(eh.data, '{}'::jsonb)->'status' as status,
+         coalesce(eh.data, '{}'::jsonb)->'category' as category,
+         coalesce(eh.data, '{}'::jsonb)->'updatedAt' as updated_at,
+         coalesce(eh.data, '{}'::jsonb)->'numberOfGuests' as number_of_guests,
+         case
+           when jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'reminders') = 'array'
+             then coalesce(eh.data, '{}'::jsonb)->'reminders'
+           else '[]'::jsonb
+         end as reminders,
+         coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
+         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,title}' as fields_guess_title,
+         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,start}' as fields_guess_start,
+         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,end}' as fields_guess_end,
+         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,location}' as fields_guess_location,
+         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,timezone}' as fields_guess_timezone,
+         coalesce(eh.data, '{}'::jsonb)#>'{event,title}' as event_title,
+         coalesce(eh.data, '{}'::jsonb)#>'{event,start}' as event_start,
+         coalesce(eh.data, '{}'::jsonb)#>'{event,end}' as event_end,
+         coalesce(eh.data, '{}'::jsonb)#>'{event,location}' as event_location,
+         coalesce(eh.data, '{}'::jsonb)#>'{event,timezone}' as event_timezone,
+         coalesce(eh.data, '{}'::jsonb)#>'{event,locationLat}' as event_location_lat,
+         coalesce(eh.data, '{}'::jsonb)#>'{event,locationLng}' as event_location_lng
+       from requested_ids r
+       join event_history eh on eh.id = r.requested_id
+       order by r.ord`,
+      [batchIds]
+    );
+    if (res.rows?.length) {
+      collected.push(...res.rows.map(mapDashboardProjectionRowToEventHistoryRow));
+    }
+  }
+
+  return collected;
+}
+
+async function listProjectedSidebarHistoryRowsByIds(
+  client: PoolClient,
+  ids: string[]
+): Promise<EventHistoryRow[]> {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (!uniqueIds.length) return [];
+
+  const collected: EventHistoryRow[] = [];
+
+  for (let i = 0; i < uniqueIds.length; i += HISTORY_SIDEBAR_BATCH_SIZE) {
+    const batchIds = uniqueIds.slice(i, i + HISTORY_SIDEBAR_BATCH_SIZE);
+    const res = await client.query<SidebarProjectionQueryRow>(
+      `with requested_ids as (
+         select requested_id, ord
+         from unnest($1::uuid[]) with ordinality as ids(requested_id, ord)
+       )
+       select
+         eh.id,
+         eh.user_id,
+         eh.title,
+         eh.created_at,
+         coalesce(eh.data, '{}'::jsonb)->'category' as category,
+         coalesce(eh.data, '{}'::jsonb)->'status' as status,
+         coalesce(eh.data, '{}'::jsonb)->'description' as description,
+         coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,
+         coalesce(eh.data, '{}'::jsonb)->'start' as start,
+         coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
+         coalesce(eh.data, '{}'::jsonb)->'color' as color,
+         coalesce(eh.data, '{}'::jsonb)#>'{event,start}' as event_start,
+         coalesce(eh.data, '{}'::jsonb)#>'{event,color}' as event_color,
+         (jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'signupForm') = 'object') as has_signup_form
+       from requested_ids r
+       join event_history eh on eh.id = r.requested_id
+       order by r.ord`,
+      [batchIds]
+    );
+    if (res.rows?.length) {
+      collected.push(...res.rows.map(mapSidebarProjectionRowToEventHistoryRow));
+    }
+  }
+
+  return collected;
+}
+
+function compareEventHistoryRowsByCreatedAtDesc(
+  a: Pick<EventHistoryRow, "id" | "created_at">,
+  b: Pick<EventHistoryRow, "id" | "created_at">
+): number {
+  const createdDiff = String(b.created_at || "").localeCompare(
+    String(a.created_at || "")
+  );
+  if (createdDiff !== 0) return createdDiff;
+  return String(b.id || "").localeCompare(String(a.id || ""));
+}
+
+function sortAndDedupeEventHistoryRows(
+  rows: EventHistoryRow[],
+  limit?: number
+): EventHistoryRow[] {
+  const seen = new Set<string>();
+  const deduped = rows.filter((row) => {
+    if (!row.id || seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+  deduped.sort(compareEventHistoryRowsByCreatedAtDesc);
+  return typeof limit === "number" ? deduped.slice(0, limit) : deduped;
+}
+
 function buildHistoryUnionQuery(
   view: HistoryView,
   timeFilter: HistoryTimeFilter
@@ -1892,131 +2242,6 @@ function buildHistoryOwnOnlyQuery(
       created_at
     from own_rows
     where ${buildHistoryTimeFilterSql(timeFilter, "own_rows")}
-    order by created_at desc nulls last, id desc
-    limit $2
-  `;
-}
-
-function buildHistorySidebarAllFastQuery(candidateCap: number): string {
-  const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
-  const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
-  const ownProjection = `jsonb_build_object(
-    'category', ${ownDataSql}->'category',
-    'shared', false,
-    'sharedOut', false,
-    'status', ${ownDataSql}->'status',
-    'description', ${ownDataSql}->'description',
-    'startISO', ${ownDataSql}->'startISO',
-    'start', ${ownDataSql}->'start',
-    'createdVia', ${ownDataSql}->'createdVia',
-    'color', ${ownDataSql}->'color',
-    'event', case
-      when jsonb_typeof(${ownDataSql}->'event') = 'object' then
-        jsonb_build_object(
-          'start', ${ownDataSql}#>'{event,start}',
-          'color', ${ownDataSql}#>'{event,color}'
-        )
-      else null
-    end,
-    'signupForm', case
-      when jsonb_typeof(${ownDataSql}->'signupForm') = 'object' then
-        jsonb_build_object('responses', '[]'::jsonb)
-      else null
-    end
-  )`;
-  const sharedProjection = `jsonb_build_object(
-    'category', to_jsonb('Shared events'::text),
-    'shared', true,
-    'sharedOut', false,
-    'status', ${sharedDataSql}->'status',
-    'description', ${sharedDataSql}->'description',
-    'startISO', ${sharedDataSql}->'startISO',
-    'start', ${sharedDataSql}->'start',
-    'createdVia', ${sharedDataSql}->'createdVia',
-    'color', ${sharedDataSql}->'color',
-    'event', case
-      when jsonb_typeof(${sharedDataSql}->'event') = 'object' then
-        jsonb_build_object(
-          'start', ${sharedDataSql}#>'{event,start}',
-          'color', ${sharedDataSql}#>'{event,color}'
-        )
-      else null
-    end,
-    'signupForm', case
-      when jsonb_typeof(${sharedDataSql}->'signupForm') = 'object' then
-        jsonb_build_object(
-          'responses',
-          (
-            select coalesce(
-              jsonb_agg(
-                jsonb_build_object(
-                  'userId', response_item->'userId',
-                  'email', response_item->'email',
-                  'status', response_item->'status',
-                  'name', response_item->'name',
-                  'calendar', response_item->'calendar'
-                )
-              ),
-              '[]'::jsonb
-            )
-            from (
-              select response_item
-              from jsonb_array_elements(
-                ${jsonbArrayOrEmpty(`${sharedDataSql}#>'{signupForm,responses}'`)}
-              ) as response_item
-              where coalesce(response_item->>'userId', '') = $1::text
-              limit 3
-            ) matched_responses
-          )
-        )
-      else null
-    end
-  )`;
-
-  return `
-    with own_candidates as (
-      select eh.id, eh.user_id, eh.title, eh.created_at
-      from event_history eh
-      where eh.user_id = $1
-      order by eh.created_at desc nulls last, eh.id desc
-      limit ${candidateCap}
-    ),
-    own_rows as (
-      select
-        eh.id,
-        eh.user_id,
-        eh.title,
-        ${ownProjection} as data,
-        eh.created_at
-      from own_candidates c
-      join event_history eh on eh.id = c.id
-    ),
-    shared_candidates as (
-      select eh.id, eh.user_id, eh.title, eh.created_at
-      from event_shares es
-      join event_history eh on eh.id = es.event_id
-      where es.recipient_user_id = $1
-        and es.status = 'accepted'
-        and es.revoked_at is null
-      order by eh.created_at desc nulls last, eh.id desc
-      limit ${candidateCap}
-    ),
-    shared_rows as (
-      select
-        eh.id,
-        eh.user_id,
-        eh.title,
-        ${sharedProjection} as data,
-        eh.created_at
-      from shared_candidates c
-      join event_history eh on eh.id = c.id
-    )
-    select id, user_id, title, data, created_at
-    from (
-      select * from own_rows
-      union all
-      select * from shared_rows
-    ) combined
     order by created_at desc nulls last, id desc
     limit $2
   `;
@@ -2462,43 +2687,35 @@ export async function listDashboardHistoryWindowForUser(
   limit: number = HISTORY_DASHBOARD_ROW_CAP
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(HISTORY_DASHBOARD_ROW_CAP, limit));
-  const identityRows = await query<EventHistoryIdentityRow>(
-    `select id, user_id, title, created_at
-     from event_history
-     where user_id = $1
-     order by created_at desc nulls last, id desc
-     limit $2`,
-    [userId, safeLimit]
-  );
-  const ids = (identityRows.rows || []).map((row) => row.id).filter(Boolean);
-  if (!ids.length) return [];
-
-  const dataSql = "coalesce(eh.data, '{}'::jsonb)";
-  const projection = buildDashboardDataProjectionSql(dataSql);
-  const collected: EventHistoryRow[] = [];
-  for (let i = 0; i < ids.length; i += HISTORY_DASHBOARD_BATCH_SIZE) {
-    const batchIds = ids.slice(i, i + HISTORY_DASHBOARD_BATCH_SIZE);
-    const res = await query<EventHistoryRow>(
-      `with requested_ids as (
-         select requested_id, ord
-         from unnest($1::uuid[]) with ordinality as ids(requested_id, ord)
-       )
-       select
-         eh.id,
-         eh.user_id,
-         eh.title,
-         ${projection} as data,
-         eh.created_at
-       from requested_ids r
-       join event_history eh on eh.id = r.requested_id
-       order by r.ord`,
-      [batchIds]
-    );
-    if (res.rows?.length) {
-      collected.push(...res.rows);
+  return await withStatementTimeout(
+    HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
+    async (client) => {
+      const candidates = await listOwnedHistoryCandidatesForUser(client, userId, safeLimit);
+      return await listProjectedDashboardHistoryRowsByIds(
+        client,
+        candidates.map((row) => row.id)
+      );
     }
-  }
-  return collected;
+  );
+}
+
+export async function listDashboardHistoryFallbackForUser(
+  userId: string,
+  ownLimit: number = HISTORY_OWN_ROW_CAP,
+  sharedLimit: number = 200
+): Promise<EventHistoryRow[]> {
+  void sharedLimit;
+  const ownRows = await withStatementTimeout(
+    HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
+    async (client) => {
+      const candidates = await listOwnedHistoryCandidatesForUser(client, userId, ownLimit);
+      return await listProjectedDashboardHistoryRowsByIds(
+        client,
+        candidates.map((row) => row.id)
+      );
+    }
+  );
+  return sortAndDedupeEventHistoryRows(ownRows);
 }
 
 export async function listRecentEventHistory(limit: number = 20): Promise<EventHistoryRow[]> {
@@ -2567,12 +2784,14 @@ export async function listSidebarHistoryForUserFast(
   limit = 200
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(limit || 40)));
-  const candidateCap = Math.max(1, Math.min(HISTORY_FAST_SIDEBAR_ROW_CAP, safeLimit));
-  const res = await query<EventHistoryRow>(buildHistorySidebarAllFastQuery(candidateCap), [
-    userId,
-    safeLimit,
-  ]);
-  return res.rows || [];
+  const rows = await withStatementTimeout(HISTORY_SIDEBAR_QUERY_TIMEOUT_MS, async (client) => {
+    const candidates = await listOwnedHistoryCandidatesForUser(client, userId, safeLimit);
+    return await listProjectedSidebarHistoryRowsByIds(
+      client,
+      candidates.map((row) => row.id)
+    );
+  });
+  return sortAndDedupeEventHistoryRows(rows, safeLimit);
 }
 
 async function ensureEventHistoryInputBlobsTable(): Promise<void> {

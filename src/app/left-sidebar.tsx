@@ -211,10 +211,7 @@ function isInvitedHistoryEvent(data: unknown): boolean {
   const record = data as Record<string, unknown>;
   if (Boolean(record.shared)) return true;
   if (Boolean(record.invitedFromScan)) return true;
-  const createdVia = String(record.createdVia || "")
-    .trim()
-    .toLowerCase();
-  return createdVia === "ocr";
+  return false;
 }
 
 const CALENDAR_TARGETS: Array<{

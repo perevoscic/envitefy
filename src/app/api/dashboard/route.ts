@@ -451,10 +451,10 @@ export async function GET(req: Request) {
 
     return withTiming(timing, body);
   } catch (err: unknown) {
-    if (process.env.NODE_ENV !== "production") {
+    const timedOut = isStatementTimeoutError(err);
+    if (!timedOut && process.env.NODE_ENV !== "production") {
       console.error("[api/dashboard] GET failed", err);
     }
-    const timedOut = isStatementTimeoutError(err);
     const message = errorMessage(err, "Failed to load dashboard");
     const body = timedOut
       ? timing.enabled
