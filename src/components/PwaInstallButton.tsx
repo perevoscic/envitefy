@@ -400,6 +400,11 @@ export default function PwaInstallButton({
   const [guidePulse, setGuidePulse] = useState(false);
   const [installedState, setInstalledState] = useState(false);
 
+  const openGuide = useCallback(() => {
+    setWasManuallyClosed(false);
+    setExpanded(true);
+  }, []);
+
   const markInstalled = useCallback(
     (reason: string, meta?: Record<string, unknown>) => {
       setInstalledState(true);
@@ -847,6 +852,65 @@ export default function PwaInstallButton({
     return () => window.clearTimeout(timer);
   }, [guidePulse]);
 
+  const handleInstallAction = useCallback(async () => {
+    const w = window as SnapWindow;
+    const promptEvent =
+      deferredPromptRef.current ?? deferred ?? w.__snapInstallDeferredPrompt ?? null;
+
+    if (promptEvent && typeof promptEvent.prompt === "function") {
+      deferredPromptRef.current = promptEvent;
+      setDeferred(promptEvent);
+      try {
+        pushDebug("install CTA prompt triggered");
+        await promptEvent.prompt();
+        let choice: {
+          outcome: "accepted" | "dismissed";
+          platform: string;
+        } | null = null;
+        try {
+          choice = await (promptEvent as any).userChoice;
+        } catch {
+          choice = null;
+        }
+        pushDebug("install CTA user choice resolved", {
+          outcome: choice?.outcome ?? "unknown",
+          platform: choice?.platform ?? "unknown",
+        });
+        if (choice?.outcome === "accepted") {
+          setShowIosTip(false);
+          setMaybeInstallable(false);
+          setExpanded(false);
+          setHideUi(true);
+        } else {
+          setGuidePulse(true);
+          openGuide();
+        }
+      } catch (error) {
+        pushDebug("install CTA prompt error", {
+          message: error instanceof Error ? error.message : String(error),
+        });
+        setGuidePulse(true);
+        openGuide();
+      } finally {
+        deferredPromptRef.current = null;
+        setDeferred(null);
+        setCanInstall(false);
+        setShowIosTip(false);
+        try {
+          w.__snapInstallDeferredPrompt = null;
+        } catch {}
+      }
+      return;
+    }
+    pushDebug("install CTA prompt missing; switching to fallback");
+    deferredPromptRef.current = null;
+    setDeferred(null);
+    setCanInstall(false);
+    setShowIosTip(false);
+    setGuidePulse(true);
+    openGuide();
+  }, [deferred, openGuide, pushDebug]);
+
   if (shouldHideInstallUi()) return null;
 
   // Additional safety check: hide if running in standalone mode
@@ -906,11 +970,8 @@ export default function PwaInstallButton({
       {!expanded && (
         <button
           type="button"
-          onClick={() => {
-            setWasManuallyClosed(false);
-            setExpanded(true);
-          }}
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-white/70 bg-[linear-gradient(135deg,#6b3cff_0%,#6757ff_40%,#5a7dff_100%)] text-white shadow-[0_20px_40px_rgba(103,87,255,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(103,87,255,0.42)]"
+          onClick={showInstallCta ? handleInstallAction : openGuide}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/70 bg-[linear-gradient(135deg,#6b3cff_0%,#6757ff_40%,#5a7dff_100%)] px-4 text-sm font-semibold text-white shadow-[0_20px_40px_rgba(103,87,255,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(103,87,255,0.42)]"
           aria-label="Open install options"
         >
           <svg
@@ -930,6 +991,7 @@ export default function PwaInstallButton({
               fill="currentColor"
             />
           </svg>
+          <span>Install app</span>
         </button>
       )}
       {expanded && (
@@ -996,73 +1058,7 @@ export default function PwaInstallButton({
               </div>
               {showInstallCta && (
                 <button
-                  onClick={async () => {
-                    const w = window as SnapWindow;
-                    const promptEvent =
-                      deferredPromptRef.current ??
-                      deferred ??
-                      w.__snapInstallDeferredPrompt ??
-                      null;
-
-                    if (promptEvent && typeof promptEvent.prompt === "function") {
-                      deferredPromptRef.current = promptEvent;
-                      setDeferred(promptEvent);
-                      try {
-                        pushDebug("install CTA prompt triggered");
-                        await promptEvent.prompt();
-                        let choice: {
-                          outcome: "accepted" | "dismissed";
-                          platform: string;
-                        } | null = null;
-                        try {
-                          choice = await (promptEvent as any).userChoice;
-                        } catch {
-                          choice = null;
-                        }
-                        pushDebug("install CTA user choice resolved", {
-                          outcome: choice?.outcome ?? "unknown",
-                          platform: choice?.platform ?? "unknown",
-                        });
-                        if (choice?.outcome === "accepted") {
-                          setShowIosTip(false);
-                          setMaybeInstallable(false);
-                          setExpanded(false);
-                          setHideUi(true);
-                        } else {
-                          // Prompt dismissed or unavailable; surface fallback instructions.
-                          setGuidePulse(true);
-                          setExpanded(true);
-                        }
-                      } catch (error) {
-                        pushDebug("install CTA prompt error", {
-                          message:
-                            error instanceof Error
-                              ? error.message
-                              : String(error),
-                        });
-                        setGuidePulse(true);
-                        setExpanded(true);
-                      } finally {
-                        deferredPromptRef.current = null;
-                        setDeferred(null);
-                        setCanInstall(false);
-                        setShowIosTip(false);
-                        try {
-                          w.__snapInstallDeferredPrompt = null;
-                        } catch {}
-                      }
-                      return;
-                    }
-                    pushDebug(
-                      "install CTA prompt missing; switching to fallback"
-                    );
-                    deferredPromptRef.current = null;
-                    setDeferred(null);
-                    setCanInstall(false);
-                    setShowIosTip(false);
-                    setGuidePulse(true);
-                    setExpanded(true);
-                  }}
+                  onClick={handleInstallAction}
                   className="w-full rounded-full bg-[linear-gradient(96deg,#6b3cff_0%,#6757ff_40%,#5a7dff_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(103,87,255,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_34px_rgba(103,87,255,0.35)]"
                 >
                   Install app
