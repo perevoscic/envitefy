@@ -10,7 +10,7 @@ import {
   useRef,
   useMemo,
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
 import GlobalSmartSignup from "./GlobalSmartSignup";
