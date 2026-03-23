@@ -847,7 +847,7 @@ export default function SimpleTemplateView({
     : hasSimpleDesignTokens
     ? undefined
     : isDarkBackground
-    ? { color: "#f5e6d3" }
+    ? { color: "#ffffff" }
     : undefined;
   const neutralBackgroundStyle: CSSProperties | undefined = neutralUsesGradient
     ? neutralUsesPalette

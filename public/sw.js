@@ -1,12 +1,13 @@
-const CACHE_NAME = "smd-static-v7";
+const CACHE_NAME = "smd-static-v8";
 const APP_SHELL = [
   "/",
   "/landing",
-  "/manifest.webmanifest",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/maskable-icon-192.png",
-  "/icons/maskable-icon-512.png",
+  "/manifest.webmanifest?v=v8",
+  "/favicon.png?v=v8",
+  "/icons/icon-192.png?v=v8",
+  "/icons/icon-512.png?v=v8",
+  "/icons/maskable-icon-192.png?v=v8",
+  "/icons/maskable-icon-512.png?v=v8",
 ];
 
 self.addEventListener("install", (event) => {

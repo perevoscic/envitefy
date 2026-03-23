@@ -21,7 +21,7 @@ export default function AppShell({
   const pathname = usePathname();
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
-  const isLightweightLanding = pathname === "/event";
+  const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 
   if (isLightweightLanding) {
     return (

@@ -533,7 +533,7 @@ export default function BirthdayTemplateView({
                 <p
                   className={styles.previewNames}
                   style={{
-                    color: headingColor,
+                    color: "#ffffff",
                     fontFamily: headingFontFamily,
                     fontWeight:
                       variation.titleWeight === "bold"

@@ -392,6 +392,7 @@ function InvitationEventCard({
                 className={`mb-4 font-black leading-tight tracking-tighter text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.7)] ${
                   primary ? "text-3xl md:text-5xl" : "text-3xl md:text-4xl"
                 }`}
+                style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
               >
                 {item.title}
               </h3>
@@ -453,7 +454,11 @@ function InvitationEventCard({
               </div>
             </div>
 
-            <div className="my-8 grid grid-cols-2 gap-3">
+            <div
+              className={`my-8 grid gap-3 ${
+                stats.length === 1 ? "grid-cols-1" : "grid-cols-2"
+              }`}
+            >
               {stats.map((stat) => {
                 const Icon = stat.icon;
                 return (
@@ -487,53 +492,6 @@ function InvitationEventCard({
         </div>
       </div>
     </div>
-  );
-}
-
-
-function UpcomingEventRow({
-  item,
-  now,
-}: {
-  item: DashboardEventItem;
-  now: number;
-}) {
-  const statusLabel = getEventStatusLabel(item);
-  const statusTone = getInvitationStatusTone(item);
-  const dateStr = formatLongDate(item.startAt);
-  const timeStr = formatTimeOnlyRange(item.startAt, item.endAt);
-
-  return (
-    <Link
-      href={`/event/${item.id}`}
-      className="group flex items-center gap-4 rounded-[20px] border border-slate-100 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-lg md:gap-5 md:p-5"
-    >
-      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 md:h-14 md:w-14">
-        <Calendar size={20} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-slate-900 md:text-base">
-          {item.title}
-        </p>
-        <p className="mt-0.5 truncate text-xs font-medium text-slate-400">
-          {dateStr} &middot; {timeStr}
-          {item.locationText ? ` · ${item.locationText}` : ""}
-        </p>
-      </div>
-      <div className="hidden flex-shrink-0 text-right sm:block">
-        <span
-          className={`text-xs font-bold ${
-            statusTone === "green" ? "text-emerald-500" : "text-orange-500"
-          }`}
-        >
-          {statusLabel}
-        </span>
-      </div>
-      <ChevronRight
-        size={16}
-        className="flex-shrink-0 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500"
-      />
-    </Link>
   );
 }
 
@@ -708,6 +666,50 @@ function buildInvitationStats(
   ].filter(Boolean) as InvitationCardStat[];
 }
 
+function buildInvitationActions(
+  item: DashboardEventItem,
+  onForceTravel: () => void
+): {
+  primaryAction: InvitationAction;
+  secondaryAction: InvitationAction | null;
+} {
+  const statusLabel = getEventStatusLabel(item);
+  const isInvitedWithoutResponse = statusLabel === "Invited";
+
+  if (isInvitedWithoutResponse) {
+    return {
+      primaryAction: { href: `/event/${item.id}`, label: "RSVP Now" },
+      secondaryAction: item.mapsUrl
+        ? {
+            href: item.mapsUrl,
+            label: "Get Directions",
+            icon: Navigation,
+            external: true,
+          }
+        : {
+            label: "Estimate Travel",
+            icon: Navigation,
+            onClick: onForceTravel,
+          },
+    };
+  }
+
+  return {
+    primaryAction: item.mapsUrl
+      ? {
+          href: item.mapsUrl,
+          label: "Get Directions",
+          icon: Navigation,
+          external: true,
+        }
+      : { href: `/event/${item.id}`, label: "Open Event" },
+    secondaryAction: {
+      href: `/event/${item.id}`,
+      label: "Open Event",
+    },
+  };
+}
+
 function LoadingDashboardState() {
   return (
     <div className="space-y-8">
@@ -754,7 +756,6 @@ export default function HomeOverviewDashboard({
   const nextEvent = data?.nextEvent ?? null;
   const viewerLabel = getViewerLabel(viewerName);
   const relationLabel = eventRelationLabel(nextEvent);
-  const statusLabel = getEventStatusLabel(nextEvent);
   const hasTravelMetrics =
     metrics?.travelMinutes != null || metrics?.travelDistanceKm != null;
   const travelMiles =
@@ -786,6 +787,10 @@ export default function HomeOverviewDashboard({
           })
         : [],
     [data?.rsvp, metrics, metricsLoading, nextEvent]
+  );
+  const nextEventActions = useMemo(
+    () => (nextEvent ? buildInvitationActions(nextEvent, onForceTravel) : null),
+    [nextEvent, onForceTravel]
   );
 
   const infoCards: InfoCardProps[] = [
@@ -863,43 +868,14 @@ export default function HomeOverviewDashboard({
       </header>
 
       <section>
-        {nextEvent ? (
+        {nextEvent && nextEventActions ? (
           <InvitationEventCard
             item={nextEvent}
             now={now}
             primary
             stats={nextEventStats}
-            primaryAction={
-              statusLabel === "Invited"
-                ? { href: `/event/${nextEvent.id}`, label: "RSVP Now" }
-                : nextEvent.mapsUrl
-                ? {
-                    href: nextEvent.mapsUrl,
-                    label: "Get Directions",
-                    icon: Navigation,
-                    external: true,
-                  }
-                : { href: `/event/${nextEvent.id}`, label: "Open Event" }
-            }
-            secondaryAction={
-              statusLabel === "Invited"
-                ? nextEvent.mapsUrl
-                  ? {
-                      href: nextEvent.mapsUrl,
-                      label: "Get Directions",
-                      icon: Navigation,
-                      external: true,
-                    }
-                  : {
-                      label: "Estimate Travel",
-                      icon: Navigation,
-                      onClick: onForceTravel,
-                    }
-                : {
-                    href: `/event/${nextEvent.id}`,
-                    label: "Open Event",
-                  }
-            }
+            primaryAction={nextEventActions.primaryAction}
+            secondaryAction={nextEventActions.secondaryAction}
           />
         ) : (
           <article className="relative overflow-hidden rounded-[40px] border border-slate-100 bg-white shadow-xl">
@@ -998,6 +974,12 @@ export default function HomeOverviewDashboard({
         )}
       </section>
 
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {infoCards.map((card) => (
+          <InfoCard key={card.label} {...card} />
+        ))}
+      </section>
+
 
       {(() => {
         const upcomingRest = (data?.upcoming ?? []).filter(
@@ -1014,20 +996,30 @@ export default function HomeOverviewDashboard({
                 {upcomingRest.length} event{upcomingRest.length !== 1 ? "s" : ""}
               </span>
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {upcomingRest.map((ev) => (
-                <UpcomingEventRow key={ev.id} item={ev} now={now} />
-              ))}
+            <div className="space-y-6">
+              {upcomingRest.map((ev) => {
+                const actions = buildInvitationActions(ev, onForceTravel);
+                return (
+                  <InvitationEventCard
+                    key={ev.id}
+                    item={ev}
+                    now={now}
+                    primary={false}
+                    stats={buildInvitationStats(ev, {
+                      isPrimary: false,
+                      rsvp: null,
+                      metrics: null,
+                      metricsLoading: false,
+                    })}
+                    primaryAction={actions.primaryAction}
+                    secondaryAction={actions.secondaryAction}
+                  />
+                );
+              })}
             </div>
           </section>
         );
       })()}
-
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {infoCards.map((card) => (
-          <InfoCard key={card.label} {...card} />
-        ))}
-      </section>
 
     </div>
   );

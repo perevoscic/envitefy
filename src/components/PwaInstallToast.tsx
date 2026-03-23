@@ -12,6 +12,7 @@ interface SnapWindow extends Window {
 }
 
 const BRIDGE_EVENT_NAME = "envitefy:beforeinstallprompt";
+const APP_ICON_SRC = "/icons/icon-192.png?v=v8";
 
 const shouldHideInstallUi = (): boolean => {
   if (typeof window === "undefined") return false;
@@ -268,7 +269,7 @@ export default function PwaInstallToast() {
             <div className="flex-shrink-0">
               <div className="flex h-14 w-14 items-center justify-center rounded-[20px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] shadow-[0_12px_30px_rgba(103,87,255,0.12)]">
                 <img
-                  src="/icons/icon-192.png"
+                  src={APP_ICON_SRC}
                   alt="Envitefy"
                   className="h-10 w-10 rounded-lg"
                   onError={(e) => {
