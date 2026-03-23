@@ -316,7 +316,7 @@ function InvitationEventCard({
   const renderAction = (
     action: InvitationAction,
     className: string,
-    trailingChevron = false
+    trailingChevron = false,
   ) => {
     const Icon = action.icon;
     const content = (
@@ -514,7 +514,7 @@ function formatLongDate(value: string | null | undefined): string {
 
 function formatTimeOnlyRange(
   startRaw: string | null | undefined,
-  endRaw: string | null | undefined
+  endRaw: string | null | undefined,
 ): string {
   const start = parseSafeDate(startRaw);
   if (!start) return "Time pending";
@@ -538,7 +538,7 @@ function toMiles(km: number): number {
 }
 
 function eventRelationLabel(
-  item: DashboardEventItem | null | undefined
+  item: DashboardEventItem | null | undefined,
 ): string {
   if (!item) return "My Event";
   if (item.ownership === "invited") {
@@ -576,7 +576,7 @@ function getEventStatusLabel(item: DashboardEventItem | null): string {
 }
 
 function getInvitationStatusTone(
-  item: DashboardEventItem | null | undefined
+  item: DashboardEventItem | null | undefined,
 ): "green" | "orange" {
   const label = getEventStatusLabel(item ?? null).toLowerCase();
   if (label === "confirmed") return "green";
@@ -584,7 +584,7 @@ function getInvitationStatusTone(
 }
 
 function getInvitationStatusTextClass(
-  item: DashboardEventItem | null | undefined
+  item: DashboardEventItem | null | undefined,
 ): string {
   return getInvitationStatusTone(item) === "green"
     ? "text-emerald-500"
@@ -620,15 +620,15 @@ function buildInvitationStats(
     rsvp: DashboardResponse["rsvp"] | null | undefined;
     metrics: DashboardMetricsCache | null;
     metricsLoading: boolean;
-  }
+  },
 ): InvitationCardStat[] {
   const timeValue = formatTimeOnlyRange(item.startAt, null);
   const travelValue =
     options.metricsLoading && options.isPrimary
       ? "Refreshing"
       : options.metrics?.travelMinutes != null
-      ? `${options.metrics.travelMinutes} min`
-      : null;
+        ? `${options.metrics.travelMinutes} min`
+        : null;
   const weatherValue =
     options.metrics?.weatherTemp != null
       ? `${Math.round(options.metrics.weatherTemp)}°F`
@@ -655,20 +655,20 @@ function buildInvitationStats(
     travelValue
       ? { icon: Navigation, label: "Travel", value: travelValue }
       : weatherValue && options.isPrimary
-      ? { icon: Calendar, label: "Forecast", value: weatherValue }
-      : options.isPrimary && options.rsvp
-      ? {
-          icon: CheckCircle2,
-          label: "Responses",
-          value: `${options.rsvp.going} going`,
-        }
-      : null,
+        ? { icon: Calendar, label: "Forecast", value: weatherValue }
+        : options.isPrimary && options.rsvp
+          ? {
+              icon: CheckCircle2,
+              label: "Responses",
+              value: `${options.rsvp.going} going`,
+            }
+          : null,
   ].filter(Boolean) as InvitationCardStat[];
 }
 
 function buildInvitationActions(
   item: DashboardEventItem,
-  onForceTravel: () => void
+  onForceTravel: () => void,
 ): {
   primaryAction: InvitationAction;
   secondaryAction: InvitationAction | null;
@@ -766,7 +766,7 @@ export default function HomeOverviewDashboard({
     enrichMeta?.hasDestination && enrichMeta?.hasOrigin === false;
   const weatherEligible = Boolean(data?.metricsEligibility.weatherEligible);
   const weatherHasData = Boolean(
-    metrics?.weatherSummary || metrics?.weatherTemp != null
+    metrics?.weatherSummary || metrics?.weatherTemp != null,
   );
   const topKicker = nextEvent
     ? nextEvent.ownership === "invited"
@@ -786,11 +786,11 @@ export default function HomeOverviewDashboard({
             metricsLoading,
           })
         : [],
-    [data?.rsvp, metrics, metricsLoading, nextEvent]
+    [data?.rsvp, metrics, metricsLoading, nextEvent],
   );
   const nextEventActions = useMemo(
     () => (nextEvent ? buildInvitationActions(nextEvent, onForceTravel) : null),
-    [nextEvent, onForceTravel]
+    [nextEvent, onForceTravel],
   );
 
   const infoCards: InfoCardProps[] = [
@@ -806,19 +806,19 @@ export default function HomeOverviewDashboard({
       value: metricsLoading
         ? "Refreshing"
         : hasTravelMetrics
-        ? `${metrics?.travelMinutes ?? "--"} min`
-        : travelMissingOrigin
-        ? "Add Origin"
-        : "Estimate",
+          ? `${metrics?.travelMinutes ?? "--"} min`
+          : travelMissingOrigin
+            ? "Add Origin"
+            : "Estimate",
       subtext: metricsLoading
         ? "Checking route details"
         : hasTravelMetrics
-        ? travelMiles
-          ? `${travelMiles} from saved origin`
-          : "Drive time is ready"
-        : travelMissingOrigin
-        ? "Save a home location to personalize this"
-        : "Run travel estimate when needed",
+          ? travelMiles
+            ? `${travelMiles} from saved origin`
+            : "Drive time is ready"
+          : travelMissingOrigin
+            ? "Save a home location to personalize this"
+            : "Run travel estimate when needed",
       icon: Navigation,
       tone: "sky",
     },
@@ -827,17 +827,17 @@ export default function HomeOverviewDashboard({
       value: metricsLoading
         ? "Refreshing"
         : metrics?.weatherTemp != null
-        ? `${Math.round(metrics.weatherTemp)}°F`
-        : weatherEligible
-        ? "Pending"
-        : "72h Window",
+          ? `${Math.round(metrics.weatherTemp)}°F`
+          : weatherEligible
+            ? "Pending"
+            : "72h Window",
       subtext: metricsLoading
         ? "Checking latest forecast"
         : weatherHasData
-        ? metrics?.weatherSummary || "Forecast ready"
-        : weatherEligible
-        ? "Forecast has not loaded yet"
-        : "Forecast appears near the event date",
+          ? metrics?.weatherSummary || "Forecast ready"
+          : weatherEligible
+            ? "Forecast has not loaded yet"
+            : "Forecast appears near the event date",
       icon: CloudSun,
       tone: "amber",
     },
@@ -848,7 +848,7 @@ export default function HomeOverviewDashboard({
   }
 
   return (
-    <div className="space-y-8 md:space-y-10">
+    <div className="pt-8 md:pt-10 space-y-8 md:space-y-10">
       <header className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
           <div className="mb-2 flex items-center gap-2">
@@ -864,7 +864,6 @@ export default function HomeOverviewDashboard({
             {heroSummary}
           </p>
         </div>
-
       </header>
 
       <section>
@@ -980,10 +979,9 @@ export default function HomeOverviewDashboard({
         ))}
       </section>
 
-
       {(() => {
         const upcomingRest = (data?.upcoming ?? []).filter(
-          (e) => e.id !== nextEvent?.id
+          (e) => e.id !== nextEvent?.id,
         );
         if (upcomingRest.length === 0) return null;
         return (
@@ -993,7 +991,8 @@ export default function HomeOverviewDashboard({
                 Upcoming Events
               </h2>
               <span className="text-xs font-bold text-slate-400">
-                {upcomingRest.length} event{upcomingRest.length !== 1 ? "s" : ""}
+                {upcomingRest.length} event
+                {upcomingRest.length !== 1 ? "s" : ""}
               </span>
             </div>
             <div className="space-y-6">
@@ -1020,7 +1019,6 @@ export default function HomeOverviewDashboard({
           </section>
         );
       })()}
-
     </div>
   );
 }
