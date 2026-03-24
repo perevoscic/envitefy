@@ -1120,7 +1120,9 @@ export default function LeftSidebar() {
 
   const templateHrefMap = useMemo(() => {
     const map = new Map<string, string>();
-    visibleTemplateLinks.forEach((t) => map.set(t.label, t.href));
+    visibleTemplateLinks.forEach((t) => {
+      map.set(t.label, t.href);
+    });
     return map;
   }, [visibleTemplateLinks]);
   const activeTemplateLabel = useMemo(() => {

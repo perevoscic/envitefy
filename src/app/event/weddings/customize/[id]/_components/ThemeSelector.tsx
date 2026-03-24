@@ -1,6 +1,6 @@
 "use client";
 
-import themes from "../../../../../../../templates/weddings/index.json" assert { type: "json" };
+import themes from "../../../../../../../templates/weddings/index.json" with { type: "json" };
 import ThemeCard from "./ThemeCard";
 import { useRouter } from "next/navigation";
 

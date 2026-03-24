@@ -16,7 +16,7 @@ import {
   type TemplateFontTokenId,
   type TemplatePaletteTokenId,
 } from "./templateDesignTokens";
-import weddingThemes from "../../../templates/weddings/index.json" assert { type: "json" };
+import weddingThemes from "../../../templates/weddings/index.json" with { type: "json" };
 
 const baseMenu = [
   "Home",

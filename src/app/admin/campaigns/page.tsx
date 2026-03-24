@@ -41,6 +41,7 @@ export default function CampaignsPage() {
   const [testEmail, setTestEmail] = useState("");
   const [htmlMode, setHtmlMode] = useState(false);
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const isAdmin = Boolean((session?.user as any)?.isAdmin);
 
   // Rich text editor functions
   const insertFormatting = (before: string, after: string = "") => {
@@ -127,6 +128,31 @@ export default function CampaignsPage() {
     setHtmlMode(!htmlMode);
   };
 
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (status !== "authenticated" || !isAdmin) {
+      setLoading(false);
+      return;
+    }
+
+    const loadCampaigns = async () => {
+      try {
+        const res = await fetch("/api/admin/campaigns");
+        const data = await res.json();
+        if (data.ok) {
+          setCampaigns(data.campaigns);
+        }
+      } catch (error) {
+        console.error("Failed to load campaigns:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCampaigns();
+  }, [isAdmin, status]);
+
   if (status === "loading") {
     return <div className="p-6">Loading…</div>;
   }
@@ -142,8 +168,6 @@ export default function CampaignsPage() {
     );
   }
 
-  // Check admin status
-  const isAdmin = (session.user as any)?.isAdmin;
   if (!isAdmin) {
     return (
       <div className="p-6">
@@ -152,24 +176,6 @@ export default function CampaignsPage() {
       </div>
     );
   }
-
-  const loadCampaigns = async () => {
-    try {
-      const res = await fetch("/api/admin/campaigns");
-      const data = await res.json();
-      if (data.ok) {
-        setCampaigns(data.campaigns);
-      }
-    } catch (error) {
-      console.error("Failed to load campaigns:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadCampaigns();
-  }, []);
 
   const handleSendCampaign = async (e: React.FormEvent) => {
     e.preventDefault();

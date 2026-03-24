@@ -251,6 +251,7 @@ function BioCard({
       <div className="w-full h-64 bg-neutral-800 grayscale overflow-hidden border border-[#D4AF37]/30">
         <img
           src={img}
+          alt=""
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-1000"
         />
       </div>

@@ -2102,6 +2102,13 @@ const SignupBuilder: React.FC<Props> = ({
   const [themeImagesQuery, setThemeImagesQuery] = React.useState("");
   const [themeImagesSearchOpen, setThemeImagesSearchOpen] =
     React.useState(false);
+  const themeImagesSearchInputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (themeImagesSearchOpen) {
+      themeImagesSearchInputRef.current?.focus();
+    }
+  }, [themeImagesSearchOpen]);
 
   const TEMPLATE_OPTIONS = [
     { id: "header-1", label: "Left" },
@@ -2746,11 +2753,48 @@ const SignupBuilder: React.FC<Props> = ({
     return () => io.disconnect();
   }, [previewFixedHeightPx, previewFloating]);
 
+  const handleThemeImagePick = React.useCallback(
+    (url: string) => {
+      const templateId = form.header?.templateId || "header-1";
+      const imageObj = {
+        name: url.split("/").pop() || "theme-image",
+        type: "image/jpeg",
+        dataUrl: url,
+      };
+
+      if (
+        templateId === "header-3" ||
+        templateId === "header-4" ||
+        templateId === "header-5" ||
+        templateId === "header-6"
+      ) {
+        const currentImages = Array.isArray(form.header?.images)
+          ? [...form.header!.images!]
+          : [];
+        if (currentImages.length === 0) {
+          currentImages.push({
+            id: generateSignupId(),
+            ...imageObj,
+          });
+        } else {
+          currentImages[0] = {
+            id: currentImages[0]?.id || generateSignupId(),
+            ...imageObj,
+          };
+        }
+        setHeader({ images: currentImages });
+      } else {
+        setHeader({
+          backgroundImage: imageObj,
+        });
+      }
+    },
+    [form.header?.images, form.header?.templateId, setHeader]
+  );
+
   return (
     <div className="space-y-6 signup-builder">
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
+      <style>{`
         .signup-builder input[type="text"]::placeholder,
         .signup-builder input[type="text"]::-webkit-input-placeholder,
         .signup-builder input[type="text"]::-moz-placeholder,
@@ -2767,9 +2811,7 @@ const SignupBuilder: React.FC<Props> = ({
           opacity: 1 !important;
           -webkit-text-fill-color: #9CA3AF !important;
         }
-      `,
-        }}
-      />
+      `}</style>
       {showBasics && (
         <div className="space-y-4">
           <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-5 shadow-sm">
@@ -3384,11 +3426,11 @@ const SignupBuilder: React.FC<Props> = ({
               {themeImagesSearchOpen ? (
                 <div className="flex items-center gap-1">
                   <input
+                    ref={themeImagesSearchInputRef}
                     type="text"
                     value={themeImagesQuery}
                     onChange={(e) => setThemeImagesQuery(e.target.value)}
                     placeholder="Search..."
-                    autoFocus
                     className="h-9 w-32 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     onBlur={() => {
                       if (!themeImagesQuery.trim()) {
@@ -3454,49 +3496,7 @@ const SignupBuilder: React.FC<Props> = ({
             themeName={
               (form.header?.designTheme || (THEME_NAMES[0] as any)) as any
             }
-            onPick={React.useCallback(
-              (url: string) => {
-                const templateId = form.header?.templateId || "header-1";
-                const imageObj = {
-                  name: url.split("/").pop() || "theme-image",
-                  type: "image/jpeg",
-                  dataUrl: url,
-                };
-
-                // For templates 3, 4, 5, 6, set the first image to images[0]
-                // For templates 1, 2, set it to backgroundImage
-                if (
-                  templateId === "header-3" ||
-                  templateId === "header-4" ||
-                  templateId === "header-5" ||
-                  templateId === "header-6"
-                ) {
-                  const currentImages = Array.isArray(form.header?.images)
-                    ? [...form.header!.images!]
-                    : [];
-                  // Ensure array has at least one slot
-                  if (currentImages.length === 0) {
-                    currentImages.push({
-                      id: generateSignupId(),
-                      ...imageObj,
-                    });
-                  } else {
-                    // Set at index 0, preserving other images
-                    currentImages[0] = {
-                      id: currentImages[0]?.id || generateSignupId(),
-                      ...imageObj,
-                    };
-                  }
-                  setHeader({ images: currentImages });
-                } else {
-                  // For templates 1 and 2, use backgroundImage
-                  setHeader({
-                    backgroundImage: imageObj,
-                  });
-                }
-              },
-              [form.header?.templateId, form.header?.images, setHeader]
-            )}
+            onPick={handleThemeImagePick}
             searchQuery={themeImagesQuery}
             allNames={THEME_NAMES as unknown as string[]}
             selectedUrl={(() => {

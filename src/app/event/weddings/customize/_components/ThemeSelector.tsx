@@ -1,15 +1,15 @@
 "use client";
 
-import themes from "../../../../../../templates/weddings/index.json" assert { type: "json" };
+import themes from "../../../../../../templates/weddings/index.json" with { type: "json" };
 import ThemeCard from "./ThemeCard";
 
 export default function ThemeSelector({
   selectedTemplateId,
-  onSelect,
+  onSelectAction,
   disabled = false,
 }: {
   selectedTemplateId?: string;
-  onSelect: (id: string) => void;
+  onSelectAction: (id: string) => void;
   disabled?: boolean;
 }) {
   return (
@@ -23,7 +23,7 @@ export default function ThemeSelector({
           key={theme.id}
           theme={theme}
           selected={theme.id === selectedTemplateId}
-          onSelect={() => onSelect(theme.id)}
+          onSelect={() => onSelectAction(theme.id)}
           disabled={disabled}
         />
       ))}

@@ -4234,8 +4234,8 @@ function collectJsonLdMetadataStrings(
 function extractJsonLdMetadataText(html: string): string[] {
   const snippets: string[] = [];
   const jsonLdRegex = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  let match: RegExpExecArray | null = null;
-  while ((match = jsonLdRegex.exec(html))) {
+  let match = jsonLdRegex.exec(html);
+  while (match) {
     const content = safeString(match[1]);
     if (!content) continue;
     try {
@@ -4244,6 +4244,7 @@ function extractJsonLdMetadataText(html: string): string[] {
     } catch {
       // Ignore malformed JSON-LD.
     }
+    match = jsonLdRegex.exec(html);
   }
   return uniqueLines(snippets.filter(Boolean), 12);
 }
@@ -4254,9 +4255,10 @@ function extractMetadataText(html: string): string {
   if (titleMatch?.[1]) snippets.push(stripHtml(titleMatch[1]));
   const metaRegex =
     /<meta[^>]+(?:name|property)=["'](?:description|og:title|og:description|twitter:title|twitter:description)["'][^>]*content=["']([^"']+)["'][^>]*>/gi;
-  let match: RegExpExecArray | null = null;
-  while ((match = metaRegex.exec(html))) {
+  let match = metaRegex.exec(html);
+  while (match) {
     if (match[1]) snippets.push(stripHtml(match[1]));
+    match = metaRegex.exec(html);
   }
   snippets.push(...extractJsonLdMetadataText(html));
   return uniqueLines(snippets.filter(Boolean), 12).join("\n\n");
@@ -4765,8 +4767,8 @@ function upsertDiscoveredLink(map: Map<string, CrawlCandidate>, candidate: Crawl
 function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): CrawlCandidate[] {
   const links: CrawlCandidate[] = [];
   const anchorRegex = /<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi;
-  let match: RegExpExecArray | null = null;
-  while ((match = anchorRegex.exec(html))) {
+  let match = anchorRegex.exec(html);
+  while (match) {
     const rawAttrs = `${match[1] || ""} ${match[3] || ""}`;
     const url = linkUrlFromHref(baseUrl, match[2] || "");
     if (!url) continue;
@@ -4787,6 +4789,7 @@ function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): C
       contentType: null,
       score: scoreDiscoveryCandidate(candidateBase),
     });
+    match = anchorRegex.exec(html);
   }
   return uniqueBy(links, (item) => item.url).sort(compareDiscoveryCandidates);
 }

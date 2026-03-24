@@ -2090,7 +2090,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const targets = navItems
         .map((item) => document.getElementById(item.id))
         .filter(Boolean) as HTMLElement[];
-      targets.forEach((el) => observer.observe(el));
+      targets.forEach((el) => {
+        observer.observe(el);
+      });
 
       return () => observer.disconnect();
     }, [navItems]);

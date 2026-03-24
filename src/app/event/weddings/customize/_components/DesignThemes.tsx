@@ -2,17 +2,17 @@ import ThemeSelector from "./ThemeSelector";
 
 export default function DesignThemes({
   selectedTemplateId,
-  onSelect,
+  onSelectAction,
   disabled = false,
 }: {
   selectedTemplateId?: string;
-  onSelect: (id: string) => void;
+  onSelectAction: (id: string) => void;
   disabled?: boolean;
 }) {
   return (
     <ThemeSelector
       selectedTemplateId={selectedTemplateId}
-      onSelect={onSelect}
+      onSelectAction={onSelectAction}
       disabled={disabled}
     />
   );

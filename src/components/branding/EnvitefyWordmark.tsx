@@ -12,6 +12,7 @@ export default function EnvitefyWordmark({
 }: EnvitefyWordmarkProps) {
   return (
     <span
+      role="img"
       aria-label="envitefy"
       className={`inline-block shrink-0 origin-center ${
         scaled ? "scale-[1.80]" : ""

@@ -1,5 +1,5 @@
 import React from "react";
-import { Waves, Mountain, Sun, Wind, ArrowDown, Map } from "lucide-react";
+import { Waves, Mountain, Sun, Wind, ArrowDown, Map as MapIcon } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -67,15 +67,15 @@ const getScheduleItems = (
 ) => {
   if (!schedule || schedule.length === 0) {
     return [
-      { time: "4:00 PM", title: "Arrival", icon: Map },
+      { time: "4:00 PM", title: "Arrival", icon: MapIcon },
       { time: "4:30 PM", title: "Vows", icon: Mountain },
       { time: "5:30 PM", title: "Sunset", icon: Sun },
       { time: "7:00 PM", title: "Dinner", icon: Wind },
     ];
   }
 
-  const iconMap: Record<string, typeof Map> = {
-    arrival: Map,
+  const iconMap: Record<string, typeof MapIcon> = {
+    arrival: MapIcon,
     ceremony: Mountain,
     vows: Mountain,
     sunset: Sun,
@@ -85,7 +85,7 @@ const getScheduleItems = (
 
   return schedule.slice(0, 4).map((item, idx) => {
     const titleLower = item.title?.toLowerCase() || "";
-    let icon = Map;
+    let icon = MapIcon;
     for (const [key, iconType] of Object.entries(iconMap)) {
       if (titleLower.includes(key)) {
         icon = iconType;
@@ -93,7 +93,7 @@ const getScheduleItems = (
       }
     }
     // Default icons based on position
-    if (idx === 0) icon = Map;
+    if (idx === 0) icon = MapIcon;
     if (idx === 1) icon = Mountain;
     if (idx === 2) icon = Sun;
     if (idx === 3) icon = Wind;

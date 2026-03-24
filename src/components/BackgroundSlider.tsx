@@ -260,7 +260,9 @@ export default function BackgroundSlider({
   // Cancel any scheduled peeks on demand
   useEffect(() => {
     if (!cancelPeek) return;
-    mountPeekTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
+    mountPeekTimeoutsRef.current.forEach((id) => {
+      window.clearTimeout(id);
+    });
     mountPeekTimeoutsRef.current = [];
     if (isPeeking) setIsPeeking(false);
     if (peekPct !== 0) setPeekPct(0);
@@ -311,7 +313,9 @@ export default function BackgroundSlider({
 
     mountPeekTimeoutsRef.current = timeouts;
     return () => {
-      mountPeekTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
+      mountPeekTimeoutsRef.current.forEach((id) => {
+        window.clearTimeout(id);
+      });
       mountPeekTimeoutsRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

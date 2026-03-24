@@ -121,6 +121,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const [category, setCategory] = useState<string>("");
   const [customCategory, setCustomCategory] = useState<string>("");
   const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const customCategoryInputRef = useRef<HTMLInputElement | null>(null);
   const [registryLinks, setRegistryLinks] = useState<RegistryFormEntry[]>([]);
   const [attachment, setAttachment] = useState<{
     name: string;
@@ -155,6 +156,12 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     microsoft: false,
     apple: false,
   });
+
+  useEffect(() => {
+    if (showCustomCategory) {
+      customCategoryInputRef.current?.focus();
+    }
+  }, [showCustomCategory]);
 
   const addRegistryLink = () => {
     setRegistryLinks((prev) => {
@@ -826,6 +833,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         ) : (
           <div className="flex gap-2">
             <input
+              ref={customCategoryInputRef}
               type="text"
               value={customCategory}
               onChange={(e) => setCustomCategory(e.target.value)}
@@ -836,7 +844,6 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
               }}
               placeholder="Enter category name"
               className="flex-1 px-3 py-2 rounded-md border border-border bg-background"
-              autoFocus
             />
             <button
               type="button"

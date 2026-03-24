@@ -44,28 +44,28 @@ import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import Link from "next/link";
-import etherealClassic from "../../../../../templates/weddings/ethereal-classic/config.json" assert { type: "json" };
-import modernEditorial from "../../../../../templates/weddings/modern-editorial/config.json" assert { type: "json" };
-import rusticBoho from "../../../../../templates/weddings/rustic-boho/config.json" assert { type: "json" };
-import cinematicWedding from "../../../../../templates/weddings/cinematic-wedding/config.json" assert { type: "json" };
-import celestialWedding from "../../../../../templates/weddings/celestial-wedding/config.json" assert { type: "json" };
-import gildedWedding from "../../../../../templates/weddings/gilded-wedding/config.json" assert { type: "json" };
-import museumWedding from "../../../../../templates/weddings/museum-wedding/config.json" assert { type: "json" };
-import etherealWedding from "../../../../../templates/weddings/ethereal-wedding/config.json" assert { type: "json" };
-import noirLuxury from "../../../../../templates/weddings/noir-luxury/config.json" assert { type: "json" };
-import retro70s from "../../../../../templates/weddings/retro-70s/config.json" assert { type: "json" };
-import newspaperWedding from "../../../../../templates/weddings/newspaper-wedding/config.json" assert { type: "json" };
-import bauhausWedding from "../../../../../templates/weddings/bauhaus-wedding/config.json" assert { type: "json" };
-import europeCoastalWedding from "../../../../../templates/weddings/europe-coastal-wedding/config.json" assert { type: "json" };
-import floridaCoastalWedding from "../../../../../templates/weddings/florida-coastal-wedding/config.json" assert { type: "json" };
-import californiaCoastalWedding from "../../../../../templates/weddings/california-coastal-wedding/config.json" assert { type: "json" };
-import winterWedding from "../../../../../templates/weddings/winter-wedding/config.json" assert { type: "json" };
-import industrialWedding from "../../../../../templates/weddings/industrial-wedding/config.json" assert { type: "json" };
-import libraryWedding from "../../../../../templates/weddings/library-wedding/config.json" assert { type: "json" };
-import gardenWedding from "../../../../../templates/weddings/garden-wedding/config.json" assert { type: "json" };
-import skylineWedding from "../../../../../templates/weddings/skyline-wedding/config.json" assert { type: "json" };
+import etherealClassic from "../../../../../templates/weddings/ethereal-classic/config.json" with { type: "json" };
+import modernEditorial from "../../../../../templates/weddings/modern-editorial/config.json" with { type: "json" };
+import rusticBoho from "../../../../../templates/weddings/rustic-boho/config.json" with { type: "json" };
+import cinematicWedding from "../../../../../templates/weddings/cinematic-wedding/config.json" with { type: "json" };
+import celestialWedding from "../../../../../templates/weddings/celestial-wedding/config.json" with { type: "json" };
+import gildedWedding from "../../../../../templates/weddings/gilded-wedding/config.json" with { type: "json" };
+import museumWedding from "../../../../../templates/weddings/museum-wedding/config.json" with { type: "json" };
+import etherealWedding from "../../../../../templates/weddings/ethereal-wedding/config.json" with { type: "json" };
+import noirLuxury from "../../../../../templates/weddings/noir-luxury/config.json" with { type: "json" };
+import retro70s from "../../../../../templates/weddings/retro-70s/config.json" with { type: "json" };
+import newspaperWedding from "../../../../../templates/weddings/newspaper-wedding/config.json" with { type: "json" };
+import bauhausWedding from "../../../../../templates/weddings/bauhaus-wedding/config.json" with { type: "json" };
+import europeCoastalWedding from "../../../../../templates/weddings/europe-coastal-wedding/config.json" with { type: "json" };
+import floridaCoastalWedding from "../../../../../templates/weddings/florida-coastal-wedding/config.json" with { type: "json" };
+import californiaCoastalWedding from "../../../../../templates/weddings/california-coastal-wedding/config.json" with { type: "json" };
+import winterWedding from "../../../../../templates/weddings/winter-wedding/config.json" with { type: "json" };
+import industrialWedding from "../../../../../templates/weddings/industrial-wedding/config.json" with { type: "json" };
+import libraryWedding from "../../../../../templates/weddings/library-wedding/config.json" with { type: "json" };
+import gardenWedding from "../../../../../templates/weddings/garden-wedding/config.json" with { type: "json" };
+import skylineWedding from "../../../../../templates/weddings/skyline-wedding/config.json" with { type: "json" };
 import DesignThemes from "./_components/DesignThemes";
-import weddingTemplateCatalog from "../../../../../templates/weddings/index.json" assert { type: "json" };
+import weddingTemplateCatalog from "../../../../../templates/weddings/index.json" with { type: "json" };
 import RegistryPanel from "./[id]/RegistryPanel";
 
 const NAV_ITEMS = [
@@ -2479,7 +2479,7 @@ const App = () => {
             )}
             <DesignThemes
               selectedTemplateId={data.theme.themeId}
-              onSelect={(id) => selectTheme(id)}
+              onSelectAction={(id) => selectTheme(id)}
               disabled={themeLocked}
             />
           </div>

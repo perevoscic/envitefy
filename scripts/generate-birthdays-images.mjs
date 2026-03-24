@@ -235,8 +235,8 @@ async function extractTemplates() {
     /templateId:\s*"([^"]+)"[\s\S]*?description:\s*"([^"]+?)"[\s\S]*?imagePrompt:\s*"([^"]+?)"/g;
 
   const templates = [];
-  let match;
-  while ((match = templateRegex.exec(inviteArrayContent)) !== null) {
+  let match = templateRegex.exec(inviteArrayContent);
+  while (match !== null) {
     const [, templateId, descriptionRaw, imagePromptRaw] = match;
     const description = descriptionRaw.replace(/\s+/g, " ").trim();
     const imagePrompt = imagePromptRaw.trim();
@@ -246,6 +246,7 @@ async function extractTemplates() {
       imagePrompt: buildEnhancedPrompt(description, imagePrompt),
       originalPrompt: imagePrompt,
     });
+    match = templateRegex.exec(inviteArrayContent);
   }
 
   if (templates.length === 0) {
@@ -400,5 +401,4 @@ run().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
 

@@ -1153,6 +1153,15 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                   e.stopPropagation();
                   profileInputRef.current?.click();
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    profileInputRef.current?.click();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
                 aria-label={
                   profilePreviewUrl
                     ? "Replace profile image"

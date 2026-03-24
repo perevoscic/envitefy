@@ -1320,7 +1320,9 @@ export default function SimpleTemplateView({
     const targets = navItems
       .map((item) => document.getElementById(item.id))
       .filter(Boolean) as HTMLElement[];
-    targets.forEach((el) => observer.observe(el));
+    targets.forEach((el) => {
+      observer.observe(el);
+    });
 
     window.addEventListener("hashchange", updateActiveFromHash);
 
@@ -3192,7 +3194,11 @@ export default function SimpleTemplateView({
     );
   }
 
-  if (false && isDynamicGymnasticsLayout) {
+  const renderLegacyDynamicGymnasticsLayout =
+    typeof window !== "undefined" &&
+    window.location.search.includes("__legacyGymLayout=1");
+
+  if (renderLegacyDynamicGymnasticsLayout && isDynamicGymnasticsLayout) {
     const parseAdmissionsFromText = (value: any) => {
       const lines = String(value || "")
         .split(/\n+/)
@@ -3577,6 +3583,8 @@ export default function SimpleTemplateView({
       .filter(Boolean);
     const findLegacyAnnouncementText = (pattern: RegExp) =>
       legacyAnnouncementTexts.find((line) => pattern.test(line)) || "";
+    const stripKnownLabelPrefix = (value: string, labelPattern: RegExp) =>
+      safeString(value).replace(labelPattern, "").trim();
     const admissionNoteCandidates = uniqueTextLines(
       [
         ...baseAdmissionNoteCandidates,
@@ -3654,8 +3662,6 @@ export default function SimpleTemplateView({
       (/(official results|live scoring|meetscoresonline)/i.test(announcementBody)
         ? announcementBody
         : "");
-    const stripKnownLabelPrefix = (value: string, labelPattern: RegExp) =>
-      safeString(value).replace(labelPattern, "").trim();
     const spectatorLogisticsItems = [
       {
         key: "doors-open",

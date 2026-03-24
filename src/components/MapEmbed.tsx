@@ -84,6 +84,7 @@ export default function MapEmbed({
     >
       <iframe
         src={embedUrl}
+        title={`Map for ${address}`}
         width="100%"
         height="400"
         style={{ border: 0 }}

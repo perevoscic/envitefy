@@ -232,9 +232,10 @@ const extractTimeTokens = (value?: string | null): string[] => {
   if (!value) return [];
   const tokens: string[] = [];
   TIME_TOKEN_GLOBAL_REGEX.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = TIME_TOKEN_GLOBAL_REGEX.exec(value))) {
+  let match = TIME_TOKEN_GLOBAL_REGEX.exec(value);
+  while (match) {
     tokens.push(match[0]);
+    match = TIME_TOKEN_GLOBAL_REGEX.exec(value);
   }
   return tokens;
 };
@@ -1575,19 +1576,16 @@ export default async function EventPage({
         } as CSSProperties
       }
     >
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function(){
-              var value = "linear-gradient(180deg, #f7f3ff 0%, #ffffff 55%, #f8f5ff 100%)";
-              function apply(){
-                try { document.documentElement.style.setProperty('--theme-hero-gradient', value); } catch {}
-              }
-              try { apply(); setTimeout(apply, 0); setTimeout(apply, 200); } catch {}
-            })();
-          `,
-        }}
-      />
+      <style>{`
+        html {
+          --theme-hero-gradient: linear-gradient(
+            180deg,
+            #f7f3ff 0%,
+            #ffffff 55%,
+            #f8f5ff 100%
+          );
+        }
+      `}</style>
       <div
         className="event-theme-scope space-y-6"
         style={themeStyleVars as CSSProperties}
