@@ -5,6 +5,15 @@ const { spawn } = require("child_process");
 const lockPath = path.join(process.cwd(), ".next-dev.lock");
 const nextBin = require.resolve("next/dist/bin/next");
 const nextArgs = [nextBin, "dev", ...process.argv.slice(2)];
+const hasExplicitPortArg = process.argv.slice(2).some((arg, index, args) => {
+  if (arg === "-p" || arg === "--port") return true;
+  if (arg.startsWith("--port=")) return true;
+  return arg.startsWith("-p") && arg.length > 2 && args[index - 1] !== "--";
+});
+
+if (!process.env.PORT && !hasExplicitPortArg) {
+  process.env.PORT = "3001";
+}
 
 function isProcessRunning(pid) {
   if (!Number.isFinite(pid) || pid <= 0) return false;

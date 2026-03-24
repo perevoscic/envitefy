@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, getCreditsByEmail } from "@/lib/db";
+import {
+  updateUserNamesByEmail,
+  getUserByEmail,
+  updatePreferredProviderByEmail,
+  getSubscriptionPlanByEmail,
+  updateSubscriptionPlanByEmail,
+} from "@/lib/db";
 import { sendSubscriptionChangeEmail } from "@/lib/email";
 
 export async function GET() {
@@ -11,10 +17,9 @@ export async function GET() {
   }
   const email = session.user.email as string;
   const user = await getUserByEmail(email);
-  const plan = await getSubscriptionPlanByEmail(email);
-  // Do not initialize/backfill credits on sign-in; only read existing value
-  const responsePlan = plan || "freemium";
-  const rawCredits = await getCreditsByEmail(email);
+  // Reuse the user row instead of issuing extra point-lookups on the critical path.
+  const responsePlan = user?.subscription_plan || "freemium";
+  const rawCredits = user?.credits;
   const creditsValue =
     responsePlan === "FF"
       ? null
@@ -131,5 +136,3 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
-
-

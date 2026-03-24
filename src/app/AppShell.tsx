@@ -10,7 +10,6 @@ import ConditionalFooter from "@/components/ConditionalFooter";
 import { MainContentWrapper } from "@/components/MainContentWrapper";
 
 const LeftSidebar = dynamic(() => import("./left-sidebar"), {
-  ssr: false,
   loading: () => null,
 });
 

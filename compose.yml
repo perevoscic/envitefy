@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16
+    container_name: envitefy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: envitefy
+      POSTGRES_USER: envitefy
+      POSTGRES_PASSWORD: envitefy
+    ports:
+      - "54329:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U envitefy -d envitefy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - envitefy-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  envitefy-postgres-data:

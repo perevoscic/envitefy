@@ -907,6 +907,18 @@ export default function LeftSidebar() {
 
   useEffect(() => {
     let ignore = false;
+    let idleId: number | null = null;
+    let timeoutId: number | null = null;
+
+    const cancelScheduledLoad = () => {
+      if (typeof window === "undefined") return;
+      if (idleId !== null && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
 
     const applyProfile = (
       plan: SubscriptionPlan,
@@ -961,24 +973,43 @@ export default function LeftSidebar() {
       }
     }
 
+    const scheduleProfileLoad = () => {
+      if (typeof window === "undefined") {
+        void loadProfile();
+        return;
+      }
+      const run = () => {
+        if (!ignore) {
+          void loadProfile();
+        }
+      };
+      if (typeof window.requestIdleCallback === "function") {
+        idleId = window.requestIdleCallback(run, { timeout: 1500 });
+        return;
+      }
+      timeoutId = window.setTimeout(run, 250);
+    };
+
     if (status === "authenticated") {
       const cached = readProfileCache(profileEmailRef.current || profileEmail);
       const hasFreshCache =
         cached && Date.now() - cached.timestamp < PROFILE_CACHE_TTL_MS;
+      setIsAdmin(Boolean((session?.user as any)?.isAdmin));
+      setProfileLoaded(true);
       if (cached) {
         applyProfile(cached.plan, cached.credits);
-        setIsAdmin(Boolean((session?.user as any)?.isAdmin));
-        setProfileLoaded(true);
         if (hasFreshCache) {
           return () => {
             ignore = true;
+            cancelScheduledLoad();
           };
         }
       } else {
-        setProfileLoaded(false);
+        setCredits(null);
       }
-      loadProfile();
+      scheduleProfileLoad();
     } else if (status === "unauthenticated") {
+      cancelScheduledLoad();
       clearProfileCache(profileEmailRef.current || profileEmail);
       profileEmailRef.current = null;
       savedCalendarProviderRef.current = "__unset";
@@ -987,6 +1018,7 @@ export default function LeftSidebar() {
     }
     return () => {
       ignore = true;
+      cancelScheduledLoad();
     };
   }, [status, profileEmail, session?.user]);
 
