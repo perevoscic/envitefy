@@ -138,7 +138,7 @@ export default function Verticals() {
                 </Link>
               ) : block.id === "gymnastics" ? (
                 <Link
-                  href="/event/gymnastics"
+                  href="/gymnastics"
                   className="group inline-flex items-center gap-2 text-lg font-semibold text-black hover:gap-3 transition-all"
                 >
                   {block.buttonText} <ArrowRight className="w-5 h-5" />

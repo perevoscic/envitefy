@@ -230,7 +230,7 @@ export default function GymnasticsLanding() {
             {/* brand */}
             <Link href="/" className="flex items-center gap-2.5">
               <div className="hidden sm:block">
-                <EnvitefyWordmark className="text-[2.5rem] -ml-0.5" />
+                <EnvitefyWordmark className="ml-8 mt-1 text-[2.5rem] sm:ml-8" />
                 <p className="text-sm font-semibold text-slate-900">
                   Gymnastics
                 </p>
