@@ -67,7 +67,10 @@ import {
   isOcrBirthdayRenderer,
   selectBirthdayOcrThemeId,
 } from "@/lib/birthday-ocr-template";
-import { isScannedInviteCreatedVia } from "@/lib/dashboard-data";
+import {
+  isScannedInviteCreatedVia,
+  normalizeDashboardEventOwnership,
+} from "@/lib/dashboard-data";
 import {
   createServerTimingTracker,
 } from "@/lib/server-timing";
@@ -719,7 +722,12 @@ export default async function EventPage({
     ((awaitedSearchParams as any)?.edit ?? "") as string
   ).trim();
   const discoveryCreatedVia = String((data as any)?.createdVia || "").toLowerCase();
-  const isScannedInviteEvent = isScannedInviteCreatedVia(discoveryCreatedVia);
+  const isScannedInviteEvent =
+    normalizeDashboardEventOwnership(
+      (data as any)?.ownership,
+      discoveryCreatedVia,
+      (data as any)?.invitedFromScan
+    ) === "invited";
   const canManageCreatedEvent = isOwner && !isScannedInviteEvent;
   const discoveryWorkflow = String(
     (data as any)?.discoverySource?.workflow || ""
@@ -1393,34 +1401,36 @@ export default async function EventPage({
                     rsvpDeadline: data.rsvpDeadline || (data.rsvp && data.rsvp.deadline),
                     numberOfGuests: data.numberOfGuests || 0
                 }}
-                isOwner={canManageCreatedEvent}
+                isOwner={isOwner}
                 calendarLinks={calendarLinks}
                 coordinates={data?.coordinates || null}
                 venueText={typeof data?.venue === "string" ? data.venue : null}
                 locationText={typeof data?.location === "string" ? data.location : null}
                 actions={
-                  !isReadOnly && canManageCreatedEvent && (
+                  !isReadOnly && isOwner && (
                     <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 sm:px-3 py-1.5 shadow">
-                      <Link
-                        href={buildEditLink(row.id, data, title)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
-                        title="Edit event"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
+                      {canManageCreatedEvent && (
+                        <Link
+                          href={buildEditLink(row.id, data, title)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
+                          title="Edit event"
                         >
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        <span className="hidden sm:inline">Edit</span>
-                      </Link>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                          >
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                          <span className="hidden sm:inline">Edit</span>
+                        </Link>
+                      )}
                       <EventDeleteModal eventId={row.id} eventTitle={title} />
                       <EventActions
                         shareUrl={shareUrl}
@@ -1444,7 +1454,8 @@ export default async function EventPage({
         eventTitle={title}
         templateId={templateId || "party-pop"}
         variationId={variationId || "classic"}
-        isOwner={canManageCreatedEvent}
+        isOwner={isOwner}
+        canEdit={canManageCreatedEvent}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
         shareUrl={shareUrl}
@@ -1462,7 +1473,8 @@ export default async function EventPage({
         eventTitle={title}
         templateId={templateId}
         variationId={variationId}
-        isOwner={canManageCreatedEvent}
+        isOwner={isOwner}
+        canEdit={canManageCreatedEvent}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
         shareUrl={shareUrl}
@@ -1481,7 +1493,8 @@ export default async function EventPage({
         eventTitle={title}
         eventData={clientSafeEventData}
         shareUrl={shareUrl}
-        isOwner={canManageCreatedEvent}
+        isOwner={isOwner}
+        canEdit={canManageCreatedEvent}
         isReadOnly={isReadOnly}
         editHref={editHref}
       />
@@ -1691,7 +1704,7 @@ export default async function EventPage({
                   <span className="hidden sm:inline">Edit</span>
                 </Link>
               )}
-              {!isReadOnly && canManageCreatedEvent && (
+              {!isReadOnly && isOwner && (
                 <EventDeleteModal eventId={row.id} eventTitle={title} />
               )}
               <EventActions
@@ -2194,6 +2207,9 @@ export default async function EventPage({
               >
                 Edit
               </Link>
+            )}
+            {isOwner && (
+              <EventDeleteModal eventId={row.id} eventTitle={title} />
             )}
             <div className="min-w-0 flex-1">
               <EventActions

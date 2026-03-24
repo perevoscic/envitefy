@@ -17,6 +17,8 @@ function assertEnv(name: string, value: string | undefined): asserts value is No
 declare global {
   // eslint-disable-next-line no-var
   var __pgPool: Pool | undefined;
+  // eslint-disable-next-line no-var
+  var __pgUnhandledGuard: boolean | undefined;
 }
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
@@ -102,15 +104,57 @@ function getPool(): Pool {
     poolConfig.allowExitOnIdle = false;
     if (ssl) poolConfig.ssl = ssl;
     global.__pgPool = new Pool(poolConfig);
-    // Ensure long queries also timeout server-side
-    try {
-      const timeoutValue = Math.max(1000, statementTimeoutMs);
-      global.__pgPool.on("connect", (client: PoolClient) => {
-        // Not awaited; best-effort. Sets statement_timeout for the session.
-        client.query(`SET statement_timeout TO ${timeoutValue}`);
+    global.__pgPool.on("error", (err: Error) => {
+      const severity = (err as any).severity;
+      const code = (err as any).code;
+      console.error("[db pool] idle client error", {
+        message: err.message,
+        severity,
+        code,
       });
-    } catch {
-      // ignore
+      if (severity === "FATAL" || /terminated unexpectedly/i.test(err.message)) {
+        console.warn("[db pool] FATAL error — destroying pool for fresh reconnect");
+        const dead = global.__pgPool;
+        global.__pgPool = undefined;
+        dead?.end().catch(() => {});
+      }
+      if (isAuthenticationPgError(err)) {
+        pgAuthErrorCount += 1;
+        if (pgAuthErrorCount >= PG_AUTH_ERROR_THRESHOLD) {
+          pgAuthBackoffUntil = Date.now() + PG_AUTH_BACKOFF_MS;
+          console.warn(
+            `[db] Pausing new Postgres connections for ${PG_AUTH_BACKOFF_MS}ms after repeated authentication failures`
+          );
+        }
+      }
+    });
+    // Ensure long queries also timeout server-side
+    const timeoutValue = Math.max(1000, statementTimeoutMs);
+    global.__pgPool.on("connect", (client: PoolClient) => {
+      client
+        .query(`SET statement_timeout TO ${timeoutValue}`)
+        .catch((err: Error) => {
+          console.warn("[db pool] SET statement_timeout failed on new connection", err.message);
+        });
+    });
+
+    if (!global.__pgUnhandledGuard) {
+      global.__pgUnhandledGuard = true;
+      process.on("unhandledRejection", (reason: any) => {
+        if (
+          reason &&
+          typeof reason === "object" &&
+          (reason.severity === "FATAL" ||
+            reason.code === "XX000" ||
+            /terminated unexpectedly|check out connection.*pool.*timeout/i.test(
+              String(reason.message || "")
+            ))
+        ) {
+          console.error("[db pool] swallowed pg unhandledRejection", reason.message);
+          return;
+        }
+        throw reason;
+      });
     }
   }
   return global.__pgPool;
@@ -140,10 +184,17 @@ async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Prom
     }
     throw err;
   }
+  let hadError = false;
+  const onClientError = (err: Error) => {
+    hadError = true;
+    console.warn("[db pool] checked-out client error", err.message);
+  };
+  client.on("error", onClientError);
   try {
     return await callback(client);
   } finally {
-    client.release();
+    client.removeListener("error", onClientError);
+    client.release(hadError);
   }
 }
 
@@ -1640,25 +1691,24 @@ const HISTORY_SIDEBAR_BATCH_SIZE = 15;
 const HISTORY_DASHBOARD_QUERY_TIMEOUT_MS = 10000;
 const HISTORY_SIDEBAR_QUERY_TIMEOUT_MS = 7000;
 
+const PG_POOL_DEFAULT_TIMEOUT_MS = Math.max(
+  1000,
+  Number.parseInt(process.env.PG_STATEMENT_TIMEOUT_MS || "15000", 10)
+);
+
 async function withStatementTimeout<T>(
   timeoutMs: number,
   callback: (client: PoolClient) => Promise<T>
 ): Promise<T> {
-  const timeoutValue = `${Math.max(1, Math.floor(timeoutMs))}ms`;
+  const timeoutValue = Math.max(1, Math.floor(timeoutMs));
   return withClient(async (client) => {
-    await client.query("begin");
+    await client.query(`SET statement_timeout = ${timeoutValue}`);
     try {
-      await client.query(`select set_config('statement_timeout', $1, true)`, [
-        timeoutValue,
-      ]);
-      const result = await callback(client);
-      await client.query("commit");
-      return result;
-    } catch (err) {
+      return await callback(client);
+    } finally {
       try {
-        await client.query("rollback");
+        await client.query(`SET statement_timeout = ${PG_POOL_DEFAULT_TIMEOUT_MS}`);
       } catch {}
-      throw err;
     }
   });
 }
@@ -1804,7 +1854,48 @@ export function buildOwnedHistoryOwnershipSql(dataSql: string): string {
   end`;
 }
 
+function buildDashboardMediaRouteSql(
+  idSql: string,
+  variant: "thumbnail" | "hero",
+  dataTextSql: string
+): string {
+  return `('/api/events/' || ${idSql} || '/thumbnail?variant=${variant}&v=' || md5(${dataTextSql}))`;
+}
+
+function buildDashboardSafeMediaJsonSql(rawJsonSql: string, rawTextSql: string): string {
+  return `case
+    when coalesce(${rawTextSql}, '') like 'data:%' then null
+    else ${rawJsonSql}
+  end`;
+}
+
+function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string {
+  const coverTextSql = `${dataSql}->>'coverImageUrl'`;
+  const thumbnailTextSql = `${dataSql}->>'thumbnail'`;
+  const customHeroTextSql = `${dataSql}->>'customHeroImage'`;
+  const heroTextSql = `${dataSql}->>'heroImage'`;
+  return `case
+    when nullif(${coverTextSql}, '') is not null
+      and coalesce(${coverTextSql}, '') not like 'data:%'
+    then ${coverTextSql}
+    when coalesce(${thumbnailTextSql}, '') like 'data:%'
+    then ${buildDashboardMediaRouteSql(idSql, "thumbnail", thumbnailTextSql)}
+    when nullif(${thumbnailTextSql}, '') is not null
+    then ${thumbnailTextSql}
+    when coalesce(${customHeroTextSql}, '') like 'data:%'
+    then ${buildDashboardMediaRouteSql(idSql, "hero", customHeroTextSql)}
+    when nullif(${customHeroTextSql}, '') is not null
+    then ${customHeroTextSql}
+    when coalesce(${heroTextSql}, '') like 'data:%'
+    then ${buildDashboardMediaRouteSql(idSql, "hero", heroTextSql)}
+    when nullif(${heroTextSql}, '') is not null
+    then ${heroTextSql}
+    else null
+  end`;
+}
+
 function buildDashboardDataProjectionSql(
+  idSql: string,
   dataSql: string,
   ownershipSql: string,
   invitedFromScanSql: string,
@@ -1825,9 +1916,15 @@ function buildDashboardDataProjectionSql(
     'lat', ${dataSql}->'lat',
     'locationLng', ${dataSql}->'locationLng',
     'lng', ${dataSql}->'lng',
-    'coverImageUrl', ${dataSql}->'coverImageUrl',
-    'thumbnail', ${dataSql}->'thumbnail',
-    'heroImage', ${dataSql}->'heroImage',
+    'coverImageUrl', ${buildDashboardCoverImageUrlSql(dataSql, idSql)},
+    'thumbnail', ${buildDashboardSafeMediaJsonSql(
+      `${dataSql}->'thumbnail'`,
+      `${dataSql}->>'thumbnail'`
+    )},
+    'heroImage', ${buildDashboardSafeMediaJsonSql(
+      `${dataSql}->'heroImage'`,
+      `${dataSql}->>'heroImage'`
+    )},
     'status', ${dataSql}->'status',
     'category', ${dataSql}->'category',
     'updatedAt', ${dataSql}->'updatedAt',
@@ -2099,9 +2196,15 @@ async function listProjectedDashboardHistoryRowsByIds(
          coalesce(eh.data, '{}'::jsonb)->'lat' as lat,
          coalesce(eh.data, '{}'::jsonb)->'locationLng' as location_lng,
          coalesce(eh.data, '{}'::jsonb)->'lng' as lng,
-         coalesce(eh.data, '{}'::jsonb)->'coverImageUrl' as cover_image_url,
-         coalesce(eh.data, '{}'::jsonb)->'thumbnail' as thumbnail,
-         coalesce(eh.data, '{}'::jsonb)->'heroImage' as hero_image,
+         ${buildDashboardCoverImageUrlSql("coalesce(eh.data, '{}'::jsonb)", "eh.id")} as cover_image_url,
+         ${buildDashboardSafeMediaJsonSql(
+           "coalesce(eh.data, '{}'::jsonb)->'thumbnail'",
+           "coalesce(eh.data, '{}'::jsonb)->>'thumbnail'"
+         )} as thumbnail,
+         ${buildDashboardSafeMediaJsonSql(
+           "coalesce(eh.data, '{}'::jsonb)->'heroImage'",
+           "coalesce(eh.data, '{}'::jsonb)->>'heroImage'"
+         )} as hero_image,
          coalesce(eh.data, '{}'::jsonb)->'status' as status,
          coalesce(eh.data, '{}'::jsonb)->'category' as category,
          coalesce(eh.data, '{}'::jsonb)->'updatedAt' as updated_at,
@@ -2827,6 +2930,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
   const ownStartRawSql = buildHistoryEventStartRawSql(ownDataSql);
   const ownStatusSql = buildHistoryStatusSql(ownDataSql);
   const ownProjection = buildDashboardDataProjectionSql(
+    "eh.id",
     ownDataSql,
     buildOwnedHistoryOwnershipSql(ownDataSql),
     `${ownDataSql}->'invitedFromScan'`,
@@ -2870,6 +2974,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
   const sharedStartRawSql = buildHistoryEventStartRawSql(sharedDataSql);
   const sharedStatusSql = buildHistoryStatusSql(sharedDataSql);
   const sharedProjection = buildDashboardDataProjectionSql(
+    "eh.id",
     sharedDataSql,
     "to_jsonb('invited'::text)",
     `${sharedDataSql}->'invitedFromScan'`,
@@ -2901,15 +3006,15 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
       from own_candidates c
       join event_history eh on eh.id = c.id
     ),
-    shared_candidates as (
+    shared_rows as (
       select *
       from (
         select
           eh.id,
           eh.user_id,
           eh.title,
+          ${sharedProjection} as data,
           eh.created_at,
-          es.status,
           ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
           ${sharedStatusSql} as status_text,
           case when es.status = 'accepted' then 1 else 2 end as relation_rank
@@ -2918,22 +3023,9 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         where es.recipient_user_id = $1
           and es.status in ('pending', 'accepted')
           and es.revoked_at is null
-      ) shared_candidates
-      order by ${buildFastHistoryOrderBySql("shared_candidates")}
+      ) shared_rows
+      order by ${buildFastHistoryOrderBySql("shared_rows")}
       limit $2
-    ),
-    shared_rows as (
-      select
-        eh.id,
-        eh.user_id,
-        eh.title,
-        ${sharedProjection} as data,
-        eh.created_at,
-        es.event_start_at,
-        es.status_text,
-        es.relation_rank
-      from shared_candidates es
-      join event_history eh on eh.id = es.id
     ),
     combined as (
       select * from own_rows
@@ -3041,15 +3133,15 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
       from own_candidates c
       join event_history eh on eh.id = c.id
     ),
-    shared_candidates as (
+    shared_rows as (
       select *
       from (
         select
           eh.id,
           eh.user_id,
           eh.title,
+          ${sharedProjection} as data,
           eh.created_at,
-          es.status,
           ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
           ${sharedStatusSql} as status_text,
           case when es.status = 'accepted' then 1 else 2 end as relation_rank
@@ -3058,22 +3150,9 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         where es.recipient_user_id = $1
           and es.status in ('pending', 'accepted')
           and es.revoked_at is null
-      ) shared_candidates
-      order by ${buildFastHistoryOrderBySql("shared_candidates")}
+      ) shared_rows
+      order by ${buildFastHistoryOrderBySql("shared_rows")}
       limit $2
-    ),
-    shared_rows as (
-      select
-        eh.id,
-        eh.user_id,
-        eh.title,
-        ${sharedProjection} as data,
-        eh.created_at,
-        es.event_start_at,
-        es.status_text,
-        es.relation_rank
-      from shared_candidates es
-      join event_history eh on eh.id = es.id
     ),
     combined as (
       select * from own_rows

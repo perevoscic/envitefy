@@ -118,50 +118,50 @@ export default function EventRsvpDashboard({
       : 0;
 
   return (
-    <section className="rounded-lg border border-border bg-background/70 p-4 space-y-3">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-foreground">
+    <section className="rounded-[28px] border border-[#ddd5ff] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f3edff] px-4 py-6 shadow-[0_22px_56px_rgba(84,61,140,0.14)] sm:px-6 space-y-4">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
           Host dashboard
         </h3>
         {displayStats.numberOfGuests > 0 && (
-          <div className="flex items-end gap-4 sm:gap-5">
+          <div className="flex items-end gap-4 sm:gap-6">
             <div className="text-center leading-none">
-              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-sky-600">
+              <div className="font-semibold text-2xl sm:text-3xl text-[#433468]">
                 {displayStats.numberOfGuests}
               </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
                 Total
               </div>
             </div>
             <div className="text-center leading-none">
-              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-emerald-600">
+              <div className="font-semibold text-2xl sm:text-3xl text-emerald-600">
                 {displayStats.yes}
               </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
                 Yes
               </div>
             </div>
             <div className="text-center leading-none">
-              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-yellow-600">
+              <div className="font-semibold text-2xl sm:text-3xl text-amber-500">
                 {displayStats.maybe}
               </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
                 Maybe
               </div>
             </div>
             <div className="text-center leading-none">
-              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-red-600">
+              <div className="font-semibold text-2xl sm:text-3xl text-red-500">
                 {displayStats.no}
               </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
                 No
               </div>
             </div>
             <div className="text-center leading-none">
-              <div className="font-mono font-extrabold text-3xl sm:text-4xl text-violet-600">
+              <div className="font-semibold text-2xl sm:text-3xl text-[#6e629c]">
                 {displayStats.remaining}
               </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-foreground/60">
+              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
                 Remaining
               </div>
             </div>
@@ -169,19 +169,18 @@ export default function EventRsvpDashboard({
         )}
       </header>
       {responses.length > 0 && (
-        <div className="pt-3 border-t border-border space-y-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/60 mb-2">
+        <div className="pt-4 border-t border-[#e7defb] space-y-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
             Responses
           </h4>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {responses.map((rsvp, index) => {
-              const displayName = rsvp.name || rsvp.email || "Anonymous";
               const responseColor =
                 rsvp.response === "yes"
                   ? "text-emerald-600"
                   : rsvp.response === "no"
-                  ? "text-red-600"
-                  : "text-yellow-600";
+                  ? "text-red-500"
+                  : "text-amber-500";
               const responseIcon =
                 rsvp.response === "yes"
                   ? "✅"
@@ -202,40 +201,40 @@ export default function EventRsvpDashboard({
               return (
                 <div
                   key={rsvpKey}
-                  className="flex items-center justify-between text-sm py-1.5 px-2 rounded border border-border/50 bg-background/50"
+                  className="flex items-center justify-between text-sm py-3 px-4 rounded-2xl border border-[#ddd4f8] bg-white/92"
                 >
                   <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-foreground font-bold truncate">
+                    <p className="text-[#2b2350] font-semibold truncate">
                       {rsvp.firstName && rsvp.lastName ? `${rsvp.firstName} ${rsvp.lastName}` : (rsvp.name || "Anonymous")}
                     </p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                       {rsvp.email && (
-                        <span className="text-[10px] text-foreground/50 truncate max-w-[150px]">
-                          📧 {rsvp.email}
+                        <span className="text-xs text-[#6e629c] truncate max-w-[180px]">
+                          {rsvp.email}
                         </span>
                       )}
                       {rsvp.phone && (
-                        <span className="text-[10px] text-foreground/50">
-                          📱 {rsvp.phone}
+                        <span className="text-xs text-[#6e629c]">
+                          {rsvp.phone}
                         </span>
                       )}
                     </div>
                     {rsvp.message && (
-                      <p className="mt-1.5 text-xs text-foreground/70 bg-foreground/5 p-2 rounded italic border-l-2 border-primary/30">
-                        "{rsvp.message}"
+                      <p className="mt-2 text-xs text-[#6e629c] bg-[#f3edff]/60 p-2.5 rounded-xl italic border-l-2 border-[#d5c9f7]">
+                        &ldquo;{rsvp.message}&rdquo;
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     <span
-                      className={`${responseColor} font-medium hidden sm:inline-flex items-center gap-1.5`}
+                      className={`${responseColor} font-medium hidden sm:inline-flex items-center gap-1.5 text-sm`}
                     >
                       <span>{responseIcon}</span>
                       <span>{responseLabel}</span>
                     </span>
                     <select
                       aria-label="Change RSVP status"
-                      className="h-8 rounded border border-border bg-background px-2 text-xs"
+                      className="h-8 rounded-lg border border-[#d5c9f7] bg-white px-2 text-xs text-[#433468] focus:border-[#beaee8] focus:outline-none focus:ring-1 focus:ring-[#beaee8]"
                       value={rsvp.response}
                       disabled={isUpdating}
                       onChange={async (e) => {
@@ -257,7 +256,6 @@ export default function EventRsvpDashboard({
                           console.error("Failed to update RSVP", err);
                         } finally {
                           setUpdatingKey(null);
-                          // Refresh list
                           try {
                             const res = await fetch(
                               `/api/events/${eventId}/rsvp?t=${Date.now()}`,
@@ -298,7 +296,7 @@ export default function EventRsvpDashboard({
                       type="button"
                       aria-label="Delete RSVP"
                       title="Delete RSVP"
-                      className="h-8 w-8 inline-flex items-center justify-center rounded border border-border hover:bg-red-500/10 text-red-600"
+                      className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-[#d5c9f7] bg-white text-[#7a6da8] hover:bg-red-50 hover:text-red-500 hover:border-red-300 transition-colors"
                       disabled={isUpdating}
                       onClick={async () => {
                         if (isUpdating) return;

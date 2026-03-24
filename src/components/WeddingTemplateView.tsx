@@ -910,6 +910,7 @@ type Props = {
   templateId: string;
   variationId: string;
   isOwner: boolean;
+  canEdit?: boolean;
   isReadOnly: boolean;
   viewerKind: "owner" | "guest" | "readonly";
   shareUrl: string;
@@ -923,11 +924,13 @@ export default function WeddingTemplateView({
   templateId,
   variationId,
   isOwner,
+  canEdit: canEditProp,
   isReadOnly,
   viewerKind,
   shareUrl,
   sessionEmail,
 }: Props) {
+  const canEdit = canEditProp ?? isOwner;
   const weddingData = eventData || {};
   const theme = weddingData.theme || {
     font: "playfair",
@@ -1071,29 +1074,33 @@ export default function WeddingTemplateView({
       <div className="event-modern-container">
       <div className="relative w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] mx-auto my-4 md:my-8">
         {/* Edit/Delete buttons overlay */}
-        {isOwner && !isReadOnly && (
+        {!isReadOnly && (canEdit || isOwner) && (
           <div className="absolute top-4 right-4 z-50 hidden md:flex items-center gap-2">
-            <Link
-              href={buildEditLink(eventId, eventData, eventTitle)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-white/90 backdrop-blur-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-white transition-colors rounded-lg shadow-md"
-              title="Edit event"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
+            {canEdit && (
+              <Link
+                href={buildEditLink(eventId, eventData, eventTitle)}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-white/90 backdrop-blur-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-white transition-colors rounded-lg shadow-md"
+                title="Edit event"
               >
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              <span className="hidden sm:inline">Edit</span>
-            </Link>
-            <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                <span className="hidden sm:inline">Edit</span>
+              </Link>
+            )}
+            {isOwner && (
+              <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
+            )}
           </div>
         )}
 
@@ -1103,8 +1110,8 @@ export default function WeddingTemplateView({
         </div>
       </div>
 
-      {/* Event Actions for owner */}
-      {isOwner && (
+      {/* Event Actions */}
+      {!isReadOnly && (
         <div className="max-w-3xl mx-auto px-5 sm:px-10 py-6 hidden md:block">
           <EventActions
             shareUrl={shareUrl}
@@ -1117,13 +1124,16 @@ export default function WeddingTemplateView({
       {!isReadOnly && (
         <div className="event-modern-mobile-bar md:hidden">
           <div className="mx-auto flex max-w-3xl items-center gap-2">
-            {isOwner && (
+            {canEdit && (
               <Link
                 href={buildEditLink(eventId, eventData, eventTitle)}
                 className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
               >
                 Edit
               </Link>
+            )}
+            {isOwner && (
+              <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
             )}
             <div className="min-w-0 flex-1">
               <EventActions

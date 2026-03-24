@@ -15,6 +15,16 @@ import { normalizeAccessControlPayload } from "@/lib/event-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const HISTORY_ITEM_DEBUG =
+  process.env.HISTORY_DEBUG === "1" || process.env.NODE_ENV !== "production";
+
+function estimateJsonBytes(value: unknown): number | null {
+  try {
+    return Buffer.byteLength(JSON.stringify(value), "utf8");
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(
   _req: Request,
@@ -23,6 +33,12 @@ export async function GET(
   const { id } = await context.params;
   const row = await getEventHistoryById(id);
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (HISTORY_ITEM_DEBUG) {
+    console.error("[history] GET by id: response_bytes", {
+      id,
+      bytes: estimateJsonBytes(row),
+    });
+  }
   return NextResponse.json(row);
 }
 

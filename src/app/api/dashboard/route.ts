@@ -27,11 +27,32 @@ export const dynamic = "force-dynamic";
 const WEATHER_FORECAST_WINDOW_HOURS = 24 * 3; // WeatherAPI free-tier 3-day forecast window.
 const WEATHERAPI_KEY =
   process.env.WEATHERAPI_KEY || process.env.WEATHERAPI_API_KEY || null;
-const DASHBOARD_CACHE_TTL_MS = 15_000;
-const DASHBOARD_STALE_TTL_MS = 60_000;
+const DASHBOARD_CACHE_TTL_MS = 30_000;
+const DASHBOARD_STALE_TTL_MS = 120_000;
 const DASHBOARD_EVENT_QUERY_LIMIT = 120;
 const DASHBOARD_DEBUG =
   process.env.DASHBOARD_DEBUG === "1" || process.env.NODE_ENV !== "production";
+
+function estimateJsonBytes(value: unknown): number | null {
+  try {
+    return Buffer.byteLength(JSON.stringify(value), "utf8");
+  } catch {
+    return null;
+  }
+}
+
+function logDashboardPayloadSize(
+  state: "fresh" | "stale" | "miss" | "error",
+  userId: string | null,
+  payload: unknown
+) {
+  if (!DASHBOARD_DEBUG) return;
+  console.error("[dashboard] response_bytes", {
+    state,
+    userId,
+    bytes: estimateJsonBytes(payload),
+  });
+}
 
 type DashboardMetricsCache = {
   eventId: string;
@@ -277,113 +298,111 @@ async function computeDashboardPayload(
     }>,
   };
 
-  if (nextEvent) {
-    const loadRsvp = async () => {
-      try {
-        const [grouped, recentRows] = await Promise.all([
-          query<{ response: string; count: string }>(
-            `select response, count(*)::text as count
-             from rsvp_responses
-             where event_id = $1
-             group by response`,
-            [nextEvent.id]
-          ),
-          query<{
-            id: string;
-            name: string | null;
-            first_name: string | null;
-            last_name: string | null;
-            email: string | null;
-            response: string;
-            updated_at: string | null;
-          }>(
-            `select id::text as id, name, first_name, last_name, email, response, updated_at
-             from rsvp_responses
-             where event_id = $1
-             order by updated_at desc nulls last
-             limit 3`,
-            [nextEvent.id]
-          ),
-        ]);
-
-        for (const row of grouped.rows || []) {
-          const key = String(row.response || "").toLowerCase();
-          const count = Number(row.count || 0);
-          if (key === "yes") rsvp.going = count;
-          if (key === "no") rsvp.declined = count;
-          if (key === "maybe") rsvp.maybe = count;
-        }
-        const filled = rsvp.going + rsvp.maybe + rsvp.declined;
-        rsvp.pending = Math.max(0, (nextEvent.numberOfGuests || 0) - filled);
-        rsvp.recent = (recentRows.rows || []).map((row) => {
-          const fullName = [row.first_name, row.last_name]
-            .filter(Boolean)
-            .join(" ")
-            .trim();
-          const displayName =
-            fullName ||
-            String(row.name || "").trim() ||
-            String(row.email || "").trim() ||
-            "Guest";
-          const responseKey = String(row.response || "").toLowerCase();
-          const status: "going" | "maybe" | "declined" | "pending" =
-            responseKey === "yes"
-              ? "going"
-              : responseKey === "no"
-              ? "declined"
-              : responseKey === "maybe"
-              ? "maybe"
-              : "pending";
-          return {
-            id: row.id,
-            name: displayName,
-            status,
-            updatedAt: row.updated_at,
-          };
-        });
-      } catch {
-        // RSVP table may not exist in some environments.
-      }
-    };
-    if (timing) {
-      await timing.time("rsvp", loadRsvp);
-    } else {
-      await loadRsvp();
-    }
-  }
-
-  // Per-user RSVP lookup: check if the signed-in user has RSVP'd to any dashboard events.
   const allEventIds = [
     ...(nextEvent ? [nextEvent.id] : []),
     ...upcoming.map((e) => e.id),
   ].filter((id, i, arr) => arr.indexOf(id) === i);
 
   const userRsvpMap = new Map<string, "yes" | "no" | "maybe">();
-  if (allEventIds.length > 0) {
-    const loadUserRsvp = async () => {
-      try {
-        const res = await query<{ event_id: string; response: string }>(
-          `select distinct on (event_id) event_id::text as event_id, response
+
+  const loadRsvp = async () => {
+    if (!nextEvent) return;
+    try {
+      const [grouped, recentRows] = await Promise.all([
+        query<{ response: string; count: string }>(
+          `select response, count(*)::text as count
            from rsvp_responses
-           where event_id = ANY($1)
-             and (user_id = $2 OR lower(email) = lower($3))
-           order by event_id, updated_at desc nulls last`,
-          [allEventIds, userId, userEmail]
-        );
-        for (const row of res.rows || []) {
-          const r = String(row.response || "").toLowerCase();
-          if (r === "yes" || r === "no" || r === "maybe") {
-            userRsvpMap.set(row.event_id, r);
-          }
-        }
-      } catch {}
-    };
-    if (timing) {
-      await timing.time("user_rsvp", loadUserRsvp);
-    } else {
-      await loadUserRsvp();
+           where event_id = $1
+           group by response`,
+          [nextEvent.id]
+        ),
+        query<{
+          id: string;
+          name: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          email: string | null;
+          response: string;
+          updated_at: string | null;
+        }>(
+          `select id::text as id, name, first_name, last_name, email, response, updated_at
+           from rsvp_responses
+           where event_id = $1
+           order by updated_at desc nulls last
+           limit 3`,
+          [nextEvent.id]
+        ),
+      ]);
+
+      for (const row of grouped.rows || []) {
+        const key = String(row.response || "").toLowerCase();
+        const count = Number(row.count || 0);
+        if (key === "yes") rsvp.going = count;
+        if (key === "no") rsvp.declined = count;
+        if (key === "maybe") rsvp.maybe = count;
+      }
+      const filled = rsvp.going + rsvp.maybe + rsvp.declined;
+      rsvp.pending = Math.max(0, (nextEvent.numberOfGuests || 0) - filled);
+      rsvp.recent = (recentRows.rows || []).map((row) => {
+        const fullName = [row.first_name, row.last_name]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        const displayName =
+          fullName ||
+          String(row.name || "").trim() ||
+          String(row.email || "").trim() ||
+          "Guest";
+        const responseKey = String(row.response || "").toLowerCase();
+        const status: "going" | "maybe" | "declined" | "pending" =
+          responseKey === "yes"
+            ? "going"
+            : responseKey === "no"
+            ? "declined"
+            : responseKey === "maybe"
+            ? "maybe"
+            : "pending";
+        return {
+          id: row.id,
+          name: displayName,
+          status,
+          updatedAt: row.updated_at,
+        };
+      });
+    } catch {
+      // RSVP table may not exist in some environments.
     }
-  }
+  };
+
+  const loadUserRsvp = async () => {
+    if (allEventIds.length === 0) return;
+    try {
+      const res = await query<{ event_id: string; response: string }>(
+        `select distinct on (event_id) event_id::text as event_id, response
+         from rsvp_responses
+         where event_id = ANY($1)
+           and (user_id = $2 OR lower(email) = lower($3))
+         order by event_id, updated_at desc nulls last`,
+        [allEventIds, userId, userEmail]
+      );
+      for (const row of res.rows || []) {
+        const r = String(row.response || "").toLowerCase();
+        if (r === "yes" || r === "no" || r === "maybe") {
+          userRsvpMap.set(row.event_id, r);
+        }
+      }
+    } catch {}
+  };
+
+  const loadMetrics = () =>
+    nextEvent ? getCachedMetrics(nextEvent.id) : Promise.resolve(null);
+
+  const parallelWork: [Promise<void>, Promise<void>, Promise<DashboardMetricsCache | null>] = [
+    timing ? timing.time("rsvp", loadRsvp) : loadRsvp(),
+    timing ? timing.time("user_rsvp", loadUserRsvp) : loadUserRsvp(),
+    timing ? timing.time("metrics_cache", loadMetrics) : loadMetrics(),
+  ];
+  const [, , metricsCache] = await Promise.all(parallelWork);
 
   if (nextEvent) {
     nextEvent.userRsvpResponse = userRsvpMap.get(nextEvent.id) ?? null;
@@ -413,10 +432,6 @@ async function computeDashboardPayload(
         dueAt: nextEvent.startAt,
       }))
     : [];
-
-  const metricsCache = nextEvent
-    ? await getCachedMetrics(nextEvent.id, timing)
-    : null;
   const nextEventHours = nextEvent ? hoursUntil(nextEvent.startAt) : null;
 
   return {
@@ -464,11 +479,15 @@ async function computeDashboardPayload(
   };
 }
 
-function getOrCreateRefresh(userId: string, userEmail: string): Promise<DashboardPayload> {
+function getOrCreateRefresh(
+  userId: string,
+  userEmail: string,
+  timing?: ServerTimingTracker
+): Promise<DashboardPayload> {
   const existing = dashboardRefreshInflight.get(userId);
   if (existing) return existing;
   const promise = (async () => {
-    const payload = await computeDashboardPayload(userId, userEmail);
+    const payload = await computeDashboardPayload(userId, userEmail, timing);
     dashboardResponseCache.set(userId, { at: Date.now(), payload });
     return payload;
   })().finally(() => {
@@ -533,6 +552,7 @@ export async function GET(req: Request) {
             }),
           }
         : cached.payload;
+      logDashboardPayloadSize("fresh", userId, body);
       return withTiming(timing, body);
     }
 
@@ -547,6 +567,7 @@ export async function GET(req: Request) {
             }),
           }
         : cached.payload;
+      logDashboardPayloadSize("stale", userId, body);
       return withTiming(timing, body);
     }
 
@@ -554,7 +575,7 @@ export async function GET(req: Request) {
       timing.addStep("coalesced_wait", 0);
     }
     const payload = await timing.time("dashboard_compute", () =>
-      getOrCreateRefresh(userId, email)
+      getOrCreateRefresh(userId, email, timing)
     );
 
     const body = timing.enabled
@@ -569,6 +590,7 @@ export async function GET(req: Request) {
         }
       : payload;
 
+    logDashboardPayloadSize("miss", userId, body);
     return withTiming(timing, body);
   } catch (err: unknown) {
     const timedOut = isStatementTimeoutError(err);
@@ -595,6 +617,7 @@ export async function GET(req: Request) {
             timings: timing.toObject(),
           }
         : { error: message };
+    logDashboardPayloadSize("error", null, body);
     return withTiming(
       timing,
       body,

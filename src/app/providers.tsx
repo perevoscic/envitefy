@@ -86,7 +86,7 @@ export default function Providers({
   children: ReactNode;
 }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus={process.env.NODE_ENV === "production"}>
       <SidebarProvider>
         <ThemeProvider>
           <RegisterServiceWorker />

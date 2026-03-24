@@ -127,8 +127,9 @@ export default function GuestRsvpModal({
           lastName,
           phone
         }));
-        
-        window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+        localStorage.setItem(`envitefy_rsvp_${eventId}`, response!);
+
+        window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response } }));
         
         setTimeout(() => {
           closeModal();

@@ -29,6 +29,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const HISTORY_DEBUG = process.env.HISTORY_DEBUG === "1";
 
+function estimateJsonBytes(value: unknown): number | null {
+  try {
+    return Buffer.byteLength(JSON.stringify(value), "utf8");
+  } catch {
+    return null;
+  }
+}
+
 function summarizeHistoryItemsForLog(items: any[]) {
   return (items || []).slice(0, 8).map((item) => ({
     id: item?.id || null,
@@ -247,7 +255,18 @@ export async function GET(req: Request) {
       });
     }
 
-    return NextResponse.json({ items: light, diagnostics }, { headers });
+    const body = { items: light, diagnostics };
+    if (HISTORY_DEBUG) {
+      console.error("[history] GET: response_bytes", {
+        userId,
+        view,
+        timeFilter,
+        source: responseSource,
+        bytes: estimateJsonBytes(body),
+      });
+    }
+
+    return NextResponse.json(body, { headers });
   } catch (err: any) {
     if (!HISTORY_DEBUG && process.env.NODE_ENV !== "production") {
       console.error("[history] GET error", err);

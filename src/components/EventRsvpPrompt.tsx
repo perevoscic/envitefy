@@ -76,6 +76,30 @@ export default function EventRsvpPrompt({
     } catch {}
   }, [mounted]);
 
+  const [existingRsvp, setExistingRsvp] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!mounted || !eventId) return;
+    try {
+      const stored = localStorage.getItem(`envitefy_rsvp_${eventId}`);
+      if (stored) setExistingRsvp(stored);
+    } catch {}
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.eventId === eventId && detail?.response) {
+        setExistingRsvp(detail.response);
+      } else if (eventId) {
+        try {
+          const stored = localStorage.getItem(`envitefy_rsvp_${eventId}`);
+          if (stored) setExistingRsvp(stored);
+        } catch {}
+      }
+    };
+    window.addEventListener("rsvp-submitted", handler);
+    return () => window.removeEventListener("rsvp-submitted", handler);
+  }, [mounted, eventId]);
+
   const hasPhone = Boolean(rsvpPhone);
   const hasEmail = Boolean(rsvpEmail);
   if (!hasPhone && !hasEmail) {
@@ -119,23 +143,21 @@ export default function EventRsvpPrompt({
           data,
         });
         if (res.ok && data.ok) {
-          // Dispatch event to refresh dashboard
           console.log("[RSVP] Dispatching rsvp-submitted event");
-          window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+          try { localStorage.setItem(`envitefy_rsvp_${eventId}`, "no"); } catch {}
+          setExistingRsvp("no");
+          window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response: "no" } }));
         } else {
           console.error(
             "RSVP submission failed:",
             data.error || "Unknown error"
           );
-          // Still continue with decline flow even if API call fails
         }
       } catch (err) {
         console.error("Failed to submit RSVP to API:", err);
-        // Continue with decline flow even if API call fails
       }
     }
 
-    // Close any modal and finish silently (no second prompt)
     setModalOpen(false);
     setIntent(null);
     setError(null);
@@ -178,8 +200,9 @@ export default function EventRsvpPrompt({
         });
         const data = await res.json();
         if (res.ok && data.ok) {
-          // Dispatch event to refresh dashboard
-          window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+          try { localStorage.setItem(`envitefy_rsvp_${eventId}`, rsvpResponse); } catch {}
+          setExistingRsvp(rsvpResponse);
+          window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response: rsvpResponse } }));
         } else {
           console.error(
             "RSVP submission failed:",
@@ -188,7 +211,6 @@ export default function EventRsvpPrompt({
         }
       } catch (err) {
         console.error("Failed to submit RSVP to API:", err);
-        // Continue with SMS/email flow even if API call fails
       }
     }
 
@@ -275,8 +297,9 @@ export default function EventRsvpPrompt({
         });
         const data = await res.json();
         if (res.ok && data.ok) {
-          // Dispatch event to refresh dashboard
-          window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+          try { localStorage.setItem(`envitefy_rsvp_${eventId}`, rsvpResponse); } catch {}
+          setExistingRsvp(rsvpResponse);
+          window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response: rsvpResponse } }));
         } else {
           console.error(
             "RSVP submission failed:",
@@ -400,6 +423,17 @@ export default function EventRsvpPrompt({
     setDeclineLines([]);
   };
 
+  if (existingRsvp) {
+    const label = existingRsvp === "yes" ? "Yes" : existingRsvp === "no" ? "No" : "Maybe";
+    const icon = existingRsvp === "yes" ? "\u2705" : existingRsvp === "no" ? "\u274C" : "\u{1F914}";
+    return (
+      <div className="inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-[#f7f2ff] px-3 py-1.5 text-sm font-semibold text-[#3f3269]">
+        <span aria-hidden="true">{icon}</span>
+        <span>RSVP&apos;d: {label}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-3">
@@ -488,11 +522,12 @@ export default function EventRsvpPrompt({
                     });
                     const data = await res.json();
                     if (res.ok && data.ok) {
-                      window.dispatchEvent(new CustomEvent("rsvp-submitted"));
+                      try { localStorage.setItem(`envitefy_rsvp_${eventId}`, "no"); } catch {}
+                      setExistingRsvp("no");
+                      window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response: "no" } }));
                     }
                   } catch {}
                 }
-                // Close immediately after sending (no second prompt)
                 setDeclineModalOpen(false);
                 setDeclineLines([]);
                 setIntent(null);

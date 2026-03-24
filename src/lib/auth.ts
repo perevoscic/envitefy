@@ -18,6 +18,9 @@ type SessionUserLike = {
   email?: string | null;
 } | null | undefined;
 
+const USER_ID_CACHE_TTL_MS = 60_000;
+const userIdByEmailCache = new Map<string, { userId: string; expiresAt: number }>();
+
 export async function resolveSessionUserId(sessionLike: {
   user?: SessionUserLike;
 } | null | undefined): Promise<string | null> {
@@ -25,9 +28,19 @@ export async function resolveSessionUserId(sessionLike: {
   const email =
     typeof sessionUser?.email === "string" ? sessionUser.email.trim().toLowerCase() : "";
   if (email) {
+    const cached = userIdByEmailCache.get(email);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.userId;
+    }
     try {
       const userId = await getUserIdByEmail(email);
-      if (userId) return userId;
+      if (userId) {
+        userIdByEmailCache.set(email, {
+          userId,
+          expiresAt: Date.now() + USER_ID_CACHE_TTL_MS,
+        });
+        return userId;
+      }
       return null;
     } catch (err) {
       const message = (err as any)?.message || String(err);

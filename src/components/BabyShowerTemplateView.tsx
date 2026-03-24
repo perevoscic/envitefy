@@ -112,6 +112,7 @@ type Props = {
   eventData: any;
   shareUrl: string;
   isOwner: boolean;
+  canEdit?: boolean;
   isReadOnly: boolean;
   editHref: string;
 };
@@ -168,9 +169,11 @@ export default function BabyShowerTemplateView({
   eventData,
   shareUrl,
   isOwner,
+  canEdit: canEditProp,
   isReadOnly,
   editHref,
 }: Props) {
+  const canEdit = canEditProp ?? isOwner;
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const [rsvpName, setRsvpName] = useState("");
@@ -322,15 +325,19 @@ export default function BabyShowerTemplateView({
                   {locationLabel && <span>{locationLabel}</span>}
                 </div>
               </div>
-              {!isReadOnly && isOwner && (
+              {!isReadOnly && (canEdit || isOwner) && (
                 <div className="flex items-center gap-2">
-                  <Link
-                    href={editHref}
-                    className="rounded-full border border-white/60 bg-white/80 px-4 py-1.5 text-sm font-semibold text-slate-800 transition hover:border-slate-300"
-                  >
-                    Edit
-                  </Link>
-                  <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
+                  {canEdit && (
+                    <Link
+                      href={editHref}
+                      className="rounded-full border border-white/60 bg-white/80 px-4 py-1.5 text-sm font-semibold text-slate-800 transition hover:border-slate-300"
+                    >
+                      Edit
+                    </Link>
+                  )}
+                  {isOwner && (
+                    <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
+                  )}
                 </div>
               )}
             </div>
@@ -724,13 +731,16 @@ export default function BabyShowerTemplateView({
                 RSVP
               </a>
             )}
-            {isOwner && (
+            {canEdit && (
               <Link
                 href={editHref}
                 className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
               >
                 Edit
               </Link>
+            )}
+            {isOwner && (
+              <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
             )}
             <div className="min-w-0 flex-1">
               <EventActions

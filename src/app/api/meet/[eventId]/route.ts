@@ -12,6 +12,15 @@ import { computeGymBuilderStatuses } from "@/lib/meet-discovery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const MEET_DEBUG = process.env.NODE_ENV !== "production";
+
+function estimateJsonBytes(value: unknown): number | null {
+  try {
+    return Buffer.byteLength(JSON.stringify(value), "utf8");
+  } catch {
+    return null;
+  }
+}
 
 async function getSessionUserId() {
   const session: any = await getServerSession(authOptions as any);
@@ -46,13 +55,20 @@ export async function GET(
     }
 
     const meetData = row.data || {};
-    return NextResponse.json({
+    const body = {
       ok: true,
       eventId: row.id,
       title: row.title,
       meet_page_json: meetData,
       statuses: computeGymBuilderStatuses(meetData),
-    });
+    };
+    if (MEET_DEBUG) {
+      console.error("[meet] GET: response_bytes", {
+        eventId: row.id,
+        bytes: estimateJsonBytes(body),
+      });
+    }
+    return NextResponse.json(body);
   } catch (err: any) {
     return NextResponse.json(
       { error: String(err?.message || err || "Failed to load meet") },

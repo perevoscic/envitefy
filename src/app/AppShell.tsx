@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -20,7 +21,13 @@ export default function AppShell({
 }) {
   const pathname = usePathname();
   const { status } = useSession();
-  const isAuthenticated = status === "authenticated";
+  const wasAuthenticated = useRef(false);
+  if (status === "authenticated") wasAuthenticated.current = true;
+  if (status === "unauthenticated") wasAuthenticated.current = false;
+
+  const isAuthenticated =
+    status === "authenticated" ||
+    (status === "loading" && wasAuthenticated.current);
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 
   if (isLightweightLanding) {
