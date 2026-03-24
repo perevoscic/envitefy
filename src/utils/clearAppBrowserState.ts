@@ -1,7 +1,6 @@
 "use client";
 
 const LOCAL_STORAGE_KEYS = new Set([
-  "categoryColors",
   "signupItemColors",
   "welcomeAfterSignup",
   "envitefy:dashboard:last-origin:v1",

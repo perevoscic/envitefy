@@ -1,6 +1,11 @@
 export type DashboardEventOwnership = "owned" | "invited";
 export type DashboardEventShareStatus = "accepted" | "pending" | null;
 
+type InvitedEventLikeRecord = {
+  ownership?: unknown;
+  invitedFromScan?: unknown;
+} | null | undefined;
+
 export type DashboardEvent = {
   id: string;
   title: string;
@@ -75,15 +80,36 @@ export function isScannedInviteCreatedVia(createdViaRaw: unknown): boolean {
   return normalized === "ocr" || Boolean(normalized?.startsWith("ocr-"));
 }
 
+export function isInvitedEventLikeRecord(
+  record: InvitedEventLikeRecord
+): boolean {
+  if (!record || typeof record !== "object") return false;
+  return normalizeDashboardEventOwnership(
+    (record as Record<string, unknown>).ownership,
+    undefined,
+    (record as Record<string, unknown>).invitedFromScan
+  ) === "invited";
+}
+
 export function normalizeDashboardEventOwnership(
   ownershipRaw: unknown,
   _createdViaRaw?: unknown,
   invitedFromScanRaw?: unknown
 ): DashboardEventOwnership {
-  if (String(ownershipRaw || "").trim().toLowerCase() === "invited") {
+  if (
+    String(ownershipRaw || "")
+      .trim()
+      .toLowerCase() === "invited"
+  ) {
     return "invited";
   }
-  if (Boolean(invitedFromScanRaw)) {
+  if (invitedFromScanRaw === true) {
+    return "invited";
+  }
+  if (
+    typeof invitedFromScanRaw === "string" &&
+    invitedFromScanRaw.trim().toLowerCase() === "true"
+  ) {
     return "invited";
   }
   return "owned";

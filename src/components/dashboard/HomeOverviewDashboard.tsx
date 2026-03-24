@@ -86,6 +86,8 @@ type DashboardResponse = {
     weatherEligible: boolean;
     travelWindowEligible: boolean;
   };
+  diagnostics?: Record<string, unknown> | null;
+  timings?: Record<string, unknown> | null;
 };
 
 type DashboardEnrichMeta = {
@@ -103,6 +105,8 @@ type HomeOverviewDashboardProps = {
   onForceTravel: () => void;
   onCreateEvent: () => void;
 };
+
+const SHOW_DEV_DIAGNOSTICS = process.env.NODE_ENV !== "production";
 
 type CardTone = "indigo" | "pink" | "sky" | "amber";
 
@@ -866,6 +870,28 @@ export default function HomeOverviewDashboard({
         </div>
       </header>
 
+      {SHOW_DEV_DIAGNOSTICS ? (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs font-medium text-amber-950">
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <span>
+              dashboard source: {String(data?.diagnostics?.sourceRowCount ?? "-")} rows
+            </span>
+            <span>
+              returned: {String(data?.diagnostics?.returnedEventCount ?? "-")}
+            </span>
+            <span>
+              fallback: {String(data?.diagnostics?.fallbackUsed ?? false)}
+            </span>
+            <span>
+              reason: {String(data?.diagnostics?.fallbackReason ?? data?.diagnostics?.emptyReason ?? "-")}
+            </span>
+          </div>
+          <div className="mt-1 break-all text-[11px] text-amber-900/80">
+            timings: {JSON.stringify(data?.timings ?? null)}
+          </div>
+        </section>
+      ) : null}
+
       <section>
         {nextEvent && nextEventActions ? (
           <InvitationEventCard
@@ -882,22 +908,12 @@ export default function HomeOverviewDashboard({
               <div className="relative min-h-[280px] w-full overflow-hidden md:w-[48%]">
                 <Image
                   src="/no-event-placeholder-card-wide.webp"
-                  alt=""
+                  alt="Decorative empty state invitation background"
                   fill
-                  aria-hidden="true"
                   sizes="(max-width: 768px) 100vw, 48vw"
+                  quality={60}
                   className="object-cover object-center opacity-90"
                 />
-                <div className="absolute inset-0 flex items-center">
-                  <Image
-                    src="/no-event-placeholder-card-wide.webp"
-                    alt="Decorative empty state invitation background"
-                    width={1440}
-                    height={900}
-                    sizes="(max-width: 768px) 100vw, 48vw"
-                    className="h-auto w-full"
-                  />
-                </div>
                 <div className="absolute inset-0 bg-slate-900/18" />
                 <div className="absolute left-6 top-6">
                   <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-xl">

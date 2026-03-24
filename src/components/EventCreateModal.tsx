@@ -89,26 +89,6 @@ export default function EventCreateModal({
   defaultDate,
 }: Props) {
   const router = useRouter();
-  // Category color helpers
-  const PALETTE = [
-    "red",
-    "orange",
-    "amber",
-    "yellow",
-    "lime",
-    "green",
-    "emerald",
-    "teal",
-    "cyan",
-    "sky",
-    "blue",
-    "indigo",
-    "violet",
-    "purple",
-    "fuchsia",
-    "pink",
-  ] as const;
-
   const DOW = [
     { code: "SU", label: "Sun" },
     { code: "MO", label: "Mon" },
@@ -299,28 +279,6 @@ export default function EventCreateModal({
     setImageColors(null);
     setAttachmentError(null);
     if (flyerInputRef.current) flyerInputRef.current.value = "";
-  };
-  const maybeAssignCategoryColor = (cat: string) => {
-    if (!cat) return;
-    try {
-      const raw = localStorage.getItem("categoryColors");
-      const map = raw ? (JSON.parse(raw) as Record<string, string>) : {};
-      if (!map[cat]) {
-        // Prefer an unused color from the palette, else random
-        const used = new Set(Object.values(map));
-        const unused = PALETTE.filter((c) => !used.has(c));
-        const pick = (arr: readonly string[]) =>
-          arr[Math.floor(Math.random() * arr.length)] as string;
-        const chosen = (unused.length ? pick(unused) : pick(PALETTE)) as string;
-        const next = { ...map, [cat]: chosen };
-        localStorage.setItem("categoryColors", JSON.stringify(next));
-        try {
-          window.dispatchEvent(
-            new CustomEvent("categoryColorsUpdated", { detail: next })
-          );
-        } catch {}
-      }
-    } catch {}
   };
   const [repeat, setRepeat] = useState<boolean>(false);
   const [repeatFrequency, setRepeatFrequency] = useState<

@@ -17,7 +17,6 @@ import {
   useState,
 } from "react";
 import type { CSSProperties } from "react";
-import { createPortal } from "react-dom";
 import { useSidebar, type EventContextTab } from "./sidebar-context";
 import { useEventCache } from "@/app/event-cache-context";
 import { useSession } from "next-auth/react";
@@ -34,7 +33,7 @@ import {
   getCreateEventSections,
   getTemplateLinks,
 } from "@/config/navigation-config";
-import { getEventStartIso } from "@/lib/dashboard-data";
+import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import {
   Baby,
   Cake,
@@ -270,16 +269,7 @@ function SidebarMyEventsMenuIcon({
 function isInvitedHistoryEvent(data: unknown): boolean {
   if (!data || typeof data !== "object") return false;
   const record = data as Record<string, unknown>;
-  if (
-    String(record.ownership || "")
-      .trim()
-      .toLowerCase() === "invited"
-  ) {
-    return true;
-  }
-  if (Boolean(record.shared)) return true;
-  if (Boolean(record.invitedFromScan)) return true;
-  return false;
+  return Boolean(record.shared) || isInvitedEventLikeRecord(record);
 }
 
 const CALENDAR_TARGETS: Array<{
@@ -466,7 +456,7 @@ export default function LeftSidebar() {
     refreshConnectedCalendars,
     featureVisibility,
   } = useMenu();
-  const { historySidebarItems } = useEventCache();
+  const { historySidebarItems, historyDiagnostics } = useEventCache();
   const profileEmail = (session?.user as any)?.email?.toLowerCase?.() ?? null;
   const profileEmailRef = useRef<string | null>(null);
   useEffect(() => {
@@ -500,6 +490,9 @@ export default function LeftSidebar() {
   const [forcedCreateActiveLabel, setForcedCreateActiveLabel] = useState<
     string | null
   >(null);
+  const savedCalendarProviderRef = useRef<CalendarProviderKey | null | "__unset">(
+    "__unset"
+  );
 
   const mirrorLocalCalendarDefault = useCallback(
     (provider: CalendarProviderKey | null) => {
@@ -518,6 +511,7 @@ export default function LeftSidebar() {
   const saveCalendarDefault = useCallback(
     async (provider: CalendarProviderKey | null) => {
       if (status !== "authenticated") return;
+      if (savedCalendarProviderRef.current === provider) return;
       try {
         await fetch("/api/user/profile", {
           method: "PUT",
@@ -525,6 +519,7 @@ export default function LeftSidebar() {
           credentials: "include",
           body: JSON.stringify({ preferredProvider: provider }),
         });
+        savedCalendarProviderRef.current = provider;
       } catch {}
     },
     [status]
@@ -953,18 +948,11 @@ export default function LeftSidebar() {
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
           }
-          if (
-            json &&
-            typeof json.categoryColors === "object" &&
-            json.categoryColors
-          ) {
-            setCategoryColors((prev) => ({
-              ...prev,
-              ...(json.categoryColors as Record<string, string>),
-            }));
-          }
           setDefaultCalendarProvider(
             normalizeCalendarProvider(json.preferredProvider)
+          );
+          savedCalendarProviderRef.current = normalizeCalendarProvider(
+            json.preferredProvider
           );
         }
       } catch {
@@ -993,6 +981,7 @@ export default function LeftSidebar() {
     } else if (status === "unauthenticated") {
       clearProfileCache(profileEmailRef.current || profileEmail);
       profileEmailRef.current = null;
+      savedCalendarProviderRef.current = "__unset";
       setProfileLoaded(true);
       setCredits(null);
     }
@@ -1250,6 +1239,7 @@ export default function LeftSidebar() {
     }, 0);
   }, [history]);
   const calendarEventsCount = createdEventsCount + invitedEventsCount;
+  const showDevDiagnostics = process.env.NODE_ENV !== "production";
   const openCompactEventsPage = useCallback(
     (page: "myEvents" | "invitedEvents") => {
       clearEventContext();
@@ -1305,19 +1295,6 @@ export default function LeftSidebar() {
       setSidebarPage,
     ]
   );
-  const [categoryColors, setCategoryColors] = useState<Record<string, string>>(
-    {}
-  );
-  // Per Smart sign-up item gradient selections (keyed by history id)
-  const [signupItemColors, setSignupItemColors] = useState<
-    Record<string, string>
-  >({});
-  const [colorMenuFor, setColorMenuFor] = useState<string | null>(null);
-  const [colorMenuPos, setColorMenuPos] = useState<{
-    left: number;
-    top: number;
-  } | null>(null);
-
   const defaultCategoryColor = (c: string): string => {
     const trimmed = String(c || "").trim();
     if (!trimmed) return "gray";
@@ -1438,20 +1415,8 @@ export default function LeftSidebar() {
   };
 
   useEffect(() => {
-    // Load stored colors once
-    try {
-      const raw = localStorage.getItem("categoryColors");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object") setCategoryColors(parsed);
-      }
-    } catch {}
     try {
       const rawItems = localStorage.getItem("signupItemColors");
-      if (rawItems) {
-        const parsed = JSON.parse(rawItems);
-        if (parsed && typeof parsed === "object") setSignupItemColors(parsed);
-      }
     } catch {}
     try {
       const rawMyEvents = localStorage.getItem(
@@ -1468,56 +1433,6 @@ export default function LeftSidebar() {
       );
     } catch {}
   }, []);
-
-  useEffect(() => {
-    const onDocClick = () => {
-      setColorMenuFor(null);
-      setColorMenuPos(null);
-    };
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setColorMenuFor(null);
-        setColorMenuPos(null);
-      }
-    };
-    if (colorMenuFor) {
-      document.addEventListener("click", onDocClick);
-      document.addEventListener("keydown", onEsc);
-    }
-    return () => {
-      document.removeEventListener("click", onDocClick);
-      document.removeEventListener("keydown", onEsc);
-    };
-  }, [colorMenuFor]);
-
-  useEffect(() => {
-    // Ensure categories present in history have defaults
-    try {
-      const categories = Array.from(
-        new Set(
-          history
-            .map((h) => {
-              const explicit = (h as any)?.data?.category as string | null;
-              if (explicit) return explicit;
-              const blob = `${h.title || ""} ${
-                (h as any)?.data?.description || ""
-              }`;
-              return guessCategoryFromText(blob);
-            })
-            .filter((c): c is string => Boolean(c))
-        )
-      );
-      if (categories.length === 0) return;
-      setCategoryColors((prev) => {
-        const next = { ...prev } as Record<string, string>;
-        for (const c of categories)
-          if (!next[c]) {
-            next[c] = defaultCategoryColor(c);
-          }
-        return next;
-      });
-    } catch {}
-  }, [history]);
 
   const colorClasses = (
     color: string
@@ -1813,8 +1728,7 @@ export default function LeftSidebar() {
           ? "pending"
           : null;
 
-      const categoryColor =
-        categoryColors[category] || defaultCategoryColor(category);
+      const categoryColor = defaultCategoryColor(category);
       const palette = colorClasses(isInvited ? "slate" : categoryColor);
       const activePalette = colorClasses(categoryColor);
       const eventHex = String(data?.color || data?.event?.color || "").trim();
@@ -1881,155 +1795,9 @@ export default function LeftSidebar() {
         past: sortGroups(bucketsByList.invitedEvents.past),
       },
     };
-  }, [categoryColors, history]);
+  }, [history]);
   const myEventsGrouped = groupedEventLists.myEvents;
   const invitedEventsGrouped = groupedEventLists.invitedEvents;
-  // Shared Events gradient palette (8 options)
-  const SHARED_GRADIENTS: {
-    id: string;
-    swatch: string; // compact square
-    lightRow: string; // list item background when theme = light
-    darkRow: string; // list item background when theme = dark
-  }[] = [
-    {
-      id: "shared-g1",
-      swatch: "bg-gradient-to-br from-cyan-400 to-fuchsia-400",
-      lightRow: "bg-gradient-to-br from-cyan-200 via-sky-200 to-fuchsia-200",
-      darkRow: "bg-gradient-to-br from-cyan-950 via-slate-900 to-fuchsia-900",
-    },
-    {
-      id: "shared-g2",
-      swatch: "bg-gradient-to-br from-rose-400 to-indigo-400",
-      lightRow: "bg-gradient-to-br from-rose-200 via-fuchsia-200 to-indigo-200",
-      darkRow: "bg-gradient-to-br from-rose-950 via-fuchsia-900 to-indigo-900",
-    },
-    {
-      id: "shared-g3",
-      swatch: "bg-gradient-to-br from-emerald-400 to-sky-400",
-      lightRow: "bg-gradient-to-br from-emerald-200 via-teal-200 to-sky-200",
-      darkRow: "bg-gradient-to-br from-emerald-950 via-teal-900 to-sky-900",
-    },
-    {
-      id: "shared-g4",
-      swatch: "bg-gradient-to-br from-amber-400 to-pink-400",
-      lightRow: "bg-gradient-to-br from-amber-200 via-orange-200 to-pink-200",
-      darkRow: "bg-gradient-to-br from-amber-950 via-rose-900 to-pink-900",
-    },
-    {
-      id: "shared-g5",
-      swatch: "bg-gradient-to-r from-indigo-400 to-cyan-400",
-      lightRow: "bg-gradient-to-r from-indigo-200 via-blue-200 to-cyan-200",
-      darkRow: "bg-gradient-to-r from-indigo-950 via-blue-900 to-cyan-900",
-    },
-    {
-      id: "shared-g6",
-      swatch: "bg-gradient-to-br from-lime-400 to-emerald-400",
-      lightRow: "bg-gradient-to-br from-lime-200 via-green-200 to-emerald-200",
-      darkRow:
-        "bg-gradient-to-br from-emerald-950 via-green-900 to-emerald-800",
-    },
-    {
-      id: "shared-g7",
-      swatch: "bg-gradient-to-br from-purple-400 to-pink-400",
-      lightRow: "bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200",
-      darkRow: "bg-gradient-to-br from-purple-950 via-fuchsia-900 to-pink-900",
-    },
-    {
-      id: "shared-g8",
-      swatch: "bg-gradient-to-br from-slate-400 to-sky-400",
-      lightRow: "bg-gradient-to-br from-slate-200 via-zinc-200 to-sky-200",
-      darkRow: "bg-gradient-to-br from-slate-950 via-zinc-900 to-sky-900",
-    },
-  ];
-  const getSharedGradientId = (): string => {
-    const val = categoryColors["Shared events"];
-    const exists = SHARED_GRADIENTS.some((g) => g.id === val);
-    return exists ? (val as string) : "shared-g1";
-  };
-
-  // Smart sign-up gradient palette — reuse Shared Events palette to keep it simple
-  const SIGNUP_GRADIENTS: {
-    id: string;
-    swatch: string;
-    lightRow: string;
-    darkRow: string;
-  }[] = SHARED_GRADIENTS;
-
-  const getSignupGradientId = (): string => {
-    const val = categoryColors["Smart sign-up"];
-    const exists = SIGNUP_GRADIENTS.some((g) => g.id === val);
-    return exists ? (val as string) : "shared-g1";
-  };
-
-  // Item-specific Smart sign-up color helpers
-  const getSignupItemGradientId = (historyId: string): string => {
-    const val = signupItemColors[historyId];
-    const exists = SIGNUP_GRADIENTS.some((g) => g.id === val);
-    return exists ? (val as string) : getSignupGradientId();
-  };
-
-  const setSignupItemColor = (historyId: string, color: string) => {
-    if (!historyId) return;
-    setSignupItemColors((prev) => ({ ...prev, [historyId]: color }));
-    setColorMenuFor(null);
-    setColorMenuPos(null);
-  };
-
-  const persistCategoryColors = async (map: Record<string, string>) => {
-    if (status !== "authenticated") return;
-    try {
-      await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        credentials: "include",
-        cache: "no-store",
-        body: JSON.stringify({ categoryColors: map }),
-      });
-    } catch {}
-  };
-
-  const setCategoryColor = (category: string, color: string) => {
-    if (!category) return;
-    setCategoryColors(
-      (prev) =>
-        ({
-          ...prev,
-          [category]: color,
-        } as Record<string, string>)
-    );
-    setColorMenuFor(null);
-    setColorMenuPos(null);
-  };
-
-  // Persist and broadcast category colors after commit to avoid cross-component updates during render
-  useEffect(() => {
-    try {
-      if (categoryColors && Object.keys(categoryColors).length > 0) {
-        localStorage.setItem("categoryColors", JSON.stringify(categoryColors));
-      }
-    } catch {}
-    try {
-      window.dispatchEvent(
-        new CustomEvent("categoryColorsUpdated", { detail: categoryColors })
-      );
-    } catch {}
-    try {
-      if (categoryColors && Object.keys(categoryColors).length > 0) {
-        persistCategoryColors(categoryColors);
-      }
-    } catch {}
-  }, [categoryColors]);
-
-  // Persist per-item Smart sign-up colors locally
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "signupItemColors",
-        JSON.stringify(signupItemColors)
-      );
-    } catch {}
-  }, [signupItemColors]);
-
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -2695,6 +2463,20 @@ export default function LeftSidebar() {
                             />
                           </span>
                         </button>
+                        {showDevDiagnostics ? (
+                          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-[11px] font-medium text-amber-950">
+                            <div className="flex flex-wrap gap-x-3 gap-y-1">
+                              <span>history rows: {history.length}</span>
+                              <span>itemCount: {String(historyDiagnostics?.itemCount ?? "-")}</span>
+                              <span>source: {String(historyDiagnostics?.source ?? "-")}</span>
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-amber-900/80">
+                              <span>empty: {String(historyDiagnostics?.emptyReason ?? "-")}</span>
+                              <span>degraded: {String(historyDiagnostics?.degradedReason ?? "-")}</span>
+                              <span>view: {String(historyDiagnostics?.view ?? "-")}</span>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -3367,133 +3149,6 @@ export default function LeftSidebar() {
         </div>
       </aside>
 
-      {colorMenuFor &&
-        colorMenuPos &&
-        createPortal(
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: "fixed",
-              left: colorMenuPos.left,
-              top: colorMenuPos.top,
-              transform: "none",
-            }}
-            className="z-[12000] w-[220px] rounded-xl border border-border bg-surface/95 backdrop-blur shadow-lg p-2"
-          >
-            <div className="px-2 py-1 text-xs uppercase tracking-wide text-foreground/60 flex items-center gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="h-3.5 w-3.5"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M8.56078 20.2501L20.5608 8.25011L15.7501 3.43945L3.75012 15.4395V20.2501H8.56078ZM15.7501 5.56077L18.4395 8.25011L16.5001 10.1895L13.8108 7.50013L15.7501 5.56077ZM12.7501 8.56079L15.4395 11.2501L7.93946 18.7501H5.25012L5.25012 16.0608L12.7501 8.56079Z"
-                />
-              </svg>
-              Edit color
-            </div>
-            {colorMenuFor === "Shared events" ? (
-              <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
-                {SHARED_GRADIENTS.map((g) => {
-                  const selected = getSharedGradientId() === g.id;
-                  return (
-                    <button
-                      key={g.id}
-                      type="button"
-                      className={`h-6 w-6 rounded-[5px] border-0 ${g.swatch} ${
-                        selected ? "ring-2 ring-foreground/80" : ""
-                      }`}
-                      aria-label={`Choose gradient`}
-                      title={g.id}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setCategoryColor("Shared events", g.id);
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            ) : (colorMenuFor || "").startsWith("signup-item:") ? (
-              <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
-                {SHARED_GRADIENTS.map((g) => {
-                  const historyId = String(
-                    (colorMenuFor || "").split(":")[1] || ""
-                  );
-                  const selected = getSignupItemGradientId(historyId) === g.id;
-                  return (
-                    <button
-                      key={g.id}
-                      type="button"
-                      className={`h-6 w-6 rounded-[5px] border-0 ${g.swatch} ${
-                        selected ? "ring-2 ring-foreground/80" : ""
-                      }`}
-                      aria-label={`Choose gradient`}
-                      title={g.id}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const hid = String(
-                          (colorMenuFor || "").split(":")[1] || ""
-                        );
-                        setSignupItemColor(hid, g.id);
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="grid grid-cols-4 gap-2 px-2 pb-2 pt-2 mt-1 place-items-center">
-                {(
-                  [
-                    "red",
-                    "orange",
-                    "amber",
-                    "yellow",
-                    "lime",
-                    "green",
-                    "emerald",
-                    "teal",
-                    "cyan",
-                    "sky",
-                    "blue",
-                    "indigo",
-                    "violet",
-                    "purple",
-                    "fuchsia",
-                    "pink",
-                  ] as const
-                ).map((name) => {
-                  const ccls = colorClasses(name);
-                  const selected =
-                    (categoryColors[colorMenuFor] ||
-                      defaultCategoryColor(colorMenuFor)) === name;
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      className={`h-6 w-6 rounded-[5px] border ${ccls.swatch} ${
-                        selected ? "ring-2 ring-foreground/80" : ""
-                      }`}
-                      aria-label={`Choose ${name}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const cat = colorMenuFor as string;
-                        setCategoryColor(cat, name);
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>,
-          document.body
-        )}
     </>
   );
 }

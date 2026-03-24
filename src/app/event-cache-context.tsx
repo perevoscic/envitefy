@@ -22,6 +22,15 @@ type HistoryRow = {
   data?: any;
 };
 
+type HistoryDiagnostics = {
+  itemCount?: number;
+  degradedReason?: string | null;
+  source?: string | null;
+  emptyReason?: string | null;
+  view?: string | null;
+  timeFilter?: string | null;
+};
+
 type DashboardMetricsCache = {
   eventId: string;
   travelMinutes: number | null;
@@ -59,6 +68,8 @@ type DashboardPayload = {
     travelWindowEligible: boolean;
   };
   degraded?: boolean;
+  diagnostics?: Record<string, unknown> | null;
+  timings?: Record<string, unknown> | null;
 };
 
 type EventCacheInvalidateDetail = {
@@ -68,6 +79,7 @@ type EventCacheInvalidateDetail = {
 
 type EventCacheContextValue = {
   historySidebarItems: HistoryRow[];
+  historyDiagnostics: HistoryDiagnostics | null;
   historyLoading: boolean;
   dashboardData: DashboardPayload | null;
   dashboardLoading: boolean;
@@ -137,6 +149,8 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     | { email?: string | null; id?: string | null }
     | null;
   const [historySidebarItems, setHistorySidebarItems] = useState<HistoryRow[]>([]);
+  const [historyDiagnostics, setHistoryDiagnostics] =
+    useState<HistoryDiagnostics | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(
     null,
@@ -181,6 +195,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     dashboardRef.current = null;
     isHydratedRef.current = false;
     setHistorySidebarItems([]);
+    setHistoryDiagnostics(null);
     setDashboardData(null);
     setHistoryLoading(false);
     setDashboardLoading(false);
@@ -190,7 +205,12 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const refreshHistory = useCallback(async (_opts?: { force?: boolean }) => {
     setHistoryLoading(true);
     try {
-      const res = await fetch("/api/history?view=sidebar&limit=200&time=all", {
+      const params = new URLSearchParams({
+        view: "sidebar",
+        limit: "200",
+        time: "all",
+      });
+      const res = await fetch(`/api/history?${params.toString()}`, {
         credentials: "include",
         cache: "no-store",
       });
@@ -199,6 +219,11 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       const items = Array.isArray(json?.items)
         ? (json.items as HistoryRow[])
         : historyRef.current;
+      setHistoryDiagnostics(
+        json?.diagnostics && typeof json.diagnostics === "object"
+          ? (json.diagnostics as HistoryDiagnostics)
+          : null
+      );
       setHistorySidebarItems(sortHistoryRows(items).slice(0, 200));
     } catch {
       // Keep the last good history state on transient failures.
@@ -210,8 +235,11 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const refreshDashboard = useCallback(async (opts?: { force?: boolean }) => {
     setDashboardLoading(true);
     try {
-      const qs = opts?.force ? "?refresh=1" : "";
-      const res = await fetch(`/api/dashboard${qs}`, {
+      const params = new URLSearchParams();
+      if (opts?.force) params.set("refresh", "1");
+      if (process.env.NODE_ENV !== "production") params.set("timing", "1");
+      const qs = params.toString();
+      const res = await fetch(`/api/dashboard${qs ? `?${qs}` : ""}`, {
         credentials: "include",
         headers: { Accept: "application/json" },
       });
@@ -400,6 +428,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const value = useMemo<EventCacheContextValue>(
     () => ({
       historySidebarItems,
+      historyDiagnostics,
       historyLoading,
       dashboardData,
       dashboardLoading,
@@ -413,6 +442,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     [
       dashboardData,
       dashboardLoading,
+      historyDiagnostics,
       historyLoading,
       historySidebarItems,
       invalidateEventCache,

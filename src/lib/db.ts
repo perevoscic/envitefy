@@ -469,13 +469,6 @@ export async function incrementUserSharesSent(params: { userId?: string | null; 
   await query(`update users set shares_sent = coalesce(shares_sent, 0) + $1 where ${where.clause}`, [delta, ...where.values]);
 }
 
-// Category colors (per-user UI preferences)
-async function ensureUsersHasCategoryColorsColumn(): Promise<void> {
-  await ensureOnce("users_category_colors_column", async () => {
-    await query(`alter table users add column if not exists category_colors jsonb`);
-  });
-}
-
 async function ensureUsersHasOnboardingColumns(): Promise<void> {
   await ensureOnce("users_onboarding_columns", async () => {
     await query(`
@@ -544,46 +537,6 @@ export async function dismissOnboardingPromptByEmail(email: string): Promise<voi
         set onboarding_prompt_dismissed_at = now()
       where email = $1`,
     [lower]
-  );
-}
-
-export async function getCategoryColorsByEmail(email: string): Promise<Record<string, string> | null> {
-  await ensureUsersHasCategoryColorsColumn();
-  const lower = email.toLowerCase();
-  const res = await query<{ category_colors: any }>(
-    `select category_colors from users where email = $1 limit 1`,
-    [lower]
-  );
-  const v = res.rows[0]?.category_colors;
-  if (!v) return null;
-  try {
-    // If stored as JSONB, pg returns object already; just ensure it's a plain object of strings
-    if (typeof v === "object" && v != null) return v as Record<string, string>;
-    if (typeof v === "string") return JSON.parse(v);
-  } catch {}
-  return null;
-}
-
-export async function updateCategoryColorsByEmail(params: {
-  email: string;
-  categoryColors: Record<string, string> | null;
-}): Promise<void> {
-  await ensureUsersHasCategoryColorsColumn();
-  const lower = params.email.toLowerCase();
-  // Normalize: ensure keys and values are strings; drop empties
-  let payload: Record<string, string> | null = null;
-  if (params.categoryColors && typeof params.categoryColors === "object") {
-    payload = {};
-    for (const [k, v] of Object.entries(params.categoryColors)) {
-      const key = String(k || "").trim();
-      const val = String(v || "").trim();
-      if (!key || !val) continue;
-      payload[key] = val;
-    }
-  }
-  await query(
-    `update users set category_colors = $2 where email = $1`,
-    [lower, payload ? JSON.stringify(payload) : null]
   );
 }
 
@@ -1478,6 +1431,42 @@ export type EventHistoryRow = {
   created_at?: string;
 };
 
+const EVENT_HISTORY_DEBUG =
+  process.env.EVENT_HISTORY_DEBUG === "1" || process.env.NODE_ENV !== "production";
+
+function summarizeEventHistoryRowForLog(row: EventHistoryRow) {
+  const data = row?.data && typeof row.data === "object" ? row.data : {};
+  return {
+    id: row?.id || null,
+    userId: row?.user_id || null,
+    title: row?.title || null,
+    createdAt: row?.created_at || null,
+    ownership: (data as any)?.ownership ?? null,
+    invitedFromScan: (data as any)?.invitedFromScan ?? null,
+    shareStatus: (data as any)?.shareStatus ?? null,
+    shared: (data as any)?.shared ?? null,
+    sharedOut: (data as any)?.sharedOut ?? null,
+    createdVia: (data as any)?.createdVia ?? null,
+    status: (data as any)?.status ?? null,
+    startAt:
+      (data as any)?.startAt ??
+      (data as any)?.startISO ??
+      (data as any)?.start ??
+      (data as any)?.fieldsGuess?.start ??
+      (data as any)?.event?.start ??
+      null,
+  };
+}
+
+function logEventHistoryRows(label: string, userId: string, rows: EventHistoryRow[]) {
+  if (!EVENT_HISTORY_DEBUG) return;
+  console.error(`[db] ${label}`, {
+    userId,
+    count: rows.length,
+    sample: rows.slice(0, 8).map(summarizeEventHistoryRowForLog),
+  });
+}
+
 export type EventHistoryIdentityRow = {
   id: string;
   user_id?: string | null;
@@ -1648,8 +1637,8 @@ const HISTORY_OWN_ROW_CAP = 600;
 const HISTORY_DASHBOARD_ROW_CAP = 200;
 const HISTORY_DASHBOARD_BATCH_SIZE = 8;
 const HISTORY_SIDEBAR_BATCH_SIZE = 15;
-const HISTORY_DASHBOARD_QUERY_TIMEOUT_MS = 4000;
-const HISTORY_SIDEBAR_QUERY_TIMEOUT_MS = 4000;
+const HISTORY_DASHBOARD_QUERY_TIMEOUT_MS = 10000;
+const HISTORY_SIDEBAR_QUERY_TIMEOUT_MS = 7000;
 
 async function withStatementTimeout<T>(
   timeoutMs: number,
@@ -1681,6 +1670,7 @@ function buildHistoryDataProjectionSql(params: {
   sharedSql: string;
   sharedOutSql: string;
   ownershipSql: string;
+  invitedFromScanSql: string;
   shareStatusSql: string;
 }): string {
   const {
@@ -1690,6 +1680,7 @@ function buildHistoryDataProjectionSql(params: {
     sharedSql,
     sharedOutSql,
     ownershipSql,
+    invitedFromScanSql,
     shareStatusSql,
   } = params;
 
@@ -1699,6 +1690,7 @@ function buildHistoryDataProjectionSql(params: {
       'shared', ${sharedSql},
       'sharedOut', ${sharedOutSql},
       'ownership', ${ownershipSql},
+      'invitedFromScan', ${invitedFromScanSql},
       'shareStatus', ${shareStatusSql}
     )`;
   }
@@ -1709,6 +1701,7 @@ function buildHistoryDataProjectionSql(params: {
       'shared', ${sharedSql},
       'sharedOut', ${sharedOutSql},
       'ownership', ${ownershipSql},
+      'invitedFromScan', ${invitedFromScanSql},
       'shareStatus', ${shareStatusSql},
       'status', ${dataSql}->'status',
       'description', ${dataSql}->'description',
@@ -1769,6 +1762,7 @@ function buildHistoryDataProjectionSql(params: {
       'shared', ${sharedSql},
       'sharedOut', ${sharedOutSql},
       'ownership', ${ownershipSql},
+      'invitedFromScan', ${invitedFromScanSql},
       'shareStatus', ${shareStatusSql},
       'timezone', ${dataSql}->'timezone',
       'venue', ${dataSql}->'venue',
@@ -1796,13 +1790,24 @@ function buildHistoryDataProjectionSql(params: {
     'shared', ${sharedSql},
     'sharedOut', ${sharedOutSql},
     'ownership', ${ownershipSql},
+    'invitedFromScan', ${invitedFromScanSql},
     'shareStatus', ${shareStatusSql}
   )`;
+}
+
+export function buildOwnedHistoryOwnershipSql(dataSql: string): string {
+  return `case
+    when lower(coalesce(${dataSql}->>'ownership', '')) = 'invited'
+      or lower(coalesce(${dataSql}->>'invitedFromScan', '')) = 'true'
+    then to_jsonb('invited'::text)
+    else to_jsonb('owned'::text)
+  end`;
 }
 
 function buildDashboardDataProjectionSql(
   dataSql: string,
   ownershipSql: string,
+  invitedFromScanSql: string,
   shareStatusSql: string
 ): string {
   return `jsonb_build_object(
@@ -1833,6 +1838,7 @@ function buildDashboardDataProjectionSql(
     end,
     'createdVia', ${dataSql}->'createdVia',
     'ownership', ${ownershipSql},
+    'invitedFromScan', ${invitedFromScanSql},
     'shareStatus', ${shareStatusSql},
     'fieldsGuess', case
       when jsonb_typeof(${dataSql}->'fieldsGuess') = 'object' then
@@ -1889,6 +1895,9 @@ type DashboardProjectionQueryRow = {
   number_of_guests: any;
   reminders: any;
   created_via: any;
+  ownership: any;
+  invited_from_scan: any;
+  share_status: any;
   fields_guess_title: any;
   fields_guess_start: any;
   fields_guess_end: any;
@@ -1914,6 +1923,11 @@ type SidebarProjectionQueryRow = {
   start_iso: any;
   start: any;
   created_via: any;
+  shared: any;
+  shared_out: any;
+  ownership: any;
+  invited_from_scan: any;
+  share_status: any;
   color: any;
   event_start: any;
   event_color: any;
@@ -1964,6 +1978,9 @@ function mapDashboardProjectionRowToEventHistoryRow(
       numberOfGuests: row.number_of_guests ?? null,
       reminders: Array.isArray(row.reminders) ? row.reminders : [],
       createdVia: row.created_via ?? null,
+      ownership: row.ownership ?? null,
+      invitedFromScan: row.invited_from_scan ?? null,
+      shareStatus: row.share_status ?? null,
       fieldsGuess: buildObjectOrNull([
         ["title", row.fields_guess_title],
         ["start", row.fields_guess_start],
@@ -1994,8 +2011,11 @@ function mapSidebarProjectionRowToEventHistoryRow(
     created_at: row.created_at || undefined,
     data: {
       category: row.category ?? null,
-      shared: false,
-      sharedOut: false,
+      shared: row.shared ?? false,
+      sharedOut: row.shared_out ?? false,
+      ownership: row.ownership ?? null,
+      invitedFromScan: row.invited_from_scan ?? null,
+      shareStatus: row.share_status ?? null,
       status: row.status ?? null,
       description: row.description ?? null,
       startISO: row.start_iso ?? null,
@@ -2092,6 +2112,9 @@ async function listProjectedDashboardHistoryRowsByIds(
            else '[]'::jsonb
          end as reminders,
          coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
+         coalesce(eh.data, '{}'::jsonb)->'ownership' as ownership,
+         coalesce(eh.data, '{}'::jsonb)->'invitedFromScan' as invited_from_scan,
+         coalesce(eh.data, '{}'::jsonb)->'shareStatus' as share_status,
          coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,title}' as fields_guess_title,
          coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,start}' as fields_guess_start,
          coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,end}' as fields_guess_end,
@@ -2144,6 +2167,11 @@ async function listProjectedSidebarHistoryRowsByIds(
          coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,
          coalesce(eh.data, '{}'::jsonb)->'start' as start,
          coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
+         coalesce(eh.data, '{}'::jsonb)->'shared' as shared,
+         coalesce(eh.data, '{}'::jsonb)->'sharedOut' as shared_out,
+         coalesce(eh.data, '{}'::jsonb)->'ownership' as ownership,
+         coalesce(eh.data, '{}'::jsonb)->'invitedFromScan' as invited_from_scan,
+         coalesce(eh.data, '{}'::jsonb)->'shareStatus' as share_status,
          coalesce(eh.data, '{}'::jsonb)->'color' as color,
          coalesce(eh.data, '{}'::jsonb)#>'{event,start}' as event_start,
          coalesce(eh.data, '{}'::jsonb)#>'{event,color}' as event_color,
@@ -2214,7 +2242,8 @@ function buildHistoryUnionQuery(
     dataSql: ownDataSql,
     categorySql: `${ownDataSql}->'category'`,
     sharedSql: "false",
-    ownershipSql: "to_jsonb('owned'::text)",
+    ownershipSql: buildOwnedHistoryOwnershipSql(ownDataSql),
+    invitedFromScanSql: `${ownDataSql}->'invitedFromScan'`,
     shareStatusSql: "null",
     sharedOutSql: `exists(
       select 1
@@ -2231,6 +2260,7 @@ function buildHistoryUnionQuery(
     categorySql: "to_jsonb('Shared events'::text)",
     sharedSql: "true",
     ownershipSql: "to_jsonb('invited'::text)",
+    invitedFromScanSql: `${sharedDataSql}->'invitedFromScan'`,
     shareStatusSql: "to_jsonb(es.status)",
     sharedOutSql: "false",
   });
@@ -2298,7 +2328,8 @@ function buildHistoryOwnOnlyQuery(
     dataSql,
     categorySql: `${dataSql}->'category'`,
     sharedSql: "false",
-    ownershipSql: "to_jsonb('owned'::text)",
+    ownershipSql: buildOwnedHistoryOwnershipSql(dataSql),
+    invitedFromScanSql: `${dataSql}->'invitedFromScan'`,
     shareStatusSql: "null",
     sharedOutSql: "false",
   });
@@ -2797,7 +2828,8 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
   const ownStatusSql = buildHistoryStatusSql(ownDataSql);
   const ownProjection = buildDashboardDataProjectionSql(
     ownDataSql,
-    "to_jsonb('owned'::text)",
+    buildOwnedHistoryOwnershipSql(ownDataSql),
+    `${ownDataSql}->'invitedFromScan'`,
     "null"
   );
 
@@ -2840,6 +2872,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
   const sharedProjection = buildDashboardDataProjectionSql(
     sharedDataSql,
     "to_jsonb('invited'::text)",
+    `${sharedDataSql}->'invitedFromScan'`,
     "to_jsonb(es.status)"
   );
 
@@ -2931,7 +2964,8 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         and es2.revoked_at is null
         and es2.status in ('pending', 'accepted')
     )`,
-    ownershipSql: "to_jsonb('owned'::text)",
+    ownershipSql: buildOwnedHistoryOwnershipSql(ownDataSql),
+    invitedFromScanSql: `${ownDataSql}->'invitedFromScan'`,
     shareStatusSql: "null",
   });
 
@@ -2978,6 +3012,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
     sharedSql: "true",
     sharedOutSql: "false",
     ownershipSql: "to_jsonb('invited'::text)",
+    invitedFromScanSql: `${sharedDataSql}->'invitedFromScan'`,
     shareStatusSql: "to_jsonb(es.status)",
   });
 
@@ -3065,7 +3100,9 @@ export async function listDashboardHistoryWindowForUser(
           buildDashboardFastHistoryQuery(true),
           [userId, safeLimit]
         );
-        return res.rows || [];
+        const rows = res.rows || [];
+        logEventHistoryRows("listDashboardHistoryWindowForUser shared-fast", userId, rows);
+        return rows;
       }
     );
   } catch (err) {
@@ -3077,7 +3114,9 @@ export async function listDashboardHistoryWindowForUser(
           buildDashboardFastHistoryQuery(false),
           [userId, safeLimit]
         );
-        return res.rows || [];
+        const rows = res.rows || [];
+        logEventHistoryRows("listDashboardHistoryWindowForUser own-fast", userId, rows);
+        return rows;
       }
     );
   }
@@ -3100,7 +3139,9 @@ export async function listDashboardHistoryFallbackForUser(
           buildDashboardFastHistoryQuery(true),
           [userId, safeLimit]
         );
-        return res.rows || [];
+        const resultRows = res.rows || [];
+        logEventHistoryRows("listDashboardHistoryFallbackForUser shared-fast", userId, resultRows);
+        return resultRows;
       }
     );
     return dedupeEventHistoryRowsInOrder(rows, safeLimit);
@@ -3113,7 +3154,9 @@ export async function listDashboardHistoryFallbackForUser(
           buildDashboardFastHistoryQuery(false),
           [userId, safeLimit]
         );
-        return res.rows || [];
+        const resultRows = res.rows || [];
+        logEventHistoryRows("listDashboardHistoryFallbackForUser own-fast", userId, resultRows);
+        return resultRows;
       }
     );
     return dedupeEventHistoryRowsInOrder(rows, safeLimit);
@@ -3170,14 +3213,26 @@ export async function listHistoryForUser(params: {
       params.userId,
       safeLimit,
     ]);
-    return res.rows || [];
+    const rows = res.rows || [];
+    logEventHistoryRows(
+      `listHistoryForUser view=${params.view} time=${params.timeFilter}`,
+      params.userId,
+      rows
+    );
+    return rows;
   } catch (err) {
     if (!isTableMissingError(err)) throw err;
     const res = await query<EventHistoryRow>(buildHistoryOwnOnlyQuery(params.view, params.timeFilter), [
       params.userId,
       safeLimit,
     ]);
-    return res.rows || [];
+    const rows = res.rows || [];
+    logEventHistoryRows(
+      `listHistoryForUser own-only view=${params.view} time=${params.timeFilter}`,
+      params.userId,
+      rows
+    );
+    return rows;
   }
 }
 
@@ -3194,7 +3249,9 @@ export async function listSidebarHistoryForUserFast(
           buildSidebarFastHistoryQuery(true),
           [userId, safeLimit]
         );
-        return res.rows || [];
+        const resultRows = res.rows || [];
+        logEventHistoryRows("listSidebarHistoryForUserFast shared-fast", userId, resultRows);
+        return resultRows;
       }
     );
     return dedupeEventHistoryRowsInOrder(rows, safeLimit);
@@ -3207,7 +3264,9 @@ export async function listSidebarHistoryForUserFast(
           buildSidebarFastHistoryQuery(false),
           [userId, safeLimit]
         );
-        return res.rows || [];
+        const resultRows = res.rows || [];
+        logEventHistoryRows("listSidebarHistoryForUserFast own-fast", userId, resultRows);
+        return resultRows;
       }
     );
     return dedupeEventHistoryRowsInOrder(rows, safeLimit);

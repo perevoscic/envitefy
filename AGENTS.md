@@ -531,7 +531,7 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 - **Caching**: In-memory TTL cache (`15s`) with stale-while-refresh behavior up to `60s`, plus in-flight request coalescing per user to avoid duplicate recomputation under concurrent calls.
 - **Query params**: Optional `refresh=1` bypasses the in-memory cache for the signed-in user so clients can reload immediately after creating/updating events.
 - **Diagnostics**: Optional `?timing=1` adds a `timings` object to JSON and a `Server-Timing` response header.
-- **Output**: `{ ok, nextEvent, snapshot, upcoming, rsvp, setupHealth, checklist, drafts, metricsCache, metricsEligibility, diagnostics? }` where `nextEvent` and `upcoming[]` now include additive relation fields `ownership: "owned"|"invited"` and `shareStatus: "pending"|"accepted"|null`. `diagnostics` is an additive debugging object that may explain empty states such as `row-filtered-no-start`, `no-history-rows`, or `no-upcoming-events`.
+- **Output**: `{ ok, nextEvent, snapshot, upcoming, rsvp, setupHealth, checklist, drafts, metricsCache, metricsEligibility, diagnostics? }` where `nextEvent` and `upcoming[]` now include additive relation fields `ownership: "owned"|"invited"` and `shareStatus: "pending"|"accepted"|null`. Invite-style OCR/uploaded rows keep `ownership: "invited"` when the stored row already carries `data.ownership="invited"` or `data.invitedFromScan=true`; OCR alone is not treated as invited. `diagnostics` is an additive debugging object that may explain empty states such as `row-filtered-no-start`, `no-history-rows`, or `no-upcoming-events`.
 - **Env**: `DATABASE_URL`.
 
 ### Dashboard Next-Event Enrichment — POST `/api/dashboard/enrich-next-event`
@@ -624,8 +624,8 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
  - GET list: `{ items: Array<HistoryRow>, diagnostics?: { itemCount, source, degradedReason, emptyReason, view, timeFilter } }`.
     - Includes invited shared events for the user when the share is `pending` or `accepted` (annotated with `data.shared=true`, `data.ownership="invited"`, `data.shareStatus`, and default category `Shared events`).
     - Response payload is view-dependent:
-      - `view=summary`: only lightweight `category/shared/sharedOut/ownership/shareStatus` flags.
-      - `view=sidebar`: compact fields used by the left sidebar (`status`, `description`, `startAt/start/startISO`, `ownership`, `shareStatus`, compact `event`, compact `signupForm.responses`).
+      - `view=summary`: only lightweight `category/shared/sharedOut/ownership/invitedFromScan/shareStatus` flags.
+      - `view=sidebar`: compact fields used by the left sidebar (`status`, `description`, `startAt/start/startISO`, `ownership`, `invitedFromScan`, `shareStatus`, compact `event`, compact `signupForm.responses`).
       - `view=calendar`: same as standard lightweight mode with heavy blobs removed.
       - `view=full`: full `data` JSON (includes heavy fields when present).
   - GET single: `HistoryRow` or `{ error }` with 404.
@@ -674,10 +674,10 @@ curl "http://localhost:3000/api/ics?title=Party&start=2025-06-23T19:00:00Z&end=2
 
 - **Purpose**: Read and update user profile, preferred provider, and subscription plan.
 - **Auth**: NextAuth session required.
-- **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, credits, name, categoryColors, isAdmin }`.
+- **GET Output**: `{ email, firstName, lastName, preferredProvider, subscriptionPlan, credits, name, isAdmin }`.
 - Notes: When `subscriptionPlan` is `FF`, `credits` is returned as `null` (unlimited usage).
-- **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|"FF"|null, categoryColors?: Record<string,string>|null }`.
-- **PUT Output**: Updated profile `{ email, firstName, lastName, preferredProvider, subscriptionPlan, categoryColors, isAdmin }`.
+- **PUT Input (JSON)**: `{ firstName?: string|null, lastName?: string|null, preferredProvider?: "google"|"microsoft"|"apple"|null, subscriptionPlan?: "free"|"monthly"|"yearly"|"FF"|null }`.
+- **PUT Output**: Updated profile `{ email, firstName, lastName, preferredProvider, subscriptionPlan, isAdmin }`.
 
 ### User Onboarding — GET/PUT `/api/user/onboarding`
 
@@ -836,7 +836,9 @@ Payload used by the authenticated calendar agents.
 
 ## Changelog
 
+- 2026-03-23: Removed deprecated `categoryColors` support from `/api/user/profile`; the profile API no longer reads or writes per-category color preferences.
 - 2026-03-21: **Dashboard visibility hardening**: `POST /api/events/share` now fails closed when a recipient account does not exist instead of silently sending an email-only invite that never lands in `event_shares`. The fast dashboard/sidebar loaders now rank rows by event usability/date before recent `created_at`, and `/api/dashboard` plus `/api/history` expose additive diagnostics to explain empty or degraded payloads.
+- 2026-03-23: **Owned vs invited dashboard separation**: centralized read-time ownership classification now treats rows as invited only when `data.ownership="invited"` or `data.invitedFromScan=true`, never from `createdVia="ocr"` alone. Fast and fallback dashboard/sidebar projections now preserve `ownership`, `invitedFromScan`, and `shareStatus`, so invite-style scanned/uploaded events stay under `Invited Events` while manual, template, gymnastics discovery, and URL-created rows remain under `My Events`.
 - 2026-03-21: **Sidebar + dashboard scan classification**: only explicit invited-scanned rows now land under `Invited Events` (`data.ownership="invited"` plus `data.invitedFromScan=true`). OCR-created owner flows are no longer reclassified solely from `createdVia`, so discovery/customizer OCR events remain under `My events`. The Google OAuth callback still persists flyer/import rows with the invited-scanned flags. Sidebar badges now count all stored rows in each bucket, while Home continues to show only future/upcoming events. The sidebar history projection now includes compact `fieldsGuess` (start/end/title/location/timezone) so client date parsing matches SQL ordering. Inserts/updates run `normalizeCanonicalStartFields` to copy nested `fieldsGuess`/`event` starts into `startAt` when missing. Fast history statement timeouts for dashboard/sidebar were raised to 4s to reduce spurious timeouts on cold/large accounts.
 - 2026-03-21: **Dashboard fallback broadening**: `GET /api/dashboard` and `POST /api/dashboard/enrich-next-event` now broaden their history scan beyond the fast recent-window cap when that hot path returns no `nextEvent`, so older-created upcoming or invited shared events still populate Home instead of falling back to an empty dashboard card.
 - 2026-03-20: **Dashboard home**: The main dashboard now calls `GET /api/dashboard` when signed in (it previously never loaded server data, so upcoming events stayed empty). `GET /api/dashboard?refresh=1` skips the server response cache. The left sidebar loads `/api/history?view=sidebar` on sign-in so Invited/My Events counts survive refresh and navigation. To avoid Postgres `statement_timeout` (default pool `PG_STATEMENT_TIMEOUT_MS` 15s) on large accounts, the dashboard now uses a bounded recent-window scan first, then falls back to the simpler owner/shared history reads if that fast path times out, so older upcoming/draft rows can still surface without bringing back the old 800-row expansion. The dashboard history read uses a slim dashboard-specific JSON projection instead of the broader history payload, and both the dashboard and sidebar hot paths now use shorter local statement timeouts so they degrade before hitting the pool-wide 15s limit. The sidebar `view=sidebar&time=all` path now bypasses the generic history projection and uses a dedicated summary loader (`listSidebarHistoryForUserFast`) built from lightweight own rows plus accepted shared rows, trims shared sign-up response projection to the current user, and keeps the candidate window intentionally capped for responsiveness while still falling back to the simpler owner/shared history reads before returning HTTP 204 or stale cache on timeout. The client now keeps prior dashboard/sidebar state on transient failures and avoids clearing sidebar rows on cache revalidation. `/api/dashboard` still returns a degraded empty payload instead of HTTP 500 when a statement timeout occurs. Ensure `idx_event_history_user_created_id` from `prisma/manual_sql/20251130_add_event_history_user_created_id_idx.sql` is applied for best performance.
@@ -871,7 +873,6 @@ Payload used by the authenticated calendar agents.
 
 - 2025-09-26: Added `FF` subscription plan (never expires, unlimited). API returns `credits: null` for FF users and preserves FF in Stripe sync.
 
-- 2025-09-19: User profile now supports `categoryColors` so event/category colors sync across devices for signed-in users.
 - 2025-09-19: Shared events: added `/api/events/share`, `/api/events/share/accept`, `/api/events/share/remove`. `/api/history` includes accepted shares; UI marks shared items and adds a hidden-until-used `Shared events` category above Birthdays.
 
 ---

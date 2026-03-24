@@ -69,25 +69,6 @@ function toLocalTimeValue(d: Date | null): string {
 export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const router = useRouter();
 
-  const PALETTE = [
-    "red",
-    "orange",
-    "amber",
-    "yellow",
-    "lime",
-    "green",
-    "emerald",
-    "teal",
-    "cyan",
-    "sky",
-    "blue",
-    "indigo",
-    "violet",
-    "purple",
-    "fuchsia",
-    "pink",
-  ] as const;
-
   const DOW = [
     { code: "SU", label: "Sun" },
     { code: "MO", label: "Mon" },
@@ -317,28 +298,6 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
       setAttachmentError("Could not process the file");
       event.target.value = "";
     }
-  };
-
-  const maybeAssignCategoryColor = (cat: string) => {
-    if (!cat) return;
-    try {
-      const raw = localStorage.getItem("categoryColors");
-      const map = raw ? (JSON.parse(raw) as Record<string, string>) : {};
-      if (!map[cat]) {
-        const used = new Set(Object.values(map));
-        const unused = PALETTE.filter((c) => !used.has(c));
-        const pick = (arr: readonly string[]) =>
-          arr[Math.floor(Math.random() * arr.length)] as string;
-        const chosen = (unused.length ? pick(unused) : pick(PALETTE)) as string;
-        const next = { ...map, [cat]: chosen };
-        localStorage.setItem("categoryColors", JSON.stringify(next));
-        try {
-          window.dispatchEvent(
-            new CustomEvent("categoryColorsUpdated", { detail: next })
-          );
-        } catch {}
-      }
-    } catch {}
   };
 
   const [repeat, setRepeat] = useState<boolean>(false);
@@ -850,7 +809,6 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
                 setCategory("");
               } else {
                 setCategory(v);
-                maybeAssignCategoryColor(v);
               }
             }}
             className="w-full px-3 py-2 rounded-md border border-border bg-background"
@@ -874,7 +832,6 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
               onBlur={() => {
                 if (customCategory.trim()) {
                   setCategory(customCategory.trim());
-                  maybeAssignCategoryColor(customCategory.trim());
                 }
               }}
               placeholder="Enter category name"
@@ -886,7 +843,6 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
               onClick={() => {
                 if (customCategory.trim()) {
                   setCategory(customCategory.trim());
-                  maybeAssignCategoryColor(customCategory.trim());
                   setShowCustomCategory(false);
                 }
               }}

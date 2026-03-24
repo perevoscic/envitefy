@@ -350,47 +350,6 @@ export default function EventCreateWysiwyg({
 
   // Draft autosave removed
 
-  // Category color assignment (keeps UI consistent with rest of app)
-  const PALETTE = [
-    "red",
-    "orange",
-    "amber",
-    "yellow",
-    "lime",
-    "green",
-    "emerald",
-    "teal",
-    "cyan",
-    "sky",
-    "blue",
-    "indigo",
-    "violet",
-    "purple",
-    "fuchsia",
-    "pink",
-  ] as const;
-  const maybeAssignCategoryColor = (cat: string) => {
-    if (!cat) return;
-    try {
-      const raw = localStorage.getItem("categoryColors");
-      const map = raw ? (JSON.parse(raw) as Record<string, string>) : {};
-      if (!map[cat]) {
-        const used = new Set(Object.values(map));
-        const unused = PALETTE.filter((c) => !used.has(c));
-        const pick = (arr: readonly string[]) =>
-          arr[Math.floor(Math.random() * arr.length)] as string;
-        const chosen = (unused.length ? pick(unused) : pick(PALETTE)) as string;
-        const next = { ...map, [cat]: chosen };
-        localStorage.setItem("categoryColors", JSON.stringify(next));
-        try {
-          window.dispatchEvent(
-            new CustomEvent("categoryColorsUpdated", { detail: next })
-          );
-        } catch {}
-      }
-    } catch {}
-  };
-
   // Registry handlers
   const addRegistryLink = () => {
     setRegistryLinks((prev) => {
@@ -904,7 +863,6 @@ export default function EventCreateWysiwyg({
     } catch {}
     // Fallback: set locally
     setCategoryKey(key);
-    maybeAssignCategoryColor(label);
   };
 
   return (

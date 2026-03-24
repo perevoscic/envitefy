@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, initFreeCreditsIfMissing, getCreditsByEmail, getCategoryColorsByEmail, updateCategoryColorsByEmail, getIsAdminByEmail } from "@/lib/db";
+import { updateUserNamesByEmail, getUserByEmail, updatePreferredProviderByEmail, getSubscriptionPlanByEmail, updateSubscriptionPlanByEmail, getCreditsByEmail } from "@/lib/db";
 import { sendSubscriptionChangeEmail } from "@/lib/email";
 
 export async function GET() {
@@ -30,7 +30,6 @@ export async function GET() {
     credits: creditsValue,
     name: session.user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
     isAdmin: Boolean(user?.is_admin),
-    categoryColors: await getCategoryColorsByEmail(email),
   });
 }
 
@@ -62,17 +61,29 @@ export async function PUT(req: Request) {
       rawPref === "google" || rawPref === "microsoft" || rawPref === "apple"
         ? (rawPref as "google" | "microsoft" | "apple")
         : null;
-
-    const namePayload: any = { email };
-    if (hasFirst) namePayload.firstName = firstName;
-    if (hasLast) namePayload.lastName = lastName;
-    const updatedNames = await updateUserNamesByEmail(namePayload);
-    const updated = await updatePreferredProviderByEmail({ email, preferredProvider });
-    if (typeof body.categoryColors !== "undefined") {
-      const map = body.categoryColors && typeof body.categoryColors === "object" ? (body.categoryColors as Record<string, string>) : null;
-      await updateCategoryColorsByEmail({ email, categoryColors: map });
+    const hasPreferredProvider = Object.prototype.hasOwnProperty.call(
+      body,
+      "preferredProvider"
+    );
+    let updatedUser = await getUserByEmail(email);
+    if (!updatedUser) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-    
+
+    if (hasFirst || hasLast) {
+      const namePayload: any = { email };
+      if (hasFirst) namePayload.firstName = firstName;
+      if (hasLast) namePayload.lastName = lastName;
+      updatedUser = await updateUserNamesByEmail(namePayload);
+    }
+
+    if (
+      hasPreferredProvider &&
+      preferredProvider !== (updatedUser.preferred_provider || null)
+    ) {
+      updatedUser = await updatePreferredProviderByEmail({ email, preferredProvider });
+    }
+
     // Track subscription plan changes for email notification
     const oldPlan = typeof body.subscriptionPlan !== "undefined" ? (await getSubscriptionPlanByEmail(email)) || "free" : null;
     
@@ -107,15 +118,13 @@ export async function PUT(req: Request) {
         console.error("[profile] Failed to send subscription change email:", emailErr);
       }
     }
-    const isAdmin = await getIsAdminByEmail(email);
     return NextResponse.json({
-      email: updated.email,
-      firstName: updated.first_name,
-      lastName: updated.last_name,
-      preferredProvider: updated.preferred_provider || null,
+      ok: true,
+      email: updatedUser.email,
+      firstName: updatedUser.first_name,
+      lastName: updatedUser.last_name,
+      preferredProvider: updatedUser.preferred_provider || null,
       subscriptionPlan: nextPlan,
-      isAdmin,
-      categoryColors: await getCategoryColorsByEmail(email),
     });
   } catch (err: any) {
     const message = typeof err?.message === "string" ? err.message : "Failed to update profile";

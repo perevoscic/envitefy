@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import {
+  listDashboardHistoryFallbackForUser,
   insertEventHistory,
+  listDashboardHistoryWindowForUser,
   listHistoryForUser,
   listSidebarHistoryForUserFast,
   upsertSignupForm,
@@ -26,6 +28,28 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const HISTORY_DEBUG = process.env.HISTORY_DEBUG === "1";
+
+function summarizeHistoryItemsForLog(items: any[]) {
+  return (items || []).slice(0, 8).map((item) => ({
+    id: item?.id || null,
+    title: item?.title || null,
+    createdAt: item?.created_at || null,
+    ownership: item?.data?.ownership ?? null,
+    invitedFromScan: item?.data?.invitedFromScan ?? null,
+    shareStatus: item?.data?.shareStatus ?? null,
+    shared: item?.data?.shared ?? null,
+    sharedOut: item?.data?.sharedOut ?? null,
+    createdVia: item?.data?.createdVia ?? null,
+    status: item?.data?.status ?? null,
+    startAt:
+      item?.data?.startAt ??
+      item?.data?.startISO ??
+      item?.data?.start ??
+      item?.data?.fieldsGuess?.start ??
+      item?.data?.event?.start ??
+      null,
+  }));
+}
 
 function isStatementTimeoutError(err: unknown): boolean {
   const anyErr = err as { code?: unknown; message?: unknown } | null;
@@ -108,9 +132,13 @@ export async function GET(req: Request) {
     } else {
       let rows: any[] = [];
       if (view === "sidebar" && timeFilter === "all") {
-        responseSource = "fast-sidebar";
+        responseSource = "dashboard-fallback";
         try {
-          rows = await listSidebarHistoryForUserFast(userId, limit);
+          rows = await listDashboardHistoryFallbackForUser(userId, limit, limit);
+          if (!rows.length) {
+            rows = await listHistoryForUser({ userId, view, limit, timeFilter });
+            responseSource = "dashboard-fallback-empty-union-fallback";
+          }
         } catch (err) {
           if (!isStatementTimeoutError(err)) throw err;
           if (Array.isArray(staleCached)) {
@@ -118,11 +146,23 @@ export async function GET(req: Request) {
             rows = [];
             responseSource = "stale-cache";
           } else {
-            light = [];
-            responseSource = "degraded-empty";
+            try {
+              rows = await listDashboardHistoryWindowForUser(userId, limit);
+              responseSource = "dashboard-window-timeout-fallback";
+            } catch (fallbackErr) {
+              if (!isStatementTimeoutError(fallbackErr)) throw fallbackErr;
+              try {
+                rows = await listSidebarHistoryForUserFast(userId, limit);
+                responseSource = "fast-sidebar-timeout-fallback";
+              } catch (finalErr) {
+                if (!isStatementTimeoutError(finalErr)) throw finalErr;
+                light = [];
+                responseSource = "degraded-empty";
+                degradedReason = "statement-timeout";
+                shouldCacheResponse = false;
+              }
+            }
           }
-          degradedReason = "statement-timeout";
-          shouldCacheResponse = false;
         }
       } else {
         responseSource = "history-union";
@@ -195,13 +235,15 @@ export async function GET(req: Request) {
     }
 
     if (HISTORY_DEBUG) {
-      console.log("[history] GET: returning items", {
+      console.error("[history] GET: returning items", {
         userId,
         count: Array.isArray(light) ? light.length : 0,
         top: light?.[0] ? { id: light[0].id, created_at: light[0].created_at } : null,
         view,
         limit,
         timeFilter,
+        diagnostics,
+        sample: summarizeHistoryItemsForLog(Array.isArray(light) ? light : []),
       });
     }
 

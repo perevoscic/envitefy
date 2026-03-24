@@ -29,6 +29,9 @@ const WEATHERAPI_KEY =
   process.env.WEATHERAPI_KEY || process.env.WEATHERAPI_API_KEY || null;
 const DASHBOARD_CACHE_TTL_MS = 15_000;
 const DASHBOARD_STALE_TTL_MS = 60_000;
+const DASHBOARD_EVENT_QUERY_LIMIT = 120;
+const DASHBOARD_DEBUG =
+  process.env.DASHBOARD_DEBUG === "1" || process.env.NODE_ENV !== "production";
 
 type DashboardMetricsCache = {
   eventId: string;
@@ -47,6 +50,18 @@ type SessionLike = {
     id?: string | null;
   } | null;
 } | null;
+
+function summarizeDashboardEventsForLog(events: DashboardEvent[]) {
+  return (events || []).slice(0, 8).map((event) => ({
+    id: event.id,
+    title: event.title,
+    ownership: event.ownership,
+    shareStatus: event.shareStatus,
+    createdVia: event.createdVia,
+    startAt: event.startAt,
+    status: event.status,
+  }));
+}
 
 let metricsCacheTableExists: boolean | null = null;
 const dashboardResponseCache = getDashboardResponseCache();
@@ -201,8 +216,10 @@ async function computeDashboardPayload(
   timing?: ServerTimingTracker
 ): Promise<DashboardPayload> {
   const eventResult = timing
-    ? await timing.time("events", () => listDashboardEventsForUser(userId, 200))
-    : await listDashboardEventsForUser(userId, 200);
+    ? await timing.time("events", () =>
+        listDashboardEventsForUser(userId, DASHBOARD_EVENT_QUERY_LIMIT)
+      )
+    : await listDashboardEventsForUser(userId, DASHBOARD_EVENT_QUERY_LIMIT);
   const events = eventResult.events;
   const now = Date.now();
   const {
@@ -227,6 +244,25 @@ async function computeDashboardPayload(
     ...eventResult.diagnostics,
     emptyReason,
   };
+  if (DASHBOARD_DEBUG) {
+    console.error("[dashboard] computeDashboardPayload", {
+      userId,
+      userEmail,
+      diagnostics,
+      nextEvent: nextEvent
+        ? {
+            id: nextEvent.id,
+            title: nextEvent.title,
+            ownership: nextEvent.ownership,
+            shareStatus: nextEvent.shareStatus,
+            createdVia: nextEvent.createdVia,
+            startAt: nextEvent.startAt,
+          }
+        : null,
+      upcomingCount: upcoming.length,
+      eventSample: summarizeDashboardEventsForLog(events),
+    });
+  }
 
   const rsvp = {
     going: 0,
