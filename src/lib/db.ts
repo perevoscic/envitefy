@@ -1686,8 +1686,6 @@ function buildFastHistoryOrderBySql(alias: string): string {
  */
 const HISTORY_OWN_ROW_CAP = 600;
 const HISTORY_DASHBOARD_ROW_CAP = 200;
-const HISTORY_DASHBOARD_BATCH_SIZE = 8;
-const HISTORY_SIDEBAR_BATCH_SIZE = 15;
 const HISTORY_DASHBOARD_QUERY_TIMEOUT_MS = 10000;
 const HISTORY_SIDEBAR_QUERY_TIMEOUT_MS = 7000;
 
@@ -2017,18 +2015,32 @@ type SidebarProjectionQueryRow = {
   category: any;
   status: any;
   description: any;
+  start_at: any;
   start_iso: any;
   start: any;
+  fields_guess_start: any;
   created_via: any;
-  shared: any;
-  shared_out: any;
-  ownership: any;
+  shared: boolean;
+  shared_out: boolean;
+  ownership: string | null;
   invited_from_scan: any;
-  share_status: any;
+  share_status: string | null;
   color: any;
   event_start: any;
   event_color: any;
   has_signup_form: boolean;
+};
+
+type FastHistoryCandidateQueryRow = {
+  id: string;
+  created_at?: string | null;
+  event_start_at?: string | null;
+  status_text?: string | null;
+  relation_rank: number;
+  shared: boolean;
+  shared_out: boolean;
+  ownership: string | null;
+  share_status: string | null;
 };
 
 function buildObjectOrNull(
@@ -2108,15 +2120,17 @@ function mapSidebarProjectionRowToEventHistoryRow(
     created_at: row.created_at || undefined,
     data: {
       category: row.category ?? null,
-      shared: row.shared ?? false,
-      sharedOut: row.shared_out ?? false,
+      shared: Boolean(row.shared),
+      sharedOut: Boolean(row.shared_out),
       ownership: row.ownership ?? null,
       invitedFromScan: row.invited_from_scan ?? null,
       shareStatus: row.share_status ?? null,
       status: row.status ?? null,
       description: row.description ?? null,
+      startAt: row.start_at ?? null,
       startISO: row.start_iso ?? null,
       start: row.start ?? null,
+      fieldsGuess: buildObjectOrNull([["start", row.fields_guess_start]]),
       createdVia: row.created_via ?? null,
       color: row.color ?? null,
       event: buildObjectOrNull([
@@ -2161,135 +2175,184 @@ async function listOwnedHistoryCandidatesForUser(
   return [...nonNullRows, ...(nullRes.rows || [])];
 }
 
+function buildOwnedHistoryOwnershipTextSql(dataSql: string): string {
+  return `case
+    when lower(coalesce(${dataSql}->>'ownership', '')) = 'invited'
+      or lower(coalesce(${dataSql}->>'invitedFromScan', '')) = 'true'
+    then 'invited'
+    else 'owned'
+  end`;
+}
+
 async function listProjectedDashboardHistoryRowsByIds(
   client: PoolClient,
-  ids: string[]
+  rows: Array<Pick<FastHistoryCandidateQueryRow, "id" | "ownership" | "share_status">>
 ): Promise<EventHistoryRow[]> {
-  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
-  if (!uniqueIds.length) return [];
+  const seen = new Set<string>();
+  const requestedRows = rows.filter((row) => {
+    if (!row?.id || seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+  if (!requestedRows.length) return [];
 
-  const collected: EventHistoryRow[] = [];
-
-  for (let i = 0; i < uniqueIds.length; i += HISTORY_DASHBOARD_BATCH_SIZE) {
-    const batchIds = uniqueIds.slice(i, i + HISTORY_DASHBOARD_BATCH_SIZE);
-    const res = await client.query<DashboardProjectionQueryRow>(
-      `with requested_ids as (
-         select requested_id, ord
-         from unnest($1::uuid[]) with ordinality as ids(requested_id, ord)
+  const res = await client.query<DashboardProjectionQueryRow>(
+    `with requested_ids as (
+       select requested_id, requested_ownership, requested_share_status, ord
+       from unnest(
+         $1::uuid[],
+         $2::text[],
+         $3::text[]
+       ) with ordinality as ids(
+         requested_id,
+         requested_ownership,
+         requested_share_status,
+         ord
        )
-       select
-         eh.id,
-         eh.user_id,
-         eh.title,
-         eh.created_at,
-         coalesce(eh.data, '{}'::jsonb)->'startAt' as start_at,
-         coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,
-         coalesce(eh.data, '{}'::jsonb)->'start' as start,
-         coalesce(eh.data, '{}'::jsonb)->'endAt' as end_at,
-         coalesce(eh.data, '{}'::jsonb)->'endISO' as end_iso,
-         coalesce(eh.data, '{}'::jsonb)->'end' as end,
-         coalesce(eh.data, '{}'::jsonb)->'tz' as tz,
-         coalesce(eh.data, '{}'::jsonb)->'timezone' as timezone,
-         coalesce(eh.data, '{}'::jsonb)->'locationText' as location_text,
-         coalesce(eh.data, '{}'::jsonb)->'location' as location,
-         coalesce(eh.data, '{}'::jsonb)->'locationLat' as location_lat,
-         coalesce(eh.data, '{}'::jsonb)->'lat' as lat,
-         coalesce(eh.data, '{}'::jsonb)->'locationLng' as location_lng,
-         coalesce(eh.data, '{}'::jsonb)->'lng' as lng,
-         ${buildDashboardCoverImageUrlSql("coalesce(eh.data, '{}'::jsonb)", "eh.id")} as cover_image_url,
-         ${buildDashboardSafeMediaJsonSql(
-           "coalesce(eh.data, '{}'::jsonb)->'thumbnail'",
-           "coalesce(eh.data, '{}'::jsonb)->>'thumbnail'"
-         )} as thumbnail,
-         ${buildDashboardSafeMediaJsonSql(
-           "coalesce(eh.data, '{}'::jsonb)->'heroImage'",
-           "coalesce(eh.data, '{}'::jsonb)->>'heroImage'"
-         )} as hero_image,
-         coalesce(eh.data, '{}'::jsonb)->'status' as status,
-         coalesce(eh.data, '{}'::jsonb)->'category' as category,
-         coalesce(eh.data, '{}'::jsonb)->'updatedAt' as updated_at,
-         coalesce(eh.data, '{}'::jsonb)->'numberOfGuests' as number_of_guests,
-         case
-           when jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'reminders') = 'array'
-             then coalesce(eh.data, '{}'::jsonb)->'reminders'
-           else '[]'::jsonb
-         end as reminders,
-         coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
-         coalesce(eh.data, '{}'::jsonb)->'ownership' as ownership,
-         coalesce(eh.data, '{}'::jsonb)->'invitedFromScan' as invited_from_scan,
-         coalesce(eh.data, '{}'::jsonb)->'shareStatus' as share_status,
-         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,title}' as fields_guess_title,
-         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,start}' as fields_guess_start,
-         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,end}' as fields_guess_end,
-         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,location}' as fields_guess_location,
-         coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,timezone}' as fields_guess_timezone,
-         coalesce(eh.data, '{}'::jsonb)#>'{event,title}' as event_title,
-         coalesce(eh.data, '{}'::jsonb)#>'{event,start}' as event_start,
-         coalesce(eh.data, '{}'::jsonb)#>'{event,end}' as event_end,
-         coalesce(eh.data, '{}'::jsonb)#>'{event,location}' as event_location,
-         coalesce(eh.data, '{}'::jsonb)#>'{event,timezone}' as event_timezone,
-         coalesce(eh.data, '{}'::jsonb)#>'{event,locationLat}' as event_location_lat,
-         coalesce(eh.data, '{}'::jsonb)#>'{event,locationLng}' as event_location_lng
-       from requested_ids r
-       join event_history eh on eh.id = r.requested_id
-       order by r.ord`,
-      [batchIds]
-    );
-    if (res.rows?.length) {
-      collected.push(...res.rows.map(mapDashboardProjectionRowToEventHistoryRow));
-    }
-  }
-
-  return collected;
+     )
+     select
+       eh.id,
+       eh.user_id,
+       eh.title,
+       eh.created_at,
+       coalesce(eh.data, '{}'::jsonb)->'startAt' as start_at,
+       coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,
+       coalesce(eh.data, '{}'::jsonb)->'start' as start,
+       coalesce(eh.data, '{}'::jsonb)->'endAt' as end_at,
+       coalesce(eh.data, '{}'::jsonb)->'endISO' as end_iso,
+       coalesce(eh.data, '{}'::jsonb)->'end' as end,
+       coalesce(eh.data, '{}'::jsonb)->'tz' as tz,
+       coalesce(eh.data, '{}'::jsonb)->'timezone' as timezone,
+       coalesce(eh.data, '{}'::jsonb)->'locationText' as location_text,
+       coalesce(eh.data, '{}'::jsonb)->'location' as location,
+       coalesce(eh.data, '{}'::jsonb)->'locationLat' as location_lat,
+       coalesce(eh.data, '{}'::jsonb)->'lat' as lat,
+       coalesce(eh.data, '{}'::jsonb)->'locationLng' as location_lng,
+       coalesce(eh.data, '{}'::jsonb)->'lng' as lng,
+       ${buildDashboardCoverImageUrlSql("coalesce(eh.data, '{}'::jsonb)", "eh.id")} as cover_image_url,
+       ${buildDashboardSafeMediaJsonSql(
+         "coalesce(eh.data, '{}'::jsonb)->'thumbnail'",
+         "coalesce(eh.data, '{}'::jsonb)->>'thumbnail'"
+       )} as thumbnail,
+       ${buildDashboardSafeMediaJsonSql(
+         "coalesce(eh.data, '{}'::jsonb)->'heroImage'",
+         "coalesce(eh.data, '{}'::jsonb)->>'heroImage'"
+       )} as hero_image,
+       coalesce(eh.data, '{}'::jsonb)->'status' as status,
+       coalesce(eh.data, '{}'::jsonb)->'category' as category,
+       coalesce(eh.data, '{}'::jsonb)->'updatedAt' as updated_at,
+       coalesce(eh.data, '{}'::jsonb)->'numberOfGuests' as number_of_guests,
+       case
+         when jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'reminders') = 'array'
+           then coalesce(eh.data, '{}'::jsonb)->'reminders'
+         else '[]'::jsonb
+       end as reminders,
+       coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
+       to_jsonb(r.requested_ownership) as ownership,
+       coalesce(eh.data, '{}'::jsonb)->'invitedFromScan' as invited_from_scan,
+       to_jsonb(r.requested_share_status) as share_status,
+       coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,title}' as fields_guess_title,
+       coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,start}' as fields_guess_start,
+       coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,end}' as fields_guess_end,
+       coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,location}' as fields_guess_location,
+       coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,timezone}' as fields_guess_timezone,
+       coalesce(eh.data, '{}'::jsonb)#>'{event,title}' as event_title,
+       coalesce(eh.data, '{}'::jsonb)#>'{event,start}' as event_start,
+       coalesce(eh.data, '{}'::jsonb)#>'{event,end}' as event_end,
+       coalesce(eh.data, '{}'::jsonb)#>'{event,location}' as event_location,
+       coalesce(eh.data, '{}'::jsonb)#>'{event,timezone}' as event_timezone,
+       coalesce(eh.data, '{}'::jsonb)#>'{event,locationLat}' as event_location_lat,
+       coalesce(eh.data, '{}'::jsonb)#>'{event,locationLng}' as event_location_lng
+     from requested_ids r
+     join event_history eh on eh.id = r.requested_id
+     order by r.ord`,
+    [
+      requestedRows.map((row) => row.id),
+      requestedRows.map((row) => row.ownership || "owned"),
+      requestedRows.map((row) => row.share_status ?? null),
+    ]
+  );
+  return (res.rows || []).map(mapDashboardProjectionRowToEventHistoryRow);
 }
 
 async function listProjectedSidebarHistoryRowsByIds(
   client: PoolClient,
-  ids: string[]
+  rows: Array<
+    Pick<
+      FastHistoryCandidateQueryRow,
+      "id" | "shared" | "shared_out" | "ownership" | "share_status"
+    >
+  >
 ): Promise<EventHistoryRow[]> {
-  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
-  if (!uniqueIds.length) return [];
+  const seen = new Set<string>();
+  const requestedRows = rows.filter((row) => {
+    if (!row?.id || seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+  if (!requestedRows.length) return [];
 
-  const collected: EventHistoryRow[] = [];
-
-  for (let i = 0; i < uniqueIds.length; i += HISTORY_SIDEBAR_BATCH_SIZE) {
-    const batchIds = uniqueIds.slice(i, i + HISTORY_SIDEBAR_BATCH_SIZE);
-    const res = await client.query<SidebarProjectionQueryRow>(
-      `with requested_ids as (
-         select requested_id, ord
-         from unnest($1::uuid[]) with ordinality as ids(requested_id, ord)
-       )
+  const res = await client.query<SidebarProjectionQueryRow>(
+    `with requested_ids as (
        select
-         eh.id,
-         eh.user_id,
-         eh.title,
-         eh.created_at,
-         coalesce(eh.data, '{}'::jsonb)->'category' as category,
-         coalesce(eh.data, '{}'::jsonb)->'status' as status,
-         coalesce(eh.data, '{}'::jsonb)->'description' as description,
-         coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,
-         coalesce(eh.data, '{}'::jsonb)->'start' as start,
-         coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
-         coalesce(eh.data, '{}'::jsonb)->'shared' as shared,
-         coalesce(eh.data, '{}'::jsonb)->'sharedOut' as shared_out,
-         coalesce(eh.data, '{}'::jsonb)->'ownership' as ownership,
-         coalesce(eh.data, '{}'::jsonb)->'invitedFromScan' as invited_from_scan,
-         coalesce(eh.data, '{}'::jsonb)->'shareStatus' as share_status,
-         coalesce(eh.data, '{}'::jsonb)->'color' as color,
-         coalesce(eh.data, '{}'::jsonb)#>'{event,start}' as event_start,
-         coalesce(eh.data, '{}'::jsonb)#>'{event,color}' as event_color,
-         (jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'signupForm') = 'object') as has_signup_form
-       from requested_ids r
-       join event_history eh on eh.id = r.requested_id
-       order by r.ord`,
-      [batchIds]
-    );
-    if (res.rows?.length) {
-      collected.push(...res.rows.map(mapSidebarProjectionRowToEventHistoryRow));
-    }
-  }
-
-  return collected;
+         requested_id,
+         requested_shared,
+         requested_shared_out,
+         requested_ownership,
+         requested_share_status,
+         ord
+       from unnest(
+         $1::uuid[],
+         $2::boolean[],
+         $3::boolean[],
+         $4::text[],
+         $5::text[]
+       ) with ordinality as ids(
+         requested_id,
+         requested_shared,
+         requested_shared_out,
+         requested_ownership,
+         requested_share_status,
+         ord
+       )
+     )
+     select
+       eh.id,
+       eh.user_id,
+       eh.title,
+       eh.created_at,
+       case
+         when r.requested_shared then to_jsonb('Shared events'::text)
+         else coalesce(eh.data, '{}'::jsonb)->'category'
+       end as category,
+       coalesce(eh.data, '{}'::jsonb)->'status' as status,
+       coalesce(eh.data, '{}'::jsonb)->'description' as description,
+       coalesce(eh.data, '{}'::jsonb)->'startAt' as start_at,
+       coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,
+       coalesce(eh.data, '{}'::jsonb)->'start' as start,
+       coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,start}' as fields_guess_start,
+       coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
+       r.requested_shared as shared,
+       r.requested_shared_out as shared_out,
+       r.requested_ownership as ownership,
+       coalesce(eh.data, '{}'::jsonb)->'invitedFromScan' as invited_from_scan,
+       r.requested_share_status as share_status,
+       coalesce(eh.data, '{}'::jsonb)->'color' as color,
+       coalesce(eh.data, '{}'::jsonb)#>'{event,start}' as event_start,
+       coalesce(eh.data, '{}'::jsonb)#>'{event,color}' as event_color,
+       (jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'signupForm') = 'object') as has_signup_form
+     from requested_ids r
+     join event_history eh on eh.id = r.requested_id
+     order by r.ord`,
+    [
+      requestedRows.map((row) => row.id),
+      requestedRows.map((row) => Boolean(row.shared)),
+      requestedRows.map((row) => Boolean(row.shared_out)),
+      requestedRows.map((row) => row.ownership || "owned"),
+      requestedRows.map((row) => row.share_status ?? null),
+    ]
+  );
+  return (res.rows || []).map(mapSidebarProjectionRowToEventHistoryRow);
 }
 
 function compareEventHistoryRowsByCreatedAtDesc(
@@ -2929,13 +2992,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
   const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const ownStartRawSql = buildHistoryEventStartRawSql(ownDataSql);
   const ownStatusSql = buildHistoryStatusSql(ownDataSql);
-  const ownProjection = buildDashboardDataProjectionSql(
-    "eh.id",
-    ownDataSql,
-    buildOwnedHistoryOwnershipSql(ownDataSql),
-    `${ownDataSql}->'invitedFromScan'`,
-    "null"
-  );
+  const ownOwnershipSql = buildOwnedHistoryOwnershipTextSql(ownDataSql);
 
   if (!includeShared) {
     return `
@@ -2953,17 +3010,27 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
       own_rows as (
         select
           eh.id,
-          eh.user_id,
-          eh.title,
-          ${ownProjection} as data,
           eh.created_at,
           ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
           ${ownStatusSql} as status_text,
-          0 as relation_rank
+          0 as relation_rank,
+          false as shared,
+          false as shared_out,
+          ${ownOwnershipSql} as ownership,
+          null::text as share_status
         from own_candidates c
         join event_history eh on eh.id = c.id
       )
-      select id, user_id, title, data, created_at
+      select
+        id,
+        created_at,
+        event_start_at,
+        status_text,
+        relation_rank,
+        shared,
+        shared_out,
+        ownership,
+        share_status
       from own_rows
       order by ${buildFastHistoryOrderBySql("own_rows")}
       limit $2
@@ -2973,13 +3040,6 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
   const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const sharedStartRawSql = buildHistoryEventStartRawSql(sharedDataSql);
   const sharedStatusSql = buildHistoryStatusSql(sharedDataSql);
-  const sharedProjection = buildDashboardDataProjectionSql(
-    "eh.id",
-    sharedDataSql,
-    "to_jsonb('invited'::text)",
-    `${sharedDataSql}->'invitedFromScan'`,
-    "to_jsonb(es.status)"
-  );
 
   return `
     with own_candidates as (
@@ -2996,13 +3056,14 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
     own_rows as (
       select
         eh.id,
-        eh.user_id,
-        eh.title,
-        ${ownProjection} as data,
         eh.created_at,
         ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
         ${ownStatusSql} as status_text,
-        0 as relation_rank
+        0 as relation_rank,
+        false as shared,
+        false as shared_out,
+        ${ownOwnershipSql} as ownership,
+        null::text as share_status
       from own_candidates c
       join event_history eh on eh.id = c.id
     ),
@@ -3011,13 +3072,14 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
       from (
         select
           eh.id,
-          eh.user_id,
-          eh.title,
-          ${sharedProjection} as data,
           eh.created_at,
           ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
           ${sharedStatusSql} as status_text,
-          case when es.status = 'accepted' then 1 else 2 end as relation_rank
+          case when es.status = 'accepted' then 1 else 2 end as relation_rank,
+          true as shared,
+          false as shared_out,
+          'invited'::text as ownership,
+          es.status::text as share_status
         from event_shares es
         join event_history eh on eh.id = es.event_id
         where es.recipient_user_id = $1
@@ -3032,7 +3094,16 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
       union all
       select * from shared_rows
     )
-    select id, user_id, title, data, created_at
+    select
+      id,
+      created_at,
+      event_start_at,
+      status_text,
+      relation_rank,
+      shared,
+      shared_out,
+      ownership,
+      share_status
     from combined
     order by ${buildFastHistoryOrderBySql("combined")}
     limit $2
@@ -3043,23 +3114,15 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
   const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const ownStartRawSql = buildHistoryEventStartRawSql(ownDataSql);
   const ownStatusSql = buildHistoryStatusSql(ownDataSql);
-  const ownProjection = buildHistoryDataProjectionSql({
-    view: "sidebar",
-    dataSql: ownDataSql,
-    categorySql: `${ownDataSql}->'category'`,
-    sharedSql: "false",
-    sharedOutSql: `exists(
-      select 1
-      from event_shares es2
-      where es2.owner_user_id = $1
-        and es2.event_id = eh.id
-        and es2.revoked_at is null
-        and es2.status in ('pending', 'accepted')
-    )`,
-    ownershipSql: buildOwnedHistoryOwnershipSql(ownDataSql),
-    invitedFromScanSql: `${ownDataSql}->'invitedFromScan'`,
-    shareStatusSql: "null",
-  });
+  const ownSharedOutSql = `exists(
+    select 1
+    from event_shares es2
+    where es2.owner_user_id = $1
+      and es2.event_id = eh.id
+      and es2.revoked_at is null
+      and es2.status in ('pending', 'accepted')
+  )`;
+  const ownOwnershipSql = buildOwnedHistoryOwnershipTextSql(ownDataSql);
 
   if (!includeShared) {
     return `
@@ -3077,17 +3140,27 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
       own_rows as (
         select
           eh.id,
-          eh.user_id,
-          eh.title,
-          ${ownProjection} as data,
           eh.created_at,
           ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
           ${ownStatusSql} as status_text,
-          0 as relation_rank
+          0 as relation_rank,
+          false as shared,
+          ${ownSharedOutSql} as shared_out,
+          ${ownOwnershipSql} as ownership,
+          null::text as share_status
         from own_candidates c
         join event_history eh on eh.id = c.id
       )
-      select id, user_id, title, data, created_at
+      select
+        id,
+        created_at,
+        event_start_at,
+        status_text,
+        relation_rank,
+        shared,
+        shared_out,
+        ownership,
+        share_status
       from own_rows
       order by ${buildFastHistoryOrderBySql("own_rows")}
       limit $2
@@ -3097,16 +3170,6 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
   const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const sharedStartRawSql = buildHistoryEventStartRawSql(sharedDataSql);
   const sharedStatusSql = buildHistoryStatusSql(sharedDataSql);
-  const sharedProjection = buildHistoryDataProjectionSql({
-    view: "sidebar",
-    dataSql: sharedDataSql,
-    categorySql: "to_jsonb('Shared events'::text)",
-    sharedSql: "true",
-    sharedOutSql: "false",
-    ownershipSql: "to_jsonb('invited'::text)",
-    invitedFromScanSql: `${sharedDataSql}->'invitedFromScan'`,
-    shareStatusSql: "to_jsonb(es.status)",
-  });
 
   return `
     with own_candidates as (
@@ -3123,13 +3186,14 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
     own_rows as (
       select
         eh.id,
-        eh.user_id,
-        eh.title,
-        ${ownProjection} as data,
         eh.created_at,
         ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
         ${ownStatusSql} as status_text,
-        0 as relation_rank
+        0 as relation_rank,
+        false as shared,
+        ${ownSharedOutSql} as shared_out,
+        ${ownOwnershipSql} as ownership,
+        null::text as share_status
       from own_candidates c
       join event_history eh on eh.id = c.id
     ),
@@ -3138,13 +3202,14 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
       from (
         select
           eh.id,
-          eh.user_id,
-          eh.title,
-          ${sharedProjection} as data,
           eh.created_at,
           ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
           ${sharedStatusSql} as status_text,
-          case when es.status = 'accepted' then 1 else 2 end as relation_rank
+          case when es.status = 'accepted' then 1 else 2 end as relation_rank,
+          true as shared,
+          false as shared_out,
+          'invited'::text as ownership,
+          es.status::text as share_status
         from event_shares es
         join event_history eh on eh.id = es.event_id
         where es.recipient_user_id = $1
@@ -3159,7 +3224,16 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
       union all
       select * from shared_rows
     )
-    select id, user_id, title, data, created_at
+    select
+      id,
+      created_at,
+      event_start_at,
+      status_text,
+      relation_rank,
+      shared,
+      shared_out,
+      ownership,
+      share_status
     from combined
     order by ${buildFastHistoryOrderBySql("combined")}
     limit $2
@@ -3175,11 +3249,12 @@ export async function listDashboardHistoryWindowForUser(
     return await withStatementTimeout(
       HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
       async (client) => {
-        const res = await client.query<EventHistoryRow>(
+        const res = await client.query<FastHistoryCandidateQueryRow>(
           buildDashboardFastHistoryQuery(true),
           [userId, safeLimit]
         );
-        const rows = res.rows || [];
+        const candidates = res.rows || [];
+        const rows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
         logEventHistoryRows("listDashboardHistoryWindowForUser shared-fast", userId, rows);
         return rows;
       }
@@ -3189,11 +3264,12 @@ export async function listDashboardHistoryWindowForUser(
     return await withStatementTimeout(
       HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
       async (client) => {
-        const res = await client.query<EventHistoryRow>(
+        const res = await client.query<FastHistoryCandidateQueryRow>(
           buildDashboardFastHistoryQuery(false),
           [userId, safeLimit]
         );
-        const rows = res.rows || [];
+        const candidates = res.rows || [];
+        const rows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
         logEventHistoryRows("listDashboardHistoryWindowForUser own-fast", userId, rows);
         return rows;
       }
@@ -3214,11 +3290,12 @@ export async function listDashboardHistoryFallbackForUser(
     const rows = await withStatementTimeout(
       HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
       async (client) => {
-        const res = await client.query<EventHistoryRow>(
+        const res = await client.query<FastHistoryCandidateQueryRow>(
           buildDashboardFastHistoryQuery(true),
           [userId, safeLimit]
         );
-        const resultRows = res.rows || [];
+        const candidates = res.rows || [];
+        const resultRows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
         logEventHistoryRows("listDashboardHistoryFallbackForUser shared-fast", userId, resultRows);
         return resultRows;
       }
@@ -3229,11 +3306,12 @@ export async function listDashboardHistoryFallbackForUser(
     const rows = await withStatementTimeout(
       HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
       async (client) => {
-        const res = await client.query<EventHistoryRow>(
+        const res = await client.query<FastHistoryCandidateQueryRow>(
           buildDashboardFastHistoryQuery(false),
           [userId, safeLimit]
         );
-        const resultRows = res.rows || [];
+        const candidates = res.rows || [];
+        const resultRows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
         logEventHistoryRows("listDashboardHistoryFallbackForUser own-fast", userId, resultRows);
         return resultRows;
       }
@@ -3324,11 +3402,12 @@ export async function listSidebarHistoryForUserFast(
     const rows = await withStatementTimeout(
       HISTORY_SIDEBAR_QUERY_TIMEOUT_MS,
       async (client) => {
-        const res = await client.query<EventHistoryRow>(
+        const res = await client.query<FastHistoryCandidateQueryRow>(
           buildSidebarFastHistoryQuery(true),
           [userId, safeLimit]
         );
-        const resultRows = res.rows || [];
+        const candidates = res.rows || [];
+        const resultRows = await listProjectedSidebarHistoryRowsByIds(client, candidates);
         logEventHistoryRows("listSidebarHistoryForUserFast shared-fast", userId, resultRows);
         return resultRows;
       }
@@ -3339,11 +3418,12 @@ export async function listSidebarHistoryForUserFast(
     const rows = await withStatementTimeout(
       HISTORY_SIDEBAR_QUERY_TIMEOUT_MS,
       async (client) => {
-        const res = await client.query<EventHistoryRow>(
+        const res = await client.query<FastHistoryCandidateQueryRow>(
           buildSidebarFastHistoryQuery(false),
           [userId, safeLimit]
         );
-        const resultRows = res.rows || [];
+        const candidates = res.rows || [];
+        const resultRows = await listProjectedSidebarHistoryRowsByIds(client, candidates);
         logEventHistoryRows("listSidebarHistoryForUserFast own-fast", userId, resultRows);
         return resultRows;
       }
