@@ -1046,7 +1046,7 @@ const meetSection = {
     const formatTime = (t: string) => {
       if (!t) return "";
       const [h, m] = t.split(":");
-      const hour = parseInt(h);
+      const hour = parseInt(h, 10);
       const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${m} ${ampm}`;
@@ -1466,7 +1466,7 @@ const practiceSection = {
     const formatTime = (t: string) => {
       if (!t) return "";
       const [h, m] = t.split(":");
-      const hour = parseInt(h);
+      const hour = parseInt(h, 10);
       const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${m} ${ampm}`;
@@ -2011,7 +2011,7 @@ const logisticsSection = {
     const formatTime = (t: string) => {
       if (!t) return "";
       const [h, m] = t.split(":");
-      const hour = parseInt(h);
+      const hour = parseInt(h, 10);
       const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${m} ${ampm}`;
@@ -3447,7 +3447,7 @@ const volunteersSection = {
           </div>
         </div>
 
-        {slots.map((slot, idx) => (
+        {slots.map((slot, _idx) => (
           <div
             key={slot.id}
             className="border border-slate-200 rounded-lg p-3 bg-white flex items-center gap-3"
@@ -3565,7 +3565,7 @@ const volunteersSection = {
                       updateCarpool(
                         cp.id,
                         "seatsAvailable",
-                        parseInt(e.target.value) || 1
+                        parseInt(e.target.value, 10) || 1
                       )
                     }
                   />
@@ -3633,7 +3633,7 @@ const volunteersSection = {
     const formatTime = (t: string) => {
       if (!t) return "";
       const [h, m] = t.split(":");
-      const hour = parseInt(h);
+      const hour = parseInt(h, 10);
       const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${m} ${ampm}`;

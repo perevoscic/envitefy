@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Snowflake,
   Thermometer,
@@ -139,7 +139,7 @@ const getScheduleItems = (
     if (idx === 1) icon = Calendar;
 
     // Try to extract day from date or use default
-    let day = idx === 0 ? "Fri" : idx === 1 ? "Sat" : "Sun";
+    const day = idx === 0 ? "Fri" : idx === 1 ? "Sat" : "Sun";
 
     return {
       icon,

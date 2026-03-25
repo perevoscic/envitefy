@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // Build SQL query to find recipients based on audience filter
-      let whereConditions: string[] = ["email IS NOT NULL"];
+      const whereConditions: string[] = ["email IS NOT NULL"];
       const queryParams: any[] = [];
       let paramIndex = 1;
 

@@ -1,4 +1,4 @@
-import React from "react";
+
 import CenteredMinimalHero from "@/app/event/weddings/_renderers/centered-minimal-hero";
 import SplitTextureBanner from "@/app/event/weddings/_renderers/split-texture-banner";
 import CrestCenteredRibbon from "@/app/event/weddings/_renderers/crest-centered-ribbon";

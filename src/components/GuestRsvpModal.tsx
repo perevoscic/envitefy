@@ -21,7 +21,7 @@ interface GuestRsvpModalProps {
 function formatDate(dateStr?: string) {
   if (!dateStr) return "";
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
+  if (Number.isNaN(date.getTime())) return dateStr;
   
   const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
   const dd = String(date.getUTCDate()).padStart(2, '0');
@@ -67,7 +67,7 @@ export default function GuestRsvpModal({
             setPhone(data.phone || "");
             prefilled = true;
           }
-        } catch (e) {}
+        } catch (_e) {}
       }
       // Fall back to signed-in session name when localStorage is empty
       if (!prefilled && session?.user?.name) {
@@ -143,7 +143,7 @@ export default function GuestRsvpModal({
         const data = await res.json();
         setError(data.error || "Failed to submit RSVP");
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);

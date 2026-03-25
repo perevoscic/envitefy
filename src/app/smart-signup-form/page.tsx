@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import SignupBuilder from "@/components/smart-signup-form/SignupBuilder";
 import SmartSignupWizard from "@/components/smart-signup-form/Wizard";
 import type { SignupForm } from "@/types/signup";
 import { createDefaultSignupForm, sanitizeSignupForm } from "@/utils/signup";

@@ -49,7 +49,7 @@ export default function SignupForm({
 
     console.log("[SignupForm] reCAPTCHA setup", {
       hasSiteKey: !!siteKey,
-      siteKey: siteKey?.substring(0, 10) + "...",
+      siteKey: `${siteKey?.substring(0, 10)}...`,
       hasGrecaptcha: typeof window !== "undefined" && !!window.grecaptcha,
     });
 
@@ -155,7 +155,7 @@ export default function SignupForm({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const errMsg = (data && data.error) || "Failed to create account";
+        const errMsg = (data?.error) || "Failed to create account";
         setMessage(errMsg);
         setToastText(errMsg);
         setToastOpen(true);

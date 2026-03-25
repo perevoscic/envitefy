@@ -1,7 +1,6 @@
 import {
   Scan,
   Calendar,
-  Share2,
   Users,
   Gift,
   CheckSquare,

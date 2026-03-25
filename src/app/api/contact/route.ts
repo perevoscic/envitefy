@@ -22,7 +22,7 @@ function extractEmailAddress(input: string | undefined): string | undefined {
   const trimmed = input.trim();
   // Match formats like: Display Name <email@domain>
   const match = trimmed.match(/<([^>]+)>/);
-  if (match && match[1]) return match[1].trim();
+  if (match?.[1]) return match[1].trim();
   // If no angle brackets, assume it's already an email address
   if (trimmed.includes("@")) return trimmed;
   return undefined;

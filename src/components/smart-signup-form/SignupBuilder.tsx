@@ -30,7 +30,7 @@ type Props = {
   };
 };
 
-const REMINDER_PRESETS: Array<{ value: number; label: string }> = [
+const _REMINDER_PRESETS: Array<{ value: number; label: string }> = [
   { value: 168, label: "1 week before" },
   { value: 72, label: "3 days before" },
   { value: 48, label: "2 days before" },
@@ -133,7 +133,7 @@ const ThemeImagesCarousel: React.FC<{
         const all = results.flat();
         if (!mounted) return;
         setUrls(all);
-      } catch (e) {
+      } catch (_e) {
         if (mounted) {
           setError("failed");
           setUrls([]);
@@ -182,7 +182,7 @@ const ThemeImagesCarousel: React.FC<{
             const file = url.split("/").pop() || "image";
             const base = file.replace(/\.[^.]+$/, "");
             const pretty = base
-              .replace(/[\-_]+/g, " ")
+              .replace(/[-_]+/g, " ")
               .replace(/\s+/g, " ")
               .trim()
               .toLowerCase()
@@ -512,7 +512,7 @@ const SignupBuilder: React.FC<Props> = ({
   const settings = { ...DEFAULT_SIGNUP_SETTINGS, ...form.settings };
   const { data: session } = useSession();
   const creatorName = (session?.user?.name as string | undefined) || null;
-  const creatorInitials = (creatorName || "")
+  const _creatorInitials = (creatorName || "")
     .trim()
     .split(/\s+/)
     .map((w) => (w ? w[0].toUpperCase() : ""))
@@ -1986,7 +1986,7 @@ const SignupBuilder: React.FC<Props> = ({
       const bgR = parseInt(story.bg.slice(1, 3), 16);
       const bgG = parseInt(story.bg.slice(3, 5), 16);
       const bgB = parseInt(story.bg.slice(5, 7), 16);
-      const bgBrightness = (bgR * 299 + bgG * 587 + bgB * 114) / 1000;
+      const _bgBrightness = (bgR * 299 + bgG * 587 + bgB * 114) / 1000;
 
       const lightest = getLightestColor(story.colors);
       const darkest = getDarkestColor(story.colors);
@@ -2461,7 +2461,7 @@ const SignupBuilder: React.FC<Props> = ({
     }
   };
 
-  const toggleReminder = (value: number) => {
+  const _toggleReminder = (value: number) => {
     const exists = settings.autoRemindersHoursBefore.includes(value);
     const next = exists
       ? settings.autoRemindersHoursBefore.filter((n) => n !== value)
@@ -2470,7 +2470,7 @@ const SignupBuilder: React.FC<Props> = ({
     setSettings({ autoRemindersHoursBefore: next });
   };
 
-  const handleAddReminderPrompt = () => {
+  const _handleAddReminderPrompt = () => {
     if (typeof window === "undefined") return;
     const answer = window
       .prompt(
@@ -2698,7 +2698,7 @@ const SignupBuilder: React.FC<Props> = ({
         })
       : null;
     if (ro) ro.observe(node);
-    return () => ro && ro.disconnect();
+    return () => ro?.disconnect();
   }, [previewFixedHeightPx]);
 
   React.useEffect(() => {

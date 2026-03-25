@@ -888,7 +888,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         },
       };
 
-      let id: string | undefined = undefined;
+      let id: string | undefined ;
       let j: any = null;
       if (editEventId) {
         // Update existing event: merge data and title

@@ -80,7 +80,7 @@ export async function preparePickedImage(
     );
   });
 
-  const outName = (file.name.replace(/\.[^.]+$/, "") || "photo") + ".jpg";
+  const outName = `${file.name.replace(/\.[^.]+$/, "") || "photo"}.jpg`;
   const outFile = new File([jpegBlob], outName, { type: "image/jpeg" });
 
   return { file: outFile, width: dstW, height: dstH, original: file };

@@ -2,10 +2,9 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import RegistryLinksEditor, {
+import {
   RegistryFormEntry,
 } from "@/components/RegistryLinksEditor";
-import Toggle from "@/components/Toggle";
 import type { NormalizedEvent } from "@/lib/mappers";
 import {
   MAX_REGISTRY_LINKS,
@@ -43,7 +42,7 @@ const createRegistryEntry = (): RegistryFormEntry => ({
   detectedLabel: null,
 });
 
-function toLocalInputValue(d: Date | null): string {
+function _toLocalInputValue(d: Date | null): string {
   if (!d) return "";
   try {
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -98,7 +97,7 @@ export default function EventCreateModal({
     { code: "FR", label: "Fri" },
     { code: "SA", label: "Sat" },
   ] as const;
-  const REPEAT_FREQUENCIES = [
+  const _REPEAT_FREQUENCIES = [
     { key: "weekly", label: "Week" },
     { key: "monthly", label: "Month" },
     { key: "yearly", label: "Year" },
@@ -119,7 +118,7 @@ export default function EventCreateModal({
   }, [initialStart]);
 
   const [submitting, setSubmitting] = useState(false);
-  const todayMin = useMemo(() => toLocalDateValue(new Date()), []);
+  const _todayMin = useMemo(() => toLocalDateValue(new Date()), []);
   const [title, setTitle] = useState("");
   // Date/time inputs
   const [whenDate, setWhenDate] = useState<string>(
@@ -140,7 +139,7 @@ export default function EventCreateModal({
   const [numberOfGuests, setNumberOfGuests] = useState<number>(0);
   const [category, setCategory] = useState<string>("");
   const [customCategory, setCustomCategory] = useState<string>("");
-  const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [_showCustomCategory, setShowCustomCategory] = useState(false);
   const [registryLinks, setRegistryLinks] = useState<RegistryFormEntry[]>([]);
   const [attachment, setAttachment] = useState<{
     name: string;
@@ -150,13 +149,13 @@ export default function EventCreateModal({
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
     string | null
   >(null);
-  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [_attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
   // Smart sign-up configuration moved to its own modal
 
   // Connected calendars state
-  const [connectedCalendars, setConnectedCalendars] =
+  const [_connectedCalendars, setConnectedCalendars] =
     useState<ConnectedCalendars>({
       google: false,
       microsoft: false,
@@ -172,18 +171,18 @@ export default function EventCreateModal({
     apple: false,
   });
 
-  const addRegistryLink = () => {
+  const _addRegistryLink = () => {
     setRegistryLinks((prev) => {
       if (prev.length >= MAX_REGISTRY_LINKS) return prev;
       return [...prev, createRegistryEntry()];
     });
   };
 
-  const removeRegistryLink = (key: string) => {
+  const _removeRegistryLink = (key: string) => {
     setRegistryLinks((prev) => prev.filter((entry) => entry.key !== key));
   };
 
-  const handleRegistryFieldChange = (
+  const _handleRegistryFieldChange = (
     key: string,
     field: "label" | "url",
     value: string
@@ -223,7 +222,7 @@ export default function EventCreateModal({
       })
     );
   };
-  const handleFlyerChange = async (
+  const _handleFlyerChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0] || null;
@@ -273,7 +272,7 @@ export default function EventCreateModal({
     }
   };
 
-  const clearFlyer = () => {
+  const _clearFlyer = () => {
     setAttachment(null);
     setAttachmentPreviewUrl(null);
     setImageColors(null);
@@ -383,7 +382,7 @@ export default function EventCreateModal({
     el.style.height = `${el.scrollHeight}px`;
   }, [description, open]);
 
-  const submit = async (e: React.FormEvent) => {
+  const _submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
 
@@ -650,8 +649,8 @@ export default function EventCreateModal({
                 title: (j as any)?.title || payload.title,
                 created_at: (j as any)?.created_at || new Date().toISOString(),
                 start:
-                  (serverData && serverData.start) ||
-                  (serverData && serverData.startISO) ||
+                  (serverData?.start) ||
+                  (serverData?.startISO) ||
                   startISO,
                 category: mergedData.category || null,
                 data: mergedData,
@@ -678,9 +677,9 @@ export default function EventCreateModal({
   const trimmedRsvp = rsvp.trim();
   const normalizedCategory = (category || "").toLowerCase();
   const isRegistryCategory = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
-  const allowsRegistrySection = isRegistryCategory;
+  const _allowsRegistrySection = isRegistryCategory;
   // RSVP field should ALWAYS show - users may want to add RSVP for any event type
-  const showRsvpField = true;
+  const _showRsvpField = true;
 
   if (!open) return null;
 

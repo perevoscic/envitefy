@@ -7,13 +7,10 @@ import {
   type BirthdayTemplateDefinition,
 } from "@/components/event-create/BirthdayTemplateGallery";
 import {
-  ArrowLeft,
   ArrowRight,
-  CalendarDays,
   Check,
   Filter,
   Palette,
-  Sparkles,
   Wand2,
 } from "lucide-react";
 
@@ -792,7 +789,7 @@ export default function BirthdaysCreateTemplate({ defaultDate }: Props) {
     router.push(`/event/birthdays/customize?${params.toString()}`);
   };
 
-  const selectedTemplate = selectedTemplateId
+  const _selectedTemplate = selectedTemplateId
     ? INVITE_TEMPLATES.find((template) => template.id === selectedTemplateId) ??
       null
     : null;

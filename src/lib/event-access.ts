@@ -1,5 +1,5 @@
-import { createHmac, randomBytes, scrypt as nodeScrypt, timingSafeEqual } from "crypto";
-import { promisify } from "util";
+import { createHmac, randomBytes, scrypt as nodeScrypt, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
 
 const scrypt = promisify(nodeScrypt);
 

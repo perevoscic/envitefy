@@ -1,4 +1,4 @@
-import React from "react";
+
 import { BIRTHDAY_THEMES } from "../birthdayThemes";
 import { BirthdayThemeCard } from "./ThemeCard";
 

@@ -1,5 +1,5 @@
-import React from "react";
-import { ArrowRight, Clock, Users, MapPin, Coffee, Gift } from "lucide-react";
+
+import { ArrowRight, MapPin, Coffee, } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {

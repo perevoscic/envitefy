@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Anchor, Sun, MapPin, Coffee, Wine, Utensils } from "lucide-react";
+
+import { Anchor, MapPin, Coffee, Wine, Utensils } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -138,7 +138,7 @@ const getScheduleItems = (
     if (idx === 1) icon = Anchor;
 
     // Try to extract day from date or use default
-    let day = "Saturday";
+    const day = "Saturday";
     if (item.time) {
       // Could parse date if available
     }

@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Leaf,
   Sun,
   Music,
   Heart,
   ArrowUpRight,
-  CheckCircle,
   MapPin,
   Gift,
 } from "lucide-react";
@@ -13,7 +12,7 @@ import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = { theme: ThemeConfig; event: EventData };
 
-const getNames = (event: EventData) =>
+const _getNames = (event: EventData) =>
   event.headlineTitle ||
   [event.couple?.partner1, event.couple?.partner2]
     .filter(Boolean)

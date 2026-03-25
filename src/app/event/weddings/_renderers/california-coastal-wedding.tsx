@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Waves, Mountain, Sun, Wind, ArrowDown, Map as MapIcon } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 

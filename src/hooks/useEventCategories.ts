@@ -32,7 +32,7 @@ export type CategoryData = {
 
 export function useEventCategories() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, _setLoading] = useState(false);
 
   const loadHistory = useCallback(async () => {
     setHistory([]);

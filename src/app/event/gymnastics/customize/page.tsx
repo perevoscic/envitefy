@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthModal from "@/components/auth/AuthModal";
 import {
@@ -14,32 +13,7 @@ import {
   Type,
   CheckSquare,
   ChevronRight,
-  Share2,
-  Calendar as CalendarIcon,
-  Apple,
-  Upload,
-  Users,
-  Trophy,
-  ClipboardList,
-  Bus,
-  Shirt,
-  Car,
-  Plus,
-  Trash2,
-  AlertCircle,
-  Clock,
-  MapPin,
-  Phone,
-  Mail,
-  FileText,
   Link as LinkIcon,
-  Check,
-  X,
-  HelpCircle,
-  Bell,
-  Download,
-  ExternalLink,
-  GripVertical,
 } from "lucide-react";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
@@ -492,7 +466,7 @@ const normalizeHostGymName = (value: unknown): string => {
   const raw = asTrimmedString(value).replace(/\s+/g, " ");
   if (!raw) return "";
   const cleaned = raw
-    .replace(/^[\-\u2022*]\s*/, "")
+    .replace(/^[-\u2022*]\s*/, "")
     .replace(/^host(?:ed)?\s*by[:\-\s]*/i, "")
     .replace(/^host\s*gym[:\-\s]*/i, "")
     .replace(/^home\s*gym[:\-\s]*/i, "")
@@ -570,7 +544,7 @@ const stripDiscoveryGeneratedDetails = (value: unknown): string => {
   return uniqueLines(
     text
       .split(/\n+/)
-      .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+      .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
       .filter(Boolean)
       .filter(
         (line) =>
@@ -873,8 +847,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.themes[0]?.id ?? "default-theme"
     );
     const [activeView, setActiveView] = useState<string>("main");
-    const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
-    const [rsvpAttending, setRsvpAttending] = useState("yes");
+    const [_rsvpSubmitted, _setRsvpSubmitted] = useState(false);
+    const [_rsvpAttending, _setRsvpAttending] = useState("yes");
     const [dismissedSuggestedExtraFields, setDismissedSuggestedExtraFields] =
       useState<Record<string, boolean>>({});
     const [submitting, setSubmitting] = useState(false);
@@ -1066,7 +1040,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const textClass = forceLightText
       ? "text-white"
       : rawTextClass || "text-white";
-    const accentClass = forceLightText
+    const _accentClass = forceLightText
       ? "text-white"
       : currentTheme?.accent || textClass;
     const usesLightText = /text-(white|slate-50|neutral-50|gray-50)/.test(
@@ -1075,23 +1049,23 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const headingShadow = usesLightText
       ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" }
       : undefined;
-    const bodyShadow = usesLightText
+    const _bodyShadow = usesLightText
       ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
       : undefined;
     // Title color for dark backgrounds - light gold/beige
     const titleColor = isDarkBackground
       ? { color: "#f5e6d3" } // Light beige/gold
       : undefined;
-    const headingFontStyle = {
+    const _headingFontStyle = {
       fontFamily: selectedFont?.css,
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
-    const headingSizeClass =
+    const _headingSizeClass =
       selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
     const locationParts = data.venue || "";
-    const addressLine = data.address || "";
+    const _addressLine = data.address || "";
 
     const hasRoster =
       advancedState?.roster?.enabled !== false &&
@@ -1522,8 +1496,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           const startIso =
             existing.start || existing.startISO || existing.startIso;
-          let loadedDate: string | undefined = undefined;
-          let loadedTime: string | undefined = undefined;
+          let loadedDate: string | undefined ;
+          let loadedTime: string | undefined ;
           if (typeof startIso === "string") {
             const isoMatch = startIso.match(
               /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/
@@ -1999,7 +1973,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           data: {
             category: config.category,
             createdVia: isDiscoveryUpdate ? "meet-discovery" : "simple-template",
-            createdManually: isDiscoveryUpdate ? false : true,
+            createdManually: !isDiscoveryUpdate,
             ...(loadedDiscoverySource && {
               discoverySource: {
                 ...loadedDiscoverySource,
@@ -2256,7 +2230,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     };
 
-    const handleShare = () => {
+    const _handleShare = () => {
       const details = buildEventDetails();
       const shareUrl =
         typeof window !== "undefined" ? window.location.href : undefined;
@@ -2279,7 +2253,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     };
 
-    const handleGoogleCalendar = () => {
+    const _handleGoogleCalendar = () => {
       const details = buildEventDetails();
       const start = toGoogleDate(details.start);
       const end = toGoogleDate(details.end);
@@ -2295,7 +2269,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     };
 
-    const handleOutlookCalendar = () => {
+    const _handleOutlookCalendar = () => {
       const details = buildEventDetails();
       const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
         details.title
@@ -2320,7 +2294,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     };
 
-    const handleAppleCalendar = () => {
+    const _handleAppleCalendar = () => {
       const details = buildEventDetails();
       openAppleCalendarIcs(buildIcsUrl(details));
     };
@@ -2506,7 +2480,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     }, []);
 
-    const handleDesignTokensChange = useCallback((tokens: any) => {
+    const _handleDesignTokensChange = useCallback((tokens: any) => {
       setData((prev) => {
         const prevTokens = prev.simpleDesignTokens;
         if (
@@ -3667,13 +3641,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
 import {
   config,
-  rosterSection,
-  meetSection,
-  practiceSection,
-  logisticsSection,
-  gearSection,
-  volunteersSection,
-  announcementsSection,
 } from "@/components/event-templates/GymnasticsTemplate";
 
 const Page = createSimpleCustomizePage(config);

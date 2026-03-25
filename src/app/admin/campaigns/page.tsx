@@ -101,7 +101,7 @@ export default function CampaignsPage() {
     if (!textarea) return;
     const start = textarea.selectionStart;
     const newText =
-      body.substring(0, start) + "\n<br>\n" + body.substring(start);
+      `${body.substring(0, start)}\n<br>\n${body.substring(start)}`;
     setBody(newText);
     setTimeout(() => {
       textarea.focus();
@@ -228,7 +228,7 @@ export default function CampaignsPage() {
           data.errors.slice(0, 10).forEach((err: any) => {
             const shortError =
               err.error.length > 80
-                ? err.error.substring(0, 80) + "..."
+                ? `${err.error.substring(0, 80)}...`
                 : err.error;
             message += `• ${err.email}\n  ${shortError}\n`;
           });
@@ -303,9 +303,9 @@ export default function CampaignsPage() {
     const socialIconsHtml = socialIcons
       .map(
         (link) => `
-                    <td style=\"padding: 0 12px;\">
-                      <a href=\"${link.href}\" target=\"_blank\" title=\"${link.title}\" style=\"display: inline-block;\">
-                        <img src=\"${link.src}\" width=\"36\" height=\"36\" alt=\"${link.title}\" style=\"display: block;\" />
+                    <td style="padding: 0 12px;">
+                      <a href="${link.href}" target="_blank" title="${link.title}" style="display: inline-block;">
+                        <img src="${link.src}" width="36" height="36" alt="${link.title}" style="display: block;" />
                       </a>
                     </td>`,
       )

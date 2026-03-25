@@ -13,7 +13,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   Edit2,
   Heart,
   MapPin,
@@ -29,14 +28,11 @@ import {
   Plane,
   Navigation,
   Building,
-  Star,
   Check,
   X as XIcon,
   Calendar as CalendarIcon,
-  Clock,
   Bus,
   Share2,
-  Apple,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
@@ -1095,7 +1091,7 @@ const INITIAL_DATA = {
 const ThemeGraphics = ({ themeId, isThumbnail = false }) => {
   const theme = DESIGN_THEMES.find((t) => t.id === themeId) || DESIGN_THEMES[0];
   const type = theme.graphicType;
-  const opacity = isThumbnail ? "opacity-100" : "opacity-100"; // Ensure visibility in thumbnail
+  const _opacity = isThumbnail ? "opacity-100" : "opacity-100"; // Ensure visibility in thumbnail
   const strokeWidth = isThumbnail ? "2" : "0.5";
 
   const containerClass = isThumbnail
@@ -1154,8 +1150,7 @@ const ThemeGraphics = ({ themeId, isThumbnail = false }) => {
           </svg>
         )}
         {type === "palm-leaves" && (
-          <>
-            <svg
+          <svg
               className={`absolute top-0 right-0 ${
                 isThumbnail ? "w-full h-full" : "w-96 h-96"
               } text-emerald-600/10`}
@@ -1165,7 +1160,6 @@ const ThemeGraphics = ({ themeId, isThumbnail = false }) => {
               <path d="M100 100 L 50 0 L 0 100 Z" opacity="0.5" />
               <path d="M100 100 L 80 0 L 60 100 Z" opacity="0.3" />
             </svg>
-          </>
         )}
       </div>
     );
@@ -1394,8 +1388,8 @@ const ThemeGraphics = ({ themeId, isThumbnail = false }) => {
                 key={i}
                 className="absolute w-1 h-1 bg-white rounded-full"
                 style={{
-                  top: Math.random() * 100 + "%",
-                  left: Math.random() * 100 + "%",
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
                 }}
               ></div>
             ))}
@@ -1408,8 +1402,8 @@ const ThemeGraphics = ({ themeId, isThumbnail = false }) => {
               key={i}
               className="absolute text-sky-300 opacity-80"
               style={{
-                top: Math.random() * 100 + "%",
-                left: Math.random() * 100 + "%",
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
                 fontSize: isThumbnail ? "10px" : "20px",
               }}
             >
@@ -1480,7 +1474,7 @@ const App = () => {
     previewTouchHandlers,
     drawerTouchHandlers,
   } = useMobileDrawer();
-  const [designOpen, setDesignOpen] = useState(true);
+  const [_designOpen, _setDesignOpen] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const designGridRef = useRef<HTMLDivElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -4771,7 +4765,7 @@ const DecorativeDivider = ({ themeId }) => {
       ),
     };
 
-    return dividers[themeId] || dividers["blush_peony_arch"];
+    return dividers[themeId] || dividers.blush_peony_arch;
   };
 
   return (

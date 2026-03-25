@@ -6,8 +6,6 @@ import React, {
   useMemo,
   useState,
   useEffect,
-  memo,
-  useRef,
 } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,16 +23,7 @@ import {
   Share2,
   Calendar as CalendarIcon,
   Apple,
-  Upload,
-  ClipboardList,
-  Users,
-  Home,
-  Plane,
   MapPin,
-  Clock,
-  Phone,
-  Mail,
-  Shirt,
   Link as LinkIcon,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
@@ -43,11 +32,6 @@ import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import {
   config,
-  eventsSection,
-  practiceSection,
-  rosterSection,
-  logisticsSection,
-  gearSection,
 } from "@/components/event-templates/CheerleadingTemplate";
 
 type FieldSpec = {
@@ -233,7 +217,7 @@ const CHEER_GOOGLE_FONT_FAMILIES = [
   "Tangerine:wght@400;700",
 ];
 
-const CHEER_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=${CHEER_GOOGLE_FONT_FAMILIES.join(
+const _CHEER_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=${CHEER_GOOGLE_FONT_FAMILIES.join(
   "&family="
 )}&display=swap`;
 
@@ -637,8 +621,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           const startIso =
             existing.start || existing.startISO || existing.startIso;
-          let loadedDate: string | undefined = undefined;
-          let loadedTime: string | undefined = undefined;
+          let loadedDate: string | undefined ;
+          let loadedTime: string | undefined ;
           if (startIso) {
             const d = new Date(startIso);
             if (!Number.isNaN(d.getTime())) {

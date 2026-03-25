@@ -1,4 +1,4 @@
-import React from "react";
+
 import { ArrowRight, CornerDownRight } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
@@ -149,7 +149,7 @@ const getScheduleItems = (
     if (time24.includes("PM") || time24.includes("pm")) {
       const match = time24.match(/(\d{1,2}):?(\d{2})?/);
       if (match) {
-        let hours = parseInt(match[1]);
+        let hours = parseInt(match[1], 10);
         if (hours < 12) hours += 12;
         const minutes = match[2] || "00";
         time24 = `${hours}:${minutes}`;
@@ -191,7 +191,7 @@ const buildMarqueeText = (
       : "Dinner at 8",
     "Dancing til late",
   ];
-  return parts.join(" • ") + " • ";
+  return `${parts.join(" • ")} • `;
 };
 
 export default function IndustrialWedding({ theme, event }: Props) {

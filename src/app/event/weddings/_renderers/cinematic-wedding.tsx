@@ -1,11 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Play,
   MapPin,
   Calendar,
   Clock,
-  ArrowDown,
-  Users,
   Plane,
   Coffee,
   Gift,

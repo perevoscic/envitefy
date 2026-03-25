@@ -1,6 +1,6 @@
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
-import { randomBytes, scrypt as nodeScrypt, timingSafeEqual, randomUUID } from "crypto";
-import { promisify } from "util";
+import { randomBytes, scrypt as nodeScrypt, timingSafeEqual, randomUUID } from "node:crypto";
+import { promisify } from "node:util";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
 import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
@@ -770,11 +770,11 @@ export async function updateUserNamesByEmail(params: {
   const sets: string[] = [];
   const values: any[] = [lower];
   let idx = 2;
-  if (Object.prototype.hasOwnProperty.call(params, "firstName")) {
+  if (Object.hasOwn(params, "firstName")) {
     sets.push(`first_name = $${idx++}`);
     values.push(params.firstName ?? null);
   }
-  if (Object.prototype.hasOwnProperty.call(params, "lastName")) {
+  if (Object.hasOwn(params, "lastName")) {
     sets.push(`last_name = $${idx++}`);
     values.push(params.lastName ?? null);
   }
@@ -972,25 +972,25 @@ export async function updateUserStripeState(
     values.push(value);
   };
 
-  if (Object.prototype.hasOwnProperty.call(updates, "stripeCustomerId")) {
+  if (Object.hasOwn(updates, "stripeCustomerId")) {
     setField("stripe_customer_id", updates.stripeCustomerId ?? null);
   }
-  if (Object.prototype.hasOwnProperty.call(updates, "stripeSubscriptionId")) {
+  if (Object.hasOwn(updates, "stripeSubscriptionId")) {
     setField("stripe_subscription_id", updates.stripeSubscriptionId ?? null);
   }
-  if (Object.prototype.hasOwnProperty.call(updates, "stripeSubscriptionStatus")) {
+  if (Object.hasOwn(updates, "stripeSubscriptionStatus")) {
     setField("stripe_subscription_status", updates.stripeSubscriptionStatus ?? null);
   }
-  if (Object.prototype.hasOwnProperty.call(updates, "stripePriceId")) {
+  if (Object.hasOwn(updates, "stripePriceId")) {
     setField("stripe_price_id", updates.stripePriceId ?? null);
   }
-  if (Object.prototype.hasOwnProperty.call(updates, "stripeCurrentPeriodEnd")) {
+  if (Object.hasOwn(updates, "stripeCurrentPeriodEnd")) {
     setField("stripe_current_period_end", isoStringOrNull(updates.stripeCurrentPeriodEnd));
   }
-  if (Object.prototype.hasOwnProperty.call(updates, "stripeCancelAtPeriodEnd")) {
+  if (Object.hasOwn(updates, "stripeCancelAtPeriodEnd")) {
     setField("stripe_cancel_at_period_end", updates.stripeCancelAtPeriodEnd ?? false);
   }
-  if (Object.prototype.hasOwnProperty.call(updates, "subscriptionPlan")) {
+  if (Object.hasOwn(updates, "subscriptionPlan")) {
     setField("subscription_plan", updates.subscriptionPlan ?? null);
     if (
       updates.subscriptionPlan === "monthly" ||
@@ -1000,7 +1000,7 @@ export async function updateUserStripeState(
       setParts.push("ever_paid = true");
     }
   }
-  if (Object.prototype.hasOwnProperty.call(updates, "subscriptionExpiresAt")) {
+  if (Object.hasOwn(updates, "subscriptionExpiresAt")) {
     setField("subscription_expires_at", isoStringOrNull(updates.subscriptionExpiresAt));
   }
 
@@ -1116,7 +1116,7 @@ export async function createGiftPromoCode(params: {
   const code = generatePromoCode(12);
   // Some databases may enforce NOT NULL on expires_at. Default to 90 days if not provided.
   const defaultTtlMs = 90 * 24 * 60 * 60 * 1000; // 90 days
-  const effectiveExpiresAt = (params.expiresAt instanceof Date && !isNaN(params.expiresAt.getTime()))
+  const effectiveExpiresAt = (params.expiresAt instanceof Date && !Number.isNaN(params.expiresAt.getTime()))
     ? params.expiresAt
     : new Date(Date.now() + defaultTtlMs);
 
@@ -1892,7 +1892,7 @@ function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string 
   end`;
 }
 
-function buildDashboardDataProjectionSql(
+function _buildDashboardDataProjectionSql(
   idSql: string,
   dataSql: string,
   ownershipSql: string,
@@ -2142,7 +2142,7 @@ function mapSidebarProjectionRowToEventHistoryRow(
   };
 }
 
-async function listOwnedHistoryCandidatesForUser(
+async function _listOwnedHistoryCandidatesForUser(
   client: PoolClient,
   userId: string,
   limit: number
@@ -2366,7 +2366,7 @@ function compareEventHistoryRowsByCreatedAtDesc(
   return String(b.id || "").localeCompare(String(a.id || ""));
 }
 
-function sortAndDedupeEventHistoryRows(
+function _sortAndDedupeEventHistoryRows(
   rows: EventHistoryRow[],
   limit?: number
 ): EventHistoryRow[] {
@@ -3776,7 +3776,7 @@ export async function getValidPasswordResetByToken(token: string): Promise<Passw
   if (!row) return null;
   if (row.used_at) return null;
   const expires = new Date(row.expires_at).getTime();
-  if (isNaN(expires) || expires < Date.now()) return null;
+  if (Number.isNaN(expires) || expires < Date.now()) return null;
   return row;
 }
 

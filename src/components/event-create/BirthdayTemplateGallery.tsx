@@ -1,10 +1,6 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
+import {
   useState,
 } from "react";
 import TemplateGallery, {
@@ -249,8 +245,8 @@ export const candyDreamsTemplateConfig: TemplateLayoutConfig = {
  */
 export function getBirthdayBackgroundPrompt(
   templateId: string,
-  birthdayName?: string,
-  templateTitle?: string
+  _birthdayName?: string,
+  _templateTitle?: string
 ): string {
   const basePrompt = BIRTHDAY_BACKGROUND_PROMPTS[templateId];
   if (!basePrompt) {
@@ -866,7 +862,7 @@ export default function BirthdayTemplateGallery({
   showColorStories = true,
   onApplyTemplate,
 }: Props) {
-  const [customHeroImage, setCustomHeroImage] = useState<string | null>(null);
+  const [customHeroImage, _setCustomHeroImage] = useState<string | null>(null);
 
   return (
     <div className="w-full max-w-7xl">

@@ -61,11 +61,11 @@ export async function absoluteUrl(path = ""): Promise<string> {
     const hdrs = await headers();
     headerProto = hdrs.get("x-forwarded-proto");
     headerHost = hdrs.get("x-forwarded-host") || hdrs.get("host");
-    if (headerProto && headerProto.includes(",")) {
+    if (headerProto?.includes(",")) {
       headerProto = headerProto.split(",")[0]?.trim() || headerProto;
     }
     headerProto = headerProto ? headerProto.replace(/:$/, "").toLowerCase() : null;
-    if (headerHost && headerHost.includes(",")) {
+    if (headerHost?.includes(",")) {
       headerHost = headerHost.split(",")[0]?.trim() || headerHost;
     }
   } catch {
@@ -78,7 +78,7 @@ export async function absoluteUrl(path = ""): Promise<string> {
     : null;
 
   let hostCandidate = headerHost || fallback.host;
-  if (hostCandidate && hostCandidate.includes("://")) {
+  if (hostCandidate?.includes("://")) {
     try {
       const parsed = new URL(hostCandidate);
       hostCandidate = parsed.host;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Star, GlassWater, Music, Utensils } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 

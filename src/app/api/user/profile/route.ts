@@ -46,8 +46,8 @@ export async function PUT(req: Request) {
 
     const body = await req.json().catch(() => ({} as any));
     // Only include keys that were actually present in the request body.
-    const hasFirst = Object.prototype.hasOwnProperty.call(body, "firstName");
-    const hasLast = Object.prototype.hasOwnProperty.call(body, "lastName");
+    const hasFirst = Object.hasOwn(body, "firstName");
+    const hasLast = Object.hasOwn(body, "lastName");
     const firstName = hasFirst
       ? body.firstName === ""
         ? null
@@ -66,7 +66,7 @@ export async function PUT(req: Request) {
       rawPref === "google" || rawPref === "microsoft" || rawPref === "apple"
         ? (rawPref as "google" | "microsoft" | "apple")
         : null;
-    const hasPreferredProvider = Object.prototype.hasOwnProperty.call(
+    const hasPreferredProvider = Object.hasOwn(
       body,
       "preferredProvider"
     );

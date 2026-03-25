@@ -36,7 +36,7 @@ export default function ConditionalFooter({
   const { data: clientSession, status } = useSession();
 
   // Use server session if available (more reliable), otherwise fall back to client session
-  const session = serverSession !== undefined ? serverSession : clientSession;
+  const _session = serverSession !== undefined ? serverSession : clientSession;
 
   // Hide footer when not logged in and viewing a shared event page
   const isEventShare = pathname && isEventSharePath(pathname);

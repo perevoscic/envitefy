@@ -2,7 +2,6 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
 import { Calendar, ExternalLink, Share2 } from "lucide-react";
 
 export default function FloatingActionStrip({

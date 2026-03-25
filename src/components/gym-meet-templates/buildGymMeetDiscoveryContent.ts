@@ -373,7 +373,7 @@ type ExtractedPageKind =
   | "empty"
   | "unknown";
 
-const normalizeLineKey = (value: string) => safeString(value).toLowerCase().replace(/\s+/g, " ").trim();
+const _normalizeLineKey = (value: string) => safeString(value).toLowerCase().replace(/\s+/g, " ").trim();
 
 const isUsableEmail = (value: unknown) => USABLE_EMAIL_PATTERN.test(safeString(value));
 const isUsablePhone = (value: unknown) => safeString(value).replace(/\D/g, "").length >= 7;
@@ -552,7 +552,7 @@ const isSparseSection = (section: any) => {
   return metrics.contentScore <= 3 && !metrics.hasVisualBlock && !metrics.hasPrimaryAction;
 };
 
-const isLightAdmissionSection = (section: any) => {
+const _isLightAdmissionSection = (section: any) => {
   const metrics = getSectionMetrics(section);
   return (
     metrics.contentScore <= 4 &&
@@ -811,7 +811,7 @@ export function buildGymMeetDiscoveryContent({
       .replace(/\bno\s+weekend\s+passes\.?/gi, "")
       .replace(/\s{2,}/g, " ")
       .replace(/\s+([,.;:!?])/g, "$1")
-      .replace(/[:;,\-]\s*$/g, "")
+      .replace(/[:;,-]\s*$/g, "")
       .trim();
 
   const parseResultAdmission = Array.isArray(eventData?.discoverySource?.parseResult?.admission)
@@ -902,7 +902,7 @@ export function buildGymMeetDiscoveryContent({
       safeString(line)
     );
   const sourceLines = collectRoutableSourceLines(extractedDiscoveryText)
-    .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+    .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
     .filter(Boolean)
     .filter((line) => !isHtmlNoiseLine(line))
     .filter((line) => !isMarketingLikeSourceLine(line))
@@ -1323,7 +1323,7 @@ export function buildGymMeetDiscoveryContent({
   const descriptionLines = uniqueTextLines(
     normalizedDetailsText
       .split(/\n+/)
-      .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+      .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
       .filter(Boolean),
     8
   ).filter((line) => line.length > 10 && !isMeetDetailsExcludedLine(line));

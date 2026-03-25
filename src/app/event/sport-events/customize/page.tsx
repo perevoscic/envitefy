@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useMemo,
   useState,
-  memo,
   useRef,
 } from "react";
 import Image from "next/image";
@@ -23,9 +22,6 @@ import {
   CheckSquare,
   ChevronRight,
   Share2,
-  Calendar as CalendarIcon,
-  Apple,
-  Upload,
   MapPin,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
@@ -384,7 +380,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? false
     );
-    const [loadingExisting, setLoadingExisting] = useState(false);
+    const [_loadingExisting, setLoadingExisting] = useState(false);
     const {
       mobileMenuOpen,
       openMobileMenu,

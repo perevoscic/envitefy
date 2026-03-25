@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Music, Sun, Heart, MapPin } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
@@ -147,7 +147,7 @@ export default function Retro70s({ theme, event }: Props) {
         </h2>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {scoop.map((card, i) => (
+          {scoop.map((card, _i) => (
             <div
               key={card.title}
               className="rounded-3xl p-8 border-4 border-[#386641] shadow-[8px_8px_0px_0px_#BC4749] hover:-translate-y-2 transition-transform"

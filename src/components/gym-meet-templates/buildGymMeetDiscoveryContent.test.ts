@@ -303,9 +303,9 @@ test("resource links drive documents, hotels, and results without rewriting even
     address: "123 Main St, Chicago, IL 60601",
   });
 
-  const documents = findSection(discovery, "documents");
+  const _documents = findSection(discovery, "documents");
   const coaches = findSection(discovery, "coaches");
-  const admission = findSection(discovery, "admission");
+  const _admission = findSection(discovery, "admission");
   const trafficParking = findSection(discovery, "traffic-parking");
   const allContent = JSON.stringify(discovery.sections);
 

@@ -16,7 +16,7 @@ export const contentType = "image/png";
 // Helper to truncate text to fit within max length
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength - 3) + "...";
+  return `${text.slice(0, maxLength - 3)}...`;
 }
 
 // Helper to load a font for ImageResponse
@@ -41,7 +41,7 @@ async function loadFont(): Promise<{
         weight: 400 as const,
       };
     }
-  } catch (error) {
+  } catch (_error) {
     console.warn("Failed to load Inter font, using system font fallback");
   }
   // Fallback: return null to use system fonts (may not work, but worth trying)
@@ -104,7 +104,7 @@ export default async function OgImage(props: {
       // Event not found - return default image
       const defaultBg = await loadImageAsDataUrl("/og-default.jpg");
       const font = await loadFont();
-      const fonts = font ? [font] : [];
+      const _fonts = font ? [font] : [];
       return new ImageResponse(
         (
           <div

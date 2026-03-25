@@ -9,9 +9,7 @@ import {
   Check,
   Filter,
   Palette,
-  Sparkles,
   Wand2,
-  Baby,
   Gift,
   Share2,
   Lock,
@@ -749,7 +747,7 @@ export default function BabyShowersCreateTemplate({ defaultDate }: Props) {
     router.push(`/event/baby-showers/customize?${params.toString()}`);
   };
 
-  const selectedTemplate = selectedTemplateId
+  const _selectedTemplate = selectedTemplateId
     ? BABY_SHOWER_TEMPLATES.find(
         (template) => template.id === selectedTemplateId
       ) ?? null

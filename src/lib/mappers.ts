@@ -52,12 +52,12 @@ export function toGoogleEvent(event: NormalizedEvent) {
   const start = isAllDay
     ? { date: event.start.slice(0, 10) }
     : // Keep local clock time exactly as typed; include the user's timezone
-      (event.timezone && event.timezone.trim()
+      (event.timezone?.trim()
         ? { dateTime: event.start, timeZone: event.timezone }
         : { dateTime: event.start });
   const end = isAllDay
     ? { date: event.end.slice(0, 10) }
-    : (event.timezone && event.timezone.trim()
+    : (event.timezone?.trim()
         ? { dateTime: event.end, timeZone: event.timezone }
         : { dateTime: event.end });
 
@@ -96,9 +96,9 @@ export function toMicrosoftEvent(event: NormalizedEvent) {
     const minutes = Math.min(
       ...event.reminders
         .map((r) => (typeof r.minutes === "number" ? r.minutes : Infinity))
-        .filter((v) => isFinite(v))
+        .filter((v) => Number.isFinite(v))
     );
-    if (isFinite(minutes)) {
+    if (Number.isFinite(minutes)) {
       graphEvent.reminderMinutesBeforeStart = minutes;
       graphEvent.isReminderOn = true;
     }

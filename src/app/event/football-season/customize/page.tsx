@@ -19,33 +19,9 @@ import {
   CheckSquare,
   ChevronRight,
   Share2,
-  Calendar as CalendarIcon,
-  Apple,
   Upload,
-  Users,
-  Trophy,
-  ClipboardList,
-  Bus,
-  Shirt,
-  Car,
-  Plus,
-  Trash2,
-  AlertCircle,
-  Clock,
   MapPin,
-  Phone,
-  Mail,
-  FileText,
   Link as LinkIcon,
-  Check,
-  X,
-  HelpCircle,
-  Bell,
-  Download,
-  ExternalLink,
-  GripVertical,
-  Home,
-  Plane,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
@@ -143,7 +119,7 @@ const normalizeRosterSection = (section: any) => {
   if (!section || typeof section !== "object") return section;
   const normalizedPlayers = Array.isArray(section.players)
     ? section.players.map((player: any) => {
-        if (player && player.id) return player;
+        if (player?.id) return player;
         return {
           ...(player || {}),
           id:
@@ -554,7 +530,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
     const [activeView, setActiveView] = useState<string>("main");
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
-    const [rsvpAttending, setRsvpAttending] = useState("yes");
+    const [_rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
     const [initializingEdit, setInitializingEdit] = useState(
       Boolean(editEventId)
@@ -2323,13 +2299,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
 import {
   config,
-  gameScheduleSection,
-  rosterSection,
-  practiceSection,
-  logisticsSection,
-  gearSection,
-  volunteersSection,
-  announcementsSection,
 } from "@/components/event-templates/FootballSeasonTemplate";
 
 const Page = createSimpleCustomizePage(config);

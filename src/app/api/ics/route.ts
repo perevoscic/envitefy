@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   // Present as an invitation so iOS can show an explicit Accept/Add flow
   cal.method(("REQUEST" as unknown) as ICalCalendarMethod);
   const evt = cal.createEvent({
-    id: (globalThis.crypto && globalThis.crypto.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
+    id: (globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
     start: new Date(start),
     end: new Date(end),
     summary: title,

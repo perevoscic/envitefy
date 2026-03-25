@@ -19,7 +19,7 @@ export default function NewBirthdayEventPage() {
   }, [search]);
   const editEventId = useMemo(() => {
     const id = search?.get("edit");
-    return id && id.trim() ? id.trim() : undefined;
+    return id?.trim() ? id.trim() : undefined;
   }, [search]);
 
   // If editing, use the old component. Otherwise redirect to customize with default template.

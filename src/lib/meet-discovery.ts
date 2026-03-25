@@ -1,11 +1,11 @@
 import OpenAI from "openai";
 import sharp from "sharp";
-import { inflateRawSync, inflateSync } from "zlib";
-import { execFile } from "child_process";
-import { promisify } from "util";
-import { mkdtemp, rm, writeFile } from "fs/promises";
-import { join } from "path";
-import { tmpdir } from "os";
+import { inflateRawSync, inflateSync } from "node:zlib";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import {
   createDiscoveryRequestCache,
   getOrCreatePdfPageImage,
@@ -804,7 +804,7 @@ function sanitizeHostGymValue(value: unknown): string | null {
     text = proudHostMatch[1].replace(/\s+/g, " ").trim();
   }
 
-  text = text.replace(/^host(?:ed)?\s+by[:\s-]*/i, "").replace(/[,:;.\-]+$/g, "").trim();
+  text = text.replace(/^host(?:ed)?\s+by[:\s-]*/i, "").replace(/[,:;.-]+$/g, "").trim();
   if (!text) return null;
   if (HOST_GYM_PAYMENT_LINE_PATTERN.test(text)) return null;
   if (HOST_GYM_PACKET_TEXT_PATTERN.test(text)) return null;
@@ -886,7 +886,7 @@ function normalizeColorHex(value: unknown): string {
   return "";
 }
 
-function normalizeScheduleColorRef(value: unknown): ScheduleColorRef | null {
+function _normalizeScheduleColorRef(value: unknown): ScheduleColorRef | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, any>;
   const legendId = safeString(raw.legendId) || null;
@@ -904,7 +904,7 @@ function sanitizeScheduleColorLegendEntries(
 ): ScheduleColorLegendEntry[] {
   return uniqueBy(
     entries
-      .map((entry, index) => ({
+      .map((entry, _index) => ({
         id: safeString((entry as any)?.id) || null,
         target:
           safeString((entry as any)?.target) === "session" ||
@@ -2034,7 +2034,7 @@ function deriveDateRangeFromText(value: string): DateRangeInfo {
 function extractHallFactsFromText(text: string): string[] {
   const normalizedLines = safeString(text)
     .split(/\n+/)
-    .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+    .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
     .filter(Boolean);
   return sanitizeVenueFactLines(normalizedLines, {
     mode: "strict",
@@ -2055,7 +2055,7 @@ export function buildDiscoveryEvidence(
   const lines = stitchDiscoveryLines(
     text
       .split(/\n+/)
-      .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+      .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
       .filter(Boolean)
   );
   const firstLines = uniqueLines(lines.slice(0, 24), 12);
@@ -3190,7 +3190,7 @@ function analyzeTextQuality(text: string): {
   const controlChars = (sample.match(/[\u0000-\u001F\u007F-\u009F]/g) || []).length;
   const englishLikeTokens = tokens.filter((token) => /^[A-Za-z][A-Za-z'’-]{1,24}$/.test(token)).length;
   const longTokens = tokens.filter((token) => token.length > 35).length;
-  const nonTextChars = (sample.match(/[^A-Za-z0-9\s.,:;!?()'"&@#%/\-]/g) || []).length;
+  const nonTextChars = (sample.match(/[^A-Za-z0-9\s.,:;!?()'"&@#%/-]/g) || []).length;
   const readableLines = cleanedText
     .split(/\n+/)
     .filter((line) => (line.match(/[A-Za-z]{3,}/g) || []).length >= 3).length;
@@ -4027,8 +4027,6 @@ async function extractGymLayoutImageFromPdf(
         finalScore: preScore,
       });
     } catch {
-      // Continue scanning remaining pages; some PDFs can fail intermittently by page.
-      continue;
     }
   }
 
@@ -5532,7 +5530,7 @@ export async function extractDiscoveryText(
   let gymLayoutPage: number | null = null;
   let gymLayoutFacts: string[] = [];
   let gymLayoutZones: GymLayoutZone[] = [];
-  let gymLayoutSelection: GymLayoutSelectionDiagnostics | undefined = undefined;
+  let gymLayoutSelection: GymLayoutSelectionDiagnostics | undefined ;
   let coachPageHints: CoachPageHint[] = [];
   let schedulePageImages: Array<{ pageNumber: number; dataUrl: string | null }> = [];
   let schedulePageTexts: Array<{ pageNumber: number; text: string }> = [];
@@ -7683,7 +7681,7 @@ function deriveClubLegendFromColoredClubs(
     }));
 }
 
-async function applyScheduleColorsFromImages(
+async function _applyScheduleColorsFromImages(
   schedule: ParseResult["schedule"],
   images: Array<{ pageNumber: number; dataUrl: string | null }>,
   pageTexts: Array<{ pageNumber: number; text: string }>,
@@ -8250,7 +8248,7 @@ async function openAiExtractScheduleAwardFlagsFromImage(
   }
 }
 
-async function deriveScheduleAwardFlagsFromImages(
+async function _deriveScheduleAwardFlagsFromImages(
   images: Array<{ pageNumber: number; dataUrl: string | null }> | undefined
 ): Promise<{ notes: string[]; days: ScheduleAwardFlagDay[]; usedImageAwardExtraction: boolean }> {
   const validImages = pickArray(images).filter(
@@ -8469,7 +8467,7 @@ function countDistinctDetectedScheduleCodes(
   ).size;
 }
 
-function countScheduleSessionsWithAwardFlags(value: unknown): number {
+function _countScheduleSessionsWithAwardFlags(value: unknown): number {
   return normalizeStoredSchedule(value).days.reduce(
     (count, day) =>
       count +

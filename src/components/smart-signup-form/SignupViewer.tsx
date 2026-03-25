@@ -424,7 +424,7 @@ const SignupViewer: React.FC<Props> = ({
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
         const errorMessage =
-          (data && data.error) || "Could not save your sign-up. Try again.";
+          (data?.error) || "Could not save your sign-up. Try again.";
         setError(errorMessage);
         setErrorOpen(true);
         return;
@@ -466,7 +466,7 @@ const SignupViewer: React.FC<Props> = ({
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
         setError(
-          (data && data.error) || "Couldn't cancel. Try again or refresh."
+          (data?.error) || "Couldn't cancel. Try again or refresh."
         );
         return;
       }
@@ -497,7 +497,7 @@ const SignupViewer: React.FC<Props> = ({
       });
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
-        setError((data && data.error) || "Couldn't remove sign-up. Try again.");
+        setError((data?.error) || "Couldn't remove sign-up. Try again.");
         setErrorOpen(true);
         return;
       }
@@ -580,7 +580,7 @@ const SignupViewer: React.FC<Props> = ({
       const data = (await res.json().catch(() => ({}))) as SignupApiResponse;
       if (!res.ok || !data?.signupForm) {
         const errorMessage =
-          (data && data.error) || "Could not update sign-up. Try again.";
+          (data?.error) || "Could not update sign-up. Try again.";
         setError(errorMessage);
         setErrorOpen(true);
         return;

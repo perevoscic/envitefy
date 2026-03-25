@@ -1,4 +1,4 @@
-import React from "react";
+
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {

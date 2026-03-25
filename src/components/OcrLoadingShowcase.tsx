@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Camera, Scan, RotateCcw } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Scan, RotateCcw } from 'lucide-react';
 
 export default function OcrLoadingShowcase() {
   const [status, setStatus] = useState<'idle' | 'flashing' | 'scanning' | 'complete'>('idle');
@@ -15,7 +15,7 @@ export default function OcrLoadingShowcase() {
     }
 
     if (status === 'scanning') {
-      let startTime = Date.now();
+      const startTime = Date.now();
       const duration = 5000; // 5 seconds scan
 
       const interval = setInterval(() => {

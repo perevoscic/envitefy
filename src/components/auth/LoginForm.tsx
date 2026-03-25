@@ -130,7 +130,7 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
             setPassword(e.target.value);
             if (message) setMessage(null);
           }}
-          aria-invalid={message ? true : false}
+          aria-invalid={!!message}
           required
         />
         <button

@@ -19,7 +19,7 @@ function getConnectionConfig() {
   const caBase64 = process.env.PGSSL_CA_BASE64;
   if (disableVerify === "1" || disableVerify === "true") {
     ssl = { rejectUnauthorized: false };
-  } else if (caBase64 && caBase64.trim()) {
+  } else if (caBase64?.trim()) {
     ssl = {
       rejectUnauthorized: true,
       ca: Buffer.from(caBase64, "base64").toString("utf8"),
@@ -82,10 +82,9 @@ async function fetchBatch(pool) {
 }
 
 async function migrateRow(pool, row) {
-  const data = row && row.data && typeof row.data === "object" ? row.data : null;
+  const data = row?.data && typeof row.data === "object" ? row.data : null;
   const input =
-    data &&
-    data.discoverySource &&
+    data?.discoverySource &&
     typeof data.discoverySource === "object" &&
     data.discoverySource.input &&
     typeof data.discoverySource.input === "object"

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+
 import {
   Palmtree,
   Sun,
@@ -187,7 +187,7 @@ const getScheduleItems = (
     }
 
     // Try to extract day from date or use default
-    let day = idx === 0 ? "Friday" : idx === 1 ? "Saturday" : "Sunday";
+    const day = idx === 0 ? "Friday" : idx === 1 ? "Saturday" : "Sunday";
 
     return {
       title: item.title || "Event",

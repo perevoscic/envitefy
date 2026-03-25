@@ -9,7 +9,7 @@ type SnapUploadHeroProps = {
   className?: string;
 };
 
-const BENEFITS: Array<{ icon: ReactNode; label: string; copy: string }> = [
+const _BENEFITS: Array<{ icon: ReactNode; label: string; copy: string }> = [
   {
     icon: <ScanLine className="h-4 w-4" />,
     label: "Real-time cleanup",

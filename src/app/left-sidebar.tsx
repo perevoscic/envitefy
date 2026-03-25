@@ -9,7 +9,6 @@ import {
 } from "@/utils/profileCache";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -50,7 +49,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
-  Menu,
   Music,
   PartyPopper,
   Plus,
@@ -272,7 +270,7 @@ function isInvitedHistoryEvent(data: unknown): boolean {
   return Boolean(record.shared) || isInvitedEventLikeRecord(record);
 }
 
-const CALENDAR_TARGETS: Array<{
+const _CALENDAR_TARGETS: Array<{
   key: CalendarProviderKey;
   label: string;
   Icon: typeof CalendarIconGoogle;
@@ -424,7 +422,7 @@ const SIDEBAR_WIDTH_REM = "21.25rem";
 const SIDEBAR_COLLAPSED_REM = "5.25rem";
 const SUBPAGE_STICKY_HEADER_CLASS =
   "sticky top-0 z-20 -mx-6 bg-[#f8f9fb]/95 px-6 pb-4 pt-2 backdrop-blur";
-const SIDEBAR_SECTION_LABEL_CLASS =
+const _SIDEBAR_SECTION_LABEL_CLASS =
   "px-1 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400";
 const SIDEBAR_DIVIDER_CLASS = "h-px w-full bg-transparent";
 const SIDEBAR_MENU_ROW_CLASS =
@@ -480,7 +478,7 @@ export default function LeftSidebar() {
     useState<EventSidebarMode>("owner");
   const [eventContextSourcePage, setEventContextSourcePage] =
     useState<EventListPage>("myEvents");
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [_isScrolled, setIsScrolled] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [defaultCalendarProvider, setDefaultCalendarProvider] =
     useState<CalendarProviderKey | null>(null);
@@ -525,7 +523,7 @@ export default function LeftSidebar() {
     [status]
   );
 
-  const toggleCalendarDefault = useCallback(
+  const _toggleCalendarDefault = useCallback(
     async (provider: CalendarProviderKey) => {
       const requiresConnection =
         provider === "google" || provider === "microsoft";
@@ -597,7 +595,7 @@ export default function LeftSidebar() {
   const prevSidebarPageRef = useRef<SidebarPage>("root");
   const showEditTopBar = isEventPageWithEditSidebar;
   const showMobileTopBar = Boolean(!isOpen);
-  const showFloatingCustomizeButton = false;
+  const _showFloatingCustomizeButton = false;
   const openSidebarFromTrigger = useCallback(
     (viaTouch: boolean) => {
       lastSidebarOpenAtRef.current = Date.now();
@@ -689,10 +687,8 @@ export default function LeftSidebar() {
       if (openedFromTouchRef.current) return;
       // Ignore clicks originating from the hamburger open button
       if (
-        (openButtonRef.current &&
-          openButtonRef.current.contains(target as Node)) ||
-        (openBarButtonRef.current &&
-          openBarButtonRef.current.contains(target as Node))
+        (openButtonRef.current?.contains(target as Node)) ||
+        (openBarButtonRef.current?.contains(target as Node))
       ) {
         return;
       }
@@ -1125,7 +1121,7 @@ export default function LeftSidebar() {
     });
     return map;
   }, [visibleTemplateLinks]);
-  const activeTemplateLabel = useMemo(() => {
+  const _activeTemplateLabel = useMemo(() => {
     if (!pathname) return null;
     const match = visibleTemplateLinks.find((t) => {
       const baseHref = t.href.split("?")[0];
@@ -1272,7 +1268,7 @@ export default function LeftSidebar() {
       return acc + 1;
     }, 0);
   }, [history]);
-  const calendarEventsCount = createdEventsCount + invitedEventsCount;
+  const _calendarEventsCount = createdEventsCount + invitedEventsCount;
   const showDevDiagnostics = process.env.NODE_ENV !== "production";
   const openCompactEventsPage = useCallback(
     (page: "myEvents" | "invitedEvents") => {
@@ -1450,7 +1446,7 @@ export default function LeftSidebar() {
 
   useEffect(() => {
     try {
-      const rawItems = localStorage.getItem("signupItemColors");
+      const _rawItems = localStorage.getItem("signupItemColors");
     } catch {}
     try {
       const rawMyEvents = localStorage.getItem(
@@ -1854,7 +1850,7 @@ export default function LeftSidebar() {
     const onDeleted = async (e: Event) => {
       try {
         const anyEvent = e as any;
-        const detail = (anyEvent && anyEvent.detail) || null;
+        const detail = (anyEvent?.detail) || null;
         const deletedId =
           detail && detail.id != null ? String(detail.id).trim() : "";
 
@@ -2141,8 +2137,7 @@ export default function LeftSidebar() {
   return (
     <>
       {!isOpen && (
-        <>
-          <header
+        <header
             className={`fixed inset-x-0 top-0 z-[6500] flex items-center justify-between px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
               showMobileTopBar
                 ? "translate-y-0 opacity-100 pointer-events-auto bg-[#F8F5FF]/95 backdrop-blur-md shadow-sm"
@@ -2211,7 +2206,6 @@ export default function LeftSidebar() {
               <div className="h-10 w-10" aria-hidden="true" />
             )}
           </header>
-        </>
       )}
       {/* Backdrop overlay */}
       <div

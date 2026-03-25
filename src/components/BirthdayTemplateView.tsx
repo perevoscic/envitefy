@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "@/components/event-create/TemplateGallery.module.css";
 import {
   resolveTemplateVariation,
-  type ResolvedTemplateVariation,
 } from "@/components/event-create/TemplateGallery";
 import {
   type BirthdayTemplateDefinition,
@@ -17,7 +16,6 @@ import EventDeleteModal from "@/components/EventDeleteModal";
 import LocationLink from "@/components/LocationLink";
 import EventMap from "@/components/EventMap";
 import EventRsvpDashboard from "@/components/EventRsvpDashboard";
-import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import {
   CalendarIconApple,
   CalendarIconGoogle,
@@ -120,7 +118,7 @@ function formatEventRangeDisplay(
 function formatDateSimple(dateStr?: string) {
   if (!dateStr) return "";
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
+  if (Number.isNaN(date.getTime())) return dateStr;
   
   // Use UTC to prevent shifts for YYYY-MM-DD
   const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -213,7 +211,7 @@ const getLuminance = (hex: string): number => {
   const { r, g, b } = rgb;
   const [rLinear, gLinear, bLinear] = [r, g, b].map((val) => {
     const v = val / 255;
-    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
 };
@@ -309,7 +307,7 @@ export default function BirthdayTemplateView({
   const city = eventData?.city || "";
   const state = eventData?.state || "";
   const description = eventData?.description || "";
-  const rsvp = eventData?.rsvp || "";
+  const _rsvp = eventData?.rsvp || "";
   const numberOfGuests = eventData?.numberOfGuests || 0;
 
   const registryLinks = Array.isArray(eventData?.registries)
@@ -331,7 +329,7 @@ export default function BirthdayTemplateView({
         .replace(/\(\d{3}\)\s*\d{3}[-.\s]?\d{4}/g, "")
         .trim()
     : "";
-  const rsvpName = rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "";
+  const _rsvpName = rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "";
   const hasRsvpContact = Boolean(rsvpPhone || rsvpEmail);
 
   const calendarStartIso =

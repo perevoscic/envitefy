@@ -4,8 +4,8 @@
   - Applies SQL from prisma/manual_sql/init_db_pgcrypto.sql
 */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 const { Pool } = require("pg");
 
 function loadEnvFromDotenvIfMissing() {
@@ -28,7 +28,7 @@ function loadEnvFromDotenvIfMissing() {
 
 function buildSslConfigFromEnv() {
   // Build SSL only when explicitly requested via env
-  let ssl = undefined;
+  let ssl ;
   const disableVerify = String(process.env.PGSSL_DISABLE_VERIFY || "").toLowerCase();
   const caBase64 = process.env.PGSSL_CA_BASE64;
   if (disableVerify === "1" || disableVerify === "true") {
@@ -37,7 +37,7 @@ function buildSslConfigFromEnv() {
     try {
       const ca = Buffer.from(caBase64, "base64").toString("utf8");
       ssl = { rejectUnauthorized: true, ca };
-    } catch (err) {
+    } catch (_err) {
       // leave ssl undefined to allow DATABASE_URL to decide
       ssl = undefined;
     }

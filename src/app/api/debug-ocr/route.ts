@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     try {
       const out = await sharp(buf).resize(1200).grayscale().toBuffer();
       processed = out.length;
-    } catch (e) {
+    } catch (_e) {
       // sharp can fail on HEIC/odd formats; we still report the raw size
     }
     return NextResponse.json({

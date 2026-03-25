@@ -3,14 +3,9 @@
 
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Edit2,
-  Heart,
   Users,
   Image as ImageIcon,
   Type,
@@ -21,9 +16,6 @@ import {
   Upload,
   Trash2,
   Cake,
-  Calendar as CalendarIcon,
-  Share2,
-  Apple,
 } from "lucide-react";
 import {
   type BirthdayTemplateDefinition,
@@ -33,7 +25,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
-import BirthdayRenderer, { type EventData } from "@/components/birthdays/BirthdayRenderer";
+import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import BirthdayDesignThemes from "./_components/BirthdayDesignThemes";
 import { BIRTHDAY_THEMES } from "./birthdayThemes";
 
@@ -311,7 +303,7 @@ const getLuminance = (hex: string): number => {
 
   // Relative luminance formula
   const [rLinear, gLinear, bLinear] = [r, g, b].map((val) => {
-    return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+    return val <= 0.03928 ? val / 12.92 : ((val + 0.055) / 1.055) ** 2.4;
   });
 
   return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
@@ -349,7 +341,7 @@ const getPreviewStyle = (palette: string[]) => {
   };
 };
 
-const ThemeSwatch = ({
+const _ThemeSwatch = ({
   theme,
   active,
   onClick,
@@ -382,7 +374,7 @@ const ThemeSwatch = ({
 export default function BirthdayTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
-  const defaultDate = search?.get("d") ?? undefined;
+  const _defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
   const variationIdParam = search?.get("variationId") ?? undefined;
@@ -401,8 +393,8 @@ export default function BirthdayTemplateCustomizePage() {
   const template = getTemplateById(activeTemplateId);
   const [activeView, setActiveView] = useState("main");
   const [data, setData] = useState(INITIAL_DATA);
-  const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
-  const [rsvpAttending, setRsvpAttending] = useState("yes");
+  const [_rsvpSubmitted, _setRsvpSubmitted] = useState(false);
+  const [_rsvpAttending, _setRsvpAttending] = useState("yes");
   const [galleryIndex, setGalleryIndex] = useState(0);
   const {
     mobileMenuOpen,
@@ -411,10 +403,10 @@ export default function BirthdayTemplateCustomizePage() {
     previewTouchHandlers,
     drawerTouchHandlers,
   } = useMobileDrawer();
-  const [themesExpanded, setThemesExpanded] = useState(true);
+  const [_themesExpanded, setThemesExpanded] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const fontListRef = useRef<HTMLDivElement | null>(null);
-  const [fontScrollTop, setFontScrollTop] = useState(0);
+  const [fontScrollTop, _setFontScrollTop] = useState(0);
   const [activeSection, setActiveSection] = useState<string>("details");
   const [submitting, setSubmitting] = useState(false);
   const [uploadingAssets, setUploadingAssets] = useState(false);
@@ -481,7 +473,7 @@ export default function BirthdayTemplateCustomizePage() {
     }
   };
 
-  const handleShare = (e?: React.MouseEvent) => {
+  const _handleShare = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     const details = buildCalendarDetails();
     const shareUrl =
@@ -505,7 +497,7 @@ export default function BirthdayTemplateCustomizePage() {
     }
   };
 
-  const handleGoogleCalendar = (e?: React.MouseEvent) => {
+  const _handleGoogleCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     const details = buildCalendarDetails();
     const start = toGoogleDate(details.start);
@@ -520,7 +512,7 @@ export default function BirthdayTemplateCustomizePage() {
     openWithAppFallback(appUrl, webUrl);
   };
 
-  const handleOutlookCalendar = (e?: React.MouseEvent) => {
+  const _handleOutlookCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     const details = buildCalendarDetails();
     const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
@@ -544,7 +536,7 @@ export default function BirthdayTemplateCustomizePage() {
     openWithAppFallback(appUrl, webUrl);
   };
 
-  const handleAppleCalendar = (e?: React.MouseEvent) => {
+  const _handleAppleCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     openAppleCalendarIcs(buildIcsUrl(buildCalendarDetails()));
   };
@@ -555,7 +547,7 @@ export default function BirthdayTemplateCustomizePage() {
 
   const updateTheme = (field, value) => {
     if (field === "professionalThemeId") {
-      const match =
+      const _match =
         BIRTHDAY_THEMES.find((t) => t.id === value) ||
         BIRTHDAY_THEMES[0];
       // Keep variation in lockstep with the chosen theme so saves reflect the same palette
@@ -693,7 +685,7 @@ export default function BirthdayTemplateCustomizePage() {
     previewDot: "bg-slate-200",
     previewColor: "bg-slate-200",
   };
-  const currentThemeDot = currentTheme.previewDot;
+  const _currentThemeDot = currentTheme.previewDot;
 
   const currentProfessionalTheme =
     PROFESSIONAL_THEMES.find(
@@ -711,7 +703,7 @@ export default function BirthdayTemplateCustomizePage() {
   );
 
   // Set text colors based on palette darkness
-  const textColorStyle = isDarkPalette
+  const _textColorStyle = isDarkPalette
     ? { color: "#ffffff" } // White text on dark backgrounds
     : { color: "#1e293b" }; // Dark slate text on light backgrounds
 
@@ -726,7 +718,7 @@ export default function BirthdayTemplateCustomizePage() {
     undefined;
 
   // Create gradient like football-season (using first 3 colors for smooth gradient)
-  const professionalBackgroundStyle =
+  const _professionalBackgroundStyle =
     professionalPalette.length >= 3
       ? {
           backgroundImage: `linear-gradient(to bottom right, ${professionalPalette[0]}, ${professionalPalette[1]}, ${professionalPalette[2]})`,
@@ -740,16 +732,16 @@ export default function BirthdayTemplateCustomizePage() {
       : {};
 
   // Use accent color from palette if available, otherwise use computed accent
-  const professionalAccentStyle = professionalAccentColor
+  const _professionalAccentStyle = professionalAccentColor
     ? { color: professionalAccentColor }
     : accentColorStyle;
 
   // Text shadow for better contrast on dark backgrounds
-  const textShadowStyle = isDarkPalette
+  const _textShadowStyle = isDarkPalette
     ? { textShadow: "0 1px 3px rgba(0,0,0,0.5)" }
     : undefined;
-  const currentFont = FONTS[data.theme.font] || FONTS.playfair;
-  const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
+  const _currentFont = FONTS[data.theme.font] || FONTS.playfair;
+  const _currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
   // Navigation items for birthday template
   const navItems = React.useMemo(() => {
@@ -862,7 +854,7 @@ export default function BirthdayTemplateCustomizePage() {
     }));
   }, [activeVariationId]);
 
-  const heroImageSrc =
+  const _heroImageSrc =
     template?.heroImageName &&
     typeof template.heroImageName === "string" &&
     template.heroImageName.trim()
@@ -872,14 +864,14 @@ export default function BirthdayTemplateCustomizePage() {
     PROFESSIONAL_THEMES.find(
       (theme) => theme.id === data.theme.professionalThemeId
     ) || PROFESSIONAL_THEMES[0];
-  const activeGalleryItem =
+  const _activeGalleryItem =
     data.gallery.length > 0
       ? data.gallery[Math.min(galleryIndex, data.gallery.length - 1)]
       : null;
 
   const getAgeSuffix = (age: number | string) => {
-    const n = typeof age === 'string' ? parseInt(age) : age;
-    if (isNaN(n)) return "";
+    const n = typeof age === 'string' ? parseInt(age, 10) : age;
+    if (Number.isNaN(n)) return "";
     const j = n % 10, k = n % 100;
     if (j === 1 && k !== 11) return "st";
     if (j === 2 && k !== 12) return "nd";
@@ -935,7 +927,7 @@ export default function BirthdayTemplateCustomizePage() {
           existing.themePalette ||
           (() => {
             const tid =
-              (existing.theme && existing.theme.professionalThemeId) ||
+              (existing.theme?.professionalThemeId) ||
               existing.variationId ||
               null;
             const match = tid

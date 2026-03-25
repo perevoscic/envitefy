@@ -1,4 +1,4 @@
-import React from "react";
+
 
 export function BirthdayThemeCard({
   theme,
@@ -65,11 +65,6 @@ export function BirthdayThemeCard({
               </span>
            </div>
         );
-      case 'pattern-play':
-      case 'balloon-arch':
-      case 'tropical-vibe':
-      case 'confetti-splash':
-      case 'magical-sparkle':
       default:
         return (
            <div className="w-full h-full flex flex-col items-center justify-center p-2 relative overflow-hidden" style={{ backgroundColor: primary }}>

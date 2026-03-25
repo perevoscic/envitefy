@@ -268,7 +268,7 @@ async function handleLegacyIngest(request: Request) {
   const events: any[] = [];
 
   // Category detection (lightweight)
-  const detectCategory = (fullText: string, sched: any): string | null => {
+  const detectCategory = (fullText: string, _sched: any): string | null => {
     try {
       // No special football handling
       // Weddings/Birthdays — words-only; if both present, do not prefer either

@@ -7,25 +7,13 @@ import {
   useState,
   type Dispatch,
   type SetStateAction,
-  type ReactNode,
-  type MouseEvent,
-  type KeyboardEvent,
-  type CSSProperties,
 } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { CalendarIconGoogle } from "@/components/CalendarIcons";
-import {
-  CreateEventIllustration,
-  ScanIllustration,
-  SignUpIllustration,
-  UploadIllustration,
-} from "@/components/landing/action-illustrations";
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import * as chrono from "chrono-node";
 import {
-  Car,
   Eye,
   Mail,
   Pencil,
@@ -216,38 +204,6 @@ type OwnerDashboardData = {
   declined: number;
   pageViews: string;
   recentRsvps: OwnerRsvpRow[];
-};
-
-type HighlightTone = "primary" | "secondary" | "accent" | "success";
-
-const TONE_STYLES: Record<
-  HighlightTone,
-  { iconBg: string; cardSurface: string; accent: string }
-> = {
-  primary: {
-    iconBg: "bg-[#e6f3ee]",
-    cardSurface:
-      "linear-gradient(145deg, rgba(255,255,255,0.94), rgba(171, 208, 193, 0.25))",
-    accent: "rgba(105, 166, 159, 0.65)",
-  },
-  secondary: {
-    iconBg: "bg-[#ede8fb]",
-    cardSurface:
-      "linear-gradient(145deg, rgba(255,255,255,0.94), rgba(183, 171, 220, 0.25))",
-    accent: "rgba(123, 104, 196, 0.55)",
-  },
-  accent: {
-    iconBg: "bg-[#fde8f1]",
-    cardSurface:
-      "linear-gradient(145deg, rgba(255,255,255,0.94), rgba(238, 169, 183, 0.25))",
-    accent: "rgba(210, 105, 140, 0.58)",
-  },
-  success: {
-    iconBg: "bg-[#e6f6f0]",
-    cardSurface:
-      "linear-gradient(145deg, rgba(255,255,255,0.94), rgba(170, 214, 196, 0.25))",
-    accent: "rgba(94, 154, 127, 0.55)",
-  },
 };
 
 declare global {
@@ -633,15 +589,6 @@ export default function Dashboard({
       return;
     }
 
-    const formatPageViews = (value: unknown): string => {
-      const numeric = Number(value);
-      if (!Number.isFinite(numeric) || numeric <= 0) return "--";
-      if (numeric >= 1000) {
-        return `${(numeric / 1000).toFixed(numeric >= 10000 ? 0 : 1)}k`;
-      }
-      return `${Math.round(numeric)}`;
-    };
-
     const fallbackRows: OwnerRsvpRow[] = [
       {
         id: "placeholder-1",
@@ -933,7 +880,7 @@ export default function Dashboard({
   );
 
   const parseStartToIso = useCallback(
-    (value: string | null, timezone: string) => {
+    (value: string | null, _timezone: string) => {
       if (!value) return null;
       try {
         const isoDate = new Date(value);
@@ -1337,7 +1284,7 @@ export default function Dashboard({
       description: ready.description || "",
       timezone: ready.timezone || "America/Chicago",
       ...(inline ? { disposition: "inline" } : {}),
-      ...(ready.reminders && ready.reminders.length
+      ...(ready.reminders?.length
         ? {
             reminders: ready.reminders.map((r) => String(r.minutes)).join(","),
           }
@@ -1369,7 +1316,7 @@ export default function Dashboard({
           | undefined;
         const fileForUpload =
           typeof sourceFile !== "undefined" ? sourceFile : uploadedFile;
-        if (fileForUpload && fileForUpload.type.startsWith("image/")) {
+        if (fileForUpload?.type.startsWith("image/")) {
           try {
             thumbnail =
               (await createThumbnailDataUrl(fileForUpload, 1200, 0.85)) ||
@@ -2345,7 +2292,7 @@ function SnapEventModal({
   resetForm,
   autoAddEnabled,
 }: SnapEventModalProps) {
-  const router = useRouter();
+  const _router = useRouter();
   const [enableAutoAddOnSave, setEnableAutoAddOnSave] = useState(false);
   const [isAppleDevice, setIsAppleDevice] = useState(false);
   const [connectedCalendars, setConnectedCalendars] = useState<{
@@ -2843,28 +2790,6 @@ function SnapEventModal({
   );
 }
 
-function FlipHintIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="M7 5h9.5a.5.5 0 01.5.5V11" />
-      <path d="M16 9l2 2 2-2" />
-      <path d="M17 19H7.5a.5.5 0 01-.5-.5V13" />
-      <path d="M8 15l-2-2-2 2" />
-    </svg>
-  );
-}
-
 function CloseIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -2882,253 +2807,5 @@ function CloseIcon({ className }: { className?: string }) {
       <path d="M6 6L18 18" />
       <path d="M18 6L6 18" />
     </svg>
-  );
-}
-
-function OptionCard({
-  href,
-  title,
-  artwork,
-  details,
-  tone = "primary",
-  ctaLabel,
-  ctaColor,
-  onClick,
-}: {
-  href?: string;
-  title: string;
-  artwork: ReactNode;
-  details?: string[];
-  tone?: HighlightTone;
-  ctaLabel?: string;
-  ctaColor?: string;
-  onClick?: () => void;
-}) {
-  const toneClass = TONE_STYLES[tone] ?? TONE_STYLES.primary;
-  const [showDetails, setShowDetails] = useState(false);
-  const buttonLabel = ctaLabel ?? title;
-
-  const iconWrapperClass = [
-    "mx-auto flex h-28 w-28 items-center justify-center rounded-3xl border border-dashed bg-white/90 text-foreground/80 shadow-inner transition group-hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80",
-    toneClass.iconBg,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const description = details?.length ? (
-    <div className="space-y-1 text-sm leading-relaxed text-muted-foreground">
-      {details.map((item, index) => (
-        <p key={`${title}-${index}`}>{item}</p>
-      ))}
-    </div>
-  ) : null;
-
-  const buttonClass =
-    "inline-flex items-center justify-center rounded-full px-6 py-2 text-center text-xs font-semibold uppercase tracking-wide text-white whitespace-nowrap shadow-[0_12px_30px_rgba(15,23,42,0.35)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.45)] focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus:outline-none disabled:opacity-70";
-
-  const buttonStyle = { backgroundColor: ctaColor ?? toneClass.accent };
-
-  const cardSurfaceStyle: CSSProperties = {
-    borderColor: toneClass.accent,
-    background: toneClass.cardSurface,
-    backfaceVisibility: "hidden",
-    WebkitBackfaceVisibility: "hidden",
-    transform: "translateZ(0)",
-  };
-
-  const handlePrimaryAction = (
-    event: MouseEvent<HTMLButtonElement | HTMLAnchorElement>
-  ) => {
-    event.stopPropagation();
-    if (showDetails) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-    onClick?.();
-  };
-
-  const cta = href ? (
-    <Link
-      href={href}
-      className={buttonClass}
-      style={buttonStyle}
-      onClick={handlePrimaryAction}
-      tabIndex={showDetails ? -1 : undefined}
-    >
-      {buttonLabel}
-    </Link>
-  ) : (
-    <button
-      type="button"
-      onClick={handlePrimaryAction}
-      className={buttonClass}
-      style={buttonStyle}
-      tabIndex={showDetails ? -1 : undefined}
-    >
-      {buttonLabel}
-    </button>
-  );
-
-  const openDetails = () => setShowDetails(true);
-
-  const handleFrontCardClick = () => {
-    if (!showDetails) {
-      openDetails();
-    }
-  };
-
-  const handleInfoPointer = (
-    event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>
-  ) => {
-    event.preventDefault();
-    event.stopPropagation();
-    openDetails();
-  };
-
-  const handleInfoKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      handleInfoPointer(event);
-    }
-  };
-
-  const closeDetails = (
-    event?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>
-  ) => {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    setShowDetails(false);
-  };
-
-  const baseCardClass =
-    "group relative flex h-full flex-col overflow-hidden rounded-[32px] border text-foreground shadow-[0_25px_80px_rgba(15,13,9,0.35)] ring-1 ring-black/5 backdrop-blur-sm";
-
-  const frontCard = (
-    <article
-      className={baseCardClass}
-      style={cardSurfaceStyle}
-      onClick={handleFrontCardClick}
-    >
-      <button
-        type="button"
-        aria-label="Show details"
-        className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/70 text-foreground/60 transition hover:border-white hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-        onClick={handleInfoPointer}
-        onKeyDown={handleInfoKeyDown}
-      >
-        <FlipHintIcon className="h-4 w-4" />
-      </button>
-      <div className="flex flex-1 flex-col items-center gap-5 px-6 pb-4 pt-8 text-center">
-        {href ? (
-          <Link
-            href={href}
-            className={iconWrapperClass}
-            style={{ borderColor: toneClass.accent }}
-            onClick={handlePrimaryAction}
-            tabIndex={showDetails ? -1 : undefined}
-            aria-label={buttonLabel}
-          >
-            <div className="w-20">{artwork}</div>
-          </Link>
-        ) : (
-          <button
-            type="button"
-            className={iconWrapperClass}
-            style={{ borderColor: toneClass.accent }}
-            onClick={handlePrimaryAction}
-            tabIndex={showDetails ? -1 : undefined}
-            aria-label={buttonLabel}
-          >
-            <div className="w-20">{artwork}</div>
-          </button>
-        )}
-        <div className="flex flex-col items-center gap-3">
-          <h2
-            className="text-base font-semibold leading-tight tracking-[-0.02em] text-foreground sm:text-xl sm:tracking-tight whitespace-nowrap"
-            style={{
-              fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-            }}
-          >
-            {title}
-          </h2>
-        </div>
-      </div>
-      <div className="flex items-center justify-center border-t border-white/50 bg-white/40 px-6 py-4">
-        {cta}
-      </div>
-    </article>
-  );
-
-  const backCard = (
-    <article
-      className={baseCardClass}
-      style={cardSurfaceStyle}
-      role="button"
-      tabIndex={0}
-      onClick={closeDetails}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          closeDetails(event);
-        }
-      }}
-    >
-      <button
-        type="button"
-        aria-label="Hide details"
-        className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/70 text-foreground/60 transition hover:border-white hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-        onClick={closeDetails}
-      >
-        <CloseIcon className="h-4 w-4" />
-      </button>
-      <div className="flex flex-1 flex-col items-center gap-4 px-6 pb-4 pt-8 text-center">
-        <div className="flex flex-col items-center gap-3">
-          <h2
-            className="text-base font-semibold leading-tight tracking-[-0.02em] text-foreground sm:text-xl sm:tracking-tight whitespace-nowrap"
-            style={{
-              fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-            }}
-          >
-            {title}
-          </h2>
-          {description}
-        </div>
-      </div>
-    </article>
-  );
-
-  return (
-    <div className="relative h-full w-full [perspective:2000px]">
-      <div
-        className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]"
-        style={{
-          transform: showDetails ? "rotateY(180deg)" : "rotateY(0deg)",
-          willChange: "transform",
-        }}
-      >
-        <div
-          className="relative h-full w-full"
-          style={{
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-            pointerEvents: showDetails ? "none" : "auto",
-          }}
-        >
-          {frontCard}
-        </div>
-        <div
-          className="absolute inset-0 h-full w-full"
-          style={{
-            transform: "rotateY(180deg)",
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-            pointerEvents: showDetails ? "auto" : "none",
-          }}
-        >
-          {backCard}
-        </div>
-      </div>
-    </div>
   );
 }

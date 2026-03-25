@@ -19,7 +19,7 @@ export default function NewBabyShowerEventPage() {
   }, [search]);
   const editEventId = useMemo(() => {
     const id = search?.get("edit");
-    return id && id.trim() ? id.trim() : undefined;
+    return id?.trim() ? id.trim() : undefined;
   }, [search]);
   const templateId = search?.get("templateId");
   const variationId = search?.get("variationId") ?? undefined;

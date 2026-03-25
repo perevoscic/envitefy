@@ -102,7 +102,7 @@ export async function sendBulkEmail(
         const firstName = recipient.firstName || "";
         const lastName = recipient.lastName || "";
 
-        let personalizedBody = params.body
+        const personalizedBody = params.body
           .replace(/\{\{greeting\}\}/g, greeting)
           .replace(/\{\{firstName\}\}/g, firstName)
           .replace(/\{\{lastName\}\}/g, lastName);

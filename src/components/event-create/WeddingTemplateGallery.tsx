@@ -3,7 +3,6 @@
 import React, {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -144,7 +143,7 @@ const TEMPLATE_FONT_ASSIGNMENTS: Record<string, TemplateFontTokenId> = {
   "retro-70s": "poppins-center",
 };
 
-const baseWeddingTemplateCatalog: WeddingTemplateDefinition[] = [
+const _baseWeddingTemplateCatalog: WeddingTemplateDefinition[] = [
   {
     id: "midnight-bloom",
     name: "Midnight Bloom",
@@ -1736,7 +1735,7 @@ export const weddingTemplateCatalog: WeddingTemplateDefinition[] = (
   const name: string = String(theme.name || id || "Wedding template");
   const rawThumbnail: string = String((theme as any).thumbnail || "").trim();
   const thumbnail =
-    rawThumbnail && rawThumbnail.startsWith("/templates/weddings/")
+    rawThumbnail?.startsWith("/templates/weddings/")
       ? ""
       : rawThumbnail;
   const heroImage: string = String((theme as any).heroImage || "").trim();

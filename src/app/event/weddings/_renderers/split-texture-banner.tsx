@@ -1,4 +1,4 @@
-import React from "react";
+
 import {
   ContentSections,
   Footer,
@@ -16,7 +16,7 @@ export default function SplitTextureBanner({
   event: EventData;
 }) {
   const baseText = pickTextColor(theme.colors.secondary);
-  const accent = ensureContrast(theme.colors.primary, theme.colors.secondary);
+  const _accent = ensureContrast(theme.colors.primary, theme.colors.secondary);
 
   return (
     <div

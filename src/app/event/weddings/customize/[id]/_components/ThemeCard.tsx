@@ -7,7 +7,7 @@ export default function ThemeCard({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const primary = theme.primaryColor || "#f8fafc";
+  const _primary = theme.primaryColor || "#f8fafc";
   const secondary = theme.secondaryColor || "#1f2937";
 
   const luminance = (hex: string) => {
@@ -17,7 +17,7 @@ export default function ThemeCard({
     const g = parseInt(normalized.slice(2, 4), 16) / 255;
     const b = parseInt(normalized.slice(4, 6), 16) / 255;
     const channel = (c: number) =>
-      c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
     return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
   };
 

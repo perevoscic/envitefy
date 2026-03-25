@@ -1,4 +1,4 @@
-import React from "react";
+
 import { BookOpen, PenTool, Feather, Bookmark } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 

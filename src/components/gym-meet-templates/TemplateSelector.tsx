@@ -2,7 +2,6 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
 import { Check, ChevronRight } from "lucide-react";
 import {
   GYM_MEET_TEMPLATE_LIBRARY,

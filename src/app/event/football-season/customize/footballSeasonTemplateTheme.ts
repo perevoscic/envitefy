@@ -61,7 +61,7 @@ const isDarkTextClass = (className: string) =>
         const channel = value / 255;
         return channel <= 0.03928
           ? channel / 12.92
-          : Math.pow((channel + 0.055) / 1.055, 2.4);
+          : ((channel + 0.055) / 1.055) ** 2.4;
       });
       const luminance = 0.2126 * rr + 0.7152 * gg + 0.0722 * bb;
       return luminance < 0.58;

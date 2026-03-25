@@ -111,10 +111,10 @@ function extractSolidColor(value: string): string | null {
   const hexMatch = value.match(/#[0-9a-f]{3,8}/i);
   if (hexMatch) return hexMatch[0];
 
-  const rgbMatch = value.match(/rgba?\([^\)]+\)/i);
+  const rgbMatch = value.match(/rgba?\([^)]+\)/i);
   if (rgbMatch) return rgbMatch[0];
 
-  const hslMatch = value.match(/hsla?\([^\)]+\)/i);
+  const hslMatch = value.match(/hsla?\([^)]+\)/i);
   if (hslMatch) return hslMatch[0];
 
   return null;

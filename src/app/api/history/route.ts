@@ -16,7 +16,7 @@ import {
   invalidateUserHistory,
 } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import {
   isCacheableHistoryView,
@@ -226,7 +226,7 @@ export async function GET(req: Request) {
 
     // Conditional response with ETag/Last-Modified
     const seed = JSON.stringify(light);
-    const etag = '"h:' + createHash("sha1").update(seed).digest("hex") + '"';
+    const etag = `"h:${createHash("sha1").update(seed).digest("hex")}"`;
     const lastModifiedIso = light[0]?.created_at ? new Date(light[0].created_at) : new Date();
     const headers: Record<string, string> = {
       ETag: etag,

@@ -1,7 +1,6 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
 
 const config = {
   slug: "workshop-class",

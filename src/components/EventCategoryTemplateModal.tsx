@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import styles from "@/components/EventCreateWysiwyg.module.css";
 import { EVENT_CATEGORIES } from "@/components/event-templates/eventCategories";
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";

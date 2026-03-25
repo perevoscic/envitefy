@@ -12,7 +12,6 @@ import Image from "next/image";
 import {
   Share2,
   Calendar as CalendarIcon,
-  Apple,
   MapPin,
   Clock,
   ExternalLink,
@@ -22,15 +21,12 @@ import {
   Download,
   CreditCard,
   AlertTriangle,
-  Camera,
   Coffee,
-  ThermometerSnowflake,
   ShoppingBag,
   Droplets,
   Dog,
   ShieldAlert,
   PhoneCall,
-  User,
   Users,
   ClipboardList,
   Navigation,
@@ -40,10 +36,8 @@ import {
   Bus,
   Hotel,
   FileText,
-  CheckSquare,
   Car,
   Megaphone,
-  Link as LinkIcon,
   Phone,
   AlertCircle,
   Plus,
@@ -404,8 +398,7 @@ export default function SimpleTemplateView({
     currentData?.customFields?.designTokens ||
     null;
   const hasSimpleDesignTokens = Boolean(
-    simpleDesignTokens &&
-      simpleDesignTokens.bg &&
+    simpleDesignTokens?.bg &&
       simpleDesignTokens.primary &&
       simpleDesignTokens.text
   );
@@ -544,7 +537,7 @@ export default function SimpleTemplateView({
     const [r, g, b] = [rgb[1], rgb[2], rgb[3]].map((val) => parseInt(val, 16));
     const toLinear = (v: number) => {
       const n = v / 255;
-      return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
+      return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
     };
     const [rl, gl, bl] = [r, g, b].map(toLinear);
     return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
@@ -713,7 +706,7 @@ export default function SimpleTemplateView({
     if (!t) return "";
     try {
       const [h, m] = t.split(":");
-      const hour = parseInt(h);
+      const hour = parseInt(h, 10);
       const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${m} ${ampm}`;
@@ -1217,7 +1210,7 @@ export default function SimpleTemplateView({
   const hasParents = Boolean(parentsName);
   const hasRegistry = registries.length > 0;
   const isGenderReveal = normalizedCategory.includes("gender reveal");
-  const isBabyShower =
+  const _isBabyShower =
     normalizedCategory.includes("baby") ||
     normalizedCategory.includes("shower");
 
@@ -3237,7 +3230,7 @@ export default function SimpleTemplateView({
         .replace(/\bno\s+weekend\s+passes\.?/gi, "")
         .replace(/\s{2,}/g, " ")
         .replace(/\s+([,.;:!?])/g, "$1")
-        .replace(/[:;,\-]\s*$/g, "")
+        .replace(/[:;,-]\s*$/g, "")
         .trim();
       return cleaned;
     };
@@ -3297,7 +3290,7 @@ export default function SimpleTemplateView({
           include.test(`${item.label} ${item.url}`) &&
           (!exclude || !exclude.test(`${item.label} ${item.url}`))
       );
-    const rotationLink = pickLink(
+    const _rotationLink = pickLink(
       /(rotation|result|score|schedule|meet\s*info|program|packet|official)/i,
       /(arcgis|parking|traffic|parkmobile|garage|rate|wayfinding)/i
     );
@@ -3384,7 +3377,7 @@ export default function SimpleTemplateView({
     const sourceLines = extractedDiscoveryText
       ? extractedDiscoveryText
           .split(/\n+/)
-          .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+          .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
           .filter(Boolean)
       : [];
     const isVenueHeaderNoiseLine = (line: string) =>
@@ -3779,7 +3772,7 @@ export default function SimpleTemplateView({
       hasAdmissionContent || admissionPolicyCards.length > 0;
     const hasSpectatorCards =
       Boolean(merchandiseText) || Boolean(resultsInfoText);
-    const rulesUpdateText =
+    const _rulesUpdateText =
       safeString(firstAnnouncement?.body) || safeString(description);
     const eventCity = (() => {
       const fromAddress = addressLabel
@@ -3924,7 +3917,7 @@ export default function SimpleTemplateView({
     const descriptionLines = uniqueTextLines(
       safeString(description)
         .split(/\n+/)
-        .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+        .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
         .filter(Boolean),
       8
     ).filter((line) => line.length > 10 && !isMeetDetailsExcludedLine(line));
@@ -4212,7 +4205,7 @@ export default function SimpleTemplateView({
     const discoveryBg = "bg-[color:var(--bg,#FFFFFF)]";
     const discoveryText = "text-[color:var(--text,#0F172A)]";
     const discoveryHeading = "text-[color:var(--color-heading,#2D1B4E)]";
-    const discoveryAccent = "text-[color:var(--accent,#D4AF37)]";
+    const _discoveryAccent = "text-[color:var(--accent,#D4AF37)]";
     const discoveryNavText = "text-[color:var(--color-nav-text,#2D1B4E)]";
     const discoveryIcon = "text-[color:var(--color-icon,#2D1B4E)]";
     const discoveryCard =
@@ -5353,7 +5346,7 @@ export default function SimpleTemplateView({
 
               {/* Hero Image */}
               <div className="relative w-full h-64 md:h-96">
-                {heroImage && heroImage.trim() ? (
+                {heroImage?.trim() ? (
                   heroImage.startsWith("data:") ? (
                     <img
                       src={heroImage}

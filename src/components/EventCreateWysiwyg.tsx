@@ -4,16 +4,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NormalizedEvent } from "@/lib/mappers";
 import { getEventTheme } from "@/lib/event-theme";
-import EventCategoryTemplateModal from "@/components/EventCategoryTemplateModal";
 import EventTemplateBase from "@/components/event-templates/EventTemplateBase";
 import type { EditorBindings } from "@/components/event-templates/EventTemplateBase";
 import BirthdaysTemplate from "@/components/event-templates/BirthdaysTemplate";
 import WeddingsTemplate from "@/components/event-templates/WeddingsTemplate";
 import BabyShowersTemplate from "@/components/event-templates/BabyShowersTemplate";
-import RegistryLinksEditor, {
+import {
   type RegistryFormEntry,
 } from "@/components/RegistryLinksEditor";
-import Toggle from "@/components/Toggle";
 import {
   MAX_REGISTRY_LINKS,
   normalizeRegistryLinks,
@@ -134,7 +132,7 @@ function formatWhenSummary(
           date: dateFmt.format(start),
         };
       }
-      const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
+      const _dateTimeFmt = new Intl.DateTimeFormat(undefined, {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -283,7 +281,7 @@ export default function EventCreateWysiwyg({
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   // Header profile image (small overlay)
-  const [profileImage, setProfileImage] = useState<{
+  const [_profileImage, setProfileImage] = useState<{
     name: string;
     type: string;
     dataUrl: string;
@@ -839,7 +837,7 @@ export default function EventCreateWysiwyg({
   );
   // Inline category selector (no modal)
   const handleSelectTemplate = (key: string) => {
-    const label = TEMPLATE_LABELS[key] || key;
+    const _label = TEMPLATE_LABELS[key] || key;
     // If we're on /event/new, navigate to dedicated template route
     try {
       const slugMap: Record<string, string> = {

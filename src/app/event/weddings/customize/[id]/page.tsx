@@ -19,7 +19,7 @@ export default async function WeddingCustomizePage({
   }
 
   const templateId = event.templateId || "ethereal-classic";
-  let template = await loadWeddingTemplate(templateId).catch(async () =>
+  const template = await loadWeddingTemplate(templateId).catch(async () =>
     loadWeddingTemplate("ethereal-classic")
   );
 

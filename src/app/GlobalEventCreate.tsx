@@ -20,7 +20,7 @@ export default function GlobalEventCreate() {
           setDefaultDate(new Date(d));
         } else if (typeof d === "string" || typeof d === "number") {
           const parsed = new Date(d as any);
-          setDefaultDate(isNaN(parsed.getTime()) ? new Date() : parsed);
+          setDefaultDate(Number.isNaN(parsed.getTime()) ? new Date() : parsed);
         } else {
           setDefaultDate(new Date());
         }

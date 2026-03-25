@@ -39,7 +39,7 @@ const sanitizeDisplayHostGym = (value: unknown): string => {
     text = proudHostMatch[1].replace(/\s+/g, " ").trim();
   }
 
-  text = text.replace(/^host(?:ed)?\s+by[:\s-]*/i, "").replace(/[,:;.\-]+$/g, "").trim();
+  text = text.replace(/^host(?:ed)?\s+by[:\s-]*/i, "").replace(/[,:;.-]+$/g, "").trim();
   if (!text) return "";
   if (DISPLAY_HOST_GYM_PAYMENT_LINE_PATTERN.test(text)) return "";
   if (DISPLAY_HOST_GYM_PACKET_TEXT_PATTERN.test(text)) return "";
@@ -94,8 +94,7 @@ const inferAnnouncementFromBody = (body: string): { title: string; body: string 
     const titleCandidate = words.slice(0, count).join(" ");
     const remainder = words.slice(count).join(" ");
     if (
-      remainder &&
-      remainder.toLowerCase().startsWith(`${titleCandidate.toLowerCase()} `)
+      remainder?.toLowerCase().startsWith(`${titleCandidate.toLowerCase()} `)
     ) {
       const dedupedBody = stripRepeatedTitleFromBody(normalizedBody, titleCandidate);
       if (dedupedBody && dedupedBody.length >= 16) {
@@ -205,7 +204,7 @@ const stripDiscoveryGeneratedDetails = (value: unknown): string => {
   return unique(
     text
       .split(/\n+/)
-      .map((line) => line.replace(/^[\-\u2022]\s*/, "").trim())
+      .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
       .filter(Boolean)
       .filter(
         (line) =>
@@ -307,7 +306,7 @@ export const normalizeGymMeetEventData = ({
   const parseResult = discoverySource?.parseResult || {};
   const parseLogistics = parseResult?.logistics || {};
   const parseMeetDetails = parseResult?.meetDetails || {};
-  const parseCommunications = parseResult?.communications || {};
+  const _parseCommunications = parseResult?.communications || {};
 
   const venueFacts = unique(
     [

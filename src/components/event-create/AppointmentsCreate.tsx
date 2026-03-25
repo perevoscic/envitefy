@@ -126,7 +126,7 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
-  const [profileImage, setProfileImage] = useState<{
+  const [_profileImage, setProfileImage] = useState<{
     name: string;
     type: string;
     dataUrl: string;

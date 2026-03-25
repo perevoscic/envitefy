@@ -160,7 +160,7 @@ function buildIcsLinks({
     timezone: "",
     floating: "1",
   });
-  if (reminders && reminders.length) {
+  if (reminders?.length) {
     params.set("reminders", reminders.join(","));
   }
   if (recurrence) {

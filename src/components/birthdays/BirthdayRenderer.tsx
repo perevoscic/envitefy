@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useContext, createContext } from "react";
 import { Calendar, Clock, MapPin, Navigation, Share2 } from "lucide-react";
-import Image from "next/image";
 import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
 import EventMap from "../EventMap";
 import AppleCalendarLink from "../AppleCalendarLink";
@@ -22,7 +21,7 @@ function formatDate(dateStr?: string) {
     return dateStr;
 
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
+  if (Number.isNaN(date.getTime())) return dateStr;
 
   // Use UTC values to avoid timezone shifts for YYYY-MM-DD strings
   const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
@@ -34,7 +33,7 @@ function formatDate(dateStr?: string) {
 function formatTime(dateStr?: string) {
   if (!dateStr) return "";
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) return "";
 
   // Check if it looks like there's no time (midnight in UTC or local)
   const hours = date.getHours();
@@ -486,8 +485,8 @@ function ConfettiSplashLayout({
   actions?: React.ReactNode;
   onRsvpClick?: () => void;
 }) {
-  const isSports = theme.decorations?.graphicType === "sports";
-  const isStars = theme.decorations?.graphicType === "stars";
+  const _isSports = theme.decorations?.graphicType === "sports";
+  const _isStars = theme.decorations?.graphicType === "stars";
 
   return (
     <>
@@ -1651,7 +1650,7 @@ function BirthdayContentSections({
   // Extract explicit birthday details
   const childName =
     event.birthdayName ||
-    (event.headlineTitle && event.headlineTitle.includes("'s")
+    (event.headlineTitle?.includes("'s")
       ? event.headlineTitle.split("'s")[0]
       : null);
   const age = event.age;
@@ -1694,14 +1693,14 @@ function BirthdayContentSections({
               </p>
               <p className="font-bold text-2xl" style={{ color: headingColor }}>
                 {(() => {
-                  const n = typeof age === "string" ? parseInt(age) : age;
-                  if (isNaN(n)) return age;
+                  const n = typeof age === "string" ? parseInt(age, 10) : age;
+                  if (Number.isNaN(n)) return age;
                   const j = n % 10,
                     k = n % 100;
-                  if (j === 1 && k !== 11) return n + "st";
-                  if (j === 2 && k !== 12) return n + "nd";
-                  if (j === 3 && k !== 13) return n + "rd";
-                  return n + "th";
+                  if (j === 1 && k !== 11) return `${n}st`;
+                  if (j === 2 && k !== 12) return `${n}nd`;
+                  if (j === 3 && k !== 13) return `${n}rd`;
+                  return `${n}th`;
                 })()}
               </p>
             </div>
@@ -1929,7 +1928,7 @@ function BirthdayContentSections({
             <div
               className="inline-flex items-center gap-3 rounded-full px-8 py-4 shadow-lg"
               style={{
-                backgroundColor: theme.colors.secondary + "14",
+                backgroundColor: `${theme.colors.secondary}14`,
                 border: `2px solid ${theme.colors.secondary}40`,
               }}
             >

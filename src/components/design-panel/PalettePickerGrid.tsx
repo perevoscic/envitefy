@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { PaletteDefinition } from "./types";
 
 type PalettePickerGridProps = {

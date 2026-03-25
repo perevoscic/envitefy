@@ -6,8 +6,6 @@ import React, {
   useMemo,
   useState,
   useEffect,
-  useRef,
-  memo,
 } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -23,9 +21,6 @@ import {
   CheckSquare,
   ChevronRight,
   Share2,
-  Calendar as CalendarIcon,
-  Apple,
-  Upload,
   Link as LinkIcon,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";

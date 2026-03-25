@@ -44,6 +44,7 @@
         "useSemanticElements": "off"
       },
       "correctness": {
+        "noUnusedFunctionParameters": "off",
         "useExhaustiveDependencies": "off"
       },
       "performance": {
@@ -55,7 +56,8 @@
       },
       "suspicious": {
         "noArrayIndexKey": "off",
-        "noControlCharactersInRegex": "off"
+        "noControlCharactersInRegex": "off",
+        "noExplicitAny": "off"
       }
     }
   },

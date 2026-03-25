@@ -126,7 +126,6 @@ const extractLinkedDomains = (links: Array<string | { url?: unknown }>) => {
       const hostname = url.hostname.replace(/^www\./i, "").toLowerCase();
       if (hostname) domains.add(hostname);
     } catch {
-      continue;
     }
   }
 

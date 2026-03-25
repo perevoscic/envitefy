@@ -45,7 +45,7 @@ export function createEmailTemplate(params: {
   } catch {
     baseUrl = "https://envitefy.com";
   }
-  const logoUrl = `${baseUrl}/Logo_stacked.png`;
+  const _logoUrl = `${baseUrl}/Logo_stacked.png`;
   const currentYear = new Date().getFullYear();
   const socialIcons = [
     {
@@ -72,9 +72,9 @@ export function createEmailTemplate(params: {
   const socialIconsRow = socialIcons
     .map(
       (link) => `
-                    <td style=\"padding: 0 12px;\">
-                      <a href=\"${link.href}\" target=\"_blank\" title=\"${link.title}\" style=\"display: inline-block;\">
-                        <img src=\"${link.src}\" width=\"36\" height=\"36\" alt=\"${link.title}\" style=\"display: block;\" />
+                    <td style="padding: 0 12px;">
+                      <a href="${link.href}" target="_blank" title="${link.title}" style="display: inline-block;">
+                        <img src="${link.src}" width="36" height="36" alt="${link.title}" style="display: block;" />
                       </a>
                     </td>`
     )

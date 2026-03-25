@@ -108,7 +108,7 @@ const buildDefaultName = (
     (typeof sessionUser?.name === "string" && sessionUser.name.trim()) || "";
   if (baseName) return baseName;
   const email = (sessionUser?.email as string | undefined) || "";
-  if (email && email.includes("@")) {
+  if (email?.includes("@")) {
     return email.split("@")[0] || "Guest";
   }
   return "Guest";
@@ -171,7 +171,7 @@ export async function POST(
 
     const existingData = (row.data ?? null) as Record<string, unknown> | null;
     const tableRow = await getSignupFormByEventId(id);
-    const rawFormSource = tableRow?.form || (existingData?.["signupForm"] as any);
+    const rawFormSource = tableRow?.form || (existingData?.signupForm as any);
     if (!rawFormSource || typeof rawFormSource !== "object") {
       return NextResponse.json(
         { error: "Sign-up form is not enabled for this event." },
@@ -404,7 +404,7 @@ export async function POST(
       const updatedData = (updatedRow?.data ?? null) as
         | Record<string, unknown>
         | null;
-      const persistedCandidate = updatedData?.["signupForm"];
+      const persistedCandidate = updatedData?.signupForm;
       const persistedForm =
         persistedCandidate && typeof persistedCandidate === "object"
           ? sanitizeSignupForm({
@@ -423,7 +423,7 @@ export async function POST(
           const toEmail = (latestResponse.email || (sessionEmail as string | null)) as string | undefined;
           if (toEmail) {
             console.log("[signup] Sending confirmation email", {
-              toEmail: toEmail.substring(0, 3) + "***@" + toEmail.split("@")[1],
+              toEmail: `${toEmail.substring(0, 3)}***@${toEmail.split("@")[1]}`,
               eventId: id,
               userName: latestResponse.name || null,
             });
@@ -436,7 +436,7 @@ export async function POST(
               response: latestResponse,
             });
             console.log("[signup] Confirmation email sent successfully", {
-              toEmail: toEmail.substring(0, 3) + "***@" + toEmail.split("@")[1],
+              toEmail: `${toEmail.substring(0, 3)}***@${toEmail.split("@")[1]}`,
             });
           } else {
             console.log("[signup] No email address available for confirmation", {
@@ -519,7 +519,7 @@ export async function POST(
       const updatedData = (updatedRow?.data ?? null) as
         | Record<string, unknown>
         | null;
-      const persistedCandidate = updatedData?.["signupForm"];
+      const persistedCandidate = updatedData?.signupForm;
       const persistedForm =
         persistedCandidate && typeof persistedCandidate === "object"
           ? sanitizeSignupForm({

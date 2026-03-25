@@ -1,13 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import {
   ArrowRight,
   Camera,
-  PlayCircle,
   Heart,
   Calendar,
-  MapPin,
   Wand2,
   CalendarCheck2,
   Check,

@@ -37,7 +37,7 @@ function parseColor(color: string): [number, number, number] | null {
 function relativeLuminance(r: number, g: number, b: number): number {
   const normalize = (value: number) => value / 255;
   const linearize = (value: number) =>
-    value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+    value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
   const [lr, lg, lb] = [r, g, b].map((component) =>
     linearize(normalize(component))
   );
@@ -46,7 +46,7 @@ function relativeLuminance(r: number, g: number, b: number): number {
 
 export default function ReadOnlyEventLogo() {
   const { theme } = useTheme();
-  const [useLightVariant, setUseLightVariant] = useState<boolean>(
+  const [_useLightVariant, setUseLightVariant] = useState<boolean>(
     () => theme === "dark"
   );
 

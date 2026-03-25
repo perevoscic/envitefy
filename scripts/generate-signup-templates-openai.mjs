@@ -10,7 +10,7 @@ const rootDir = path.join(projectRoot, "scripts");
 const publicDir = path.join(projectRoot, "public");
 
 function getArg(name, fallback = null) {
-  const ix = process.argv.findIndex((a) => a === name || a.startsWith(name + "="));
+  const ix = process.argv.findIndex((a) => a === name || a.startsWith(`${name}=`));
   if (ix === -1) return fallback;
   const val = process.argv[ix].split("=")[1];
   return val ?? fallback;

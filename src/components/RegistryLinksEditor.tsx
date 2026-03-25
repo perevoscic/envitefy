@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { MAX_REGISTRY_LINKS } from "@/utils/registry-links";
 
 export type RegistryFormEntry = {

@@ -167,7 +167,7 @@ export default function GenderRevealCreate({
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
-  const [profileImage, setProfileImage] = useState<{
+  const [_profileImage, setProfileImage] = useState<{
     name: string;
     type: string;
     dataUrl: string;
@@ -347,7 +347,7 @@ export default function GenderRevealCreate({
           const rec: string | undefined = data.recurrence;
           if (rec && /BYDAY=/.test(rec)) {
             const m = rec.match(/BYDAY=([A-Z,]+)/);
-            if (m && m[1]) setRepeatDays(m[1].split(","));
+            if (m?.[1]) setRepeatDays(m[1].split(","));
           }
         } catch {}
         // Media/visuals
@@ -723,7 +723,7 @@ export default function GenderRevealCreate({
         },
       };
       let j: any = null;
-      let id: string | undefined = undefined;
+      let id: string | undefined ;
       if (editEventId) {
         try {
           await fetch(`/api/history/${editEventId}`, {

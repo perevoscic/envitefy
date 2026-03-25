@@ -156,7 +156,7 @@ function extractAmazonTagFromUrl(url: string): string | null {
     const host = u.hostname.toLowerCase();
     if (!/amazon\./.test(host)) return null;
     const tag = u.searchParams.get("tag");
-    return tag && tag.trim() ? tag.trim() : null;
+    return tag?.trim() ? tag.trim() : null;
   } catch {
     return null;
   }
@@ -239,7 +239,7 @@ export function decorateAmazonUrl(
         }
         // Fallback: allow specifying a tag directly via env without a full URL
         const directTag = get("NEXT_PUBLIC_AFFILIATE_AMAZON_TAG");
-        if (directTag && directTag.trim()) return directTag.trim();
+        if (directTag?.trim()) return directTag.trim();
         return null;
       })();
       if (tag) u.searchParams.set("tag", tag);

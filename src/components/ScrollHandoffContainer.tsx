@@ -1,6 +1,6 @@
 "use client";
 
-import React, {
+import {
   useCallback,
   useRef,
   type HTMLAttributes,

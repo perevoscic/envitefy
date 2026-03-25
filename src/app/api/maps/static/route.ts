@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
         "Cache-Control": "public, max-age=86400, s-maxage=86400",
       },
     });
-  } catch (err) {
+  } catch (_err) {
     return new Response("Fetch error", { status: 502 });
   }
 }

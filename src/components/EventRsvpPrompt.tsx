@@ -111,7 +111,7 @@ export default function EventRsvpPrompt({
 
   const contactMode: "sms" | "email" = hasPhone ? "sms" : "email";
 
-  const handleDecline = async () => {
+  const _handleDecline = async () => {
     // Submit "no" RSVP to API if eventId is available
     if (eventId) {
       try {
@@ -274,7 +274,7 @@ export default function EventRsvpPrompt({
     setIntent(null);
   };
 
-  const handleEmailIntent = async (nextIntent: ResponseIntent) => {
+  const _handleEmailIntent = async (nextIntent: ResponseIntent) => {
     if (!rsvpEmail || !nextIntent) return;
 
     // Submit RSVP to API if eventId is available

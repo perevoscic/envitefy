@@ -15,7 +15,6 @@ import {
   ChevronRight,
   ChevronDown,
   Edit2,
-  Heart,
   Users,
   Image as ImageIcon,
   Type,
@@ -24,12 +23,10 @@ import {
   Gift,
   Upload,
   Trash2,
-  Calendar as CalendarIcon,
   Check,
   X as XIcon,
   Sparkles,
   Share2,
-  Apple,
 } from "lucide-react";
 import {
   type GenderRevealTemplateDefinition,
@@ -352,7 +349,7 @@ const InputGroup = ({
 export default function GenderRevealTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
-  const defaultDate = search?.get("d") ?? undefined;
+  const _defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
 

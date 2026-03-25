@@ -23,8 +23,6 @@ import {
   Upload,
   CheckSquare,
   Share2,
-  Calendar as CalendarIcon,
-  Apple,
   MapPin,
   Clock,
   Users,

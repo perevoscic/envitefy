@@ -3,8 +3,8 @@
   Requires: sharp (already in dependencies)
 */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 const sharp = require("sharp");
 
 async function ensureDir(dir) {

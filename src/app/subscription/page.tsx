@@ -32,7 +32,7 @@ export default function SubscriptionPage() {
     string | null
   >(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [credits, setCredits] = useState<number | null>(null);
+  const [_credits, setCredits] = useState<number | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [redeemOpen, setRedeemOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState<boolean>(false);

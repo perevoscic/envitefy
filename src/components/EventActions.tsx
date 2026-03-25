@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { findFirstEmail } from "@/utils/contact";
@@ -365,7 +365,7 @@ export default function EventActions({
   // referencing `findPhone` during hot reloads keep working without throwing.
   const legacyFindPhone = (): string | null => rsvpPhone;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const findPhone = legacyFindPhone;
+  const _findPhone = legacyFindPhone;
 
   const formatDateRange = (
     startIso: string | null | undefined,
@@ -428,7 +428,7 @@ export default function EventActions({
       if (!t) return "the event";
       // Try to extract a name prior to 's (e.g., "Livia's Birthday Party")
       const m = t.match(/([^\s][^']*?)\s*(?:'s|’s)\b/i);
-      if (m && m[1]) {
+      if (m?.[1]) {
         const name = m[1].trim();
         return `${name}'s birthday`;
       }

@@ -1,5 +1,5 @@
-import React from "react";
-import { ArrowUpRight, Martini, Music, Building2 } from "lucide-react";
+
+import { ArrowUpRight, Martini, Building2 } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -112,11 +112,11 @@ export default function SkylineWedding({ theme, event }: Props) {
               </div>
               <div>
                 <h3 className="font-bold text-lg">
-                  {(event.schedule && event.schedule[0]?.title) ||
+                  {(event.schedule?.[0]?.title) ||
                     "The Rooftop"}
                 </h3>
                 <p className="text-sm text-slate-500">
-                  {(event.schedule && event.schedule[0]?.time) ||
+                  {(event.schedule?.[0]?.time) ||
                     "Ceremony at 5:30 PM"}
                 </p>
               </div>
@@ -128,10 +128,10 @@ export default function SkylineWedding({ theme, event }: Props) {
               </div>
               <div>
                 <h3 className="font-bold text-lg">
-                  {(event.schedule && event.schedule[1]?.title) || "The Lounge"}
+                  {(event.schedule?.[1]?.title) || "The Lounge"}
                 </h3>
                 <p className="text-sm text-slate-500">
-                  {(event.schedule && event.schedule[1]?.time) ||
+                  {(event.schedule?.[1]?.time) ||
                     "Cocktails & Music at 6:30 PM"}
                 </p>
               </div>

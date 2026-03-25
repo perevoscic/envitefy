@@ -23,7 +23,7 @@ const appTitle = process.env.OPENROUTER_X_TITLE || "Envitefy";
 const model = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
 
 function getArg(name, fallback = null) {
-  const ix = process.argv.findIndex((a) => a === name || a.startsWith(name + "="));
+  const ix = process.argv.findIndex((a) => a === name || a.startsWith(`${name}=`));
   if (ix === -1) return fallback;
   const val = process.argv[ix].split("=")[1];
   return val ?? fallback;
@@ -32,7 +32,7 @@ function getArg(name, fallback = null) {
 const themeFilter = getArg("--theme");
 const forceRegenerate = getArg("--force") !== null;
 
-async function ensureDir(dir) {
+async function _ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
 
@@ -52,7 +52,7 @@ async function sleep(ms) {
 /**
  * Call OpenRouter vision API to identify elements in the image
  */
-async function identifyElements(imageBuffer, themeName) {
+async function identifyElements(imageBuffer, _themeName) {
   const base64 = imageBuffer.toString("base64");
   const mime = "image/webp"; // Assuming webp input
 
@@ -137,7 +137,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
     const content = data?.choices?.[0]?.message?.content || "";
     
     // Try to parse JSON from the response
-    let jsonMatch = content.match(/\{[\s\S]*\}/);
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("No JSON found in response");
     }
@@ -158,7 +158,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
  * Extract element from image using bounding box and remove background
  */
 async function extractElement(imageBuffer, element, imageWidth, imageHeight, outputPath) {
-  const { bbox, name } = element;
+  const { bbox } = element;
 
   // Ensure bbox is within image bounds
   const x = Math.max(0, Math.min(bbox.x || 0, imageWidth));
@@ -182,10 +182,6 @@ async function extractElement(imageBuffer, element, imageWidth, imageHeight, out
       height: Math.floor(paddedHeight),
     })
     .toBuffer();
-
-  // Get image metadata
-  const metadata = await sharp(extracted).metadata();
-  const { width: extractWidth, height: extractHeight } = metadata;
 
   // Remove background using threshold-based approach
   // First, get raw pixel data with exact size
@@ -258,12 +254,12 @@ async function extractElement(imageBuffer, element, imageWidth, imageHeight, out
     // Calculate standard deviation to determine threshold dynamically
     const distances = edgeSamples.map(c => {
       return Math.sqrt(
-        Math.pow(c.r - avgBg.r, 2) + Math.pow(c.g - avgBg.g, 2) + Math.pow(c.b - avgBg.b, 2)
+        (c.r - avgBg.r) ** 2 + (c.g - avgBg.g) ** 2 + (c.b - avgBg.b) ** 2
       );
     });
     const avgDistance = distances.reduce((sum, d) => sum + d, 0) / distances.length;
     const stdDev = Math.sqrt(
-      distances.reduce((sum, d) => sum + Math.pow(d - avgDistance, 2), 0) / distances.length
+      distances.reduce((sum, d) => sum + (d - avgDistance) ** 2, 0) / distances.length
     );
     
     // Use adaptive threshold: average distance + 2 standard deviations
@@ -277,7 +273,7 @@ async function extractElement(imageBuffer, element, imageWidth, imageHeight, out
 
       // Calculate color distance from background
       const distance = Math.sqrt(
-        Math.pow(r - avgBg.r, 2) + Math.pow(g - avgBg.g, 2) + Math.pow(b - avgBg.b, 2)
+        (r - avgBg.r) ** 2 + (g - avgBg.g) ** 2 + (b - avgBg.b) ** 2
       );
 
       // Check brightness for very light backgrounds (cream/off-white)
@@ -444,4 +440,3 @@ run().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-

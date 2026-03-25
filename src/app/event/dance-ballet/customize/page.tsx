@@ -6,7 +6,6 @@ import React, {
   useMemo,
   useState,
   useEffect,
-  memo,
   useRef,
 } from "react";
 import Image from "next/image";
@@ -25,7 +24,6 @@ import {
   Share2,
   Calendar as CalendarIcon,
   Apple,
-  Upload,
   ClipboardList,
   Users,
   MapPin,
@@ -686,7 +684,7 @@ const eventsSection = {
     const fmtTime = (t?: string) => {
       if (!t) return "";
       const [h, m] = t.split(":");
-      const hour = parseInt(h);
+      const hour = parseInt(h, 10);
       const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${m} ${ampm}`;
@@ -1003,7 +1001,7 @@ const practiceSection = {
     const fmtTime = (t?: string) => {
       if (!t) return "";
       const [h, m] = t.split(":");
-      const hour = parseInt(h);
+      const hour = parseInt(h, 10);
       const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${m} ${ampm}`;
@@ -1751,7 +1749,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [themesExpanded, setThemesExpanded] = useState(
       config.themesExpandedByDefault ?? true
     );
-    const [loadingExisting, setLoadingExisting] = useState(false);
+    const [_loadingExisting, setLoadingExisting] = useState(false);
     const {
       mobileMenuOpen,
       openMobileMenu,

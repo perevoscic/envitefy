@@ -1,19 +1,13 @@
 "use client";
 
 import React, { useMemo } from "react";
-import Image from "next/image";
-import { Share2 } from "lucide-react";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
-import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import Link from "next/link";
 import { buildEditLink } from "@/utils/event-edit-route";
-import { findFirstEmail } from "@/utils/contact";
-import { extractFirstPhoneNumber } from "@/utils/phone";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import type {
   EventData,
-  ThemeConfig,
 } from "@/app/event/weddings/_renderers/content-sections";
 
 // Import all template configs
@@ -66,11 +60,11 @@ const getLuminance = (hex: string): number => {
   const g = parseInt(normalized.slice(2, 4), 16) / 255;
   const b = parseInt(normalized.slice(4, 6), 16) / 255;
   const channel = (c: number) =>
-    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 };
 
-const pickTextColor = (bg: string) =>
+const _pickTextColor = (bg: string) =>
   getLuminance(bg) > 0.6 ? "#1f2937" : "#F9FAFB";
 
 // Font definitions (matching customize page)
@@ -131,7 +125,7 @@ const FONTS = {
   },
 };
 
-const FONT_SIZES = {
+const _FONT_SIZES = {
   small: {
     h1: "text-2xl md:text-4xl",
     h2: "text-2xl md:text-3xl",
@@ -152,7 +146,7 @@ const FONT_SIZES = {
   },
 };
 
-const DESIGN_THEMES = [
+const _DESIGN_THEMES = [
   {
     id: "blush_peony_arch",
     name: "Blush Peony Arch",
@@ -196,13 +190,13 @@ const DESIGN_THEMES = [
 ];
 
 // Simplified ThemeGraphics - we'll need to import the full version later
-const ThemeGraphics = ({ themeId }: { themeId: string }) => {
+const _ThemeGraphics = ({ themeId }: { themeId: string }) => {
   // This is a placeholder - we need the full ThemeGraphics component
   return null;
 };
 
 // Decorative divider component - different styles per theme
-const DecorativeDivider = ({ themeId }: { themeId: string }) => {
+const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
   const getDividerStyle = () => {
     const dividers: Record<string, React.ReactElement> = {
       blush_peony_arch: (
@@ -893,7 +887,7 @@ const DecorativeDivider = ({ themeId }: { themeId: string }) => {
       ),
     };
 
-    return dividers[themeId] || dividers["blush_peony_arch"];
+    return dividers[themeId] || dividers.blush_peony_arch;
   };
 
   return (

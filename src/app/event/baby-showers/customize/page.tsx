@@ -25,11 +25,9 @@ import {
   Upload,
   Trash2,
   Baby,
-  Calendar as CalendarIcon,
   Check,
   X as XIcon,
   Share2,
-  Apple,
 } from "lucide-react";
 import {
   type BabyShowerTemplateDefinition,
@@ -319,7 +317,7 @@ const InputGroup = ({
 export default function BabyShowerTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
-  const defaultDate = search?.get("d") ?? undefined;
+  const _defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
   const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(
@@ -346,7 +344,7 @@ export default function BabyShowerTemplateCustomizePage() {
   const [submitting, setSubmitting] = useState(false);
   const [newHost, setNewHost] = useState({ name: "", role: "" });
   const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
-  const [loadingExisting, setLoadingExisting] = useState(false);
+  const [_loadingExisting, setLoadingExisting] = useState(false);
   const buildCalendarDetails = () => {
     const title = data.title || "Baby Shower";
     let start: Date | null = null;

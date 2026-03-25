@@ -18,7 +18,7 @@ type DemoEvent = {
 export default function Demo() {
   const [event, setEvent] = useState<DemoEvent | null>(null);
   const [ocrText, setOcrText] = useState<string>("");
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<SnapProcessingStatus>("idle");
   const [uploadProgress, setUploadProgress] = useState(0);

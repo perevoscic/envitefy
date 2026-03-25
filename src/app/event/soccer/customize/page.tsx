@@ -6,7 +6,6 @@ import React, {
   useMemo,
   useState,
   useEffect,
-  memo,
   useRef,
 } from "react";
 import Image from "next/image";
@@ -23,9 +22,6 @@ import {
   CheckSquare,
   ChevronRight,
   Share2,
-  Calendar as CalendarIcon,
-  Apple,
-  Upload,
   MapPin,
   Link as LinkIcon,
 } from "lucide-react";

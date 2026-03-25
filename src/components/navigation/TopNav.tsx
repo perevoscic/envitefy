@@ -19,7 +19,7 @@ import {
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
 
-const CALENDAR_TARGETS: Array<{
+const _CALENDAR_TARGETS: Array<{
   key: CalendarProviderKey;
   label: string;
   Icon: typeof CalendarIconGoogle;

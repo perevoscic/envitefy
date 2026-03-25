@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const email = (tokenData as any)?.email as string | undefined;
     const g = providers.google || {};
     let refreshToken = g.refreshToken as string | undefined;
-    let accessToken = g.accessToken as string | undefined;
+    const accessToken = g.accessToken as string | undefined;
     const expiresAt = g.expiresAt as number | undefined;
 
     // Prefer DB token for signed-in users; avoid cookie to prevent cross-user leakage

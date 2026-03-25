@@ -391,13 +391,13 @@ export default function PwaInstallButton({
   const [canInstall, setCanInstall] = useState(false);
   const [showIosTip, setShowIosTip] = useState(false);
   const [hideUi, setHideUi] = useState(false);
-  const [allowedDevice, setAllowedDevice] = useState(false);
+  const [_allowedDevice, setAllowedDevice] = useState(false);
   const [maybeInstallable, setMaybeInstallable] = useState(false);
   const [expanded, setExpanded] = useState(startExpanded);
   const [wasManuallyClosed, setWasManuallyClosed] = useState(false);
   const [heroOutOfView, setHeroOutOfView] = useState(false);
   const [recaptchaOffset, setRecaptchaOffset] = useState(0);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const _observerRef = useRef<IntersectionObserver | null>(null);
   const [installGuide, setInstallGuide] = useState<InstallGuide | null>(null);
   const [guidePulse, setGuidePulse] = useState(false);
   const [installedState, setInstalledState] = useState(false);
@@ -576,8 +576,7 @@ export default function PwaInstallButton({
       const hasSW = "serviceWorker" in navigator;
       const isStandaloneNow =
         (window.navigator as any).standalone === true ||
-        (window.matchMedia &&
-          window.matchMedia("(display-mode: standalone)").matches);
+        (window.matchMedia?.("(display-mode: standalone)").matches);
       if (hasManifest && isSecure && hasSW && !isStandaloneNow) {
         setMaybeInstallable(true);
         pushDebug("heuristic installable", { hasManifest, isSecure, hasSW });
@@ -730,8 +729,7 @@ export default function PwaInstallButton({
       !/Chrome|Chromium|Edg|OPR\//.test(ua);
     const isStandaloneNow =
       (window.navigator as any).standalone === true ||
-      (window.matchMedia &&
-        window.matchMedia("(display-mode: standalone)").matches);
+      (window.matchMedia?.("(display-mode: standalone)").matches);
     let iosTimeout: number | undefined;
     const isAppleLike = isIOS || isMacSafari;
     if (isAppleLike && !isStandaloneNow && !w.__snapInstallDeferredPrompt) {

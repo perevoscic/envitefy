@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { MoreOptions } from "./MoreOptions";
 import { PalettePickerGrid } from "./PalettePickerGrid";
 import { TitleFontSelect } from "./TitleFontSelect";

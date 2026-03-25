@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useMemo, useState, memo } from "react";
+import React, { useCallback, useMemo, useState, } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -16,9 +16,6 @@ import {
   CheckSquare,
   ChevronRight,
   Share2,
-  Calendar as CalendarIcon,
-  Apple,
-  Upload,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";

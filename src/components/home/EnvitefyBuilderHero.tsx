@@ -5,9 +5,6 @@ import Image from "next/image";
 import {
   ArrowRight,
   CalendarHeart,
-  Share2,
-  Smartphone,
-  Sparkles,
 } from "lucide-react";
 import { BabyCarriageIcon } from "./BabyCarriageIcon";
 

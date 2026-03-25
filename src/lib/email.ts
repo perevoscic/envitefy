@@ -814,8 +814,8 @@ export async function sendSignupConfirmationEmail(params: {
     <p style="margin:0 0 16px 0; font-size:16px; line-height:1.6;">You're <strong>${escapeHtml(status)}</strong> for <strong>${escapeHtml(params.eventTitle)}</strong>.</p>
     <div style="background:#F9FAFB; border:1px solid #E5E7EB; padding:14px 16px; border-radius:10px; margin:16px 0;">
       ${startLabel ? `<p style="margin:0 0 4px 0; font-size:14px;"><strong>Date:</strong> ${escapeHtml(startLabel)}</p>` : ""}
-      ${(params.form as any)?.location ? `<p style=\"margin:0 0 4px 0; font-size:14px;\"><strong>Location:</strong> ${escapeHtml(((params.form as any).location as string) || "")}</p>` : ""}
-      ${slotSummaries.length ? `<p style=\"margin:8px 0 0 0; font-size:14px;\"><strong>Selections:</strong><br/> ${slotSummaries.map((s) => `• ${s}`).join("<br/>")}</p>` : ""}
+      ${(params.form as any)?.location ? `<p style="margin:0 0 4px 0; font-size:14px;"><strong>Location:</strong> ${escapeHtml(((params.form as any).location as string) || "")}</p>` : ""}
+      ${slotSummaries.length ? `<p style="margin:8px 0 0 0; font-size:14px;"><strong>Selections:</strong><br/> ${slotSummaries.map((s) => `• ${s}`).join("<br/>")}</p>` : ""}
     </div>
     ${headerPreview}
   `;

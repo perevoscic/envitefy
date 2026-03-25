@@ -22,7 +22,6 @@ import {
 
 type Props = { defaultDate?: Date };
 
-type TemplateFormat = "card" | "page";
 type InviteTone = "Sweet & Soft" | "Chic & Modern" | "Fun & Casual";
 
 type FilterState = {

@@ -10,7 +10,6 @@ import LocationLink from "@/components/LocationLink";
 import EventMap from "@/components/EventMap";
 import ReadOnlyBanner from "./ReadOnlyBanner";
 import AccessCodeGate from "@/components/AccessCodeGate";
-import Image from "next/image";
 import Link from "next/link";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import {
@@ -607,7 +606,7 @@ export default async function EventPage({
   let recipientPending = false;
   let isReadOnly = false; // Read-only mode for non-authenticated users
   const isShared = Boolean((row.data as any)?.shared);
-  const isSharedOut = Boolean((row.data as any)?.sharedOut);
+  const _isSharedOut = Boolean((row.data as any)?.sharedOut);
   let hasShareRelation = isShared;
   if (!isOwner) {
     if (!userId) {
@@ -649,7 +648,7 @@ export default async function EventPage({
     }
   }
   const title = row.title as string;
-  const createdAt = row.created_at as string | undefined;
+  const _createdAt = row.created_at as string | undefined;
   const data = (() => {
     if (!row.data) return {};
     if (typeof row.data === "string") {
@@ -921,7 +920,7 @@ export default async function EventPage({
     typeof data?.location === "string" ? (data.location as string) : "";
   const venueText = typeof data?.venue === "string" ? (data.venue as string) : "";
   const hasMapLocation = Boolean(
-    (venueText && venueText.trim()) || (locationText && locationText.trim())
+    (venueText?.trim()) || (locationText?.trim())
   );
   const categoryRaw = typeof data?.category === "string" ? data.category : "";
   const categoryNormalized = categoryRaw.toLowerCase();
@@ -1081,17 +1080,17 @@ export default async function EventPage({
     : "";
   const rsvpName = rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "";
   const userName = ((session as any)?.user?.name as string | undefined) || "";
-  const smsIntroParts = [
+  const _smsIntroParts = [
     "Hi, there,",
     userName ? ` this is ${userName},` : "",
     " RSVP-ing for ",
     title || "the event",
   ];
-  const isSignedIn = Boolean(sessionEmail);
+  const _isSignedIn = Boolean(sessionEmail);
   const eventTheme = getEventTheme(
     (data?.category as string | undefined) || null
   );
-  const categoryLabel = eventTheme.categoryLabel;
+  const _categoryLabel = eventTheme.categoryLabel;
 
   // Check if image colors are available (from uploaded image)
   const imageColors = (() => {
@@ -1220,7 +1219,7 @@ export default async function EventPage({
   };
 
   // Determine whether the event is in the future for conditional rendering
-  const isFutureEvent = (() => {
+  const _isFutureEvent = (() => {
     try {
       const startIso = (data?.startISO as string | undefined) || null;
       const rawStart = (data?.start as string | undefined) || null;
@@ -1236,7 +1235,7 @@ export default async function EventPage({
   })();
 
   // Compute a right padding to avoid text flowing under the thumbnail overlay
-  const detailsExtraPaddingRight = headerImageUrl ? " pr-40 sm:pr-48" : "";
+  const _detailsExtraPaddingRight = headerImageUrl ? " pr-40 sm:pr-48" : "";
 
   const calendarStartIso = normalizeIso(
     (data?.startISO as string | undefined) ||
@@ -1282,8 +1281,8 @@ export default async function EventPage({
 
   const clientSafeEventData = data;
 
-  const heroDateLine = formattedTimeAndDate.date || whenLabel || null;
-  const heroTimeLine =
+  const _heroDateLine = formattedTimeAndDate.date || whenLabel || null;
+  const _heroTimeLine =
     formattedTimeAndDate.time && (formattedTimeAndDate.date || !whenLabel)
       ? formattedTimeAndDate.time
       : null;
@@ -1367,12 +1366,12 @@ export default async function EventPage({
           : "neutral"
       );
     const birthdayTheme =
-      (data.theme && data.theme.id)
+      (data.theme?.id)
         ? data.theme
         : BIRTHDAY_THEMES.find((t) => t.id === birthdayThemeId) ||
           BIRTHDAY_THEMES[0];
     
-    if (isBirthdayRendererEvent || (data.theme && data.theme.layout)) {
+    if (isBirthdayRendererEvent || (data.theme?.layout)) {
         return (
             <BirthdayRenderer
                 template={birthdayTheme}
@@ -1386,20 +1385,20 @@ export default async function EventPage({
                     headlineTitle: title || data.headlineTitle,
                     date: data.startISO || (data.date && data.time ? `${data.date}T${data.time}` : data.date),
                     location: data.location || [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
-                    story: data.story || data.description || (data.partyDetails && data.partyDetails.notes),
+                    story: data.story || data.description || (data.partyDetails?.notes),
                     schedule: data.schedule,
                     registries: data.registries,
                     rsvpEnabled:
                       Boolean(data.rsvpEnabled) ||
-                      Boolean((data.rsvp && data.rsvp.isEnabled) || data.rsvp),
+                      Boolean((data.rsvp?.isEnabled) || data.rsvp),
                     rsvpLink: "#rsvp",
                     birthdayName: data.birthdayName || data.childName || "Birthday Star",
                     age: data.age,
                     party: data.party || data.partyDetails,
-                    thingsToDo: data.thingsToDo || (data.partyDetails && data.partyDetails.activities),
+                    thingsToDo: data.thingsToDo || (data.partyDetails?.activities),
                     hosts: data.hosts,
                     gallery: Array.isArray(data.gallery) ? data.gallery.map((item: any) => typeof item === 'string' ? item : item.url) : [],
-                    rsvpDeadline: data.rsvpDeadline || (data.rsvp && data.rsvp.deadline),
+                    rsvpDeadline: data.rsvpDeadline || (data.rsvp?.deadline),
                     numberOfGuests: data.numberOfGuests || 0
                 }}
                 isOwner={isOwner}
@@ -1571,7 +1570,7 @@ export default async function EventPage({
       style={
         {
           // Keep page chrome in the white/purple family for scanned event views.
-          ["--theme-hero-gradient"]:
+          "--theme-hero-gradient":
             "linear-gradient(180deg, #f7f3ff 0%, #ffffff 55%, #f8f5ff 100%)",
         } as CSSProperties
       }

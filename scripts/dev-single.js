@@ -1,6 +1,6 @@
-const fs = require("fs");
-const path = require("path");
-const { spawn } = require("child_process");
+const fs = require("node:fs");
+const path = require("node:path");
+const { spawn } = require("node:child_process");
 
 const lockPath = path.join(process.cwd(), ".next-dev.lock");
 const nextBin = require.resolve("next/dist/bin/next");

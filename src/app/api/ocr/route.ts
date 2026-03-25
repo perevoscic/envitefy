@@ -63,7 +63,7 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
 }
 
 // Basic low-confidence heuristic for titles
-function isTitleLowConfidence(title: string): boolean {
+function _isTitleLowConfidence(title: string): boolean {
   if (!title) return true;
   const t = title.trim();
   if (t.length < 6) return true;
@@ -261,7 +261,7 @@ async function llmExtractGymnasticsScheduleFromImage(
           {
             role: "user",
             content: [
-              { type: "text", text: userText + `\nTIMEZONE: ${timezone}` },
+              { type: "text", text: `${userText}\nTIMEZONE: ${timezone}` },
               { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
             ],
           },
@@ -374,7 +374,7 @@ async function llmExtractPracticeScheduleFromImage(
           {
             role: "user",
             content: [
-              { type: "text", text: userText + `\nTIMEZONE_GUESS: ${timezone}` },
+              { type: "text", text: `${userText}\nTIMEZONE_GUESS: ${timezone}` },
               { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
             ],
           },
@@ -528,7 +528,7 @@ function buildNextOccurrence(
 ): { start: string; end: string } {
   const nowLocal = getLocalNowInTimezone(baseTz);
   const currentDay = nowLocal.getDay();
-  let delta = (dayIndex - currentDay + 7) % 7;
+  const delta = (dayIndex - currentDay + 7) % 7;
   const startDate = new Date(nowLocal);
   startDate.setHours(0, 0, 0, 0);
   startDate.setDate(startDate.getDate() + delta);
@@ -570,11 +570,11 @@ function looksLikeGroupName(line: string): boolean {
     return false;
   }
   // Time ranges or standalone times should not be treated as group names
-  if (/\d{1,2}\s*[:\-]/.test(trimmed)) return false;
+  if (/\d{1,2}\s*[:-]/.test(trimmed)) return false;
   return /[A-Za-z]/.test(trimmed);
 }
 
-function isValueNoteLine(line: string): boolean {
+function _isValueNoteLine(line: string): boolean {
   const trimmed = line.trim();
   if (!trimmed) return false;
   if (isDayToken(trimmed)) return false;
@@ -601,7 +601,7 @@ function parsePracticeTimeRange(value: string): {
   const noteParts: string[] = [];
   let timePart = normalized;
   const noteMatch = normalized.match(/(?:\d|:|am|pm|\s|-)+\s*(.*)$/i);
-  if (noteMatch && noteMatch[1]) {
+  if (noteMatch?.[1]) {
     const remainder = noteMatch[1].trim();
     if (remainder && !/^(?:am|pm)$/i.test(remainder)) {
       noteParts.push(remainder);
@@ -806,7 +806,7 @@ function parsePracticeScheduleHeuristics(
       const noteMatch = value.match(/(.*?)(?:\s+(rec|conditioning|team gym|team\s+gym|open gym|weights))$/i);
       let label = value;
       let note: string | null = null;
-      if (noteMatch && noteMatch[2]) {
+      if (noteMatch?.[2]) {
         label = noteMatch[1].trim();
         note = noteMatch[2].trim();
       }
@@ -935,7 +935,7 @@ function detectSpelledTime(raw: string): { hour: number; minute: number; meridie
 
 function cleanAddressLabel(input: string): string {
   let s = input.trim();
-  s = s.replace(/^\s*(location|address|venue|where)\s*[:\-]?\s*/i, "");
+  s = s.replace(/^\s*(location|address|venue|where)\s*[:-]?\s*/i, "");
   s = s.replace(/^\s*at\s+/i, "");
   s = s.replace(/[\r\n]+/g, ", ");
   s = s.replace(/\s*,\s*/g, ", ");
@@ -1074,7 +1074,7 @@ function stripInvitePhrases(s: string): string {
     .replace(/^\s*\b(cordially\s+)?invites?\s+you\s+to(?:\s+join)?\b[:\s,-]*/i, "")
     .replace(/^\s*\b(requests?\s+the\s+(honou?r|pleasure)\s+of\s+your\s+(presence|company))\b[:\s,-]*/i, "")
     // "please join us" variations
-    .replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,\-]*/i, "")
+    .replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,-]*/i, "")
     .trim();
 }
 
@@ -1083,8 +1083,8 @@ function stripJoinUsLanguage(description: string): string {
   const cleanedLines = description
     .split("\n")
     .map((line) => stripInvitePhrases(line))
-    .map((line) => line.replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,\-]*/i, ""))
-    .map((line) => line.replace(/^\s*(let's\s+)?celebrate\s+with\s+us[:\s,\-]*/i, ""))
+    .map((line) => line.replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,-]*/i, ""))
+    .map((line) => line.replace(/^\s*(let's\s+)?celebrate\s+with\s+us[:\s,-]*/i, ""))
     .map((line) => line.trim())
     .filter((line, idx, arr) => line.length > 0 || (idx < arr.length - 1 && arr[idx + 1].length > 0));
   return cleanedLines.join("\n");
@@ -1100,7 +1100,7 @@ function improveJoinUsFor(description: string, title: string, location?: string)
     const joinIdx = lines.findIndex((l) => /^join\s+us\s+for\s*$/i.test(l));
     if (joinIdx === -1) return description;
 
-    const possessiveMatch = (title || "").match(/\b([A-Z][A-Za-z\-]+(?:\s+[A-Z][A-Za-z\-]+){0,2})[’']s\b/);
+    const possessiveMatch = (title || "").match(/\b([A-Z][A-Za-z-]+(?:\s+[A-Z][A-Za-z-]+){0,2})[’']s\b/);
     if (!possessiveMatch) return description;
 
     const namePossessive = possessiveMatch[0];
@@ -1213,11 +1213,11 @@ function pickVenueLabelForSentence(
   return "";
 }
 
-function buildFriendlyBirthdaySentence(title: string, location?: string): string {
+function _buildFriendlyBirthdaySentence(title: string, location?: string): string {
   const extractPossessive = (t: string): string | null => {
-    const m = (t || "").match(/\b([A-Z][A-Za-z\-]+(?:\s+[A-Z][A-Za-z\-]+){0,2})[’']s\b/);
-    if (m && m[1]) return `${m[1]}'s`;
-    const first = (t || "").match(/\b([A-Z][A-Za-z\-]+)\b/);
+    const m = (t || "").match(/\b([A-Z][A-Za-z-]+(?:\s+[A-Z][A-Za-z-]+){0,2})[’']s\b/);
+    if (m?.[1]) return `${m[1]}'s`;
+    const first = (t || "").match(/\b([A-Z][A-Za-z-]+)\b/);
     return first ? `${first[1]}'s` : null;
   };
   const who = extractPossessive(title) || "Our";
@@ -1256,10 +1256,10 @@ function extractRsvpCompact(rawText: string, fallbackText?: string): string | nu
       const phone = l.match(phoneRe)?.[0] || null;
       if (!phone) continue;
       if (/\b(call|text|contact|rsvp)\b/i.test(l)) {
-        const name = (l.match(/\bwith\s+([A-Z][A-Za-z'\-]+)\b/i)?.[1]
-          || l.match(/\bto\s+([A-Z][A-Za-z'\-]+)\b/i)?.[1]
+        const name = (l.match(/\bwith\s+([A-Z][A-Za-z'-]+)\b/i)?.[1]
+          || l.match(/\bto\s+([A-Z][A-Za-z'-]+)\b/i)?.[1]
           || "").trim();
-        return `RSVP: ${name ? name + " " : ""}${phone}`.trim();
+        return `RSVP: ${name ? `${name} ` : ""}${phone}`.trim();
       }
     }
     return null;
@@ -1314,7 +1314,7 @@ async function llmRewriteBirthdayDescription(
 // Returns null on failure; otherwise returns a tuple [title, description].
 async function llmRewriteWedding(
   rawText: string,
-  title: string,
+  _title: string,
   location: string,
   timeoutMs = OPENAI_TIMEOUT_MS
 ): Promise<{ title: string; description: string } | null> {
@@ -1412,14 +1412,14 @@ async function llmRewriteSmartDescription(
   }
 }
 
-function pickTitle(lines: string[], raw: string): string {
+function pickTitle(lines: string[], _raw: string): string {
   const cleanedLines = lines
     .map((l) => stripInvitePhrases(l.replace(/[•·\-–—\s]+$/g, "").replace(/^[•·\-–—\s]+/g, "").trim()))
     .filter((l) => l.length > 1);
 
   const weekdays = /^(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(r(s(day)?)?)?|fri(day)?|sat(urday)?|sun(day)?)$/i;
   const months = /^(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)$/i;
-  const badHints = /(invitation(\s*card)?|rsvp|admission|tickets|door(s)? open|free entry|age|call|visit|www\.|\.com|\b(am|pm)\b|\b\d{1,2}[:\.]?\d{0,2}\b)/i;
+  const badHints = /(invitation(\s*card)?|rsvp|admission|tickets|door(s)? open|free entry|age|call|visit|www\.|\.com|\b(am|pm)\b|\b\d{1,2}[:.]?\d{0,2}\b)/i;
   const goodHints = /(baby\s*shower|bridal\s*shower|shower|birthday|party|anniversary|wedding|marriage|nupti(al)?|concert|festival|meet(ing|up)|ceremony|reception|gala|fundraiser|show|conference|appointment|open\s*house|celebration|quincea?ñera|graduation)/i;
   const ordinal = /\b\d{1,2}(st|nd|rd|th)\b/i;
 
@@ -1473,7 +1473,7 @@ function pickTitle(lines: string[], raw: string): string {
   }
 
   candidates.sort((x, y) => y.score - x.score);
-  let best = candidates[0];
+  const best = candidates[0];
   if (best && best.score > 0) {
     const monthAlt = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?)";
     const dateTail = new RegExp(`(?:\\s*(?:on|,)?\\s*)?(?:${monthAlt})\\b\\s*\\d{1,2}(?:st|nd|rd|th)?(?:\\s*,?\\s*\\d{4})?\\s*$`, "i");
@@ -1558,7 +1558,7 @@ export async function POST(request: Request) {
     let llmImage: any = null;
     let raw = "";
     let ocrSource = "none";
-    let openAiSucceeded = false;
+    let _openAiSucceeded = false;
 
     const runOpenAiPrimary = async (timeoutMs: number): Promise<{ rawText: string; llm: any }> => {
       const llm = await llmExtractEventFromImage(
@@ -1589,7 +1589,7 @@ export async function POST(request: Request) {
           raw = primary.rawText;
           llmImage = primary.llm;
           ocrSource = "openai";
-          openAiSucceeded = true;
+          _openAiSucceeded = true;
           log(">>> OCR turbo mode: OpenAI Vision succeeded ✓");
         } catch (e) {
           console.error(">>> OCR turbo mode: OpenAI Vision failed with error:", e);
@@ -1613,7 +1613,7 @@ export async function POST(request: Request) {
           raw = primary.rawText;
           llmImage = primary.llm;
           ocrSource = "openai";
-          openAiSucceeded = true;
+          _openAiSucceeded = true;
           log(">>> OCR: OpenAI Vision succeeded ✓");
         } catch (e) {
           console.error(">>> OCR: OpenAI Vision failed with error:", e);
@@ -1634,7 +1634,7 @@ export async function POST(request: Request) {
     const rangeLike = /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b\s*[-–—]\s*\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
     let start: Date | null = null;
     let end: Date | null = null;
-    let startHasClockTime = false; // track if a time-of-day is present
+    let _startHasClockTime = false; // track if a time-of-day is present
     let parsedText: string | null = null;
 
     // Prefer explicit medical/dental Appointment Date/Time labels over DOB when detected
@@ -1644,11 +1644,11 @@ export async function POST(request: Request) {
     if (isMedical) {
       let apptDateStr: string | null = null;
       let apptTimeStr: string | null = null;
-      const dobM = raw.match(/\b(dob|date\s*of\s*birth)[:#\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+      const dobM = raw.match(/\b(dob|date\s*of\s*birth)[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
       const dobStr = dobM?.[2] || null;
       // Labeled same-line patterns
-      const dateLM = raw.match(/\b(appointment\s*date|appt\s*date|date)\b[:#\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
-      const timeLM = raw.match(/\b(appointment\s*time|time)\b[:#\-]?\s*(\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?))/i);
+      const dateLM = raw.match(/\b(appointment\s*date|appt\s*date|date)\b[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
+      const timeLM = raw.match(/\b(appointment\s*time|time)\b[:#-]?\s*(\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?))/i);
       apptDateStr = (dateLM?.[2] || null);
       apptTimeStr = (timeLM?.[2] || null);
       // Two-line label followed by value
@@ -1656,7 +1656,7 @@ export async function POST(request: Request) {
         for (let i = 0; i < lines.length - 1; i++) {
           if (/^\s*(appointment\s*date|appt\s*date|date)\s*:?\s*$/i.test(lines[i])) {
             const next = lines[i + 1];
-            const m = next.match(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/);
+            const m = next.match(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/);
             if (m) { apptDateStr = m[0]; break; }
           }
         }
@@ -1671,7 +1671,7 @@ export async function POST(request: Request) {
         }
       }
       if (apptDateStr) {
-        const [mm, dd, yy] = apptDateStr.split(/[\/\-]/).map((x) => x.trim());
+        const [mm, dd, yy] = apptDateStr.split(/[/-]/).map((x) => x.trim());
         const year = Number(yy.length === 2 ? (Number(yy) + 2000) : yy);
         const month = Number(mm) - 1;
         const day = Number(dd);
@@ -1688,7 +1688,7 @@ export async function POST(request: Request) {
           }
         }
         medicalStart = new Date(year, month, day, hours, minutes, 0, 0);
-        medicalParsedText = `${apptDateStr}${apptTimeStr ? " " + apptTimeStr : ""}`;
+        medicalParsedText = `${apptDateStr}${apptTimeStr ? ` ${apptTimeStr}` : ""}`;
       }
     }
 
@@ -1721,7 +1721,7 @@ export async function POST(request: Request) {
       const cAny: any = c as any;
       const chosenHasExplicitDate = Boolean(cAny?.start?.knownValues?.month && cAny?.start?.knownValues?.day);
       const chosenHasExplicitTime = typeof cAny?.start?.knownValues?.hour === "number";
-      if (chosenHasExplicitTime) startHasClockTime = true;
+      if (chosenHasExplicitTime) _startHasClockTime = true;
       if (start && chosenHasExplicitDate && !chosenHasExplicitTime) {
         const timeOnly = byPreference.find((r: any) => {
           const kv = r?.start?.knownValues || {};
@@ -1744,7 +1744,7 @@ export async function POST(request: Request) {
             endMerged.setHours(tEnd.getHours(), tEnd.getMinutes(), 0, 0);
             end = endMerged;
           }
-          startHasClockTime = true;
+          _startHasClockTime = true;
         }
       }
     }
@@ -1768,7 +1768,7 @@ export async function POST(request: Request) {
         const merged = new Date(start);
         merged.setHours(hour24, spelled.minute, 0, 0);
         start = merged;
-        startHasClockTime = true;
+        _startHasClockTime = true;
       }
     }
     // If we detected explicit medical appointment Date/Time, prefer it over other parses
@@ -1790,7 +1790,7 @@ export async function POST(request: Request) {
       if (hasStreetNumber.test(l)) score += 5;
       if (venueOrSuffix.test(l)) score += 3;
       const next = lines[idx + 1] || "";
-      const cityStateZip = /\b[A-Za-z\.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
+      const cityStateZip = /\b[A-Za-z.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
       if (cityStateZip.test(next)) score += 2;
       return score;
     });
@@ -1811,7 +1811,7 @@ export async function POST(request: Request) {
       if (idx >= 0) {
         const block = [lines[idx + 1], lines[idx + 2], lines[idx + 3]].filter(Boolean) as string[];
         const hasStreetNo = /\b\d{1,6}\s+[A-Za-z]/;
-        const cityStateZip = /\b[A-Za-z\.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
+        const cityStateZip = /\b[A-Za-z.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
         const pick = block.find((s) => hasStreetNo.test(s) || cityStateZip.test(s));
         if (pick) addressOnly = pick.trim();
       }
@@ -1821,7 +1821,7 @@ export async function POST(request: Request) {
       const line = lines[locIdx].replace(/[–—-]\s*$/g, "").trim();
       const prev = lines[locIdx - 1]?.replace(/[–—-]\s*$/g, "").trim();
       const next = lines[locIdx + 1]?.replace(/[–—-]\s*$/g, "").trim();
-      const cityStateZip = /\b[A-Za-z\.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
+      const cityStateZip = /\b[A-Za-z.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
       if (prev && !timeToken.test(prev) && venueOrSuffix.test(prev) && !hasStreetNumber.test(prev)) {
         parts.push(prev);
       }
@@ -1899,7 +1899,7 @@ export async function POST(request: Request) {
         if (!line) continue;
         const strippedOrig = stripInvitePhrases(line).trim();
         if (!strippedOrig) continue;
-        let stripped = strippedOrig.replace(/^(?:st|nd|rd|th)\b[\s\-.,:]*/i, "").trim();
+        const stripped = strippedOrig.replace(/^(?:st|nd|rd|th)\b[\s\-.,:]*/i, "").trim();
         if (!stripped) continue;
 
         if (stripped.length <= 2) continue;
@@ -1910,8 +1910,8 @@ export async function POST(request: Request) {
         if (hasEnoughOverlap(stripped, titleWords)) continue;
 
         // Skip standalone time-like tokens (e.g., "3:30", "3:30PM") and score-like "1-0"/"1:0"
-        if (/^\d{1,2}([:\.]\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?$/i.test(stripped)) continue;
-        if (/^\d+\s*[:\-]\s*\d+$/.test(stripped)) continue;
+        if (/^\d{1,2}([:.]\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?$/i.test(stripped)) continue;
+        if (/^\d+\s*[:-]\s*\d+$/.test(stripped)) continue;
 
         if (/^[A-Za-z]{3,}$/.test(stripped) && stripped.split(/\s+/).length === 1) {
           if (!looksEnglishWord(stripped)) continue;
@@ -1932,9 +1932,9 @@ export async function POST(request: Request) {
       // Surface key medical fields if present: patient, DOB, provider, facility
       try {
         const full = lines.join("\n");
-        const patientMatch = full.match(/\bpatient\s*(name|id)?[:#\-]?\s*([A-Z][A-Za-z'\-]+\s+[A-Z][A-Za-z'\-]+)\b/i);
-        const dobMatch = full.match(/\b(dob|date\s*of\s*birth)[:#\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
-        const providerMatch = full.match(/\b(dr\.?|doctor)\s*([A-Z][A-Za-z\s\-']+)|\bprovider[:#\-]?\s*([A-Z][A-Za-z\s\-']+)/i);
+        const patientMatch = full.match(/\bpatient\s*(name|id)?[:#-]?\s*([A-Z][A-Za-z'-]+\s+[A-Z][A-Za-z'-]+)\b/i);
+        const dobMatch = full.match(/\b(dob|date\s*of\s*birth)[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
+        const providerMatch = full.match(/\b(dr\.?|doctor)\s*([A-Z][A-Za-z\s\-']+)|\bprovider[:#-]?\s*([A-Z][A-Za-z\s\-']+)/i);
         const facilityMatch = full.match(/\b(ascension|sacred\s*heart|medical\s+group|clinic|hospital)[^\n]*\b/iu);
         const extras: string[] = [];
         if (patientMatch) extras.push(`Patient: ${(patientMatch[2] || "").trim()}`);
@@ -1965,7 +1965,7 @@ export async function POST(request: Request) {
       const safeDate = (s?: string | null) => {
         if (!s) return null;
         const d = new Date(s);
-        return isNaN(d.getTime()) ? null : d;
+        return Number.isNaN(d.getTime()) ? null : d;
       };
       
       finalTitle = (typeof llmImage.title === "string" && llmImage.title.trim()) ? llmImage.title.trim() : title;
@@ -2120,7 +2120,7 @@ export async function POST(request: Request) {
     // Clean up extra spaces
     finalTitle = finalTitle.replace(/\s{2,}/g, " ").trim();
     // Remove trailing punctuation that might be left
-    finalTitle = finalTitle.replace(/[,\.;:]+$/, "").trim();
+    finalTitle = finalTitle.replace(/[,.;:]+$/, "").trim();
 
     const isMedicalAppointment =
       /(appointment|appt)/i.test(raw) && /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw);
@@ -2129,7 +2129,7 @@ export async function POST(request: Request) {
     // and keep notes minimal (just the title line)
     if (isMedicalAppointment) {
       // If OpenAI already provided a well-formatted description, preserve it
-      const openAIHasProvider = ocrSource === "openai" && finalDescription && /Provider:.*Dr/i.test(finalDescription);
+      const _openAIHasProvider = ocrSource === "openai" && finalDescription && /Provider:.*Dr/i.test(finalDescription);
       // 1) Try to read appointment reason near the "Appointment" label
       const appIdx = lines.findIndex((l: string) => /^\s*appointment\s*$/i.test(l));
       let reasonLine: string | null = null;
@@ -2138,7 +2138,7 @@ export async function POST(request: Request) {
       }
       // 2) Fallback regexes for common reasons (including dental)
       const reasonMatch = (raw.match(/\b(dental\s+cleaning|teeth\s+cleaning|annual\s+visit|annual\s+physical|follow\s*-?\s*up|new\s*patient(\s*visit)?|consult(ation)?|check\s*-?\s*up|well(ness)?\s*visit|routine\s*(exam|visit|check(\s*-?\s*up)?)|cleaning)\b/i) || [])[0];
-      let apptTypeRaw = (reasonLine && reasonLine.trim()) || reasonMatch || "Doctor Appointment";
+      let apptTypeRaw = (reasonLine?.trim()) || reasonMatch || "Doctor Appointment";
       // Clean trailing codes (e.g., "Annual Visit 20")
       apptTypeRaw = apptTypeRaw.replace(/\b\d+\b/g, "").replace(/\s{2,}/g, " ").trim();
       const apptType = apptTypeRaw;
@@ -2158,14 +2158,14 @@ export async function POST(request: Request) {
       
       // c) NAME , MD|DO|NP... (uppercase or titlecase, handles hyphens)
       if (!provider) {
-        const provB = raw.match(/\b([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,4})\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C|FNP|ARNP|CNM|DDS|DMD)\b/i);
+        const provB = raw.match(/\b([A-Z][A-Za-z'-]+(?:\s+[A-Z][A-Za-z'-]+){1,4})\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C|FNP|ARNP|CNM|DDS|DMD)\b/i);
         if (provB) provider = (provB[1] || "").trim();
       }
       
       // d) The line immediately after reason (often provider)
       if (!provider && reasonLine) {
         const cand = (lines[appIdx + 2] || "").trim();
-        if (/^[A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,4}(\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C))?$/i.test(cand)) {
+        if (/^[A-Z][A-Za-z'-]+(?:\s+[A-Z][A-Za-z'-]+){1,4}(\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C))?$/i.test(cand)) {
           provider = cand.replace(/\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C)$/i, "").trim();
         }
       }
@@ -2215,7 +2215,7 @@ export async function POST(request: Request) {
       if (!openAIHasGoodDesc) {
         // If we found specific details, use them; otherwise just use a simple message
         if (descParts.length > 0) {
-          finalDescription = descParts.map(p => p.endsWith('.') ? p : p + '.').join("\n");
+          finalDescription = descParts.map(p => p.endsWith('.') ? p : `${p}.`).join("\n");
         } else {
           finalDescription = `${toTitle(apptType)}.`;
         }
@@ -2284,7 +2284,7 @@ export async function POST(request: Request) {
         const venueForSentence = venueLabel || locationForNarrative || finalAddress;
         // Extract name and age from title for description
         // Pattern: "Gemma's 7th Birthday Party" → name="Gemma", age="7th"
-        const nameMatch = finalTitle.match(/^([A-Z][A-Za-z’'\-]+)['’]s/i);
+        const nameMatch = finalTitle.match(/^([A-Z][A-Za-z’'-]+)['’]s/i);
         const ageOrdinalInTitle = finalTitle.match(/\b(\d{1,2})(st|nd|rd|th)\s+Birthday/i);
         let age = ageOrdinalInTitle ? `${ageOrdinalInTitle[1]}${ageOrdinalInTitle[2]}` : null;
         if (!age) {
@@ -2575,7 +2575,7 @@ export async function POST(request: Request) {
 
     // ---------------- Weekly practice schedule extraction ----------------
     const dayMentions = raw.match(/\b(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(rs(day)?)?|fri(day)?|sat(urday)?|sun(day)?)\b/gi) || [];
-    const hasTimeRange = /\d{1,2}:\d{2}\s*[\-–—]\s*\d{1,2}:\d{2}/.test(raw) || /\b\d{1,2}:\d{2}\b/.test(raw);
+    const hasTimeRange = /\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2}/.test(raw) || /\b\d{1,2}:\d{2}\b/.test(raw);
     const hasPracticeKeyword = /(practice|training|schedule|team)/i.test(raw);
     const looksLikePracticeSchedule = hasPracticeKeyword && hasTimeRange && dayMentions.length >= 4;
 
@@ -2621,7 +2621,7 @@ export async function POST(request: Request) {
         }
       }
 
-      if (llmPractice?.groups && llmPractice.groups.length) {
+      if (llmPractice?.groups?.length) {
         const locationHint = llmPractice?.timezoneHint || finalAddress || fieldsGuess.location || "";
         practiceTz = inferTimezoneFromAddress(locationHint || "") || tz;
         const builtGroups: typeof practiceGroups = [];
@@ -2857,12 +2857,12 @@ export async function POST(request: Request) {
         schedule.season = (llmSched.season as any) || schedule.season;
 
         // Away meet geocode disabled (no external lookups)
-        const geocode = async (): Promise<string | null> => null;
+        const _geocode = async (): Promise<string | null> => null;
 
         const homeAddress = (llmSched.homeAddress as any) || "";
         const filled: any[] = [];
         for (const rawEv of llmSched.events) {
-          let ev = { ...rawEv } as any;
+          const ev = { ...rawEv } as any;
           const t = String(ev.title || "");
           const isAway = /\bat\b/i.test(t) && !/\bvs\.?\b/i.test(t);
           if (!ev.location) {
@@ -2871,7 +2871,7 @@ export async function POST(request: Request) {
             } else {
               // Try to infer opponent from title after 'at'
               const m = t.split(/\bat\b/i)[1];
-              const opponent = m ? m.replace(/\*/g, "").trim() : "";
+              const _opponent = m ? m.replace(/\*/g, "").trim() : "";
               // External venue lookup removed; leave location empty when unknown
             }
           }
@@ -2911,7 +2911,7 @@ export async function POST(request: Request) {
             // stop at obvious footer legend
             if (/home\b|away\b|mac\s*meets?/i.test(s)) break;
             if (/^\s*$/.test(s)) break;
-            text += "\n" + s;
+            text += `\n${s}`;
             j++;
           }
           i = j - 1;
@@ -2968,7 +2968,7 @@ export async function POST(request: Request) {
         if (typeof monthIndex !== "number") continue;
         const nowYear = new Date().getFullYear();
         const seasonYear = season ? Number(season) : nowYear;
-        let year = seasonYear;
+        const year = seasonYear;
         // If month is Jan/Feb/Mar and season likely spans academic year, keep seasonYear
         const dateLocal = new Date(Date.UTC(year, monthIndex, b.day, 0, 0, 0));
 
@@ -2990,7 +2990,7 @@ export async function POST(request: Request) {
         }
 
         const prettyOpp = opp.label.replace(/\s{2,}/g, " ");
-        const evTitle = `${schedule.homeTeam ? schedule.homeTeam + " " : ""}Gymnastics: ${opp.homeAway === "home" ? "vs" : "at"} ${prettyOpp}`.trim();
+        const evTitle = `${schedule.homeTeam ? `${schedule.homeTeam} ` : ""}Gymnastics: ${opp.homeAway === "home" ? "vs" : "at"} ${prettyOpp}`.trim();
 
         // Push both schedule game (semantic) and normalized event
         schedule.games.push({
@@ -3001,8 +3001,8 @@ export async function POST(request: Request) {
 
         events.push({
           title: evTitle,
-          start: startISO + "T00:00:00.000Z",
-          end: endISO + "T00:00:00.000Z",
+          start: `${startISO}T00:00:00.000Z`,
+          end: `${endISO}T00:00:00.000Z`,
           allDay: true,
           timezone: tz,
           location,
@@ -3031,9 +3031,9 @@ export async function POST(request: Request) {
     }
 
     // --- Category detection ---
-    const detectCategory = (fullText: string, sched: any, guess: any): string | null => {
+    const detectCategory = (fullText: string, _sched: any, _guess: any): string | null => {
       try {
-        const text = (fullText || "").toLowerCase();
+        const _text = (fullText || "").toLowerCase();
         // Football handling removed
         // Doctor/Dentist/Clinic appointments
         const isDoctorLike = /(doctor|dr\.|dentist|dental|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam|ascension|sacred\s*heart)/i.test(fullText);
@@ -3088,7 +3088,7 @@ export async function POST(request: Request) {
               headers: { cookie: requestCookie },
             } as any).catch(() => null);
             const plan =
-              profileRes && profileRes.ok
+              profileRes?.ok
                 ? (await profileRes.json().catch(() => ({}))).subscriptionPlan
                 : null;
             if (!plan || plan === "free") {

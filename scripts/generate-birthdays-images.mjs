@@ -17,7 +17,7 @@ const birthdaysTemplateSourcePath = path.join(
 );
 
 function getArg(name, fallback = null) {
-  const ix = process.argv.findIndex((a) => a === name || a.startsWith(name + "="));
+  const ix = process.argv.findIndex((a) => a === name || a.startsWith(`${name}=`));
   if (ix === -1) return fallback;
   const val = process.argv[ix].split("=")[1];
   return val ?? fallback;
@@ -68,7 +68,7 @@ async function generateImage(prompt, size = "1792x1024", retries = 3) {
         error.code === 8; // Google gRPC rate limit
 
       if (isRateLimit && attempt < retries) {
-        const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff
+        const waitTime = 2 ** attempt * 1000; // Exponential backoff
         console.log(`  Rate limited, retrying in ${waitTime}ms... (attempt ${attempt}/${retries})`);
         await new Promise((resolve) => setTimeout(resolve, waitTime));
         continue;

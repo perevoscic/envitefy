@@ -329,9 +329,9 @@ export default function BackgroundSlider({
       {/* Track (above slot, below overlay) */}
       <div
         className={
-          (orientation === "vertical"
+          `${orientation === "vertical"
             ? "h-full w-full flex flex-col"
-            : "h-full w-full flex") + " relative z-[2]"
+            : "h-full w-full flex"} relative z-[2]`
         }
         style={{
           transform:

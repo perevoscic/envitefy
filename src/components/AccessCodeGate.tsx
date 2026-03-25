@@ -36,7 +36,7 @@ export default function AccessCodeGate({
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError((payload && payload.error) || "That code did not match.");
+        setError((payload?.error) || "That code did not match.");
         setSubmitting(false);
         return;
       }

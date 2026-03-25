@@ -947,7 +947,7 @@ function getEventTypeStats(
     .sort((a, b) => b.count - a.count);
 }
 
-function Th({ children }: { children: any }) {
+function _Th({ children }: { children: any }) {
   return (
     <th className="text-left font-semibold px-4 py-3 text-foreground/80 text-xs uppercase tracking-wider">
       {children}
@@ -955,7 +955,7 @@ function Th({ children }: { children: any }) {
   );
 }
 
-function Td({ children, className }: { children: any; className?: string }) {
+function _Td({ children, className }: { children: any; className?: string }) {
   return (
     <td className={`px-4 py-3 text-muted-foreground ${className || ""}`}>
       {children}

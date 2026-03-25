@@ -5,7 +5,6 @@ import {
   attachPromoCodeToGiftOrder,
   createGiftPromoCode,
   extendUserSubscriptionByMonths,
-  getGiftOrderByCheckoutSessionId,
   getGiftOrderById,
   getGiftOrderByPaymentIntentId,
   getUserByEmail,

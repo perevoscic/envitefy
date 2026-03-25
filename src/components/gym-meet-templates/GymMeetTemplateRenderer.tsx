@@ -2,7 +2,6 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   resolveGymMeetTemplateId,
@@ -124,7 +123,6 @@ export default function GymMeetTemplateRenderer(props: any) {
       return <WeekendJourneyTemplate {...props} />;
     case "scouting-report":
       return <ScoutingReportTemplate {...props} />;
-    case "elite-athlete":
     default:
       return <EliteAthleteTemplate {...props} />;
   }

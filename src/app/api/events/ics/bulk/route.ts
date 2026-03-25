@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NormalizedEvent } from "@/lib/mappers";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 
 export const runtime = "nodejs";
 
@@ -56,7 +56,7 @@ function foldLine(input: string): string {
     // try not to break multi-byte chars
     while (end > i && (bytes[end] & 0b11000000) === 0b10000000) end--;
     const chunk = new TextDecoder().decode(bytes.slice(i, end));
-    parts.push(parts.length === 0 ? chunk : " " + chunk);
+    parts.push(parts.length === 0 ? chunk : ` ${chunk}`);
     i = end;
   }
   return parts.join("\r\n");
@@ -111,7 +111,7 @@ function buildIcs(events: NormalizedEvent[]): string {
   }
 
   lines.push("END:VCALENDAR");
-  return lines.join("\r\n") + "\r\n";
+  return `${lines.join("\r\n")}\r\n`;
 }
 
 export async function POST(request: NextRequest) {
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No events provided" }, { status: 400 });
     }
     const ics = buildIcs(events);
-    const filename = (body?.filename || "events") + ".ics";
+    const filename = `${body?.filename || "events"}.ics`;
     return new NextResponse(ics, {
       status: 200,
       headers: {

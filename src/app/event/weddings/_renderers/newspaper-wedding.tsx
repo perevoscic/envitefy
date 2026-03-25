@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Camera } from "lucide-react";
 import { EventData, ThemeConfig } from "./content-sections";
 
@@ -16,7 +16,7 @@ const buildNames = (event: EventData) => {
   return "Your Names";
 };
 
-const firstImage = (event: EventData, fallback?: string) =>
+const _firstImage = (event: EventData, fallback?: string) =>
   event.photos?.[0] ||
   event.gallery?.[0]?.url ||
   event.travel ||

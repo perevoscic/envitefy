@@ -59,9 +59,9 @@ export default function SmartSignupWizard({
 }: Props) {
   const [step, setStep] = useState<StepKey>(0);
   const [showBasicsErrors, setShowBasicsErrors] = useState(false);
-  const { data: session } = useSession();
+  useSession();
 
-  const theme = useMemo(
+  const _theme = useMemo(
     () => getEventTheme((form.description || form.title || "") as string),
     [form.title, form.description]
   );

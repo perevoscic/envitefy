@@ -1,5 +1,5 @@
-import React from "react";
-import { Clock, Users, MapPin, Coffee, Gift, ImageIcon } from "lucide-react";
+
+import { Clock, Users, MapPin, Coffee, Gift, } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
 
 type Props = {
@@ -150,14 +150,14 @@ const formatDate = (dateStr?: string) => {
     const ones = year % 10;
     let yearText = "";
     if (thousands > 0) {
-      yearText += yearWords[thousands] + " Thousand ";
+      yearText += `${yearWords[thousands]} Thousand `;
     }
     if (hundreds > 0) {
-      yearText += yearWords[hundreds] + " Hundred ";
+      yearText += `${yearWords[hundreds]} Hundred `;
     }
     if (tens >= 2) {
       yearText +=
-        [
+        `${[
           "",
           "",
           "Twenty",
@@ -168,12 +168,12 @@ const formatDate = (dateStr?: string) => {
           "Seventy",
           "Eighty",
           "Ninety",
-        ][tens] + " ";
+        ][tens]} `;
     }
     if (tens === 1) {
-      yearText += yearWords[10 + ones] + " ";
+      yearText += `${yearWords[10 + ones]} `;
     } else if (ones > 0) {
-      yearText += yearWords[ones] + " ";
+      yearText += `${yearWords[ones]} `;
     }
     yearText = yearText.trim() || "Two Thousand Twenty Five";
 

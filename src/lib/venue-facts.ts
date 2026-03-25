@@ -7,7 +7,7 @@ export type SanitizeVenueFactOptions = {
   excludePatterns?: RegExp[];
 };
 
-const BULLET_PREFIX_RE = /^[\-\u2022*]+\s*/;
+const BULLET_PREFIX_RE = /^[-\u2022*]+\s*/;
 const CONTINUATION_START_RE =
   /^(and|or|but|to|for|with|in|on|at|near|by|of|the|a|an|available|entrance|registration|convention center|guest services|competition area|awards area|located|will|is|are)\b/i;
 const STRONG_VENUE_ANCHOR_RE =
@@ -39,7 +39,7 @@ function splitLineFragments(line: string): string[] {
 function containsInvalidSymbols(value: string): boolean {
   const sample = safeText(value);
   if (!sample) return true;
-  const invalidChars = (sample.match(/[^A-Za-z0-9\s.,:;'"()\-\/&#]/g) || []).length;
+  const invalidChars = (sample.match(/[^A-Za-z0-9\s.,:;'"()\-/&#]/g) || []).length;
   const ratio = invalidChars / Math.max(sample.length, 1);
   return ratio > 0.18;
 }

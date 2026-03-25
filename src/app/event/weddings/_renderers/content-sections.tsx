@@ -1,4 +1,4 @@
-import React from "react";
+
 import Image from "next/image";
 import { Share2 } from "lucide-react";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
@@ -65,7 +65,7 @@ export const getLuminance = (hex: string): number => {
   const g = parseInt(normalized.slice(2, 4), 16) / 255;
   const b = parseInt(normalized.slice(4, 6), 16) / 255;
   const channel = (c: number) =>
-    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 };
 

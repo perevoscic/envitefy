@@ -70,7 +70,7 @@ export async function GET(req: Request) {
     if (cursor) {
       try {
         const obj = JSON.parse(Buffer.from(cursor, "base64").toString("utf8"));
-        if (obj && obj.created_at && obj.id) {
+        if (obj?.created_at && obj.id) {
           createdAfterClause = " and (created_at, id) < ($4::timestamptz, $5::uuid) ";
           values.push(obj.created_at, obj.id);
         }

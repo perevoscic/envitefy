@@ -6,8 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   ClipboardList,
   Users,
-  Home,
-  Plane,
   MapPin,
   Clock,
   Phone,
@@ -556,7 +554,7 @@ const eventsSection = {
     const fmtTime = (t?: string) => {
       if (!t) return "";
       const [h, m] = t.split(":");
-      const hour = parseInt(h);
+      const hour = parseInt(h, 10);
       const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${m} ${ampm}`;
@@ -884,7 +882,7 @@ const practiceSection = {
     const fmtTime = (t?: string) => {
       if (!t) return "";
       const [h, m] = t.split(":");
-      const hour = parseInt(h);
+      const hour = parseInt(h, 10);
       const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${m} ${ampm}`;
@@ -1532,7 +1530,7 @@ const gearSection = {
   },
 };
 
-function createSimpleCustomizePage(config: SimpleTemplateConfig) {
+function _createSimpleCustomizePage(config: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
     const router = useRouter();

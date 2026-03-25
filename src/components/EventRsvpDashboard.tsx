@@ -112,7 +112,7 @@ export default function EventRsvpDashboard({
     return null;
   }
 
-  const percentage =
+  const _percentage =
     displayStats.numberOfGuests > 0
       ? Math.round((displayStats.filled / displayStats.numberOfGuests) * 100)
       : 0;
