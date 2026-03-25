@@ -301,6 +301,7 @@ export default function Dashboard({
   const {
     dashboardData: cachedDashboardData,
     dashboardLoading,
+    refreshDashboard,
     invalidateEventCache,
     setDashboardMetricsCache,
   } = useEventCache();
@@ -309,6 +310,11 @@ export default function Dashboard({
   useEffect(() => {
     scanStatusRef.current = scanStatus;
   }, [scanStatus]);
+
+  useEffect(() => {
+    if (!isSignedIn || dashboardData || dashboardLoading) return;
+    void refreshDashboard();
+  }, [dashboardData, dashboardLoading, isSignedIn, refreshDashboard]);
 
   useEffect(() => {
     if (!isSignedIn) {

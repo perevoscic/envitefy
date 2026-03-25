@@ -77,6 +77,11 @@ type EventCacheInvalidateDetail = {
   source?: string;
 };
 
+type EventCacheRefreshOptions = {
+  force?: boolean;
+  includeDashboard?: boolean;
+};
+
 type EventCacheContextValue = {
   historySidebarItems: HistoryRow[];
   historyDiagnostics: HistoryDiagnostics | null;
@@ -86,12 +91,13 @@ type EventCacheContextValue = {
   isHydrated: boolean;
   refreshHistory: (opts?: { force?: boolean }) => Promise<void>;
   refreshDashboard: (opts?: { force?: boolean }) => Promise<void>;
-  refreshAll: (opts?: { force?: boolean }) => Promise<void>;
+  refreshAll: (opts?: EventCacheRefreshOptions) => Promise<void>;
   invalidateEventCache: (detail?: EventCacheInvalidateDetail) => void;
   setDashboardMetricsCache: (metrics: DashboardMetricsCache | null) => void;
 };
 
 const EventCacheContext = createContext<EventCacheContextValue | null>(null);
+const dashboardRefreshInflight = new Map<string, Promise<void>>();
 
 function sortHistoryRows(rows: HistoryRow[]): HistoryRow[] {
   return [...rows].sort((a, b) => {
@@ -160,6 +166,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
 
   const historyRef = useRef<HistoryRow[]>([]);
   const dashboardRef = useRef<DashboardPayload | null>(null);
+  const dashboardRefreshPromiseRef = useRef<Promise<void> | null>(null);
   const isHydratedRef = useRef(false);
   const refreshTimerRef = useRef<number | null>(null);
   const refreshPromiseRef = useRef<Promise<void> | null>(null);
@@ -193,6 +200,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     refreshPromiseRef.current = null;
     historyRef.current = [];
     dashboardRef.current = null;
+    dashboardRefreshPromiseRef.current = null;
     isHydratedRef.current = false;
     setHistorySidebarItems([]);
     setHistoryDiagnostics(null);
@@ -233,52 +241,71 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshDashboard = useCallback(async (opts?: { force?: boolean }) => {
-    setDashboardLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (opts?.force) params.set("refresh", "1");
-      if (process.env.NODE_ENV !== "production") params.set("timing", "1");
-      const qs = params.toString();
-      const res = await fetch(`/api/dashboard${qs ? `?${qs}` : ""}`, {
-        credentials: "include",
-        headers: { Accept: "application/json" },
-      });
-      if (!res.ok) {
+    const inflightKey = sessionIdentityKey || "__anonymous__";
+    const sharedInflight = dashboardRefreshInflight.get(inflightKey);
+    if (sharedInflight) {
+      return await sharedInflight;
+    }
+    if (dashboardRefreshPromiseRef.current) {
+      return await dashboardRefreshPromiseRef.current;
+    }
+    const refreshPromise = (async () => {
+      setDashboardLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (opts?.force) params.set("refresh", "1");
+        if (process.env.NODE_ENV !== "production") params.set("timing", "1");
+        const qs = params.toString();
+        const res = await fetch(`/api/dashboard${qs ? `?${qs}` : ""}`, {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) {
+          if (!dashboardRef.current) {
+            setDashboardData(null);
+          }
+          return;
+        }
+        const json = await res.json().catch(() => null);
+        if (isDashboardResponsePayload(json)) {
+          const degraded = Boolean((json as DashboardPayload).degraded);
+          if (degraded && dashboardRef.current?.nextEvent) {
+            setDashboardData({
+              ...dashboardRef.current,
+              metricsCache:
+                json.metricsCache ?? dashboardRef.current.metricsCache ?? null,
+            });
+            return;
+          }
+          setDashboardData(json);
+        } else if (!dashboardRef.current) {
+          setDashboardData(null);
+        }
+      } catch {
         if (!dashboardRef.current) {
           setDashboardData(null);
         }
-        return;
+      } finally {
+        setDashboardLoading(false);
       }
-      const json = await res.json().catch(() => null);
-      if (isDashboardResponsePayload(json)) {
-        const degraded = Boolean((json as DashboardPayload).degraded);
-        if (degraded && dashboardRef.current?.nextEvent) {
-          setDashboardData({
-            ...dashboardRef.current,
-            metricsCache:
-              json.metricsCache ?? dashboardRef.current.metricsCache ?? null,
-          });
-          return;
-        }
-        setDashboardData(json);
-      } else if (!dashboardRef.current) {
-        setDashboardData(null);
-      }
-    } catch {
-      if (!dashboardRef.current) {
-        setDashboardData(null);
-      }
+    })();
+    dashboardRefreshPromiseRef.current = refreshPromise;
+    dashboardRefreshInflight.set(inflightKey, refreshPromise);
+    try {
+      await refreshPromise;
     } finally {
-      setDashboardLoading(false);
+      dashboardRefreshPromiseRef.current = null;
+      dashboardRefreshInflight.delete(inflightKey);
     }
-  }, []);
+  }, [sessionIdentityKey]);
 
   const refreshAll = useCallback(
-    async (opts?: { force?: boolean }) => {
-      await Promise.all([
-        refreshHistory(opts),
-        refreshDashboard({ force: opts?.force }),
-      ]);
+    async (opts?: EventCacheRefreshOptions) => {
+      const work: Array<Promise<void>> = [refreshHistory(opts)];
+      if (opts?.includeDashboard || dashboardRef.current) {
+        work.push(refreshDashboard({ force: opts?.force }));
+      }
+      await Promise.all(work);
       setIsHydrated(true);
     },
     [refreshDashboard, refreshHistory],
@@ -293,7 +320,10 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       refreshTimerRef.current = window.setTimeout(() => {
         refreshTimerRef.current = null;
         if (refreshPromiseRef.current) return;
-        refreshPromiseRef.current = refreshAll({ force: detail?.force !== false })
+        refreshPromiseRef.current = refreshAll({
+          force: detail?.force !== false,
+          includeDashboard: Boolean(dashboardRef.current),
+        })
           .catch(() => undefined)
           .finally(() => {
             refreshPromiseRef.current = null;
@@ -338,7 +368,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     if (status !== "authenticated" || isHydratedRef.current) return;
     let cancelled = false;
     (async () => {
-      await Promise.all([refreshHistory(), refreshDashboard()]);
+      await refreshHistory();
       if (!cancelled) {
         setIsHydrated(true);
       }
