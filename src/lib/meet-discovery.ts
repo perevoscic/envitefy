@@ -24,6 +24,7 @@ import {
 } from "@/components/gym-meet-templates/registry";
 import { computeGymBuilderStatuses } from "@/lib/meet-discovery/status";
 import { parseDataUrlBase64 } from "@/utils/data-url";
+import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 
 export { computeGymBuilderStatuses };
 
@@ -35,6 +36,8 @@ export type DiscoverySourceInput =
       sizeBytes: number;
       dataUrl?: string | null;
       blobStored?: boolean;
+      /** Set when PDF was not persisted to blob; client must re-upload on parse/enrich. */
+      ephemeralFile?: boolean;
     }
   | {
       type: "url";
@@ -590,13 +593,6 @@ const LOW_TEXT_THRESHOLD = 200;
 const DEFAULT_DISCOVERY_CORE_BUDGET_MS = 25_000;
 const DEFAULT_DISCOVERY_ENRICH_BUDGET_MS = 45_000;
 const execFileAsync = promisify(execFile);
-let pdfRenderDepsPromise: Promise<
-  | {
-      pdfjs: any;
-      createCanvas: (width: number, height: number) => any;
-    }
-  | null
-> | null = null;
 let urlDiscoveryTestHooks: UrlDiscoveryTestHooks | null = null;
 
 export function createDiscoveryPerformance(
@@ -2418,65 +2414,12 @@ function getOpenAiClient(): OpenAI {
   return openAiClient;
 }
 
-async function getPdfRenderDeps() {
-  if (!pdfRenderDepsPromise) {
-    pdfRenderDepsPromise = Promise.all([
-      import("pdfjs-dist/legacy/build/pdf.mjs"),
-      import("@napi-rs/canvas"),
-    ])
-      .then(([pdfjs, canvasMod]) => ({
-        pdfjs,
-        createCanvas: (canvasMod as any).createCanvas,
-      }))
-      .catch(() => null);
-  }
-  return pdfRenderDepsPromise;
-}
-
-async function renderPdfPageToPng(
-  pdfBuffer: Buffer,
-  pageIndex: number,
-  scale = 1.75
-): Promise<Buffer | null> {
-  const deps = await getPdfRenderDeps();
-  if (!deps) return null;
-  try {
-    const loadingTask = deps.pdfjs.getDocument({
-      data: new Uint8Array(pdfBuffer),
-      useSystemFonts: true,
-      isEvalSupported: false,
-      disableFontFace: true,
-    });
-    const doc = await loadingTask.promise;
-    const page = await doc.getPage(pageIndex + 1);
-    const viewport = page.getViewport({ scale });
-    const width = Math.max(1, Math.ceil(viewport.width));
-    const height = Math.max(1, Math.ceil(viewport.height));
-    const canvas = deps.createCanvas(width, height);
-    const context = canvas.getContext("2d");
-    await page.render({ canvasContext: context, viewport }).promise;
-    const png = canvas.toBuffer("image/png");
-    if (typeof page.cleanup === "function") page.cleanup();
-    if (typeof doc.cleanup === "function") doc.cleanup();
-    if (typeof doc.destroy === "function") await doc.destroy();
-    return Buffer.isBuffer(png) ? png : Buffer.from(png);
-  } catch {
-    return null;
-  }
-}
-
 async function getPdfPageImage(
   pdfBuffer: Buffer,
   pageIndex: number,
   cache?: DiscoveryRequestCache
 ): Promise<Buffer | null> {
-  const render = async () => {
-    const sharpPageImage = await sharp(pdfBuffer, { density: 220, page: pageIndex })
-      .png()
-      .toBuffer()
-      .catch(() => null);
-    return sharpPageImage || (await renderPdfPageToPng(pdfBuffer, pageIndex));
-  };
+  const render = async () => rasterizePdfPageToPng(pdfBuffer, pageIndex);
   return cache
     ? getOrCreatePdfPageImage(cache, pdfBuffer, pageIndex, render)
     : render();
@@ -3567,22 +3510,32 @@ async function extractTextFromPdf(
   if (!ocrCandidate) {
     try {
       const ocrStartedAt = Date.now();
-      if (options?.performance) {
-        options.performance.ocrPageCount += 1;
+      const fallbackPages: string[] = [];
+      const maxFallbackPages = options?.mode === "core" ? 2 : 4;
+      for (let page = 0; page < maxFallbackPages; page += 1) {
+        if (Date.now() >= deadline) break;
+        const pageImage = await getPdfPageImage(buffer, page, options?.cache);
+        if (!pageImage) break;
+        if (options?.performance) {
+          options.performance.ocrPageCount += 1;
+        }
+        const text = cleanExtractedText(
+          await extractTextFromImage(pageImage, options?.cache)
+        );
+        if (text) fallbackPages.push(text);
       }
-      ocrCandidate = toCandidate(
-        await extractTextFromImage(buffer, options?.cache),
-        true
-      );
       if (options?.performance) {
         options.performance.ocrMs += Date.now() - ocrStartedAt;
       }
-      if (ocrCandidate.textQuality === "good" && ocrCandidate.text.length > 0) {
-        return {
-          ...ocrCandidate,
-          coachPageHints: workerCoachPageHints,
-          pages: workerExtraction.pages,
-        };
+      if (fallbackPages.length > 0) {
+        ocrCandidate = toCandidate(fallbackPages.join("\n\n"), true);
+        if (ocrCandidate.textQuality === "good" && ocrCandidate.text.length > 0) {
+          return {
+            ...ocrCandidate,
+            coachPageHints: workerCoachPageHints,
+            pages: workerExtraction.pages,
+          };
+        }
       }
     } catch {
       // Continue to best-candidate selection.

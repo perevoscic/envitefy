@@ -1,38 +1,33 @@
 // @ts-nocheck
 "use client";
 
-import React, {
-  useCallback,
-  useMemo,
-  useState,
-  useEffect,
-} from "react";
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
+  CheckSquare,
   ChevronLeft,
+  ChevronRight,
   Edit2,
   Image as ImageIcon,
+  Link as LinkIcon,
+  MapPin,
   Menu,
   Palette,
-  Type,
-  CheckSquare,
-  ChevronRight,
   Share2,
+  Type,
   Upload,
-  MapPin,
-  Link as LinkIcon,
 } from "lucide-react";
-import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
-import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { buildEventPath } from "@/utils/event-url";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
-import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
+import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   getGymMeetTemplateMeta,
   isGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
+import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
+import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
+import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { buildEventPath } from "@/utils/event-url";
 import { resolveFootballSeasonTemplateChrome } from "./footballSeasonTemplateTheme";
 
 type FieldSpec = {
@@ -112,8 +107,7 @@ const FONT_SIZE_OPTIONS = [
   { id: "large", label: "Large", className: "text-5xl md:text-6xl" },
 ];
 
-const generateRosterPlayerId = () =>
-  `player-${Math.random().toString(36).slice(2, 9)}`;
+const generateRosterPlayerId = () => `player-${Math.random().toString(36).slice(2, 9)}`;
 
 const normalizeRosterSection = (section: any) => {
   if (!section || typeof section !== "object") return section;
@@ -122,11 +116,7 @@ const normalizeRosterSection = (section: any) => {
         if (player?.id) return player;
         return {
           ...(player || {}),
-          id:
-            player?.playerId ||
-            player?.athleteId ||
-            player?.name ||
-            generateRosterPlayerId(),
+          id: player?.playerId || player?.athleteId || player?.name || generateRosterPlayerId(),
         };
       })
     : section.players;
@@ -158,8 +148,7 @@ const cloneState = <T,>(value: T): T => {
   }
 };
 
-const safeString = (value: unknown): string =>
-  typeof value === "string" ? value.trim() : "";
+const safeString = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
 const InputGroup = ({
   label,
@@ -229,9 +218,7 @@ const FootballSeasonSectionCard = ({
   theme: any;
   className?: string;
   children: React.ReactNode;
-}) => (
-  <div className={`${theme.sectionCardClass} ${className}`}>{children}</div>
-);
+}) => <div className={`${theme.sectionCardClass} ${className}`}>{children}</div>;
 
 const FootballSeasonSectionNav = ({
   theme,
@@ -317,8 +304,8 @@ const FootballSeasonHeader = ({
             className={`max-w-2xl text-sm leading-relaxed md:text-base ${theme.mutedClass}`}
             style={bodyShadow}
           >
-            A gym-style builder shell with the same template selector pipeline
-            and side-panel editing flow as the gymnastics builder.
+            A gym-style builder shell with the same template selector pipeline and side-panel
+            editing flow as the gymnastics builder.
           </p>
         </div>
 
@@ -336,9 +323,7 @@ const FootballSeasonHeader = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <FootballSeasonMutedBadge theme={theme}>
-            Theme: {templateName}
-          </FootballSeasonMutedBadge>
+          <FootballSeasonMutedBadge theme={theme}>Theme: {templateName}</FootballSeasonMutedBadge>
           <FootballSeasonMutedBadge theme={theme}>
             Size: {selectedSizeLabel}
           </FootballSeasonMutedBadge>
@@ -355,11 +340,7 @@ const FootballSeasonHeader = ({
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/35 via-transparent to-white/5" />
             {heroSrc ? (
-              <img
-                src={heroSrc}
-                alt="Hero"
-                className="h-full w-full object-cover"
-              />
+              <img src={heroSrc} alt="Hero" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full items-center justify-center bg-white/40">
                 <div className="text-center">
@@ -375,23 +356,26 @@ const FootballSeasonHeader = ({
             <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white/55 to-transparent" />
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2">
-            <FootballSeasonSectionCard theme={theme} className="px-3 py-3 text-center text-xs font-semibold">
+            <FootballSeasonSectionCard
+              theme={theme}
+              className="px-3 py-3 text-center text-xs font-semibold"
+            >
               Theme
-              <div className="mt-1 text-[11px] font-medium text-slate-500">
-                {templateName}
-              </div>
+              <div className="mt-1 text-[11px] font-medium text-slate-500">{templateName}</div>
             </FootballSeasonSectionCard>
-            <FootballSeasonSectionCard theme={theme} className="px-3 py-3 text-center text-xs font-semibold">
+            <FootballSeasonSectionCard
+              theme={theme}
+              className="px-3 py-3 text-center text-xs font-semibold"
+            >
               Typography
-              <div className="mt-1 text-[11px] font-medium text-slate-500">
-                {selectedSizeLabel}
-              </div>
+              <div className="mt-1 text-[11px] font-medium text-slate-500">{selectedSizeLabel}</div>
             </FootballSeasonSectionCard>
-            <FootballSeasonSectionCard theme={theme} className="px-3 py-3 text-center text-xs font-semibold">
+            <FootballSeasonSectionCard
+              theme={theme}
+              className="px-3 py-3 text-center text-xs font-semibold"
+            >
               Preview
-              <div className="mt-1 text-[11px] font-medium text-slate-500">
-                Live update
-              </div>
+              <div className="mt-1 text-[11px] font-medium text-slate-500">Live update</div>
             </FootballSeasonSectionCard>
           </div>
         </div>
@@ -427,10 +411,7 @@ const FootballSeasonPreviewSection = ({
   id: string;
   children: React.ReactNode;
 }) => (
-  <section
-    id={id}
-    className={`relative overflow-hidden scroll-mt-28 ${theme.sectionClass}`}
-  >
+  <section id={id} className={`relative overflow-hidden scroll-mt-28 ${theme.sectionClass}`}>
     <div className="relative">{children}</div>
   </section>
 );
@@ -514,33 +495,26 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         config.detailFields.map((f) => [
           f.key,
           config.prefill?.extra?.[f.key] ?? (f.placeholder || ""),
-        ])
+        ]),
       ),
     }));
     const [advancedState, setAdvancedState] = useState(() => {
       const entries =
-        config.advancedSections?.map((section) => [
-          section.id,
-          section.initialState,
-        ]) || [];
+        config.advancedSections?.map((section) => [section.id, section.initialState]) || [];
       return Object.fromEntries(entries);
     });
-    const [pageTemplateId, setPageTemplateId] = useState(
-      DEFAULT_GYM_MEET_TEMPLATE_ID
-    );
+    const [pageTemplateId, setPageTemplateId] = useState(DEFAULT_GYM_MEET_TEMPLATE_ID);
     const [activeView, setActiveView] = useState<string>("main");
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [_rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
-    const [initializingEdit, setInitializingEdit] = useState(
-      Boolean(editEventId)
-    );
+    const [initializingEdit, setInitializingEdit] = useState(Boolean(editEventId));
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
     const [discoverError, setDiscoverError] = useState("");
-    const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<
-      Record<string, any> | null
-    >(null);
+    const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<Record<string, any> | null>(
+      null,
+    );
     const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(false);
     const {
       mobileMenuOpen,
@@ -581,18 +555,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             .toLowerCase()
             .trim();
           const existingDiscoverySource =
-            existing?.discoverySource &&
-            typeof existing.discoverySource === "object"
+            existing?.discoverySource && typeof existing.discoverySource === "object"
               ? (existing.discoverySource as Record<string, any>)
               : null;
           setLoadedDiscoverySource(existingDiscoverySource);
           setIsDiscoveryEdit(
             existingCreatedVia === "football-discovery" ||
-              safeString(existingDiscoverySource?.workflow) === "football"
+              safeString(existingDiscoverySource?.workflow) === "football",
           );
 
-          const startIso =
-            existing.start || existing.startISO || existing.startIso;
+          const startIso = existing.start || existing.startISO || existing.startIso;
           let loadedDate = data.date;
           let loadedTime = data.time;
           if (startIso) {
@@ -605,7 +577,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           const accessControl = existing.accessControl || {};
           const hasPasscode = Boolean(
-            accessControl?.passcodeHash || accessControl?.requirePasscode
+            accessControl?.passcodeHash || accessControl?.requirePasscode,
           );
 
           setData((prev) => ({
@@ -619,9 +591,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             details: existing.details || existing.description || prev.details,
             hero: existing.heroImage || existing.hero || prev.hero,
             rsvpEnabled:
-              typeof existing.rsvpEnabled === "boolean"
-                ? existing.rsvpEnabled
-                : prev.rsvpEnabled,
+              typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : prev.rsvpEnabled,
             rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
             fontSize: existing.fontSize || prev.fontSize,
             passcodeRequired: hasPasscode,
@@ -638,8 +608,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existing.customFields?.advancedSections ||
             existing.advanced ||
             {};
-          const normalizedAdvanced =
-            normalizeAdvancedSectionsForStorage(incomingAdvanced);
+          const normalizedAdvanced = normalizeAdvancedSectionsForStorage(incomingAdvanced);
           if (normalizedAdvanced && Object.keys(normalizedAdvanced).length) {
             setAdvancedState((prev) => ({
               ...prev,
@@ -655,7 +624,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           setPageTemplateId(
             isGymMeetTemplateId(incomingTemplateId)
               ? incomingTemplateId
-              : DEFAULT_GYM_MEET_TEMPLATE_ID
+              : DEFAULT_GYM_MEET_TEMPLATE_ID,
           );
         } catch {
           // ignore to keep edit usable
@@ -667,18 +636,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editEventId]);
 
-    const currentTemplate = useMemo(
-      () => getGymMeetTemplateMeta(pageTemplateId),
-      [pageTemplateId]
-    );
+    const currentTemplate = useMemo(() => getGymMeetTemplateMeta(pageTemplateId), [pageTemplateId]);
     const templateTheme = useMemo(
       () => resolveFootballSeasonTemplateChrome(pageTemplateId),
-      [pageTemplateId]
+      [pageTemplateId],
     );
     const templateTypography = templateTheme.titleTypography;
     const selectedSize =
-      FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
-      FONT_SIZE_OPTIONS[1];
+      FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) || FONT_SIZE_OPTIONS[1];
 
     useEffect(() => {
       if (!isEmbed || !editEventId) return;
@@ -697,8 +662,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               details: data.details,
               heroImage: data.hero || undefined,
               hero: data.hero || undefined,
-              venue:
-                data.venue || data.extra?.stadium || data.extra?.stadiumAddress,
+              venue: data.venue || data.extra?.stadium || data.extra?.stadiumAddress,
               date: data.date,
               time: data.time,
               rsvpEnabled: data.rsvpEnabled,
@@ -718,7 +682,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               extra: data.extra,
             },
           },
-          "*"
+          "*",
         );
       } catch {
         // Best effort only for live preview.
@@ -784,14 +748,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       templateTheme.accentClass || (isDarkBackground ? "text-white" : "text-slate-700");
     const usesLightText =
       /text-(white|slate-50|neutral-50|gray-50|amber-50|cyan-50|indigo-50|emerald-50|sky-50|stone-50|zinc-50)/.test(
-        textClass
+        textClass,
       ) || isDarkBackground;
-    const headingShadow = usesLightText
-      ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" }
-      : undefined;
-    const bodyShadow = usesLightText
-      ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
-      : undefined;
+    const headingShadow = usesLightText ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" } : undefined;
+    const bodyShadow = usesLightText ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" } : undefined;
     const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
     const heroHeadingFontStyle = {
       ...templateTypography.fontStyle,
@@ -804,8 +764,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ...(templateTheme.sectionTitleStyle || {}),
       ...(headingShadow || {}),
     };
-    const headingSizeClass =
-      selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
+    const headingSizeClass = selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
     const advancedSectionPreviewContext = useMemo(
       () => ({
@@ -835,7 +794,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         templateTypography.cardClassName,
         textClass,
         titleColor,
-      ]
+      ],
     );
 
     const advancedSectionPreviews = useMemo(
@@ -855,18 +814,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           })
           .filter(
             (
-              entry
+              entry,
             ): entry is {
               section: AdvancedSectionSpec;
               previewNode: React.ReactNode;
-            } => entry !== null
+            } => entry !== null,
           ),
-      [advancedSectionPreviewContext, advancedState, config.advancedSections]
+      [advancedSectionPreviewContext, advancedState, config.advancedSections],
     );
 
-    const locationParts = [data.venue, data.city, data.state]
-      .filter(Boolean)
-      .join(", ");
+    const locationParts = [data.venue, data.city, data.state].filter(Boolean).join(", ");
     const addressLine = data.extra?.stadiumAddress || data.extra?.address || "";
 
     const hasGames = (advancedState?.games?.games?.length ?? 0) > 0;
@@ -875,7 +832,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const hasLogistics = Boolean(
       advancedState?.logistics?.travelMode ||
         advancedState?.logistics?.callTime ||
-        advancedState?.logistics?.weatherPolicy
+        advancedState?.logistics?.weatherPolicy,
     );
     const hasGear = (advancedState?.gear?.items?.length ?? 0) > 0;
     const hasVolunteers = (advancedState?.volunteers?.slots?.length ?? 0) > 0;
@@ -894,20 +851,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           { id: "rsvp", label: "Attendance", enabled: hasRsvpSection },
           { id: "passcode", label: "Passcode", enabled: true },
         ].filter((item) => item.enabled),
-      [
-        hasGames,
-        hasGear,
-        hasLogistics,
-        hasPractice,
-        hasRoster,
-        hasRsvpSection,
-        hasVolunteers,
-      ]
+      [hasGames, hasGear, hasLogistics, hasPractice, hasRoster, hasRsvpSection, hasVolunteers],
     );
 
-    const [activeSection, setActiveSection] = useState<string>(
-      navItems[0]?.id || "details"
-    );
+    const [activeSection, setActiveSection] = useState<string>(navItems[0]?.id || "details");
 
     useEffect(() => {
       if (!navItems.length) return;
@@ -935,10 +882,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               const id = entry.target.id;
               if (id && navItems.some((i) => i.id === id)) {
                 setActiveSection(id);
-                if (
-                  typeof window !== "undefined" &&
-                  window.location.hash !== `#${id}`
-                ) {
+                if (typeof window !== "undefined" && window.location.hash !== `#${id}`) {
                   window.history.replaceState(null, "", `#${id}`);
                 }
               }
@@ -949,7 +893,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           root: null,
           rootMargin: "-25% 0px -60% 0px",
           threshold: 0,
-        }
+        },
       );
 
       const targets = navItems
@@ -962,22 +906,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return () => observer.disconnect();
     }, [navItems]);
 
-    const handleSectionSelect = useCallback(
-      (sectionId: string) => {
-        const el = document.getElementById(sectionId);
-        if (el) {
-          el.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
-        setActiveSection(sectionId);
-        if (typeof window !== "undefined") {
-          window.history.replaceState(null, "", `#${sectionId}`);
-        }
-      },
-      []
-    );
+    const handleSectionSelect = useCallback((sectionId: string) => {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+      setActiveSection(sectionId);
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", `#${sectionId}`);
+      }
+    }, []);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -990,8 +931,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const updateExtra = useCallback((key: string, value: string) => {
       setData((prev) => {
         const next = cloneState(prev || {});
-        const extra =
-          next.extra && typeof next.extra === "object" ? next.extra : {};
+        const extra = next.extra && typeof next.extra === "object" ? next.extra : {};
         next.extra = { ...extra, [key]: value };
         return next;
       });
@@ -1002,8 +942,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       menuDesc: config.rsvpCopy?.menuDesc || "Attendance settings.",
       editorTitle: config.rsvpCopy?.editorTitle || "Attendance",
       toggleLabel: config.rsvpCopy?.toggleLabel || "Enable attendance tracking",
-      deadlineLabel:
-        config.rsvpCopy?.deadlineLabel || "Attendance response deadline",
+      deadlineLabel: config.rsvpCopy?.deadlineLabel || "Attendance response deadline",
       helperText:
         config.rsvpCopy?.helperText ||
         "The attendance card in the preview updates with these settings.",
@@ -1033,8 +972,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               const blob = await response.blob();
               const reader = new FileReader();
               return await new Promise<string>((resolve, reject) => {
-                reader.onloadend = () =>
-                  resolve((reader.result as string) || config.defaultHero);
+                reader.onloadend = () => resolve((reader.result as string) || config.defaultHero);
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
               });
@@ -1046,8 +984,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         })();
 
         const currentSelectedSize =
-          FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
-          FONT_SIZE_OPTIONS[1];
+          FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) || FONT_SIZE_OPTIONS[1];
         const derivedFontId = templateTypography.id;
         const validFontSize = currentSelectedSize?.id || data.fontSize;
         const themeToSave = {
@@ -1059,10 +996,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           preview: currentTemplate?.previewClassName || "",
         };
         const addressToSave =
-          data.extra?.stadiumAddress ||
-          data.extra?.address ||
-          locationParts ||
-          undefined;
+          data.extra?.stadiumAddress || data.extra?.address || locationParts || undefined;
 
         const templateConfigForSave = {
           slug: config.slug,
@@ -1130,13 +1064,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   },
                 }
               : data.passcodeRequired === false
-              ? {
-                  accessControl: {
-                    mode: "public",
-                    requirePasscode: false,
-                  },
-                }
-              : {}),
+                ? {
+                    accessControl: {
+                      mode: "public",
+                      requirePasscode: false,
+                    },
+                  }
+                : {}),
           },
         };
 
@@ -1152,18 +1086,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             window.dispatchEvent(
               new CustomEvent("history:updated", {
                 detail: { id: editEventId },
-              })
+              }),
             );
           }
           const redirectUrl = buildEventPath(editEventId, payload.title, {
             updated: true,
             t: Date.now(),
           });
-          if (
-            isEmbed &&
-            typeof window !== "undefined" &&
-            (window as any).parent !== window
-          ) {
+          if (isEmbed && typeof window !== "undefined" && (window as any).parent !== window) {
             try {
               (window as any).parent.postMessage(
                 {
@@ -1171,7 +1101,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   eventId: editEventId,
                   redirectUrl,
                 },
-                window.location.origin
+                window.location.origin,
               );
             } catch {}
             return;
@@ -1196,7 +1126,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   created_at: (json as any)?.created_at || new Date().toISOString(),
                   data: payload.data,
                 },
-              })
+              }),
             );
           }
           router.push(buildEventPath(id, payload.title, { created: true }));
@@ -1247,9 +1177,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
       if (!start) start = new Date();
       const end = new Date(start.getTime() + 60 * 60 * 1000);
-      const location = [data.venue, data.city, data.state]
-        .filter(Boolean)
-        .join(", ");
+      const location = [data.venue, data.city, data.state].filter(Boolean).join(", ");
       const description = data.details || "";
       return { title, start, end, location, description };
     };
@@ -1293,13 +1221,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const handleShare = () => {
       const details = buildEventDetails();
-      const shareUrl =
-        typeof window !== "undefined" ? window.location.href : undefined;
-      if (
-        typeof navigator !== "undefined" &&
-        (navigator as any).share &&
-        shareUrl
-      ) {
+      const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
+      if (typeof navigator !== "undefined" && (navigator as any).share && shareUrl) {
         (navigator as any)
           .share({
             title: details.title,
@@ -1319,9 +1242,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const start = toGoogleDate(details.start);
       const end = toGoogleDate(details.end);
       const query = `action=TEMPLATE&text=${encodeURIComponent(
-        details.title
+        details.title,
       )}&dates=${start}/${end}&location=${encodeURIComponent(
-        details.location
+        details.location,
       )}&details=${encodeURIComponent(details.description || "")}`;
       const webUrl = `https://calendar.google.com/calendar/render?${query}`;
       const appUrl = `comgooglecalendar://?${query}`;
@@ -1331,22 +1254,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const handleOutlookCalendar = () => {
       const details = buildEventDetails();
       const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
-        details.title
-      )}&body=${encodeURIComponent(
-        details.description || ""
-      )}&location=${encodeURIComponent(
-        details.location
+        details.title,
+      )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
+        details.location,
       )}&startdt=${encodeURIComponent(
-        details.start.toISOString()
+        details.start.toISOString(),
       )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
       const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
-        details.title
-      )}&body=${encodeURIComponent(
-        details.description || ""
-      )}&location=${encodeURIComponent(
-        details.location
+        details.title,
+      )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
+        details.location,
       )}&startdt=${encodeURIComponent(
-        details.start.toISOString()
+        details.start.toISOString(),
       )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
       openWithAppFallback(appUrl, webUrl);
     };
@@ -1500,15 +1419,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         updateData,
         handleBackToMain,
         config.displayName,
-      ]
+      ],
     );
 
     const renderImagesEditor = () => (
-      <EditorLayout
-        title="Images"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title="Images" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-4">
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Hero Image
@@ -1516,11 +1431,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <div className="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:bg-slate-50 transition-colors relative">
             {data.hero ? (
               <div className="relative w-full h-40 rounded-lg overflow-hidden">
-                <img
-                  src={data.hero}
-                  alt="Hero"
-                  className="w-full h-full object-cover"
-                />
+                <img src={data.hero} alt="Hero" className="w-full h-full object-cover" />
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1537,12 +1448,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
                   <ImageIcon size={20} />
                 </div>
-                <p className="text-sm text-slate-600 mb-1">
-                  Upload header photo
-                </p>
-                <p className="text-xs text-slate-400">
-                  Recommended: 1600x900px
-                </p>
+                <p className="text-sm text-slate-600 mb-1">Upload header photo</p>
+                <p className="text-xs text-slate-400">Recommended: 1600x900px</p>
               </>
             )}
             <input
@@ -1557,25 +1464,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderDesignEditor = () => (
-      <EditorLayout
-        title="Design"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title="Design" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-4">
-          <TemplateSelector
-            value={pageTemplateId}
-            onChange={setPageTemplateId}
-          />
+          <TemplateSelector value={pageTemplateId} onChange={setPageTemplateId} />
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
                   Title Size
                 </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Controls the preview title hierarchy.
-                </p>
+                <p className="mt-1 text-sm text-slate-500">Controls the preview title hierarchy.</p>
               </div>
               <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                 {selectedSize.label}
@@ -1606,11 +1504,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderDetailsEditor = () => (
-      <EditorLayout
-        title="Details"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title="Details" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-4">
           <InputGroup
             label="Description"
@@ -1666,8 +1560,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
 
         const eventId = String(ingestJson.eventId);
+        const parseBody = new FormData();
+        parseBody.append("file", discoverFile);
         const parseRes = await fetch(`/api/parse/${eventId}`, {
           method: "POST",
+          body: parseBody,
           credentials: "include",
         });
         const parseJson = await parseRes.json().catch(() => ({}));
@@ -1676,24 +1573,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
         router.push(`/event/football/customize?edit=${eventId}`);
       } catch (err: any) {
-        setDiscoverError(
-          String(err?.message || err || "Failed to parse source")
-        );
+        setDiscoverError(String(err?.message || err || "Failed to parse source"));
       } finally {
         setDiscoverBusy(false);
       }
     }, [discoverBusy, discoverFile, router]);
 
     const renderDiscoverEditor = () => (
-      <EditorLayout
-        title="Upload to Prefill"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title="Upload to Prefill" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-4">
           <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
-            Upload a football packet, season schedule, roster sheet, or parent
-            memo. We will parse and prefill the football page builder.
+            Upload a football packet, season schedule, roster sheet, or parent memo. We will parse
+            and prefill the football page builder.
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
@@ -1709,9 +1600,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               className={baseInputClass}
             />
             {discoverFile ? (
-              <p className="text-xs text-slate-500">
-                Selected: {discoverFile.name}
-              </p>
+              <p className="text-xs text-slate-500">Selected: {discoverFile.name}</p>
             ) : null}
           </div>
           {discoverError ? (
@@ -1732,20 +1621,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderRsvpEditor = () => (
-      <EditorLayout
-        title={rsvpCopy.editorTitle}
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title={rsvpCopy.editorTitle} onBack={() => setActiveView("main")} showBack>
         <div className="space-y-6">
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <span className="font-medium text-slate-700 text-sm">
-              {rsvpCopy.toggleLabel}
-            </span>
+            <span className="font-medium text-slate-700 text-sm">{rsvpCopy.toggleLabel}</span>
             <button
-              onClick={() =>
-                setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))
-              }
+              onClick={() => setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))}
               className={`w-11 h-6 rounded-full transition-colors relative ${
                 data.rsvpEnabled ? "bg-indigo-600" : "bg-slate-300"
               }`}
@@ -1774,11 +1655,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderPasscodeEditor = () => (
-      <EditorLayout
-        title="Passcode"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title="Passcode" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-6">
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
             <div className="flex-1">
@@ -1793,9 +1670,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <input
                 type="checkbox"
                 checked={data.passcodeRequired}
-                onChange={(e) =>
-                  updateData("passcodeRequired", e.target.checked)
-                }
+                onChange={(e) => updateData("passcodeRequired", e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -1813,24 +1688,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           )}
 
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
-            <strong>How it works:</strong> Your event stays unlisted. Only
-            people with the link and access code can view it. Perfect for team
-            events - share the link and code in your team group chat.
+            <strong>How it works:</strong> Your event stays unlisted. Only people with the link and
+            access code can view it. Perfect for team events - share the link and code in your team
+            group chat.
           </div>
         </div>
       </EditorLayout>
     );
 
     const renderAdvancedEditor = (section: AdvancedSectionSpec) => (
-      <EditorLayout
-        title={section.menuTitle}
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title={section.menuTitle} onBack={() => setActiveView("main")} showBack>
         {section.renderEditor({
           state: advancedState?.[section.id],
-          setState: (updater: any) =>
-            setAdvancedSectionState(section.id, updater),
+          setState: (updater: any) => setAdvancedSectionState(section.id, updater),
           setActiveView,
           inputClass: baseInputClass,
           textareaClass: baseTextareaClass,
@@ -1865,9 +1735,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-100">
           <div className="text-center px-4 py-6 bg-white shadow rounded-lg border border-slate-200">
-            <p className="text-sm font-medium text-slate-700">
-              Loading your custom event…
-            </p>
+            <p className="text-sm font-medium text-slate-700">Loading your custom event…</p>
             <p className="text-xs text-slate-500 mt-1">
               Please wait while we restore your saved details.
             </p>
@@ -1879,9 +1747,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     return (
       <div
         className={`relative flex w-full bg-slate-100 font-sans text-slate-900 ${
-          isEmbed
-            ? "min-h-screen flex-col"
-            : "min-h-screen h-[100dvh] overflow-hidden"
+          isEmbed ? "min-h-screen flex-col" : "min-h-screen h-[100dvh] overflow-hidden"
         }`}
       >
         {!isEmbed && (
@@ -1893,11 +1759,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               overscrollBehavior: "contain",
             }}
           >
-          <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1120px] my-4 md:my-8 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
+            <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1120px] my-4 md:my-8 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
               <div className="mt-4 md:mt-6">
-                <FootballSeasonPreviewFrame
-                  theme={templateTheme}
-                >
+                <FootballSeasonPreviewFrame theme={templateTheme}>
                   <FootballSeasonHeader
                     theme={templateTheme}
                     title={data.title || config.displayName}
@@ -1921,10 +1785,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     />
                   </div>
 
-                  <FootballSeasonPreviewSection
-                    theme={templateTheme}
-                    id="details"
-                  >
+                  <FootballSeasonPreviewSection theme={templateTheme} id="details">
                     <h2
                       className={`${templateTypography.cardClassName} mb-3 text-2xl ${templateTheme.sectionTitleClass || accentClass}`}
                       style={sectionHeadingFontStyle}
@@ -1939,10 +1800,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         {data.details}
                       </p>
                     ) : (
-                      <p
-                        className={`text-sm opacity-70 ${textClass}`}
-                        style={bodyShadow}
-                      >
+                      <p className={`text-sm opacity-70 ${textClass}`} style={bodyShadow}>
                         Add a short description so guests know what to expect.
                       </p>
                     )}
@@ -1950,10 +1808,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       {config.detailFields.map((field) => {
                         const val = data.extra[field.key];
                         return (
-                          <FootballSeasonSectionCard
-                            key={field.key}
-                            theme={templateTheme}
-                          >
+                          <FootballSeasonSectionCard key={field.key} theme={templateTheme}>
                             <div
                               className={`text-xs uppercase tracking-wide opacity-80 ${textClass}`}
                               style={bodyShadow}
@@ -1983,10 +1838,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   ))}
 
                   {data.rsvpEnabled && (
-                    <FootballSeasonPreviewSection
-                      theme={templateTheme}
-                      id="rsvp"
-                    >
+                    <FootballSeasonPreviewSection theme={templateTheme} id="rsvp">
                       <h2
                         className={`${templateTypography.cardClassName} mb-6 text-2xl ${templateTheme.sectionTitleClass || accentClass}`}
                         style={sectionHeadingFontStyle}
@@ -2000,13 +1852,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                               <p className={`opacity-80 ${textClass}`}>
                                 {data.rsvpDeadline
                                   ? `Kindly respond by ${new Date(
-                                      data.rsvpDeadline
+                                      data.rsvpDeadline,
                                     ).toLocaleDateString()}`
                                   : "Please confirm attendance"}
                               </p>
                             </div>
                             <div>
-                              <label className={`mb-2 block text-xs font-bold uppercase tracking-wider opacity-70 ${textClass}`}>
+                              <label
+                                className={`mb-2 block text-xs font-bold uppercase tracking-wider opacity-70 ${textClass}`}
+                              >
                                 Full Name
                               </label>
                               <input
@@ -2095,9 +1949,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     </FootballSeasonPreviewSection>
                   )}
 
-                  <footer
-                    className={`mt-1 border-t border-white/10 py-8 text-center ${textClass}`}
-                  >
+                  <footer className={`mt-1 border-t border-white/10 py-8 text-center ${textClass}`}>
                     <a
                       href="https://envitefy.com"
                       target="_blank"
@@ -2201,16 +2053,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <ScrollHandoffContainer className="flex-1">
             {!isEmbed && (
               <div className="md:hidden sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
-              <button
-                onClick={closeMobileMenu}
-                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
-              >
-                <ChevronLeft size={14} />
-                Back to preview
-              </button>
-              <span className="text-sm font-semibold text-slate-700">
-                Customize
-              </span>
+                <button
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+                >
+                  <ChevronLeft size={14} />
+                  Back to preview
+                </button>
+                <span className="text-sm font-semibold text-slate-700">Customize</span>
               </div>
             )}
 
@@ -2225,10 +2075,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {activeView === "passcode" && renderPasscodeEditor()}
               {config.advancedSections?.map((section) =>
                 activeView === section.id ? (
-                  <React.Fragment key={section.id}>
-                    {renderAdvancedEditor(section)}
-                  </React.Fragment>
-                ) : null
+                  <React.Fragment key={section.id}>{renderAdvancedEditor(section)}</React.Fragment>
+                ) : null,
               )}
             </div>
           </ScrollHandoffContainer>
@@ -2244,9 +2092,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       (window as any).parent !== window
                     ) {
                       try {
-                        (window as any).parent.location.assign(
-                          `/event/${editEventId}`
-                        );
+                        (window as any).parent.location.assign(`/event/${editEventId}`);
                         return;
                       } catch {}
                     }
@@ -2269,8 +2115,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     ? "Saving..."
                     : "Publishing..."
                   : editEventId
-                  ? "Save"
-                  : "Publish"}
+                    ? "Save"
+                    : "Publish"}
               </button>
             </div>
           </div>
@@ -2297,9 +2143,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 // FOOTBALL SEASON MANAGEMENT - TYPES & HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
-import {
-  config,
-} from "@/components/event-templates/FootballSeasonTemplate";
+import { config } from "@/components/event-templates/FootballSeasonTemplate";
 
 const Page = createSimpleCustomizePage(config);
 export default Page;

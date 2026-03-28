@@ -1,8 +1,8 @@
 import * as chrono from "chrono-node";
-import sharp from "sharp";
-import { getVisionClient } from "@/lib/gcp";
 import { getServerSession } from "next-auth";
+import sharp from "sharp";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { corsJson, corsPreflight } from "@/lib/cors";
 import {
   deleteEventHistoryById,
   incrementCreditsByEmail,
@@ -11,9 +11,10 @@ import {
   upsertEventHistoryInputBlob,
 } from "@/lib/db";
 import { uploadDiscoveryInputToBlob } from "@/lib/discovery-input-storage";
-import { corsJson, corsPreflight } from "@/lib/cors";
-import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
 import { buildDefaultFootballDiscoveryData } from "@/lib/football-discovery";
+import { getVisionClient } from "@/lib/gcp";
+import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
+import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 
 export const runtime = "nodejs";
 const DISCOVERY_INGEST_LOG_PREFIX = "[discovery-ingest]";
@@ -33,7 +34,7 @@ async function handleDiscoveryIngest(
     workflow: "gymnastics" | "football";
     defaultTitle: string;
     buildBaseData: () => Record<string, any>;
-  }
+  },
 ) {
   const formData = await request.formData();
   const file = formData.get("file");
@@ -49,15 +50,11 @@ async function handleDiscoveryIngest(
     return corsJson(
       request,
       { error: "Provide either file or url for meet discovery" },
-      { status: 400 }
+      { status: 400 },
     );
   }
   if (hasFile && hasUrl) {
-    return corsJson(
-      request,
-      { error: "Use one input at a time (file or url)" },
-      { status: 400 }
-    );
+    return corsJson(request, { error: "Use one input at a time (file or url)" }, { status: 400 });
   }
 
   const userId = await getSessionUserId();
@@ -87,16 +84,18 @@ async function handleDiscoveryIngest(
       return corsJson(
         request,
         { error: "Unsupported file. Use PDF, JPG/JPEG, or PNG." },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const bytes = Buffer.from(await fileValue.arrayBuffer());
+    const isPdf = /pdf/i.test(mimeType) || /\.pdf$/i.test(fileValue.name || "");
     discoveryInput = {
       type: "file",
       fileName: fileValue.name || "upload",
       mimeType: mimeType || "application/octet-stream",
       sizeBytes: fileValue.size || bytes.length,
-      blobStored: true,
+      blobStored: !isPdf,
+      ...(isPdf ? { ephemeralFile: true as const } : {}),
     };
     title = fileValue.name?.replace(/\.[^.]+$/, "") || title;
 
@@ -124,38 +123,46 @@ async function handleDiscoveryIngest(
       title,
     });
 
-    try {
-      const { pathname, url } = await uploadDiscoveryInputToBlob({
-        eventId: row.id,
-        fileName: fileValue.name || "upload",
-        mimeType: mimeType || "application/octet-stream",
-        bytes,
-      });
-      await upsertEventHistoryInputBlob({
-        eventId: row.id,
-        mimeType: mimeType || "application/octet-stream",
-        fileName: fileValue.name || "upload",
-        sizeBytes: fileValue.size || bytes.length,
-        data: null,
-        storagePathname: pathname,
-        storageUrl: url,
-      });
-      console.log(`${DISCOVERY_INGEST_LOG_PREFIX} stored blob`, {
-        workflow: options.workflow,
-        eventId: row.id,
-        sizeBytes: fileValue.size || bytes.length,
-        storagePathname: pathname,
-      });
-    } catch (error) {
-      console.error(`${DISCOVERY_INGEST_LOG_PREFIX} blob write failed`, {
-        workflow: options.workflow,
-        eventId: row.id,
-        message: error instanceof Error ? error.message : String(error),
-      });
+    if (!isPdf) {
       try {
-        await deleteEventHistoryById(row.id);
-      } catch {}
-      throw error;
+        const { pathname, url } = await uploadDiscoveryInputToBlob({
+          eventId: row.id,
+          fileName: fileValue.name || "upload",
+          mimeType: mimeType || "application/octet-stream",
+          bytes,
+        });
+        await upsertEventHistoryInputBlob({
+          eventId: row.id,
+          mimeType: mimeType || "application/octet-stream",
+          fileName: fileValue.name || "upload",
+          sizeBytes: fileValue.size || bytes.length,
+          data: null,
+          storagePathname: pathname,
+          storageUrl: url,
+        });
+        console.log(`${DISCOVERY_INGEST_LOG_PREFIX} stored blob`, {
+          workflow: options.workflow,
+          eventId: row.id,
+          sizeBytes: fileValue.size || bytes.length,
+          storagePathname: pathname,
+        });
+      } catch (error) {
+        console.error(`${DISCOVERY_INGEST_LOG_PREFIX} blob write failed`, {
+          workflow: options.workflow,
+          eventId: row.id,
+          message: error instanceof Error ? error.message : String(error),
+        });
+        try {
+          await deleteEventHistoryById(row.id);
+        } catch {}
+        throw error;
+      }
+    } else {
+      console.log(`${DISCOVERY_INGEST_LOG_PREFIX} skipped blob store for PDF (ephemeral)`, {
+        workflow: options.workflow,
+        eventId: row.id,
+        sizeBytes: fileValue.size || bytes.length,
+      });
     }
 
     console.log(`${DISCOVERY_INGEST_LOG_PREFIX} request complete`, {
@@ -235,9 +242,21 @@ async function handleLegacyIngest(request: Request) {
   const inputBuffer = Buffer.from(fileArrayBuffer);
 
   let ocrBuffer: Buffer = inputBuffer;
-  if (!/pdf/i.test(mime)) {
-    // Preprocess for OCR (resize, grayscale, normalize)
-    ocrBuffer = await sharp(inputBuffer).resize(2000).grayscale().normalize().toBuffer();
+  if (/pdf/i.test(mime)) {
+    const pagePng = await rasterizePdfPageToPng(inputBuffer, 0);
+    if (!pagePng) {
+      return corsJson(
+        request,
+        { error: "Could not convert PDF to image for OCR" },
+        { status: 422 },
+      );
+    }
+    ocrBuffer = pagePng;
+  }
+  try {
+    ocrBuffer = await sharp(ocrBuffer).resize(2000).grayscale().normalize().toBuffer();
+  } catch {
+    // keep buffer as-is
   }
 
   const vision = getVisionClient();
@@ -249,10 +268,12 @@ async function handleLegacyIngest(request: Request) {
   const text = result.fullTextAnnotation?.text || result.textAnnotations?.[0]?.description || "";
   const raw = (text || "").replace(/\s+\n/g, "\n").trim();
 
-  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = raw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   const title =
-    lines.find((l) => l.length > 5 && !/rsvp|free entry|admission/i.test(l)) ||
-    "Event from flyer";
+    lines.find((l) => l.length > 5 && !/rsvp|free entry|admission/i.test(l)) || "Event from flyer";
 
   const parsed = chrono.parse(raw, new Date(), { forwardDate: true });
   let start: Date | null = null;
@@ -268,9 +289,7 @@ async function handleLegacyIngest(request: Request) {
 
   const locationLine =
     lines.find((l) =>
-      /\d{1,5}\s+\w+|\b(Auditorium|Center|Hall|Gym|Park|Room|Suite|Ave|St|Blvd|Rd)\b/i.test(
-        l
-      )
+      /\d{1,5}\s+\w+|\b(Auditorium|Center|Hall|Gym|Park|Room|Suite|Ave|St|Blvd|Rd)\b/i.test(l),
     ) || "";
 
   const tz = "America/Chicago";
@@ -285,13 +304,13 @@ async function handleLegacyIngest(request: Request) {
       const hasWedding =
         /(wedding|marriage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText);
       const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(
-        fullText
+        fullText,
       );
       if (hasWedding && !hasBirthday) return "Weddings";
       if (hasBirthday && !hasWedding) return "Birthdays";
       const isDoctorLike =
         /(doctor|dr\.|dentist|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam)/i.test(
-          fullText
+          fullText,
         );
       const hasAppt = /(appointment|appt)/i.test(fullText);
       if (isDoctorLike && hasAppt) return "Doctor Appointments";
@@ -303,7 +322,9 @@ async function handleLegacyIngest(request: Request) {
       ) {
         return "Sport Events";
       }
-      if (/(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)) {
+      if (
+        /(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)
+      ) {
         return "Car Pool";
       }
     } catch {}

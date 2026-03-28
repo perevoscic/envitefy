@@ -59,10 +59,24 @@ async function ensureBlobTable(pool) {
       mime_type text not null,
       file_name text null,
       size_bytes integer null,
-      data bytea not null,
+      data bytea null,
+      storage_pathname text null,
+      storage_url text null,
       created_at timestamptz default now(),
       updated_at timestamptz default now()
     )
+  `);
+  await pool.query(`
+    alter table event_history_input_blobs
+      add column if not exists storage_pathname text
+  `);
+  await pool.query(`
+    alter table event_history_input_blobs
+      add column if not exists storage_url text
+  `);
+  await pool.query(`
+    alter table event_history_input_blobs
+      alter column data drop not null
   `);
 }
 
@@ -129,15 +143,19 @@ async function migrateRow(pool, row) {
           mime_type,
           file_name,
           size_bytes,
-          data
+          data,
+          storage_pathname,
+          storage_url
         )
-        values ($1, $2, $3, $4, $5)
+        values ($1, $2, $3, $4, $5, null, null)
         on conflict (event_id)
         do update set
           mime_type = excluded.mime_type,
           file_name = excluded.file_name,
           size_bytes = excluded.size_bytes,
           data = excluded.data,
+          storage_pathname = null,
+          storage_url = null,
           updated_at = now()
       `,
       [

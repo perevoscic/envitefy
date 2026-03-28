@@ -1,14 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ArrowRight, CheckCircle2, Globe, Upload, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Globe,
-  Upload,
-  X,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 type FootballLauncherProps = {
   forwardQueryString?: string;
@@ -24,9 +18,7 @@ export default function FootballLauncher({
 }: FootballLauncherProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [selectedPath, setSelectedPath] = useState<
-    "upload" | "url" | "scratch"
-  >("upload");
+  const [selectedPath, setSelectedPath] = useState<"upload" | "url" | "scratch">("upload");
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadFileName, setUploadFileName] = useState("");
@@ -38,9 +30,7 @@ export default function FootballLauncher({
   const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
   const ingestAbortRef = useRef<AbortController | null>(null);
   const parseAbortRef = useRef<AbortController | null>(null);
-  const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
+  const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cancelRequestedRef = useRef(false);
   const discoveryBusy = uploadBusy || urlBusy;
 
@@ -121,39 +111,36 @@ export default function FootballLauncher({
 
     if (file) {
       reportProgress(4, "Uploading football file...");
-      ingestJson = await new Promise<{ eventId?: string; error?: string }>(
-        (resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          uploadXhrRef.current = xhr;
-          xhr.open("POST", "/api/ingest?mode=football_discovery", true);
-          xhr.withCredentials = true;
-          xhr.upload.onprogress = (event) => {
-            if (!event.lengthComputable) return;
-            const ratio = event.loaded / event.total;
-            reportProgress(5 + ratio * 65, "Uploading football file...");
-          };
-          xhr.onabort = () => reject(abortError());
-          xhr.onerror = () =>
-            reject(new Error("Network error while uploading file"));
-          xhr.onload = () => {
-            uploadXhrRef.current = null;
-            try {
-              const json = JSON.parse(xhr.responseText || "{}") as {
-                eventId?: string;
-                error?: string;
-              };
-              if (xhr.status >= 200 && xhr.status < 300 && json?.eventId) {
-                resolve(json);
-                return;
-              }
-              reject(new Error(json?.error || "Failed to ingest source"));
-            } catch {
-              reject(new Error("Failed to parse ingest response"));
+      ingestJson = await new Promise<{ eventId?: string; error?: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        uploadXhrRef.current = xhr;
+        xhr.open("POST", "/api/ingest?mode=football_discovery", true);
+        xhr.withCredentials = true;
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          const ratio = event.loaded / event.total;
+          reportProgress(5 + ratio * 65, "Uploading football file...");
+        };
+        xhr.onabort = () => reject(abortError());
+        xhr.onerror = () => reject(new Error("Network error while uploading file"));
+        xhr.onload = () => {
+          uploadXhrRef.current = null;
+          try {
+            const json = JSON.parse(xhr.responseText || "{}") as {
+              eventId?: string;
+              error?: string;
+            };
+            if (xhr.status >= 200 && xhr.status < 300 && json?.eventId) {
+              resolve(json);
+              return;
             }
-          };
-          xhr.send(formData);
-        }
-      );
+            reject(new Error(json?.error || "Failed to ingest source"));
+          } catch {
+            reject(new Error("Failed to parse ingest response"));
+          }
+        };
+        xhr.send(formData);
+      });
       throwIfCancelled();
     } else {
       reportProgress(20, "Submitting football URL...");
@@ -183,11 +170,17 @@ export default function FootballLauncher({
 
     try {
       parseAbortRef.current = new AbortController();
-      const parseRes = await fetch(`/api/parse/${eventId}`, {
+      const parseInit: RequestInit = {
         method: "POST",
         credentials: "include",
         signal: parseAbortRef.current.signal,
-      }).finally(() => {
+      };
+      if (file) {
+        const parseBody = new FormData();
+        parseBody.append("file", file);
+        parseInit.body = parseBody;
+      }
+      const parseRes = await fetch(`/api/parse/${eventId}`, parseInit).finally(() => {
         parseAbortRef.current = null;
       });
       const parseJson = await parseRes.json().catch(() => ({}));
@@ -308,12 +301,10 @@ export default function FootballLauncher({
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8d8ba4]">
               Fastest setup
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">
-              Upload football file.
-            </h2>
+            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Upload football file.</h2>
             <p className="mt-3 text-base text-[#66677f]">
-              Upload a game packet, season schedule, roster sheet, or parent
-              memo and prefill the football page.
+              Upload a game packet, season schedule, roster sheet, or parent memo and prefill the
+              football page.
             </p>
 
             <div className="mt-7">
@@ -377,9 +368,7 @@ export default function FootballLauncher({
                 }}
               />
               {uploadFileName ? (
-                <p className="mt-2 truncate text-xs text-[#6a6782]">
-                  Selected: {uploadFileName}
-                </p>
+                <p className="mt-2 truncate text-xs text-[#6a6782]">Selected: {uploadFileName}</p>
               ) : null}
               {uploadError ? (
                 <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -408,12 +397,10 @@ export default function FootballLauncher({
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8d8ba4]">
               Sync from web
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">
-              Paste football URL.
-            </h2>
+            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Paste football URL.</h2>
             <p className="mt-3 text-base text-[#66677f]">
-              Use an existing schedule page, roster page, or travel packet URL
-              and sync the core details.
+              Use an existing schedule page, roster page, or travel packet URL and sync the core
+              details.
             </p>
             <div className="mt-7 flex flex-1 flex-col gap-3">
               <input
@@ -468,12 +455,10 @@ export default function FootballLauncher({
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8d8ba4]">
               Full control
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">
-              Start from scratch.
-            </h2>
+            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Start from scratch.</h2>
             <p className="mt-3 text-base text-[#66677f]">
-              Build the page manually with game schedule, roster, travel,
-              equipment, and volunteer sections.
+              Build the page manually with game schedule, roster, travel, equipment, and volunteer
+              sections.
             </p>
             <div className="mt-7 flex flex-1 flex-col">
               <button
