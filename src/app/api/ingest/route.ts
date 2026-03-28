@@ -10,6 +10,7 @@ import {
   insertEventHistory,
   upsertEventHistoryInputBlob,
 } from "@/lib/db";
+import { uploadDiscoveryInputToBlob } from "@/lib/discovery-input-storage";
 import { corsJson, corsPreflight } from "@/lib/cors";
 import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
 import { buildDefaultFootballDiscoveryData } from "@/lib/football-discovery";
@@ -124,17 +125,26 @@ async function handleDiscoveryIngest(
     });
 
     try {
+      const { pathname, url } = await uploadDiscoveryInputToBlob({
+        eventId: row.id,
+        fileName: fileValue.name || "upload",
+        mimeType: mimeType || "application/octet-stream",
+        bytes,
+      });
       await upsertEventHistoryInputBlob({
         eventId: row.id,
         mimeType: mimeType || "application/octet-stream",
         fileName: fileValue.name || "upload",
         sizeBytes: fileValue.size || bytes.length,
-        data: bytes,
+        data: null,
+        storagePathname: pathname,
+        storageUrl: url,
       });
       console.log(`${DISCOVERY_INGEST_LOG_PREFIX} stored blob`, {
         workflow: options.workflow,
         eventId: row.id,
         sizeBytes: fileValue.size || bytes.length,
+        storagePathname: pathname,
       });
     } catch (error) {
       console.error(`${DISCOVERY_INGEST_LOG_PREFIX} blob write failed`, {
