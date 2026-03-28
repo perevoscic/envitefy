@@ -1549,7 +1549,9 @@ export type EventHistoryInputBlobRow = {
   mime_type: string;
   file_name?: string | null;
   size_bytes?: number | null;
-  data: Buffer;
+  data: Buffer | null;
+  storage_pathname?: string | null;
+  storage_url?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -3440,10 +3442,26 @@ async function ensureEventHistoryInputBlobsTable(): Promise<void> {
         mime_type text not null,
         file_name text null,
         size_bytes integer null,
-        data bytea not null,
+        data bytea null,
+        storage_pathname text null,
+        storage_url text null,
         created_at timestamptz default now(),
         updated_at timestamptz default now()
       )
+    `);
+  });
+  await ensureOnce("event_history_input_blobs_storage_migration", async () => {
+    await query(`
+      alter table event_history_input_blobs
+        add column if not exists storage_pathname text
+    `);
+    await query(`
+      alter table event_history_input_blobs
+        add column if not exists storage_url text
+    `);
+    await query(`
+      alter table event_history_input_blobs
+        alter column data drop not null
     `);
   });
 }
@@ -3453,8 +3471,16 @@ export async function upsertEventHistoryInputBlob(params: {
   mimeType: string;
   fileName?: string | null;
   sizeBytes?: number | null;
-  data: Buffer;
+  data?: Buffer | null;
+  storagePathname?: string | null;
+  storageUrl?: string | null;
 }): Promise<EventHistoryInputBlobRow | null> {
+  const pathname = params.storagePathname?.trim() || null;
+  const hasBlobRef = Boolean(pathname);
+  const hasData = Boolean(params.data && params.data.length > 0);
+  if (!hasBlobRef && !hasData) {
+    throw new Error("upsertEventHistoryInputBlob requires storagePathname or non-empty data");
+  }
   await ensureEventHistoryInputBlobsTable();
   const res = await query<EventHistoryInputBlobRow>(
     `insert into event_history_input_blobs (
@@ -3462,23 +3488,29 @@ export async function upsertEventHistoryInputBlob(params: {
        mime_type,
        file_name,
        size_bytes,
-       data
+       data,
+       storage_pathname,
+       storage_url
      )
-     values ($1, $2, $3, $4, $5)
+     values ($1, $2, $3, $4, $5, $6, $7)
      on conflict (event_id)
      do update set
        mime_type = excluded.mime_type,
        file_name = excluded.file_name,
        size_bytes = excluded.size_bytes,
        data = excluded.data,
+       storage_pathname = excluded.storage_pathname,
+       storage_url = excluded.storage_url,
        updated_at = now()
-     returning event_id, mime_type, file_name, size_bytes, data, created_at, updated_at`,
+     returning event_id, mime_type, file_name, size_bytes, data, storage_pathname, storage_url, created_at, updated_at`,
     [
       params.eventId,
       params.mimeType,
       params.fileName || null,
       params.sizeBytes ?? null,
-      params.data,
+      hasData ? params.data! : null,
+      pathname,
+      params.storageUrl?.trim() || null,
     ]
   );
   return res.rows[0] || null;
@@ -3491,7 +3523,7 @@ export async function getEventHistoryInputBlob(
   try {
     await ensureEventHistoryInputBlobsTable();
     const res = await query<EventHistoryInputBlobRow>(
-      `select event_id, mime_type, file_name, size_bytes, data, created_at, updated_at
+      `select event_id, mime_type, file_name, size_bytes, data, storage_pathname, storage_url, created_at, updated_at
        from event_history_input_blobs
        where event_id = $1
        limit 1`,

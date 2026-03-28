@@ -3,12 +3,12 @@ import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import {
   getEventHistoryById,
-  getEventHistoryInputBlob,
   query,
   updateEventHistoryData,
   updateEventHistoryDataMerge,
   updateEventHistoryTitle,
 } from "@/lib/db";
+import { loadDiscoveryInputBytes } from "@/lib/discovery-input-storage";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
@@ -315,8 +315,8 @@ export async function POST(
 
     let hydratedSourceInput = sourceInput;
     if (sourceInput.type === "file" && !safeString(sourceInput.dataUrl || "")) {
-      const blob = await getEventHistoryInputBlob(eventId);
-      if (!blob?.data) {
+      const loaded = await loadDiscoveryInputBytes(eventId);
+      if (!loaded) {
         return NextResponse.json(
           { error: "Discovery source file blob not found" },
           { status: 404 }
@@ -324,16 +324,16 @@ export async function POST(
       }
       hydratedSourceInput = {
         ...sourceInput,
-        fileName: safeString(sourceInput.fileName) || safeString(blob.file_name) || "upload",
+        fileName: safeString(sourceInput.fileName) || safeString(loaded.file_name) || "upload",
         mimeType:
           safeString(sourceInput.mimeType) ||
-          safeString(blob.mime_type) ||
+          safeString(loaded.mime_type) ||
           "application/octet-stream",
         sizeBytes:
           Number.isFinite(sourceInput.sizeBytes)
             ? sourceInput.sizeBytes
-            : Number(blob.size_bytes || blob.data.length),
-        dataUrl: `data:${safeString(blob.mime_type) || "application/octet-stream"};base64,${blob.data.toString("base64")}`,
+            : Number(loaded.size_bytes || loaded.buffer.length),
+        dataUrl: `data:${safeString(loaded.mime_type) || "application/octet-stream"};base64,${loaded.buffer.toString("base64")}`,
         blobStored: true,
       };
     }
