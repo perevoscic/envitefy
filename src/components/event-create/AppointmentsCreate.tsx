@@ -6,9 +6,15 @@ import type { NormalizedEvent } from "@/lib/mappers";
 import { getEventTheme } from "@/lib/event-theme";
 import EventTemplateBase from "@/components/event-templates/EventTemplateBase";
 import type { EditorBindings } from "@/components/event-templates/EventTemplateBase";
-import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
+import {
+  createObjectUrlPreview,
+  mergeUploadedEventMedia,
+  uploadMediaFile,
+  validateClientUploadFile,
+} from "@/utils/media-upload-client";
+import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { buildEventPath } from "@/utils/event-url";
 
 type Props = { defaultDate?: Date };
@@ -119,6 +125,7 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
     type: string;
     dataUrl: string;
   } | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
     string | null
   >(null);
@@ -175,6 +182,7 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
 
   const clearFlyer = () => {
     setAttachment(null);
+    setAttachmentFile(null);
     setAttachmentPreviewUrl(null);
     setImageColors(null);
     setAttachmentError(null);
@@ -186,30 +194,23 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
       clearFlyer();
       return;
     }
-    const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) {
-      setAttachmentError("Upload an image or PDF file");
-      e.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setAttachmentError("File must be 5 MB or smaller");
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setAttachmentError(validationError);
       e.target.value = "";
       return;
     }
     setAttachmentError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      let previewUrl: string | null = null;
+      const previewUrl = createObjectUrlPreview(file);
       let colors: ImageColors | null = null;
-      if (isImage) {
-        previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+      if (previewUrl) {
         try {
-          colors = await extractColorsFromImage(dataUrl);
+          colors = await extractColorsFromImage(previewUrl);
         } catch {}
       }
-      setAttachment({ name: file.name, type: file.type, dataUrl });
+      setAttachmentFile(file);
+      setAttachment({ name: file.name, type: file.type, dataUrl: "" });
       setAttachmentPreviewUrl(previewUrl);
       setImageColors(colors);
     } catch {
@@ -223,26 +224,22 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
     const file = e.target.files?.[0] || null;
     if (!file) {
       setAttachment(null);
+      setAttachmentFile(null);
       return;
     }
-    const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) {
-      setAttachmentError("Upload an image or PDF file");
-      e.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setAttachmentError("File must be 5 MB or smaller");
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setAttachmentError(validationError);
       e.target.value = "";
       return;
     }
     setAttachmentError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setAttachment({ name: file.name, type: file.type, dataUrl });
+      setAttachmentFile(file);
+      setAttachment({ name: file.name, type: file.type, dataUrl: "" });
     } catch {
       setAttachment(null);
+      setAttachmentFile(null);
       e.target.value = "";
     }
   };
@@ -340,6 +337,15 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
         }
       }
       const recurrenceRule: null = null;
+      const attachmentUpload = attachmentFile
+        ? await uploadMediaFile({
+            file: attachmentFile,
+            usage: "attachment",
+          })
+        : null;
+      const mediaPatch = mergeUploadedEventMedia({
+        attachmentUpload,
+      });
       const payload: any = {
         title: title || "Event",
         data: {
@@ -357,17 +363,7 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
           repeat: undefined,
           repeatFrequency: undefined,
           recurrence: recurrenceRule || undefined,
-          thumbnail:
-            attachmentPreviewUrl && attachment?.type.startsWith("image/")
-              ? attachmentPreviewUrl
-              : undefined,
-          attachment: attachment
-            ? {
-                name: attachment.name,
-                type: attachment.type,
-                dataUrl: attachment.dataUrl,
-              }
-            : undefined,
+          ...mediaPatch,
           imageColors: imageColors || undefined,
           registries: undefined,
           signupForm: undefined,
@@ -408,13 +404,7 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
         recurrence: null,
         reminders: [{ minutes: 30 }],
         registries: null,
-        attachment: attachment
-          ? {
-              name: attachment.name,
-              type: attachment.type,
-              dataUrl: attachment.dataUrl,
-            }
-          : null,
+        attachment: (mediaPatch.attachment as any) || null,
         signupForm: null,
       };
       const tasks: Promise<any>[] = [];

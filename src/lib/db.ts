@@ -1856,7 +1856,7 @@ export function buildOwnedHistoryOwnershipSql(dataSql: string): string {
 
 function buildDashboardMediaRouteSql(
   idSql: string,
-  variant: "thumbnail" | "hero",
+  variant: "thumbnail" | "hero" | "attachment",
   dataTextSql: string
 ): string {
   return `('/api/events/' || ${idSql} || '/thumbnail?variant=${variant}&v=' || md5(${dataTextSql}))`;
@@ -1874,6 +1874,10 @@ function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string 
   const thumbnailTextSql = `${dataSql}->>'thumbnail'`;
   const customHeroTextSql = `${dataSql}->>'customHeroImage'`;
   const heroTextSql = `${dataSql}->>'heroImage'`;
+  const attachmentTypeSql = `lower(coalesce(${dataSql}#>>'{attachment,type}', ''))`;
+  const attachmentDataUrlSql = `${dataSql}#>>'{attachment,dataUrl}'`;
+  const attachmentPreviewUrlSql = `${dataSql}#>>'{attachment,previewImageUrl}'`;
+  const attachmentThumbnailUrlSql = `${dataSql}#>>'{attachment,thumbnailUrl}'`;
   return `case
     when nullif(${coverTextSql}, '') is not null
       and coalesce(${coverTextSql}, '') not like 'data:%'
@@ -1890,6 +1894,16 @@ function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string 
     then ${buildDashboardMediaRouteSql(idSql, "hero", heroTextSql)}
     when nullif(${heroTextSql}, '') is not null
     then ${heroTextSql}
+    when ${attachmentTypeSql} like 'image/%'
+      and coalesce(${attachmentDataUrlSql}, '') like 'data:%'
+    then ${buildDashboardMediaRouteSql(idSql, "attachment", attachmentDataUrlSql)}
+    when ${attachmentTypeSql} like 'image/%'
+      and nullif(${attachmentDataUrlSql}, '') is not null
+    then ${attachmentDataUrlSql}
+    when nullif(${attachmentPreviewUrlSql}, '') is not null
+    then ${attachmentPreviewUrlSql}
+    when nullif(${attachmentThumbnailUrlSql}, '') is not null
+    then ${attachmentThumbnailUrlSql}
     else null
   end`;
 }

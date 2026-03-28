@@ -17,8 +17,14 @@ import {
   normalizeRegistryLinks,
   validateRegistryUrl,
 } from "@/utils/registry-links";
-import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
+import {
+  createObjectUrlPreview,
+  mergeUploadedEventMedia,
+  uploadMediaFile,
+  validateClientUploadFile,
+} from "@/utils/media-upload-client";
+import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
 import styles from "./EventCreateWysiwyg.module.css";
 import { EVENT_CATEGORIES } from "@/components/event-templates/eventCategories";
@@ -273,6 +279,7 @@ export default function EventCreateWysiwyg({
     type: string;
     dataUrl: string;
   } | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
     string | null
   >(null);
@@ -402,6 +409,7 @@ export default function EventCreateWysiwyg({
   // Attachment handlers
   const clearFlyer = () => {
     setAttachment(null);
+    setAttachmentFile(null);
     setAttachmentPreviewUrl(null);
     setImageColors(null);
     setAttachmentError(null);
@@ -413,44 +421,32 @@ export default function EventCreateWysiwyg({
   ) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
-      setAttachment(null);
-      setAttachmentPreviewUrl(null);
-      setImageColors(null);
-      setAttachmentError(null);
+      clearFlyer();
       return;
     }
-    const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) {
-      setAttachmentError("Upload an image or PDF file");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setAttachmentError("File must be 10 MB or smaller");
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setAttachmentError(validationError);
       event.target.value = "";
       return;
     }
     setAttachmentError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      let previewUrl: string | null = null;
+      const previewUrl = createObjectUrlPreview(file);
       let colors: ImageColors | null = null;
-      if (isImage) {
-        previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+      if (previewUrl) {
         try {
-          colors = await extractColorsFromImage(dataUrl);
+          colors = await extractColorsFromImage(previewUrl);
         } catch (err) {
           console.error("Failed to extract colors from image:", err);
         }
       }
-      setAttachment({ name: file.name, type: file.type, dataUrl });
+      setAttachmentFile(file);
+      setAttachment({ name: file.name, type: file.type, dataUrl: "" });
       setAttachmentPreviewUrl(previewUrl);
       setImageColors(colors);
     } catch {
-      setAttachment(null);
-      setAttachmentPreviewUrl(null);
-      setImageColors(null);
+      clearFlyer();
       setAttachmentError("Could not process the file");
       event.target.value = "";
     }
@@ -658,6 +654,16 @@ export default function EventCreateWysiwyg({
         }
       }
 
+      const attachmentUpload = attachmentFile
+        ? await uploadMediaFile({
+            file: attachmentFile,
+            usage: "attachment",
+          })
+        : null;
+      const mediaPatch = mergeUploadedEventMedia({
+        attachmentUpload,
+      });
+
       const payload: any = {
         title: title || "Event",
         data: {
@@ -675,17 +681,7 @@ export default function EventCreateWysiwyg({
           repeat: repeat || undefined,
           repeatFrequency: repeat ? repeatFrequency : undefined,
           recurrence: recurrenceRule || undefined,
-          thumbnail:
-            attachmentPreviewUrl && attachment?.type.startsWith("image/")
-              ? attachmentPreviewUrl
-              : undefined,
-          attachment: attachment
-            ? {
-                name: attachment.name,
-                type: attachment.type,
-                dataUrl: attachment.dataUrl,
-              }
-            : undefined,
+          ...mediaPatch,
           imageColors: imageColors || undefined,
           registries:
             sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
@@ -719,13 +715,7 @@ export default function EventCreateWysiwyg({
         recurrence: recurrenceRule,
         reminders: [{ minutes: 30 }],
         registries: sanitizedRegistries.length ? sanitizedRegistries : null,
-        attachment: attachment
-          ? {
-              name: attachment.name,
-              type: attachment.type,
-              dataUrl: attachment.dataUrl,
-            }
-          : null,
+        attachment: (mediaPatch.attachment as any) || null,
         signupForm: null,
       };
 

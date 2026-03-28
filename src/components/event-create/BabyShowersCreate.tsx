@@ -16,10 +16,17 @@ import {
   normalizeRegistryLinks,
   validateRegistryUrl,
 } from "@/utils/registry-links";
-import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
 import { buildEventPath } from "@/utils/event-url";
 import { EditSquareIcon } from "@/components/icons/EditSquareIcon";
+import {
+  createObjectUrlPreview,
+  getAttachmentPreviewForEditor,
+  mergeUploadedEventMedia,
+  uploadMediaFile,
+  validateClientUploadFile,
+} from "@/utils/media-upload-client";
+import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 
 type Props = {
   defaultDate?: Date;
@@ -161,6 +168,7 @@ export default function BabyShowersCreate({
     type: string;
     dataUrl: string;
   } | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
     string | null
   >(null);
@@ -362,8 +370,10 @@ export default function BabyShowersCreate({
             dataUrl: attach.dataUrl,
           });
           setAttachmentPreviewUrl(
-            (typeof data.thumbnail === "string" && data.thumbnail) ||
-              (attach.type?.startsWith?.("image/") ? attach.dataUrl : null)
+            getAttachmentPreviewForEditor({
+              attachment: attach,
+              thumbnail: typeof data.thumbnail === "string" ? data.thumbnail : null,
+            })
           );
         } else {
           setAttachmentPreviewUrl(
@@ -458,6 +468,7 @@ export default function BabyShowersCreate({
 
   const clearFlyer = () => {
     setAttachment(null);
+    setAttachmentFile(null);
     setAttachmentPreviewUrl(null);
     setImageColors(null);
     setAttachmentError(null);
@@ -471,30 +482,23 @@ export default function BabyShowersCreate({
       clearFlyer();
       return;
     }
-    const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) {
-      setAttachmentError("Upload an image or PDF file");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setAttachmentError("File must be 5 MB or smaller");
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setAttachmentError(validationError);
       event.target.value = "";
       return;
     }
     setAttachmentError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      let previewUrl: string | null = null;
+      const previewUrl = createObjectUrlPreview(file);
       let colors: ImageColors | null = null;
-      if (isImage) {
-        previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+      if (previewUrl) {
         try {
-          colors = await extractColorsFromImage(dataUrl);
+          colors = await extractColorsFromImage(previewUrl);
         } catch {}
       }
-      setAttachment({ name: file.name, type: file.type, dataUrl });
+      setAttachmentFile(file);
+      setAttachment({ name: file.name, type: file.type, dataUrl: "" });
       setAttachmentPreviewUrl(previewUrl);
       setImageColors(colors);
     } catch {
@@ -508,26 +512,22 @@ export default function BabyShowersCreate({
     const file = event.target.files?.[0] || null;
     if (!file) {
       setAttachment(null);
+      setAttachmentFile(null);
       return;
     }
-    const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) {
-      setAttachmentError("Upload an image or PDF file");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setAttachmentError("File must be 5 MB or smaller");
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setAttachmentError(validationError);
       event.target.value = "";
       return;
     }
     setAttachmentError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setAttachment({ name: file.name, type: file.type, dataUrl });
+      setAttachmentFile(file);
+      setAttachment({ name: file.name, type: file.type, dataUrl: "" });
     } catch {
       setAttachment(null);
+      setAttachmentFile(null);
       event.target.value = "";
     }
   };
@@ -673,6 +673,18 @@ export default function BabyShowersCreate({
           }
         }
       }
+      const attachmentUpload = attachmentFile
+        ? await uploadMediaFile({
+            file: attachmentFile,
+            usage: "attachment",
+            eventId: editEventId || undefined,
+          })
+        : null;
+      const mediaPatch = mergeUploadedEventMedia({
+        attachmentUpload,
+        existingThumbnail: attachmentPreviewUrl,
+        existingAttachment: attachment as any,
+      });
       const payload: any = {
         title: title || "Event",
         data: {
@@ -705,17 +717,7 @@ export default function BabyShowersCreate({
           templateId: templateIdState || undefined,
           templateVariationId: templateVariationState || undefined,
           templateBackgroundCss: templateBackgroundCss || undefined,
-          thumbnail:
-            attachmentPreviewUrl && attachment?.type.startsWith("image/")
-              ? attachmentPreviewUrl
-              : undefined,
-          attachment: attachment
-            ? {
-                name: attachment.name,
-                type: attachment.type,
-                dataUrl: attachment.dataUrl,
-              }
-            : undefined,
+          ...mediaPatch,
           imageColors: imageColors || undefined,
           registries:
             sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
@@ -783,13 +785,7 @@ export default function BabyShowersCreate({
         recurrence: recurrenceRule,
         reminders: [{ minutes: 30 }],
         registries: sanitizedRegistries.length ? sanitizedRegistries : null,
-        attachment: attachment
-          ? {
-              name: attachment.name,
-              type: attachment.type,
-              dataUrl: attachment.dataUrl,
-            }
-          : null,
+        attachment: (mediaPatch.attachment as any) || null,
         signupForm: null,
       };
       const tasks: Promise<any>[] = [];

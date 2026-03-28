@@ -1,6 +1,5 @@
 import * as chrono from "chrono-node";
 import { getServerSession } from "next-auth";
-import sharp from "sharp";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { corsJson, corsPreflight } from "@/lib/cors";
 import {
@@ -13,6 +12,7 @@ import {
 import { uploadDiscoveryInputToBlob } from "@/lib/discovery-input-storage";
 import { buildDefaultFootballDiscoveryData } from "@/lib/football-discovery";
 import { getVisionClient } from "@/lib/gcp";
+import { prepareDiscoverySourceFile, readAndValidateUploadFile } from "@/lib/media-upload";
 import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
 import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 
@@ -69,33 +69,33 @@ async function handleDiscoveryIngest(
 
   if (hasFile) {
     const fileValue = file as File;
-    const mimeType = fileValue.type || "";
     console.log(`${DISCOVERY_INGEST_LOG_PREFIX} validating file input`, {
       workflow: options.workflow,
       fileName: fileValue.name || "upload",
-      mimeType: mimeType || "application/octet-stream",
+      mimeType: fileValue.type || "application/octet-stream",
       sizeBytes: fileValue.size || 0,
     });
-    const validMime =
-      /pdf/i.test(mimeType) ||
-      /image\/(png|jpe?g)/i.test(mimeType) ||
-      /\.(pdf|png|jpe?g)$/i.test(fileValue.name || "");
-    if (!validMime) {
-      return corsJson(
-        request,
-        { error: "Unsupported file. Use PDF, JPG/JPEG, or PNG." },
-        { status: 400 },
-      );
+    let prepared: Awaited<ReturnType<typeof prepareDiscoverySourceFile>>;
+    try {
+      prepared = await prepareDiscoverySourceFile(fileValue);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid file upload";
+      const status =
+        error && typeof error === "object" && "status" in error && Number.isFinite((error as any).status)
+          ? Number((error as any).status)
+          : 415;
+      return corsJson(request, { error: message }, { status });
     }
-    const bytes = Buffer.from(await fileValue.arrayBuffer());
-    const isPdf = /pdf/i.test(mimeType) || /\.pdf$/i.test(fileValue.name || "");
     discoveryInput = {
       type: "file",
-      fileName: fileValue.name || "upload",
-      mimeType: mimeType || "application/octet-stream",
-      sizeBytes: fileValue.size || bytes.length,
-      blobStored: !isPdf,
-      ...(isPdf ? { ephemeralFile: true as const } : {}),
+      fileName: prepared.fileName,
+      mimeType: prepared.mimeType,
+      sizeBytes: prepared.sizeBytes,
+      blobStored: true,
+      originalName: prepared.originalName,
+      originalMimeType: prepared.originalMimeType,
+      originalSizeBytes: prepared.originalSizeBytes,
+      optimizedByQpdf: prepared.optimizedByQpdf,
     };
     title = fileValue.name?.replace(/\.[^.]+$/, "") || title;
 
@@ -122,47 +122,39 @@ async function handleDiscoveryIngest(
       eventId: row.id,
       title,
     });
-
-    if (!isPdf) {
-      try {
-        const { pathname, url } = await uploadDiscoveryInputToBlob({
-          eventId: row.id,
-          fileName: fileValue.name || "upload",
-          mimeType: mimeType || "application/octet-stream",
-          bytes,
-        });
-        await upsertEventHistoryInputBlob({
-          eventId: row.id,
-          mimeType: mimeType || "application/octet-stream",
-          fileName: fileValue.name || "upload",
-          sizeBytes: fileValue.size || bytes.length,
-          data: null,
-          storagePathname: pathname,
-          storageUrl: url,
-        });
-        console.log(`${DISCOVERY_INGEST_LOG_PREFIX} stored blob`, {
-          workflow: options.workflow,
-          eventId: row.id,
-          sizeBytes: fileValue.size || bytes.length,
-          storagePathname: pathname,
-        });
-      } catch (error) {
-        console.error(`${DISCOVERY_INGEST_LOG_PREFIX} blob write failed`, {
-          workflow: options.workflow,
-          eventId: row.id,
-          message: error instanceof Error ? error.message : String(error),
-        });
-        try {
-          await deleteEventHistoryById(row.id);
-        } catch {}
-        throw error;
-      }
-    } else {
-      console.log(`${DISCOVERY_INGEST_LOG_PREFIX} skipped blob store for PDF (ephemeral)`, {
+    try {
+      const { pathname, url } = await uploadDiscoveryInputToBlob({
+        eventId: row.id,
+        fileName: prepared.fileName,
+        mimeType: prepared.mimeType,
+        bytes: prepared.buffer,
+      });
+      await upsertEventHistoryInputBlob({
+        eventId: row.id,
+        mimeType: prepared.mimeType,
+        fileName: prepared.fileName,
+        sizeBytes: prepared.sizeBytes,
+        data: null,
+        storagePathname: pathname,
+        storageUrl: url,
+      });
+      console.log(`${DISCOVERY_INGEST_LOG_PREFIX} stored blob`, {
         workflow: options.workflow,
         eventId: row.id,
-        sizeBytes: fileValue.size || bytes.length,
+        sizeBytes: prepared.sizeBytes,
+        storagePathname: pathname,
+        optimizedByQpdf: prepared.optimizedByQpdf ?? null,
       });
+    } catch (error) {
+      console.error(`${DISCOVERY_INGEST_LOG_PREFIX} blob write failed`, {
+        workflow: options.workflow,
+        eventId: row.id,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      try {
+        await deleteEventHistoryById(row.id);
+      } catch {}
+      throw error;
     }
 
     console.log(`${DISCOVERY_INGEST_LOG_PREFIX} request complete`, {
@@ -236,10 +228,20 @@ async function handleLegacyIngest(request: Request) {
   if (!(file instanceof File)) {
     return corsJson(request, { error: "No file" }, { status: 400 });
   }
+  let validated: Awaited<ReturnType<typeof readAndValidateUploadFile>>;
+  try {
+    validated = await readAndValidateUploadFile(file, "attachment");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid file upload";
+    const status =
+      error && typeof error === "object" && "status" in error && Number.isFinite((error as any).status)
+        ? Number((error as any).status)
+        : 415;
+    return corsJson(request, { error: message }, { status });
+  }
 
-  const mime = file.type || "";
-  const fileArrayBuffer = await file.arrayBuffer();
-  const inputBuffer = Buffer.from(fileArrayBuffer);
+  const mime = validated.mimeType;
+  const inputBuffer = validated.bytes;
 
   let ocrBuffer: Buffer = inputBuffer;
   if (/pdf/i.test(mime)) {
@@ -254,7 +256,11 @@ async function handleLegacyIngest(request: Request) {
     ocrBuffer = pagePng;
   }
   try {
-    ocrBuffer = await sharp(ocrBuffer).resize(2000).grayscale().normalize().toBuffer();
+    ocrBuffer = await (await import("sharp")).default(ocrBuffer)
+      .resize(2000)
+      .grayscale()
+      .normalize()
+      .toBuffer();
   } catch {
     // keep buffer as-is
   }

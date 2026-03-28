@@ -98,7 +98,6 @@ type GroupedEventItem = {
   hoverTintClass: string;
   activeTintClass: string;
   activeCardClass: string;
-  swatchClass: string;
   style?: CSSProperties;
 };
 type GroupedEventSection = {
@@ -1782,7 +1781,6 @@ export default function LeftSidebar() {
         hoverTintClass: palette.hoverTint,
         activeTintClass: activePalette.tint,
         activeCardClass: activeEventCardClasses(categoryColor),
-        swatchClass: palette.swatch,
         style,
       };
       const targetBuckets = bucketsByList[targetList];
@@ -2716,12 +2714,9 @@ export default function LeftSidebar() {
                                         isHistoryRowActive(item.row.id)
                                           ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                           : `${item.tintClass} ${item.hoverTintClass}`
-                                      } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
+                                      } flex w-full items-start border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                       style={item.style}
                                     >
-                                      <span
-                                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border ${item.swatchClass}`}
-                                      />
                                       <span className="min-w-0 flex-1">
                                         <span className="block truncate text-sm md:text-base font-semibold">
                                           {item.title}
@@ -2730,11 +2725,6 @@ export default function LeftSidebar() {
                                           {item.dateLabel}
                                         </span>
                                       </span>
-                                      <ChevronRight
-                                        size={16}
-                                        className="mt-1 shrink-0 text-slate-400"
-                                        aria-hidden="true"
-                                      />
                                     </button>
                                   ))}
                                 </section>
@@ -2803,12 +2793,9 @@ export default function LeftSidebar() {
                                               isHistoryRowActive(item.row.id)
                                                 ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                                 : `${item.tintClass} ${item.hoverTintClass}`
-                                            } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-75 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
+                                            } flex w-full items-start border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-75 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                             style={item.style}
                                           >
-                                            <span
-                                              className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border ${item.swatchClass}`}
-                                            />
                                             <span className="min-w-0 flex-1">
                                               <span className="block truncate text-sm md:text-base font-semibold">
                                                 {item.title}
@@ -2817,11 +2804,6 @@ export default function LeftSidebar() {
                                                 {item.dateLabel}
                                               </span>
                                             </span>
-                                            <ChevronRight
-                                              size={16}
-                                              className="mt-1 shrink-0 text-slate-400"
-                                              aria-hidden="true"
-                                            />
                                           </button>
                                         ))}
                                       </section>
@@ -2906,10 +2888,9 @@ export default function LeftSidebar() {
                                         isHistoryRowActive(item.row.id)
                                           ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                           : `${item.tintClass} ${item.hoverTintClass}`
-                                      } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
+                                      } flex w-full items-start border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                       style={item.style}
                                     >
-                                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
                                       <span className="min-w-0 flex-1">
                                         <span className="flex items-center gap-2">
                                           <span className="block truncate text-sm md:text-base font-semibold">
@@ -2925,11 +2906,6 @@ export default function LeftSidebar() {
                                           {item.dateLabel}
                                         </span>
                                       </span>
-                                      <ChevronRight
-                                        size={16}
-                                        className="mt-1 shrink-0 text-slate-400"
-                                        aria-hidden="true"
-                                      />
                                     </button>
                                   ))}
                                 </section>
@@ -3005,10 +2981,9 @@ export default function LeftSidebar() {
                                               isHistoryRowActive(item.row.id)
                                                 ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                                 : `${item.tintClass} ${item.hoverTintClass}`
-                                            } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-70 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
+                                            } flex w-full items-start border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-70 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                             style={item.style}
                                           >
-                                            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
                                             <span className="min-w-0 flex-1">
                                               <span className="flex items-center gap-2">
                                                 <span className="block truncate text-sm md:text-base font-semibold">
@@ -3025,11 +3000,6 @@ export default function LeftSidebar() {
                                                 {item.dateLabel}
                                               </span>
                                             </span>
-                                            <ChevronRight
-                                              size={16}
-                                              className="mt-1 shrink-0 text-slate-400"
-                                              aria-hidden="true"
-                                            />
                                           </button>
                                         ))}
                                       </section>

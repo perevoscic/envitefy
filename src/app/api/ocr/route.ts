@@ -6,6 +6,7 @@ import { normalizeBirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { corsJson, corsPreflight } from "@/lib/cors";
 import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
 import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
+import { validateUploadFileMeta } from "@/lib/upload-config";
 
 /** Ensure this runs on Node (not Edge) and isn’t cached */
 export const runtime = "nodejs";
@@ -1781,7 +1782,17 @@ export async function POST(request: Request) {
       return corsJson(request, { error: "No file" }, { status: 400 });
     }
 
-    const mime = file.type || "";
+    const validation = validateUploadFileMeta({
+      fileName: file.name,
+      mimeType: file.type,
+      sizeBytes: file.size,
+      usage: "attachment",
+    });
+    if (!validation.ok) {
+      return corsJson(request, { error: validation.error }, { status: validation.status });
+    }
+
+    const mime = validation.mimeType;
     const inputBuffer = Buffer.from(await file.arrayBuffer());
 
     let ocrBuffer: Buffer = inputBuffer;

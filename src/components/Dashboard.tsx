@@ -21,7 +21,8 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
-import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
+import { uploadMediaFile } from "@/utils/media-upload-client";
+import { readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { findFirstEmail } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
@@ -1317,24 +1318,20 @@ export default function Dashboard({
           "UTC";
 
         let thumbnail: string | undefined;
-        let attachment:
-          | { name: string; type: string; dataUrl: string }
-          | undefined;
+        let attachment: Record<string, unknown> | undefined;
         const fileForUpload =
           typeof sourceFile !== "undefined" ? sourceFile : uploadedFile;
-        if (fileForUpload?.type.startsWith("image/")) {
+        if (fileForUpload instanceof File) {
           try {
-            thumbnail =
-              (await createThumbnailDataUrl(fileForUpload, 1200, 0.85)) ||
-              undefined;
-            const dataUrl = await readFileAsDataUrl(fileForUpload);
-            attachment = {
-              name: fileForUpload.name,
-              type: fileForUpload.type,
-              dataUrl,
-            };
+            const upload = await uploadMediaFile({
+              file: fileForUpload,
+              usage: "attachment",
+            });
+            thumbnail = upload.eventMedia.thumbnail;
+            attachment = upload.eventMedia.attachment;
           } catch (err) {
-            console.error("Failed to create thumbnail:", err);
+            console.error("Failed to upload scanned media:", err);
+            throw err;
           }
         }
 
@@ -1364,7 +1361,7 @@ export default function Dashboard({
             reminders: eventInput.reminders || undefined,
             createdVia: isBirthdayOcrEvent ? "ocr-birthday-renderer" : "ocr",
             thumbnail,
-            attachment,
+            attachment: attachment || undefined,
             templateId: isBirthdayOcrEvent ? "party-pop" : undefined,
             variationId: isBirthdayOcrEvent
               ? normalizedBirthdayTemplateHint.themeId || undefined

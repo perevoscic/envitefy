@@ -45,6 +45,7 @@ import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { createServerTimingTracker } from "@/lib/server-timing";
 import { resolveEventThemeColor } from "@/lib/theme-color";
+import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
 import type { SignupForm } from "@/types/signup";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
@@ -816,11 +817,10 @@ export default async function EventPage({
       typeof raw.name === "string" && raw.name.trim() ? (raw.name as string) : "Attachment";
     const previewUrl = attachmentIsInline
       ? buildMediaUrl("attachment")
-      : typeof raw.dataUrl === "string" && raw.dataUrl
-        ? (raw.dataUrl as string)
-        : thumbnailIsInline
-          ? buildMediaUrl("thumbnail")
-          : null;
+      : resolveAttachmentPreviewUrl(
+          raw as Record<string, unknown>,
+          thumbnailIsInline ? buildMediaUrl("thumbnail") : rawThumbnailValue,
+        );
     return { name, type, dataUrl: previewUrl };
   })();
   const locationText = typeof data?.location === "string" ? (data.location as string) : "";
