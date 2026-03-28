@@ -47,6 +47,15 @@ type PublicUploadParams = {
   uploadToken?: string | null;
 };
 
+type BufferUploadParams = {
+  bytes: Buffer;
+  fileName: string;
+  mimeType?: string | null;
+  usage: UploadUsage;
+  eventId?: string | null;
+  uploadToken?: string | null;
+};
+
 type DiscoverySourceResult = {
   fileName: string;
   mimeType: string;
@@ -371,23 +380,30 @@ async function processPdfUpload(params: {
   };
 }
 
-export async function processPublicUpload(params: PublicUploadParams): Promise<UploadResponse> {
-  const validated = await readAndValidateUploadFile(params.file, params.usage);
+async function processValidatedUpload(params: {
+  validated: ValidatedUpload;
+  usage: UploadUsage;
+  eventId?: string | null;
+  uploadToken?: string | null;
+}): Promise<UploadResponse> {
   const scopeId = getScopeId(params.eventId, params.uploadToken);
-
   console.log("[media-upload] processing", {
     scopeId,
     usage: params.usage,
-    fileName: validated.fileName,
-    mimeType: validated.mimeType,
-    inputType: validated.kind,
-    originalSize: validated.sizeBytes,
+    fileName: params.validated.fileName,
+    mimeType: params.validated.mimeType,
+    inputType: params.validated.kind,
+    originalSize: params.validated.sizeBytes,
   });
 
   const response =
-    validated.kind === "pdf"
-      ? await processPdfUpload({ validated, scopeId })
-      : await processImageUpload({ validated, scopeId, usage: params.usage });
+    params.validated.kind === "pdf"
+      ? await processPdfUpload({ validated: params.validated, scopeId })
+      : await processImageUpload({
+          validated: params.validated,
+          scopeId,
+          usage: params.usage,
+        });
 
   console.log("[media-upload] complete", {
     scopeId,
@@ -400,6 +416,43 @@ export async function processPublicUpload(params: PublicUploadParams): Promise<U
   });
 
   return response;
+}
+
+export async function processPublicUpload(params: PublicUploadParams): Promise<UploadResponse> {
+  const validated = await readAndValidateUploadFile(params.file, params.usage);
+  return processValidatedUpload({
+    validated,
+    usage: params.usage,
+    eventId: params.eventId,
+    uploadToken: params.uploadToken,
+  });
+}
+
+export async function processBufferUpload(params: BufferUploadParams): Promise<UploadResponse> {
+  const validation = validateUploadFileMeta({
+    fileName: params.fileName,
+    mimeType: params.mimeType,
+    sizeBytes: params.bytes.length,
+    usage: params.usage,
+  });
+  if (!validation.ok) {
+    const error = new Error(validation.error) as Error & { status?: number };
+    error.status = validation.status;
+    throw error;
+  }
+
+  return processValidatedUpload({
+    validated: {
+      bytes: params.bytes,
+      fileName: params.fileName || "upload",
+      mimeType: validation.mimeType,
+      sizeBytes: params.bytes.length,
+      kind: validation.kind,
+    },
+    usage: params.usage,
+    eventId: params.eventId,
+    uploadToken: params.uploadToken,
+  });
 }
 
 export async function prepareDiscoverySourceFile(file: File): Promise<DiscoverySourceResult> {

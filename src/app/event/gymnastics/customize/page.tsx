@@ -24,6 +24,7 @@ import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 type FieldSpec = {
   key: string;
@@ -1806,35 +1807,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
-        // Convert blob URLs to data URLs for saving
-        let heroToSave = "";
-        if (data.hero) {
-          if (/^blob:/i.test(data.hero)) {
-            // Convert blob URL to data URL
-            try {
-              const response = await fetch(data.hero);
-              const blob = await response.blob();
-              const reader = new FileReader();
-              heroToSave = await new Promise<string>((resolve, reject) => {
-                reader.onloadend = () => {
-                  const result = reader.result as string;
-                  resolve(result || "");
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-              });
-            } catch (err) {
-              console.error("Failed to convert blob URL:", err);
-              heroToSave = "";
-            }
-          } else if (/^data:/i.test(data.hero)) {
-            // Already a data URL, use as-is
-            heroToSave = data.hero;
-          } else {
-            // Regular URL (http/https), use as-is
-            heroToSave = data.hero;
-          }
-        }
+        const heroToSave =
+          (await persistImageMediaValue({
+            value: data.hero,
+            eventId: editEventId || undefined,
+            fileName: "gymnastics-hero.png",
+          })) || "";
 
         const resolvedPageTemplateId =
           data.pageTemplateId || resolveGymMeetTemplateId(data) || DEFAULT_GYM_MEET_TEMPLATE_ID;

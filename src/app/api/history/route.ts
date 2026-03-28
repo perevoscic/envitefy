@@ -18,6 +18,7 @@ import {
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { createHash } from "node:crypto";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
+import { findTransientEventMedia } from "@/lib/event-media";
 import {
   isCacheableHistoryView,
   normalizeHistoryTimeFilter,
@@ -68,6 +69,16 @@ function isStatementTimeoutError(err: unknown): boolean {
     /statement timeout|canceling statement due to statement timeout/i.test(
       message
     )
+  );
+}
+
+function buildMediaValidationResponse(issues: ReturnType<typeof findTransientEventMedia>) {
+  return NextResponse.json(
+    {
+      error: "Upload media before saving. Inline data URLs and browser blob URLs are not allowed.",
+      issues,
+    },
+    { status: 400 },
   );
 }
 
@@ -310,6 +321,10 @@ export async function POST(req: Request) {
         data.accessControl
       );
       if (!data.accessControl) delete data.accessControl;
+    }
+    const mediaIssues = findTransientEventMedia(data);
+    if (mediaIssues.length > 0) {
+      return buildMediaValidationResponse(mediaIssues);
     }
     if (HISTORY_DEBUG) {
       console.log(

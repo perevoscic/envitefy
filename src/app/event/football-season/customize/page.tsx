@@ -28,6 +28,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 import { resolveFootballSeasonTemplateChrome } from "./footballSeasonTemplateTheme";
 
 type FieldSpec = {
@@ -962,26 +963,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
-        // Convert blob hero to data URL so saved preview matches editor
-        const heroToSave = await (async () => {
-          if (!data.hero) return config.defaultHero;
-          if (/^data:/i.test(data.hero)) return data.hero;
-          if (/^blob:/i.test(data.hero)) {
-            try {
-              const response = await fetch(data.hero);
-              const blob = await response.blob();
-              const reader = new FileReader();
-              return await new Promise<string>((resolve, reject) => {
-                reader.onloadend = () => resolve((reader.result as string) || config.defaultHero);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-              });
-            } catch {
-              return config.defaultHero;
-            }
-          }
-          return data.hero;
-        })();
+        const heroToSave =
+          (await persistImageMediaValue({
+            value: data.hero,
+            eventId: editEventId || undefined,
+            fileName: `${config.slug}-hero.png`,
+            fallbackValue: config.defaultHero,
+          })) || config.defaultHero;
 
         const currentSelectedSize =
           FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) || FONT_SIZE_OPTIONS[1];

@@ -27,6 +27,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 type FieldSpec = {
   key: string;
@@ -408,6 +409,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       if (submitting) return;
       setSubmitting(true);
       try {
+        const heroImageUrl =
+          (await persistImageMediaValue({
+            value: data.hero,
+            fileName: `${config.slug}-hero.png`,
+            fallbackValue: config.defaultHero,
+          })) || config.defaultHero;
         let startISO: string | null = null;
         let endISO: string | null = null;
         if (data.date) {
@@ -437,7 +444,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               advancedSections: advancedState,
             },
             advancedSections: advancedState,
-            heroImage: data.hero || config.defaultHero,
+            heroImage: heroImageUrl,
             fontSize: data.fontSize,
             ...(data.passcodeRequired && data.passcode
               ? {

@@ -38,6 +38,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import Link from "next/link";
 import etherealClassic from "../../../../../templates/weddings/ethereal-classic/config.json" with { type: "json" };
@@ -2037,7 +2038,7 @@ const App = () => {
   const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
 
   const buildHistoryPayload = useCallback(
-    (status: "draft" | "published") => {
+    async (status: "draft" | "published") => {
       let startISO: string | null = null;
       let endISO: string | null = null;
       if (data.date) {
@@ -2058,6 +2059,27 @@ const App = () => {
           ? buildDraftTitle(variationId, data.partner1, data.partner2)
           : buildDisplayTitle(variationId, data.partner1, data.partner2);
       const coupleNames = getCoupleNames(data.partner1, data.partner2);
+      const customHeroImage =
+        (await persistImageMediaValue({
+          value: data.images?.hero,
+          eventId: editEventId || undefined,
+          fileName: `wedding-${variationId}-hero.png`,
+        })) || undefined;
+      const gallery = await Promise.all(
+        (Array.isArray(data.gallery) ? data.gallery : []).map(async (item) => ({
+          ...item,
+          url:
+            (await persistImageMediaValue({
+              value: item?.url || item?.src || item?.preview || "",
+              eventId: editEventId || undefined,
+              fileName: `wedding-gallery-${item?.id || "image"}.png`,
+            })) ||
+            item?.url ||
+            item?.src ||
+            item?.preview ||
+            "",
+        })),
+      );
 
       const payload: any = {
         title,
@@ -2097,22 +2119,22 @@ const App = () => {
                 label: r.label?.trim() || "Registry",
                 url: r.url?.trim(),
               })) || [],
-          customHeroImage: data.images?.hero || undefined,
+          customHeroImage,
           headlineBg: data.images?.headlineBg || undefined,
-          gallery: data.gallery || [],
+          gallery,
         },
       };
 
       return payload;
     },
-    [data]
+    [data, editEventId]
   );
 
   const handlePublish = useCallback(async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const payload = buildHistoryPayload("published");
+      const payload = await buildHistoryPayload("published");
       let id: string | undefined;
 
       if (editEventId) {
@@ -2171,7 +2193,7 @@ const App = () => {
     if (savingDraft || submitting) return;
     setSavingDraft(true);
     try {
-      const payload = buildHistoryPayload("draft");
+      const payload = await buildHistoryPayload("draft");
       let id: string | undefined = editEventId;
 
       if (id) {

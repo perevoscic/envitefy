@@ -4,14 +4,16 @@ import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import {
   getEventHistoryById,
   updateEventHistoryTitle,
-  deleteEventHistoryById,
   updateEventHistoryDataMerge,
   updateEventHistoryData,
   claimEventHistoryById,
+  listShareRecipientUserIdsForEvent,
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
+import { deleteEventHistoryWithCleanup } from "@/lib/event-cleanup";
+import { findTransientEventMedia } from "@/lib/event-media";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +26,16 @@ function estimateJsonBytes(value: unknown): number | null {
   } catch {
     return null;
   }
+}
+
+function buildMediaValidationResponse(issues: ReturnType<typeof findTransientEventMedia>) {
+  return NextResponse.json(
+    {
+      error: "Upload media before saving. Inline data URLs and browser blob URLs are not allowed.",
+      issues,
+    },
+    { status: 400 },
+  );
 }
 
 export async function GET(
@@ -100,6 +112,12 @@ export async function PATCH(
       );
       if (!processedData.accessControl) {
         delete processedData.accessControl;
+      }
+    }
+    if (processedData && typeof processedData === "object") {
+      const mediaIssues = findTransientEventMedia(processedData);
+      if (mediaIssues.length > 0) {
+        return buildMediaValidationResponse(mediaIssues);
       }
     }
 
@@ -195,11 +213,16 @@ export async function DELETE(
   if (existing.user_id && existing.user_id !== userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  await deleteEventHistoryById(id);
+  const affectedRecipients = await listShareRecipientUserIdsForEvent(id).catch(() => []);
+  await deleteEventHistoryWithCleanup({ id, row: existing });
   // Invalidate cache for the owner
   if (existing.user_id) {
     invalidateUserHistory(existing.user_id);
     invalidateUserDashboard(existing.user_id);
+  }
+  for (const recipientUserId of affectedRecipients) {
+    invalidateUserHistory(recipientUserId);
+    invalidateUserDashboard(recipientUserId);
   }
   return NextResponse.json({ ok: true });
 }

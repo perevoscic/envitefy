@@ -37,6 +37,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 // Import constants from wedding page (we'll reuse FONTS, FONT_SIZES, DESIGN_THEMES)
 // For now, let's create a simplified version with essential features
@@ -752,27 +753,13 @@ export default function BabyShowerTemplateCustomizePage() {
       const selectedFont = FONTS[data.theme.font] || FONTS.playfair;
       const selectedSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
-      // Persist hero image (convert blob URLs to data URLs)
-      const heroImageToSave = await (async () => {
-        if (!data.images.hero) return heroImageSrc;
-        if (/^data:/i.test(data.images.hero)) return data.images.hero;
-        if (data.images.hero.startsWith("blob:")) {
-          try {
-            const response = await fetch(data.images.hero);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            return await new Promise<string>((resolve, reject) => {
-              reader.onloadend = () => resolve((reader.result as string) || "");
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-          } catch (err) {
-            console.error("Failed to convert blob URL", err);
-            return heroImageSrc;
-          }
-        }
-        return data.images.hero;
-      })();
+      const heroImageToSave =
+        (await persistImageMediaValue({
+          value: data.images.hero,
+          eventId: editEventId || undefined,
+          fileName: "baby-shower-hero.png",
+          fallbackValue: heroImageSrc,
+        })) || heroImageSrc;
 
       const registryLinks = data.registries
         .filter((r) => r.url.trim())

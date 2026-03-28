@@ -29,6 +29,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 type FieldSpec = {
   key: string;
@@ -762,32 +763,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
-        // Convert blob URLs to data URLs for saving so edits persist
-        let heroToSave = config.defaultHero;
-        if (data.hero) {
-          if (/^blob:/i.test(data.hero)) {
-            try {
-              const response = await fetch(data.hero);
-              const blob = await response.blob();
-              const reader = new FileReader();
-              heroToSave = await new Promise<string>((resolve, reject) => {
-                reader.onloadend = () => {
-                  const result = reader.result as string;
-                  resolve(result || config.defaultHero);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-              });
-            } catch (err) {
-              console.error("Failed to convert blob URL:", err);
-              heroToSave = config.defaultHero;
-            }
-          } else if (/^data:/i.test(data.hero)) {
-            heroToSave = data.hero;
-          } else {
-            heroToSave = data.hero;
-          }
-        }
+        const heroToSave =
+          (await persistImageMediaValue({
+            value: data.hero,
+            eventId: editEventId || undefined,
+            fileName: `${config.slug}-hero.png`,
+            fallbackValue: config.defaultHero,
+          })) || config.defaultHero;
 
         const validThemeId =
           themeId && config.themes.find((t) => t.id === themeId)

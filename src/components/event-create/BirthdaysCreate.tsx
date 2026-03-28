@@ -16,6 +16,7 @@ import {
   createObjectUrlPreview,
   getAttachmentPreviewForEditor,
   mergeUploadedEventMedia,
+  persistImageMediaValue,
   uploadMediaFile,
   validateClientUploadFile,
 } from "@/utils/media-upload-client";
@@ -865,6 +866,13 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
       if (!headerUpload && attachmentPreviewUrl) {
         mediaPatch.thumbnail = attachmentPreviewUrl;
       }
+      const profileImageUrl = profileImage?.dataUrl
+        ? await persistImageMediaValue({
+            value: profileImage.dataUrl,
+            eventId: editEventId || undefined,
+            fileName: profileImage.name || "birthday-profile.png",
+          })
+        : null;
 
       const payload: any = {
         title: title || "Event",
@@ -900,7 +908,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
             ? {
                 name: profileImage.name,
                 type: profileImage.type,
-                dataUrl: profileImage.dataUrl,
+                dataUrl: profileImageUrl || profileImage.dataUrl,
               }
             : undefined,
           ...mediaPatch,

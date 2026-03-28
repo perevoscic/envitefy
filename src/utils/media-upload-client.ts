@@ -56,6 +56,50 @@ export async function uploadMediaFile(params: {
   return json as UploadResponse;
 }
 
+async function fileFromMediaValue(value: string, fileName: string): Promise<File | null> {
+  try {
+    const response = await fetch(value);
+    const blob = await response.blob();
+    const mimeType =
+      blob.type ||
+      (value.startsWith("data:") ? value.slice(5, value.indexOf(";base64,")) : "") ||
+      "image/png";
+    return new File([blob], fileName, {
+      type: mimeType,
+      lastModified: Date.now(),
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function persistImageMediaValue(params: {
+  value?: string | null;
+  eventId?: string | null;
+  uploadToken?: string | null;
+  fileName?: string;
+  fallbackValue?: string | null;
+}): Promise<string | null> {
+  const value = typeof params.value === "string" ? params.value.trim() : "";
+  if (!value) return params.fallbackValue || null;
+  if (/^https?:\/\//i.test(value) || value.startsWith("/")) {
+    return value;
+  }
+  if (!value.startsWith("blob:") && !value.startsWith("data:")) {
+    return params.fallbackValue || null;
+  }
+
+  const file = await fileFromMediaValue(value, params.fileName || "event-image.png");
+  if (!file) return params.fallbackValue || null;
+  const upload = await uploadMediaFile({
+    file,
+    usage: "header",
+    eventId: params.eventId,
+    uploadToken: params.uploadToken,
+  });
+  return upload.stored.display?.url || upload.eventMedia.thumbnail || params.fallbackValue || null;
+}
+
 export function mergeUploadedEventMedia(params: {
   headerUpload?: UploadResponse | null;
   attachmentUpload?: UploadResponse | null;
