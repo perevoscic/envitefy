@@ -1,47 +1,35 @@
 "use client";
 
+import * as chrono from "chrono-node";
+import { Eye, Mail, Pencil, Share2, Trash2, UserPlus } from "lucide-react";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
+  type Dispatch,
+  type SetStateAction,
   useCallback,
   useEffect,
   useRef,
   useState,
-  type Dispatch,
-  type SetStateAction,
 } from "react";
-import Image from "next/image";
+import { useEventCache } from "@/app/event-cache-context";
+import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
 import { CalendarIconGoogle } from "@/components/CalendarIcons";
-import { useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
-import * as chrono from "chrono-node";
-import {
-  Eye,
-  Mail,
-  Pencil,
-  Share2,
-  Trash2,
-  UserPlus,
-} from "lucide-react";
-import { uploadMediaFile } from "@/utils/media-upload-client";
-import { readFileAsDataUrl } from "@/utils/thumbnail";
-import { extractFirstPhoneNumber } from "@/utils/phone";
-import { findFirstEmail } from "@/utils/contact";
-import { buildEventPath } from "@/utils/event-url";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
-import {
-  SnapProcessingCard,
-  type SnapPreviewKind,
-  type SnapProcessingStatus,
-} from "@/components/snap/SnapProcessingCard";
 import HomeOverviewDashboard from "@/components/dashboard/HomeOverviewDashboard";
 import {
-  TEMPLATE_DEFINITIONS,
-  TEMPLATE_KEYS,
-  type TemplateKey,
-} from "@/config/feature-visibility";
-import { useSidebar, type EventContextTab } from "@/app/sidebar-context";
-import { useEventCache } from "@/app/event-cache-context";
+  type SnapPreviewKind,
+  SnapProcessingCard,
+  type SnapProcessingStatus,
+} from "@/components/snap/SnapProcessingCard";
 import { useMenuOptional } from "@/contexts/MenuContext";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { findFirstEmail } from "@/utils/contact";
+import { buildEventPath } from "@/utils/event-url";
+import { uploadMediaFile } from "@/utils/media-upload-client";
+import { extractFirstPhoneNumber } from "@/utils/phone";
+import { readFileAsDataUrl } from "@/utils/thumbnail";
 
 type EventFields = {
   title: string;
@@ -231,7 +219,6 @@ export default function Dashboard({
 }) {
   const { data: session } = useSession();
   const menu = useMenuOptional();
-  const featureVisibility = menu?.featureVisibility || null;
   const pathname = usePathname();
   const {
     selectedEventId: sidebarSelectedEventId,
@@ -241,26 +228,13 @@ export default function Dashboard({
     activeEventTab: sidebarActiveEventTab,
     clearEventContext,
   } = useSidebar();
-  const selectedEventId =
-    initialEventContext?.eventId ?? sidebarSelectedEventId ?? null;
-  const selectedEventTitle =
-    initialEventContext?.eventTitle ?? sidebarSelectedEventTitle ?? null;
-  const selectedEventHref =
-    initialEventContext?.eventHref ?? sidebarSelectedEventHref ?? null;
+  const selectedEventId = initialEventContext?.eventId ?? sidebarSelectedEventId ?? null;
+  const selectedEventTitle = initialEventContext?.eventTitle ?? sidebarSelectedEventTitle ?? null;
+  const selectedEventHref = initialEventContext?.eventHref ?? sidebarSelectedEventHref ?? null;
   const selectedEventEditHref =
     initialEventContext?.eventEditHref ?? sidebarSelectedEventEditHref ?? null;
-  const activeEventTab =
-    initialEventContext?.activeEventTab ?? sidebarActiveEventTab;
+  const activeEventTab = initialEventContext?.activeEventTab ?? sidebarActiveEventTab;
   const isSignedIn = Boolean(session?.user);
-  const fallbackRefreshVisibility = useCallback(async () => {}, []);
-  const visibilityLoading = featureVisibility?.loading ?? false;
-  const onboardingRequired = featureVisibility?.required ?? false;
-  const onboardingCompleted = featureVisibility?.completed ?? false;
-  const promptDismissedAt = featureVisibility?.promptDismissedAt ?? null;
-  const visibleTemplateKeys =
-    featureVisibility?.visibleTemplateKeys ?? [...TEMPLATE_KEYS];
-  const refreshVisibility =
-    featureVisibility?.refresh ?? fallbackRefreshVisibility;
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [event, setEvent] = useState<EventFields | null>(null);
@@ -273,7 +247,7 @@ export default function Dashboard({
   const [ocrBirthdayTemplateHint, setOcrBirthdayTemplateHint] =
     useState<BirthdayTemplateHint | null>(null);
   const [autoAddPreference, setAutoAddPreference] = useState<AutoAddPreference>(
-    DEFAULT_AUTO_ADD_PREFERENCE
+    DEFAULT_AUTO_ADD_PREFERENCE,
   );
   const [scanStatus, setScanStatus] = useState<SnapProcessingStatus>("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -283,22 +257,16 @@ export default function Dashboard({
   const activeOcrAbortRef = useRef<AbortController | null>(null);
   const cancelledByUserRef = useRef(false);
   const isSubmittingRef = useRef(false);
-  const submitScannedEventRef = useRef<
-    (params: SubmitScannedEventParams) => Promise<boolean>
-  >(async () => false);
+  const submitScannedEventRef = useRef<(params: SubmitScannedEventParams) => Promise<boolean>>(
+    async () => false,
+  );
   const previewLoadIdRef = useRef(0);
   const scanStartedAtRef = useRef<number | null>(null);
   const scanStatusRef = useRef<SnapProcessingStatus>("idle");
-  const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
-  const [softPromptDismissed, setSoftPromptDismissed] = useState(false);
-  const [nextEventMetrics, setNextEventMetrics] =
-    useState<DashboardMetricsCache | null>(null);
-  const [enrichMeta, setEnrichMeta] = useState<DashboardEnrichMeta | null>(
-    null
-  );
+  const [nextEventMetrics, setNextEventMetrics] = useState<DashboardMetricsCache | null>(null);
+  const [enrichMeta, setEnrichMeta] = useState<DashboardEnrichMeta | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
-  const [ownerDashboardData, setOwnerDashboardData] =
-    useState<OwnerDashboardData | null>(null);
+  const [ownerDashboardData, setOwnerDashboardData] = useState<OwnerDashboardData | null>(null);
   const {
     dashboardData: cachedDashboardData,
     dashboardLoading,
@@ -336,10 +304,7 @@ export default function Dashboard({
     setAutoAddPreference(next);
     if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(
-        AUTO_ADD_PREFERENCE_STORAGE_KEY,
-        JSON.stringify(next)
-      );
+      window.localStorage.setItem(AUTO_ADD_PREFERENCE_STORAGE_KEY, JSON.stringify(next));
     } catch {
       // ignore storage failures
     }
@@ -366,11 +331,6 @@ export default function Dashboard({
     }
   }, []);
 
-  useEffect(() => {
-    if (!isSignedIn || visibilityLoading) return;
-    setOnboardingModalOpen(Boolean(onboardingRequired));
-  }, [isSignedIn, visibilityLoading, onboardingRequired]);
-
   const clearScanTimers = useCallback(() => {
     if (uploadIntervalRef.current) {
       clearInterval(uploadIntervalRef.current);
@@ -390,7 +350,7 @@ export default function Dashboard({
         setPreviewKind(null);
       }
     },
-    [clearScanTimers]
+    [clearScanTimers],
   );
 
   const startScanUi = useCallback(
@@ -400,13 +360,11 @@ export default function Dashboard({
       previewLoadIdRef.current += 1;
       const previewLoadId = previewLoadIdRef.current;
 
-      const nextPreviewKind: SnapPreviewKind = selected.type.startsWith(
-        "image/"
-      )
+      const nextPreviewKind: SnapPreviewKind = selected.type.startsWith("image/")
         ? "image"
         : selected.type === "application/pdf"
-        ? "pdf"
-        : "file";
+          ? "pdf"
+          : "file";
       setPreviewKind(nextPreviewKind);
       if (nextPreviewKind === "image") {
         if (previewOverride) {
@@ -444,7 +402,7 @@ export default function Dashboard({
         });
       }, 100);
     },
-    [clearScanTimers]
+    [clearScanTimers],
   );
 
   const finishScanUi = useCallback(async () => {
@@ -460,9 +418,7 @@ export default function Dashboard({
     }
 
     const minScanRevealMs = 1200;
-    const elapsed = scanStartedAtRef.current
-      ? Date.now() - scanStartedAtRef.current
-      : 0;
+    const elapsed = scanStartedAtRef.current ? Date.now() - scanStartedAtRef.current : 0;
     if (elapsed < minScanRevealMs) {
       await new Promise<void>((resolve) => {
         setTimeout(resolve, minScanRevealMs - elapsed);
@@ -511,7 +467,7 @@ export default function Dashboard({
       }
       console.error("[snap-upload]", payload, err);
     },
-    []
+    [],
   );
 
   const connected = {
@@ -529,9 +485,7 @@ export default function Dashboard({
         let storedOrigin: { lat: number; lng: number } | null = null;
         try {
           if (typeof window !== "undefined") {
-            const raw = window.localStorage.getItem(
-              DASHBOARD_ORIGIN_STORAGE_KEY
-            );
+            const raw = window.localStorage.getItem(DASHBOARD_ORIGIN_STORAGE_KEY);
             if (raw) {
               const parsed = JSON.parse(raw) as {
                 lat?: unknown;
@@ -660,7 +614,7 @@ export default function Dashboard({
           lat: origin.lat,
           lng: origin.lng,
           savedAt: new Date().toISOString(),
-        })
+        }),
       );
     } catch {}
   }, []);
@@ -669,29 +623,27 @@ export default function Dashboard({
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
       return readStoredOrigin();
     }
-    const livePosition = await new Promise<{ lat: number; lng: number } | null>(
-      (resolve) => {
-        const timeout = window.setTimeout(() => resolve(null), 10500);
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            window.clearTimeout(timeout);
-            resolve({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            });
-          },
-          () => {
-            window.clearTimeout(timeout);
-            resolve(null);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 5 * 60 * 1000,
-          }
-        );
-      }
-    );
+    const livePosition = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      const timeout = window.setTimeout(() => resolve(null), 10500);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          window.clearTimeout(timeout);
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        () => {
+          window.clearTimeout(timeout);
+          resolve(null);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 5 * 60 * 1000,
+        },
+      );
+    });
     if (livePosition) {
       persistOrigin(livePosition);
       return livePosition;
@@ -733,10 +685,7 @@ export default function Dashboard({
     } finally {
       setMetricsLoading(false);
     }
-  }, [
-    dashboardData?.nextEvent?.id,
-    resolveCurrentPosition,
-  ]);
+  }, [dashboardData?.nextEvent?.id, resolveCurrentPosition]);
 
   const openCreateEvent = useCallback(() => {
     try {
@@ -744,28 +693,20 @@ export default function Dashboard({
     } catch {}
   }, [router]);
 
-  const isEventRoute =
-    (pathname?.startsWith("/event/") ?? false) || Boolean(initialEventContext);
+  const isEventRoute = (pathname?.startsWith("/event/") ?? false) || Boolean(initialEventContext);
   const hasEventContextOnPage = Boolean(selectedEventId) && isEventRoute;
   const showEventHeaderActions = hasEventContextOnPage;
   const viewerName =
-    (session?.user?.name as string) ||
-    (session?.user?.email as string)?.split("@")[0] ||
-    "there";
+    (session?.user?.name as string) || (session?.user?.email as string)?.split("@")[0] || "there";
   const showWelcomeMessage = false;
-  const showHeaderRow =
-    isSignedIn && (showWelcomeMessage || showEventHeaderActions);
+  const showHeaderRow = isSignedIn && (showWelcomeMessage || showEventHeaderActions);
   const selectedEventLabel = selectedEventTitle || "Untitled event";
   const headerPrimaryActionButtonClass =
     "inline-flex items-center gap-1.5 rounded-full border border-[#5b4ed1] bg-[#5b4ed1] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#4f44bc]";
   const headerSecondaryActionButtonClass =
     "inline-flex items-center gap-1.5 rounded-full border border-[#ddd6ff] bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#4f457a] shadow-sm transition hover:border-[#c8beff] hover:bg-white";
-  const showOwnerDashboard = Boolean(
-    hasEventContextOnPage && activeEventTab === "dashboard"
-  );
-  const showOwnerTabPlaceholder = Boolean(
-    hasEventContextOnPage && activeEventTab !== "dashboard"
-  );
+  const showOwnerDashboard = Boolean(hasEventContextOnPage && activeEventTab === "dashboard");
+  const showOwnerTabPlaceholder = Boolean(hasEventContextOnPage && activeEventTab !== "dashboard");
 
   const handleHeaderPreview = useCallback(() => {
     if (!selectedEventHref) return;
@@ -810,9 +751,9 @@ export default function Dashboard({
       selectedEventHref
         ? `I wanted to share this event with you: ${new URL(
             selectedEventHref,
-            window.location.origin
+            window.location.origin,
           ).toString()}`
-        : "I wanted to share this event with you."
+        : "I wanted to share this event with you.",
     );
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }, [selectedEventHref, selectedEventLabel]);
@@ -820,7 +761,7 @@ export default function Dashboard({
   const handleHeaderDelete = useCallback(async () => {
     if (!selectedEventId) return;
     const ok = window.confirm(
-      `Are you sure you want to delete this event?\n\n${selectedEventLabel}`
+      `Are you sure you want to delete this event?\n\n${selectedEventLabel}`,
     );
     if (!ok) return;
     try {
@@ -830,13 +771,10 @@ export default function Dashboard({
       if (!response.ok) {
         throw new Error("Failed to delete event");
       }
-      window.dispatchEvent(
-        new CustomEvent("history:deleted", { detail: { id: selectedEventId } })
-      );
+      window.dispatchEvent(new CustomEvent("history:deleted", { detail: { id: selectedEventId } }));
       invalidateEventCache({ force: true, source: "dashboard-delete" });
       clearEventContext();
-      const currentPath =
-        typeof window !== "undefined" ? window.location.pathname : pathname;
+      const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
       if (
         currentPath &&
         (currentPath === `/event/${selectedEventId}` ||
@@ -851,13 +789,7 @@ export default function Dashboard({
     } catch {
       // no-op placeholder until a global toast system is wired here
     }
-  }, [
-    clearEventContext,
-    pathname,
-    router,
-    selectedEventId,
-    selectedEventLabel,
-  ]);
+  }, [clearEventContext, pathname, router, selectedEventId, selectedEventLabel]);
 
   const resetForm = useCallback(() => {
     cancelledByUserRef.current = true;
@@ -883,23 +815,20 @@ export default function Dashboard({
       clearScanTimers();
       previewLoadIdRef.current += 1;
     },
-    [clearScanTimers]
+    [clearScanTimers],
   );
 
-  const parseStartToIso = useCallback(
-    (value: string | null, _timezone: string) => {
-      if (!value) return null;
-      try {
-        const isoDate = new Date(value);
-        if (!Number.isNaN(isoDate.getTime())) return isoDate.toISOString();
-      } catch {
-        // ignore
-      }
-      const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
-      return parsed ? new Date(parsed.getTime()).toISOString() : null;
-    },
-    []
-  );
+  const parseStartToIso = useCallback((value: string | null, _timezone: string) => {
+    if (!value) return null;
+    try {
+      const isoDate = new Date(value);
+      if (!Number.isNaN(isoDate.getTime())) return isoDate.toISOString();
+    } catch {
+      // ignore
+    }
+    const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
+    return parsed ? new Date(parsed.getTime()).toISOString() : null;
+  }, []);
 
   const normalizeAddress = useCallback((raw: string) => {
     if (!raw) return "";
@@ -918,10 +847,7 @@ export default function Dashboard({
 
   const buildSubmissionEvent = useCallback(
     (input: EventFields) => {
-      const timezone =
-        input.timezone ||
-        Intl.DateTimeFormat().resolvedOptions().timeZone ||
-        "UTC";
+      const timezone = input.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const startIso = parseStartToIso(input.start, timezone);
       if (!startIso) return null;
       const endIso = input.end
@@ -937,7 +863,7 @@ export default function Dashboard({
         timezone,
       } as EventFields;
     },
-    [normalizeAddress, parseStartToIso]
+    [normalizeAddress, parseStartToIso],
   );
 
   const ingest = useCallback(
@@ -966,10 +892,7 @@ export default function Dashboard({
         } catch (readErr) {
           // If reading fails, fall back to using the original file object
           // (works on most platforms but may fail on Android)
-          console.warn(
-            "Failed to prepare OCR upload file, using original file object:",
-            readErr
-          );
+          console.warn("Failed to prepare OCR upload file, using original file object:", readErr);
         }
 
         const form = new FormData();
@@ -997,9 +920,7 @@ export default function Dashboard({
             if (cancelledByUserRef.current) {
               throw new Error("__scan_cancelled__");
             }
-            throw new Error(
-              "Upload timed out. Please check your connection and try again."
-            );
+            throw new Error("Upload timed out. Please check your connection and try again.");
           }
           logUploadIssue(fetchErr, "fetch", {
             fileName: incoming.name,
@@ -1007,18 +928,15 @@ export default function Dashboard({
             fileType: incoming.type,
           });
           // Network errors, CORS issues, etc.
-          const errorMessage =
-            fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+          const errorMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
           throw new Error(
-            `Upload failed: ${errorMessage}. Please check your connection and try again.`
+            `Upload failed: ${errorMessage}. Please check your connection and try again.`,
           );
         }
 
         if (!res.ok) {
           const payload = await res.json().catch(() => ({}));
-          const errorMsg =
-            (payload as { error?: string })?.error ||
-            `Server error (${res.status})`;
+          const errorMsg = (payload as { error?: string })?.error || `Server error (${res.status})`;
           logUploadIssue(new Error(errorMsg || "HTTP error"), "http", {
             status: res.status,
             statusText: res.statusText,
@@ -1031,9 +949,7 @@ export default function Dashboard({
 
         const data = await res.json();
         const tz =
-          data?.fieldsGuess?.timezone ||
-          Intl.DateTimeFormat().resolvedOptions().timeZone ||
-          "UTC";
+          data?.fieldsGuess?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
         const formatIsoForInput = (iso: string | null, timezone: string) => {
           if (!iso) return null;
           try {
@@ -1054,9 +970,7 @@ export default function Dashboard({
         };
         // Clean RSVP field: extract ONLY phone number (digits only) or email (no "RSVP:", names, etc.)
         // This ensures the field contains ONLY the contact info that can be used directly for SMS/email
-        const cleanRsvp = (
-          rsvpText: string | null | undefined
-        ): string | null => {
+        const cleanRsvp = (rsvpText: string | null | undefined): string | null => {
           if (!rsvpText) return null;
           // Try to extract phone number first
           const phone = extractFirstPhoneNumber(rsvpText);
@@ -1080,9 +994,7 @@ export default function Dashboard({
           return null;
         };
 
-        const cleanedRsvp = data?.fieldsGuess?.rsvp
-          ? cleanRsvp(data.fieldsGuess.rsvp)
-          : null;
+        const cleanedRsvp = data?.fieldsGuess?.rsvp ? cleanRsvp(data.fieldsGuess.rsvp) : null;
 
         const adjusted: EventFields | null = data?.fieldsGuess
           ? {
@@ -1121,9 +1033,7 @@ export default function Dashboard({
         } else {
           resetScanUi();
           setModalOpen(false);
-          setError(
-            "Unable to create an event from this scan. Please try again."
-          );
+          setError("Unable to create an event from this scan. Please try again.");
         }
       } catch (err) {
         if (err instanceof Error && err.message === "__scan_cancelled__") {
@@ -1137,9 +1047,7 @@ export default function Dashboard({
         setModalOpen(false);
         const alreadyLogged =
           err instanceof Error &&
-          Boolean(
-            (err as Error & { __snapUploadLogged?: boolean }).__snapUploadLogged
-          );
+          Boolean((err as Error & { __snapUploadLogged?: boolean }).__snapUploadLogged);
         if (!alreadyLogged) {
           logUploadIssue(err, "ingest-final", {
             fileName: incoming.name,
@@ -1158,7 +1066,7 @@ export default function Dashboard({
         setLoading(false);
       }
     },
-    [finishScanUi, logUploadIssue, resetScanUi]
+    [finishScanUi, logUploadIssue, resetScanUi],
   );
 
   const onFile = useCallback(
@@ -1170,7 +1078,7 @@ export default function Dashboard({
       startScanUi(selected, previewOverride);
       void ingest(selected);
     },
-    [ingest, startScanUi]
+    [ingest, startScanUi],
   );
 
   const openCamera = useCallback(() => {
@@ -1313,14 +1221,11 @@ export default function Dashboard({
     }): Promise<SaveHistoryResult> => {
       try {
         const timezone =
-          eventInput.timezone ||
-          Intl.DateTimeFormat().resolvedOptions().timeZone ||
-          "UTC";
+          eventInput.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
         let thumbnail: string | undefined;
         let attachment: Record<string, unknown> | undefined;
-        const fileForUpload =
-          typeof sourceFile !== "undefined" ? sourceFile : uploadedFile;
+        const fileForUpload = typeof sourceFile !== "undefined" ? sourceFile : uploadedFile;
         if (fileForUpload instanceof File) {
           try {
             const upload = await uploadMediaFile({
@@ -1369,15 +1274,11 @@ export default function Dashboard({
             birthdayAudience: isBirthdayOcrEvent
               ? normalizedBirthdayTemplateHint.audience || "neutral"
               : undefined,
-            birthdayTemplateHint: isBirthdayOcrEvent
-              ? normalizedBirthdayTemplateHint
-              : undefined,
+            birthdayTemplateHint: isBirthdayOcrEvent ? normalizedBirthdayTemplateHint : undefined,
             birthdayName: isBirthdayOcrEvent
               ? normalizedBirthdayTemplateHint.honoreeName || undefined
               : undefined,
-            age: isBirthdayOcrEvent
-              ? normalizedBirthdayTemplateHint.age || undefined
-              : undefined,
+            age: isBirthdayOcrEvent ? normalizedBirthdayTemplateHint.age || undefined : undefined,
           },
         };
 
@@ -1393,8 +1294,7 @@ export default function Dashboard({
           typeof historyData?.id === "string" && historyData.id.trim()
             ? historyData.id.trim()
             : undefined;
-        const savedTitle =
-          typeof historyData?.title === "string" ? historyData.title : undefined;
+        const savedTitle = typeof historyData?.title === "string" ? historyData.title : undefined;
 
         if (!historyRes.ok || !eventId) {
           const serverError =
@@ -1403,9 +1303,7 @@ export default function Dashboard({
               : null;
           return {
             ok: false,
-            error:
-              serverError ||
-              "We couldn't save this event to your account. Please try again.",
+            error: serverError || "We couldn't save this event to your account. Please try again.",
           };
         }
 
@@ -1420,7 +1318,7 @@ export default function Dashboard({
                 category: normalizedOcrCategory || null,
                 data: payload.data,
               },
-            })
+            }),
           );
         }
         invalidateEventCache({ force: true, source: "dashboard-create" });
@@ -1433,7 +1331,7 @@ export default function Dashboard({
         };
       }
     },
-    [invalidateEventCache, ocrBirthdayTemplateHint, ocrCategory, uploadedFile]
+    [invalidateEventCache, ocrBirthdayTemplateHint, ocrCategory, uploadedFile],
   );
 
   const connectGoogle = useCallback(() => {
@@ -1461,10 +1359,7 @@ export default function Dashboard({
     const jsonStr = JSON.stringify(eventData);
     // Use btoa with encodeURIComponent for proper UTF-8 handling
     const stateParam = btoa(encodeURIComponent(jsonStr));
-    window.open(
-      `/api/google/auth?state=${encodeURIComponent(stateParam)}`,
-      "_blank"
-    );
+    window.open(`/api/google/auth?state=${encodeURIComponent(stateParam)}`, "_blank");
   }, [event, buildSubmissionEvent, setError]);
 
   const connectOutlook = useCallback(() => {
@@ -1504,7 +1399,7 @@ export default function Dashboard({
           setError(
             saveResult.error === "Unable to resolve signed-in account"
               ? "We couldn't verify your signed-in account. Sign out and sign back in, then try again."
-              : saveResult.error
+              : saveResult.error,
           );
           if (mode === "auto") {
             setEvent(eventInput);
@@ -1526,9 +1421,7 @@ export default function Dashboard({
             });
             const payload: any = await res.json().catch(() => ({}));
             if (!res.ok) {
-              throw new Error(
-                payload?.error || "Failed to add to Google Calendar"
-              );
+              throw new Error(payload?.error || "Failed to add to Google Calendar");
             }
             if (payload?.htmlLink) {
               window.open(payload.htmlLink, "_blank");
@@ -1542,9 +1435,7 @@ export default function Dashboard({
             });
             const payload: any = await res.json().catch(() => ({}));
             if (!res.ok) {
-              throw new Error(
-                payload?.error || "Failed to add to Outlook Calendar"
-              );
+              throw new Error(payload?.error || "Failed to add to Outlook Calendar");
             }
             if (payload?.webLink) {
               window.open(payload.webLink, "_blank");
@@ -1556,13 +1447,8 @@ export default function Dashboard({
         } catch (providerErr: any) {
           const label = providerLabel(provider);
           const baseError =
-            providerErr?.message ||
-            `Failed to add to ${label}. Please try again from review.`;
-          setError(
-            mode === "auto"
-              ? `${baseError} Review details and retry.`
-              : baseError
-          );
+            providerErr?.message || `Failed to add to ${label}. Please try again from review.`;
+          setError(mode === "auto" ? `${baseError} Review details and retry.` : baseError);
           if (mode === "auto" && provider !== "envitefy") {
             setEvent(eventInput);
             setModalOpen(true);
@@ -1589,7 +1475,7 @@ export default function Dashboard({
       resetForm,
       router,
       saveToEnvitefyHistory,
-    ]
+    ],
   );
 
   submitScannedEventRef.current = submitScannedEvent;
@@ -1615,7 +1501,7 @@ export default function Dashboard({
         rememberAutoAdd: Boolean(options?.enableAutoAdd),
       });
     },
-    [event, submitScannedEvent]
+    [event, submitScannedEvent],
   );
 
   const addOutlook = useCallback(
@@ -1628,7 +1514,7 @@ export default function Dashboard({
         rememberAutoAdd: Boolean(options?.enableAutoAdd),
       });
     },
-    [event, submitScannedEvent]
+    [event, submitScannedEvent],
   );
 
   const addAppleCalendar = useCallback(
@@ -1641,7 +1527,7 @@ export default function Dashboard({
         rememberAutoAdd: Boolean(options?.enableAutoAdd),
       });
     },
-    [event, submitScannedEvent]
+    [event, submitScannedEvent],
   );
 
   useEffect(() => {
@@ -1649,7 +1535,7 @@ export default function Dashboard({
   }, [session]);
 
   const showScanSection = Boolean(
-    error || loading || scanStatus !== "idle" || (modalOpen && event)
+    error || loading || scanStatus !== "idle" || (modalOpen && event),
   );
 
   useEffect(() => {
@@ -1661,35 +1547,6 @@ export default function Dashboard({
       media.removeEventListener("change", handler);
     };
   }, []);
-
-  const showSoftPrompt =
-    isSignedIn &&
-    !visibilityLoading &&
-    !onboardingRequired &&
-    !onboardingCompleted &&
-    !promptDismissedAt &&
-    !softPromptDismissed;
-
-  const handleDismissPrompt = useCallback(async () => {
-    try {
-      await fetch("/api/user/onboarding", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ action: "dismiss_prompt" }),
-      });
-    } catch {
-      // ignore network errors for dismiss
-    } finally {
-      setSoftPromptDismissed(true);
-      void refreshVisibility();
-    }
-  }, [refreshVisibility]);
-
-  const handleOnboardingComplete = useCallback(async () => {
-    setOnboardingModalOpen(false);
-    await refreshVisibility();
-  }, [refreshVisibility]);
 
   return (
     <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-gradient-to-b from-[#F8F5FF] via-white to-white px-3 pb-20 pt-2 text-foreground md:px-8 md:pt-16">
@@ -1726,13 +1583,10 @@ export default function Dashboard({
                 <div
                   className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
                   style={{
-                    fontFamily:
-                      '"Venturis ADF", "Venturis ADF Fallback", serif',
+                    fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
                   }}
                 >
-                  <span className="block text-[#1b1540] sm:inline">
-                    Welcome Back,
-                  </span>
+                  <span className="block text-[#1b1540] sm:inline">Welcome Back,</span>
                   <span className="mt-0.5 block text-[#7F8CFF] italic sm:ml-2 sm:mt-0 sm:inline">
                     {(session?.user?.name as string) ||
                       (session?.user?.email as string)?.split("@")[0] ||
@@ -1876,20 +1730,6 @@ export default function Dashboard({
           />
         </section>
       )}
-      <OnboardingModal
-        open={onboardingModalOpen}
-        visibleTemplateKeys={visibleTemplateKeys}
-        required={onboardingRequired}
-        onClose={() => {
-          if (!onboardingRequired) setOnboardingModalOpen(false);
-        }}
-        onComplete={handleOnboardingComplete}
-      />
-      <OnboardingPromptPopup
-        open={showSoftPrompt && !onboardingModalOpen}
-        onStart={() => setOnboardingModalOpen(true)}
-        onDismiss={handleDismissPrompt}
-      />
     </main>
   );
 }
@@ -1911,164 +1751,6 @@ type SnapEventModalProps = {
   resetForm: () => void;
   autoAddEnabled: boolean;
 };
-
-type OnboardingModalProps = {
-  open: boolean;
-  required: boolean;
-  visibleTemplateKeys: TemplateKey[];
-  onClose: () => void;
-  onComplete: () => void;
-};
-
-function OnboardingModal({
-  open,
-  required,
-  visibleTemplateKeys,
-  onClose,
-  onComplete,
-}: OnboardingModalProps) {
-  const [step, setStep] = useState<1 | 2>(1);
-  const [saving, setSaving] = useState(false);
-  const [selectedKeys, setSelectedKeys] = useState<TemplateKey[]>(
-    visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS]
-  );
-
-  useEffect(() => {
-    if (!open) return;
-    setStep(1);
-    setSelectedKeys(
-      visibleTemplateKeys.length > 0 ? visibleTemplateKeys : [...TEMPLATE_KEYS]
-    );
-  }, [open, visibleTemplateKeys]);
-
-  if (!open) return null;
-
-  const save = async () => {
-    if (!selectedKeys.length) return;
-    setSaving(true);
-    try {
-      const res = await fetch("/api/user/onboarding", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action: "complete",
-          persona: "general",
-          personas: ["general"],
-          visibleTemplateKeys: selectedKeys,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to save onboarding");
-      onComplete();
-    } catch (err) {
-      console.error("[onboarding] save failed", err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
-      <div className="relative z-10 w-full max-w-2xl rounded-3xl border border-[#e2dafb] bg-white p-6 shadow-2xl">
-        <div className="mb-5 flex items-start justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7F8CFF]">
-              Onboarding
-            </p>
-            <h2 className="text-2xl font-semibold text-[#1b1540]">
-              Personalize your workspace
-            </h2>
-          </div>
-          {!required && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-[#e6ddff] px-3 py-1 text-sm"
-            >
-              Close
-            </button>
-          )}
-        </div>
-
-        {step === 1 && (
-          <div className="space-y-4">
-            <p className="text-sm text-[#4f456f]">
-              Step 1: Choose the features you want visible.
-            </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {TEMPLATE_DEFINITIONS.map((item) => {
-                const checked = selectedKeys.includes(item.key);
-                return (
-                  <label
-                    key={item.key}
-                    className="flex items-center gap-3 rounded-xl border border-[#ebe6fb] px-3 py-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        setSelectedKeys((prev) => {
-                          if (e.target.checked) {
-                            if (prev.includes(item.key)) return prev;
-                            return [...prev, item.key];
-                          }
-                          return prev.filter((k) => k !== item.key);
-                        });
-                      }}
-                    />
-                    <span>{item.label}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-3">
-            <p className="text-sm text-[#4f456f]">
-              Step 2: Confirm and apply your feature visibility.
-            </p>
-            <p className="text-sm text-[#1b1540]">
-              You can update this anytime in Settings.
-            </p>
-          </div>
-        )}
-
-        <div className="mt-6 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setStep((s) => (s === 1 ? 1 : ((s - 1) as 1 | 2)))}
-            className="rounded-lg border border-[#e6ddff] px-3 py-1.5 text-sm"
-            disabled={step === 1 || saving}
-          >
-            Back
-          </button>
-          {step < 2 ? (
-            <button
-              type="button"
-              onClick={() => setStep((s) => (s + 1) as 1 | 2)}
-              disabled={step === 1 && selectedKeys.length === 0}
-              className="rounded-lg bg-[#7F8CFF] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving || selectedKeys.length === 0}
-              className="rounded-lg bg-[#7F8CFF] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {saving ? "Saving..." : "Finish"}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
   const cards = [
@@ -2120,9 +1802,7 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
           <h2 className="truncate text-2xl font-semibold text-[#201942] sm:text-3xl">
             {data.title}
           </h2>
-          <p className="mt-1 text-sm font-medium text-[#6e629f]">
-            {data.dateLine}
-          </p>
+          <p className="mt-1 text-sm font-medium text-[#6e629f]">{data.dateLine}</p>
         </header>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -2134,15 +1814,11 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#8f86ba]">
                 {card.label}
               </p>
-              <p
-                className={`mt-2 text-3xl font-bold tracking-tight ${card.accent}`}
-              >
+              <p className={`mt-2 text-3xl font-bold tracking-tight ${card.accent}`}>
                 {card.value}
               </p>
               {card.note ? (
-                <p className="mt-1 text-xs font-semibold text-[#4d9f76]">
-                  {card.note}
-                </p>
+                <p className="mt-1 text-xs font-semibold text-[#4d9f76]">{card.note}</p>
               ) : (
                 <p className="mt-1 text-xs text-transparent">.</p>
               )}
@@ -2152,12 +1828,8 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
 
         <section className="overflow-hidden rounded-[24px] border border-[#e1dafb] bg-white/92 shadow-[0_12px_30px_rgba(62,50,112,0.10)]">
           <div className="flex items-center justify-between border-b border-[#ece7ff] px-4 py-3 sm:px-6">
-            <h3 className="text-xl font-semibold text-[#221b45]">
-              Recent RSVPs
-            </h3>
-            <span className="text-sm font-semibold text-[#4e4acf]">
-              View All
-            </span>
+            <h3 className="text-xl font-semibold text-[#221b45]">Recent RSVPs</h3>
+            <span className="text-sm font-semibold text-[#4e4acf]">View All</span>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left">
@@ -2172,17 +1844,12 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
               <tbody>
                 {data.recentRsvps.length > 0 ? (
                   data.recentRsvps.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-t border-[#f0ecff] text-sm text-[#2b2350]"
-                    >
-                      <td className="px-4 py-3 font-semibold sm:px-6">
-                        {row.name}
-                      </td>
+                    <tr key={row.id} className="border-t border-[#f0ecff] text-sm text-[#2b2350]">
+                      <td className="px-4 py-3 font-semibold sm:px-6">{row.name}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(
-                            row.status
+                            row.status,
                           )}`}
                         >
                           {row.status}
@@ -2214,11 +1881,7 @@ function EventOwnerTabPlaceholder({
   tab: "dashboard" | "guests" | "communications" | "settings";
 }) {
   const label =
-    tab === "guests"
-      ? "Guests"
-      : tab === "communications"
-      ? "Communications"
-      : "Settings";
+    tab === "guests" ? "Guests" : tab === "communications" ? "Communications" : "Settings";
   return (
     <section className="rounded-[28px] border border-[#ddd5ff] bg-white/90 p-6 shadow-[0_20px_50px_rgba(80,63,145,0.12)]">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8f86ba]">
@@ -2226,55 +1889,10 @@ function EventOwnerTabPlaceholder({
       </p>
       <h3 className="mt-2 text-2xl font-semibold text-[#201942]">{label}</h3>
       <p className="mt-2 text-sm text-[#6e629f]">
-        {label} content is available in the next step. Dashboard remains the
-        default view on event open.
+        {label} content is available in the next step. Dashboard remains the default view on event
+        open.
       </p>
     </section>
-  );
-}
-
-function OnboardingPromptPopup({
-  open,
-  onStart,
-  onDismiss,
-}: {
-  open: boolean;
-  onStart: () => void;
-  onDismiss: () => void;
-}) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-[79] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-      <div className="relative z-10 w-full max-w-lg rounded-3xl border border-[#e2dafb] bg-white p-6 shadow-2xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7F8CFF]">
-          Quick Setup
-        </p>
-        <h3 className="mt-2 text-2xl font-semibold text-[#1b1540]">
-          Personalize your workspace
-        </h3>
-        <p className="mt-3 text-sm text-[#4f456f]">
-          Select the event features you want visible, and we will personalize
-          create menus and dashboard sections.
-        </p>
-        <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="rounded-lg border border-[#d8d2ef] px-3 py-1.5 text-sm font-semibold text-[#4a406b]"
-          >
-            Not now
-          </button>
-          <button
-            type="button"
-            onClick={onStart}
-            className="rounded-lg bg-[#7F8CFF] px-3 py-1.5 text-sm font-semibold text-white"
-          >
-            Start onboarding
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -2320,8 +1938,7 @@ function SnapEventModal({
     const ua = nav.userAgent || (nav as any).vendor || "";
     const uaLower = ua.toLowerCase();
     const platform = (nav.platform || "").toLowerCase();
-    const maxTouchPoints =
-      typeof nav.maxTouchPoints === "number" ? nav.maxTouchPoints : 0;
+    const maxTouchPoints = typeof nav.maxTouchPoints === "number" ? nav.maxTouchPoints : 0;
 
     // First, check if it's clearly NOT an Apple device - exclude these explicitly
     const isNotApple =
@@ -2355,9 +1972,7 @@ function SnapEventModal({
 
     // Detect macOS (but exclude touch-enabled Macs which are actually iPads)
     const isMacOS =
-      (/Mac OS X|Macintosh/.test(ua) ||
-        platform.startsWith("mac") ||
-        platform === "macintel") &&
+      (/Mac OS X|Macintosh/.test(ua) || platform.startsWith("mac") || platform === "macintel") &&
       !isIpadLike; // Exclude touch-enabled Macs that are actually iPads
 
     // Only set to true if it's definitively an Apple device
@@ -2413,7 +2028,7 @@ function SnapEventModal({
         return mutator(prev);
       });
     },
-    [setEvent]
+    [setEvent],
   );
 
   if (!open || !event) {
@@ -2438,8 +2053,7 @@ function SnapEventModal({
                 <h2
                   className="text-lg sm:text-2xl font-semibold text-[#3e2f68] mb-1 tracking-tight"
                   style={{
-                    fontFamily:
-                      '"Venturis ADF", "Venturis ADF Fallback", serif',
+                    fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
                   }}
                 >
                   Review Event Details
@@ -2586,29 +2200,21 @@ function SnapEventModal({
               </div>
 
               <div className="space-y-3">
-                <span className="text-sm font-semibold text-[#43336d] block">
-                  Reminders
-                </span>
+                <span className="text-sm font-semibold text-[#43336d] block">Reminders</span>
                 <div className="space-y-3">
                   {(event.reminders || []).map((reminder, idx) => {
                     const dayOptions = [1, 2, 3, 7, 14, 30];
                     const currentDays = Math.max(
                       1,
-                      Math.round((reminder.minutes || 0) / 1440) || 1
+                      Math.round((reminder.minutes || 0) / 1440) || 1,
                     );
                     return (
-                      <div
-                        key={idx}
-                        className="flex flex-col sm:flex-row sm:items-center gap-3"
-                      >
+                      <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-3">
                         <select
                           className="w-full sm:w-[240px] rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
                           value={currentDays}
                           onChange={(e) => {
-                            const days = Math.max(
-                              1,
-                              Number(e.target.value) || 1
-                            );
+                            const days = Math.max(1, Number(e.target.value) || 1);
                             updateEvent((current) => {
                               const next = [...(current.reminders || [])];
                               next[idx] = { minutes: days * 1440 };
@@ -2629,9 +2235,7 @@ function SnapEventModal({
                           onClick={() =>
                             updateEvent((current) => ({
                               ...current,
-                              reminders: (current.reminders || []).filter(
-                                (_, i) => i !== idx
-                              ),
+                              reminders: (current.reminders || []).filter((_, i) => i !== idx),
                             }))
                           }
                         >
@@ -2685,8 +2289,8 @@ function SnapEventModal({
                   onChange={(e) => setEnableAutoAddOnSave(e.target.checked)}
                 />
                 <span>
-                  Skip review next time and auto-add to the calendar button you
-                  tap now, plus Envitefy.
+                  Skip review next time and auto-add to the calendar button you tap now, plus
+                  Envitefy.
                   {autoAddEnabled
                     ? " Auto-add is currently enabled; saving here can update the provider."
                     : ""}
@@ -2767,12 +2371,7 @@ function SnapEventModal({
                     }}
                   >
                     <span>Add to</span>
-                    <Image
-                      src="/brands/apple-white.svg"
-                      alt="Apple"
-                      width={20}
-                      height={20}
-                    />
+                    <Image src="/brands/apple-white.svg" alt="Apple" width={20} height={20} />
                   </button>
                 )}
               </div>

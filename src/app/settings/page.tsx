@@ -1,10 +1,7 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import {
-  TEMPLATE_DEFINITIONS,
-  type TemplateKey,
-} from "@/config/feature-visibility";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TEMPLATE_DEFINITIONS, TEMPLATE_KEYS, type TemplateKey } from "@/config/feature-visibility";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
 type CalendarConnectionStatus = {
@@ -28,24 +25,19 @@ export default function SettingsPage() {
     loading: false,
     error: null,
   });
-  const [calendarState, setCalendarState] = useState<
-    ApiState<{ ok?: boolean }>
-  >({
+  const [calendarState, setCalendarState] = useState<ApiState<{ ok?: boolean }>>({
     loading: false,
     error: null,
   });
-  const [connectedCalendars, setConnectedCalendars] =
-    useState<CalendarConnectionStatus>({
-      google: false,
-      microsoft: false,
-      apple: false,
-    });
+  const [connectedCalendars, setConnectedCalendars] = useState<CalendarConnectionStatus>({
+    google: false,
+    microsoft: false,
+    apple: false,
+  });
   const autoClearedProviderRef = useRef<CalendarProvider | null>(null);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
-  const [visibleTemplateKeys, setVisibleTemplateKeys] = useState<TemplateKey[]>(
-    []
-  );
-  const [onboardingSaving, setOnboardingSaving] = useState(false);
+  const [visibleTemplateKeys, setVisibleTemplateKeys] = useState<TemplateKey[]>([...TEMPLATE_KEYS]);
+  const [featureVisibilitySaving, setFeatureVisibilitySaving] = useState(false);
 
   // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -56,19 +48,12 @@ export default function SettingsPage() {
     error: null,
   });
 
-  const userEmail = useMemo(
-    () => (session?.user?.email as string) || "",
-    [session]
-  );
+  const userEmail = useMemo(() => (session?.user?.email as string) || "", [session]);
 
   const normalizeProvider = (value: unknown): CalendarProvider | null => {
     if (typeof value !== "string") return null;
     const trimmed = value.trim().toLowerCase();
-    if (
-      trimmed === "google" ||
-      trimmed === "microsoft" ||
-      trimmed === "apple"
-    ) {
+    if (trimmed === "google" || trimmed === "microsoft" || trimmed === "apple") {
       return trimmed;
     }
     return null;
@@ -127,23 +112,26 @@ export default function SettingsPage() {
     }
   }, []);
 
-  const handleCalendarConnect = useCallback((provider: CalendarProvider) => {
-    if (typeof window === "undefined") return;
-    if (provider === "google") {
-      window.open("/api/google/auth?source=settings", "_blank", "noopener,noreferrer");
-    } else if (provider === "microsoft") {
-      window.open("/api/outlook/auth?source=settings", "_blank", "noopener,noreferrer");
-    } else {
-      window.open(
-        "https://support.apple.com/guide/calendar/welcome/mac",
-        "_blank",
-        "noopener,noreferrer"
-      );
-    }
-    window.setTimeout(() => {
-      void fetchConnectedCalendars();
-    }, 4000);
-  }, [fetchConnectedCalendars]);
+  const handleCalendarConnect = useCallback(
+    (provider: CalendarProvider) => {
+      if (typeof window === "undefined") return;
+      if (provider === "google") {
+        window.open("/api/google/auth?source=settings", "_blank", "noopener,noreferrer");
+      } else if (provider === "microsoft") {
+        window.open("/api/outlook/auth?source=settings", "_blank", "noopener,noreferrer");
+      } else {
+        window.open(
+          "https://support.apple.com/guide/calendar/welcome/mac",
+          "_blank",
+          "noopener,noreferrer",
+        );
+      }
+      window.setTimeout(() => {
+        void fetchConnectedCalendars();
+      }, 4000);
+    },
+    [fetchConnectedCalendars],
+  );
 
   async function saveCalendarDefault() {
     if (preferredProviderInvalid) {
@@ -172,8 +160,7 @@ export default function SettingsPage() {
       autoClearedProviderRef.current = null;
       setCalendarState({ loading: false, error: null, data: { ok: true } });
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to save calendar default";
+      const message = err instanceof Error ? err.message : "Failed to save calendar default";
       setCalendarState({ loading: false, error: message });
     }
   }
@@ -183,8 +170,7 @@ export default function SettingsPage() {
     async function loadProfile() {
       try {
         const res = await fetch("/api/user/profile", { cache: "no-store" });
-        if (!res.ok)
-          throw new Error((await res.json()).error || "Failed to load profile");
+        if (!res.ok) throw new Error((await res.json()).error || "Failed to load profile");
         const json = await res.json();
         if (ignore) return;
         setFirstName(json.firstName || "");
@@ -202,22 +188,24 @@ export default function SettingsPage() {
 
   useEffect(() => {
     let ignore = false;
-    async function loadOnboarding() {
+    async function loadFeatureVisibility() {
       try {
-        const res = await fetch("/api/user/onboarding", { cache: "no-store" });
+        const res = await fetch("/api/user/feature-visibility", {
+          cache: "no-store",
+        });
         if (!res.ok) return;
         const json = await res.json();
         if (ignore) return;
         setVisibleTemplateKeys(
           Array.isArray(json?.visibleTemplateKeys)
             ? (json.visibleTemplateKeys as TemplateKey[])
-            : []
+            : [...TEMPLATE_KEYS],
         );
       } catch {
         // ignore
       }
     }
-    loadOnboarding();
+    loadFeatureVisibility();
     return () => {
       ignore = true;
     };
@@ -238,9 +226,7 @@ export default function SettingsPage() {
   }, [fetchConnectedCalendars]);
 
   useEffect(() => {
-    const invalidProvider = preferredProviderInvalid
-      ? normalizeProvider(preferredProvider)
-      : null;
+    const invalidProvider = preferredProviderInvalid ? normalizeProvider(preferredProvider) : null;
     if (!invalidProvider || invalidProvider === "apple") {
       autoClearedProviderRef.current = null;
       return;
@@ -268,10 +254,7 @@ export default function SettingsPage() {
       } catch (err: unknown) {
         if (cancelled) return;
         autoClearedProviderRef.current = null;
-        const message =
-          err instanceof Error
-            ? err.message
-            : "Failed to clear disconnected default";
+        const message = err instanceof Error ? err.message : "Failed to clear disconnected default";
         setCalendarState({ loading: false, error: message });
       }
     })();
@@ -337,25 +320,22 @@ export default function SettingsPage() {
     }
   }
 
-  async function saveOnboarding() {
+  async function saveFeatureVisibility() {
     if (visibleTemplateKeys.length === 0) return;
-    setOnboardingSaving(true);
+    setFeatureVisibilitySaving(true);
     try {
-      const res = await fetch("/api/user/onboarding", {
+      const res = await fetch("/api/user/feature-visibility", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "complete",
-          persona: "general",
-          personas: ["general"],
           visibleTemplateKeys,
         }),
       });
-      if (!res.ok) throw new Error("Failed to update onboarding settings");
+      if (!res.ok) throw new Error("Failed to update feature visibility");
     } catch {
       // keep silent in settings UI
     } finally {
-      setOnboardingSaving(false);
+      setFeatureVisibilitySaving(false);
     }
   }
 
@@ -375,9 +355,7 @@ export default function SettingsPage() {
             <form onSubmit={onSaveProfile} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    First name
-                  </label>
+                  <label className="block text-sm font-medium mb-1">First name</label>
                   <input
                     type="text"
                     value={firstName}
@@ -386,9 +364,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Last name
-                  </label>
+                  <label className="block text-sm font-medium mb-1">Last name</label>
                   <input
                     type="text"
                     value={lastName}
@@ -407,12 +383,8 @@ export default function SettingsPage() {
                 />
               </div>
               <div></div>
-              {profileState.error && (
-                <p className="text-sm text-red-600">{profileState.error}</p>
-              )}
-              {profileState.data?.ok && (
-                <p className="text-sm text-green-600">Profile saved.</p>
-              )}
+              {profileState.error && <p className="text-sm text-red-600">{profileState.error}</p>}
+              {profileState.data?.ok && <p className="text-sm text-green-600">Profile saved.</p>}
               <div className="flex gap-2">
                 <button
                   type="submit"
@@ -428,12 +400,9 @@ export default function SettingsPage() {
           <section className="space-y-6 mt-8 border-t border-[#ece4ff] pt-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold">
-                  Calendar Connection Status
-                </h2>
+                <h2 className="text-base font-semibold">Calendar Connection Status</h2>
                 <p className="text-sm text-muted-foreground">
-                  Connect providers and choose your default calendar for event
-                  quick-add.
+                  Connect providers and choose your default calendar for event quick-add.
                 </p>
               </div>
               <button
@@ -469,9 +438,7 @@ export default function SettingsPage() {
                   className="rounded-xl border border-[#e5dcff] bg-white p-3 space-y-2"
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-[#2f1d47]">
-                      {item.label}
-                    </p>
+                    <p className="text-sm font-medium text-[#2f1d47]">{item.label}</p>
                     <span
                       className={`text-xs rounded-full px-2 py-0.5 ${
                         item.connected
@@ -494,9 +461,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="rounded-xl border border-[#e5dcff] bg-white p-4 space-y-3">
-              <p className="text-sm font-medium text-[#2f1d47]">
-                Default calendar
-              </p>
+              <p className="text-sm font-medium text-[#2f1d47]">Default calendar</p>
               <p className="text-xs text-[#7a6ca8]">
                 Tap a provider to set default. Tap again to clear.
               </p>
@@ -522,8 +487,7 @@ export default function SettingsPage() {
                   },
                 ].map((item) => {
                   const isDefault = preferredProvider === item.key;
-                  const isDisabled =
-                    item.key !== "apple" && !item.connected;
+                  const isDisabled = item.key !== "apple" && !item.connected;
                   return (
                     <div key={item.key} className="flex flex-col items-center gap-1">
                       <button
@@ -535,15 +499,15 @@ export default function SettingsPage() {
                           isDefault
                             ? `Default is ${item.label}. Click to clear default`
                             : isDisabled
-                            ? `${item.label} is not connected`
-                            : `Set ${item.label} as default`
+                              ? `${item.label} is not connected`
+                              : `Set ${item.label} as default`
                         }
                         className={`relative flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-semibold transition ${
                           isDefault
                             ? "border-[#b9a7ea] bg-[#f7f3ff] text-[#5a4699] shadow-[0_6px_16px_rgba(119,92,191,0.22)] ring-1 ring-[#d8ccf6]"
                             : isDisabled
-                            ? "border-[#ebe5fb] bg-[#f8f6ff] text-[#b2a8d1]"
-                            : "border-[#ddd3f5] bg-white text-[#8677b4] hover:border-[#c7b7ee] hover:bg-[#f8f5ff]"
+                              ? "border-[#ebe5fb] bg-[#f8f6ff] text-[#b2a8d1]"
+                              : "border-[#ddd3f5] bg-white text-[#8677b4] hover:border-[#c7b7ee] hover:bg-[#f8f5ff]"
                         }`}
                       >
                         {item.glyph}
@@ -568,9 +532,7 @@ export default function SettingsPage() {
                         )}
                       </button>
                       <span
-                        className={`text-[11px] ${
-                          isDefault ? "text-[#4b3f72]" : "text-[#8f86b3]"
-                        }`}
+                        className={`text-[11px] ${isDefault ? "text-[#4b3f72]" : "text-[#8f86b3]"}`}
                       >
                         {item.label}
                       </span>
@@ -586,8 +548,7 @@ export default function SettingsPage() {
 
               {preferredProviderInvalid && (
                 <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                  Current default is disconnected. Clear or choose a connected
-                  provider.
+                  Current default is disconnected. Clear or choose a connected provider.
                 </div>
               )}
 
@@ -609,13 +570,9 @@ export default function SettingsPage() {
                 </button>
               </div>
 
-              {calendarState.error && (
-                <p className="text-xs text-red-600">{calendarState.error}</p>
-              )}
+              {calendarState.error && <p className="text-xs text-red-600">{calendarState.error}</p>}
               {calendarState.data?.ok && (
-                <p className="text-xs text-green-600">
-                  Calendar default saved.
-                </p>
+                <p className="text-xs text-green-600">Calendar default saved.</p>
               )}
             </div>
           </section>
@@ -625,9 +582,7 @@ export default function SettingsPage() {
             <h2 className="text-base font-semibold">Security</h2>
             <form onSubmit={onChangePassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  Current password
-                </label>
+                <label className="block text-sm font-medium mb-1">Current password</label>
                 <input
                   name="currentPassword"
                   type="password"
@@ -639,9 +594,7 @@ export default function SettingsPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    New password
-                  </label>
+                  <label className="block text-sm font-medium mb-1">New password</label>
                   <input
                     name="newPassword"
                     type="password"
@@ -652,9 +605,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Confirm new password
-                  </label>
+                  <label className="block text-sm font-medium mb-1">Confirm new password</label>
                   <input
                     name="confirmPassword"
                     type="password"
@@ -665,12 +616,8 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
-              {pwdState.error && (
-                <p className="text-sm text-red-600">{pwdState.error}</p>
-              )}
-              {pwdState.data?.ok && (
-                <p className="text-sm text-green-600">Password changed.</p>
-              )}
+              {pwdState.error && <p className="text-sm text-red-600">{pwdState.error}</p>}
+              {pwdState.data?.ok && <p className="text-sm text-green-600">Password changed.</p>}
               <div className="flex gap-2">
                 <button
                   type="submit"
@@ -714,11 +661,11 @@ export default function SettingsPage() {
 
             <button
               type="button"
-              onClick={saveOnboarding}
-              disabled={visibleTemplateKeys.length === 0 || onboardingSaving}
+              onClick={saveFeatureVisibility}
+              disabled={visibleTemplateKeys.length === 0 || featureVisibilitySaving}
               className="inline-flex items-center px-4 py-2 rounded-xl text-sm border border-[#cfc2ff] bg-[#7F8CFF] text-white hover:bg-[#6d7af5] disabled:opacity-60"
             >
-              {onboardingSaving ? "Saving..." : "Save feature settings"}
+              {featureVisibilitySaving ? "Saving..." : "Save feature settings"}
             </button>
           </section>
         </div>

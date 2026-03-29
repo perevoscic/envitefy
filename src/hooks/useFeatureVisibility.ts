@@ -2,41 +2,35 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  type DashboardLayout,
+  resolveVisibility,
   TEMPLATE_KEYS,
   type TemplateKey,
   type UserPersona,
-  type DashboardLayout,
-  resolveVisibility,
 } from "@/config/feature-visibility";
 
-type OnboardingState = {
-  required: boolean;
-  completed: boolean;
+type FeatureVisibilityState = {
   persona: UserPersona | null;
   personas: UserPersona[];
-  promptDismissedAt: string | null;
   visibleTemplateKeys: TemplateKey[];
   dashboardLayout: DashboardLayout;
 };
 
-const DEFAULT_STATE: OnboardingState = {
-  required: false,
-  completed: false,
+const DEFAULT_STATE: FeatureVisibilityState = {
   persona: null,
   personas: [],
-  promptDismissedAt: null,
   visibleTemplateKeys: [...TEMPLATE_KEYS],
   dashboardLayout: "default",
 };
 
 export function useFeatureVisibility() {
   const [loading, setLoading] = useState(true);
-  const [state, setState] = useState<OnboardingState>(DEFAULT_STATE);
+  const [state, setState] = useState<FeatureVisibilityState>(DEFAULT_STATE);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/user/onboarding", {
+      const res = await fetch("/api/user/feature-visibility", {
         credentials: "include",
         cache: "no-store",
       });
@@ -51,11 +45,8 @@ export function useFeatureVisibility() {
         visibleTemplateKeys: json?.visibleTemplateKeys,
       });
       setState({
-        required: Boolean(json?.required),
-        completed: Boolean(json?.completed),
         persona: resolved.persona,
         personas: resolved.personas,
-        promptDismissedAt: json?.promptDismissedAt || null,
         visibleTemplateKeys: resolved.visibleTemplateKeys,
         dashboardLayout: resolved.dashboardLayout,
       });
@@ -77,4 +68,4 @@ export function useFeatureVisibility() {
   };
 }
 
-export type { OnboardingState };
+export type { FeatureVisibilityState };

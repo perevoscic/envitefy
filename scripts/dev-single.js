@@ -12,7 +12,7 @@ const hasExplicitPortArg = process.argv.slice(2).some((arg, index, args) => {
 });
 
 if (!process.env.PORT && !hasExplicitPortArg) {
-  process.env.PORT = "3001";
+  process.env.PORT = "3000";
 }
 
 function isProcessRunning(pid) {

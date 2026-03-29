@@ -14,10 +14,6 @@ model users {
   last_name          String?          @db.VarChar(255)
   preferred_provider String?          @db.VarChar(32)
   subscription_plan  String?          @db.VarChar(32)
-  onboarding_required Boolean?        @default(false)
-  onboarding_persona String?          @db.VarChar(32)
-  onboarding_completed_at DateTime?   @db.Timestamptz(6)
-  onboarding_prompt_dismissed_at DateTime? @db.Timestamptz(6)
   feature_visibility Json?
   password_hash      String?
   created_at         DateTime         @default(now()) @db.Timestamptz(6)

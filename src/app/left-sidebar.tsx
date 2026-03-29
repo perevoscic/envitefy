@@ -453,7 +453,7 @@ export default function LeftSidebar() {
     refreshConnectedCalendars,
     featureVisibility,
   } = useMenu();
-  const { historySidebarItems, historyDiagnostics } = useEventCache();
+  const { historySidebarItems } = useEventCache();
   const profileEmail = (session?.user as any)?.email?.toLowerCase?.() ?? null;
   const profileEmailRef = useRef<string | null>(null);
   useEffect(() => {
@@ -1268,7 +1268,6 @@ export default function LeftSidebar() {
     }, 0);
   }, [history]);
   const _calendarEventsCount = createdEventsCount + invitedEventsCount;
-  const showDevDiagnostics = process.env.NODE_ENV !== "production";
   const openCompactEventsPage = useCallback(
     (page: "myEvents" | "invitedEvents") => {
       clearEventContext();
@@ -2489,20 +2488,6 @@ export default function LeftSidebar() {
                             />
                           </span>
                         </button>
-                        {showDevDiagnostics ? (
-                          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-[11px] font-medium text-amber-950">
-                            <div className="flex flex-wrap gap-x-3 gap-y-1">
-                              <span>history rows: {history.length}</span>
-                              <span>itemCount: {String(historyDiagnostics?.itemCount ?? "-")}</span>
-                              <span>source: {String(historyDiagnostics?.source ?? "-")}</span>
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-amber-900/80">
-                              <span>empty: {String(historyDiagnostics?.emptyReason ?? "-")}</span>
-                              <span>degraded: {String(historyDiagnostics?.degradedReason ?? "-")}</span>
-                              <span>view: {String(historyDiagnostics?.view ?? "-")}</span>
-                            </div>
-                          </div>
-                        ) : null}
                       </div>
                     </div>
                   </div>

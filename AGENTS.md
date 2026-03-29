@@ -6,7 +6,7 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 
 - The repo still has rename drift. `package.json` says `snap-my-date`, and `README.md` still frames the product as OCR-to-calendar first, but the current app is broader: multi-vertical event creation, public event sites, RSVP/sign-up flows, registry links, and admin campaign tooling.
 - Anonymous `/` is not the real landing route. `src/middleware.ts` rewrites signed-out users to `/landing`; signed-in users stay on `/`.
-- `npm run dev` does not run plain `next dev`. It goes through `scripts/dev-single.js`, defaults to port `3001`, writes to `.next-dev`, and uses `.next-dev.lock` to block a second dev server.
+- `npm run dev` does not run plain `next dev`. It goes through `scripts/dev-single.js`, defaults to port `3000`, writes to `.next-dev`, and uses `.next-dev.lock` to block a second dev server.
 
 ## Data Model That Actually Matters
 
