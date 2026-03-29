@@ -73,6 +73,12 @@ type SidebarPage =
   | "eventContext";
 type EventSidebarMode = "owner" | "guest";
 type EventListPage = "myEvents" | "invitedEvents";
+type CompactNavItemId =
+  | "home"
+  | "snap"
+  | "create"
+  | "myEvents"
+  | "invitedEvents";
 type SubscriptionPlan =
   | "freemium"
   | "free"
@@ -1284,31 +1290,70 @@ export default function LeftSidebar() {
     setIsCollapsed(false);
     setSidebarPage("createEvent");
   }, [setIsCollapsed, setSidebarPage]);
+  const isCompactNavActive = useCallback(
+    (id: CompactNavItemId) => {
+      switch (id) {
+        case "home":
+          return pathname === "/" && sidebarPage === "root";
+        case "snap":
+          return pathname === "/event" && sidebarPage === "root";
+        case "create":
+          return (
+            sidebarPage === "createEvent" || sidebarPage === "createEventOther"
+          );
+        case "myEvents":
+          return (
+            sidebarPage === "myEvents" ||
+            (sidebarPage === "eventContext" &&
+              eventContextSourcePage === "myEvents")
+          );
+        case "invitedEvents":
+          return (
+            sidebarPage === "invitedEvents" ||
+            (sidebarPage === "eventContext" &&
+              eventContextSourcePage === "invitedEvents")
+          );
+        default:
+          return false;
+      }
+    },
+    [pathname, sidebarPage, eventContextSourcePage]
+  );
   const compactNavItems = useMemo(
     () => [
-      { icon: Home, label: "Home", onClick: goHomeFromSidebar },
       {
+        id: "home" as const,
+        icon: Home,
+        label: "Home",
+        href: "/",
+        onClick: goHomeFromSidebar,
+      },
+      {
+        id: "snap" as const,
         icon: Camera,
         label: "Snap event",
+        href: "/event",
         onClick: () => {
           clearEventContext();
           setSidebarPage("root");
           collapseSidebarOnTouch();
-          openSnapFromSidebar("camera");
         },
       },
       {
+        id: "create" as const,
         icon: Plus,
         label: "Create event",
         onClick: openCreateEventPage,
       },
       {
+        id: "myEvents" as const,
         icon: SidebarMyEventsMenuIcon,
         label: "My events",
         onClick: () => openCompactEventsPage("myEvents"),
         badge: createdEventsCount,
       },
       {
+        id: "invitedEvents" as const,
         icon: Users,
         label: "Invited events",
         onClick: () => openCompactEventsPage("invitedEvents"),
@@ -1323,7 +1368,6 @@ export default function LeftSidebar() {
       goHomeFromSidebar,
       openCompactEventsPage,
       openCreateEventPage,
-      openSnapFromSidebar,
       setSidebarPage,
     ]
   );
@@ -2255,21 +2299,52 @@ export default function LeftSidebar() {
               {compactNavItems.map((item) => {
                 const Icon = item.icon;
                 const badgeCount = item.badge || 0;
+                const active = isCompactNavActive(item.id);
+                const compactNavClass = `relative inline-flex h-12 w-12 cursor-pointer touch-manipulation items-center justify-center rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                  active
+                    ? "border-indigo-100 bg-indigo-50 text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-white hover:text-slate-900"
+                }`;
+                const iconNode =
+                  item.id === "myEvents" ? (
+                    <SidebarMyEventsMenuIcon size={18} active={active} />
+                  ) : (
+                    <Icon size={18} />
+                  );
+                const badgeNode =
+                  badgeCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white shadow-sm">
+                      {badgeCount}
+                    </span>
+                  ) : null;
+                if (item.href) {
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      onClick={item.onClick}
+                      className={compactNavClass}
+                      title={item.label}
+                      aria-label={item.label}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      {iconNode}
+                      {badgeNode}
+                    </Link>
+                  );
+                }
                 return (
                   <button
-                    key={item.label}
+                    key={item.id}
                     type="button"
                     onClick={item.onClick}
-                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-900 hover:shadow-md"
+                    className={compactNavClass}
                     title={item.label}
                     aria-label={item.label}
+                    aria-current={active ? "true" : undefined}
                   >
-                    <Icon size={18} />
-                    {badgeCount > 0 && (
-                      <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white shadow-sm">
-                        {badgeCount}
-                      </span>
-                    )}
+                    {iconNode}
+                    {badgeNode}
                   </button>
                 );
               })}
