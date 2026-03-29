@@ -1,20 +1,53 @@
 import sharp from "sharp";
 
+export type PdfAnnotationLink = {
+  url: string;
+  label: string | null;
+  pageNumber: number;
+  source: "pdf_annotation";
+};
+
+let pdfJsPromise: Promise<any | null> | null = null;
 let pdfRenderDepsPromise: Promise<{
   pdfjs: any;
   createCanvas: (width: number, height: number) => any;
 } | null> | null = null;
 
+function safeString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeHttpUrl(value: unknown): string {
+  const raw = safeString(value);
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    if (!/^https?:$/i.test(parsed.protocol)) return "";
+    parsed.hash = "";
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+}
+
+async function getPdfJs() {
+  if (!pdfJsPromise) {
+    pdfJsPromise = import("pdfjs-dist/legacy/build/pdf.mjs").catch(() => null);
+  }
+  return pdfJsPromise;
+}
+
 async function getPdfRenderDeps() {
   if (!pdfRenderDepsPromise) {
-    pdfRenderDepsPromise = Promise.all([
-      import("pdfjs-dist/legacy/build/pdf.mjs"),
-      import("@napi-rs/canvas"),
-    ])
-      .then(([pdfjs, canvasMod]) => ({
-        pdfjs,
-        createCanvas: (canvasMod as any).createCanvas,
-      }))
+    pdfRenderDepsPromise = Promise.all([getPdfJs(), import("@napi-rs/canvas")])
+      .then(([pdfjs, canvasMod]) =>
+        pdfjs
+          ? {
+              pdfjs,
+              createCanvas: (canvasMod as any).createCanvas,
+            }
+          : null
+      )
       .catch(() => null);
   }
   return pdfRenderDepsPromise;
@@ -64,4 +97,64 @@ export async function rasterizePdfPageToPng(
     .toBuffer()
     .catch(() => null);
   return sharpPageImage || (await renderPdfPageToPngWithPdfJs(pdfBuffer, pageIndex));
+}
+
+export async function extractPdfAnnotationLinks(
+  pdfBuffer: Buffer,
+): Promise<PdfAnnotationLink[]> {
+  const pdfjs = await getPdfJs();
+  if (!pdfjs) return [];
+
+  let doc: any = null;
+  try {
+    const loadingTask = pdfjs.getDocument({
+      data: new Uint8Array(pdfBuffer),
+      useSystemFonts: true,
+      isEvalSupported: false,
+      disableFontFace: true,
+    });
+    doc = await loadingTask.promise;
+    const links: PdfAnnotationLink[] = [];
+    const seen = new Set<string>();
+    const pageCount = Number(doc.numPages) || 0;
+    for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
+      const page = await doc.getPage(pageNumber);
+      try {
+        const annotations = await page.getAnnotations();
+        for (const annotation of Array.isArray(annotations) ? annotations : []) {
+          const url = normalizeHttpUrl(
+            annotation?.url ||
+              annotation?.unsafeUrl ||
+              annotation?.action?.url ||
+              annotation?.action?.unsafeUrl,
+          );
+          if (!url) continue;
+          const key = `${pageNumber}|${url}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const label =
+            safeString(annotation?.title) ||
+            safeString(annotation?.contents) ||
+            safeString(annotation?.fieldName) ||
+            null;
+          links.push({
+            url,
+            label,
+            pageNumber,
+            source: "pdf_annotation",
+          });
+        }
+      } finally {
+        if (typeof page.cleanup === "function") page.cleanup();
+      }
+    }
+    return links;
+  } catch {
+    return [];
+  } finally {
+    if (doc) {
+      if (typeof doc.cleanup === "function") doc.cleanup();
+      if (typeof doc.destroy === "function") await doc.destroy();
+    }
+  }
 }

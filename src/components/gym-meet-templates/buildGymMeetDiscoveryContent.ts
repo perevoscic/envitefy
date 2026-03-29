@@ -175,13 +175,35 @@ const hasScheduleInfoContent = (value: unknown) => {
   );
 };
 
+const normalizePossibleUrl = (value: unknown) => {
+  const raw = safeString(value).replace(/[)\],.;!?]+$/, "");
+  if (!raw) return "";
+  const withProtocol =
+    /^https?:\/\//i.test(raw)
+      ? raw
+      : /^www\./i.test(raw) || (/^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(raw) && !/@/.test(raw))
+      ? `https://${raw}`
+      : "";
+  if (!withProtocol) return "";
+  try {
+    return new URL(withProtocol).toString();
+  } catch {
+    return "";
+  }
+};
+
 const extractInlineUrl = (line: string) => {
-  const urlMatch = line.match(/(?:https?:\/\/[^\s)]+|www\.[^\s)]+)/i);
+  const urlMatch = line.match(
+    /(?:https?:\/\/[^\s)]+|www\.[^\s)]+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s),;!?]*)?)/i
+  );
   if (!urlMatch) {
     return { text: line, href: undefined };
   }
   const raw = (urlMatch[0] || "").replace(/[.,;!?]+$/g, "");
-  const href = /^www\./i.test(raw) ? `https://${raw}` : raw;
+  const href = normalizePossibleUrl(raw);
+  if (!href) {
+    return { text: line, href: undefined };
+  }
   const matchIndex = urlMatch.index ?? line.indexOf(urlMatch[0]);
   const text = `${line.slice(0, Math.max(0, matchIndex))}${line.slice(
     Math.max(0, matchIndex) + (urlMatch[0] || "").length
@@ -629,6 +651,7 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
   const resultsMatch = takeSection("results");
   if (
     resultsMatch &&
+    !resultsMatch.section?.preserveStandalone &&
     isSparseSection(resultsMatch.section) &&
     getSectionMetrics(resultsMatch.section).linkCount <= 2
   ) {
@@ -657,6 +680,7 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
   if (
     trafficMatch &&
     hotelMatch &&
+    !hotelMatch.section?.preserveStandalone &&
     isSparseSection(hotelMatch.section) &&
     getSectionMetrics(hotelMatch.section).linkCount <= 2
   ) {
@@ -1144,6 +1168,13 @@ export function buildGymMeetDiscoveryContent({
       .map((fact: any) => safeString(fact?.detail)),
     8
   );
+  const normalizedOperationalNotes = uniqueTextLines(
+    [
+      ...(Array.isArray(meetSection?.operationalNotes) ? meetSection.operationalNotes : []),
+      ...(Array.isArray(parseMeetDetails?.operationalNotes) ? parseMeetDetails.operationalNotes : []),
+    ],
+    12
+  );
   const resultsInfoTextRaw =
     safeString(meetSection?.resultsInfo || parseMeetDetails?.resultsInfo) ||
     sourceResultsText ||
@@ -1314,9 +1345,7 @@ export function buildGymMeetDiscoveryContent({
         ? `Scoring: ${safeString(parseMeetDetails.scoringInfo)}`
         : "",
       ...parsedMeetDetailLines,
-      ...(Array.isArray(parseMeetDetails?.operationalNotes)
-        ? parseMeetDetails.operationalNotes
-        : []),
+      ...normalizedOperationalNotes,
     ],
     12
   ).filter((line) => line.length > 10);
@@ -1349,7 +1378,7 @@ export function buildGymMeetDiscoveryContent({
     [
       ...extractionLayoutFacts,
       ...parsedVenueDetailLines,
-      ...(Array.isArray(parseMeetDetails?.operationalNotes) ? parseMeetDetails.operationalNotes : []),
+      ...normalizedOperationalNotes,
       safeString(parseMeetDetails?.facilityLayout),
       safeString(parseMeetDetails?.registrationInfo),
     ].filter(Boolean),
@@ -1461,15 +1490,19 @@ export function buildGymMeetDiscoveryContent({
   const sourcePolicyLine = (pattern: RegExp) =>
     sourceLines.find((line) => pattern.test(line)) || "";
   const policyNotes = [
-    safeString(logistics?.mealPlan || parseLogistics?.meals) ||
+    safeString(logistics?.policyFood || parseResult?.policies?.food) ||
+      safeString(logistics?.mealPlan || parseLogistics?.meals) ||
       sourcePolicyLine(/(food|beverage|coffee|starbucks|kahwa|outside food)/i),
-    sourceHydrationLine ||
+    safeString(logistics?.policyHydration || parseResult?.policies?.hydration) ||
+      sourceHydrationLine ||
       (safeString(parseResult?.athlete?.stretchTime)
         ? `Athlete stretch begins at ${parseResult.athlete.stretchTime}. Bring water and arrive prepared.`
         : ""),
-    safeString(logistics?.waivers || parseLogistics?.waivers) ||
+    safeString(logistics?.policyAnimals || parseResult?.policies?.animals) ||
+      safeString(logistics?.waivers || parseLogistics?.waivers) ||
       sourcePolicyLine(/(service animal|service dog|certified service)/i),
-    safeString(parseMeetDetails?.judgingNotes) ||
+    safeString(logistics?.policySafety || parseResult?.policies?.safety) ||
+      safeString(parseMeetDetails?.judgingNotes) ||
       sourceSafetyObjectsLine ||
       sourcePolicyLine(/(safety policy|throwing objects|baseballs|footballs|safety)/i),
   ];
@@ -1872,6 +1905,10 @@ export function buildGymMeetDiscoveryContent({
         ].filter(Boolean),
     8
   );
+  const inferredResultsLink = (() => {
+    const inline = extractInlineUrl(resultsInfoTextRaw);
+    return inline.href ? { label: "Official Results", url: inline.href } : null;
+  })();
   const resultsLinkItems = uniqueLinks(
     structuredResultsLinks.length > 0
       ? structuredResultsLinks
@@ -1881,6 +1918,7 @@ export function buildGymMeetDiscoveryContent({
               `${item.label} ${item.url}`
             )
           ),
+          inferredResultsLink,
         ],
     8
   );
@@ -2037,9 +2075,15 @@ export function buildGymMeetDiscoveryContent({
   const hotelLinks = uniqueLinks(
     structuredHotelLinks.length > 0
       ? structuredHotelLinks
-      : normalizedLinks.filter((item) =>
-          /(hotel|travel|visitor|stay|lodging|book)/i.test(`${item.label} ${item.url}`)
-        ),
+      : [
+          ...normalizedLinks.filter((item) =>
+            /(hotel|travel|visitor|stay|lodging|book)/i.test(`${item.label} ${item.url}`)
+          ),
+          (() => {
+            const inline = extractInlineUrl(safeString(logistics?.hotelInfo || parseLogistics?.hotel));
+            return inline.href ? { label: "Hotel Booking", url: inline.href } : null;
+          })(),
+        ],
     8
   );
   const venueLinks = uniqueLinks(
@@ -2259,7 +2303,10 @@ export function buildGymMeetDiscoveryContent({
         {
           key: "hotel-info",
           label: "Stay / Travel Note",
-          body: safeString(logistics?.hotelInfo || parseLogistics?.hotel),
+          body: sanitizeLinkedCopy(
+            safeString(logistics?.hotelInfo || parseLogistics?.hotel),
+            hotelLinks
+          ),
         },
       ]
     : [];
@@ -2380,18 +2427,27 @@ export function buildGymMeetDiscoveryContent({
               },
             ]
           : []),
-        ...(communicationCards.length > 0
+      ],
+    },
+    {
+      id: "results",
+      label: "Results",
+      kind: "results",
+      priority: 25,
+      preserveStandalone: communicationCards.length > 0,
+      hasContent: communicationCards.length > 0,
+      blocks:
+        communicationCards.length > 0
           ? [
               {
-                id: "communication",
+                id: "results-cards",
                 type: "card-grid" as const,
                 title: "Results & Links",
                 columns: 2 as const,
                 cards: communicationCards,
               },
             ]
-          : []),
-      ],
+          : [],
     },
     {
       id: "admission",
@@ -2695,6 +2751,10 @@ export function buildGymMeetDiscoveryContent({
       label: "Hotels",
       kind: "hotels",
       priority: 80,
+      preserveStandalone:
+        hotelCards.length > 0 ||
+        structuredHotelLinks.length > 0 ||
+        Boolean(safeString(logistics?.hotelInfo)),
       hasContent: hotelLinks.length > 0 || hotelCards.length > 0,
       blocks: [
         ...(hotelCards.length > 0

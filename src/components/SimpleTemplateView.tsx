@@ -3710,6 +3710,54 @@ export default function SimpleTemplateView({
           `${safeString(item?.label)}|${safeString(item?.body)}`
         )
     );
+    const pendingResourceCards = uniqueBy(
+      [
+        ...(Array.isArray(advancedSections?.meet?.pendingResources)
+          ? advancedSections.meet.pendingResources
+          : []),
+        ...(Array.isArray(currentData?.discoverySource?.extractionMeta?.resourceLinks)
+          ? currentData.discoverySource.extractionMeta.resourceLinks
+              .filter((item: any) => safeString(item?.status) === "not_posted")
+              .map((item: any, index: number) => ({
+                id: `resource-pending-${index + 1}`,
+                kind: safeString(item?.kind || "resource"),
+                label: safeString(item?.label || "Posting soon"),
+                availabilityText: safeString(item?.availabilityText || item?.label),
+                availabilityDate: safeString(item?.availabilityDate),
+                url: safeString(item?.url),
+                sourceUrl: safeString(item?.sourceUrl),
+              }))
+          : []),
+      ]
+        .filter((item: any) => safeString(item?.label || item?.availabilityText))
+        .map((item: any, index: number) => {
+          const dateLabel = safeString(item?.availabilityDate)
+            ? formatDate(safeString(item.availabilityDate))
+            : "";
+          const availabilityText = safeString(item?.availabilityText);
+          const body = dateLabel
+            ? `Expected ${dateLabel}`
+            : availabilityText || "This resource has not been posted yet.";
+          return {
+            key: safeString(item?.id) || `pending-resource-${index}`,
+            label: safeString(item?.label || "Posting soon"),
+            body,
+            href: safeString(item?.url || item?.sourceUrl),
+            availabilityDate: safeString(item?.availabilityDate),
+          };
+        }),
+      (item: any) =>
+        normalizeVenueFactForCompare(
+          `${safeString(item?.label)}|${safeString(item?.availabilityDate)}`
+        )
+    ).sort((a: any, b: any) => {
+      if (a.availabilityDate && b.availabilityDate) {
+        return a.availabilityDate.localeCompare(b.availabilityDate);
+      }
+      if (a.availabilityDate) return -1;
+      if (b.availabilityDate) return 1;
+      return a.label.localeCompare(b.label);
+    });
     const hasAdmissionContent =
       admissionCards.length > 0 || Boolean(admissionPrimaryNote);
     const publicMeetStaffCards = uniqueBy(
@@ -4150,7 +4198,8 @@ export default function SimpleTemplateView({
     const hasMeetDetailsContent =
       meetDetailsLines.length > 0 ||
       meetOverviewCards.length > 0 ||
-      publicMeetStaffCards.length > 0;
+      publicMeetStaffCards.length > 0 ||
+      pendingResourceCards.length > 0;
     const extractInlineUrl = (line: string) => {
       const urlMatch = line.match(/(?:https?:\/\/[^\s)]+|www\.[^\s)]+)/i);
       if (!urlMatch) {
@@ -4575,6 +4624,45 @@ export default function SimpleTemplateView({
                                       {item.body}
                                     </p>
                                   )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {pendingResourceCards.length > 0 && (
+                          <div>
+                            <h4 className="font-bold text-lg mb-4 text-[color:var(--color-heading,#2D1B4E)]">
+                              Posting Soon
+                            </h4>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                              {pendingResourceCards.map((item: any) => (
+                                <div
+                                  key={item.key}
+                                  className="bg-amber-50 p-5 rounded-3xl border border-amber-100"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className="mt-0.5 rounded-2xl bg-white p-2 border border-amber-100 text-amber-700">
+                                      <CalendarIcon size={18} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">
+                                        {item.label}
+                                      </p>
+                                      <p className="text-sm text-amber-900 leading-relaxed">
+                                        {item.body}
+                                      </p>
+                                      {item.href && (
+                                        <a
+                                          href={item.href}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={`mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--link,#2D1B4E)] hover:text-[color:var(--link-hover,#D4AF37)] hover:border-[color:var(--color-border-hover,#D4AF37)] ${discoveryFocusRing}`}
+                                        >
+                                          Check Source <ExternalLink size={12} />
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                               ))}
                             </div>

@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { inflateRawSync, inflateSync } from "node:zlib";
 import { execFile } from "node:child_process";
@@ -24,7 +25,15 @@ import {
 } from "@/components/gym-meet-templates/registry";
 import { computeGymBuilderStatuses } from "@/lib/meet-discovery/status";
 import { parseDataUrlBase64 } from "@/utils/data-url";
-import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
+import {
+  extractPdfAnnotationLinks,
+  rasterizePdfPageToPng,
+  type PdfAnnotationLink,
+} from "@/lib/pdf-raster";
+import {
+  collectDiscoveryBrowserData,
+  type BrowserDiscoveryResult,
+} from "@/lib/discovery-browser";
 
 export { computeGymBuilderStatuses };
 
@@ -333,6 +342,7 @@ export type DiscoveryResourceStatus = "available" | "not_posted" | "unknown";
 type DiscoveryResourceOrigin =
   | "root"
   | "child_page"
+  | "linked_asset"
   | "hub"
   | "hub_descendant";
 
@@ -347,6 +357,9 @@ export type DiscoveryResourceLink = {
   followed: boolean;
   matchScore: number | null;
   matchReason: string | null;
+  availabilityText: string | null;
+  availabilityDate: string | null;
+  discoveryMethod: "http" | "playwright";
 };
 
 type EventFingerprint = {
@@ -544,6 +557,7 @@ type UrlDiscoveryTestHooks = {
   fetchWithLimit?: (
     url: string
   ) => Promise<{ contentType: string; buffer: Buffer; text: string }>;
+  collectBrowserData?: (url: string) => Promise<BrowserDiscoveryResult>;
   extractTextFromPdf?: (
     buffer: Buffer,
     options?: {
@@ -559,6 +573,7 @@ type UrlDiscoveryTestHooks = {
     textQuality: TextQuality;
     qualitySignals: TextQualitySignals;
     pages?: Array<{ num: number; text: string }>;
+    annotationLinks?: PdfAnnotationLink[];
   }>;
   extractTextFromImage?: (
     buffer: Buffer,
@@ -704,6 +719,7 @@ type GymLayoutExtraction = {
 type PdfTextExtraction = {
   text: string;
   pages: Array<{ num: number; text: string }>;
+  annotationLinks: PdfAnnotationLink[];
 };
 
 type ScheduleAwardFlagDay = {
@@ -829,6 +845,9 @@ function toIsoOrNull(value: unknown): string | null {
   if (!/^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?)?$/i.test(asText)) {
     return null;
   }
+  if (/^\d{4}-\d{2}-\d{2}$/i.test(asText)) {
+    return `${asText}T00:00:00.000Z`;
+  }
   const normalized = asText.includes("T")
     ? asText
     : asText.includes(" ")
@@ -851,7 +870,12 @@ function pickArray(value: unknown): any[] {
 function normalizeUrl(value: unknown): string {
   const raw = safeString(value).replace(/[)\],.;!?]+$/, "");
   if (!raw) return "";
-  const withProtocol = /^www\./i.test(raw) ? `https://${raw}` : raw;
+  const withProtocol =
+    /^www\./i.test(raw)
+      ? `https://${raw}`
+      : /^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(raw) && !/@/.test(raw)
+      ? `https://${raw}`
+      : raw;
   if (!/^https?:\/\//i.test(withProtocol)) return "";
   try {
     const parsed = new URL(withProtocol);
@@ -860,6 +884,18 @@ function normalizeUrl(value: unknown): string {
   } catch {
     return "";
   }
+}
+
+function extractCanonicalUrlFromText(value: unknown): string {
+  const text = safeString(value);
+  if (!text) return "";
+  const match = text.match(
+    /(?:https?:\/\/[^\s)]+|www\.[^\s)]+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s),;!?]*)?)/i
+  );
+  if (!match) return "";
+  const candidate = safeString(match[0]).replace(/[)\],.;!?]+$/, "");
+  if (!candidate || /@/.test(candidate)) return "";
+  return normalizeUrl(candidate);
 }
 
 function uniqueBy<T>(items: T[], getKey: (item: T) => string): T[] {
@@ -1242,12 +1278,17 @@ function extractScheduleDateLines(text: string): string[] {
 function looksLikeSchedulePageText(text: string): boolean {
   const combined = safeString(text);
   if (!combined) return false;
-  const scheduleSignals = (combined.match(/session\s+[a-z]{1,3}\d+/gi) || []).length;
+  const tabularSignals = getScheduleTabularSignals(combined);
+  const scheduleSignals = countScheduleSessionCodes(combined);
   return (
     SCHEDULE_GRID_TEXT_PATTERN.test(combined) ||
     scheduleSignals >= 2 ||
+    tabularSignals.score >= 3 ||
+    tabularSignals.assignmentHeaderCount > 0 ||
+    tabularSignals.assignmentRowCount >= 2 ||
     (SCHEDULE_DATE_LINE_PATTERN.test(combined) &&
-      /(stretch\/warmup|warmup|bronze|silver|gold|platinum|diamond)/i.test(combined))
+      (/(stretch\/warmup|warmup|bronze|silver|gold|platinum|diamond)/i.test(combined) ||
+        tabularSignals.repeatedTimeValueCount >= 2))
   );
 }
 
@@ -1397,7 +1438,7 @@ const SUPPRESSED_UNMAPPED_FACT_CATEGORIES = new Set([
 const MARKETING_TEXT_PATTERN =
   /(visit lauderdale|hairstyle ?to ?impress|hairstyling appointment|sponsor(?:ing)? this event|many thanks to our sponsors|book your hairstyling appointment)/i;
 const SCHEDULE_GRID_TEXT_PATTERN =
-  /(session\s+(?:fr|sa|su)\d+\b|stretch\/warmup:|levels?\s+\d|clubs in pink|individual & team awards|your designated number of athlete spots per session|questions\?\s*email us asap)/i;
+  /(session\s+(?:[a-z]{1,3}\d{1,2}|\d{1,2})\b|\b[a-z]{1,3}\d{1,2}\b.*\b[a-z]{1,3}\d{1,2}\b|stretch\/warmup:|levels?\s+\d|clubs in pink|individual & team awards|your designated number of athlete spots per session|questions\?\s*email us asap)/i;
 const CLUB_PARTICIPATION_TEXT_PATTERN =
   /\b(360 gymnastics fl|alpha gymnastics|christi'?s gymnastics|browns? gym(?:nastics)?|team twisters|twisters canada|top gymnastics fl|whitby-galaxy|gymnastics usa|gymnastics du sol|miracle gymnastics|southern starz|fgtc|ega|zga|world class miami|intensity gymnastics|harbor city|sunny gymnastics)\b/i;
 const TRUE_GEAR_TEXT_PATTERN =
@@ -1421,8 +1462,162 @@ type SchedulePageSegment = {
 type ScheduleAnnotation = NonNullable<ParseResult["schedule"]["annotations"]>[number];
 type ScheduleAssignment = NonNullable<ParseResult["schedule"]["assignments"]>[number];
 
+function splitScheduleCellCandidates(
+  line: string,
+  options?: { preserveEmpty?: boolean }
+): string[] {
+  const normalized = safeString(line);
+  if (!normalized) return [];
+  const preserveEmpty = options?.preserveEmpty ?? false;
+  const cells = /\t/.test(normalized)
+    ? normalized.split(/\t/)
+    : normalized.split(/\s{2,}/);
+  return preserveEmpty
+    ? cells.map((cell) => safeString(cell))
+    : cells.map((cell) => safeString(cell)).filter(Boolean);
+}
+
+function normalizeScheduleSessionCode(value: unknown): string {
+  const normalized = safeString(value)
+    .replace(/^session\s+/i, "")
+    .replace(/[#:]+$/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+  if (!normalized) return "";
+  if (/^\d+$/.test(normalized)) return normalized;
+  return normalized.toUpperCase();
+}
+
+function extractSessionCodeFromCell(
+  value: string,
+  options?: { allowBareCode?: boolean; allowNumericOnly?: boolean }
+): string {
+  const normalized = safeString(value).replace(/\s+/g, " ");
+  if (!normalized) return "";
+  const prefixedMatch = normalized.match(
+    /\bsession\s+([a-z]{1,3}\d{1,2}|\d{1,2})\b/i
+  );
+  if (prefixedMatch) {
+    return normalizeScheduleSessionCode(prefixedMatch[1]);
+  }
+  if (!options?.allowBareCode) return "";
+  const exactMatch = normalized.match(/^([a-z]{1,3}\d{1,2})$/i);
+  if (exactMatch) {
+    return normalizeScheduleSessionCode(exactMatch[1]);
+  }
+  if (options?.allowNumericOnly) {
+    const numericMatch = normalized.match(/^(\d{1,2})$/);
+    if (numericMatch) {
+      return normalizeScheduleSessionCode(numericMatch[1]);
+    }
+  }
+  return "";
+}
+
+function extractScheduleSessionCodesInText(text: string): string[] {
+  const normalized = safeString(text);
+  if (!normalized) return [];
+  const prefixed = [...normalized.matchAll(/\bsession\s+([a-z]{1,3}\d{1,2}|\d{1,2})\b/gi)].map(
+    (match) => normalizeScheduleSessionCode(match[1])
+  );
+  const bare =
+    prefixed.length === 0 &&
+    /\t|\s{2,}/.test(normalized) &&
+    !/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(normalized)
+      ? splitScheduleCellCandidates(normalized)
+          .map((cell) =>
+            extractSessionCodeFromCell(cell, {
+              allowBareCode: true,
+              allowNumericOnly: false,
+            })
+          )
+          .filter(Boolean)
+      : [];
+  return uniqueBy([...prefixed, ...bare], (item) => item);
+}
+
 function countScheduleSessionCodes(text: string): number {
-  return (safeString(text).match(/\bsession\s+(?:fr|sa|su)\d+\b/gi) || []).length;
+  return extractScheduleSessionCodesInText(text).length;
+}
+
+function countScheduleTimeValues(text: string): number {
+  return (safeString(text).match(/\b\d{1,2}:\d{2}\s*(?:am|pm)?\b/gi) || []).length;
+}
+
+function hasMultiColumnScheduleStructure(text: string): boolean {
+  return safeString(text)
+    .split(/\n+/)
+    .some((line) => splitScheduleCellCandidates(line).length >= 2 && (/\t/.test(line) || /\s{2,}/.test(line)));
+}
+
+function countScheduleDateHeadings(text: string): number {
+  return safeString(text)
+    .split(/\n+/)
+    .filter((line) => SCHEDULE_DATE_LINE_PATTERN.test(line)).length;
+}
+
+function countScheduleHeaderLines(text: string): number {
+  return safeString(text)
+    .split(/\n+/)
+    .filter((line) => extractSessionCodesFromHeader(line).length >= 2).length;
+}
+
+function countScheduleAssignmentRows(text: string): number {
+  return safeString(text)
+    .split(/\n+/)
+    .filter((line) => {
+      const normalized = safeString(line);
+      if (!normalized) return false;
+      if (!/\b(group\s+\d+|younger|middle|older)\b/i.test(normalized)) return false;
+      if (!/\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4}/i.test(normalized)) {
+        return false;
+      }
+      return (
+        /\bsession\s+([a-z]{1,3}\d{1,2}|\d{1,2})\b/i.test(normalized) ||
+        /\b[a-z]{1,3}\d{1,2}\b$/i.test(normalized)
+      );
+    }).length;
+}
+
+function getScheduleTabularSignals(text: string) {
+  const normalized = safeString(text);
+  const lines = normalized.split(/\n+/).map((line) => safeString(line)).filter(Boolean);
+  const dayHeadingCount = countScheduleDateHeadings(normalized);
+  const sessionHeaderLineCount = countScheduleHeaderLines(normalized);
+  const repeatedTimeValueCount = countScheduleTimeValues(normalized);
+  const multiColumnLineCount = lines.filter(
+    (line) => splitScheduleCellCandidates(line).length >= 2 && (/\t/.test(line) || /\s{2,}/.test(line))
+  ).length;
+  const divisionHeaderLineCount = lines.filter((line) => looksLikeScheduleDivisionLine(splitScheduleCellCandidates(line))).length;
+  const gymColumnHeaderCount = lines.filter(
+    (line) =>
+      splitScheduleCellCandidates(line).length >= 2 &&
+      splitScheduleCellCandidates(line).every((cell) => /^gym(?:\s+[a-z0-9]+)?$/i.test(cell))
+  ).length;
+  const assignmentHeaderCount = lines.filter((line) =>
+    /(age groups?\s+and\s+session assignments|age group\s+birth date(?:\s*range)?\s+divisions?\s+session|birth date(?:\s*range)?\s+divisions?\s+session)/i.test(
+      line
+    )
+  ).length;
+  const assignmentRowCount = countScheduleAssignmentRows(normalized);
+  const score =
+    (sessionHeaderLineCount > 0 ? 2 : 0) +
+    (repeatedTimeValueCount >= 3 ? 1 : 0) +
+    (multiColumnLineCount >= 2 ? 1 : 0) +
+    (divisionHeaderLineCount >= 1 ? 1 : 0) +
+    (gymColumnHeaderCount >= 1 ? 1 : 0) +
+    (dayHeadingCount >= 2 ? 1 : 0);
+  return {
+    dayHeadingCount,
+    sessionHeaderLineCount,
+    repeatedTimeValueCount,
+    multiColumnLineCount,
+    divisionHeaderLineCount,
+    gymColumnHeaderCount,
+    assignmentHeaderCount,
+    assignmentRowCount,
+    score,
+  };
 }
 
 function looksLikeScheduleNarrativeText(text: string): boolean {
@@ -1440,12 +1635,12 @@ function looksLikeScheduleNarrativeText(text: string): boolean {
 function looksLikeScheduleAssignmentText(text: string): boolean {
   const normalized = safeString(text);
   if (!normalized) return false;
+  const tabularSignals = getScheduleTabularSignals(normalized);
   return (
-    /(age groups?\s+and\s+session assignments|age group\s+birth date\s+divisions?\s+session)/i.test(
-      normalized
-    ) ||
+    tabularSignals.assignmentHeaderCount > 0 ||
+    tabularSignals.assignmentRowCount >= 2 ||
     (/\bgroup\s+\d+\b/i.test(normalized) &&
-      /\bsession\s+(?:fr|sa|su)\d+\b/i.test(normalized) &&
+      countScheduleSessionCodes(normalized) >= 1 &&
       /\b(?:younger|older)\b/i.test(normalized))
   );
 }
@@ -1456,8 +1651,16 @@ function classifySchedulePageText(text: string): {
 } {
   const normalized = safeString(text);
   if (!normalized) return { kind: "other", reason: "empty" };
+  const tabularSignals = getScheduleTabularSignals(normalized);
   if (looksLikeScheduleAssignmentText(normalized)) {
     return { kind: "assignment", reason: "assignment_table_signals" };
+  }
+  if (
+    tabularSignals.sessionHeaderLineCount > 0 &&
+    tabularSignals.repeatedTimeValueCount >= 2 &&
+    (tabularSignals.multiColumnLineCount >= 2 || hasMultiColumnScheduleStructure(normalized))
+  ) {
+    return { kind: "grid", reason: "grid_tabular_session_structure" };
   }
   if (SCHEDULE_GRID_TEXT_PATTERN.test(normalized) && /\t/.test(normalized)) {
     return { kind: "grid", reason: "grid_tabs_and_schedule_signals" };
@@ -1468,6 +1671,9 @@ function classifySchedulePageText(text: string): {
     /stretch\/warmup:/i.test(normalized)
   ) {
     return { kind: "grid", reason: "grid_club_and_warmup_signals" };
+  }
+  if (tabularSignals.score >= 4) {
+    return { kind: "grid", reason: "tabular_candidate_structure" };
   }
   if (looksLikeScheduleNarrativeText(normalized)) {
     return { kind: "narrative", reason: "narrative_session_signals" };
@@ -2187,6 +2393,10 @@ export function buildDiscoveryEvidence(
       origin: (safeString(item?.origin) as DiscoveryResourceOrigin) || "root",
       contentType: safeString(item?.contentType) || null,
       followed: Boolean(item?.followed),
+      availabilityText: safeString(item?.availabilityText) || null,
+      availabilityDate: safeString(item?.availabilityDate) || null,
+      discoveryMethod:
+        safeString(item?.discoveryMethod) === "playwright" ? "playwright" : "http",
       matchScore:
         typeof item?.matchScore === "number" && Number.isFinite(item.matchScore)
           ? item.matchScore
@@ -2469,23 +2679,19 @@ async function extractSchedulePageImagesFromPdf(
   return images;
 }
 
-const SCHEDULE_SESSION_HEADER_PATTERN = /session\s+([a-z]{1,3}\d{1,2})/i;
-const SCHEDULE_TIME_PATTERN = /^stretch\/warmup:/i;
+const SCHEDULE_SESSION_HEADER_PATTERN = /session\s+([a-z]{1,3}\d{1,2}|\d{1,2})/i;
+const SCHEDULE_TIME_PATTERN =
+  /^(?:stretch\/warmup:|stretch:|warm-?up:|open stretch:|march in:)|\b\d{1,2}:\d{2}\s*(?:am|pm)?\b/i;
 const SCHEDULE_BOILERPLATE_PATTERN =
   /^(?:florida crown championships schedule|clubs in pink|clubs in black|questions\?\s*email|for event info and results|[*]teams with athletes of the same level|your designated number of athlete spots|email\s+[^\s@]+@[^\s@]+\.[^\s@]+\s+with your choice|many thanks to our sponsors|thank you to visit lauderdale|meet site:|ph:|parking is|the temperature inside the venue|group hotel:|group rate:|distance from venue:|parking:|breakfast:|reservation deadline:|reservations link:|for complete meet results|book your hairstyling appointment|please book in advance|get ready to impress|@usacompetitions|✨)/i;
 const SCHEDULE_EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 
 function splitScheduleCells(line: string): string[] {
-  return safeString(line)
-    .split(/\t+/)
-    .map((cell) => safeString(cell))
-    .filter(Boolean);
+  return splitScheduleCellCandidates(line);
 }
 
 function splitScheduleGridCells(line: string): string[] {
-  const cells = safeString(line)
-    .split(/\t/)
-    .map((cell) => safeString(cell));
+  const cells = splitScheduleCellCandidates(line, { preserveEmpty: true });
   while (cells.length > 0 && !cells[cells.length - 1]) {
     cells.pop();
   }
@@ -2493,13 +2699,38 @@ function splitScheduleGridCells(line: string): string[] {
 }
 
 function extractSessionCodesFromHeader(line: string): string[] {
-  return [...safeString(line).matchAll(/session\s+([a-z]{1,3}\d{1,2})/gi)]
-    .map((match) => safeString(match[1]).toUpperCase())
-    .filter(Boolean);
+  const cells = splitScheduleCells(line);
+  const fromCells = uniqueBy(
+    cells
+      .map((cell) =>
+        extractSessionCodeFromCell(cell, {
+          allowBareCode: true,
+          allowNumericOnly: true,
+        })
+      )
+      .filter(Boolean),
+    (item) => item
+  );
+  if (fromCells.length >= 2) return fromCells;
+  return extractScheduleSessionCodesInText(line);
 }
 
 function normalizeScheduleTimeCell(value: string): string {
-  return safeString(value).replace(/^stretch\/warmup:\s*/i, "");
+  const normalized = safeString(value).replace(
+    /^(?:stretch\/warmup:|stretch:|warm-?up:|open stretch:|march in:)\s*/i,
+    ""
+  );
+  const firstTime = normalized.match(/\b\d{1,2}:\d{2}\s*(?:am|pm)?\b/i);
+  return firstTime ? safeString(firstTime[0]) : normalized;
+}
+
+function looksLikeScheduleTimeLine(line: string): boolean {
+  const normalized = safeString(line);
+  if (!normalized) return false;
+  if (/^(?:stretch\/warmup:|stretch:|warm-?up:|open stretch:|march in:)/i.test(normalized)) {
+    return true;
+  }
+  return countScheduleTimeValues(normalized) >= 2 && (/\t/.test(normalized) || /\s{2,}/.test(normalized));
 }
 
 function looksLikeScheduleBoilerplate(line: string): boolean {
@@ -2658,12 +2889,17 @@ function buildScheduleSessionsFromBlock(
   if (!codes.length) return [];
   const groupCells = splitScheduleCells(groupLine);
   const timeCells = splitScheduleCells(timeLine).map((cell) => normalizeScheduleTimeCell(cell));
+  const timeNote = /stretch|warm-?up/i.test(timeLine)
+    ? "Stretch/warmup"
+    : /\bmarch\b/i.test(timeLine)
+    ? "March-in"
+    : null;
   const sessions = codes.map((code, index) => ({
     code,
     group: groupCells[index] || null,
     startTime: timeCells[index] || null,
     warmupTime: timeCells[index] || null,
-    note: timeCells[index] ? "Stretch/warmup" : null,
+    note: timeCells[index] ? timeNote : null,
     clubs: [] as ParseResult["schedule"]["days"][number]["sessions"][number]["clubs"],
   }));
   const sessionDivisionState = sessions.map((session) => ({
@@ -2705,14 +2941,7 @@ function buildScheduleSessionsFromBlock(
   return sessions;
 }
 
-function parseScheduleDayFromPage(page: { pageNumber: number; text: string }) {
-  const lines = page.text
-    .split(/\n+/)
-    .map((line) => safeString(line))
-    .filter(Boolean);
-  const dateLine = lines.find((line) => SCHEDULE_DATE_LINE_PATTERN.test(line)) || "";
-  if (!dateLine) return null;
-
+function parseScheduleSessionsFromLines(lines: string[]) {
   const sessions: ParseResult["schedule"]["days"][number]["sessions"] = [];
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -2720,7 +2949,7 @@ function parseScheduleDayFromPage(page: { pageNumber: number; text: string }) {
 
     const groupLine =
       index + 1 < lines.length &&
-      !SCHEDULE_TIME_PATTERN.test(lines[index + 1]) &&
+      !looksLikeScheduleTimeLine(lines[index + 1]) &&
       !SCHEDULE_DATE_LINE_PATTERN.test(lines[index + 1]) &&
       !extractSessionCodesFromHeader(lines[index + 1]).length &&
       !looksLikeScheduleBoilerplate(lines[index + 1])
@@ -2728,7 +2957,7 @@ function parseScheduleDayFromPage(page: { pageNumber: number; text: string }) {
         : "";
     const timeLine =
       index + (groupLine ? 2 : 1) < lines.length &&
-      SCHEDULE_TIME_PATTERN.test(lines[index + (groupLine ? 2 : 1)])
+      looksLikeScheduleTimeLine(lines[index + (groupLine ? 2 : 1)])
         ? lines[index + (groupLine ? 2 : 1)]
         : "";
 
@@ -2753,13 +2982,40 @@ function parseScheduleDayFromPage(page: { pageNumber: number; text: string }) {
     sessions.push(...buildScheduleSessionsFromBlock(line, groupLine, timeLine, bodyLines));
     index = Math.max(index, cursor - 1);
   }
+  return sessions;
+}
 
-  if (!sessions.length) return null;
-  return {
-    date: dateLine,
-    shortDate: formatScheduleShortDate(dateLine),
-    sessions,
-  };
+function parseScheduleDaysFromPage(page: { pageNumber: number; text: string }) {
+  const lines = page.text
+    .split(/\n+/)
+    .map((line) => safeString(line))
+    .filter(Boolean);
+  const dateIndexes = lines
+    .map((line, index) => (SCHEDULE_DATE_LINE_PATTERN.test(line) ? index : -1))
+    .filter((index) => index >= 0);
+  if (!dateIndexes.length) return [];
+
+  return dateIndexes
+    .map((dateIndex, index) => {
+      const dateLine = lines[dateIndex];
+      const nextDateIndex = index + 1 < dateIndexes.length ? dateIndexes[index + 1] : lines.length;
+      const sessionLines =
+        index === 0
+          ? [...lines.slice(0, dateIndex), ...lines.slice(dateIndex + 1, nextDateIndex)]
+          : lines.slice(dateIndex + 1, nextDateIndex);
+      const sessions = parseScheduleSessionsFromLines(sessionLines);
+      if (!sessions.length) return null;
+      return {
+        date: dateLine,
+        shortDate: formatScheduleShortDate(dateLine),
+        sessions,
+      };
+    })
+    .filter((day): day is ParseResult["schedule"]["days"][number] => Boolean(day));
+}
+
+function _parseScheduleDayFromPage(page: { pageNumber: number; text: string }) {
+  return parseScheduleDaysFromPage(page)[0] || null;
 }
 
 function sanitizeScheduleLegendEntries(
@@ -2931,11 +3187,11 @@ function parseNarrativeScheduleSessionsFromPage(
     }
 
     const sessionMatch = line.match(
-      /^session\s+([a-z]{2,3}\d{1,2})\s+(.+?)\s+(\d{1,2}:\d{2}\s*(?:am|pm))\s+stretch\b/i
+      /^session\s+([a-z]{1,3}\d{1,2}|\d{1,2})\s+(.+?)\s+(\d{1,2}:\d{2}\s*(?:am|pm))\s+stretch\b/i
     );
     if (!sessionMatch || !currentDay) continue;
 
-    const sessionCode = safeString(sessionMatch[1]).toUpperCase();
+    const sessionCode = normalizeScheduleSessionCode(sessionMatch[1]);
     const group = safeString(sessionMatch[2]).replace(/\s+/g, " ");
     const startTime = safeString(sessionMatch[3]);
     let warmupTime: string | null = null;
@@ -3075,16 +3331,48 @@ function parseScheduleAssignmentsFromPages(
       ) {
         continue;
       }
-      const rowMatch = line.match(
-        /^(group\s+\d+|younger|middle|older)\s+(.+?)\s+([a-z]{2,3}\d{1,2})$/i
-      );
-      if (!rowMatch) continue;
+      const cells = splitScheduleCells(line);
+      let groupLabel = "";
+      let birthDateRange = "";
+      let divisionLabel = "";
+      let sessionCode = "";
+      if (cells.length >= 3) {
+        groupLabel = safeString(cells[0]);
+        birthDateRange = safeString(cells[1]);
+        divisionLabel = safeString(cells.slice(2, -1).join(" "));
+        sessionCode = extractSessionCodeFromCell(cells[cells.length - 1] || "", {
+          allowBareCode: true,
+          allowNumericOnly: true,
+        });
+      }
+      if (!sessionCode) {
+        const rowMatch = line.match(
+          /^(group\s+\d+|younger|middle|older)\s+(.+?)\s+((?:session\s+)?(?:[a-z]{1,3}\d{1,2}|\d{1,2}))$/i
+        );
+        if (!rowMatch) continue;
+        groupLabel = safeString(rowMatch[1]);
+        sessionCode = normalizeScheduleSessionCode(rowMatch[3]);
+        const rangeMatch = safeString(rowMatch[2]).match(
+          /(\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4})(.*)$/i
+        );
+        birthDateRange = safeString(rangeMatch?.[1] || rowMatch[2]);
+        divisionLabel = safeString(rangeMatch?.[2]);
+      }
+      if (
+        !/\b(group\s+\d+|younger|middle|older)\b/i.test(groupLabel) ||
+        !/\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4}/i.test(
+          birthDateRange
+        ) ||
+        !sessionCode
+      ) {
+        continue;
+      }
       assignments.push({
         level: currentLevel || null,
-        groupLabel: safeString(rowMatch[1]) || null,
-        sessionCode: safeString(rowMatch[3]).toUpperCase() || null,
-        birthDateRange: safeString(rowMatch[2]) || null,
-        divisionLabel: null,
+        groupLabel: groupLabel || null,
+        sessionCode: sessionCode || null,
+        birthDateRange: birthDateRange || null,
+        divisionLabel: divisionLabel || null,
         note: null,
       });
     }
@@ -3219,6 +3507,7 @@ const { PDFParse } = require("pdf-parse");
           text: cleanPdfPageTextPreservingGrid(String(page?.text || "")),
         }))
         .filter((page) => page.text),
+      annotationLinks: [],
     };
   } catch (err: unknown) {
     const message =
@@ -3257,7 +3546,7 @@ const { PDFParse } = require("pdf-parse");
         message: fallbackMessage,
       });
     }
-    return { text: "", pages: [] };
+    return { text: "", pages: [], annotationLinks: [] };
   } finally {
     if (tempDir) {
       await rm(tempDir, { recursive: true, force: true });
@@ -3410,6 +3699,7 @@ async function extractTextFromPdf(
   textQuality: TextQuality;
   qualitySignals: TextQualitySignals;
   pages: Array<{ num: number; text: string }>;
+  annotationLinks: PdfAnnotationLink[];
 }> {
   const rank: Record<TextQuality, number> = { good: 2, suspect: 1, poor: 0 };
   const deadline =
@@ -3434,6 +3724,7 @@ async function extractTextFromPdf(
 
   const nativeParseStartedAt = Date.now();
   const workerExtraction = await extractPdfTextWithNodeWorker(buffer);
+  const annotationLinks = await extractPdfAnnotationLinks(buffer);
   const workerCoachPageHints = extractCoachPageHintsFromPages(workerExtraction.pages);
   const workerCandidate = toCandidate(workerExtraction.text, false);
   if (options?.performance) {
@@ -3444,6 +3735,7 @@ async function extractTextFromPdf(
       ...workerCandidate,
       coachPageHints: workerCoachPageHints,
       pages: workerExtraction.pages,
+      annotationLinks,
     };
   }
 
@@ -3453,6 +3745,7 @@ async function extractTextFromPdf(
       ...heuristicCandidate,
       coachPageHints: workerCoachPageHints,
       pages: workerExtraction.pages,
+      annotationLinks,
     };
   }
 
@@ -3465,6 +3758,7 @@ async function extractTextFromPdf(
       ...bestNative,
       coachPageHints: workerCoachPageHints,
       pages: workerExtraction.pages,
+      annotationLinks,
     };
   }
 
@@ -3501,6 +3795,7 @@ async function extractTextFromPdf(
           ...ocrCandidate,
           coachPageHints: workerCoachPageHints,
           pages: workerExtraction.pages,
+          annotationLinks,
         };
       }
     }
@@ -3534,6 +3829,7 @@ async function extractTextFromPdf(
             ...ocrCandidate,
             coachPageHints: workerCoachPageHints,
             pages: workerExtraction.pages,
+            annotationLinks,
           };
         }
       }
@@ -3557,6 +3853,7 @@ async function extractTextFromPdf(
       ...best,
       coachPageHints: workerCoachPageHints,
       pages: workerExtraction.pages,
+      annotationLinks,
     };
   }
 
@@ -3568,6 +3865,7 @@ async function extractTextFromPdf(
     textQuality: "poor",
     qualitySignals: emptyQuality.signals,
     pages: workerExtraction.pages,
+    annotationLinks,
   };
 }
 
@@ -4296,15 +4594,58 @@ function normalizeCanonicalUrl(input: string): string {
 }
 
 const RESOURCE_STATUS_LABEL_PATTERN =
-  /\((?:\s*(?:not yet posted|posted[^)]*|updated[^)]*)\s*)\)/gi;
+  /\((?:\s*(?:not yet posted|will be posted(?:\s+by)?[^)]*|posted[^)]*|updated[^)]*)\s*)\)/gi;
 
-function parseResourceStatusFromLabel(label: string): {
+function toIsoDateOnly(value: Date | null): string | null {
+  if (!value || Number.isNaN(value.getTime())) return null;
+  return value.toISOString().slice(0, 10);
+}
+
+function extractAvailabilityText(label: string): string | null {
+  const raw = safeString(label);
+  if (!raw) return null;
+  const parenMatches = [...raw.matchAll(/\(([^)]+)\)/g)]
+    .map((match) => safeString(match[1]))
+    .filter(Boolean);
+  const parenthetical =
+    parenMatches.find((item) =>
+      /(not yet posted|will be posted|posted|updated)/i.test(item)
+    ) || "";
+  if (parenthetical) return parenthetical;
+  const inlineMatch = raw.match(
+    /\b(not yet posted|will be posted(?:\s+by)?[^,.;]*|posted[^,.;]*|updated[^,.;]*)\b/i
+  );
+  return safeString(inlineMatch?.[1] || inlineMatch?.[0] || "") || null;
+}
+
+function parseAvailabilityDateFromText(
+  availabilityText: string | null,
+  referenceYear?: string | null
+): string | null {
+  const raw = safeString(availabilityText);
+  if (!raw) return null;
+  const year =
+    safeString(referenceYear).match(/\b(20\d{2})\b/)?.[1] ||
+    String(new Date().getFullYear());
+  const referenceDate = new Date(`${year}-01-15T12:00:00.000Z`);
+  const parsed = chrono.parseDate(raw, referenceDate, {
+    forwardDate: false,
+  });
+  return toIsoDateOnly(parsed || null);
+}
+
+function parseResourceStatusFromLabel(label: string, options?: {
+  referenceYear?: string | null;
+}): {
   status: DiscoveryResourceStatus;
   cleanedLabel: string;
+  availabilityText: string | null;
+  availabilityDate: string | null;
 } {
   const raw = safeString(label);
   const lowered = raw.toLowerCase();
-  const status: DiscoveryResourceStatus = /not yet posted/i.test(lowered)
+  const availabilityText = extractAvailabilityText(raw);
+  const status: DiscoveryResourceStatus = /(not yet posted|will be posted)/i.test(lowered)
     ? "not_posted"
     : /(posted|updated|available|live|book now|reserve now|buy now)/i.test(lowered)
     ? "available"
@@ -4313,6 +4654,11 @@ function parseResourceStatusFromLabel(label: string): {
   return {
     status,
     cleanedLabel: cleanedLabel || raw,
+    availabilityText,
+    availabilityDate: parseAvailabilityDateFromText(
+      availabilityText,
+      options?.referenceYear
+    ),
   };
 }
 
@@ -4610,6 +4956,14 @@ function upsertResourceLink(
       : { ...resource, ...existing };
   merged.followed = existing.followed || resource.followed;
   merged.contentType = resource.contentType || existing.contentType || null;
+  merged.availabilityText =
+    resource.availabilityText || existing.availabilityText || null;
+  merged.availabilityDate =
+    resource.availabilityDate || existing.availabilityDate || null;
+  merged.discoveryMethod =
+    resource.discoveryMethod === "playwright" || existing.discoveryMethod === "playwright"
+      ? "playwright"
+      : "http";
   merged.matchScore =
     resource.matchScore == null
       ? existing.matchScore
@@ -4743,6 +5097,113 @@ function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): C
     match = anchorRegex.exec(html);
   }
   return uniqueBy(links, (item) => item.url).sort(compareDiscoveryCandidates);
+}
+
+function toCrawlCandidateFromBrowserDiscovery(
+  candidate: {
+    label: string;
+    url: string;
+    sourceUrl: string;
+    depth: 0 | 1;
+    sameHost: boolean;
+    contentType?: string | null;
+  },
+  rootUrl: URL
+): CrawlCandidate | null {
+  const normalizedUrl = normalizeUrl(candidate.url);
+  if (!normalizedUrl) return null;
+  const resolvedUrl = new URL(normalizedUrl);
+  const kind = candidate.sameHost
+    ? isAssetUrl(resolvedUrl) ||
+      /pdf|image\//i.test(safeString(candidate.contentType))
+      ? "asset"
+      : "html"
+    : "external";
+  const baseCandidate = {
+    url: normalizedUrl,
+    label: safeString(candidate.label) || fallbackLinkLabel(resolvedUrl),
+    sourceUrl: normalizeUrl(candidate.sourceUrl) || rootUrl.toString(),
+    depth: candidate.depth,
+    kind,
+    sameHost: candidate.sameHost,
+  };
+  return {
+    ...baseCandidate,
+    followed: candidate.depth > 0,
+    contentType: safeString(candidate.contentType) || null,
+    score: scoreDiscoveryCandidate(baseCandidate),
+  };
+}
+
+function titleCaseWords(value: string): string {
+  return safeString(value)
+    .split(/\s+/)
+    .map((part) =>
+      part ? `${part.slice(0, 1).toUpperCase()}${part.slice(1).toLowerCase()}` : ""
+    )
+    .join(" ")
+    .trim();
+}
+
+function fallbackLabelFromPdfAnnotation(url: URL): string {
+  const inferredKind = classifyResourceLink("", url.toString(), null);
+  switch (inferredKind) {
+    case "hotel_booking":
+      return "Hotel Booking";
+    case "photo_video":
+      return "Photo / Video Order Form";
+    case "results_live":
+    case "results_hub":
+    case "results_pdf":
+      return "Results";
+    case "rotation_hub":
+    case "rotation_sheet":
+      return "Rotation Sheets";
+    case "packet":
+      return "Schedule & Info";
+    case "roster":
+      return "Rosters";
+    case "team_divisions":
+      return "Team Divisions";
+    case "admission":
+      return "Admission";
+    case "parking":
+      return "Parking";
+    default:
+      break;
+  }
+
+  const pathLabel = titleCaseWords(
+    decodeURIComponent(url.pathname.split("/").filter(Boolean).pop() || "")
+      .replace(/\.[a-z0-9]+$/i, "")
+      .replace(/[-_]+/g, " ")
+  );
+  return pathLabel || fallbackLinkLabel(url);
+}
+
+function toCrawlCandidateFromPdfAnnotation(
+  link: PdfAnnotationLink,
+  assetUrl: URL,
+  rootUrl: URL
+): CrawlCandidate | null {
+  const normalizedUrl = normalizeUrl(link.url);
+  if (!normalizedUrl || normalizedUrl === assetUrl.toString()) return null;
+  const resolvedUrl = new URL(normalizedUrl);
+  const kind = classifyDiscoveryLink(resolvedUrl, rootUrl);
+  const baseCandidate = {
+    url: normalizedUrl,
+    label: safeString(link.label) || fallbackLabelFromPdfAnnotation(resolvedUrl),
+    sourceUrl: assetUrl.toString(),
+    depth: 1 as const,
+    kind,
+    sameHost: resolvedUrl.host === rootUrl.host,
+  };
+  return {
+    ...baseCandidate,
+    followed: false,
+    contentType: null,
+    score: scoreDiscoveryCandidate(baseCandidate),
+  };
 }
 
 function buildHtmlTextChunk(
@@ -4903,8 +5364,12 @@ async function appendFetchedAssetText(
   assetUrl: URL,
   fetched: { contentType: string; buffer: Buffer; text: string },
   accumulators: {
+    rootUrl: URL;
+    referenceYear: string | null;
     linkedChunks: string[];
     linkedMeta: Array<{ url: string; contentType: string }>;
+    discoveredLinkMap: Map<string, CrawlCandidate>;
+    resourceLinkMap: Map<string, DiscoveryResourceLink>;
     usedOcr: boolean;
     highConfidencePdfFound: boolean;
     gymLayoutImageDataUrl: string | null;
@@ -4918,6 +5383,9 @@ async function appendFetchedAssetText(
   },
   hooks: Required<UrlDiscoveryTestHooks>,
   options: Required<DiscoveryExtractionOptions>,
+  context: {
+    discoveryMethod: "http" | "playwright";
+  },
   requestCache?: DiscoveryRequestCache
 ) {
   accumulators.linkedMeta.push({ url: assetUrl.toString(), contentType: fetched.contentType });
@@ -4937,6 +5405,27 @@ async function appendFetchedAssetText(
       [...accumulators.coachPageHints, ...parsed.coachPageHints],
       (item) => `${item.page}|${item.heading}|${item.excerpt}`
     );
+    for (const annotationLink of pickArray(parsed.annotationLinks)) {
+      const discovered = toCrawlCandidateFromPdfAnnotation(
+        annotationLink as PdfAnnotationLink,
+        assetUrl,
+        accumulators.rootUrl
+      );
+      if (!discovered) continue;
+      upsertDiscoveredLink(accumulators.discoveredLinkMap, discovered);
+      const resource = buildResourceLinkFromCandidate(
+        discovered,
+        "linked_asset",
+        null,
+        {
+          referenceYear: accumulators.referenceYear,
+          discoveryMethod: context.discoveryMethod,
+        }
+      );
+      if (resource) {
+        upsertResourceLink(accumulators.resourceLinkMap, resource);
+      }
+    }
     if (
       options.workflow === "gymnastics" &&
       options.mode === "enrich" &&
@@ -5047,11 +5536,15 @@ function buildFetchedHtmlTextChunk(
 function buildResourceLinkFromCandidate(
   candidate: Pick<CrawlCandidate, "label" | "url" | "sourceUrl" | "followed">,
   origin: DiscoveryResourceOrigin,
-  contentType?: string | null
+  contentType?: string | null,
+  options?: { referenceYear?: string | null; discoveryMethod?: "http" | "playwright" }
 ): DiscoveryResourceLink | null {
   const normalizedUrl = normalizeUrl(candidate.url);
   if (!normalizedUrl) return null;
-  const { status, cleanedLabel } = parseResourceStatusFromLabel(candidate.label);
+  const { status, cleanedLabel, availabilityText, availabilityDate } =
+    parseResourceStatusFromLabel(candidate.label, {
+      referenceYear: options?.referenceYear,
+    });
   const kind = classifyResourceLink(cleanedLabel || candidate.label, normalizedUrl, contentType);
   if (kind === "other") return null;
   return {
@@ -5065,6 +5558,9 @@ function buildResourceLinkFromCandidate(
     followed: Boolean(candidate.followed),
     matchScore: origin === "root" ? 10 : null,
     matchReason: origin === "root" ? "root_direct_resource" : null,
+    availabilityText,
+    availabilityDate,
+    discoveryMethod: options?.discoveryMethod || "http",
   };
 }
 
@@ -5137,7 +5633,11 @@ async function resolveHubResourceLinks(
     const baseResource = buildResourceLinkFromCandidate(
       { ...candidate, followed: false },
       "hub_descendant",
-      candidate.contentType || null
+      candidate.contentType || null,
+      {
+        referenceYear: fingerprint.year,
+        discoveryMethod: "http",
+      }
     );
     if (!baseResource) continue;
     if (
@@ -5246,6 +5746,7 @@ export function buildDefaultGymMeetData() {
         awardsInfo: "",
         sessionWindows: [],
         operationalNotes: [],
+        pendingResources: [],
         staffContacts: [],
       },
       practice: { enabled: true, blocks: [], excusedAthletes: [], modifiedTraining: [] },
@@ -5476,6 +5977,7 @@ export async function extractDiscoveryText(
   const discoveredLinkMap = new Map<string, CrawlCandidate>();
   const resourceLinkMap = new Map<string, DiscoveryResourceLink>();
   const crawledPages: CrawledPage[] = [{ url: url.toString(), title: pageTitle, depth: 0 }];
+  const crawledPageKeys = new Set([`${url.toString()}|0`]);
   const fetchedAssetUrls = new Set<string>();
   const fetchedCanonicalUrls = new Set<string>();
   let usedOcr = false;
@@ -5490,15 +5992,22 @@ export async function extractDiscoveryText(
 
   for (const candidate of rootCandidates) {
     upsertDiscoveredLink(discoveredLinkMap, candidate);
-    const resource = buildResourceLinkFromCandidate(candidate, "root", null);
+    const resource = buildResourceLinkFromCandidate(candidate, "root", null, {
+      referenceYear: fingerprint.year,
+      discoveryMethod: "http",
+    });
     if (resource) {
       upsertResourceLink(resourceLinkMap, resource);
     }
   }
 
   const accumulators = {
+    rootUrl: url,
+    referenceYear: fingerprint.year,
     linkedChunks,
     linkedMeta,
+    discoveredLinkMap,
+    resourceLinkMap,
     usedOcr,
     highConfidencePdfFound: false,
     gymLayoutImageDataUrl,
@@ -5510,6 +6019,66 @@ export async function extractDiscoveryText(
     schedulePageImages,
     schedulePageTexts,
   };
+  const resolveDiscoveryMethodForUrl = (targetUrl: string): "http" | "playwright" =>
+    [...resourceLinkMap.values()].find(
+      (item) => normalizeCanonicalUrl(item.url) === normalizeCanonicalUrl(targetUrl)
+    )?.discoveryMethod || "http";
+
+  const browserCollector =
+    urlDiscoveryTestHooks?.collectBrowserData || collectDiscoveryBrowserData;
+  const shouldRunBrowserDiscovery =
+    !urlDiscoveryTestHooks?.fetchWithLimit || Boolean(urlDiscoveryTestHooks?.collectBrowserData);
+  if (shouldRunBrowserDiscovery) {
+    try {
+      const browserDiscovery = await browserCollector(url.toString());
+      for (const browserCandidate of browserDiscovery.candidates) {
+        const normalizedCandidate = toCrawlCandidateFromBrowserDiscovery(
+          browserCandidate,
+          url
+        );
+        if (!normalizedCandidate) continue;
+        upsertDiscoveredLink(discoveredLinkMap, normalizedCandidate);
+        const resource = buildResourceLinkFromCandidate(
+          normalizedCandidate,
+          normalizedCandidate.depth === 0 ? "root" : "child_page",
+          normalizedCandidate.contentType || null,
+          {
+            referenceYear: fingerprint.year,
+            discoveryMethod: "playwright",
+          }
+        );
+        if (resource) {
+          upsertResourceLink(resourceLinkMap, resource);
+        }
+      }
+      for (const browserPage of browserDiscovery.pages) {
+        if (!browserPage.text) continue;
+        const pageKey = `${browserPage.url}|${browserPage.depth}`;
+        if (!crawledPageKeys.has(pageKey)) {
+          crawledPages.push({
+            url: browserPage.url,
+            title: browserPage.title,
+            depth: browserPage.depth,
+          });
+          crawledPageKeys.add(pageKey);
+        }
+        if (browserPage.depth > 0) {
+          htmlChunks.push(
+            buildHtmlTextChunk(
+              browserPage.url,
+              browserPage.title || "",
+              browserPage.text
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.warn("[meet-discovery] playwright browser discovery failed", {
+        url: url.toString(),
+        message: error instanceof Error ? error.message : String(error || ""),
+      });
+    }
+  }
 
   const fetchAssetCandidate = async (candidate: CrawlCandidate) => {
     if (fetchedAssetUrls.has(candidate.url)) return;
@@ -5528,6 +6097,9 @@ export async function extractDiscoveryText(
         accumulators,
         hooks,
         resolvedOptions,
+        {
+          discoveryMethod: resolveDiscoveryMethodForUrl(candidate.url),
+        },
         requestCache
       );
     } catch {
@@ -5571,6 +6143,9 @@ export async function extractDiscoveryText(
           accumulators,
           hooks,
           resolvedOptions,
+          {
+            discoveryMethod: resource.discoveryMethod,
+          },
           requestCache
         );
       }
@@ -5604,7 +6179,9 @@ export async function extractDiscoveryText(
   };
 
   await fetchAssetCandidates(
-    rootCandidates.filter((candidate) => candidate.kind === "asset")
+    [...discoveredLinkMap.values()].filter(
+      (candidate) => candidate.kind === "asset" && candidate.depth === 0
+    )
   );
 
   for (const resource of [...resourceLinkMap.values()]) {
@@ -5613,10 +6190,12 @@ export async function extractDiscoveryText(
     }
   }
 
-  for (const childPage of rootCandidates.filter((candidate) =>
-    shouldFollowDiscoveryChildPage(candidate, fingerprint)
-  )) {
+  for (const childPage of [...discoveredLinkMap.values()]
+    .filter((candidate) => shouldFollowDiscoveryChildPage(candidate, fingerprint))
+    .sort(compareDiscoveryCandidates)) {
     if (crawledPages.length - 1 >= MAX_FOLLOWED_CHILD_PAGES) break;
+    const childPageKey = `${childPage.url}|1`;
+    if (crawledPageKeys.has(childPageKey)) continue;
     try {
       const fetched = await hooks.fetchWithLimit(childPage.url);
       upsertDiscoveredLink(discoveredLinkMap, {
@@ -5632,6 +6211,9 @@ export async function extractDiscoveryText(
             accumulators,
             hooks,
             resolvedOptions,
+            {
+              discoveryMethod: resolveDiscoveryMethodForUrl(childPage.url),
+            },
             requestCache
           );
           fetchedAssetUrls.add(childPage.url);
@@ -5644,7 +6226,10 @@ export async function extractDiscoveryText(
       const childMetadata = extractMetadataText(childHtml);
       const childReadable = stripHtml(childHtml);
       const childTitle = getPageTitle(childHtml);
-      crawledPages.push({ url: childPage.url, title: childTitle, depth: 1 });
+      if (!crawledPageKeys.has(childPageKey)) {
+        crawledPages.push({ url: childPage.url, title: childTitle, depth: 1 });
+        crawledPageKeys.add(childPageKey);
+      }
       htmlChunks.push(buildHtmlTextChunk(childPage.url, childMetadata, childReadable));
 
       const childCandidates = collectDiscoveryCandidates(childHtml, childUrl, 1);
@@ -5658,6 +6243,10 @@ export async function extractDiscoveryText(
       // Best-effort child pages.
     }
   }
+
+  await fetchAssetCandidates(
+    [...discoveredLinkMap.values()].filter((candidate) => candidate.kind === "asset")
+  );
 
   usedOcr = accumulators.usedOcr;
   gymLayoutImageDataUrl = accumulators.gymLayoutImageDataUrl;
@@ -6654,7 +7243,12 @@ function sanitizeDiscoveryParseResult(value: ParseResult): ParseResult {
       .map((item) => safeString(item))
       .filter(Boolean)
       .filter((item) => {
-        if (isMarketingLikeText(item) || isScheduleGridLikeText(item) || isClubParticipationLikeText(item)) {
+        if (
+          isMarketingLikeText(item) ||
+          isScheduleGridLikeText(item) ||
+          isClubParticipationLikeText(item) ||
+          isLowSignalOperationalNote(item)
+        ) {
           return false;
         }
         if (VENUE_DETAIL_TEXT_PATTERN.test(item) || isAdmissionAnnouncementText(item)) {
@@ -8380,18 +8974,26 @@ function deriveScheduleFromTextFallback(
     pages
       .map((page) => safeString(page.text).match(SCHEDULE_EMAIL_PATTERN)?.[0] || "")
       .find(Boolean) || null;
-  const days = pages
-    .map((page) => parseScheduleDayFromPage(page))
-    .filter((day): day is NonNullable<typeof day> => Boolean(day));
-
-  return {
-    venueLabel: null,
-    supportEmail,
-    notes: [],
-    annotations: [],
-    assignments: [],
-    days,
-  };
+  return pages.reduce<ParseResult["schedule"]>(
+    (acc, page) =>
+      mergeScheduleWithFallback(acc, {
+        venueLabel: null,
+        supportEmail:
+          safeString(page.text).match(SCHEDULE_EMAIL_PATTERN)?.[0] || null,
+        notes: [],
+        annotations: [],
+        assignments: [],
+        days: parseScheduleDaysFromPage(page),
+      }),
+    {
+      venueLabel: null,
+      supportEmail,
+      notes: [],
+      annotations: [],
+      assignments: [],
+      days: [],
+    }
+  );
 }
 
 function countScheduleDaysWithSessions(value: unknown): number {
@@ -8412,11 +9014,7 @@ function countDistinctDetectedScheduleCodes(
   pages: Array<{ pageNumber: number; text: string }>
 ): number {
   return new Set(
-    pages.flatMap((page) =>
-      [...safeString(page.text).matchAll(/session\s+([a-z]{1,3}\d{1,2})/gi)]
-        .map((match) => safeString(match[1]).toUpperCase())
-        .filter(Boolean)
-    )
+    pages.flatMap((page) => extractScheduleSessionCodesInText(page.text))
   ).size;
 }
 
@@ -8455,11 +9053,15 @@ function shouldUseVisualScheduleRepair(
   selectedPages: Array<{ pageNumber: number; text: string }>
 ): boolean {
   if (!selectedPages.length) return false;
+  const normalizedTextSchedule = normalizeStoredSchedule(textSchedule);
+  const textSessions = normalizedTextSchedule.days.flatMap((day) => day.sessions);
+  const sessionsWithClubs = textSessions.filter((session) => session.clubs.length > 0).length;
+  if (textSessions.length > 0 && sessionsWithClubs === 0) return true;
   const textDayCount = countScheduleDaysWithSessions(textSchedule);
   if (textDayCount === 0) return true;
   const fallbackDayCount = countScheduleDaysWithSessions(fallbackSchedule);
   if (fallbackDayCount > textDayCount) return true;
-  const hasEmptySessions = normalizeStoredSchedule(textSchedule).days.some(
+  const hasEmptySessions = normalizedTextSchedule.days.some(
     (day) => day.sessions.length === 0
   );
   if (hasEmptySessions) return true;
@@ -9745,6 +10347,81 @@ function isDateWithinRange(
   return target >= lower && target <= upper;
 }
 
+function hasExplicitIsoTimeComponent(value: unknown): boolean {
+  const text = safeString(value);
+  if (!text) return false;
+  const match = text.match(/T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?Z$/i);
+  if (!match) return false;
+  return !(
+    match[1] === "00" &&
+    match[2] === "00" &&
+    safeString(match[3] || "00") === "00"
+  );
+}
+
+function hasAnyDiscoveryTimeSignal(parseResult: ParseResult): boolean {
+  return [
+    parseResult.startAt,
+    parseResult.endAt,
+    parseResult.athlete?.stretchTime,
+    parseResult.athlete?.marchIn,
+    parseResult.meetDetails?.warmup,
+    parseResult.meetDetails?.marchIn,
+    parseResult.meetDetails?.doorsOpen,
+    parseResult.meetDetails?.registrationInfo,
+  ].some((value) => /\b\d{1,2}:\d{2}\s*(?:am|pm)?\b/i.test(safeString(value)));
+}
+
+function hasExplicitDiscoveryStartTime(parseResult: ParseResult): boolean {
+  if (hasExplicitIsoTimeComponent(parseResult.startAt)) return true;
+  if (!parseResult.startAt) return false;
+  return hasAnyDiscoveryTimeSignal(parseResult);
+}
+
+function buildTextDerivedLink(
+  label: string,
+  value: unknown
+): { label: string; url: string } | null {
+  const url = extractCanonicalUrlFromText(value);
+  return url ? { label, url } : null;
+}
+
+function isScheduleTableNoiseLine(value: unknown): boolean {
+  const text = safeString(value);
+  if (!text) return true;
+  if (SCHEDULE_DATE_LINE_PATTERN.test(text)) return true;
+  if (extractSessionCodesFromHeader(text).length >= 1) return true;
+  if (looksLikeScheduleTimeLine(text)) return true;
+  if (looksLikeScheduleDivisionLine(splitScheduleCells(text))) return true;
+  if (/^(?:gym|arena)\s+[a-z0-9]+(?:\s{2,}(?:gym|arena)\s+[a-z0-9]+)+$/i.test(text)) return true;
+  return false;
+}
+
+function isPacketCoverCopyText(value: unknown): boolean {
+  return /(is proud to host|please review the following items enclosed in this packet|welcome to the .* championships?|thank you for attending|hosted by)/i.test(
+    safeString(value)
+  );
+}
+
+function shouldKeepOperationalLayoutEvidence(
+  extractionMeta?: ExtractionResult["extractionMeta"]
+): boolean {
+  return Boolean(
+    Number(extractionMeta?.gymLayoutPage) || safeString(extractionMeta?.gymLayoutImageDataUrl)
+  );
+}
+
+function isLowSignalOperationalNote(value: unknown): boolean {
+  const text = safeString(value);
+  if (!text) return true;
+  if (isMarketingLikeText(text) || isScheduleGridLikeText(text) || isClubParticipationLikeText(text)) {
+    return true;
+  }
+  if (isScheduleTableNoiseLine(text) || isPacketCoverCopyText(text)) return true;
+  if (/^(?:coach(?:es)?\s+)?sign[-\s]?in[:\s]/i.test(text)) return true;
+  return false;
+}
+
 export async function mapParseResultToGymData(
   parseResult: ParseResult,
   baseData: any = {},
@@ -9763,6 +10440,7 @@ export async function mapParseResultToGymData(
     (looksLikeDiscoveryPlaceholderTitle(baseTitle) ? "" : baseTitle);
   const resolvedPageTemplateId =
     resolveGymMeetTemplateId(baseData) || DEFAULT_GYM_MEET_TEMPLATE_ID;
+  const hasExplicitStartTime = hasExplicitDiscoveryStartTime(parseResult);
   const { date, time } = splitDateTime(parseResult.startAt);
   const derivedRange = deriveDateRangeFromText(parseResult.dates);
   const hasDateConflictWithRange =
@@ -9780,20 +10458,82 @@ export async function mapParseResultToGymData(
         status: (safeString(item?.status) as DiscoveryResourceStatus) || "unknown",
         label: safeString(item?.label) || "Resource link",
         url: normalizeUrl(item?.url),
+        sourceUrl: normalizeUrl(item?.sourceUrl),
+        availabilityText: safeString(item?.availabilityText) || null,
+        availabilityDate: safeString(item?.availabilityDate) || null,
+        discoveryMethod:
+          safeString(item?.discoveryMethod) === "playwright" ? "playwright" : "http",
       }))
       .filter((item) => item.url),
     (item) => `${item.kind}|${item.url}`
   );
-  const pickResourceLink = (...kinds: DiscoveryResourceKind[]) =>
-    resourceLinks.find((item) => kinds.includes(item.kind));
-  const pickResourceLinks = (...kinds: DiscoveryResourceKind[]) =>
-    resourceLinks.filter((item) => kinds.includes(item.kind));
+  const availableResourceLinks = resourceLinks.filter(
+    (item) => item.status !== "not_posted"
+  );
+  const pickAvailableResourceLink = (...kinds: DiscoveryResourceKind[]) =>
+    availableResourceLinks.find((item) => kinds.includes(item.kind));
+  const pickAvailableResourceLinks = (...kinds: DiscoveryResourceKind[]) =>
+    availableResourceLinks.filter((item) => kinds.includes(item.kind));
   const canonicalScoresLink =
-    pickResourceLink("results_live")?.url || pickResourceLink("results_hub")?.url || "";
+    pickAvailableResourceLink("results_live")?.url ||
+    pickAvailableResourceLink("results_hub")?.url ||
+    extractCanonicalUrlFromText(parseResult.meetDetails.resultsInfo) ||
+    "";
+  const pendingResourceKindGroups: Partial<Record<DiscoveryResourceKind, DiscoveryResourceKind[]>> = {
+    rotation_hub: ["rotation_sheet", "rotation_hub"],
+    rotation_sheet: ["rotation_sheet", "rotation_hub"],
+    results_hub: ["results_live", "results_pdf", "results_hub"],
+    results_pdf: ["results_live", "results_pdf", "results_hub"],
+    team_divisions: ["team_divisions"],
+    packet: ["packet"],
+    roster: ["roster"],
+    photo_video: ["photo_video"],
+    hotel_booking: ["hotel_booking"],
+    admission: ["admission"],
+    parking: ["parking"],
+  };
+  const pendingResources = uniqueBy(
+    resourceLinks
+      .filter((item) => item.status === "not_posted")
+      .filter((item) => {
+        const relatedKinds = pendingResourceKindGroups[item.kind] || [item.kind];
+        return !availableResourceLinks.some((candidate) =>
+          relatedKinds.includes(candidate.kind)
+        );
+      })
+      .map((item, idx) => ({
+        id: `pending-resource-${idx + 1}`,
+        kind: item.kind,
+        label: item.label || "Posting soon",
+        availabilityText: item.availabilityText || item.label || "",
+        availabilityDate: item.availabilityDate || "",
+        url: item.url || "",
+        sourceUrl: item.sourceUrl || "",
+        lastSeenAt: new Date().toISOString(),
+      }))
+      .sort((a, b) => {
+        if (a.availabilityDate && b.availabilityDate) {
+          return a.availabilityDate.localeCompare(b.availabilityDate);
+        }
+        if (a.availabilityDate) return -1;
+        if (b.availabilityDate) return 1;
+        return a.label.localeCompare(b.label);
+      }),
+    (item) => `${item.kind}|${item.label}|${item.availabilityDate}`
+  );
   const hotelNarrative =
     safeString(parseResult.logistics.hotel) ||
     safeString(existingAdvanced.logistics?.hotelInfo) ||
     "";
+  const inferredResultsLink = buildTextDerivedLink(
+    "Official Results",
+    parseResult.meetDetails.resultsInfo
+  );
+  const inferredHotelLink = buildTextDerivedLink("Hotel Booking", hotelNarrative);
+  const inferredRotationLink = buildTextDerivedLink(
+    "Rotation Sheets",
+    parseResult.meetDetails.rotationSheetsInfo
+  );
   const compactHotelName =
     hotelNarrative &&
     hotelNarrative.length <= 80 &&
@@ -9801,23 +10541,25 @@ export async function mapParseResultToGymData(
     !/\b(book|reserve|deadline|rate|parking|distance|travel)\b/i.test(hotelNarrative)
       ? hotelNarrative
       : "";
-  const layoutFacts = uniqueLines(
-    sanitizeVenueFactLines(
-      pickArray(effectiveExtractionMeta?.gymLayoutFacts)
-        .map((item) => safeString(item))
-        .filter(Boolean),
-      {
-        mode: "strict",
-        maxLines: 14,
-        requireAnchor: true,
-        excludePatterns: [
-          /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
-          /official results|live scoring|daylight savings/i,
-        ],
-      }
-    ),
-    14
-  );
+  const layoutFacts = shouldKeepOperationalLayoutEvidence(effectiveExtractionMeta)
+    ? uniqueLines(
+        sanitizeVenueFactLines(
+          pickArray(effectiveExtractionMeta?.gymLayoutFacts)
+            .map((item) => safeString(item))
+            .filter(Boolean),
+          {
+            mode: "strict",
+            maxLines: 14,
+            requireAnchor: true,
+            excludePatterns: [
+              /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
+              /official results|live scoring|daylight savings/i,
+            ],
+          }
+        ),
+        14
+      )
+    : [];
   const assignedGym = safeString(
     parseResult.athlete.assignedGym || existingAdvanced.meet?.assignedGym || ""
   );
@@ -9862,6 +10604,7 @@ export async function mapParseResultToGymData(
     safeString(parseResult.meetDetails.resultsInfo),
     safeString(parseResult.meetDetails.rotationSheetsInfo),
     safeString(parseResult.meetDetails.awardsInfo),
+    safeString(parseResult.coachInfo.signIn),
   ].filter(Boolean);
   const dedicatedFieldKeys = new Set(
     dedicatedFieldValues
@@ -9881,6 +10624,7 @@ export async function mapParseResultToGymData(
       const key = normalizeVenueFactForCompare(item);
       if (!key) return false;
       if (dedicatedFieldKeys.has(key)) return false;
+      if (isLowSignalOperationalNote(item)) return false;
       return true;
     })
     .slice(0, 16);
@@ -9898,7 +10642,7 @@ export async function mapParseResultToGymData(
       url: normalizeUrl(item?.url),
     }))
     .filter((item) => item.url);
-  const canonicalResourceDocuments = pickResourceLinks(
+  const canonicalResourceDocuments = pickAvailableResourceLinks(
     "packet",
     "roster",
     "team_divisions",
@@ -10042,7 +10786,13 @@ export async function mapParseResultToGymData(
   } = resolvedSchedule as Record<string, any>;
   const coachSectionEnabled = hasCoachInfoContent(parseResult.coachInfo);
   const coachLinks = uniqueBy(
-    [...parseResult.coachInfo.links, ...parseResult.links]
+    [
+      ...parseResult.coachInfo.links,
+      ...parseResult.links,
+      inferredResultsLink,
+      inferredRotationLink,
+    ]
+      .filter(Boolean)
       .map((item) => ({
         label: safeString(item?.label) || "Coach link",
         url: normalizeUrl(item?.url),
@@ -10143,6 +10893,7 @@ export async function mapParseResultToGymData(
       awardsInfo: parseResult.meetDetails.awardsInfo || "",
       sessionWindows: parseResult.meetDetails.sessionWindows || [],
       operationalNotes,
+      pendingResources,
       staffContacts: publicMeetContacts.map((item, idx) => ({
         id: `meet-staff-${idx + 1}`,
         role: item.role,
@@ -10286,12 +11037,14 @@ export async function mapParseResultToGymData(
     toIsoDateOnlyOrNull(baseData?.date) ||
     "";
   const mappedTime = (() => {
+    if (!hasExplicitStartTime) return "";
     if (authoritativeDate) return time || safeString(baseData?.time) || "";
     if (parseResult.startAt) return time || "";
     if (safeString(baseData?.date) === mappedDate) return safeString(baseData?.time) || "";
     return "";
   })();
   const mappedStartISO = (() => {
+    if (!hasExplicitStartTime) return null;
     if (parseResult.startAt && !hasDateConflictWithRange) return parseResult.startAt;
     const existingStart = safeString(toIsoOrNull(baseData?.startISO));
     if (existingStart && mappedDate && existingStart.startsWith(mappedDate)) {
@@ -10300,6 +11053,7 @@ export async function mapParseResultToGymData(
     return null;
   })();
   const mappedEndISO = (() => {
+    if (!hasExplicitStartTime) return null;
     if (parseResult.endAt && !hasDateConflictWithRange) return parseResult.endAt;
     const existingEnd = safeString(toIsoOrNull(baseData?.endISO));
     if (existingEnd && mappedDate && existingEnd.startsWith(mappedDate)) {
@@ -10316,7 +11070,7 @@ export async function mapParseResultToGymData(
     time: mappedTime,
     startISO: mappedStartISO,
     endISO: mappedEndISO,
-    timezone: parseResult.timezone || baseData?.timezone || "America/Chicago",
+    timezone: parseResult.timezone || baseData?.timezone || null,
     venue: parseResult.venue || baseData?.venue || "",
     address: parseResult.address || baseData?.address || "",
     hostGym:
@@ -10345,12 +11099,17 @@ export async function mapParseResultToGymData(
     },
     links: uniqueBy(
       [
-        ...resourceLinks.map((item) => ({ label: item.label, url: item.url! })),
+        ...availableResourceLinks.map((item) => ({ label: item.label, url: item.url! })),
         ...parseResult.links,
         ...parseResult.coachInfo.links,
         ...parseResult.logistics.parkingLinks,
         ...parseResult.logistics.parkingPricingLinks,
-      ].filter((item) => item.url),
+        inferredResultsLink,
+        inferredHotelLink,
+        inferredRotationLink,
+      ].filter(
+        (item): item is { label?: string; url: string } => Boolean(item?.url)
+      ),
       (item) => item.url
     ),
     advancedSections: nextAdvanced,
@@ -10375,11 +11134,13 @@ export const __testUtils = {
   routeCoachDeadlines,
   hasCoachInfoContent,
   deriveScheduleFromTextFallback,
+  deriveScheduleFromExtractedText,
   parseNarrativeScheduleSessionsFromPage,
   parseScheduleAnnotationsFromPages,
   parseScheduleAssignmentsFromPages,
   classifySchedulePageText,
   selectScheduleSegments,
+  shouldUseVisualScheduleRepair,
   mergeScheduleWithFallback,
   supplementScheduleWithFallback,
   mergeScheduleAwardFlags,
