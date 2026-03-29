@@ -11,8 +11,8 @@ type HeroProps = {
 const heroTabs = ["Sessions", "Rotations", "Venue", "Hotels", "Results"];
 
 const evidenceNotes = [
-  "Session schedule and warm-up times",
-  "Venue notes, doors, and parking",
+  "Meet details, warm-up, and arrival timing",
+  "Admission, doors, and parking",
   "Hotel block, packet, and documents",
 ];
 
@@ -42,7 +42,7 @@ export default function Hero({ onGoToStart, onOpenBuilder }: HeroProps) {
           </h1>
 
           <p className="mt-6 max-w-[60ch] text-lg leading-8 text-[#55607d] sm:text-xl">
-            Upload your meet schedule, sessions, venue details, hotels, and
+            Upload your meet packet, venue details, hotels, admission notes, and
             documents once. Envitefy turns them into one polished meet hub for
             parents, athletes, coaches, and spectators.
           </p>

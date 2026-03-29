@@ -120,6 +120,7 @@ interface Props {
   actions?: React.ReactNode;
   eventId?: string;
   isOwner?: boolean;
+  showHostDashboard?: boolean;
   heroImageUrl?: string | null;
   calendarLinks?: {
     appleInline: string;
@@ -150,6 +151,7 @@ export default function BirthdayRenderer({
   actions,
   eventId,
   isOwner,
+  showHostDashboard = isOwner,
   heroImageUrl,
   calendarLinks,
   coordinates,
@@ -251,7 +253,7 @@ export default function BirthdayRenderer({
         )}
         {actions && <div className="event-modern-mobile-spacer md:hidden" />}
 
-        {isOwner && eventId && (
+        {showHostDashboard && eventId && (
           <div className="max-w-4xl mx-auto w-full px-6 pb-20 mt-12">
             <EventRsvpDashboard
               eventId={eventId}

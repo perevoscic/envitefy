@@ -377,6 +377,7 @@ export default function BabyShowerTemplateView({
               <EventActions
                 shareUrl={shareUrl}
                 event={eventData}
+                calendarTitle={eventTitle}
                 historyId={!isReadOnly ? eventId : undefined}
                 className=""
                 variant="compact"
@@ -746,6 +747,7 @@ export default function BabyShowerTemplateView({
               <EventActions
                 shareUrl={shareUrl}
                 event={eventData}
+                calendarTitle={eventTitle}
                 historyId={eventId}
                 className="w-full justify-center"
                 variant="compact"

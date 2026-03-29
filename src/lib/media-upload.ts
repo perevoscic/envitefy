@@ -1,6 +1,7 @@
 import { put } from "@vercel/blob";
 import sharp from "sharp";
 import { randomUUID } from "node:crypto";
+import { absoluteUrl } from "./absolute-url.ts";
 import {
   type UploadKind,
   type UploadResponse,
@@ -17,6 +18,7 @@ type BlobAsset = {
   url: string;
   pathname: string;
   sizeBytes: number;
+  access: BlobAccess;
 };
 
 type ValidatedUpload = {
@@ -39,6 +41,10 @@ type UploadBlobParams = {
   contentType: string;
   access: BlobAccess;
 };
+
+const PRIVATE_STORE_ACCESS_ERROR = /cannot use public access on a private store/i;
+
+let detectedBlobStoreAccess: BlobAccess | null = null;
 
 type PublicUploadParams = {
   file: File;
@@ -84,15 +90,49 @@ function getImageOutputName(fileName: string): string {
   return `${sanitizePathSegment(stripExtension(fileName)) || "image"}.webp`;
 }
 
+function isPrivateStoreAccessError(error: unknown): boolean {
+  return error instanceof Error && PRIVATE_STORE_ACCESS_ERROR.test(error.message);
+}
+
+function buildPrivateBlobProxyPath(pathname: string): string {
+  const encodedPath = pathname
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  return `/api/blob/${encodedPath}`;
+}
+
+async function resolveBlobAssetUrl(pathname: string, blobUrl: string, access: BlobAccess): Promise<string> {
+  if (access === "public") return blobUrl;
+  return absoluteUrl(buildPrivateBlobProxyPath(pathname));
+}
+
 async function uploadBlobAsset(params: UploadBlobParams): Promise<BlobAsset> {
-  const blob = await put(params.pathname, params.bytes, {
-    access: params.access,
-    contentType: params.contentType || "application/octet-stream",
-  });
+  const preferredAccess = detectedBlobStoreAccess || params.access;
+  let blob: Awaited<ReturnType<typeof put>>;
+  let resolvedAccess = preferredAccess;
+  try {
+    blob = await put(params.pathname, params.bytes, {
+      access: preferredAccess,
+      contentType: params.contentType || "application/octet-stream",
+    });
+  } catch (error) {
+    if (preferredAccess !== "public" || !isPrivateStoreAccessError(error)) {
+      throw error;
+    }
+    resolvedAccess = "private";
+    blob = await put(params.pathname, params.bytes, {
+      access: resolvedAccess,
+      contentType: params.contentType || "application/octet-stream",
+    });
+  }
+  detectedBlobStoreAccess = resolvedAccess;
   return {
-    url: blob.url,
+    url: await resolveBlobAssetUrl(blob.pathname, blob.url, resolvedAccess),
     pathname: blob.pathname,
     sizeBytes: params.bytes.length,
+    access: resolvedAccess,
   };
 }
 

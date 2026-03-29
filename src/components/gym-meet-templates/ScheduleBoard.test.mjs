@@ -83,15 +83,18 @@ test("schedule board does not render schedule legends or color helpers", () => {
 });
 
 test("schedule board formats nav day labels without the year and does not render blank date text", () => {
-  const source = readSource("src/components/gym-meet-templates/ScheduleBoard.tsx");
+  const board = readSource("src/components/gym-meet-templates/ScheduleBoard.tsx");
+  const displayText = readSource("src/components/gym-meet-templates/displayText.ts");
 
-  assert.match(source, /const formatScheduleDayLabel =/);
-  assert.match(source, /weekday: "short"/);
-  assert.match(source, /month: "short"/);
-  assert.match(source, /day: "numeric"/);
-  assert.match(source, /\.toUpperCase\(\)/);
-  assert.match(source, /formatScheduleDayLabel\(day\)/);
-  assert.doesNotMatch(source, /<span>\{day\.shortDate \|\| day\.date\}<\/span>/);
+  assert.match(board, /formatGymMeetScheduleTabLabel/);
+  assert.match(board, /from "\.\/displayText"/);
+  assert.match(board, /\.sort\(compareGymMeetScheduleDays\)/);
+  assert.match(board, /formatGymMeetScheduleTabLabel\(day\)/);
+  assert.match(displayText, /weekday: "short"/);
+  assert.match(displayText, /month: "short"/);
+  assert.match(displayText, /day: "numeric"/);
+  assert.match(displayText, /\.toUpperCase\(\)/);
+  assert.doesNotMatch(board, /<span>\{day\.shortDate \|\| day\.date\}<\/span>/);
 });
 
 test("schedule board keeps schedule timing separate from notes and renders stretch warm-up labels", () => {

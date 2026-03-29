@@ -224,6 +224,7 @@ export type GymMeetDiscoverySectionKind =
   | "results"
   | "coaches"
   | "schedule"
+  | "session_assignments"
   | "venue"
   | "venue_map"
   | "traffic_parking"

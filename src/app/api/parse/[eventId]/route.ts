@@ -12,6 +12,7 @@ import {
   requiresClientPdfReupload,
 } from "@/lib/discovery-file-hydration";
 import { runInlineGymnasticsEnrichmentPhase } from "@/lib/discovery-gymnastics-enrich-inline";
+import { summarizeDiscoveryPerformanceForLog } from "@/lib/discovery-performance-log";
 import {
   computeFootballBuilderStatuses,
   mapParseResultToFootballData,
@@ -29,7 +30,9 @@ import {
   isDiscoveryDebugArtifactsEnabled,
   mapParseResultToGymData,
   parseMeetFromExtractedText,
+  type ParseResult,
   resolveDiscoveryBudget,
+  stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
 
 export const runtime = "nodejs";
@@ -107,7 +110,6 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
     const sourceInput = currentData?.discoverySource?.input as DiscoverySourceInput | undefined;
     const workflow = normalizeWorkflow(currentData?.discoverySource?.workflow);
     const debugArtifacts = isDiscoveryDebugArtifactsEnabled();
-    const coreBudgetMs = resolveDiscoveryBudget("core");
     const performance = createDiscoveryPerformance();
     console.log(`${MEET_PARSE_LOG_PREFIX} source resolved`, {
       eventId,
@@ -120,6 +122,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
     if (!sourceInput || !sourceInput.type) {
       return NextResponse.json({ error: "No discovery source input found" }, { status: 400 });
     }
+    const coreBudgetMs = resolveDiscoveryBudget("core", sourceInput.type);
 
     const contentType = safeString(req.headers.get("content-type")).toLowerCase();
     let uploadFile: File | null = null;
@@ -305,7 +308,10 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
           debugArtifacts,
         ),
         ...(workflow === "gymnastics" && "evidence" in parsed ? { evidence: parsed.evidence } : {}),
-        parseResult: parsed.parseResult,
+        parseResult:
+          workflow === "gymnastics"
+            ? stripGymScheduleGridsFromParseResult(parsed.parseResult as ParseResult)
+            : parsed.parseResult,
         rawModelOutput: parsed.rawModelOutput,
         modelUsed: parsed.modelUsed,
         performance: buildPersistedPerformance(performance),
@@ -355,6 +361,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       workflow,
       durationMs: durationMs(persistStartedAt),
     });
+    const parseSummary = summarizeDiscoveryPerformanceForLog(performance);
     console.log(`${MEET_PARSE_LOG_PREFIX} request completed`, {
       eventId,
       workflow,
@@ -364,6 +371,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       phase: "core",
       textQuality: extraction.extractionMeta?.textQuality || null,
       performance,
+      parseSummary,
     });
 
     return NextResponse.json({
@@ -375,6 +383,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       phase: "core",
       enrichment,
       performance,
+      parseSummary,
       statuses:
         workflow === "football"
           ? computeFootballBuilderStatuses(nextData)

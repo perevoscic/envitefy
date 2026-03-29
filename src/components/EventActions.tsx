@@ -50,6 +50,40 @@ type CalendarPreference = {
 
 const CALENDAR_DEFAULT_STORAGE_KEY = "envitefy:event-actions:calendar-default:v1";
 
+const isGenericPlaceholderTitle = (value: string) => /^event$/i.test(value.trim());
+
+const trimText = (value: unknown): string =>
+  typeof value === "string" ? value.trim() : "";
+
+/**
+ * Calendar/share UIs often read a display title from `event_history.title` or template fields,
+ * while JSON `event.title` is still empty or the default "Event".
+ */
+function resolveCalendarDisplayTitle(
+  event: EventFields | null | undefined,
+  calendarTitle?: string | null,
+): string {
+  const fromOverride = trimText(calendarTitle);
+  if (fromOverride) return fromOverride;
+  if (!event) return "";
+
+  const record = event as Record<string, unknown>;
+  const rawTitle = trimText(event.title);
+  if (rawTitle && !isGenericPlaceholderTitle(rawTitle)) return rawTitle;
+
+  const headline = trimText(record.headlineTitle);
+  if (headline) return headline;
+
+  const eventName = trimText(record.eventName);
+  if (eventName) return eventName;
+
+  const birthdayName = trimText(record.birthdayName);
+  if (birthdayName) return `${birthdayName}'s Birthday`;
+
+  if (rawTitle) return rawTitle;
+  return "";
+}
+
 const normalizeCalendarProvider = (value: unknown): CalendarProvider | null => {
   if (typeof value !== "string") return null;
   const provider = value.trim().toLowerCase();
@@ -71,6 +105,7 @@ export default function EventActions({
   variant = "default",
   tone = "default",
   showLabels = false,
+  calendarTitle,
 }: {
   shareUrl: string;
   event: EventFields | null;
@@ -79,6 +114,8 @@ export default function EventActions({
   variant?: "default" | "compact";
   tone?: "default" | "light";
   showLabels?: boolean;
+  /** When set (e.g. server `event_history.title`), used for calendar links and share/email copy. */
+  calendarTitle?: string | null;
 }) {
   const normalizeDateLike = (value: string | null | undefined): string | null => {
     if (typeof value !== "string") return null;
@@ -155,6 +192,12 @@ export default function EventActions({
     } as EventFields;
   }, [combinedLocation, event]);
 
+  const displayEventTitle = useMemo(
+    () => resolveCalendarDisplayTitle(event, calendarTitle),
+    [event, calendarTitle],
+  );
+  const shareTitle = displayEventTitle || "Event";
+
   const calendarLinks = useMemo(() => {
     if (!safeEvent?.start || !safeEvent?.end) return null;
     const reminders = Array.isArray(safeEvent.reminders)
@@ -163,7 +206,7 @@ export default function EventActions({
           .filter((minutes): minutes is number => minutes !== null && minutes > 0)
       : null;
     return buildCalendarLinks({
-      title: safeEvent.title || "Event",
+      title: shareTitle,
       description: safeEvent.description || "",
       location: safeEvent.location || "",
       startIso: safeEvent.start,
@@ -173,7 +216,7 @@ export default function EventActions({
       reminders,
       recurrence: safeEvent.recurrence || null,
     });
-  }, [safeEvent]);
+  }, [safeEvent, shareTitle]);
 
   const readLocalCalendarDefault = useCallback(() => {
     if (typeof window === "undefined") return null;
@@ -446,7 +489,7 @@ export default function EventActions({
 
   const onEmail = () => {
     const to = rsvpEmail || "";
-    const title = event?.title || "Event";
+    const title = shareTitle;
     const whenLine = formatDateRange(
       safeEvent?.start || null,
       safeEvent?.end || null,
@@ -474,7 +517,7 @@ export default function EventActions({
   };
 
   const onRsvp = () => {
-    const rsvpTarget = extractRsvpSubject(event?.title);
+    const rsvpTarget = extractRsvpSubject(shareTitle);
     const introParts = [
       "Hi there,",
       userFullName ? `this is ${userFullName}.` : undefined,
@@ -498,7 +541,9 @@ export default function EventActions({
       } catch {}
     }
     if (!email) return;
-    const subject = encodeURIComponent(event?.title || "Event RSVP");
+    const subject = encodeURIComponent(
+      displayEventTitle || trimText(event?.title) || "Event RSVP",
+    );
     window.location.href = `mailto:${encodeURIComponent(
       email
     )}?subject=${subject}&body=${encodeURIComponent(message)}`;
@@ -514,7 +559,7 @@ export default function EventActions({
         "share" in navigator &&
         typeof navigator.share === "function"
       ) {
-        await navigator.share({ title: event?.title || "Event", url });
+        await navigator.share({ title: shareTitle, url });
         return;
       }
       await navigator.clipboard.writeText(url);

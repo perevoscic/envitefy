@@ -1,7 +1,12 @@
 "use client";
 
 import type { RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowRight, LayoutTemplate, Upload, X } from "lucide-react";
+import {
+  GYM_DISCOVERY_STATUS_PHRASES,
+  pickNextRandomPhrase,
+} from "@/components/event-create/gym-discovery-status-phrases";
 import styles from "./gymnastics-landing.module.css";
 
 type StartYourMeetProps = {
@@ -21,8 +26,8 @@ type StartYourMeetProps = {
 };
 
 const checklist = [
-  "Upload your meet packet, session schedule, venue details, hotel sheet, or supporting docs",
-  "Envitefy organizes the information into a clean gymnastics meet hub",
+  "Upload your meet packet, venue details, hotel sheet, admission notes, or supporting docs",
+  "Envitefy sorts the information into meet details, admission, travel, and coach sections",
   "Publish one page families can actually use on meet weekend",
 ];
 
@@ -41,6 +46,30 @@ export default function StartYourMeet({
   onFileChange,
   onOpenBuilder,
 }: StartYourMeetProps) {
+  const showRotatingPhrases = uploadBusy && uploadProgress < 100;
+  const [displayPhrase, setDisplayPhrase] = useState("");
+  const barAnimRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (showRotatingPhrases) {
+      setDisplayPhrase(pickNextRandomPhrase(GYM_DISCOVERY_STATUS_PHRASES, null));
+    }
+  }, [showRotatingPhrases]);
+
+  useEffect(() => {
+    if (!showRotatingPhrases) return;
+    const el = barAnimRef.current;
+    if (!el) return;
+    const phrases = GYM_DISCOVERY_STATUS_PHRASES;
+    const onIter = () => setDisplayPhrase((c) => pickNextRandomPhrase(phrases, c));
+    el.addEventListener("animationiteration", onIter);
+    return () => el.removeEventListener("animationiteration", onIter);
+  }, [showRotatingPhrases, uploadIndeterminate]);
+
+  const statusLine = showRotatingPhrases
+    ? displayPhrase
+    : uploadStatus || "Processing meet info...";
+
   return (
     <section
       id="gym-start-meet"
@@ -108,7 +137,7 @@ export default function StartYourMeet({
                 ) : (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#eef1ff]">
-                      <span>{uploadStatus || "Processing meet info..."}</span>
+                      <span>{statusLine}</span>
                       <div className="flex items-center gap-2">
                         {!uploadIndeterminate ? <span>{uploadProgress}%</span> : null}
                         <button
@@ -124,11 +153,15 @@ export default function StartYourMeet({
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/12">
                       {uploadIndeterminate ? (
                         <div className="relative h-full w-full overflow-hidden">
-                          <div className="launcher-indeterminate-bar absolute inset-y-0 left-0 w-2/5 rounded-full bg-[#d4af37]" />
+                          <div
+                            ref={barAnimRef}
+                            className={styles.landingIndeterminateBar}
+                          />
                         </div>
                       ) : (
                         <div
-                          className="h-full rounded-full bg-[#d4af37] transition-[width] duration-300 ease-out"
+                          ref={barAnimRef}
+                          className={`h-full rounded-full transition-[width] duration-300 ease-out ${styles.landingProgressShimmer}`}
                           style={{ width: `${uploadProgress}%` }}
                         />
                       )}

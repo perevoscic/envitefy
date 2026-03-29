@@ -2,29 +2,18 @@
 
 import * as chrono from "chrono-node";
 import { Eye, Mail, Pencil, Share2, Trash2, UserPlus } from "lucide-react";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import {
-  type Dispatch,
-  type SetStateAction,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useEventCache } from "@/app/event-cache-context";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
-import { CalendarIconGoogle } from "@/components/CalendarIcons";
 import HomeOverviewDashboard from "@/components/dashboard/HomeOverviewDashboard";
 import {
   type SnapPreviewKind,
   SnapProcessingCard,
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
-import { useMenuOptional } from "@/contexts/MenuContext";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { findFirstEmail } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
 import { uploadMediaFile } from "@/utils/media-upload-client";
@@ -43,17 +32,6 @@ type EventFields = {
   rsvp?: string | null;
 };
 
-type CalendarProvider = "google" | "microsoft" | "apple" | "envitefy";
-
-type AutoAddPreference = {
-  enabled: boolean;
-  provider: CalendarProvider | null;
-};
-
-type ProviderActionOptions = {
-  enableAutoAdd?: boolean;
-};
-
 type PendingSnapUpload = {
   file: File;
   previewUrl: string | null;
@@ -61,10 +39,7 @@ type PendingSnapUpload = {
 
 type SubmitScannedEventParams = {
   eventInput: EventFields;
-  provider: CalendarProvider;
-  mode: "manual" | "auto";
   sourceFile?: File | null;
-  rememberAutoAdd?: boolean;
   ocrMeta?: {
     category?: string | null;
     birthdayTemplateHint?: BirthdayTemplateHint | null;
@@ -170,12 +145,7 @@ type DashboardEnrichMeta = {
   weatherUsedCache?: boolean;
 };
 
-const AUTO_ADD_PREFERENCE_STORAGE_KEY = "envitefy:snap:auto-add:v1";
 const DASHBOARD_ORIGIN_STORAGE_KEY = "envitefy:dashboard:last-origin:v1";
-const DEFAULT_AUTO_ADD_PREFERENCE: AutoAddPreference = {
-  enabled: false,
-  provider: null,
-};
 
 type OwnerRsvpRow = {
   id: string;
@@ -218,7 +188,6 @@ export default function Dashboard({
   initialEventContext?: DashboardInitialEventContext | null;
 }) {
   const { data: session } = useSession();
-  const menu = useMenuOptional();
   const pathname = usePathname();
   const {
     selectedEventId: sidebarSelectedEventId,
@@ -237,18 +206,13 @@ export default function Dashboard({
   const isSignedIn = Boolean(session?.user);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [event, setEvent] = useState<EventFields | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, setOcrText] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [ocrCategory, setOcrCategory] = useState<string | null>(null);
   const [ocrBirthdayTemplateHint, setOcrBirthdayTemplateHint] =
     useState<BirthdayTemplateHint | null>(null);
-  const [autoAddPreference, setAutoAddPreference] = useState<AutoAddPreference>(
-    DEFAULT_AUTO_ADD_PREFERENCE,
-  );
   const [scanStatus, setScanStatus] = useState<SnapProcessingStatus>("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -299,37 +263,6 @@ export default function Dashboard({
     }
     setNextEventMetrics(dashboardData?.metricsCache ?? null);
   }, [dashboardData, isSignedIn]);
-
-  const persistAutoAddPreference = useCallback((next: AutoAddPreference) => {
-    setAutoAddPreference(next);
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(AUTO_ADD_PREFERENCE_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // ignore storage failures
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(AUTO_ADD_PREFERENCE_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<AutoAddPreference>;
-      const provider =
-        parsed?.provider === "google" ||
-        parsed?.provider === "microsoft" ||
-        parsed?.provider === "apple"
-          ? parsed.provider
-          : null;
-      setAutoAddPreference({
-        enabled: Boolean(parsed?.enabled && provider),
-        provider,
-      });
-    } catch {
-      setAutoAddPreference(DEFAULT_AUTO_ADD_PREFERENCE);
-    }
-  }, []);
 
   const clearScanTimers = useCallback(() => {
     if (uploadIntervalRef.current) {
@@ -469,11 +402,6 @@ export default function Dashboard({
     },
     [],
   );
-
-  const connected = {
-    google: Boolean(menu?.connectedCalendars.google),
-    microsoft: Boolean(menu?.connectedCalendars.microsoft),
-  };
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -796,8 +724,6 @@ export default function Dashboard({
     activeOcrAbortRef.current?.abort();
     activeOcrAbortRef.current = null;
     resetScanUi();
-    setEvent(null);
-    setModalOpen(false);
     setLoading(false);
     setError(null);
     setOcrText("");
@@ -1010,17 +936,13 @@ export default function Dashboard({
             }
           : null;
         await finishScanUi();
-        setEvent(adjusted);
         setOcrText(data.ocrText || "");
         setUploadedFile(fileToUpload);
         setOcrCategory(data?.category || null);
         setOcrBirthdayTemplateHint(data?.birthdayTemplateHint || null);
         if (adjusted) {
-          setModalOpen(false);
           const created = await submitScannedEventRef.current({
             eventInput: adjusted,
-            provider: "envitefy",
-            mode: "auto",
             sourceFile: fileToUpload,
             ocrMeta: {
               category: data?.category || null,
@@ -1032,19 +954,14 @@ export default function Dashboard({
           }
         } else {
           resetScanUi();
-          setModalOpen(false);
           setError("Unable to create an event from this scan. Please try again.");
         }
       } catch (err) {
         if (err instanceof Error && err.message === "__scan_cancelled__") {
-          setEvent(null);
-          setModalOpen(false);
           setError(null);
           return;
         }
         resetScanUi();
-        setEvent(null);
-        setModalOpen(false);
         const alreadyLogged =
           err instanceof Error &&
           Boolean((err as Error & { __snapUploadLogged?: boolean }).__snapUploadLogged);
@@ -1165,47 +1082,6 @@ export default function Dashboard({
       // noop
     }
   }, [onFile, openCamera, openUpload, takePendingUpload]);
-
-  useEffect(() => {
-    if (!event && modalOpen) {
-      setModalOpen(false);
-    }
-  }, [event, modalOpen]);
-
-  useEffect(() => {
-    if (!modalOpen) return;
-    if (typeof document === "undefined") return;
-    const { body } = document;
-    const previous = body.style.overflow;
-    body.style.overflow = "hidden";
-    return () => {
-      body.style.overflow = previous;
-    };
-  }, [modalOpen]);
-
-  const providerLabel = useCallback((provider: CalendarProvider) => {
-    if (provider === "google") return "Google Calendar";
-    if (provider === "microsoft") return "Outlook Calendar";
-    if (provider === "envitefy") return "Envitefy";
-    return "Apple Calendar";
-  }, []);
-
-  const buildIcsQuery = useCallback((ready: EventFields, inline = false) => {
-    return new URLSearchParams({
-      title: ready.title || "Event",
-      start: ready.start ?? "",
-      end: ready.end ?? "",
-      location: ready.location || "",
-      description: ready.description || "",
-      timezone: ready.timezone || "America/Chicago",
-      ...(inline ? { disposition: "inline" } : {}),
-      ...(ready.reminders?.length
-        ? {
-            reminders: ready.reminders.map((r) => String(r.minutes)).join(","),
-          }
-        : {}),
-    }).toString();
-  }, []);
 
   const saveToEnvitefyHistory = useCallback(
     async ({
@@ -1334,58 +1210,14 @@ export default function Dashboard({
     [invalidateEventCache, ocrBirthdayTemplateHint, ocrCategory, uploadedFile],
   );
 
-  const connectGoogle = useCallback(() => {
-    if (!event?.start) return;
-    const ready = buildSubmissionEvent(event);
-    if (!ready) {
-      setError("Missing start time for Google Calendar");
-      return;
-    }
-
-    // Encode event data as base64 JSON for OAuth state
-    const eventData = {
-      title: ready.title || "Event",
-      start: ready.start,
-      end: ready.end,
-      location: ready.location || "",
-      description: event.description || "",
-      timezone: ready.timezone || "UTC",
-      reminders: event.reminders || null,
-      allDay: false,
-      recurrence: null,
-    };
-    // Browser-compatible base64 encoding matching callback's decodeURIComponent expectation
-    // The callback decodes: Buffer.from(state, "base64").toString("utf8") then JSON.parse(decodeURIComponent(json))
-    const jsonStr = JSON.stringify(eventData);
-    // Use btoa with encodeURIComponent for proper UTF-8 handling
-    const stateParam = btoa(encodeURIComponent(jsonStr));
-    window.open(`/api/google/auth?state=${encodeURIComponent(stateParam)}`, "_blank");
-  }, [event, buildSubmissionEvent, setError]);
-
-  const connectOutlook = useCallback(() => {
-    window.open("/api/outlook/auth", "_blank");
-  }, []);
-
   const submitScannedEvent = useCallback(
-    async ({
-      eventInput,
-      provider,
-      mode,
-      sourceFile,
-      rememberAutoAdd = false,
-      ocrMeta,
-    }: SubmitScannedEventParams) => {
+    async ({ eventInput, sourceFile, ocrMeta }: SubmitScannedEventParams) => {
       if (isSubmittingRef.current) return false;
       isSubmittingRef.current = true;
       try {
         const ready = buildSubmissionEvent(eventInput);
         if (!ready) {
-          const label = providerLabel(provider);
-          setError(`Missing start time for ${label}`);
-          if (mode === "auto" && provider !== "envitefy") {
-            setEvent(eventInput);
-            setModalOpen(true);
-          }
+          setError("Missing start time for event creation");
           return false;
         }
 
@@ -1401,64 +1233,9 @@ export default function Dashboard({
               ? "We couldn't verify your signed-in account. Sign out and sign back in, then try again."
               : saveResult.error,
           );
-          if (mode === "auto") {
-            setEvent(eventInput);
-            setModalOpen(true);
-          }
           return false;
         }
         const { eventId, savedTitle } = saveResult;
-
-        try {
-          if (provider === "envitefy") {
-            // Envitefy-only flow: save to history and skip external calendar redirects.
-          } else if (provider === "google") {
-            const res = await fetch("/api/events/google", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify(ready),
-            });
-            const payload: any = await res.json().catch(() => ({}));
-            if (!res.ok) {
-              throw new Error(payload?.error || "Failed to add to Google Calendar");
-            }
-            if (payload?.htmlLink) {
-              window.open(payload.htmlLink, "_blank");
-            }
-          } else if (provider === "microsoft") {
-            const res = await fetch("/api/events/outlook", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify(ready),
-            });
-            const payload: any = await res.json().catch(() => ({}));
-            if (!res.ok) {
-              throw new Error(payload?.error || "Failed to add to Outlook Calendar");
-            }
-            if (payload?.webLink) {
-              window.open(payload.webLink, "_blank");
-            }
-          } else {
-            const q = buildIcsQuery(ready, true);
-            openAppleCalendarIcs(`/api/ics?${q}`);
-          }
-        } catch (providerErr: any) {
-          const label = providerLabel(provider);
-          const baseError =
-            providerErr?.message || `Failed to add to ${label}. Please try again from review.`;
-          setError(mode === "auto" ? `${baseError} Review details and retry.` : baseError);
-          if (mode === "auto" && provider !== "envitefy") {
-            setEvent(eventInput);
-            setModalOpen(true);
-          }
-          return false;
-        }
-
-        if (rememberAutoAdd) {
-          persistAutoAddPreference({ enabled: true, provider });
-        }
 
         const eventTitle = savedTitle || eventInput.title || "Event";
         router.push(buildEventPath(eventId, eventTitle, { created: true }));
@@ -1467,76 +1244,16 @@ export default function Dashboard({
         isSubmittingRef.current = false;
       }
     },
-    [
-      buildSubmissionEvent,
-      buildIcsQuery,
-      persistAutoAddPreference,
-      providerLabel,
-      resetForm,
-      router,
-      saveToEnvitefyHistory,
-    ],
+    [buildSubmissionEvent, router, saveToEnvitefyHistory],
   );
 
   submitScannedEventRef.current = submitScannedEvent;
-
-  const dlIcs = useCallback(() => {
-    if (!event?.start) return;
-    const ready = buildSubmissionEvent(event);
-    if (!ready) {
-      setError("Missing start time for calendar export");
-      return;
-    }
-    const q = buildIcsQuery(ready);
-    window.location.href = `/api/ics?${q}`;
-  }, [event, buildIcsQuery, buildSubmissionEvent]);
-
-  const addGoogle = useCallback(
-    async (options?: ProviderActionOptions) => {
-      if (!event) return;
-      await submitScannedEvent({
-        eventInput: event,
-        provider: "google",
-        mode: "manual",
-        rememberAutoAdd: Boolean(options?.enableAutoAdd),
-      });
-    },
-    [event, submitScannedEvent],
-  );
-
-  const addOutlook = useCallback(
-    async (options?: ProviderActionOptions) => {
-      if (!event) return;
-      await submitScannedEvent({
-        eventInput: event,
-        provider: "microsoft",
-        mode: "manual",
-        rememberAutoAdd: Boolean(options?.enableAutoAdd),
-      });
-    },
-    [event, submitScannedEvent],
-  );
-
-  const addAppleCalendar = useCallback(
-    async (options?: ProviderActionOptions) => {
-      if (!event) return;
-      await submitScannedEvent({
-        eventInput: event,
-        provider: "apple",
-        mode: "manual",
-        rememberAutoAdd: Boolean(options?.enableAutoAdd),
-      });
-    },
-    [event, submitScannedEvent],
-  );
 
   useEffect(() => {
     // Touch the session so provider connections hydrate promptly
   }, [session]);
 
-  const showScanSection = Boolean(
-    error || loading || scanStatus !== "idle" || (modalOpen && event),
-  );
+  const showScanSection = Boolean(error);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1710,47 +1427,11 @@ export default function Dashboard({
               </div>
             )}
           </div>
-
-          <SnapEventModal
-            open={modalOpen && Boolean(event)}
-            event={event}
-            onClose={resetForm}
-            setEvent={setEvent}
-            connected={connected}
-            addGoogle={addGoogle}
-            connectGoogle={connectGoogle}
-            addOutlook={addOutlook}
-            connectOutlook={connectOutlook}
-            dlIcs={dlIcs}
-            addAppleCalendar={addAppleCalendar}
-            buildSubmissionEvent={buildSubmissionEvent}
-            setError={setError}
-            resetForm={resetForm}
-            autoAddEnabled={autoAddPreference.enabled}
-          />
         </section>
       )}
     </main>
   );
 }
-
-type SnapEventModalProps = {
-  open: boolean;
-  event: EventFields | null;
-  onClose: () => void;
-  setEvent: Dispatch<SetStateAction<EventFields | null>>;
-  connected: { google: boolean; microsoft: boolean };
-  addGoogle: (options?: ProviderActionOptions) => void | Promise<void>;
-  connectGoogle: () => void;
-  addOutlook: (options?: ProviderActionOptions) => void | Promise<void>;
-  connectOutlook: () => void;
-  dlIcs: () => void;
-  addAppleCalendar?: (options?: ProviderActionOptions) => void | Promise<void>;
-  buildSubmissionEvent: (input: EventFields) => any;
-  setError: (error: string | null) => void;
-  resetForm: () => void;
-  autoAddEnabled: boolean;
-};
 
 function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
   const cards = [
@@ -1893,521 +1574,5 @@ function EventOwnerTabPlaceholder({
         open.
       </p>
     </section>
-  );
-}
-
-function SnapEventModal({
-  open,
-  event,
-  onClose,
-  setEvent,
-  connected,
-  addGoogle,
-  connectGoogle,
-  addOutlook,
-  connectOutlook,
-  dlIcs,
-  addAppleCalendar,
-  buildSubmissionEvent,
-  setError,
-  resetForm,
-  autoAddEnabled,
-}: SnapEventModalProps) {
-  const _router = useRouter();
-  const [enableAutoAddOnSave, setEnableAutoAddOnSave] = useState(false);
-  const [isAppleDevice, setIsAppleDevice] = useState(false);
-  const [connectedCalendars, setConnectedCalendars] = useState<{
-    google: boolean;
-    microsoft: boolean;
-    apple: boolean;
-  }>({
-    google: connected.google,
-    microsoft: connected.microsoft,
-    apple: false,
-  });
-
-  useEffect(() => {
-    if (!open) return;
-    setEnableAutoAddOnSave(false);
-  }, [open]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const nav = window.navigator;
-    const ua = nav.userAgent || (nav as any).vendor || "";
-    const uaLower = ua.toLowerCase();
-    const platform = (nav.platform || "").toLowerCase();
-    const maxTouchPoints = typeof nav.maxTouchPoints === "number" ? nav.maxTouchPoints : 0;
-
-    // First, check if it's clearly NOT an Apple device - exclude these explicitly
-    const isNotApple =
-      uaLower.includes("android") ||
-      uaLower.includes("windows") ||
-      uaLower.includes("linux") ||
-      uaLower.includes("cros") || // Chrome OS
-      uaLower.includes("x11") || // Unix-like systems
-      platform.includes("win") ||
-      platform.includes("linux") ||
-      platform.includes("android");
-
-    if (isNotApple) {
-      setIsAppleDevice(false);
-      return;
-    }
-
-    // Detect iPad (including iPadOS)
-    // iPadOS 13+ reports as "MacIntel" but has touch support
-    const isIpadLike =
-      uaLower.includes("ipad") ||
-      platform === "ipad" ||
-      (platform === "macintel" && maxTouchPoints > 1);
-
-    // Detect iPhone/iPod Touch (strict iOS check)
-    const isIOS =
-      /iPhone|iPod/.test(ua) ||
-      platform === "iphone" ||
-      uaLower.includes("iphone") ||
-      uaLower.includes("ipod");
-
-    // Detect macOS (but exclude touch-enabled Macs which are actually iPads)
-    const isMacOS =
-      (/Mac OS X|Macintosh/.test(ua) || platform.startsWith("mac") || platform === "macintel") &&
-      !isIpadLike; // Exclude touch-enabled Macs that are actually iPads
-
-    // Only set to true if it's definitively an Apple device
-    const isApple = isIOS || isIpadLike || isMacOS;
-
-    setIsAppleDevice(isApple);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
-
-  // Fetch connected calendars when modal opens
-  useEffect(() => {
-    if (!open) return;
-    const fetchConnected = async () => {
-      try {
-        const res = await fetch("/api/calendars", { credentials: "include" });
-        const data = await res.json();
-        setConnectedCalendars({
-          google: Boolean(data?.google),
-          microsoft: Boolean(data?.microsoft),
-          apple: Boolean(data?.apple),
-        });
-      } catch (err) {
-        console.error("Failed to fetch connected calendars:", err);
-      }
-    };
-    fetchConnected();
-
-    // Refresh connection status when window regains focus (after OAuth)
-    const handleFocus = () => {
-      fetchConnected();
-    };
-    window.addEventListener("focus", handleFocus);
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, [open]);
-
-  const updateEvent = useCallback(
-    (mutator: (current: EventFields) => EventFields) => {
-      setEvent((prev) => {
-        if (!prev) return prev;
-        return mutator(prev);
-      });
-    },
-    [setEvent],
-  );
-
-  if (!open || !event) {
-    return null;
-  }
-
-  return (
-    <div className="fixed inset-0 z-[70] overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-3 sm:p-5 md:px-8">
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-[#2f1d47]/62 via-[#3c2b5f]/58 to-[#2d2346]/62 backdrop-blur-xl"
-          onClick={onClose}
-        />
-
-        <div
-          className="relative z-10 w-full max-w-3xl h-[90dvh] max-h-[90dvh] rounded-[32px] border border-[#ddd5f6] bg-gradient-to-bl from-[#f3efff] via-[#ffffff] to-[#f7f3ff] shadow-[0_25px_60px_rgba(101,67,145,0.20)] backdrop-blur-2xl overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex h-full flex-col">
-            <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-[#e3dbf8] bg-gradient-to-r from-[#ffffff]/95 via-[#f4efff]/92 to-[#ffffff]/90 backdrop-blur-xl px-5 py-4 sm:px-7">
-              <div className="flex-1 pt-1">
-                <h2
-                  className="text-lg sm:text-2xl font-semibold text-[#3e2f68] mb-1 tracking-tight"
-                  style={{
-                    fontFamily: '"Venturis ADF", "Venturis ADF Fallback", serif',
-                  }}
-                >
-                  Review Event Details
-                </h2>
-                <p className="text-sm text-[#7f73a9] leading-relaxed">
-                  Tweak anything before you save or send to a calendar.
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="Close event editor"
-                className="rounded-2xl border border-[#ddd5f6] bg-white/90 hover:bg-[#f7f3ff] shadow-sm hover:shadow-md transition-all p-2.5 text-[#7f73a9] hover:text-[#3e2f68] hover:scale-105"
-                onClick={onClose}
-              >
-                <CloseIcon className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 px-5 py-6 sm:px-7 sm:py-7 space-y-6">
-              <div className="space-y-2.5">
-                <label
-                  htmlFor="snap-event-title"
-                  className="text-sm font-semibold text-[#43336d] block"
-                >
-                  Title
-                </label>
-                <input
-                  id="snap-event-title"
-                  className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
-                  value={event.title}
-                  onChange={(e) =>
-                    updateEvent((current) => ({
-                      ...current,
-                      title: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
-                <div className="space-y-2.5">
-                  <label
-                    htmlFor="snap-event-start"
-                    className="text-sm font-semibold text-[#43336d] block"
-                  >
-                    Start
-                  </label>
-                  <input
-                    id="snap-event-start"
-                    className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
-                    value={event.start || ""}
-                    onChange={(e) => {
-                      const value = e.target.value || null;
-                      updateEvent((current) => ({ ...current, start: value }));
-                    }}
-                  />
-                </div>
-                <div className="space-y-2.5">
-                  <label
-                    htmlFor="snap-event-end"
-                    className="text-sm font-semibold text-[#43336d] block"
-                  >
-                    End (optional)
-                  </label>
-                  <input
-                    id="snap-event-end"
-                    className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
-                    value={event.end || ""}
-                    onChange={(e) => {
-                      const value = e.target.value || null;
-                      updateEvent((current) => ({ ...current, end: value }));
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2.5">
-                <label
-                  htmlFor="snap-event-location"
-                  className="text-sm font-semibold text-[#43336d] block"
-                >
-                  Location
-                </label>
-                <input
-                  id="snap-event-location"
-                  className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
-                  value={event.location}
-                  onChange={(e) =>
-                    updateEvent((current) => ({
-                      ...current,
-                      location: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2.5">
-                <label
-                  htmlFor="snap-event-description"
-                  className="text-sm font-semibold text-[#43336d] block"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="snap-event-description"
-                  className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg resize-none"
-                  rows={4}
-                  value={event.description}
-                  onChange={(e) =>
-                    updateEvent((current) => ({
-                      ...current,
-                      description: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2.5">
-                <label
-                  htmlFor="snap-event-rsvp"
-                  className="text-sm font-semibold text-[#43336d] block"
-                >
-                  RSVP (Phone or Email)
-                </label>
-                <input
-                  id="snap-event-rsvp"
-                  type="text"
-                  inputMode="tel"
-                  maxLength={64}
-                  style={{ minWidth: "14ch" }}
-                  className="w-full rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
-                  placeholder="e.g., RSVP: Taya 850-555-8888 or contact@example.com"
-                  value={event.rsvp || ""}
-                  onChange={(e) =>
-                    updateEvent((current) => ({
-                      ...current,
-                      rsvp: e.target.value || null,
-                    }))
-                  }
-                />
-                <p className="text-xs text-[#8a7fb3] mt-1.5 pl-1">
-                  Phone number or email for RSVP. Detected info is pre-filled.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <span className="text-sm font-semibold text-[#43336d] block">Reminders</span>
-                <div className="space-y-3">
-                  {(event.reminders || []).map((reminder, idx) => {
-                    const dayOptions = [1, 2, 3, 7, 14, 30];
-                    const currentDays = Math.max(
-                      1,
-                      Math.round((reminder.minutes || 0) / 1440) || 1,
-                    );
-                    return (
-                      <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <select
-                          className="w-full sm:w-[240px] rounded-xl border border-[#d8d1f3] bg-white backdrop-blur-sm text-[#3f3269] px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[#bba9eb]/55 focus:border-[#a18ddf] shadow-sm hover:shadow-md focus:shadow-lg"
-                          value={currentDays}
-                          onChange={(e) => {
-                            const days = Math.max(1, Number(e.target.value) || 1);
-                            updateEvent((current) => {
-                              const next = [...(current.reminders || [])];
-                              next[idx] = { minutes: days * 1440 };
-                              return { ...current, reminders: next };
-                            });
-                          }}
-                        >
-                          {dayOptions.map((d) => (
-                            <option key={d} value={d}>
-                              {d} day{d === 1 ? "" : "s"} before
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          aria-label="Delete reminder"
-                          className="self-start sm:self-auto rounded-xl border border-red-200/70 bg-red-50/80 hover:bg-red-100 px-3.5 py-2.5 text-sm text-red-700 hover:text-red-800 transition-all hover:border-red-300 hover:scale-105 shadow-sm"
-                          onClick={() =>
-                            updateEvent((current) => ({
-                              ...current,
-                              reminders: (current.reminders || []).filter((_, i) => i !== idx),
-                            }))
-                          }
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            className="h-4 w-4"
-                          >
-                            <path
-                              d="M6 7h12M9 7l1-2h4l1 2m-9 0l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6m4-6v6"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    );
-                  })}
-                  <div>
-                    <button
-                      type="button"
-                      className="rounded-xl border border-[#c8baf0] bg-[#f2edff] hover:bg-[#ebe3ff] px-4 py-2.5 text-sm text-[#6a58a8] font-semibold transition-all hover:border-[#b8a5ea] hover:scale-105 shadow-sm"
-                      onClick={() =>
-                        updateEvent((current) => {
-                          const base = Array.isArray(current.reminders)
-                            ? [...current.reminders]
-                            : [];
-                          return {
-                            ...current,
-                            reminders: [...base, { minutes: 1440 }],
-                          };
-                        })
-                      }
-                    >
-                      + Add reminder
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-[#ebe4fb] bg-[#fbf9ff] px-5 py-3 sm:px-7">
-              <label className="flex items-start gap-2.5 text-xs sm:text-sm text-[#51457d]">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 rounded border-[#cfc4f2] text-[#7f8cff] focus:ring-[#bcaef0]"
-                  checked={enableAutoAddOnSave}
-                  onChange={(e) => setEnableAutoAddOnSave(e.target.checked)}
-                />
-                <span>
-                  Skip review next time and auto-add to the calendar button you tap now, plus
-                  Envitefy.
-                  {autoAddEnabled
-                    ? " Auto-add is currently enabled; saving here can update the provider."
-                    : ""}
-                </span>
-              </label>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6 border-t border-[#e3dbf8] bg-gradient-to-r from-[#ffffff]/90 via-[#f5f1ff]/90 to-[#ffffff]/90 backdrop-blur-md">
-              <div className="flex flex-wrap items-center gap-3">
-                {connectedCalendars.google ? (
-                  <button
-                    type="button"
-                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
-                    onClick={() =>
-                      void addGoogle({
-                        enableAutoAdd: enableAutoAddOnSave,
-                      })
-                    }
-                  >
-                    <span>Add to</span>
-                    <CalendarIconGoogle className="h-5 w-5 text-white" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
-                    onClick={connectGoogle}
-                  >
-                    <span>Connect to</span>
-                    <CalendarIconGoogle className="h-5 w-5 text-white" />
-                  </button>
-                )}
-                {connectedCalendars.microsoft ? (
-                  <button
-                    type="button"
-                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
-                    onClick={() =>
-                      void addOutlook({
-                        enableAutoAdd: enableAutoAddOnSave,
-                      })
-                    }
-                  >
-                    <span>Add to</span>
-                    <Image
-                      src="/brands/microsoft-white.svg"
-                      alt="Microsoft"
-                      width={20}
-                      height={20}
-                    />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
-                    onClick={connectOutlook}
-                  >
-                    <span>Connect to</span>
-                    <Image
-                      src="/brands/microsoft-white.svg"
-                      alt="Microsoft"
-                      width={20}
-                      height={20}
-                    />
-                  </button>
-                )}
-                {isAppleDevice && (
-                  <button
-                    type="button"
-                    className="rounded-xl bg-[#8667d8] hover:bg-[#7657cb] px-5 py-3 text-sm text-white font-semibold shadow-lg shadow-[#8667d8]/30 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:shadow-[#8667d8]/40 hover:scale-105 active:scale-100"
-                    onClick={() => {
-                      if (addAppleCalendar) {
-                        void addAppleCalendar({
-                          enableAutoAdd: enableAutoAddOnSave,
-                        });
-                        return;
-                      }
-                      dlIcs();
-                    }}
-                  >
-                    <span>Add to</span>
-                    <Image src="/brands/apple-white.svg" alt="Apple" width={20} height={20} />
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  className="rounded-xl border border-[#d8d1f3] bg-white/90 hover:bg-[#f4efff] backdrop-blur-sm px-5 py-3 text-sm text-[#4b3f72] font-semibold transition-all hover:border-[#c7b9ed] hover:scale-105 active:scale-100 shadow-sm"
-                  onClick={onClose}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CloseIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="M6 6L18 18" />
-      <path d="M18 6L6 18" />
-    </svg>
   );
 }
