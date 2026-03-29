@@ -26,6 +26,7 @@ import {
   isDiscoveryDebugArtifactsEnabled,
   mapParseResultToGymData,
   resolveDiscoveryBudget,
+  stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
 
 export const runtime = "nodejs";
@@ -373,7 +374,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
           extraction.extractionMeta,
           debugArtifacts,
         ),
-        parseResult: enrichedParseResult,
+        parseResult: stripGymScheduleGridsFromParseResult(enrichedParseResult),
         enrichment: enrichmentState,
         enrichedAt: finishedAt,
         updatedAt: finishedAt,

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import DiscoveryProgressPanel, {
   type DiscoveryProgressTheme,
 } from "@/components/event-create/DiscoveryProgressPanel";
+import { GYM_DISCOVERY_STATUS_PHRASES } from "@/components/event-create/gym-discovery-status-phrases";
 import {
   GYMNASTICS_URL_PARSE_START_PROGRESS,
   GYMNASTICS_URL_PARSE_TAIL_LABEL,
@@ -25,8 +26,6 @@ type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
 const PROCESSING_PROGRESS_CAP = 90;
 const INGEST_REQUEST_TIMEOUT_MS = 15_000;
-const FILE_PARSE_REQUEST_TIMEOUT_MS = 45_000;
-const URL_PARSE_REQUEST_TIMEOUT_MS = resolveDiscoveryClientParseTimeoutMs("url");
 const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY = "envitefy:gymnastics-demo-draft:v1";
 const GYM_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
   badgeBackground: "rgba(255,255,255,0.12)",
@@ -76,7 +75,7 @@ export default function GymnasticsLauncher({
   const uploadStageLabel = getDiscoveryStageLabel("gymnastics-upload", uploadProgress);
   const urlStageLabel = urlStatus || getDiscoveryStageLabel("gymnastics-url", urlProgress);
   const resolveParseTimeoutMs = (inputType: "file" | "url") =>
-    inputType === "url" ? URL_PARSE_REQUEST_TIMEOUT_MS : FILE_PARSE_REQUEST_TIMEOUT_MS;
+    resolveDiscoveryClientParseTimeoutMs(inputType);
 
   const toErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
@@ -337,13 +336,17 @@ export default function GymnasticsLauncher({
         parseAbortRef.current = null;
       }
       const parseJson = await parseRes.json().catch(() => ({}));
+      const clientDurationMs = Date.now() - parseStartedAt;
       log("parse request completed", {
         status: parseRes.status,
-        durationMs: Date.now() - parseStartedAt,
-        modelUsed: parseJson?.modelUsed || null,
+        clientDurationMs,
+        durationMs: clientDurationMs,
+        modelUsed: parseJson?.modelUsed ?? null,
         repaired: parseJson?.repaired ?? null,
-        phase: parseJson?.phase || null,
+        phase: parseJson?.phase ?? null,
         enrichmentPending: parseJson?.enrichment?.pending ?? null,
+        performance: parseJson?.performance ?? null,
+        parseSummary: parseJson?.parseSummary ?? null,
       });
       if (!parseRes.ok) {
         throw new Error(parseJson?.error || "Failed to parse source");
@@ -510,7 +513,7 @@ export default function GymnasticsLauncher({
             </p>
             <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Upload meet file.</h2>
             <p className="mt-3 text-base text-[#66677f]">
-              Upload your meet packet (PDF/JPG) and let us extract the schedule and rosters.
+              Upload your meet packet (PDF/JPG) and we will pull meet details, admission, venue, and travel into your page.
             </p>
 
             <div className="mt-7">
@@ -540,6 +543,9 @@ export default function GymnasticsLauncher({
                   label={uploadStageLabel}
                   onCancel={() => cancelDiscovery()}
                   progress={uploadProgress}
+                  rotatingStatusPhrases={
+                    uploadBusy && uploadProgress < 100 ? GYM_DISCOVERY_STATUS_PHRASES : undefined
+                  }
                   theme={GYM_DISCOVERY_PROGRESS_THEME}
                 />
               )}
@@ -604,6 +610,9 @@ export default function GymnasticsLauncher({
                   label={urlStageLabel}
                   onCancel={() => cancelDiscovery()}
                   progress={urlProgress}
+                  rotatingStatusPhrases={
+                    urlBusy && urlProgress < 100 ? GYM_DISCOVERY_STATUS_PHRASES : undefined
+                  }
                   theme={GYM_DISCOVERY_PROGRESS_THEME}
                 />
               ) : (

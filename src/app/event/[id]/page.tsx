@@ -1288,6 +1288,7 @@ export default async function EventPage({
                 <EventActions
                   shareUrl={shareUrl}
                   event={data as any}
+                  calendarTitle={title}
                   historyId={!isReadOnly ? row.id : undefined}
                   className=""
                   variant="compact"
@@ -1548,6 +1549,7 @@ export default async function EventPage({
               <EventActions
                 shareUrl={shareUrl}
                 event={data as any}
+                calendarTitle={title}
                 historyId={!isReadOnly ? row.id : undefined}
                 className=""
                 variant="compact"
@@ -2015,6 +2017,7 @@ export default async function EventPage({
               <EventActions
                 shareUrl={shareUrl}
                 event={data as any}
+                calendarTitle={title}
                 historyId={!isReadOnly ? row.id : undefined}
                 className="w-full justify-center"
                 variant="compact"

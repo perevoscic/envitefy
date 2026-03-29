@@ -1,49 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Clock, LayoutGrid, List, Search, Table as TableIcon, Users } from "lucide-react";
 import type { CSSProperties } from "react";
-import {
-  Clock,
-  LayoutGrid,
-  List,
-  Search,
-  Table as TableIcon,
-  Users,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { compareGymMeetScheduleDays, formatGymMeetScheduleTabLabel } from "./displayText";
 import { GymMeetScheduleInfo } from "./types";
 
 const safeString = (value: unknown): string =>
-  typeof value === "string"
-    ? value.trim()
-    : value == null
-    ? ""
-    : String(value).trim();
-
-const formatScheduleDayLabel = (day: {
-  shortDate?: string;
-  date?: string;
-  isoDate?: string;
-}) => {
-  const candidates = [day.isoDate, day.date, day.shortDate].map((item) => safeString(item));
-  for (const candidate of candidates) {
-    if (!candidate) continue;
-    const parsed = new Date(candidate);
-    if (Number.isNaN(parsed.getTime())) continue;
-    const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short" })
-      .format(parsed)
-      .replace(".", "")
-      .toUpperCase();
-    const monthDay = new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-    })
-      .format(parsed)
-      .replace(",", "")
-      .toUpperCase();
-    return `${weekday} • ${monthDay}`;
-  }
-  return safeString(day.shortDate || day.date || day.isoDate || "Schedule Day");
-};
+  typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
 
 const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
   const schedule = (value && typeof value === "object" ? value : {}) as Record<string, any>;
@@ -82,7 +46,7 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
           item.groupLabel ||
           item.birthDateRange ||
           item.divisionLabel ||
-          item.note
+          item.note,
       ),
     days: days
       .map((day, dayIndex) => ({
@@ -108,9 +72,7 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
                   `${safeString(session?.id) || `session-${sessionIndex + 1}`}-club-${clubIndex + 1}`,
                 name: safeString(club?.name),
                 teamAwardEligible:
-                  typeof club?.teamAwardEligible === "boolean"
-                    ? club.teamAwardEligible
-                    : null,
+                  typeof club?.teamAwardEligible === "boolean" ? club.teamAwardEligible : null,
                 athleteCount:
                   typeof club?.athleteCount === "number" && Number.isFinite(club.athleteCount)
                     ? club.athleteCount
@@ -121,18 +83,22 @@ const normalizeSchedule = (value: unknown): GymMeetScheduleInfo => {
           }))
           .filter(
             (session: any) =>
-              session.code || session.group || session.startTime || session.clubs.length > 0
+              session.code || session.group || session.startTime || session.clubs.length > 0,
           ),
       }))
-      .filter((day: any) => day.date || day.shortDate || day.sessions.length > 0),
+      .filter((day: any) => day.date || day.shortDate || day.sessions.length > 0)
+      .sort(compareGymMeetScheduleDays),
   };
 };
 
-const formatClubName = (club: {
-  name: string;
-  athleteCount?: number | null;
-  divisionLabel?: string;
-}, options?: { includeDivisionLabel?: boolean }) => {
+const formatClubName = (
+  club: {
+    name: string;
+    athleteCount?: number | null;
+    divisionLabel?: string;
+  },
+  options?: { includeDivisionLabel?: boolean },
+) => {
   const suffixParts = [
     typeof club.athleteCount === "number" && Number.isFinite(club.athleteCount)
       ? `(${club.athleteCount})`
@@ -162,7 +128,7 @@ const groupSessionClubsByDivision = (
     teamAwardEligible?: boolean | null;
     athleteCount?: number | null;
     divisionLabel?: string;
-  }>
+  }>,
 ): { hasDivisionGrouping: boolean; groups: ScheduleClubGroup[] } => {
   const hasDivisionGrouping = clubs.some((club) => safeString(club.divisionLabel));
   if (!hasDivisionGrouping) {
@@ -280,7 +246,7 @@ export default function ScheduleBoard({
 
   const activeDay = useMemo(
     () => days.find((day) => day.id === activeDayId) || days[0] || null,
-    [activeDayId, days]
+    [activeDayId, days],
   );
 
   const filteredSessions = useMemo(() => {
@@ -296,7 +262,7 @@ export default function ScheduleBoard({
   }, [activeDay, searchQuery]);
   const hasVisibleClubs = useMemo(
     () => filteredSessions.some((session) => session.clubs.length > 0),
-    [filteredSessions]
+    [filteredSessions],
   );
 
   if (!normalizedSchedule.enabled || days.length === 0 || !activeDay) {
@@ -335,12 +301,12 @@ export default function ScheduleBoard({
   const tableRowClass =
     appearance?.tableRowClass || "border-t border-current/10 transition-colors hover:bg-black/5";
 
-  const renderClubList = (clubs: typeof filteredSessions[number]["clubs"]) => (
+  const renderClubList = (clubs: (typeof filteredSessions)[number]["clubs"]) =>
     (() => {
       const grouped = groupSessionClubsByDivision(clubs);
       const renderClubRow = (
         club: (typeof filteredSessions)[number]["clubs"][number],
-        includeDivisionLabel: boolean
+        includeDivisionLabel: boolean,
       ) => (
         <div key={club.id} className="flex items-center justify-between gap-3 py-1">
           <span className={clubTextClass}>{formatClubName(club, { includeDivisionLabel })}</span>
@@ -354,7 +320,10 @@ export default function ScheduleBoard({
       return (
         <div className="space-y-4">
           {grouped.groups.map((group) => (
-            <section key={group.key} className="rounded-2xl border border-current/10 bg-black/5 p-4">
+            <section
+              key={group.key}
+              className="rounded-2xl border border-current/10 bg-black/5 p-4"
+            >
               <div className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] opacity-65">
                 {group.label}
               </div>
@@ -365,10 +334,9 @@ export default function ScheduleBoard({
           ))}
         </div>
       );
-    })()
-  );
+    })();
 
-  const renderTimelineClubList = (clubs: typeof filteredSessions[number]["clubs"]) => {
+  const renderTimelineClubList = (clubs: (typeof filteredSessions)[number]["clubs"]) => {
     const grouped = groupSessionClubsByDivision(clubs);
     if (!grouped.hasDivisionGrouping) {
       return (
@@ -402,7 +370,7 @@ export default function ScheduleBoard({
     );
   };
 
-  const renderCompactClubCell = (clubs: typeof filteredSessions[number]["clubs"]) => {
+  const renderCompactClubCell = (clubs: (typeof filteredSessions)[number]["clubs"]) => {
     const grouped = groupSessionClubsByDivision(clubs);
     if (!grouped.hasDivisionGrouping) {
       return (
@@ -463,19 +431,21 @@ export default function ScheduleBoard({
                   <h3
                     className={joinClasses(
                       sessionHeadingClass(session.group || session.code || "Session"),
-                      sessionTitleClass
+                      sessionTitleClass,
                     )}
                     style={sessionTitleStyle}
                   >
                     {session.group || session.code || "Session"}
                   </h3>
-                  <div className={joinClasses("mt-3 h-1 w-12 bg-current opacity-60", accentClass)} />
+                  <div
+                    className={joinClasses("mt-3 h-1 w-12 bg-current opacity-60", accentClass)}
+                  />
                 </div>
                 {timingRows.length > 0 ? (
                   <div
                     className={joinClasses(
                       "space-y-2 text-xs font-semibold leading-snug sm:min-w-[148px] sm:text-right md:text-sm",
-                      accentClass
+                      accentClass,
                     )}
                   >
                     {timingRows.map((timingRow, timingIndex) => (
@@ -494,9 +464,7 @@ export default function ScheduleBoard({
                 ) : null}
               </div>
               {safeString(session.note) ? (
-                <div className="text-sm font-medium leading-snug opacity-70">
-                  {session.note}
-                </div>
+                <div className="text-sm font-medium leading-snug opacity-70">{session.note}</div>
               ) : null}
             </div>
 
@@ -533,8 +501,10 @@ export default function ScheduleBoard({
                 <div
                   key={`${session.id}-timing-${timingIndex + 1}`}
                   className={joinClasses(
-                    timingIndex === 0 ? "text-base font-black md:text-lg" : "text-[10px] font-black uppercase tracking-[0.16em] opacity-55",
-                    accentClass
+                    timingIndex === 0
+                      ? "text-base font-black md:text-lg"
+                      : "text-[10px] font-black uppercase tracking-[0.16em] opacity-55",
+                    accentClass,
                   )}
                 >
                   {line}
@@ -549,7 +519,7 @@ export default function ScheduleBoard({
               <span
                 className={joinClasses(
                   "relative mt-2 h-4 w-4 rounded-full border-4 border-current bg-white/80",
-                  accentClass
+                  accentClass,
                 )}
               />
             </div>
@@ -564,7 +534,7 @@ export default function ScheduleBoard({
                     className={joinClasses(
                       "mt-3",
                       sessionHeadingClass(session.group || session.code || "Session"),
-                      sessionTitleClass
+                      sessionTitleClass,
                     )}
                     style={sessionTitleStyle}
                   >
@@ -575,7 +545,7 @@ export default function ScheduleBoard({
                   <span
                     className={joinClasses(
                       "rounded-full border border-current/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em]",
-                      sectionMutedClass
+                      sectionMutedClass,
                     )}
                   >
                     {session.note}
@@ -614,13 +584,15 @@ export default function ScheduleBoard({
           {filteredSessions.map((session) => (
             <tr key={session.id} className={tableRowClass}>
               <td className="px-4 py-4 align-top">
-                <span className="text-sm font-black">{session.label || session.code || "Session"}</span>
+                <span className="text-sm font-black">
+                  {session.label || session.code || "Session"}
+                </span>
               </td>
               <td className="px-4 py-4 align-top">
                 <div className="space-y-1">
                   {(buildSessionTimingRows(session.startTime, session.warmupTime).length > 0
                     ? buildSessionTimingRows(session.startTime, session.warmupTime).map(
-                        (row) => `${row.label}: ${row.value}`
+                        (row) => `${row.label}: ${row.value}`,
                       )
                     : ["TBD"]
                   ).map((line, timingIndex) => (
@@ -638,7 +610,9 @@ export default function ScheduleBoard({
                 </div>
               </td>
               <td className="px-4 py-4 align-top">
-                <span className="text-sm font-semibold">{session.group || session.code || "Session"}</span>
+                <span className="text-sm font-semibold">
+                  {session.group || session.code || "Session"}
+                </span>
               </td>
               {hasVisibleClubs ? (
                 <td className="px-4 py-4 align-top">
@@ -656,7 +630,7 @@ export default function ScheduleBoard({
     <div
       className={joinClasses(
         "rounded-[32px] border border-dashed py-24 text-center",
-        summaryCardClass
+        summaryCardClass,
       )}
     >
       <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-current/10 bg-black/5">
@@ -700,10 +674,10 @@ export default function ScheduleBoard({
                     onClick={() => setActiveDayId(day.id)}
                     className={joinClasses(
                       "relative whitespace-nowrap",
-                      isActive ? navActiveClass : navIdleClass
+                      isActive ? navActiveClass : navIdleClass,
                     )}
                   >
-                    <span>{formatScheduleDayLabel(day)}</span>
+                    <span>{formatGymMeetScheduleTabLabel(day)}</span>
                   </button>
                 );
               })}
@@ -757,7 +731,7 @@ export default function ScheduleBoard({
         <div
           className={joinClasses(
             "flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em]",
-            sectionMutedClass
+            sectionMutedClass,
           )}
         >
           <span>Schedule support</span>

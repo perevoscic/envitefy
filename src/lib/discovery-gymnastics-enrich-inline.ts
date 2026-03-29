@@ -12,6 +12,7 @@ import {
   isDiscoveryDebugArtifactsEnabled,
   mapParseResultToGymData,
   resolveDiscoveryBudget,
+  stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
 
 function safeString(value: unknown): string {
@@ -121,7 +122,7 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
         extraction.extractionMeta,
         debugArtifacts,
       ),
-      parseResult: enrichedParseResult,
+      parseResult: stripGymScheduleGridsFromParseResult(enrichedParseResult),
       enrichment: enrichmentState,
       enrichedAt: finishedAt,
       updatedAt: finishedAt,

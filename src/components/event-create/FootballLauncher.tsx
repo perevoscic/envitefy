@@ -7,6 +7,7 @@ import DiscoveryProgressPanel, {
   type DiscoveryProgressTheme,
 } from "@/components/event-create/DiscoveryProgressPanel";
 import { getDiscoveryStageLabel } from "@/components/event-create/discovery-progress";
+import { resolveDiscoveryClientParseTimeoutMs } from "@/lib/discovery-budget";
 
 type FootballLauncherProps = {
   forwardQueryString?: string;
@@ -17,7 +18,6 @@ type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const FOOTBALL_DISCOVERY_LOG_PREFIX = "[football-launcher]";
 const INGEST_REQUEST_TIMEOUT_MS = 15_000;
-const PARSE_REQUEST_TIMEOUT_MS = 45_000;
 const FOOTBALL_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
   badgeBackground: "rgba(255,255,255,0.12)",
   badgeBorder: "rgba(255,255,255,0.22)",
@@ -55,6 +55,8 @@ export default function FootballLauncher({
   const discoveryBusy = uploadBusy || urlBusy;
   const uploadStageLabel = getDiscoveryStageLabel("football-upload", uploadProgress);
   const urlStageLabel = getDiscoveryStageLabel("football-url", urlProgress);
+  const resolveParseTimeoutMs = (inputType: "file" | "url") =>
+    resolveDiscoveryClientParseTimeoutMs(inputType);
 
   const toErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
@@ -220,15 +222,16 @@ export default function FootballLauncher({
 
     try {
       parseAbortRef.current = new AbortController();
+      const parseTimeoutMs = resolveParseTimeoutMs(file ? "file" : "url");
       let parseTimedOut = false;
       const parseTimeoutId = window.setTimeout(() => {
         parseTimedOut = true;
         console.log(`${FOOTBALL_DISCOVERY_LOG_PREFIX} parse request timed out`, {
           eventId,
-          timeoutMs: PARSE_REQUEST_TIMEOUT_MS,
+          timeoutMs: parseTimeoutMs,
         });
         parseAbortRef.current?.abort();
-      }, PARSE_REQUEST_TIMEOUT_MS);
+      }, parseTimeoutMs);
       const parseInit: RequestInit = {
         method: "POST",
         credentials: "include",
@@ -312,7 +315,7 @@ export default function FootballLauncher({
     console.log(`${FOOTBALL_DISCOVERY_LOG_PREFIX} URL sync requested`, {
       url: trimmed,
       ingestTimeoutMs: INGEST_REQUEST_TIMEOUT_MS,
-      parseTimeoutMs: PARSE_REQUEST_TIMEOUT_MS,
+      parseTimeoutMs: resolveParseTimeoutMs("url"),
     });
     try {
       await startDiscovery({

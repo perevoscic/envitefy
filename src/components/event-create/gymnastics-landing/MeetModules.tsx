@@ -12,7 +12,7 @@ import styles from "./gymnastics-landing.module.css";
 
 const modules = [
   {
-    title: "Session schedule",
+    title: "Meet details & timing",
     copy: "Warm-up, march-in, competition, and awards timing in a format parents can actually scan on a phone.",
     icon: ScanSearch,
     span: "xl:col-span-5",
@@ -62,7 +62,7 @@ const modules = [
   },
   {
     title: "Documents",
-    copy: "Meet packets, schedules, forms, and PDFs stay connected to the clean published page.",
+    copy: "Meet packets, forms, and PDFs stay connected to the clean published page.",
     icon: FileText,
     span: "xl:col-span-4",
     tone: "light",

@@ -120,3 +120,39 @@
     display: none;
   }
 }
+
+/* Meet upload progress bar (StartYourMeet) — matches DiscoveryProgressPanel cycle timings */
+@keyframes landingProgressShimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes landingIndeterminateSlide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.landingProgressShimmer {
+  background-image: linear-gradient(90deg, #c9a227 0%, #d4af37 45%, #e8c85a 100%);
+  background-size: 200% 100%;
+  animation: landingProgressShimmer 2.2s ease-in-out infinite;
+}
+
+.landingIndeterminateBar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  border-radius: 9999px;
+  background: #d4af37;
+  animation: landingIndeterminateSlide 1.2s linear infinite;
+}

@@ -25,6 +25,7 @@ import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { GYM_DISCOVERY_SCHEDULE_GRID_ENABLED } from "@/lib/meet-discovery/constants";
 
 type FieldSpec = {
   key: string;
@@ -1180,8 +1181,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
     const visibleAdvancedSections = useMemo(() => {
       const allSections = config.advancedSections || [];
-      if (!useParseDrivenSections) return allSections;
-      return allSections.filter((section) => {
+      const base =
+        !GYM_DISCOVERY_SCHEDULE_GRID_ENABLED
+          ? allSections.filter((section) => section.id !== "schedule")
+          : allSections;
+      if (!useParseDrivenSections) return base;
+      return base.filter((section) => {
         switch (section.id) {
           case "roster":
             return hasRoster || parseHasRoster;
@@ -1220,6 +1225,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     }, [
       config.advancedSections,
+      GYM_DISCOVERY_SCHEDULE_GRID_ENABLED,
       hasAnnouncementEntries,
       hasGear,
       hasLogistics,
@@ -1333,7 +1339,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           },
           { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
           { id: "passcode", label: "Passcode", enabled: true },
-        ].filter((item) => item.enabled),
+        ].filter(
+          (item) =>
+            item.enabled &&
+            (GYM_DISCOVERY_SCHEDULE_GRID_ENABLED || item.id !== "schedule"),
+        ),
       [
         hasAnnouncementEntries,
         hasGear,
@@ -1343,6 +1353,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         hasRoster,
         hasVolunteers,
         data.rsvpEnabled,
+        GYM_DISCOVERY_SCHEDULE_GRID_ENABLED,
       ],
     );
 

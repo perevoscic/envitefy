@@ -645,6 +645,7 @@ export default function BirthdayTemplateView({
                       <EventActions
                         shareUrl={shareUrl}
                         event={eventData}
+                        calendarTitle={eventTitle}
                         historyId={eventId}
                         className=""
                         variant="compact"
@@ -1043,6 +1044,7 @@ export default function BirthdayTemplateView({
               <EventActions
                 shareUrl={shareUrl}
                 event={eventData}
+                calendarTitle={eventTitle}
                 historyId={eventId}
                 className="w-full justify-center"
                 variant="compact"

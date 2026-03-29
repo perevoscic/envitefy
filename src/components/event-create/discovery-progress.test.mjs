@@ -14,7 +14,7 @@ test("discovery progress copy includes staged meet and football sync messaging",
   assert.match(source, /"gymnastics-url"/);
   assert.match(source, /"Gathering meet info\.\.\."/);
   assert.match(source, /"Searching for gym\.\.\."/);
-  assert.match(source, /GYMNASTICS_URL_PARSE_TAIL_LABEL = "Finalizing meet schedule\.\.\."/);
+  assert.match(source, /GYMNASTICS_URL_PARSE_TAIL_LABEL = "Finalizing your meet page\.\.\."/);
   assert.match(source, /resolveGymnasticsUrlParseProgress/);
   assert.match(source, /"Checking parking and arrival\.\.\."/);
   assert.match(source, /"football-url"/);

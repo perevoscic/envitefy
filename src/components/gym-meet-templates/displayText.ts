@@ -1,9 +1,5 @@
 const toDisplayString = (value: unknown): string =>
-  typeof value === "string"
-    ? value.trim()
-    : value == null
-    ? ""
-    : String(value).trim();
+  typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
 
 const normalizeCompareText = (value: string) =>
   toDisplayString(value)
@@ -80,10 +76,7 @@ export const collapseRepeatedDisplayText = (value: unknown): string =>
     .replace(/\s+([,.;:!?])/g, "$1")
     .trim();
 
-export const joinUniqueDisplayParts = (
-  parts: Array<unknown>,
-  separator = ", "
-): string => {
+export const joinUniqueDisplayParts = (parts: Array<unknown>, separator = ", "): string => {
   const output: string[] = [];
 
   for (const rawPart of parts) {
@@ -125,8 +118,7 @@ const extractLinkedDomains = (links: Array<string | { url?: unknown }>) => {
       const url = new URL(/^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`);
       const hostname = url.hostname.replace(/^www\./i, "").toLowerCase();
       if (hostname) domains.add(hostname);
-    } catch {
-    }
+    } catch {}
   }
 
   return [...domains];
@@ -148,14 +140,14 @@ const isLowSignalLinkedText = (value: string) => {
   return (
     !normalized ||
     /^(official results?|results?|live scoring|tickets?|ticket sales?|spectator admission|spectator presale|spectator pre sale|admission|online|available online|here)$/i.test(
-      normalized
+      normalized,
     )
   );
 };
 
 export const stripLinkedDomainMentions = (
   value: unknown,
-  links: Array<string | { url?: unknown }>
+  links: Array<string | { url?: unknown }>,
 ): string => {
   const text = toDisplayString(value);
   const domains = extractLinkedDomains(links);
@@ -169,7 +161,7 @@ export const stripLinkedDomainMentions = (
         const escapedDomain = domain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const pattern = new RegExp(
           `(?:https?:\\/\\/)?(?:www\\.)?${escapedDomain}(?:\\/[^\\s),;]*)?`,
-          "ig"
+          "ig",
         );
         next = next.replace(pattern, "");
       }
@@ -199,11 +191,7 @@ export const formatGymMeetTime = (value: unknown): string => {
   const trimmed = text.trim();
   // Date-only ISO or midnight placeholder from pipelines when PDF had no real start time
   if (ISO_DATE_ONLY_PATTERN.test(trimmed)) return "";
-  if (
-    /^\d{4}-\d{2}-\d{2}[T\s]00:00:00(?:\.0+)?(?:Z|[+-]\d{2}:?\d{2})?$/i.test(
-      trimmed
-    )
-  ) {
+  if (/^\d{4}-\d{2}-\d{2}[T\s]00:00:00(?:\.0+)?(?:Z|[+-]\d{2}:?\d{2})?$/i.test(trimmed)) {
     return "";
   }
   if (/^\d{4}-\d{2}-\d{2}T00:00:00(?:\.0+)?$/i.test(trimmed)) return "";
@@ -234,11 +222,10 @@ const MONTH_NAME_DATE_RANGE_PATTERN =
   /\b(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s*[–-]\s*\d{1,2})?,?\s+\d{4}\b/i;
 const MONTH_NAME_DATE_SINGLE_PATTERN =
   /\b(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2},?\s+\d{4}\b/i;
-const SLASH_DATE_RANGE_PATTERN =
-  /\b\d{1,2}\/\d{1,2}\/\d{4}\s*[–-]\s*\d{1,2}\/\d{1,2}\/\d{4}\b/;
+const SLASH_DATE_RANGE_PATTERN = /\b\d{1,2}\/\d{1,2}\/\d{4}\s*[–-]\s*\d{1,2}\/\d{1,2}\/\d{4}\b/;
 const SLASH_DATE_SINGLE_PATTERN = /\b\d{1,2}\/\d{1,2}\/\d{4}\b/;
 
-const parseStrictGymMeetDate = (value: unknown): Date | null => {
+export const parseStrictGymMeetDate = (value: unknown): Date | null => {
   const text = toDisplayString(value);
   if (!text) return null;
 
@@ -256,6 +243,59 @@ const parseStrictGymMeetDate = (value: unknown): Date | null => {
   return null;
 };
 
+export type GymMeetScheduleDayLabelInput = {
+  shortDate?: string;
+  date?: string;
+  isoDate?: string;
+};
+
+const parseGymMeetScheduleLabelDate = (candidate: string): Date | null => {
+  const strict = parseStrictGymMeetDate(candidate);
+  if (strict) return strict;
+  const loose = new Date(candidate);
+  return Number.isNaN(loose.getTime()) ? null : loose;
+};
+
+/** Tab label for schedule board; date-only ISO uses local calendar day (not UTC midnight). */
+export const formatGymMeetScheduleTabLabel = (day: GymMeetScheduleDayLabelInput): string => {
+  const candidates = [day.isoDate, day.date, day.shortDate]
+    .map((item) => toDisplayString(item))
+    .filter(Boolean);
+  for (const candidate of candidates) {
+    const parsed = parseGymMeetScheduleLabelDate(candidate);
+    if (!parsed) continue;
+    const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short" })
+      .format(parsed)
+      .replace(".", "")
+      .toUpperCase();
+    const monthDay = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+    })
+      .format(parsed)
+      .replace(",", "")
+      .toUpperCase();
+    return `${weekday} • ${monthDay}`;
+  }
+  return toDisplayString(day.shortDate || day.date || day.isoDate || "Schedule Day");
+};
+
+export const getGymMeetScheduleDaySortTime = (day: GymMeetScheduleDayLabelInput): number => {
+  const candidates = [day.isoDate, day.date, day.shortDate]
+    .map((item) => toDisplayString(item))
+    .filter(Boolean);
+  for (const candidate of candidates) {
+    const parsed = parseGymMeetScheduleLabelDate(candidate);
+    if (parsed) return parsed.getTime();
+  }
+  return Number.POSITIVE_INFINITY;
+};
+
+export const compareGymMeetScheduleDays = (
+  a: GymMeetScheduleDayLabelInput,
+  b: GymMeetScheduleDayLabelInput,
+): number => getGymMeetScheduleDaySortTime(a) - getGymMeetScheduleDaySortTime(b);
+
 export const sanitizeGymMeetDisplayDateLabel = (value: unknown): string => {
   const text = collapseRepeatedDisplayText(value);
   if (!text) return "";
@@ -266,10 +306,7 @@ export const sanitizeGymMeetDisplayDateLabel = (value: unknown): string => {
   return "";
 };
 
-export const formatGymMeetDate = (
-  value: unknown,
-  options?: { withWeekday?: boolean }
-): string => {
+export const formatGymMeetDate = (value: unknown, options?: { withWeekday?: boolean }): string => {
   const date = parseStrictGymMeetDate(value);
   if (!date) return "";
   return new Intl.DateTimeFormat("en-US", {

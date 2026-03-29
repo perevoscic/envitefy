@@ -12,7 +12,7 @@ test("URL discovery budgets honor URL-specific env overrides without changing fi
       DISCOVERY_URL_CORE_BUDGET_MS: "41000",
       DISCOVERY_CORE_BUDGET_MS: "25000",
     }),
-    41_000
+    41_000,
   );
   assert.equal(resolveDiscoveryBudget("core", "file", {}), 25_000);
   assert.equal(resolveDiscoveryBudget("core", "url", {}), 35_000);
@@ -20,6 +20,10 @@ test("URL discovery budgets honor URL-specific env overrides without changing fi
 });
 
 test("client URL parse timeout tracks the combined URL crawl budgets plus buffer", () => {
-  assert.equal(resolveDiscoveryClientParseTimeoutMs("file", {}), 45_000);
-  assert.equal(resolveDiscoveryClientParseTimeoutMs("url", {}), 140_000);
+  assert.equal(resolveDiscoveryClientParseTimeoutMs("file", {}), 300_000);
+  assert.equal(resolveDiscoveryClientParseTimeoutMs("url", {}), 215_000);
+  assert.equal(
+    resolveDiscoveryClientParseTimeoutMs("url", { DISCOVERY_URL_PARSE_CLIENT_BUFFER_MS: "60000" }),
+    155_000,
+  );
 });

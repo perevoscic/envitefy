@@ -38,8 +38,10 @@ import {
   resolveDiscoveryBudget as resolveSharedDiscoveryBudget,
   type DiscoveryBudgetSource,
 } from "@/lib/discovery-budget";
+import { GYM_DISCOVERY_SCHEDULE_GRID_ENABLED } from "./meet-discovery/constants";
 
 export { computeGymBuilderStatuses };
+export { GYM_DISCOVERY_SCHEDULE_GRID_ENABLED };
 
 export type DiscoverySourceInput =
   | {
@@ -704,6 +706,8 @@ export function createDiscoveryPerformance(
     ...seed,
   };
 }
+
+export { type DiscoveryParseLogSummary, summarizeDiscoveryPerformanceForLog } from "./discovery-performance-log";
 
 export function resolveDiscoveryBudget(
   mode: DiscoveryMode,
@@ -2877,25 +2881,25 @@ function extractSchedulePageTextsFromPdfPages(
     .filter((page) => page.pageNumber > 0 && page.text);
 }
 
+const SCHEDULE_PAGE_IMAGE_EXTRACT_CONCURRENCY = 3;
+
 async function extractSchedulePageImagesFromPdf(
   buffer: Buffer,
   pages: Array<{ num: number; text: string }>,
   cache?: DiscoveryRequestCache
 ): Promise<Array<{ pageNumber: number; dataUrl: string | null }>> {
   const pageNumbers = selectSchedulePageNumbersFromPdfPages(pages).slice(0, 6);
-  const images: Array<{ pageNumber: number; dataUrl: string | null }> = [];
-  for (const pageNumber of pageNumbers) {
+  return mapWithConcurrency(pageNumbers, SCHEDULE_PAGE_IMAGE_EXTRACT_CONCURRENCY, async (pageNumber) => {
     try {
       const pageImage = await getPdfPageImage(buffer, pageNumber - 1, cache);
-      images.push({
+      return {
         pageNumber,
         dataUrl: pageImage ? await toOptimizedImageDataUrl(pageImage, cache) : null,
-      });
+      };
     } catch {
-      images.push({ pageNumber, dataUrl: null });
+      return { pageNumber, dataUrl: null };
     }
-  }
-  return images;
+  });
 }
 
 const SCHEDULE_SESSION_HEADER_PATTERN = /session\s+([a-z]{1,3}\d{1,2}|\d{1,2})/i;
@@ -6019,6 +6023,7 @@ async function appendFetchedAssetText(
       }
     }
     if (
+      GYM_DISCOVERY_SCHEDULE_GRID_ENABLED &&
       options.workflow === "gymnastics" &&
       options.mode === "enrich" &&
       !accumulators.schedulePageImages.length
@@ -6035,6 +6040,7 @@ async function appendFetchedAssetText(
       );
     }
     if (
+      GYM_DISCOVERY_SCHEDULE_GRID_ENABLED &&
       options.workflow === "gymnastics" &&
       !accumulators.schedulePageTexts.length
     ) {
@@ -6499,7 +6505,8 @@ export async function extractDiscoveryText(
       const shouldRunGymnasticsEnrichment =
         resolvedOptions.workflow === "gymnastics" &&
         resolvedOptions.mode === "enrich";
-      const shouldExtractSchedulePageImages = resolvedOptions.workflow === "gymnastics";
+      const shouldExtractSchedulePageImages =
+        resolvedOptions.workflow === "gymnastics" && GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
       const gymLayout = shouldRunGymnasticsEnrichment
         ? await extractGymLayoutImageFromPdf(parsed.buffer, {
             maxPages: 4,
@@ -6515,14 +6522,11 @@ export async function extractDiscoveryText(
             page: null,
             selection: undefined,
           };
-      const schedulePageImages =
-        shouldExtractSchedulePageImages && resolvedOptions.debugArtifacts
-          ? await extractSchedulePageImagesFromPdf(parsed.buffer, pages, requestCache)
-          : shouldExtractSchedulePageImages
-          ? await extractSchedulePageImagesFromPdf(parsed.buffer, pages, requestCache)
-          : [];
+      const schedulePageImages = shouldExtractSchedulePageImages
+        ? await extractSchedulePageImagesFromPdf(parsed.buffer, pages, requestCache)
+        : [];
       const schedulePageTexts =
-        resolvedOptions.workflow === "gymnastics"
+        resolvedOptions.workflow === "gymnastics" && GYM_DISCOVERY_SCHEDULE_GRID_ENABLED
           ? extractSchedulePageTextsFromPdfPages(pages)
           : [];
       const combinedLayoutFacts = sanitizeVenueFactLines(
@@ -6965,6 +6969,9 @@ export async function extractDiscoveryText(
       resolvedOptions.workflow === "gymnastics" &&
       resolvedOptions.mode === "enrich"
     ) {
+      if (!GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
+        return !accumulators.gymLayoutImageDataUrl;
+      }
       return (
         !accumulators.gymLayoutImageDataUrl ||
         accumulators.schedulePageImages.length === 0
@@ -7565,7 +7572,9 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
   },
   "links": [{ "label": string, "url": string }],
   "unmappedFacts": [{ "category": string, "detail": string, "confidence": "high"|"medium"|"low" }]
-}`;
+}
+
+Session grids, division-to-session tables, and club roster rows: leave schedule.days, schedule.assignments, and schedule.annotations empty. Capture session timing in meetDetails.sessionWindows; put short procedural lines in meetDetails.operationalNotes and meetDetails fields (warmup, marchIn, doorsOpen, arrivalGuidance, registrationInfo). Spectator pricing belongs in admission[].`;
 
 function buildParsePromptEvidence(
   evidence: DiscoveryEvidence,
@@ -7804,7 +7813,11 @@ function selectParsePromptProfiles(classification: ParseClassification): ParsePr
   }
 
   if (!classification.contentMix.mixed) {
-    return [profileFromDocumentProfile(classification.documentProfile)];
+    const single = profileFromDocumentProfile(classification.documentProfile);
+    if (!GYM_DISCOVERY_SCHEDULE_GRID_ENABLED && single === "athlete_session") {
+      return ["overview_core"];
+    }
+    return [single];
   }
 
   if (classification.contentMix.scheduleHeavy) {
@@ -7817,7 +7830,10 @@ function selectParsePromptProfiles(classification: ParseClassification): ParsePr
         ? "registration_coach"
         : classification.contentMix.parentPacketHeavy
         ? "parent_public"
-        : "overview_core";
+        : "parent_public";
+    if (!GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
+      return uniqueBy(["overview_core", dominantSecondary], (item) => item).slice(0, 2);
+    }
     return uniqueBy(
       ["athlete_session", dominantSecondary].filter(
         (item): item is ParsePromptProfile => item !== "overview_core"
@@ -7833,7 +7849,9 @@ function selectParsePromptProfiles(classification: ParseClassification): ParsePr
         : classification.contentMix.parentPacketHeavy
         ? "parent_public"
         : classification.contentMix.scheduleHeavy
-        ? "athlete_session"
+        ? GYM_DISCOVERY_SCHEDULE_GRID_ENABLED
+          ? "athlete_session"
+          : "parent_public"
         : "overview_core";
     return uniqueBy(["overview_core", dominantSecondary], (item) => item).slice(0, 2);
   }
@@ -8113,8 +8131,9 @@ function buildTargetedParsePrompt(
       "Coach/admin items belong in `coachInfo` before generic `contacts`, `deadlines`, or `unmappedFacts`.",
     ],
     athlete_session: [
-      "Focus on athlete session facts, stretch/warmup, march-in, assigned gym, awards, and session windows.",
+      "Focus on athlete session facts, stretch/warmup, march-in, assigned gym, awards, and meetDetails.sessionWindows.",
       "Only populate rotation order when an explicit apparatus sequence is shown.",
+      "Do not build schedule.days or schedule.assignments; keep grids out of schedule fields.",
     ],
   };
   return [
@@ -8138,12 +8157,12 @@ function buildTargetedParsePrompt(
     "- Ignore `Hosted by:` when no host value is provided.",
     "- Sponsor thanks, hashtag campaigns, and vendor promotions are not meet announcements.",
     "- Prefer structured resource fields/links for results, rotation sheets, rosters, tickets, hotels, and travel hubs.",
-    "- Use `schedule.assignments` for age-group or birth-date to session mappings.",
+    "- Age-group, birth-date, or division-to-session tables belong in meetDetails.sessionWindows and meetDetails.operationalNotes, not in schedule.assignments or schedule.days.",
     "- Use only absolute URLs from evidence/resources when URLs are available there.",
     "- Public admission pricing belongs only in `admission`.",
     "- Coach entry/team/late fees belong only in `coachInfo`.",
     "- Keep parking maps/rates in parking link fields, not generic notes.",
-    "- Do not convert schedule grids or club lists into operational notes or announcements.",
+    "- Leave schedule.days, schedule.assignments, and schedule.annotations empty; summarize timing in meetDetails instead.",
     "- Use `unmappedFacts` only for grounded leftovers that clearly do not fit elsewhere.",
     "- Leave unrelated fields empty instead of stretching evidence.",
     "",
@@ -11716,6 +11735,22 @@ function buildEmptyParseResult(): ParseResult {
   };
 }
 
+export function stripGymScheduleGridsFromParseResult(parseResult: ParseResult): ParseResult {
+  if (GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) return parseResult;
+  const empty = buildEmptyParseResult().schedule;
+  return {
+    ...parseResult,
+    schedule: {
+      venueLabel: empty.venueLabel,
+      supportEmail: empty.supportEmail,
+      notes: [],
+      annotations: [],
+      assignments: [],
+      days: [],
+    },
+  };
+}
+
 async function _callOpenAiParse(
   text: string,
   evidence: DiscoveryEvidence,
@@ -11927,6 +11962,20 @@ export async function finalizeMeetParseResult(
   const sanitized = sanitizeDiscoveryParseResult(value);
   const withCoachRouting = routeCoachDeadlines(mergeCoachFeesFromAdmission(sanitized));
   const reconciled = reconcileParsedDates(withCoachRouting, extractedText);
+  if (!GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
+    const emptySchedule = buildEmptyParseResult().schedule;
+    delete extractionMeta.scheduleDiagnostics;
+    console.log("[meet-discovery] schedule derivation skipped (grids disabled)", { traceId });
+    const finalized = {
+      ...reconciled,
+      schedule: emptySchedule,
+    };
+    console.log("[meet-discovery] finalize parse result finished", {
+      traceId,
+      durationMs: Date.now() - finalizeStartedAt,
+    });
+    return finalized;
+  }
   const scheduleStartedAt = Date.now();
   console.log("[meet-discovery] schedule derivation started", {
     traceId,
@@ -13211,10 +13260,32 @@ export async function mapParseResultToGymData(
       })),
       notes: coachNotes,
     },
-    schedule: {
-      ...existingScheduleWithoutColors,
-      ...resolvedScheduleWithoutColors,
-    },
+    schedule: (() => {
+      if (GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
+        return {
+          ...existingScheduleWithoutColors,
+          ...resolvedScheduleWithoutColors,
+        };
+      }
+      const keepManual =
+        hasStoredScheduleContent(existingSchedule) && !staleStoredSchedule;
+      if (keepManual) {
+        return {
+          ...existingScheduleWithoutColors,
+          ...resolvedScheduleWithoutColors,
+        };
+      }
+      return {
+        ...existingScheduleWithoutColors,
+        enabled: false,
+        days: [],
+        assignments: [],
+        annotations: [],
+        notes: [],
+        venueLabel: derivedScheduleVenueLabel || existingScheduleWithoutColors.venueLabel || null,
+        supportEmail: derivedScheduleSupportEmail || existingScheduleWithoutColors.supportEmail || null,
+      };
+    })(),
     gear: {
       ...(existingAdvanced.gear || {}),
       enabled: existingAdvanced.gear?.enabled ?? false,

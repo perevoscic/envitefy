@@ -12,6 +12,7 @@ import {
   requiresClientPdfReupload,
 } from "@/lib/discovery-file-hydration";
 import { runInlineGymnasticsEnrichmentPhase } from "@/lib/discovery-gymnastics-enrich-inline";
+import { summarizeDiscoveryPerformanceForLog } from "@/lib/discovery-performance-log";
 import {
   computeFootballBuilderStatuses,
   mapParseResultToFootballData,
@@ -29,7 +30,9 @@ import {
   isDiscoveryDebugArtifactsEnabled,
   mapParseResultToGymData,
   parseMeetFromExtractedText,
+  type ParseResult,
   resolveDiscoveryBudget,
+  stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
 
 export const runtime = "nodejs";
@@ -305,7 +308,10 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
           debugArtifacts,
         ),
         ...(workflow === "gymnastics" && "evidence" in parsed ? { evidence: parsed.evidence } : {}),
-        parseResult: parsed.parseResult,
+        parseResult:
+          workflow === "gymnastics"
+            ? stripGymScheduleGridsFromParseResult(parsed.parseResult as ParseResult)
+            : parsed.parseResult,
         rawModelOutput: parsed.rawModelOutput,
         modelUsed: parsed.modelUsed,
         performance: buildPersistedPerformance(performance),
@@ -355,6 +361,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       workflow,
       durationMs: durationMs(persistStartedAt),
     });
+    const parseSummary = summarizeDiscoveryPerformanceForLog(performance);
     console.log(`${MEET_PARSE_LOG_PREFIX} request completed`, {
       eventId,
       workflow,
@@ -364,6 +371,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       phase: "core",
       textQuality: extraction.extractionMeta?.textQuality || null,
       performance,
+      parseSummary,
     });
 
     return NextResponse.json({
@@ -375,6 +383,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       phase: "core",
       enrichment,
       performance,
+      parseSummary,
       statuses:
         workflow === "football"
           ? computeFootballBuilderStatuses(nextData)

@@ -1,5 +1,9 @@
+"use client";
+
 import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { pickNextRandomPhrase } from "@/components/event-create/gym-discovery-status-phrases";
 
 export type DiscoveryProgressTheme = {
   badgeBackground: string;
@@ -21,6 +25,8 @@ type DiscoveryProgressPanelProps = {
   label: string;
   onCancel: () => void;
   progress: number;
+  /** When set, status line cycles a random phrase on each bar animation loop instead of `label`. */
+  rotatingStatusPhrases?: readonly string[];
   theme: DiscoveryProgressTheme;
 };
 
@@ -32,6 +38,7 @@ export default function DiscoveryProgressPanel({
   label,
   onCancel,
   progress,
+  rotatingStatusPhrases,
   theme,
 }: DiscoveryProgressPanelProps) {
   const clampedProgress = Math.max(0, Math.min(100, Math.round(progress)));
@@ -40,6 +47,25 @@ export default function DiscoveryProgressPanel({
     : clampedProgress > 0
       ? Math.max(MINIMUM_VISIBLE_PROGRESS, clampedProgress)
       : MINIMUM_VISIBLE_PROGRESS;
+
+  const useRotation = Boolean(rotatingStatusPhrases?.length);
+  const [displayPhrase, setDisplayPhrase] = useState(() =>
+    rotatingStatusPhrases?.length ? pickNextRandomPhrase(rotatingStatusPhrases, null) : "",
+  );
+  const animRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!rotatingStatusPhrases?.length) return;
+    const el = animRef.current;
+    if (!el) return;
+    const onIter = () => {
+      setDisplayPhrase((cur) => pickNextRandomPhrase(rotatingStatusPhrases, cur));
+    };
+    el.addEventListener("animationiteration", onIter);
+    return () => el.removeEventListener("animationiteration", onIter);
+  }, [indeterminate, rotatingStatusPhrases]);
+
+  const statusText = useRotation ? displayPhrase : label;
 
   return (
     <div className="space-y-3">
@@ -67,6 +93,7 @@ export default function DiscoveryProgressPanel({
           style={{ width: `${visibleProgress}%` }}
         >
           <div
+            ref={animRef}
             className={`h-full w-full ${
               indeterminate ? "launcher-progress-indeterminate" : "launcher-progress-shimmer"
             }`}
@@ -78,7 +105,7 @@ export default function DiscoveryProgressPanel({
         </div>
         <div className="relative flex items-center justify-between gap-3 px-4 py-3.5">
           <p className="min-w-0 truncate text-sm font-semibold" style={{ color: theme.textColor }}>
-            {label}
+            {statusText}
           </p>
           <span
             className="shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em]"
@@ -96,11 +123,13 @@ export default function DiscoveryProgressPanel({
         type="button"
         onClick={onCancel}
         className="discovery-progress-cancel inline-flex w-full items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-xs font-semibold transition"
-        style={{
-          "--cancel-hover-background": theme.cancelHoverBackground,
-          borderColor: theme.cancelBorderColor,
-          color: theme.cancelTextColor,
-        } as CSSProperties}
+        style={
+          {
+            "--cancel-hover-background": theme.cancelHoverBackground,
+            borderColor: theme.cancelBorderColor,
+            color: theme.cancelTextColor,
+          } as CSSProperties
+        }
       >
         <X className="h-3.5 w-3.5" />
         {cancelLabel}

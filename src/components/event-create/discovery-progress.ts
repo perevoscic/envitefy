@@ -6,7 +6,7 @@ export type DiscoveryProgressFlow =
 
 export const GYMNASTICS_URL_PARSE_START_PROGRESS = 72;
 export const GYMNASTICS_URL_PARSE_TAIL_PROGRESS = 85;
-export const GYMNASTICS_URL_PARSE_TAIL_LABEL = "Finalizing meet schedule...";
+export const GYMNASTICS_URL_PARSE_TAIL_LABEL = "Finalizing your meet page...";
 const GYMNASTICS_URL_PARSE_PROGRESS_STEP_MS = 1_800;
 
 type DiscoveryStage = {
@@ -20,7 +20,7 @@ const DISCOVERY_STAGE_COPY: Record<DiscoveryProgressFlow, DiscoveryStage[]> = {
     { until: 32, label: "Reading meet packet..." },
     { until: 48, label: "Matching host gym..." },
     { until: 62, label: "Gathering meet info..." },
-    { until: 76, label: "Finding session details..." },
+    { until: 76, label: "Sorting meet details & admission..." },
     { until: 90, label: "Searching for gym..." },
     { until: 100, label: "Checking parking and arrival..." },
     { until: Number.POSITIVE_INFINITY, label: "Opening meet builder..." },
@@ -29,7 +29,7 @@ const DISCOVERY_STAGE_COPY: Record<DiscoveryProgressFlow, DiscoveryStage[]> = {
     { until: 18, label: "Checking live meet page..." },
     { until: 34, label: "Matching host gym..." },
     { until: 50, label: "Gathering meet info..." },
-    { until: 64, label: "Finding session details..." },
+    { until: 64, label: "Sorting meet details & admission..." },
     { until: 78, label: "Checking coaches notes..." },
     { until: 85, label: "Searching for gym..." },
     { until: 100, label: "Checking parking and arrival..." },

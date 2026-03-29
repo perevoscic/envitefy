@@ -299,6 +299,7 @@ export default function FootballDiscoveryContent({
                     <EventActions
                       shareUrl={shareUrl || ""}
                       event={eventData as any}
+                      calendarTitle={eventTitle}
                       historyId={actionHistoryId}
                       className="flex items-center gap-2"
                       variant="compact"
