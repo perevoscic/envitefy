@@ -8,6 +8,20 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Anonymous `/` is not the real landing route. `src/middleware.ts` rewrites signed-out users to `/landing`; signed-in users stay on `/`.
 - `npm run dev` does not run plain `next dev`. It goes through `scripts/dev-single.js`, defaults to port `3000`, writes to `.next-dev`, and uses `.next-dev.lock` to block a second dev server.
 
+## My events vs Invited events (product language)
+
+- **My events** — Events you are **creating and owning** in the workspace. That includes manual creation and upload/snap flows when the result is **not** an “invite card” for the core social-invite verticals (see below). Uploading a schedule, flyer, or anything where you are really **authoring your own event** in Envitefy belongs here, even when the source was a file or camera.
+- **Invited events** — Events from **uploading/snapping someone else’s invite** for the classic cases: **birthday party**, **wedding**, **gender reveal** invite (and similar invite-card intent). That is “I received an invite” rather than “I’m hosting / creating my event in the app.”
+
+If you upload something **outside** those invite-card cases, treat it as **My events**: you are still **creating** an event in the product.
+
+**Codebase map (how this ties to data and UI):**
+
+- Left sidebar grouping uses `isInvitedHistoryEvent` in `src/app/left-sidebar.tsx`. It is true when `event_history.data.shared` is set **or** when `isInvitedEventLikeRecord` applies in `src/lib/dashboard-data.ts` (explicit `ownership: "invited"` and/or `invitedFromScan: true`).
+- Dashboard/home projections use `normalizeDashboardEventOwnership` in `src/lib/dashboard-data.ts`, which treats `ownership: "invited"` or `invitedFromScan: true` as **invited**.
+
+**Drift:** The main OCR save path `saveToEnvitefyHistory` in `src/components/Dashboard.tsx` still sets `ownership: "invited"` and `invitedFromScan: true` for **all** OCR saves; `src/app/api/google/callback/route.ts` does similar for best-effort history inserts. That does **not** yet match the product definition above until those flags are narrowed to true invite-card verticals only.
+
 ## Data Model That Actually Matters
 
 - The real app state lives in Postgres plus JSONB, not Prisma. `src/lib/db.ts` is the primary data layer.
