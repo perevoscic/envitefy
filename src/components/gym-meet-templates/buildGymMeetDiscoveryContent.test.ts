@@ -9,7 +9,7 @@ const findSection = (discovery: any, id: string) =>
 const findBlock = (section: any, id: string) =>
   (section?.blocks || []).find((block: any) => block.id === id);
 
-test("mixed packet content keeps rich operational sections separate but merges light results and hotels", () => {
+test("mixed packet content keeps rich operational sections separate while preserving results", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
       discoverySource: {
@@ -74,10 +74,10 @@ test("mixed packet content keeps rich operational sections separate but merges l
   assert.equal(findSection(discovery, "registration"), undefined);
   assert.ok(findSection(discovery, "coaches"));
   assert.ok(findSection(discovery, "traffic-parking"));
-  assert.equal(findSection(discovery, "results"), undefined);
+  assert.ok(findSection(discovery, "results"));
   assert.equal(findSection(discovery, "documents"), undefined);
   assert.equal(findSection(discovery, "hotels"), undefined);
-  assert.match(JSON.stringify(findSection(discovery, "meet-details")), /Live scoring available online/);
+  assert.match(JSON.stringify(findSection(discovery, "results")), /Live scoring available online/);
   assert.match(JSON.stringify(findSection(discovery, "coaches")), /Athlete Entry Fee|MeetMaker/);
   assert.match(JSON.stringify(findSection(discovery, "traffic-parking")), /Host Hotel/);
 });
@@ -368,7 +368,7 @@ test("rotation hub with not_posted shows neutral status instead of a wrong PDF",
   assert.doesNotMatch(allContent, /https:\/\/legacy\.example\.com\/wrong-rotation\.pdf/i);
 });
 
-test("lightweight results merge into meet details without leaking into admission", () => {
+test("lightweight results stay in the results section without leaking into admission", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
       discoverySource: {
@@ -395,9 +395,9 @@ test("lightweight results merge into meet details without leaking into admission
   const meetDetails = findSection(discovery, "meet-details");
   const admission = findSection(discovery, "admission");
 
-  assert.equal(results, undefined);
+  assert.ok(results);
   assert.ok(meetDetails);
-  assert.match(JSON.stringify(meetDetails), /Live scoring available online/);
+  assert.match(JSON.stringify(results), /Live scoring available online/);
   assert.ok(admission);
   assert.doesNotMatch(JSON.stringify(admission), /Live scoring available online/);
   assert.doesNotMatch(JSON.stringify(admission), /https:\/\/example\.com\/results/);
@@ -607,10 +607,10 @@ test("rich results merge into meet details communication cards", () => {
   const results = findSection(discovery, "results");
   const meetDetails = findSection(discovery, "meet-details");
 
-  assert.equal(results, undefined);
+  assert.ok(results);
   assert.ok(meetDetails);
-  assert.match(JSON.stringify(meetDetails), /Results 1|Results 2|Results 3/);
-  assert.match(JSON.stringify(meetDetails), /results\/1|results\/2|results\/3/);
+  assert.match(JSON.stringify(results), /Results 1|Results 2|Results 3/);
+  assert.match(JSON.stringify(results), /results\/1|results\/2|results\/3/);
 });
 
 test("coach deadline cards render month day year instead of raw ISO dates", () => {
@@ -694,12 +694,12 @@ test("spectator presale announcements route into admission and linked domains st
   });
 
   const admission = findSection(discovery, "admission");
-  const meetDetails = findSection(discovery, "meet-details");
+  const results = findSection(discovery, "results");
   const admissionCopy = JSON.stringify(
     (admission?.blocks || []).filter((block: any) => block.type !== "link-list")
   );
-  const meetDetailsCopy = JSON.stringify(
-    (meetDetails?.blocks || [])
+  const resultsCopy = JSON.stringify(
+    (results?.blocks || [])
       .filter((block: any) => block.type !== "link-list")
       .map((block: any) =>
         block?.type === "card-grid"
@@ -717,10 +717,104 @@ test("spectator presale announcements route into admission and linked domains st
   assert.ok(admission);
   assert.match(JSON.stringify(admission), /Spectator pre-sale available now/i);
   assert.match(JSON.stringify(admission), /USA Competitions/);
-  assert.ok(meetDetails);
-  assert.doesNotMatch(JSON.stringify(meetDetails), /Spectator pre-sale available now/i);
+  assert.ok(results);
+  assert.doesNotMatch(JSON.stringify(results), /Spectator pre-sale available now/i);
   assert.doesNotMatch(admissionCopy, /USACompetitions\.com/i);
-  assert.doesNotMatch(meetDetailsCopy, /USACompetitions\.com/i);
+  assert.doesNotMatch(resultsCopy, /USACompetitions\.com/i);
+});
+
+test("normalized logistics policies, hotel notes, and bare-domain results links render in dedicated sections", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          meetDetails: {
+            resultsInfo: "Live scoring available at USACompetitions.com.",
+          },
+          logistics: {
+            hotel: "Book rooms at GroupBook.com/state-host-hotel.",
+          },
+        },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {
+        resultsInfo: "Live scoring available at USACompetitions.com.",
+      },
+      logistics: {
+        hotelInfo: "Book rooms at GroupBook.com/state-host-hotel.",
+        policyFood: "Outside food is not permitted in the competition hall.",
+        policyHydration: "Bring a refillable water bottle.",
+        policyAnimals: "Only trained service animals are permitted.",
+        policySafety: "No throwing objects in spectator seating.",
+      },
+      coaches: {},
+    },
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+  });
+
+  const results = findSection(discovery, "results");
+  const hotels = findSection(discovery, "hotels");
+  const safety = findSection(discovery, "safety-policy");
+
+  assert.ok(results);
+  assert.match(JSON.stringify(results), /Live scoring available/i);
+  assert.match(JSON.stringify(results), /https:\/\/usacompetitions\.com\//i);
+  assert.ok(hotels);
+  assert.match(JSON.stringify(hotels), /Book rooms/i);
+  assert.match(JSON.stringify(hotels), /https:\/\/groupbook\.com\/state-host-hotel/i);
+  assert.ok(safety);
+  assert.match(JSON.stringify(safety), /Outside food is not permitted|Bring a refillable water bottle|service animals|throwing objects/i);
+});
+
+test("normalized operational-note noise stays out of meet details and coach notes", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          meetDetails: {
+            operationalNotes: [
+              "Gym A\tGym B",
+              "B1\tW04",
+              "8:00 AM\t12:30 PM",
+            ],
+          },
+          coachInfo: {
+            notes: ["Coaches sign in at the registration table."],
+          },
+        },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {
+        operationalNotes: [
+          "Gym A\tGym B",
+          "B1\tW04",
+          "8:00 AM\t12:30 PM",
+        ],
+      },
+      logistics: {},
+      coaches: {
+        enabled: true,
+        notes: ["Coaches sign in at the registration table."],
+      },
+    },
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+  });
+
+  const meetDetails = findSection(discovery, "meet-details");
+  const coaches = findSection(discovery, "coaches");
+
+  assert.doesNotMatch(JSON.stringify(meetDetails), /Gym A|B1|W04|12:30 PM/);
+  assert.match(JSON.stringify(coaches), /Coaches sign in at the registration table/i);
 });
 
 test("operational routing keeps public meet facts out of announcements", () => {

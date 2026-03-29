@@ -18,11 +18,13 @@ const {
   mergeCoachFeesFromAdmission,
   routeCoachDeadlines,
   deriveScheduleFromTextFallback,
+  deriveScheduleFromExtractedText,
   parseNarrativeScheduleSessionsFromPage,
   parseScheduleAnnotationsFromPages,
   parseScheduleAssignmentsFromPages,
   classifySchedulePageText,
   selectScheduleSegments,
+  shouldUseVisualScheduleRepair,
   mergeScheduleWithFallback,
   supplementScheduleWithFallback,
   isStaleDerivedSchedule,
@@ -942,6 +944,255 @@ test("extractDiscoveryText dedupes repeated assets and tolerates fetch failures"
   );
 });
 
+test("parseResourceStatusFromLabel captures future posting dates from labels", () => {
+  const parsed = parseResourceStatusFromLabel(
+    "Rotation Sheets (will be posted by April 7th)",
+    { referenceYear: "2026" }
+  );
+
+  assert.equal(parsed.status, "not_posted");
+  assert.equal(parsed.cleanedLabel, "Rotation Sheets");
+  assert.equal(parsed.availabilityText, "will be posted by April 7th");
+  assert.equal(parsed.availabilityDate, "2026-04-07");
+});
+
+test("extractDiscoveryText merges Playwright-discovered resources and child-page text", async (t) => {
+  const rootUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/";
+  const scheduleUrl = "https://usacompetitions.com/wp-content/uploads/2026/03/state-info.pdf";
+  const divisionsUrl = "https://usacompetitions.com/team-divisions/";
+  const photoUrl = "https://form.jotform.com/host/state-photo-video";
+
+  t.after(() => resetUrlDiscoveryTestHooks());
+  setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url: string) => {
+      if (url === rootUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Xcel State Championships</title></head>
+            <body>April 10-12, 2026 Gainesville, FL</body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === scheduleUrl) {
+        return {
+          contentType: "application/pdf",
+          buffer: Buffer.from("browser discovered schedule packet"),
+          text: "",
+        };
+      }
+      if (url === photoUrl) {
+        const text = `
+          <html><head><title>Photo Orders</title></head><body>Photo and video ordering form.</body></html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === divisionsUrl) {
+        const text = `
+          <html><head><title>Team Divisions</title></head><body>Will be posted March 30th.</body></html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+    collectBrowserData: async () => ({
+      candidates: [
+        {
+          label: "Schedule & Info (Updated March 27th)",
+          url: scheduleUrl,
+          sourceUrl: rootUrl,
+          depth: 0,
+          sameHost: true,
+          contentType: "application/pdf",
+          openedVia: "anchor",
+          discoveryMethod: "playwright",
+        },
+        {
+          label: "Team Divisions (will be posted March 30th)",
+          url: divisionsUrl,
+          sourceUrl: rootUrl,
+          depth: 0,
+          sameHost: true,
+          contentType: "text/html",
+          openedVia: "button",
+          discoveryMethod: "playwright",
+        },
+        {
+          label: "Photo / Video Order Form",
+          url: photoUrl,
+          sourceUrl: rootUrl,
+          depth: 0,
+          sameHost: false,
+          contentType: "text/html",
+          openedVia: "popup",
+          discoveryMethod: "playwright",
+        },
+      ],
+      pages: [
+        {
+          url: divisionsUrl,
+          title: "Team Divisions",
+          depth: 1,
+          text: "Team divisions will be posted March 30th.",
+          sourceUrl: rootUrl,
+        },
+      ],
+    }),
+    extractTextFromPdf: async (buffer: Buffer) => ({
+      text: `PDF:${buffer.toString("utf8")}`,
+      usedOcr: false,
+      coachPageHints: [],
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+    }),
+    extractTextFromImage: async () => "",
+    extractGymLayoutImageFromPdf: async () => ({
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+    }),
+    openAiExtractGymLayoutZones: async () => [],
+    toOptimizedImageDataUrl: async () => null,
+  });
+
+  const result = await extractDiscoveryText({ type: "url", url: rootUrl });
+  const resourceLinks = result.extractionMeta.resourceLinks || [];
+
+  assert.match(result.extractedText, /Team divisions will be posted March 30th/i);
+  assert.match(result.extractedText, /PDF:browser discovered schedule packet/);
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "team_divisions" &&
+        item.status === "not_posted" &&
+        item.availabilityDate === "2026-03-30" &&
+        item.discoveryMethod === "playwright"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "photo_video" &&
+        item.url === photoUrl &&
+        item.discoveryMethod === "playwright"
+    )
+  );
+});
+
+test("extractDiscoveryText merges PDF annotation links into resources and follows same-host child pages", async (t) => {
+  const rootUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/";
+  const packetUrl = "https://usacompetitions.com/wp-content/uploads/2026/03/state-info.pdf";
+  const divisionsUrl = "https://usacompetitions.com/team-divisions/";
+  const hotelUrl = "https://api.groupbook.io/group/usag-state-2026";
+  let hotelFetchCount = 0;
+
+  t.after(() => resetUrlDiscoveryTestHooks());
+  setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url: string) => {
+      if (url === rootUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Xcel State Championships</title></head>
+            <body>
+              <a href="/wp-content/uploads/2026/03/state-info.pdf">Schedule &amp; Info</a>
+              April 10-12, 2026 Gainesville, FL
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === packetUrl) {
+        return {
+          contentType: "application/pdf",
+          buffer: Buffer.from("packet with hidden links"),
+          text: "",
+        };
+      }
+      if (url === divisionsUrl) {
+        const text = `
+          <html>
+            <head><title>Team Divisions</title></head>
+            <body>Team divisions for the 2026 Xcel State Championships.</body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === hotelUrl) {
+        hotelFetchCount += 1;
+        const text = `
+          <html>
+            <head><title>Groupbook Hotel Block</title></head>
+            <body>Groupbook room block available until March 31, 2026.</body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+    extractTextFromPdf: async (buffer: Buffer) => ({
+      text: `PDF:${buffer.toString("utf8")}`,
+      usedOcr: false,
+      coachPageHints: [],
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+      annotationLinks: [
+        {
+          url: divisionsUrl,
+          label: "Team Divisions",
+          pageNumber: 1,
+          source: "pdf_annotation",
+        },
+        {
+          url: hotelUrl,
+          label: null,
+          pageNumber: 1,
+          source: "pdf_annotation",
+        },
+        {
+          url: hotelUrl,
+          label: null,
+          pageNumber: 2,
+          source: "pdf_annotation",
+        },
+      ],
+    }),
+    extractTextFromImage: async () => "",
+    extractGymLayoutImageFromPdf: async () => ({
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+    }),
+    openAiExtractGymLayoutZones: async () => [],
+    toOptimizedImageDataUrl: async () => null,
+  });
+
+  const result = await extractDiscoveryText({ type: "url", url: rootUrl });
+  const resourceLinks = result.extractionMeta.resourceLinks || [];
+
+  assert.match(result.extractedText, /PDF:packet with hidden links/i);
+  assert.match(result.extractedText, /Team divisions for the 2026 Xcel State Championships/i);
+  assert.match(result.extractedText, /Groupbook room block available until March 31, 2026/i);
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "team_divisions" &&
+        item.url === divisionsUrl &&
+        item.origin === "linked_asset"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.url === hotelUrl &&
+        item.origin === "linked_asset"
+    )
+  );
+  assert.equal(hotelFetchCount, 1, "expected trusted external PDF annotation URL to be fetched once");
+});
+
 test("parseMeetFromExtractedText keeps a deterministic title when quality gate skips model parsing", async () => {
   const parsed = await parseMeetFromExtractedText(
     [
@@ -1012,6 +1263,109 @@ test("mapParseResultToGymData replaces URL ingest hostname titles with extracted
   );
 
   assert.equal(mapped.title, "2026 Level 7/9/10 State Championships");
+});
+
+test("mapParseResultToGymData keeps future-posted resources out of normal links and exposes pending resources", async () => {
+  const mapped = await mapParseResultToGymData(
+    normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "meet_overview",
+      title: "2026 Xcel State Championships",
+      dates: "April 10-12, 2026",
+      startAt: null,
+      endAt: null,
+      timezone: "America/New_York",
+      venue: "Alachua County Sports & Events Center",
+      address: "4870 Celebration Pointe Ave, Gainesville, FL 32608",
+      hostGym: "USA Competitions",
+      admission: [],
+      athlete: {},
+      meetDetails: {},
+      logistics: {},
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      links: [],
+      unmappedFacts: [],
+    })!,
+    {
+      title: "usacompetitions.com Meet",
+      discoverySource: {
+        extractedText: "2026 Xcel State Championships",
+      },
+    },
+    {
+      sourceType: "url",
+      usedOcr: false,
+      linkedAssets: [],
+      discoveredLinks: [],
+      resourceLinks: [
+        {
+          kind: "packet",
+          status: "available",
+          label: "Schedule & Info",
+          url: "https://usacompetitions.com/docs/state-info.pdf",
+          sourceUrl: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
+          origin: "root",
+          contentType: "application/pdf",
+          followed: true,
+          matchScore: 10,
+          matchReason: "root_direct_resource",
+          availabilityText: "updated March 27th",
+          availabilityDate: "2026-03-27",
+          discoveryMethod: "playwright",
+        },
+        {
+          kind: "team_divisions",
+          status: "not_posted",
+          label: "Team Divisions",
+          url: "https://usacompetitions.com/team-divisions/",
+          sourceUrl: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
+          origin: "root",
+          contentType: "text/html",
+          followed: true,
+          matchScore: 10,
+          matchReason: "root_direct_resource",
+          availabilityText: "will be posted March 30th",
+          availabilityDate: "2026-03-30",
+          discoveryMethod: "playwright",
+        },
+      ],
+      crawledPages: [],
+      pageTitle: "2026 Xcel State Championships",
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+      schedulePageImages: [],
+      schedulePageTexts: [],
+    }
+  );
+
+  assert.ok(
+    mapped.links.some(
+      (item: any) => item.url === "https://usacompetitions.com/docs/state-info.pdf"
+    )
+  );
+  assert.ok(
+    !mapped.links.some(
+      (item: any) => item.url === "https://usacompetitions.com/team-divisions/"
+    )
+  );
+  assert.deepEqual(mapped.advancedSections.meet.pendingResources, [
+    {
+      id: "pending-resource-1",
+      kind: "team_divisions",
+      label: "Team Divisions",
+      availabilityText: "will be posted March 30th",
+      availabilityDate: "2026-03-30",
+      url: "https://usacompetitions.com/team-divisions/",
+      sourceUrl: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
+      lastSeenAt: mapped.advancedSections.meet.pendingResources[0].lastSeenAt,
+    },
+  ]);
 });
 
 test("extractDiscoveryText core mode skips gymnastics enrichment branches", async (t) => {
@@ -1569,6 +1923,193 @@ test("selectScheduleSegments keeps narrative and assignment pages out of grid pa
       [1, "narrative"],
       [2, "assignment"],
     ]
+  );
+});
+
+test("classifySchedulePageText recognizes organizer-agnostic tabular schedule and assignment pages", () => {
+  assert.equal(
+    classifySchedulePageText(
+      [
+        "Friday, January 9, 2026",
+        "Gym A\tGym B",
+        "B1\tW04",
+        "Bronze\tXcel Platinum",
+        "8:00 AM\t12:30 PM",
+        "North Stars\tMetro Gym",
+      ].join("\n")
+    ).kind,
+    "grid"
+  );
+  assert.equal(
+    classifySchedulePageText(
+      [
+        "AGE GROUP / DIVISION / SESSION",
+        "Level 4",
+        "Group 1\t7/01/2014 - 6/30/2015\tJunior A\tB1",
+        "Group 2\t7/01/2013 - 6/30/2014\tJunior B\tW04",
+      ].join("\n")
+    ).kind,
+    "assignment"
+  );
+  assert.equal(
+    classifySchedulePageText(
+      [
+        "Friday, January 9",
+        "Session 3 Level 7 8:00am Stretch",
+        "Age groups: 4, 7, 12 8:15am Warm-up. Competition to follow",
+      ].join("\n")
+    ).kind,
+    "narrative"
+  );
+});
+
+test("deriveScheduleFromExtractedText builds day sessions from tabular schedule candidates", async () => {
+  const derived = await deriveScheduleFromExtractedText(
+    "",
+    {
+      sourceType: "file",
+      usedOcr: false,
+      linkedAssets: [],
+      discoveredLinks: [],
+      crawledPages: [],
+      schedulePageImages: [],
+      schedulePageTexts: [
+        {
+          pageNumber: 1,
+          text: [
+            "Friday, January 9, 2026",
+            "Gym A\tGym B",
+            "B1\tW04",
+            "Bronze\tXcel Platinum",
+            "8:00 AM\t12:30 PM",
+            "North Stars\tMetro Gym",
+          ].join("\n"),
+        },
+      ],
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+    }
+  );
+
+  assert.equal(derived.schedule.days.length, 1);
+  assert.equal(derived.schedule.days[0]?.sessions[0]?.code, "B1");
+  assert.equal(derived.schedule.days[0]?.sessions[0]?.startTime, "8:00 AM");
+  assert.equal(derived.schedule.days[0]?.sessions[1]?.code, "W04");
+  assert.equal(derived.schedule.days[0]?.sessions[1]?.clubs[0]?.name, "Metro Gym");
+});
+
+test("deriveScheduleFromExtractedText keeps assignment rows even when there are no grid pages", async () => {
+  const derived = await deriveScheduleFromExtractedText(
+    "",
+    {
+      sourceType: "file",
+      usedOcr: false,
+      linkedAssets: [],
+      discoveredLinks: [],
+      crawledPages: [],
+      schedulePageImages: [],
+      schedulePageTexts: [
+        {
+          pageNumber: 2,
+          text: [
+            "AGE GROUP / DIVISION / SESSION",
+            "Level 4",
+            "Group 1\t7/01/2014 - 6/30/2015\tJunior A\tB1",
+            "Group 2\t7/01/2013 - 6/30/2014\tJunior B\tW04",
+          ].join("\n"),
+        },
+      ],
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+    }
+  );
+
+  assert.deepEqual(
+    derived.schedule.assignments.map((item) => [
+      item.level,
+      item.groupLabel,
+      item.birthDateRange,
+      item.divisionLabel,
+      item.sessionCode,
+    ]),
+    [
+      ["Level 4", "Group 1", "7/01/2014 - 6/30/2015", "Junior A", "B1"],
+      ["Level 4", "Group 2", "7/01/2013 - 6/30/2014", "Junior B", "W04"],
+    ]
+  );
+});
+
+test("shouldUseVisualScheduleRepair keeps image repair enabled when text parsing found only empty session shells", () => {
+  assert.equal(
+    shouldUseVisualScheduleRepair(
+      {
+        venueLabel: null,
+        supportEmail: null,
+        notes: [],
+        annotations: [],
+        assignments: [],
+        days: [
+          {
+            date: "Thursday, April 9, 2026",
+            shortDate: "Thu • Apr 9",
+            sessions: [
+              {
+                code: "B01",
+                group: "Gold",
+                startTime: "8:00 AM",
+                warmupTime: "8:00 AM",
+                note: "Stretch/warmup",
+                clubs: [],
+              },
+              {
+                code: "B02",
+                group: "Gold",
+                startTime: "11:30 AM",
+                warmupTime: "11:30 AM",
+                note: "Stretch/warmup",
+                clubs: [],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        venueLabel: null,
+        supportEmail: null,
+        notes: [],
+        annotations: [],
+        assignments: [],
+        days: [
+          {
+            date: "Thursday, April 9, 2026",
+            shortDate: "Thu • Apr 9",
+            sessions: [
+              {
+                code: "B01",
+                group: "Gold",
+                startTime: "8:00 AM",
+                warmupTime: "8:00 AM",
+                note: "Stretch/warmup",
+                clubs: [],
+              },
+            ],
+          },
+        ],
+      },
+      [
+        {
+          pageNumber: 1,
+          text: [
+            "Thursday, April 9, 2026",
+            "B01\tB02",
+            "Gold\tGold",
+            "8:00 AM\t11:30 AM",
+            "North Stars\tMetro Gym",
+          ].join("\n"),
+        },
+      ]
+    ),
+    true
   );
 });
 
@@ -2412,6 +2953,176 @@ test("mapParseResultToGymData does not map packet intro prose into host gym fiel
 
   assert.equal(mapped.hostGym, "Team Twisters & USA Competitions");
   assert.equal(mapped.customFields.team, "Team Twisters & USA Competitions");
+});
+
+test("mapParseResultToGymData keeps date-only packets blank-time and blank-timezone", async () => {
+  const mapped = await mapParseResultToGymData(
+    normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "meet_overview",
+      title: "Winter Classic",
+      dates: "January 9-11, 2026",
+      startAt: "2026-01-09",
+      endAt: "2026-01-11",
+      timezone: null,
+      venue: "State Arena",
+      address: "123 Main St, Chicago, IL 60601",
+      hostGym: "State Gym",
+      admission: [],
+      athlete: {},
+      meetDetails: {},
+      logistics: {},
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      schedule: {
+        venueLabel: "",
+        supportEmail: "",
+        notes: [],
+        awardLegend: [],
+        annotations: [],
+        assignments: [],
+        days: [],
+      },
+      links: [],
+      unmappedFacts: [],
+    })!,
+    {}
+  );
+
+  assert.equal(mapped.date, "2026-01-09");
+  assert.equal(mapped.time, "");
+  assert.equal(mapped.startISO, null);
+  assert.equal(mapped.endISO, null);
+  assert.equal(mapped.timezone, null);
+});
+
+test("mapParseResultToGymData filters schedule-grid noise from operational notes and infers bare-domain links", async () => {
+  const mapped = await mapParseResultToGymData(
+    normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "meet_overview",
+      title: "Winter Classic",
+      dates: "January 9-11, 2026",
+      startAt: null,
+      endAt: null,
+      timezone: null,
+      venue: "State Arena",
+      address: "123 Main St, Chicago, IL 60601",
+      hostGym: "State Gym",
+      admission: [],
+      athlete: {},
+      meetDetails: {
+        resultsInfo: "Live scoring available at USACompetitions.com.",
+        rotationSheetsInfo: "Rotation sheets will be posted on MeetScoresOnline.com.",
+        operationalNotes: [
+          "Gym A\tGym B",
+          "B1\tW04",
+          "8:00 AM\t12:30 PM",
+          "Please review the following items enclosed in this packet:",
+          "Coaches sign in at the registration table.",
+          "Doors open at 7:00 AM.",
+        ],
+      },
+      logistics: {
+        hotel: "Book rooms at GroupBook.com/state-host-hotel.",
+      },
+      policies: {},
+      coachInfo: {
+        signIn: "Coaches sign in at the registration table.",
+      },
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      schedule: {
+        venueLabel: "",
+        supportEmail: "",
+        notes: [],
+        awardLegend: [],
+        annotations: [],
+        assignments: [],
+        days: [],
+      },
+      links: [],
+      unmappedFacts: [],
+    })!,
+    {},
+    {
+      sourceType: "file",
+      usedOcr: false,
+      linkedAssets: [],
+      discoveredLinks: [],
+      resourceLinks: [],
+      crawledPages: [],
+      gymLayoutFacts: ["Gym B is on the west side concourse."],
+      gymLayoutPage: null,
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+      schedulePageImages: [],
+      schedulePageTexts: [],
+    }
+  );
+
+  assert.deepEqual(mapped.advancedSections.meet.operationalNotes, []);
+  assert.ok(
+    mapped.links.some((item: any) => item.url === "https://usacompetitions.com/")
+  );
+  assert.ok(
+    mapped.links.some((item: any) => item.url === "https://groupbook.com/state-host-hotel")
+  );
+});
+
+test("mapParseResultToGymData tolerates missing inferred links when building top-level links", async () => {
+  const mapped = await mapParseResultToGymData(
+    normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "meet_overview",
+      title: "Winter Classic",
+      dates: "January 9-11, 2026",
+      startAt: null,
+      endAt: null,
+      timezone: null,
+      venue: "State Arena",
+      address: "123 Main St, Chicago, IL 60601",
+      hostGym: "State Gym",
+      admission: [],
+      athlete: {},
+      meetDetails: {},
+      logistics: {},
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      schedule: {
+        venueLabel: "",
+        supportEmail: "",
+        notes: [],
+        awardLegend: [],
+        annotations: [],
+        assignments: [],
+        days: [],
+      },
+      links: [{ label: "Packet", url: "https://example.com/packet.pdf" }],
+      unmappedFacts: [],
+    })!,
+    {}
+  );
+
+  assert.deepEqual(mapped.links, [
+    {
+      label: "Packet",
+      url: "https://example.com/packet.pdf",
+    },
+  ]);
 });
 
 test("computeGymBuilderStatuses marks schedule ready when sessions exist", () => {
