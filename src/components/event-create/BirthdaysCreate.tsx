@@ -11,8 +11,16 @@ import {
   normalizeRegistryLinks,
   validateRegistryUrl,
 } from "@/utils/registry-links";
-import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
+import {
+  createObjectUrlPreview,
+  getAttachmentPreviewForEditor,
+  mergeUploadedEventMedia,
+  persistImageMediaValue,
+  uploadMediaFile,
+  validateClientUploadFile,
+} from "@/utils/media-upload-client";
+import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { buildEventPath } from "@/utils/event-url";
 
 type Props = {
@@ -153,9 +161,11 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
     type: string;
     dataUrl: string;
   } | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
     string | null
   >(null);
+  const [headerFile, setHeaderFile] = useState<File | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
@@ -266,8 +276,10 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
             dataUrl: attach.dataUrl,
           });
           setAttachmentPreviewUrl(
-            (typeof data.thumbnail === "string" && data.thumbnail) ||
-              (attach.type?.startsWith?.("image/") ? attach.dataUrl : null)
+            getAttachmentPreviewForEditor({
+              attachment: attach,
+              thumbnail: typeof data.thumbnail === "string" ? data.thumbnail : null,
+            })
           );
         }
         const colors = (data as any).imageColors;
@@ -367,6 +379,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
 
   // Header image handlers
   const clearHeader = () => {
+    setHeaderFile(null);
     setAttachmentPreviewUrl(null);
     setImageColors(null);
     setAttachmentError(null);
@@ -380,26 +393,22 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
       clearHeader();
       return;
     }
-    const isImage = file.type.startsWith("image/");
-    if (!isImage) {
-      setAttachmentError("Upload an image file");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setAttachmentError("File must be 5 MB or smaller");
+    const validationError = validateClientUploadFile(file, "header");
+    if (validationError) {
+      setAttachmentError(validationError);
       event.target.value = "";
       return;
     }
     setAttachmentError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      let previewUrl: string | null = null;
+      const previewUrl = createObjectUrlPreview(file);
       let colors: ImageColors | null = null;
-      previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
       try {
-        colors = await extractColorsFromImage(dataUrl);
+        if (previewUrl) {
+          colors = await extractColorsFromImage(previewUrl);
+        }
       } catch {}
+      setHeaderFile(file);
       setAttachmentPreviewUrl(previewUrl);
       setImageColors(colors);
     } catch {
@@ -410,6 +419,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
   // Flyer/invite clear (separate from header)
   const clearFlyer = () => {
     setAttachment(null);
+    setAttachmentFile(null);
     if (attachmentInputRef.current) attachmentInputRef.current.value = "";
   };
 
@@ -420,27 +430,23 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
     const file = event.target.files?.[0] || null;
     if (!file) {
       setAttachment(null);
+      setAttachmentFile(null);
       return;
     }
-    const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) {
-      setAttachmentError("Upload an image or PDF file");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setAttachmentError("File must be 5 MB or smaller");
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setAttachmentError(validationError);
       event.target.value = "";
       return;
     }
     setAttachmentError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setAttachment({ name: file.name, type: file.type, dataUrl });
+      setAttachmentFile(file);
+      setAttachment({ name: file.name, type: file.type, dataUrl: "" });
       // Do not set attachmentPreviewUrl or imageColors here to keep header independent
     } catch {
       setAttachment(null);
+      setAttachmentFile(null);
       event.target.value = "";
     }
   };
@@ -835,6 +841,39 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         }
       }
 
+      const [headerUpload, attachmentUpload] = await Promise.all([
+        headerFile
+          ? uploadMediaFile({
+              file: headerFile,
+              usage: "header",
+              eventId: editEventId || undefined,
+            })
+          : Promise.resolve(null),
+        attachmentFile
+          ? uploadMediaFile({
+              file: attachmentFile,
+              usage: "attachment",
+              eventId: editEventId || undefined,
+            })
+          : Promise.resolve(null),
+      ]);
+      const mediaPatch = mergeUploadedEventMedia({
+        headerUpload,
+        attachmentUpload,
+        existingThumbnail: attachmentPreviewUrl,
+        existingAttachment: attachment as any,
+      });
+      if (!headerUpload && attachmentPreviewUrl) {
+        mediaPatch.thumbnail = attachmentPreviewUrl;
+      }
+      const profileImageUrl = profileImage?.dataUrl
+        ? await persistImageMediaValue({
+            value: profileImage.dataUrl,
+            eventId: editEventId || undefined,
+            fileName: profileImage.name || "birthday-profile.png",
+          })
+        : null;
+
       const payload: any = {
         title: title || "Event",
         data: {
@@ -869,18 +908,10 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
             ? {
                 name: profileImage.name,
                 type: profileImage.type,
-                dataUrl: profileImage.dataUrl,
+                dataUrl: profileImageUrl || profileImage.dataUrl,
               }
             : undefined,
-          // Always persist the header image as thumbnail, regardless of flyer type
-          thumbnail: attachmentPreviewUrl || undefined,
-          attachment: attachment
-            ? {
-                name: attachment.name,
-                type: attachment.type,
-                dataUrl: attachment.dataUrl,
-              }
-            : undefined,
+          ...mediaPatch,
           imageColors: imageColors || undefined,
           registries:
             sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
@@ -945,13 +976,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         recurrence: recurrenceRule,
         reminders: [{ minutes: 30 }],
         registries: sanitizedRegistries.length ? sanitizedRegistries : null,
-        attachment: attachment
-          ? {
-              name: attachment.name,
-              type: attachment.type,
-              dataUrl: attachment.dataUrl,
-            }
-          : null,
+        attachment: (mediaPatch.attachment as any) || null,
         signupForm: null,
       };
 

@@ -25,6 +25,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import BirthdayDesignThemes from "./_components/BirthdayDesignThemes";
 import { BIRTHDAY_THEMES } from "./birthdayThemes";
@@ -1030,26 +1031,6 @@ export default function BirthdayTemplateCustomizePage() {
       return;
     }
     try {
-      const toDataUrlIfBlob = async (
-        input: string | null | undefined
-      ): Promise<string | null> => {
-        if (!input) return null;
-        if (!/^blob:/i.test(input)) return input;
-        try {
-          const response = await fetch(input);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          return await new Promise<string>((resolve, reject) => {
-            reader.onloadend = () => resolve((reader.result as string) || "");
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        } catch (err) {
-          console.error("[Birthday] Failed to convert blob URL", err);
-          return null;
-        }
-      };
-
       let startISO: string | null = null;
       let endISO: string | null = null;
       if (data.date) {
@@ -1066,15 +1047,28 @@ export default function BirthdayTemplateCustomizePage() {
 
       // Convert hero/background/gallery uploads so they persist
       const heroToSave =
-        (await toDataUrlIfBlob(data.images.hero)) ||
+        (await persistImageMediaValue({
+          value: data.images.hero,
+          eventId: editEventId || undefined,
+          fileName: "birthday-hero.png",
+        })) ||
         (template?.heroImageName
           ? `/templates/birthdays/${template.heroImageName}`
           : null);
-      const headlineBgToSave = await toDataUrlIfBlob(data.images.headlineBg);
+      const headlineBgToSave = await persistImageMediaValue({
+        value: data.images.headlineBg,
+        eventId: editEventId || undefined,
+        fileName: "birthday-headline-bg.png",
+      });
       const galleryToSave = await Promise.all(
         (data.gallery || []).map(async (item) => ({
           ...item,
-          url: (await toDataUrlIfBlob(item.url)) || item.url,
+          url:
+            (await persistImageMediaValue({
+              value: item.url,
+              eventId: editEventId || undefined,
+              fileName: `birthday-gallery-${item.id || "image"}.png`,
+            })) || item.url,
         }))
       );
 

@@ -1,8 +1,7 @@
 import * as chrono from "chrono-node";
-import sharp from "sharp";
-import { getVisionClient } from "@/lib/gcp";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { corsJson, corsPreflight } from "@/lib/cors";
 import {
   deleteEventHistoryById,
   incrementCreditsByEmail,
@@ -11,9 +10,11 @@ import {
   upsertEventHistoryInputBlob,
 } from "@/lib/db";
 import { uploadDiscoveryInputToBlob } from "@/lib/discovery-input-storage";
-import { corsJson, corsPreflight } from "@/lib/cors";
-import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
 import { buildDefaultFootballDiscoveryData } from "@/lib/football-discovery";
+import { getVisionClient } from "@/lib/gcp";
+import { prepareDiscoverySourceFile, readAndValidateUploadFile } from "@/lib/media-upload";
+import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
+import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 
 export const runtime = "nodejs";
 const DISCOVERY_INGEST_LOG_PREFIX = "[discovery-ingest]";
@@ -33,7 +34,7 @@ async function handleDiscoveryIngest(
     workflow: "gymnastics" | "football";
     defaultTitle: string;
     buildBaseData: () => Record<string, any>;
-  }
+  },
 ) {
   const formData = await request.formData();
   const file = formData.get("file");
@@ -49,15 +50,11 @@ async function handleDiscoveryIngest(
     return corsJson(
       request,
       { error: "Provide either file or url for meet discovery" },
-      { status: 400 }
+      { status: 400 },
     );
   }
   if (hasFile && hasUrl) {
-    return corsJson(
-      request,
-      { error: "Use one input at a time (file or url)" },
-      { status: 400 }
-    );
+    return corsJson(request, { error: "Use one input at a time (file or url)" }, { status: 400 });
   }
 
   const userId = await getSessionUserId();
@@ -72,31 +69,33 @@ async function handleDiscoveryIngest(
 
   if (hasFile) {
     const fileValue = file as File;
-    const mimeType = fileValue.type || "";
     console.log(`${DISCOVERY_INGEST_LOG_PREFIX} validating file input`, {
       workflow: options.workflow,
       fileName: fileValue.name || "upload",
-      mimeType: mimeType || "application/octet-stream",
+      mimeType: fileValue.type || "application/octet-stream",
       sizeBytes: fileValue.size || 0,
     });
-    const validMime =
-      /pdf/i.test(mimeType) ||
-      /image\/(png|jpe?g)/i.test(mimeType) ||
-      /\.(pdf|png|jpe?g)$/i.test(fileValue.name || "");
-    if (!validMime) {
-      return corsJson(
-        request,
-        { error: "Unsupported file. Use PDF, JPG/JPEG, or PNG." },
-        { status: 400 }
-      );
+    let prepared: Awaited<ReturnType<typeof prepareDiscoverySourceFile>>;
+    try {
+      prepared = await prepareDiscoverySourceFile(fileValue);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid file upload";
+      const status =
+        error && typeof error === "object" && "status" in error && Number.isFinite((error as any).status)
+          ? Number((error as any).status)
+          : 415;
+      return corsJson(request, { error: message }, { status });
     }
-    const bytes = Buffer.from(await fileValue.arrayBuffer());
     discoveryInput = {
       type: "file",
-      fileName: fileValue.name || "upload",
-      mimeType: mimeType || "application/octet-stream",
-      sizeBytes: fileValue.size || bytes.length,
+      fileName: prepared.fileName,
+      mimeType: prepared.mimeType,
+      sizeBytes: prepared.sizeBytes,
       blobStored: true,
+      originalName: prepared.originalName,
+      originalMimeType: prepared.originalMimeType,
+      originalSizeBytes: prepared.originalSizeBytes,
+      optimizedByQpdf: prepared.optimizedByQpdf,
     };
     title = fileValue.name?.replace(/\.[^.]+$/, "") || title;
 
@@ -123,19 +122,18 @@ async function handleDiscoveryIngest(
       eventId: row.id,
       title,
     });
-
     try {
       const { pathname, url } = await uploadDiscoveryInputToBlob({
         eventId: row.id,
-        fileName: fileValue.name || "upload",
-        mimeType: mimeType || "application/octet-stream",
-        bytes,
+        fileName: prepared.fileName,
+        mimeType: prepared.mimeType,
+        bytes: prepared.buffer,
       });
       await upsertEventHistoryInputBlob({
         eventId: row.id,
-        mimeType: mimeType || "application/octet-stream",
-        fileName: fileValue.name || "upload",
-        sizeBytes: fileValue.size || bytes.length,
+        mimeType: prepared.mimeType,
+        fileName: prepared.fileName,
+        sizeBytes: prepared.sizeBytes,
         data: null,
         storagePathname: pathname,
         storageUrl: url,
@@ -143,8 +141,9 @@ async function handleDiscoveryIngest(
       console.log(`${DISCOVERY_INGEST_LOG_PREFIX} stored blob`, {
         workflow: options.workflow,
         eventId: row.id,
-        sizeBytes: fileValue.size || bytes.length,
+        sizeBytes: prepared.sizeBytes,
         storagePathname: pathname,
+        optimizedByQpdf: prepared.optimizedByQpdf ?? null,
       });
     } catch (error) {
       console.error(`${DISCOVERY_INGEST_LOG_PREFIX} blob write failed`, {
@@ -229,15 +228,41 @@ async function handleLegacyIngest(request: Request) {
   if (!(file instanceof File)) {
     return corsJson(request, { error: "No file" }, { status: 400 });
   }
+  let validated: Awaited<ReturnType<typeof readAndValidateUploadFile>>;
+  try {
+    validated = await readAndValidateUploadFile(file, "attachment");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid file upload";
+    const status =
+      error && typeof error === "object" && "status" in error && Number.isFinite((error as any).status)
+        ? Number((error as any).status)
+        : 415;
+    return corsJson(request, { error: message }, { status });
+  }
 
-  const mime = file.type || "";
-  const fileArrayBuffer = await file.arrayBuffer();
-  const inputBuffer = Buffer.from(fileArrayBuffer);
+  const mime = validated.mimeType;
+  const inputBuffer = validated.bytes;
 
   let ocrBuffer: Buffer = inputBuffer;
-  if (!/pdf/i.test(mime)) {
-    // Preprocess for OCR (resize, grayscale, normalize)
-    ocrBuffer = await sharp(inputBuffer).resize(2000).grayscale().normalize().toBuffer();
+  if (/pdf/i.test(mime)) {
+    const pagePng = await rasterizePdfPageToPng(inputBuffer, 0);
+    if (!pagePng) {
+      return corsJson(
+        request,
+        { error: "Could not convert PDF to image for OCR" },
+        { status: 422 },
+      );
+    }
+    ocrBuffer = pagePng;
+  }
+  try {
+    ocrBuffer = await (await import("sharp")).default(ocrBuffer)
+      .resize(2000)
+      .grayscale()
+      .normalize()
+      .toBuffer();
+  } catch {
+    // keep buffer as-is
   }
 
   const vision = getVisionClient();
@@ -249,10 +274,12 @@ async function handleLegacyIngest(request: Request) {
   const text = result.fullTextAnnotation?.text || result.textAnnotations?.[0]?.description || "";
   const raw = (text || "").replace(/\s+\n/g, "\n").trim();
 
-  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = raw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   const title =
-    lines.find((l) => l.length > 5 && !/rsvp|free entry|admission/i.test(l)) ||
-    "Event from flyer";
+    lines.find((l) => l.length > 5 && !/rsvp|free entry|admission/i.test(l)) || "Event from flyer";
 
   const parsed = chrono.parse(raw, new Date(), { forwardDate: true });
   let start: Date | null = null;
@@ -268,9 +295,7 @@ async function handleLegacyIngest(request: Request) {
 
   const locationLine =
     lines.find((l) =>
-      /\d{1,5}\s+\w+|\b(Auditorium|Center|Hall|Gym|Park|Room|Suite|Ave|St|Blvd|Rd)\b/i.test(
-        l
-      )
+      /\d{1,5}\s+\w+|\b(Auditorium|Center|Hall|Gym|Park|Room|Suite|Ave|St|Blvd|Rd)\b/i.test(l),
     ) || "";
 
   const tz = "America/Chicago";
@@ -285,13 +310,13 @@ async function handleLegacyIngest(request: Request) {
       const hasWedding =
         /(wedding|marriage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText);
       const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(
-        fullText
+        fullText,
       );
       if (hasWedding && !hasBirthday) return "Weddings";
       if (hasBirthday && !hasWedding) return "Birthdays";
       const isDoctorLike =
         /(doctor|dr\.|dentist|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam)/i.test(
-          fullText
+          fullText,
         );
       const hasAppt = /(appointment|appt)/i.test(fullText);
       if (isDoctorLike && hasAppt) return "Doctor Appointments";
@@ -303,7 +328,9 @@ async function handleLegacyIngest(request: Request) {
       ) {
         return "Sport Events";
       }
-      if (/(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)) {
+      if (
+        /(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)
+      ) {
         return "Car Pool";
       }
     } catch {}

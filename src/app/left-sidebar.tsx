@@ -73,6 +73,12 @@ type SidebarPage =
   | "eventContext";
 type EventSidebarMode = "owner" | "guest";
 type EventListPage = "myEvents" | "invitedEvents";
+type CompactNavItemId =
+  | "home"
+  | "snap"
+  | "create"
+  | "myEvents"
+  | "invitedEvents";
 type SubscriptionPlan =
   | "freemium"
   | "free"
@@ -98,7 +104,6 @@ type GroupedEventItem = {
   hoverTintClass: string;
   activeTintClass: string;
   activeCardClass: string;
-  swatchClass: string;
   style?: CSSProperties;
 };
 type GroupedEventSection = {
@@ -454,7 +459,7 @@ export default function LeftSidebar() {
     refreshConnectedCalendars,
     featureVisibility,
   } = useMenu();
-  const { historySidebarItems, historyDiagnostics } = useEventCache();
+  const { historySidebarItems } = useEventCache();
   const profileEmail = (session?.user as any)?.email?.toLowerCase?.() ?? null;
   const profileEmailRef = useRef<string | null>(null);
   useEffect(() => {
@@ -856,6 +861,10 @@ export default function LeftSidebar() {
     Boolean((session?.user as any)?.isAdmin)
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const userTitleLabel = useMemo(
+    () => (isAdmin ? `${displayName} (Admin)` : displayName),
+    [displayName, isAdmin]
+  );
   const footerMenuItems = useMemo(
     () =>
       [
@@ -1269,7 +1278,6 @@ export default function LeftSidebar() {
     }, 0);
   }, [history]);
   const _calendarEventsCount = createdEventsCount + invitedEventsCount;
-  const showDevDiagnostics = process.env.NODE_ENV !== "production";
   const openCompactEventsPage = useCallback(
     (page: "myEvents" | "invitedEvents") => {
       clearEventContext();
@@ -1282,31 +1290,70 @@ export default function LeftSidebar() {
     setIsCollapsed(false);
     setSidebarPage("createEvent");
   }, [setIsCollapsed, setSidebarPage]);
+  const isCompactNavActive = useCallback(
+    (id: CompactNavItemId) => {
+      switch (id) {
+        case "home":
+          return pathname === "/" && sidebarPage === "root";
+        case "snap":
+          return pathname === "/event" && sidebarPage === "root";
+        case "create":
+          return (
+            sidebarPage === "createEvent" || sidebarPage === "createEventOther"
+          );
+        case "myEvents":
+          return (
+            sidebarPage === "myEvents" ||
+            (sidebarPage === "eventContext" &&
+              eventContextSourcePage === "myEvents")
+          );
+        case "invitedEvents":
+          return (
+            sidebarPage === "invitedEvents" ||
+            (sidebarPage === "eventContext" &&
+              eventContextSourcePage === "invitedEvents")
+          );
+        default:
+          return false;
+      }
+    },
+    [pathname, sidebarPage, eventContextSourcePage]
+  );
   const compactNavItems = useMemo(
     () => [
-      { icon: Home, label: "Home", onClick: goHomeFromSidebar },
       {
+        id: "home" as const,
+        icon: Home,
+        label: "Home",
+        href: "/",
+        onClick: goHomeFromSidebar,
+      },
+      {
+        id: "snap" as const,
         icon: Camera,
         label: "Snap event",
+        href: "/event",
         onClick: () => {
           clearEventContext();
           setSidebarPage("root");
           collapseSidebarOnTouch();
-          openSnapFromSidebar("camera");
         },
       },
       {
+        id: "create" as const,
         icon: Plus,
         label: "Create event",
         onClick: openCreateEventPage,
       },
       {
+        id: "myEvents" as const,
         icon: SidebarMyEventsMenuIcon,
         label: "My events",
         onClick: () => openCompactEventsPage("myEvents"),
         badge: createdEventsCount,
       },
       {
+        id: "invitedEvents" as const,
         icon: Users,
         label: "Invited events",
         onClick: () => openCompactEventsPage("invitedEvents"),
@@ -1321,7 +1368,6 @@ export default function LeftSidebar() {
       goHomeFromSidebar,
       openCompactEventsPage,
       openCreateEventPage,
-      openSnapFromSidebar,
       setSidebarPage,
     ]
   );
@@ -1782,7 +1828,6 @@ export default function LeftSidebar() {
         hoverTintClass: palette.hoverTint,
         activeTintClass: activePalette.tint,
         activeCardClass: activeEventCardClasses(categoryColor),
-        swatchClass: palette.swatch,
         style,
       };
       const targetBuckets = bucketsByList[targetList];
@@ -2254,21 +2299,52 @@ export default function LeftSidebar() {
               {compactNavItems.map((item) => {
                 const Icon = item.icon;
                 const badgeCount = item.badge || 0;
+                const active = isCompactNavActive(item.id);
+                const compactNavClass = `relative inline-flex h-12 w-12 cursor-pointer touch-manipulation items-center justify-center rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                  active
+                    ? "border-indigo-100 bg-indigo-50 text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-white hover:text-slate-900"
+                }`;
+                const iconNode =
+                  item.id === "myEvents" ? (
+                    <SidebarMyEventsMenuIcon size={18} active={active} />
+                  ) : (
+                    <Icon size={18} />
+                  );
+                const badgeNode =
+                  badgeCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white shadow-sm">
+                      {badgeCount}
+                    </span>
+                  ) : null;
+                if (item.href) {
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      onClick={item.onClick}
+                      className={compactNavClass}
+                      title={item.label}
+                      aria-label={item.label}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      {iconNode}
+                      {badgeNode}
+                    </Link>
+                  );
+                }
                 return (
                   <button
-                    key={item.label}
+                    key={item.id}
                     type="button"
                     onClick={item.onClick}
-                    className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-900 hover:shadow-md"
+                    className={compactNavClass}
                     title={item.label}
                     aria-label={item.label}
+                    aria-current={active ? "true" : undefined}
                   >
-                    <Icon size={18} />
-                    {badgeCount > 0 && (
-                      <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white shadow-sm">
-                        {badgeCount}
-                      </span>
-                    )}
+                    {iconNode}
+                    {badgeNode}
                   </button>
                 );
               })}
@@ -2491,20 +2567,6 @@ export default function LeftSidebar() {
                             />
                           </span>
                         </button>
-                        {showDevDiagnostics ? (
-                          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-[11px] font-medium text-amber-950">
-                            <div className="flex flex-wrap gap-x-3 gap-y-1">
-                              <span>history rows: {history.length}</span>
-                              <span>itemCount: {String(historyDiagnostics?.itemCount ?? "-")}</span>
-                              <span>source: {String(historyDiagnostics?.source ?? "-")}</span>
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-amber-900/80">
-                              <span>empty: {String(historyDiagnostics?.emptyReason ?? "-")}</span>
-                              <span>degraded: {String(historyDiagnostics?.degradedReason ?? "-")}</span>
-                              <span>view: {String(historyDiagnostics?.view ?? "-")}</span>
-                            </div>
-                          </div>
-                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -2716,12 +2778,9 @@ export default function LeftSidebar() {
                                         isHistoryRowActive(item.row.id)
                                           ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                           : `${item.tintClass} ${item.hoverTintClass}`
-                                      } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
+                                      } flex w-full items-start border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                       style={item.style}
                                     >
-                                      <span
-                                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border ${item.swatchClass}`}
-                                      />
                                       <span className="min-w-0 flex-1">
                                         <span className="block truncate text-sm md:text-base font-semibold">
                                           {item.title}
@@ -2730,11 +2789,6 @@ export default function LeftSidebar() {
                                           {item.dateLabel}
                                         </span>
                                       </span>
-                                      <ChevronRight
-                                        size={16}
-                                        className="mt-1 shrink-0 text-slate-400"
-                                        aria-hidden="true"
-                                      />
                                     </button>
                                   ))}
                                 </section>
@@ -2803,12 +2857,9 @@ export default function LeftSidebar() {
                                               isHistoryRowActive(item.row.id)
                                                 ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                                 : `${item.tintClass} ${item.hoverTintClass}`
-                                            } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-75 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
+                                            } flex w-full items-start border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-75 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                             style={item.style}
                                           >
-                                            <span
-                                              className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border ${item.swatchClass}`}
-                                            />
                                             <span className="min-w-0 flex-1">
                                               <span className="block truncate text-sm md:text-base font-semibold">
                                                 {item.title}
@@ -2817,11 +2868,6 @@ export default function LeftSidebar() {
                                                 {item.dateLabel}
                                               </span>
                                             </span>
-                                            <ChevronRight
-                                              size={16}
-                                              className="mt-1 shrink-0 text-slate-400"
-                                              aria-hidden="true"
-                                            />
                                           </button>
                                         ))}
                                       </section>
@@ -2906,10 +2952,9 @@ export default function LeftSidebar() {
                                         isHistoryRowActive(item.row.id)
                                           ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                           : `${item.tintClass} ${item.hoverTintClass}`
-                                      } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
+                                      } flex w-full items-start border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                       style={item.style}
                                     >
-                                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
                                       <span className="min-w-0 flex-1">
                                         <span className="flex items-center gap-2">
                                           <span className="block truncate text-sm md:text-base font-semibold">
@@ -2925,11 +2970,6 @@ export default function LeftSidebar() {
                                           {item.dateLabel}
                                         </span>
                                       </span>
-                                      <ChevronRight
-                                        size={16}
-                                        className="mt-1 shrink-0 text-slate-400"
-                                        aria-hidden="true"
-                                      />
                                     </button>
                                   ))}
                                 </section>
@@ -3005,10 +3045,9 @@ export default function LeftSidebar() {
                                               isHistoryRowActive(item.row.id)
                                                 ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
                                                 : `${item.tintClass} ${item.hoverTintClass}`
-                                            } w-full border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-70 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
+                                            } flex w-full items-start border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 opacity-70 shadow-sm saturate-75 transition-all hover:-translate-y-0.5 hover:shadow-md`}
                                             style={item.style}
                                           >
-                                            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border border-indigo-200 bg-indigo-50" />
                                             <span className="min-w-0 flex-1">
                                               <span className="flex items-center gap-2">
                                                 <span className="block truncate text-sm md:text-base font-semibold">
@@ -3025,11 +3064,6 @@ export default function LeftSidebar() {
                                                 {item.dateLabel}
                                               </span>
                                             </span>
-                                            <ChevronRight
-                                              size={16}
-                                              className="mt-1 shrink-0 text-slate-400"
-                                              aria-hidden="true"
-                                            />
                                           </button>
                                         ))}
                                       </section>
@@ -3093,7 +3127,7 @@ export default function LeftSidebar() {
                       </span>
                       <div className="min-w-0 flex-1 text-left">
                         <div className="truncate text-[14px] font-bold leading-tight text-slate-700">
-                          {displayName}
+                          {userTitleLabel}
                         </div>
                         {userEmail && (
                           <div className="truncate text-[12px] text-slate-400">

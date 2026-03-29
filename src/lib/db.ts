@@ -1,9 +1,10 @@
-import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
-import { randomBytes, scrypt as nodeScrypt, timingSafeEqual, randomUUID } from "node:crypto";
+import { scrypt as nodeScrypt, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
+import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
+import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
-import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
+
 const scrypt = promisify(nodeScrypt);
 
 type NonEmptyString = string & { _brand: "NonEmptyString" };
@@ -38,7 +39,7 @@ function isAuthenticationPgError(err: unknown): boolean {
   return (
     ["28P01", "28000"].includes(code) ||
     /password authentication failed|authentication failed|invalid auth|invalid password|too many authentication errors|circuit breaker open/i.test(
-      message
+      message,
     )
   );
 }
@@ -48,8 +49,17 @@ function isTransientPgError(err: unknown): boolean {
   const code = String(anyErr?.code || "");
   const message = String(anyErr?.message || "");
   return (
-    ["PG_AUTH_BACKOFF", "ETIMEDOUT", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETUNREACH"].includes(code) ||
-    /timeout|terminat|refused|getaddrinfo|not known|too many authentication errors|circuit breaker open/i.test(message) ||
+    [
+      "PG_AUTH_BACKOFF",
+      "ETIMEDOUT",
+      "ECONNREFUSED",
+      "ECONNRESET",
+      "EHOSTUNREACH",
+      "ENETUNREACH",
+    ].includes(code) ||
+    /timeout|terminat|refused|getaddrinfo|not known|too many authentication errors|circuit breaker open/i.test(
+      message,
+    ) ||
     isAuthenticationPgError(err)
   );
 }
@@ -123,7 +133,7 @@ function getPool(): Pool {
         if (pgAuthErrorCount >= PG_AUTH_ERROR_THRESHOLD) {
           pgAuthBackoffUntil = Date.now() + PG_AUTH_BACKOFF_MS;
           console.warn(
-            `[db] Pausing new Postgres connections for ${PG_AUTH_BACKOFF_MS}ms after repeated authentication failures`
+            `[db] Pausing new Postgres connections for ${PG_AUTH_BACKOFF_MS}ms after repeated authentication failures`,
           );
         }
       }
@@ -131,11 +141,9 @@ function getPool(): Pool {
     // Ensure long queries also timeout server-side
     const timeoutValue = Math.max(1000, statementTimeoutMs);
     global.__pgPool.on("connect", (client: PoolClient) => {
-      client
-        .query(`SET statement_timeout TO ${timeoutValue}`)
-        .catch((err: Error) => {
-          console.warn("[db pool] SET statement_timeout failed on new connection", err.message);
-        });
+      client.query(`SET statement_timeout TO ${timeoutValue}`).catch((err: Error) => {
+        console.warn("[db pool] SET statement_timeout failed on new connection", err.message);
+      });
     });
 
     if (!global.__pgUnhandledGuard) {
@@ -147,7 +155,7 @@ function getPool(): Pool {
           (reason.severity === "FATAL" ||
             reason.code === "XX000" ||
             /terminated unexpectedly|check out connection.*pool.*timeout/i.test(
-              String(reason.message || "")
+              String(reason.message || ""),
             ))
         ) {
           console.error("[db pool] swallowed pg unhandledRejection", reason.message);
@@ -163,7 +171,9 @@ function getPool(): Pool {
 async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
   const pool = getPool();
   if (pgAuthBackoffUntil > Date.now()) {
-    const err: any = new Error("Database authentication temporarily paused after repeated failures");
+    const err: any = new Error(
+      "Database authentication temporarily paused after repeated failures",
+    );
     err.code = "PG_AUTH_BACKOFF";
     throw err;
   }
@@ -178,7 +188,7 @@ async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Prom
       if (pgAuthErrorCount >= PG_AUTH_ERROR_THRESHOLD) {
         pgAuthBackoffUntil = Date.now() + PG_AUTH_BACKOFF_MS;
         console.warn(
-          `[db] Pausing new Postgres connections for ${PG_AUTH_BACKOFF_MS}ms after repeated authentication failures`
+          `[db] Pausing new Postgres connections for ${PG_AUTH_BACKOFF_MS}ms after repeated authentication failures`,
         );
       }
     }
@@ -198,7 +208,10 @@ async function withClient<T>(callback: (client: PoolClient) => Promise<T>): Prom
   }
 }
 
-export async function query<T extends QueryResultRow = QueryResultRow>(text: string, params: any[] = []): Promise<QueryResult<T>> {
+export async function query<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params: any[] = [],
+): Promise<QueryResult<T>> {
   return withClient((client) => client.query<T>(text, params));
 }
 
@@ -234,8 +247,7 @@ const USER_SELECT_COLUMNS = `
   scans_sport_events, scans_appointments, scans_doctor_appointments,
   scans_play_days, scans_general_events, scans_car_pool,
   shares_sent,
-  onboarding_required, onboarding_persona, onboarding_completed_at,
-  onboarding_prompt_dismissed_at, feature_visibility
+  feature_visibility
 `;
 
 export type AppUserRow = {
@@ -267,31 +279,27 @@ export type AppUserRow = {
   scans_general_events?: number | null;
   scans_car_pool?: number | null;
   shares_sent?: number | null;
-  onboarding_required?: boolean | null;
-  onboarding_persona?: string | null;
-  onboarding_completed_at?: string | null;
-  onboarding_prompt_dismissed_at?: string | null;
   feature_visibility?: unknown;
 };
 
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
-  await ensureUsersHasOnboardingColumns();
+  await ensureUsersHasFeatureVisibilityColumn();
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS}
      from users
      where email = $1
      limit 1`,
-    [lower]
+    [lower],
   );
   return res.rows[0] || null;
 }
 
 export async function getUserById(id: string): Promise<AppUserRow | null> {
-  await ensureUsersHasOnboardingColumns();
+  await ensureUsersHasFeatureVisibilityColumn();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS} from users where id = $1 limit 1`,
-    [id]
+    [id],
   );
   return res.rows[0] || null;
 }
@@ -335,7 +343,9 @@ export async function setUserAdminByEmail(email: string, isAdmin: boolean): Prom
 export async function getIsAdminByEmail(email: string): Promise<boolean> {
   const lower = email.toLowerCase();
   const selectIsAdmin = async () =>
-    query<{ is_admin: boolean | null }>(`select is_admin from users where email = $1 limit 1`, [lower]);
+    query<{ is_admin: boolean | null }>(`select is_admin from users where email = $1 limit 1`, [
+      lower,
+    ]);
 
   try {
     const res = await selectIsAdmin();
@@ -351,17 +361,23 @@ export async function getIsAdminByEmail(email: string): Promise<boolean> {
         if (isTransientPgError(retryErr)) {
           console.warn(
             "[db] getIsAdminByEmail: database unavailable during schema ensure, defaulting isAdmin=false",
-            (retryErr as any)?.message || retryErr
+            (retryErr as any)?.message || retryErr,
           );
           return false;
         }
-        console.error("[db] getIsAdminByEmail failed after schema ensure, defaulting isAdmin=false", retryErr);
+        console.error(
+          "[db] getIsAdminByEmail failed after schema ensure, defaulting isAdmin=false",
+          retryErr,
+        );
         return false;
       }
     }
 
     if (isTransientPgError(err)) {
-      console.warn("[db] getIsAdminByEmail: database unavailable, defaulting isAdmin=false", (err as any)?.message || err);
+      console.warn(
+        "[db] getIsAdminByEmail: database unavailable, defaulting isAdmin=false",
+        (err as any)?.message || err,
+      );
       return false;
     }
     console.error("[db] getIsAdminByEmail failed, defaulting isAdmin=false", err);
@@ -485,109 +501,130 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
   };
 }
 
-export async function getTopUsersByScans(limit: number = 20): Promise<Array<{ email: string; scans: number; shares: number }>> {
+export async function getTopUsersByScans(
+  limit: number = 20,
+): Promise<Array<{ email: string; scans: number; shares: number }>> {
   await ensureUsersHasAdminAndMetricsColumns();
-  const res = await query<{ email: string; scans_total: number | null; shares_sent: number | null }>(
+  const res = await query<{
+    email: string;
+    scans_total: number | null;
+    shares_sent: number | null;
+  }>(
     `select email, coalesce(scans_total, 0) as scans_total, coalesce(shares_sent, 0) as shares_sent
      from users
      order by scans_total desc nulls last, shares_sent desc nulls last
      limit $1`,
-    [Math.max(1, Math.min(100, Math.floor(limit)))]
+    [Math.max(1, Math.min(100, Math.floor(limit)))],
   );
-  return (res.rows || []).map((r) => ({ email: r.email, scans: Number(r.scans_total || 0), shares: Number(r.shares_sent || 0) }));
+  return (res.rows || []).map((r) => ({
+    email: r.email,
+    scans: Number(r.scans_total || 0),
+    shares: Number(r.shares_sent || 0),
+  }));
 }
 
-export async function incrementUserScanCounters(params: { userId?: string | null; email?: string | null; category?: string | null }): Promise<void> {
+export async function incrementUserScanCounters(params: {
+  userId?: string | null;
+  email?: string | null;
+  category?: string | null;
+}): Promise<void> {
   await ensureUsersHasAdminAndMetricsColumns();
-  const where = buildUserWhereClause({ userId: params.userId || null, email: params.email || null }, 1);
+  const where = buildUserWhereClause(
+    { userId: params.userId || null, email: params.email || null },
+    1,
+  );
   const updates: string[] = ["scans_total = coalesce(scans_total, 0) + 1"];
   const cat = (params.category || "").toLowerCase();
   if (cat.includes("birthday")) updates.push("scans_birthdays = coalesce(scans_birthdays, 0) + 1");
   if (cat.includes("wedding")) updates.push("scans_weddings = coalesce(scans_weddings, 0) + 1");
-  if (cat.includes("sport")) updates.push("scans_sport_events = coalesce(scans_sport_events, 0) + 1");
-  if (cat.includes("doctor") || cat.includes("dr ") || cat.includes("dr.")) updates.push("scans_doctor_appointments = coalesce(scans_doctor_appointments, 0) + 1");
-  if (cat.includes("appointment")) updates.push("scans_appointments = coalesce(scans_appointments, 0) + 1");
-  if (cat.includes("play day") || cat.includes("playday") || cat.includes("playdate")) updates.push("scans_play_days = coalesce(scans_play_days, 0) + 1");
-  if (cat.includes("general")) updates.push("scans_general_events = coalesce(scans_general_events, 0) + 1");
-  if (cat.includes("car pool") || cat.includes("carpool") || cat.includes("ride share") || cat.includes("school pickup") || cat.includes("school drop")) updates.push("scans_car_pool = coalesce(scans_car_pool, 0) + 1");
+  if (cat.includes("sport"))
+    updates.push("scans_sport_events = coalesce(scans_sport_events, 0) + 1");
+  if (cat.includes("doctor") || cat.includes("dr ") || cat.includes("dr."))
+    updates.push("scans_doctor_appointments = coalesce(scans_doctor_appointments, 0) + 1");
+  if (cat.includes("appointment"))
+    updates.push("scans_appointments = coalesce(scans_appointments, 0) + 1");
+  if (cat.includes("play day") || cat.includes("playday") || cat.includes("playdate"))
+    updates.push("scans_play_days = coalesce(scans_play_days, 0) + 1");
+  if (cat.includes("general"))
+    updates.push("scans_general_events = coalesce(scans_general_events, 0) + 1");
+  if (
+    cat.includes("car pool") ||
+    cat.includes("carpool") ||
+    cat.includes("ride share") ||
+    cat.includes("school pickup") ||
+    cat.includes("school drop")
+  )
+    updates.push("scans_car_pool = coalesce(scans_car_pool, 0) + 1");
   await query(`update users set ${updates.join(", ")} where ${where.clause}`, where.values);
 }
 
-export async function incrementUserSharesSent(params: { userId?: string | null; email?: string | null; delta?: number }): Promise<void> {
+export async function incrementUserSharesSent(params: {
+  userId?: string | null;
+  email?: string | null;
+  delta?: number;
+}): Promise<void> {
   await ensureUsersHasAdminAndMetricsColumns();
-  const where = buildUserWhereClause({ userId: params.userId || null, email: params.email || null }, 1);
+  const where = buildUserWhereClause(
+    { userId: params.userId || null, email: params.email || null },
+    1,
+  );
   const delta = Math.floor(params.delta ?? 1);
-  await query(`update users set shares_sent = coalesce(shares_sent, 0) + $1 where ${where.clause}`, [delta, ...where.values]);
+  await query(
+    `update users set shares_sent = coalesce(shares_sent, 0) + $1 where ${where.clause}`,
+    [delta, ...where.values],
+  );
 }
 
-async function ensureUsersHasOnboardingColumns(): Promise<void> {
-  await ensureOnce("users_onboarding_columns", async () => {
+async function ensureUsersHasFeatureVisibilityColumn(): Promise<void> {
+  await ensureOnce("users_feature_visibility_column", async () => {
     await query(`
-      alter table users add column if not exists onboarding_required boolean;
-      alter table users alter column onboarding_required set default false;
-      alter table users add column if not exists onboarding_persona varchar(32);
-      alter table users add column if not exists onboarding_completed_at timestamptz(6);
-      alter table users add column if not exists onboarding_prompt_dismissed_at timestamptz(6);
       alter table users add column if not exists feature_visibility jsonb;
     `);
   });
 }
 
-type OnboardingProfileRow = {
-  onboarding_required: boolean | null;
-  onboarding_persona: string | null;
-  onboarding_completed_at: string | null;
-  onboarding_prompt_dismissed_at: string | null;
+type FeatureVisibilityRow = {
   feature_visibility: any;
 };
 
-export async function getOnboardingByEmail(email: string): Promise<OnboardingProfileRow | null> {
-  await ensureUsersHasOnboardingColumns();
+export async function getFeatureVisibilityByEmail(
+  email: string,
+): Promise<FeatureVisibilityRow | null> {
+  await ensureUsersHasFeatureVisibilityColumn();
   const lower = email.toLowerCase();
-  const res = await query<OnboardingProfileRow>(
-    `select onboarding_required, onboarding_persona, onboarding_completed_at,
-            onboarding_prompt_dismissed_at, feature_visibility
+  const res = await query<FeatureVisibilityRow>(
+    `select feature_visibility
        from users
       where email = $1
       limit 1`,
-    [lower]
+    [lower],
   );
   return res.rows[0] || null;
 }
 
-export async function completeOnboardingByEmail(params: {
+export async function updateFeatureVisibilityByEmail(params: {
   email: string;
-  persona: string;
+  persona?: string | null;
   personas?: string[];
   visibleTemplateKeys: string[];
 }): Promise<void> {
-  await ensureUsersHasOnboardingColumns();
+  await ensureUsersHasFeatureVisibilityColumn();
   const lower = params.email.toLowerCase();
   const payload = {
     v: 1,
-    personas: Array.isArray(params.personas) ? params.personas : [params.persona],
+    persona: params.persona || null,
+    personas: Array.isArray(params.personas)
+      ? params.personas
+      : params.persona
+        ? [params.persona]
+        : [],
     visibleTemplateKeys: params.visibleTemplateKeys,
   };
   await query(
     `update users
-        set onboarding_required = false,
-            onboarding_persona = $2,
-            onboarding_completed_at = now(),
-            onboarding_prompt_dismissed_at = null,
-            feature_visibility = $3::jsonb
+        set feature_visibility = $2::jsonb
       where email = $1`,
-    [lower, params.persona, JSON.stringify(payload)]
-  );
-}
-
-export async function dismissOnboardingPromptByEmail(email: string): Promise<void> {
-  await ensureUsersHasOnboardingColumns();
-  const lower = email.toLowerCase();
-  await query(
-    `update users
-        set onboarding_prompt_dismissed_at = now()
-      where email = $1`,
-    [lower]
+    [lower, JSON.stringify(payload)],
   );
 }
 
@@ -598,18 +635,18 @@ export async function createUserWithEmailPassword(params: {
   password: string;
 }): Promise<AppUserRow> {
   const { email, firstName, lastName, password } = params;
-  await ensureUsersHasOnboardingColumns();
+  await ensureUsersHasFeatureVisibilityColumn();
   const existing = await getUserByEmail(email);
   if (existing) throw new Error("Account already exists for this email");
   const password_hash = await hashPassword(password);
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
     `insert into users (
-       email, first_name, last_name, password_hash, subscription_plan, ever_paid, onboarding_required
+       email, first_name, last_name, password_hash, subscription_plan, ever_paid
      )
-     values ($1, $2, $3, $4, 'freemium', false, true)
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at, onboarding_required`,
-    [lower, firstName || null, lastName || null, password_hash]
+     values ($1, $2, $3, $4, 'freemium', false)
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
+    [lower, firstName || null, lastName || null, password_hash],
   );
   return res.rows[0];
 }
@@ -620,7 +657,10 @@ export async function hashPassword(password: string): Promise<string> {
   return `${salt.toString("hex")}:${derivedKey.toString("hex")}`;
 }
 
-export async function verifyPassword(password: string, passwordHash: string | null): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  passwordHash: string | null,
+): Promise<boolean> {
   if (!passwordHash) return false;
   const [saltHex, keyHex] = passwordHash.split(":");
   if (!saltHex || !keyHex) return false;
@@ -633,11 +673,16 @@ export async function verifyPassword(password: string, passwordHash: string | nu
 export async function getUserIdByEmail(email: string): Promise<string | null> {
   const lower = email.toLowerCase();
   try {
-    const res = await query<{ id: string }>(`select id from users where email = $1 limit 1`, [lower]);
+    const res = await query<{ id: string }>(`select id from users where email = $1 limit 1`, [
+      lower,
+    ]);
     return res.rows[0]?.id || null;
   } catch (err) {
     if (isTransientPgError(err)) {
-      console.warn("[db] getUserIdByEmail: database unavailable, returning null", (err as any)?.message || err);
+      console.warn(
+        "[db] getUserIdByEmail: database unavailable, returning null",
+        (err as any)?.message || err,
+      );
       return null;
     }
     throw err;
@@ -650,7 +695,7 @@ export async function createOrUpdateOAuthUser(params: {
   lastName?: string | null;
   provider: string;
 }): Promise<AppUserRow> {
-  await ensureUsersHasOnboardingColumns();
+  await ensureUsersHasFeatureVisibilityColumn();
   const lower = params.email.toLowerCase();
   const existing = await getUserByEmail(lower);
 
@@ -662,18 +707,21 @@ export async function createOrUpdateOAuthUser(params: {
   // Create new OAuth user with NULL password_hash
   const res = await query<AppUserRow>(
     `insert into users (
-       email, first_name, last_name, password_hash, subscription_plan, ever_paid, onboarding_required
+       email, first_name, last_name, password_hash, subscription_plan, ever_paid
      )
-     values ($1, $2, $3, NULL, 'freemium', false, true)
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at, onboarding_required`,
-    [lower, params.firstName || null, params.lastName || null]
+     values ($1, $2, $3, NULL, 'freemium', false)
+     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
+    [lower, params.firstName || null, params.lastName || null],
   );
   return res.rows[0];
 }
 
 // handle-based helpers removed per revert
 
-export async function saveMicrosoftRefreshToken(email: string, refreshToken: string): Promise<void> {
+export async function saveMicrosoftRefreshToken(
+  email: string,
+  refreshToken: string,
+): Promise<void> {
   const lower = email.toLowerCase();
   const userId = await getUserIdByEmail(lower);
   await query(
@@ -683,7 +731,7 @@ export async function saveMicrosoftRefreshToken(email: string, refreshToken: str
      do update set refresh_token = excluded.refresh_token,
                    user_id = coalesce(excluded.user_id, oauth_tokens.user_id),
                    updated_at = now()`,
-    [lower, refreshToken, userId]
+    [lower, refreshToken, userId],
   );
 }
 
@@ -694,18 +742,21 @@ export async function getMicrosoftRefreshToken(email: string): Promise<string | 
     if (userId) {
       const res = await query<{ refresh_token: string }>(
         `select refresh_token from oauth_tokens where provider = 'microsoft' and user_id = $1 limit 1`,
-        [userId]
+        [userId],
       );
       if (res.rows[0]?.refresh_token) return res.rows[0].refresh_token;
     }
     const res = await query<{ refresh_token: string }>(
       `select refresh_token from oauth_tokens where provider = 'microsoft' and email = $1 limit 1`,
-      [lower]
+      [lower],
     );
     return res.rows[0]?.refresh_token || null;
   } catch (err) {
     if (isTransientPgError(err)) {
-      console.warn("[db] getMicrosoftRefreshToken: database unavailable, returning null", (err as any)?.message || err);
+      console.warn(
+        "[db] getMicrosoftRefreshToken: database unavailable, returning null",
+        (err as any)?.message || err,
+      );
       return null;
     }
     throw err;
@@ -722,7 +773,7 @@ export async function saveGoogleRefreshToken(email: string, refreshToken: string
      do update set refresh_token = excluded.refresh_token,
                    user_id = coalesce(excluded.user_id, oauth_tokens.user_id),
                    updated_at = now()`,
-    [lower, refreshToken, userId]
+    [lower, refreshToken, userId],
   );
 }
 
@@ -733,27 +784,28 @@ export async function getGoogleRefreshToken(email: string): Promise<string | nul
     if (userId) {
       const res = await query<{ refresh_token: string }>(
         `select refresh_token from oauth_tokens where provider = 'google' and user_id = $1 limit 1`,
-        [userId]
+        [userId],
       );
       if (res.rows[0]?.refresh_token) return res.rows[0].refresh_token;
     }
     const res = await query<{ refresh_token: string }>(
       `select refresh_token from oauth_tokens where provider = 'google' and email = $1 limit 1`,
-      [lower]
+      [lower],
     );
     return res.rows[0]?.refresh_token || null;
   } catch (err) {
     if (isTransientPgError(err)) {
-      console.warn("[db] getGoogleRefreshToken: database unavailable, returning null", (err as any)?.message || err);
+      console.warn(
+        "[db] getGoogleRefreshToken: database unavailable, returning null",
+        (err as any)?.message || err,
+      );
       return null;
     }
     throw err;
   }
 }
 
-
 // removed deleteProviderRefreshTokenByEmail helper (undo)
-
 
 export async function updateUserNamesByEmail(params: {
   email: string;
@@ -803,7 +855,7 @@ export async function updatePreferredProviderByEmail(params: {
      set preferred_provider = $2
      where email = $1
      returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
-    [lower, params.preferredProvider]
+    [lower, params.preferredProvider],
   );
   return res.rows[0];
 }
@@ -819,13 +871,13 @@ export async function changePasswordByEmail(params: {
   const ok = await verifyPassword(params.currentPassword, user.password_hash);
   if (!ok) throw new Error("Current password is incorrect");
   const newHash = await hashPassword(params.newPassword);
-  await query(
-    `update users set password_hash = $2 where email = $1`,
-    [lower, newHash]
-  );
+  await query(`update users set password_hash = $2 where email = $1`, [lower, newHash]);
 }
 
-export async function setPasswordByEmail(params: { email: string; newPassword: string }): Promise<void> {
+export async function setPasswordByEmail(params: {
+  email: string;
+  newPassword: string;
+}): Promise<void> {
   const lower = params.email.toLowerCase();
   const user = await getUserByEmail(lower);
   if (!user) throw new Error("No local account found for this email");
@@ -860,7 +912,7 @@ export async function getSubscriptionPlanByEmail(email: string): Promise<string 
   const lower = email.toLowerCase();
   const res = await query<{ subscription_plan: string | null }>(
     `select subscription_plan from users where email = $1 limit 1`,
-    [lower]
+    [lower],
   );
   return (res.rows[0]?.subscription_plan as string | null) ?? null;
 }
@@ -878,7 +930,7 @@ export async function updateSubscriptionPlanByEmail(params: {
        set subscription_plan = $2,
            ever_paid = true
        where email = $1`,
-      [lower, params.plan]
+      [lower, params.plan],
     );
   } else {
     await query(`update users set subscription_plan = $2 where email = $1`, [lower, params.plan]);
@@ -903,7 +955,7 @@ function isoStringOrNull(value: string | Date | null | undefined): string | null
 
 function buildUserWhereClause(
   params: { userId?: string | null; email?: string | null },
-  startIndex: number
+  startIndex: number,
 ): { clause: string; values: any[] } {
   if (params.userId) {
     return { clause: `id = $${startIndex}`, values: [params.userId] };
@@ -917,27 +969,29 @@ function buildUserWhereClause(
 export async function getUserByStripeCustomerId(customerId: string): Promise<AppUserRow | null> {
   if (!customerId) return null;
   await ensureUsersHasStripeBillingColumns();
-  await ensureUsersHasOnboardingColumns();
+  await ensureUsersHasFeatureVisibilityColumn();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS}
      from users
      where stripe_customer_id = $1
      limit 1`,
-    [customerId]
+    [customerId],
   );
   return res.rows[0] || null;
 }
 
-export async function getUserByStripeSubscriptionId(subscriptionId: string): Promise<AppUserRow | null> {
+export async function getUserByStripeSubscriptionId(
+  subscriptionId: string,
+): Promise<AppUserRow | null> {
   if (!subscriptionId) return null;
   await ensureUsersHasStripeBillingColumns();
-  await ensureUsersHasOnboardingColumns();
+  await ensureUsersHasFeatureVisibilityColumn();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS}
      from users
      where stripe_subscription_id = $1
      limit 1`,
-    [subscriptionId]
+    [subscriptionId],
   );
   return res.rows[0] || null;
 }
@@ -955,7 +1009,7 @@ type StripeStateUpdate = {
 
 export async function updateUserStripeState(
   identifier: { userId?: string | null; email?: string | null },
-  updates: StripeStateUpdate
+  updates: StripeStateUpdate,
 ): Promise<void> {
   if (!identifier.userId && !identifier.email) {
     throw new Error("updateUserStripeState requires a user identifier");
@@ -1012,7 +1066,10 @@ export async function updateUserStripeState(
 }
 
 // Free credits initialization for legacy users
-export async function initFreeCreditsIfMissing(email: string, amount: number = 3): Promise<number | null> {
+export async function initFreeCreditsIfMissing(
+  email: string,
+  amount: number = 3,
+): Promise<number | null> {
   await ensureUsersHasSubscriptionPlanColumn();
   await ensureUsersHasCreditsColumn();
   const lower = email.toLowerCase();
@@ -1022,7 +1079,7 @@ export async function initFreeCreditsIfMissing(email: string, amount: number = 3
      where email = $1
        and (subscription_plan in ('freemium','free') or subscription_plan is null)
      returning credits`,
-    [lower, Math.max(0, Math.trunc(amount))]
+    [lower, Math.max(0, Math.trunc(amount))],
   );
   const v = res.rows[0]?.credits;
   return typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -1040,7 +1097,7 @@ export async function getCreditsByEmail(email: string): Promise<number | null> {
   const lower = email.toLowerCase();
   const res = await query<{ credits: number | null }>(
     `select credits from users where email = $1 limit 1`,
-    [lower]
+    [lower],
   );
   const v = res.rows[0]?.credits;
   return typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -1057,7 +1114,7 @@ export async function incrementCreditsByEmail(email: string, delta: number): Pro
      end
      where email = $1
      returning credits`,
-    [lower, Math.trunc(delta)]
+    [lower, Math.trunc(delta)],
   );
   return Number.isFinite(res.rows[0]?.credits as any) ? (res.rows[0]?.credits as number) : 0;
 }
@@ -1116,9 +1173,10 @@ export async function createGiftPromoCode(params: {
   const code = generatePromoCode(12);
   // Some databases may enforce NOT NULL on expires_at. Default to 90 days if not provided.
   const defaultTtlMs = 90 * 24 * 60 * 60 * 1000; // 90 days
-  const effectiveExpiresAt = (params.expiresAt instanceof Date && !Number.isNaN(params.expiresAt.getTime()))
-    ? params.expiresAt
-    : new Date(Date.now() + defaultTtlMs);
+  const effectiveExpiresAt =
+    params.expiresAt instanceof Date && !Number.isNaN(params.expiresAt.getTime())
+      ? params.expiresAt
+      : new Date(Date.now() + defaultTtlMs);
 
   const res = await query<PromoCodeRow>(
     `insert into promo_codes (code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, metadata)
@@ -1139,17 +1197,17 @@ export async function createGiftPromoCode(params: {
       params.stripeCheckoutSessionId || null,
       params.stripeChargeId || null,
       params.metadata ? JSON.stringify(params.metadata) : null,
-    ]
+    ],
   );
 
   const row = res.rows[0];
   // Attach creator user id when available and column exists. Ignore errors if column is missing.
   if (params.createdByUserId) {
     try {
-      await query(
-        `update promo_codes set created_by_user_id = $2 where id = $1`,
-        [row.id, params.createdByUserId]
-      ).catch(() => {});
+      await query(`update promo_codes set created_by_user_id = $2 where id = $1`, [
+        row.id,
+        params.createdByUserId,
+      ]).catch(() => {});
       row.created_by_user_id = params.createdByUserId;
     } catch (err) {
       console.error("[db] failed to store created_by_user_id on promo code", {
@@ -1162,10 +1220,10 @@ export async function createGiftPromoCode(params: {
     try {
       const creatorUserId = await getUserIdByEmail(params.createdByEmail);
       if (creatorUserId) {
-        await query(
-          `update promo_codes set created_by_user_id = $2 where id = $1`,
-          [row.id, creatorUserId]
-        ).catch(() => {});
+        await query(`update promo_codes set created_by_user_id = $2 where id = $1`, [
+          row.id,
+          creatorUserId,
+        ]).catch(() => {});
         row.created_by_user_id = creatorUserId;
       }
     } catch {
@@ -1181,7 +1239,7 @@ export async function getPromoCodeByCode(code: string): Promise<PromoCodeRow | n
     `select id, code, amount_cents, currency, created_by_email, recipient_name, recipient_email, message, quantity, period, expires_at, redeemed_at, redeemed_by_email,
             stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, stripe_refund_id, revoked_at, metadata, created_at
      from promo_codes where code = $1 limit 1`,
-    [code]
+    [code],
   );
   return res.rows[0] || null;
 }
@@ -1193,15 +1251,19 @@ export async function listRecentPromoCodes(limit: number = 5): Promise<PromoCode
      from promo_codes
      order by created_at desc
      limit $1`,
-    [Math.max(1, Math.min(50, Math.floor(limit)))]
+    [Math.max(1, Math.min(50, Math.floor(limit)))],
   );
   return res.rows || [];
 }
 
-export async function getCurrentDatabaseIdentity(): Promise<{ db: string; user: string; host: string | null } | null> {
+export async function getCurrentDatabaseIdentity(): Promise<{
+  db: string;
+  user: string;
+  host: string | null;
+} | null> {
   try {
     const r = await query<{ db: string; user: string; host: string | null }>(
-      `select current_database() as db, current_user as user, inet_server_addr()::text as host`
+      `select current_database() as db, current_user as user, inet_server_addr()::text as host`,
     );
     return r.rows[0] || null;
   } catch {
@@ -1209,14 +1271,17 @@ export async function getCurrentDatabaseIdentity(): Promise<{ db: string; user: 
   }
 }
 
-export async function markPromoCodeRedeemed(id: string, redeemedByEmail?: string | null): Promise<void> {
+export async function markPromoCodeRedeemed(
+  id: string,
+  redeemedByEmail?: string | null,
+): Promise<void> {
   await query(
     `update promo_codes
      set redeemed_at = now(),
          redeemed_by_email = coalesce($2, redeemed_by_email),
          expires_at = coalesce(expires_at, now() + interval '90 days')
      where id = $1 and redeemed_at is null`,
-    [id, redeemedByEmail || null]
+    [id, redeemedByEmail || null],
   );
 }
 
@@ -1232,7 +1297,7 @@ export async function revokePromoCodesByPaymentIntent(params: {
          stripe_refund_id = coalesce($2, stripe_refund_id),
          metadata = case when $3::text is not null then coalesce(metadata, '{}'::jsonb) || $3::jsonb else metadata end
      where stripe_payment_intent_id = $1 and revoked_at is null`,
-    [params.paymentIntentId, params.refundId || null, metaJson]
+    [params.paymentIntentId, params.refundId || null, metaJson],
   );
 }
 
@@ -1286,7 +1351,7 @@ export async function createGiftOrder(params: {
       Math.max(0, Math.floor(params.amountCents || 0)),
       (params.currency || "USD").toUpperCase(),
       params.metadata ? JSON.stringify(params.metadata) : null,
-    ]
+    ],
   );
   return res.rows[0];
 }
@@ -1327,10 +1392,7 @@ export async function updateGiftOrderStripeRefs(params: {
 
   setParts.push("updated_at = now()");
   values.push(params.orderId);
-  await query(
-    `update gift_orders set ${setParts.join(", ")} where id = $${values.length}`,
-    values
-  );
+  await query(`update gift_orders set ${setParts.join(", ")} where id = $${values.length}`, values);
 }
 
 export async function markGiftOrderStatus(params: {
@@ -1392,12 +1454,14 @@ export async function getGiftOrderById(id: string): Promise<GiftOrderRow | null>
      from gift_orders
      where id = $1
      limit 1`,
-    [id]
+    [id],
   );
   return res.rows[0] || null;
 }
 
-export async function getGiftOrderByCheckoutSessionId(sessionId: string): Promise<GiftOrderRow | null> {
+export async function getGiftOrderByCheckoutSessionId(
+  sessionId: string,
+): Promise<GiftOrderRow | null> {
   if (!sessionId) return null;
   const res = await query<GiftOrderRow>(
     `select id, stripe_checkout_session_id, stripe_payment_intent_id, stripe_customer_id, purchaser_email, purchaser_name,
@@ -1406,12 +1470,14 @@ export async function getGiftOrderByCheckoutSessionId(sessionId: string): Promis
      from gift_orders
      where stripe_checkout_session_id = $1
      limit 1`,
-    [sessionId]
+    [sessionId],
   );
   return res.rows[0] || null;
 }
 
-export async function getGiftOrderByPaymentIntentId(paymentIntentId: string): Promise<GiftOrderRow | null> {
+export async function getGiftOrderByPaymentIntentId(
+  paymentIntentId: string,
+): Promise<GiftOrderRow | null> {
   if (!paymentIntentId) return null;
   const res = await query<GiftOrderRow>(
     `select id, stripe_checkout_session_id, stripe_payment_intent_id, stripe_customer_id, purchaser_email, purchaser_name,
@@ -1420,7 +1486,7 @@ export async function getGiftOrderByPaymentIntentId(paymentIntentId: string): Pr
      from gift_orders
      where stripe_payment_intent_id = $1
      limit 1`,
-    [paymentIntentId]
+    [paymentIntentId],
   );
   return res.rows[0] || null;
 }
@@ -1436,7 +1502,7 @@ export async function recordStripeWebhookEvent(params: {
      values ($1, $2, $3)
      on conflict (event_id) do nothing
      returning id`,
-    [params.eventId, params.type, JSON.stringify(params.payload ?? {})]
+    [params.eventId, params.type, JSON.stringify(params.payload ?? {})],
   );
   return (res.rowCount ?? 0) > 0;
 }
@@ -1444,11 +1510,16 @@ export async function recordStripeWebhookEvent(params: {
 // Subscription expiration helpers
 async function ensureUsersHasSubscriptionExpiresColumn(): Promise<void> {
   await ensureOnce("users_subscription_expires_column", async () => {
-    await query(`alter table users add column if not exists subscription_expires_at timestamptz(6)`);
+    await query(
+      `alter table users add column if not exists subscription_expires_at timestamptz(6)`,
+    );
   });
 }
 
-export async function extendUserSubscriptionByMonths(email: string, months: number): Promise<{ expiresAt: string | null }> {
+export async function extendUserSubscriptionByMonths(
+  email: string,
+  months: number,
+): Promise<{ expiresAt: string | null }> {
   await ensureUsersHasSubscriptionPlanColumn();
   await ensureUsersHasSubscriptionExpiresColumn();
   const lower = email.toLowerCase();
@@ -1468,7 +1539,7 @@ export async function extendUserSubscriptionByMonths(email: string, months: numb
          )
      where email = $1
      returning subscription_expires_at`,
-    [lower, monthsInt]
+    [lower, monthsInt],
   );
   return { expiresAt: res.rows[0]?.subscription_expires_at || null };
 }
@@ -1625,10 +1696,7 @@ function buildHistoryStatusSql(dataSql: string): string {
   return `lower(trim(coalesce(${dataSql}->>'status', '')))`;
 }
 
-function buildHistoryTimeFilterSql(
-  timeFilter: HistoryTimeFilter,
-  alias: string
-): string {
+function buildHistoryTimeFilterSql(timeFilter: HistoryTimeFilter, alias: string): string {
   if (timeFilter === "upcoming") {
     return `(
       ${alias}.status_text = 'draft'
@@ -1693,12 +1761,12 @@ const HISTORY_SIDEBAR_QUERY_TIMEOUT_MS = 7000;
 
 const PG_POOL_DEFAULT_TIMEOUT_MS = Math.max(
   1000,
-  Number.parseInt(process.env.PG_STATEMENT_TIMEOUT_MS || "15000", 10)
+  Number.parseInt(process.env.PG_STATEMENT_TIMEOUT_MS || "15000", 10),
 );
 
 async function withStatementTimeout<T>(
   timeoutMs: number,
-  callback: (client: PoolClient) => Promise<T>
+  callback: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
   const timeoutValue = Math.max(1, Math.floor(timeoutMs));
   return withClient(async (client) => {
@@ -1856,8 +1924,8 @@ export function buildOwnedHistoryOwnershipSql(dataSql: string): string {
 
 function buildDashboardMediaRouteSql(
   idSql: string,
-  variant: "thumbnail" | "hero",
-  dataTextSql: string
+  variant: "thumbnail" | "hero" | "attachment",
+  dataTextSql: string,
 ): string {
   return `('/api/events/' || ${idSql} || '/thumbnail?variant=${variant}&v=' || md5(${dataTextSql}))`;
 }
@@ -1874,6 +1942,10 @@ function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string 
   const thumbnailTextSql = `${dataSql}->>'thumbnail'`;
   const customHeroTextSql = `${dataSql}->>'customHeroImage'`;
   const heroTextSql = `${dataSql}->>'heroImage'`;
+  const attachmentTypeSql = `lower(coalesce(${dataSql}#>>'{attachment,type}', ''))`;
+  const attachmentDataUrlSql = `${dataSql}#>>'{attachment,dataUrl}'`;
+  const attachmentPreviewUrlSql = `${dataSql}#>>'{attachment,previewImageUrl}'`;
+  const attachmentThumbnailUrlSql = `${dataSql}#>>'{attachment,thumbnailUrl}'`;
   return `case
     when nullif(${coverTextSql}, '') is not null
       and coalesce(${coverTextSql}, '') not like 'data:%'
@@ -1890,6 +1962,16 @@ function buildDashboardCoverImageUrlSql(dataSql: string, idSql: string): string 
     then ${buildDashboardMediaRouteSql(idSql, "hero", heroTextSql)}
     when nullif(${heroTextSql}, '') is not null
     then ${heroTextSql}
+    when ${attachmentTypeSql} like 'image/%'
+      and coalesce(${attachmentDataUrlSql}, '') like 'data:%'
+    then ${buildDashboardMediaRouteSql(idSql, "attachment", attachmentDataUrlSql)}
+    when ${attachmentTypeSql} like 'image/%'
+      and nullif(${attachmentDataUrlSql}, '') is not null
+    then ${attachmentDataUrlSql}
+    when nullif(${attachmentPreviewUrlSql}, '') is not null
+    then ${attachmentPreviewUrlSql}
+    when nullif(${attachmentThumbnailUrlSql}, '') is not null
+    then ${attachmentThumbnailUrlSql}
     else null
   end`;
 }
@@ -1899,7 +1981,7 @@ function _buildDashboardDataProjectionSql(
   dataSql: string,
   ownershipSql: string,
   invitedFromScanSql: string,
-  shareStatusSql: string
+  shareStatusSql: string,
 ): string {
   return `jsonb_build_object(
     'startAt', ${dataSql}->'startAt',
@@ -1919,11 +2001,11 @@ function _buildDashboardDataProjectionSql(
     'coverImageUrl', ${buildDashboardCoverImageUrlSql(dataSql, idSql)},
     'thumbnail', ${buildDashboardSafeMediaJsonSql(
       `${dataSql}->'thumbnail'`,
-      `${dataSql}->>'thumbnail'`
+      `${dataSql}->>'thumbnail'`,
     )},
     'heroImage', ${buildDashboardSafeMediaJsonSql(
       `${dataSql}->'heroImage'`,
-      `${dataSql}->>'heroImage'`
+      `${dataSql}->>'heroImage'`,
     )},
     'status', ${dataSql}->'status',
     'category', ${dataSql}->'category',
@@ -2045,9 +2127,7 @@ type FastHistoryCandidateQueryRow = {
   share_status: string | null;
 };
 
-function buildObjectOrNull(
-  entries: Array<[string, any]>,
-): Record<string, any> | null {
+function buildObjectOrNull(entries: Array<[string, any]>): Record<string, any> | null {
   const out: Record<string, any> = {};
   let hasValue = false;
   for (const [key, value] of entries) {
@@ -2112,9 +2192,7 @@ function mapDashboardProjectionRowToEventHistoryRow(
   };
 }
 
-function mapSidebarProjectionRowToEventHistoryRow(
-  row: SidebarProjectionQueryRow,
-): EventHistoryRow {
+function mapSidebarProjectionRowToEventHistoryRow(row: SidebarProjectionQueryRow): EventHistoryRow {
   return {
     id: row.id,
     user_id: row.user_id,
@@ -2147,7 +2225,7 @@ function mapSidebarProjectionRowToEventHistoryRow(
 async function _listOwnedHistoryCandidatesForUser(
   client: PoolClient,
   userId: string,
-  limit: number
+  limit: number,
 ): Promise<EventHistoryIdentityRow[]> {
   const safeLimit = Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, Math.floor(limit || 1)));
   const nonNullRes = await client.query<EventHistoryIdentityRow>(
@@ -2157,7 +2235,7 @@ async function _listOwnedHistoryCandidatesForUser(
        and created_at is not null
      order by created_at desc, id desc
      limit $2`,
-    [userId, safeLimit]
+    [userId, safeLimit],
   );
   const nonNullRows = nonNullRes.rows || [];
   if (nonNullRows.length >= safeLimit) {
@@ -2172,7 +2250,7 @@ async function _listOwnedHistoryCandidatesForUser(
        and created_at is null
      order by id desc
      limit $2`,
-    [userId, remaining]
+    [userId, remaining],
   );
   return [...nonNullRows, ...(nullRes.rows || [])];
 }
@@ -2188,7 +2266,7 @@ function buildOwnedHistoryOwnershipTextSql(dataSql: string): string {
 
 async function listProjectedDashboardHistoryRowsByIds(
   client: PoolClient,
-  rows: Array<Pick<FastHistoryCandidateQueryRow, "id" | "ownership" | "share_status">>
+  rows: Array<Pick<FastHistoryCandidateQueryRow, "id" | "ownership" | "share_status">>,
 ): Promise<EventHistoryRow[]> {
   const seen = new Set<string>();
   const requestedRows = rows.filter((row) => {
@@ -2234,11 +2312,11 @@ async function listProjectedDashboardHistoryRowsByIds(
        ${buildDashboardCoverImageUrlSql("coalesce(eh.data, '{}'::jsonb)", "eh.id")} as cover_image_url,
        ${buildDashboardSafeMediaJsonSql(
          "coalesce(eh.data, '{}'::jsonb)->'thumbnail'",
-         "coalesce(eh.data, '{}'::jsonb)->>'thumbnail'"
+         "coalesce(eh.data, '{}'::jsonb)->>'thumbnail'",
        )} as thumbnail,
        ${buildDashboardSafeMediaJsonSql(
          "coalesce(eh.data, '{}'::jsonb)->'heroImage'",
-         "coalesce(eh.data, '{}'::jsonb)->>'heroImage'"
+         "coalesce(eh.data, '{}'::jsonb)->>'heroImage'",
        )} as hero_image,
        coalesce(eh.data, '{}'::jsonb)->'status' as status,
        coalesce(eh.data, '{}'::jsonb)->'category' as category,
@@ -2272,7 +2350,7 @@ async function listProjectedDashboardHistoryRowsByIds(
       requestedRows.map((row) => row.id),
       requestedRows.map((row) => row.ownership || "owned"),
       requestedRows.map((row) => row.share_status ?? null),
-    ]
+    ],
   );
   return (res.rows || []).map(mapDashboardProjectionRowToEventHistoryRow);
 }
@@ -2284,7 +2362,7 @@ async function listProjectedSidebarHistoryRowsByIds(
       FastHistoryCandidateQueryRow,
       "id" | "shared" | "shared_out" | "ownership" | "share_status"
     >
-  >
+  >,
 ): Promise<EventHistoryRow[]> {
   const seen = new Set<string>();
   const requestedRows = rows.filter((row) => {
@@ -2352,25 +2430,23 @@ async function listProjectedSidebarHistoryRowsByIds(
       requestedRows.map((row) => Boolean(row.shared_out)),
       requestedRows.map((row) => row.ownership || "owned"),
       requestedRows.map((row) => row.share_status ?? null),
-    ]
+    ],
   );
   return (res.rows || []).map(mapSidebarProjectionRowToEventHistoryRow);
 }
 
 function compareEventHistoryRowsByCreatedAtDesc(
   a: Pick<EventHistoryRow, "id" | "created_at">,
-  b: Pick<EventHistoryRow, "id" | "created_at">
+  b: Pick<EventHistoryRow, "id" | "created_at">,
 ): number {
-  const createdDiff = String(b.created_at || "").localeCompare(
-    String(a.created_at || "")
-  );
+  const createdDiff = String(b.created_at || "").localeCompare(String(a.created_at || ""));
   if (createdDiff !== 0) return createdDiff;
   return String(b.id || "").localeCompare(String(a.id || ""));
 }
 
 function _sortAndDedupeEventHistoryRows(
   rows: EventHistoryRow[],
-  limit?: number
+  limit?: number,
 ): EventHistoryRow[] {
   const seen = new Set<string>();
   const deduped = rows.filter((row) => {
@@ -2382,10 +2458,7 @@ function _sortAndDedupeEventHistoryRows(
   return typeof limit === "number" ? deduped.slice(0, limit) : deduped;
 }
 
-function dedupeEventHistoryRowsInOrder(
-  rows: EventHistoryRow[],
-  limit?: number
-): EventHistoryRow[] {
+function dedupeEventHistoryRowsInOrder(rows: EventHistoryRow[], limit?: number): EventHistoryRow[] {
   const seen = new Set<string>();
   const deduped: EventHistoryRow[] = [];
   for (const row of rows) {
@@ -2397,10 +2470,7 @@ function dedupeEventHistoryRowsInOrder(
   return deduped;
 }
 
-function buildHistoryUnionQuery(
-  view: HistoryView,
-  timeFilter: HistoryTimeFilter
-): string {
+function buildHistoryUnionQuery(view: HistoryView, timeFilter: HistoryTimeFilter): string {
   const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const sharedDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const ownStartRawSql = buildHistoryEventStartRawSql(ownDataSql);
@@ -2485,10 +2555,7 @@ function buildHistoryUnionQuery(
   `;
 }
 
-function buildHistoryOwnOnlyQuery(
-  view: HistoryView,
-  timeFilter: HistoryTimeFilter
-): string {
+function buildHistoryOwnOnlyQuery(view: HistoryView, timeFilter: HistoryTimeFilter): string {
   const dataSql = "coalesce(eh.data, '{}'::jsonb)";
   const startRawSql = buildHistoryEventStartRawSql(dataSql);
   const projection = buildHistoryDataProjectionSql({
@@ -2544,7 +2611,7 @@ function sanitizeJsonStringForPostgres(value: string): string {
   const noNull = value.replace(/\u0000/g, "");
   return noNull.replace(
     /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
-    "\uFFFD"
+    "\uFFFD",
   );
 }
 
@@ -2576,7 +2643,7 @@ export async function insertEventHistory(params: {
     `insert into event_history (id, user_id, title, data, created_at)
      values ($1, $2, $3, $4, coalesce(now(), now()))
      returning id, user_id, title, data, created_at`,
-    [id, params.userId || null, params.title, JSON.stringify(safeData)]
+    [id, params.userId || null, params.title, JSON.stringify(safeData)],
   );
   return res.rows[0];
 }
@@ -2587,7 +2654,7 @@ export async function getEventHistoryById(id: string): Promise<EventHistoryRow |
      from event_history
      where id = $1
      limit 1`,
-    [id]
+    [id],
   );
   return res.rows[0] || null;
 }
@@ -2624,7 +2691,7 @@ type EventHistoryPublicQueryRow = EventHistoryRow & {
 };
 
 function mapEventHistoryPublicRow(
-  row: EventHistoryPublicQueryRow | null | undefined
+  row: EventHistoryPublicQueryRow | null | undefined,
 ): EventHistoryPublicRow | null {
   if (!row) return null;
   return {
@@ -2651,20 +2718,20 @@ function mapEventHistoryPublicRow(
 }
 
 export async function getEventHistoryIdentityById(
-  id: string
+  id: string,
 ): Promise<EventHistoryIdentityRow | null> {
   const res = await query<EventHistoryIdentityRow>(
     `select id, user_id, title, created_at
      from event_history
      where id = $1
      limit 1`,
-    [id]
+    [id],
   );
   return res.rows[0] || null;
 }
 
 export async function getEventHistoryPublicRenderById(
-  id: string
+  id: string,
 ): Promise<EventHistoryPublicRow | null> {
   const dataSql = "data";
   const projection = buildEventHistoryPublicDataProjectionSql(dataSql);
@@ -2714,25 +2781,28 @@ export async function getEventHistoryPublicRenderById(
      from event_history
      where id = $1
      limit 1`,
-    [id]
+    [id],
   );
   return mapEventHistoryPublicRow(res.rows[0]);
 }
 
-export async function updateEventHistoryTitle(id: string, title: string): Promise<EventHistoryRow | null> {
+export async function updateEventHistoryTitle(
+  id: string,
+  title: string,
+): Promise<EventHistoryRow | null> {
   const res = await query<EventHistoryRow>(
     `update event_history
      set title = $2
      where id = $1
      returning id, user_id, title, data, created_at`,
-    [id, title]
+    [id, title],
   );
   return res.rows[0] || null;
 }
 
 export async function updateEventHistoryDataMerge(
   id: string,
-  patch: any
+  patch: any,
 ): Promise<EventHistoryRow | null> {
   // Merge provided patch object into existing JSONB data. Later keys override.
   // jsonb concatenation '||' merges objects shallowly; sufficient for category updates.
@@ -2742,12 +2812,11 @@ export async function updateEventHistoryDataMerge(
      set data = coalesce(data, '{}'::jsonb) || $2::jsonb
      where id = $1
      returning id, user_id, title, data, created_at`,
-    [id, JSON.stringify(safePatch)]
+    [id, JSON.stringify(safePatch)],
   );
   const row = res.rows[0] || null;
   if (!row) return null;
-  const merged =
-    row.data && typeof row.data === "object" ? { ...row.data } : {};
+  const merged = row.data && typeof row.data === "object" ? { ...row.data } : {};
   normalizeCanonicalStartFields(merged);
   try {
     if (JSON.stringify(merged) !== JSON.stringify(row.data)) {
@@ -2761,7 +2830,7 @@ export async function updateEventHistoryDataMerge(
 
 export async function updateEventHistoryData(
   id: string,
-  data: any
+  data: any,
 ): Promise<EventHistoryRow | null> {
   const safeData = sanitizeJsonValueForPostgres(data ?? {});
   normalizeCanonicalStartFields(safeData);
@@ -2770,21 +2839,21 @@ export async function updateEventHistoryData(
      set data = $2::jsonb
      where id = $1
      returning id, user_id, title, data, created_at`,
-    [id, JSON.stringify(safeData)]
+    [id, JSON.stringify(safeData)],
   );
   return res.rows[0] || null;
 }
 
 export async function claimEventHistoryById(
   id: string,
-  userId: string
+  userId: string,
 ): Promise<EventHistoryRow | null> {
   const res = await query<EventHistoryRow>(
     `update event_history
      set user_id = $2
      where id = $1 and user_id is null
      returning id, user_id, title, data, created_at`,
-    [id, userId]
+    [id, userId],
   );
   return res.rows[0] || null;
 }
@@ -2800,7 +2869,10 @@ function slugifyTitleForQuery(title: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export async function getEventHistoryByUserAndSlug(userId: string, slug: string): Promise<EventHistoryRow | null> {
+export async function getEventHistoryByUserAndSlug(
+  userId: string,
+  slug: string,
+): Promise<EventHistoryRow | null> {
   // Fetch a handful of recent events and match by slug server-side to avoid DB funcs
   const res = await query<EventHistoryRow>(
     `select id, user_id, title, data, created_at
@@ -2808,7 +2880,7 @@ export async function getEventHistoryByUserAndSlug(userId: string, slug: string)
      where user_id = $1
      order by created_at desc nulls last, id desc
      limit 200`,
-    [userId]
+    [userId],
   );
   const rows = res.rows || [];
   const target = slug.toLowerCase();
@@ -2821,7 +2893,7 @@ export async function getEventHistoryByUserAndSlug(userId: string, slug: string)
 
 export async function getEventHistoryIdentityByUserAndSlug(
   userId: string,
-  slug: string
+  slug: string,
 ): Promise<EventHistoryIdentityRow | null> {
   const res = await query<EventHistoryIdentityRow>(
     `select id, user_id, title, created_at
@@ -2829,7 +2901,7 @@ export async function getEventHistoryIdentityByUserAndSlug(
      where user_id = $1
      order by created_at desc nulls last, id desc
      limit 200`,
-    [userId]
+    [userId],
   );
   const rows = res.rows || [];
   const target = slug.toLowerCase();
@@ -2849,16 +2921,13 @@ export async function resolveEventHistoryIdentityBySlugOrId(params: {
 
   const maybeUuid = raw.replace(
     /^.*-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i,
-    "$1"
+    "$1",
   );
-  const isUuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      raw
-    );
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    raw,
+  );
   const endsWithUuid =
-    /^[\w-]*-[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      raw
-    );
+    /^[\w-]*-[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw);
 
   if (isUuid) {
     return await getEventHistoryIdentityById(raw);
@@ -2877,7 +2946,7 @@ export async function resolveEventHistoryIdentityBySlugOrId(params: {
     `select id, user_id, title, created_at
      from event_history
      order by created_at desc
-     limit 500`
+     limit 500`,
   );
   const rows = res.rows || [];
   for (const row of rows) {
@@ -2905,7 +2974,7 @@ export type EventHistoryMediaVariant =
 
 export async function getEventHistoryMediaDataUrlById(
   id: string,
-  variant?: EventHistoryMediaVariant | null
+  variant?: EventHistoryMediaVariant | null,
 ): Promise<string | null> {
   const normalizedVariant = variant || "__default__";
   const res = await query<{ data_url: string | null }>(
@@ -2930,7 +2999,7 @@ export async function getEventHistoryMediaDataUrlById(
      from event_history
      where id = $1
      limit 1`,
-    [id, normalizedVariant]
+    [id, normalizedVariant],
   );
   return res.rows[0]?.data_url || null;
 }
@@ -2946,9 +3015,15 @@ export async function getEventHistoryBySlugOrId(params: {
   const raw = (params.value || "").trim();
   if (!raw) return null;
 
-  const maybeUuid = raw.replace(/^.*-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i, "$1");
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw);
-  const endsWithUuid = /^[\w-]*-[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw);
+  const maybeUuid = raw.replace(
+    /^.*-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i,
+    "$1",
+  );
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    raw,
+  );
+  const endsWithUuid =
+    /^[\w-]*-[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw);
 
   if (isUuid) {
     return await getEventHistoryById(raw);
@@ -2968,7 +3043,7 @@ export async function getEventHistoryBySlugOrId(params: {
     `select id, user_id, title, data, created_at
      from event_history
      order by created_at desc
-     limit 500`
+     limit 500`,
   );
   const rows = res.rows || [];
   for (const r of rows) {
@@ -2978,14 +3053,17 @@ export async function getEventHistoryBySlugOrId(params: {
   return null;
 }
 
-export async function listEventHistoryByUser(userId: string, limit: number = 50): Promise<EventHistoryRow[]> {
+export async function listEventHistoryByUser(
+  userId: string,
+  limit: number = 50,
+): Promise<EventHistoryRow[]> {
   const res = await query<EventHistoryRow>(
     `select id, user_id, title, (data - 'attachment' - 'ocrText') as data, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
      limit $2`,
-    [userId, Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, limit))]
+    [userId, Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, limit))],
   );
   return res.rows;
 }
@@ -3244,80 +3322,65 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
 
 export async function listDashboardHistoryWindowForUser(
   userId: string,
-  limit: number = HISTORY_DASHBOARD_ROW_CAP
+  limit: number = HISTORY_DASHBOARD_ROW_CAP,
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(HISTORY_DASHBOARD_ROW_CAP, limit));
   try {
-    return await withStatementTimeout(
-      HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
-      async (client) => {
-        const res = await client.query<FastHistoryCandidateQueryRow>(
-          buildDashboardFastHistoryQuery(true),
-          [userId, safeLimit]
-        );
-        const candidates = res.rows || [];
-        const rows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
-        logEventHistoryRows("listDashboardHistoryWindowForUser shared-fast", userId, rows);
-        return rows;
-      }
-    );
+    return await withStatementTimeout(HISTORY_DASHBOARD_QUERY_TIMEOUT_MS, async (client) => {
+      const res = await client.query<FastHistoryCandidateQueryRow>(
+        buildDashboardFastHistoryQuery(true),
+        [userId, safeLimit],
+      );
+      const candidates = res.rows || [];
+      const rows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
+      logEventHistoryRows("listDashboardHistoryWindowForUser shared-fast", userId, rows);
+      return rows;
+    });
   } catch (err) {
     if (!isTableMissingError(err)) throw err;
-    return await withStatementTimeout(
-      HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
-      async (client) => {
-        const res = await client.query<FastHistoryCandidateQueryRow>(
-          buildDashboardFastHistoryQuery(false),
-          [userId, safeLimit]
-        );
-        const candidates = res.rows || [];
-        const rows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
-        logEventHistoryRows("listDashboardHistoryWindowForUser own-fast", userId, rows);
-        return rows;
-      }
-    );
+    return await withStatementTimeout(HISTORY_DASHBOARD_QUERY_TIMEOUT_MS, async (client) => {
+      const res = await client.query<FastHistoryCandidateQueryRow>(
+        buildDashboardFastHistoryQuery(false),
+        [userId, safeLimit],
+      );
+      const candidates = res.rows || [];
+      const rows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
+      logEventHistoryRows("listDashboardHistoryWindowForUser own-fast", userId, rows);
+      return rows;
+    });
   }
 }
 
 export async function listDashboardHistoryFallbackForUser(
   userId: string,
   ownLimit: number = HISTORY_OWN_ROW_CAP,
-  sharedLimit: number = 200
+  sharedLimit: number = 200,
 ): Promise<EventHistoryRow[]> {
-  const safeLimit = Math.max(
-    1,
-    Math.min(HISTORY_OWN_ROW_CAP, Math.max(ownLimit, sharedLimit))
-  );
+  const safeLimit = Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, Math.max(ownLimit, sharedLimit)));
   try {
-    const rows = await withStatementTimeout(
-      HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
-      async (client) => {
-        const res = await client.query<FastHistoryCandidateQueryRow>(
-          buildDashboardFastHistoryQuery(true),
-          [userId, safeLimit]
-        );
-        const candidates = res.rows || [];
-        const resultRows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
-        logEventHistoryRows("listDashboardHistoryFallbackForUser shared-fast", userId, resultRows);
-        return resultRows;
-      }
-    );
+    const rows = await withStatementTimeout(HISTORY_DASHBOARD_QUERY_TIMEOUT_MS, async (client) => {
+      const res = await client.query<FastHistoryCandidateQueryRow>(
+        buildDashboardFastHistoryQuery(true),
+        [userId, safeLimit],
+      );
+      const candidates = res.rows || [];
+      const resultRows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
+      logEventHistoryRows("listDashboardHistoryFallbackForUser shared-fast", userId, resultRows);
+      return resultRows;
+    });
     return dedupeEventHistoryRowsInOrder(rows, safeLimit);
   } catch (err) {
     if (!isTableMissingError(err)) throw err;
-    const rows = await withStatementTimeout(
-      HISTORY_DASHBOARD_QUERY_TIMEOUT_MS,
-      async (client) => {
-        const res = await client.query<FastHistoryCandidateQueryRow>(
-          buildDashboardFastHistoryQuery(false),
-          [userId, safeLimit]
-        );
-        const candidates = res.rows || [];
-        const resultRows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
-        logEventHistoryRows("listDashboardHistoryFallbackForUser own-fast", userId, resultRows);
-        return resultRows;
-      }
-    );
+    const rows = await withStatementTimeout(HISTORY_DASHBOARD_QUERY_TIMEOUT_MS, async (client) => {
+      const res = await client.query<FastHistoryCandidateQueryRow>(
+        buildDashboardFastHistoryQuery(false),
+        [userId, safeLimit],
+      );
+      const candidates = res.rows || [];
+      const resultRows = await listProjectedDashboardHistoryRowsByIds(client, candidates);
+      logEventHistoryRows("listDashboardHistoryFallbackForUser own-fast", userId, resultRows);
+      return resultRows;
+    });
     return dedupeEventHistoryRowsInOrder(rows, safeLimit);
   }
 }
@@ -3328,19 +3391,17 @@ export async function listRecentEventHistory(limit: number = 20): Promise<EventH
      from event_history
      order by created_at desc nulls last, id desc
      limit $1`,
-    [Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, limit))]
+    [Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, limit))],
   );
   return res.rows || [];
 }
 
 export async function listSharedEventHistoryByRecipient(
   userId: string,
-  limit: number = 50
+  limit: number = 50,
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
-  const dataSql = buildEventHistoryPublicDataProjectionSql(
-    "coalesce(eh.data, '{}'::jsonb)"
-  );
+  const dataSql = buildEventHistoryPublicDataProjectionSql("coalesce(eh.data, '{}'::jsonb)");
   const res = await query<EventHistoryRow>(
     `select
        eh.id,
@@ -3355,7 +3416,7 @@ export async function listSharedEventHistoryByRecipient(
        and es.revoked_at is null
      order by eh.created_at desc nulls last, eh.id desc
      limit $2`,
-    [userId, safeLimit]
+    [userId, safeLimit],
   );
   return res.rows || [];
 }
@@ -3368,28 +3429,28 @@ export async function listHistoryForUser(params: {
 }): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(params.limit || 40)));
   try {
-    const res = await query<EventHistoryRow>(buildHistoryUnionQuery(params.view, params.timeFilter), [
-      params.userId,
-      safeLimit,
-    ]);
+    const res = await query<EventHistoryRow>(
+      buildHistoryUnionQuery(params.view, params.timeFilter),
+      [params.userId, safeLimit],
+    );
     const rows = res.rows || [];
     logEventHistoryRows(
       `listHistoryForUser view=${params.view} time=${params.timeFilter}`,
       params.userId,
-      rows
+      rows,
     );
     return rows;
   } catch (err) {
     if (!isTableMissingError(err)) throw err;
-    const res = await query<EventHistoryRow>(buildHistoryOwnOnlyQuery(params.view, params.timeFilter), [
-      params.userId,
-      safeLimit,
-    ]);
+    const res = await query<EventHistoryRow>(
+      buildHistoryOwnOnlyQuery(params.view, params.timeFilter),
+      [params.userId, safeLimit],
+    );
     const rows = res.rows || [];
     logEventHistoryRows(
       `listHistoryForUser own-only view=${params.view} time=${params.timeFilter}`,
       params.userId,
-      rows
+      rows,
     );
     return rows;
   }
@@ -3397,39 +3458,33 @@ export async function listHistoryForUser(params: {
 
 export async function listSidebarHistoryForUserFast(
   userId: string,
-  limit = 200
+  limit = 200,
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(limit || 40)));
   try {
-    const rows = await withStatementTimeout(
-      HISTORY_SIDEBAR_QUERY_TIMEOUT_MS,
-      async (client) => {
-        const res = await client.query<FastHistoryCandidateQueryRow>(
-          buildSidebarFastHistoryQuery(true),
-          [userId, safeLimit]
-        );
-        const candidates = res.rows || [];
-        const resultRows = await listProjectedSidebarHistoryRowsByIds(client, candidates);
-        logEventHistoryRows("listSidebarHistoryForUserFast shared-fast", userId, resultRows);
-        return resultRows;
-      }
-    );
+    const rows = await withStatementTimeout(HISTORY_SIDEBAR_QUERY_TIMEOUT_MS, async (client) => {
+      const res = await client.query<FastHistoryCandidateQueryRow>(
+        buildSidebarFastHistoryQuery(true),
+        [userId, safeLimit],
+      );
+      const candidates = res.rows || [];
+      const resultRows = await listProjectedSidebarHistoryRowsByIds(client, candidates);
+      logEventHistoryRows("listSidebarHistoryForUserFast shared-fast", userId, resultRows);
+      return resultRows;
+    });
     return dedupeEventHistoryRowsInOrder(rows, safeLimit);
   } catch (err) {
     if (!isTableMissingError(err)) throw err;
-    const rows = await withStatementTimeout(
-      HISTORY_SIDEBAR_QUERY_TIMEOUT_MS,
-      async (client) => {
-        const res = await client.query<FastHistoryCandidateQueryRow>(
-          buildSidebarFastHistoryQuery(false),
-          [userId, safeLimit]
-        );
-        const candidates = res.rows || [];
-        const resultRows = await listProjectedSidebarHistoryRowsByIds(client, candidates);
-        logEventHistoryRows("listSidebarHistoryForUserFast own-fast", userId, resultRows);
-        return resultRows;
-      }
-    );
+    const rows = await withStatementTimeout(HISTORY_SIDEBAR_QUERY_TIMEOUT_MS, async (client) => {
+      const res = await client.query<FastHistoryCandidateQueryRow>(
+        buildSidebarFastHistoryQuery(false),
+        [userId, safeLimit],
+      );
+      const candidates = res.rows || [];
+      const resultRows = await listProjectedSidebarHistoryRowsByIds(client, candidates);
+      logEventHistoryRows("listSidebarHistoryForUserFast own-fast", userId, resultRows);
+      return resultRows;
+    });
     return dedupeEventHistoryRowsInOrder(rows, safeLimit);
   }
 }
@@ -3511,13 +3566,13 @@ export async function upsertEventHistoryInputBlob(params: {
       hasData ? params.data! : null,
       pathname,
       params.storageUrl?.trim() || null,
-    ]
+    ],
   );
   return res.rows[0] || null;
 }
 
 export async function getEventHistoryInputBlob(
-  eventId: string
+  eventId: string,
 ): Promise<EventHistoryInputBlobRow | null> {
   if (!eventId) return null;
   try {
@@ -3527,7 +3582,7 @@ export async function getEventHistoryInputBlob(
        from event_history_input_blobs
        where event_id = $1
        limit 1`,
-      [eventId]
+      [eventId],
     );
     return res.rows[0] || null;
   } catch (err) {
@@ -3582,7 +3637,14 @@ export async function createOrUpdateEventShare(params: {
                    created_at = now(),
                    accepted_at = null
      returning id, event_id, owner_user_id, recipient_user_id, status, invite_code, recipient_first_name, recipient_last_name, created_at, accepted_at, revoked_at`,
-    [params.eventId, params.ownerUserId, recipientId, invite, (params.recipientFirstName || null), (params.recipientLastName || null)]
+    [
+      params.eventId,
+      params.ownerUserId,
+      recipientId,
+      invite,
+      params.recipientFirstName || null,
+      params.recipientLastName || null,
+    ],
   );
   return res.rows[0];
 }
@@ -3596,7 +3658,7 @@ export async function acceptEventShare(params: {
      set status = 'accepted', accepted_at = now()
      where event_id = $1 and recipient_user_id = $2 and status = 'pending' and revoked_at is null
      returning id, event_id, owner_user_id, recipient_user_id, status, invite_code, created_at, accepted_at, revoked_at`,
-    [params.eventId, params.recipientUserId]
+    [params.eventId, params.recipientUserId],
   );
   return res.rows[0] || null;
 }
@@ -3621,7 +3683,7 @@ export async function revokeEventShare(params: {
        from target t
        where es.id = t.id
        returning es.id`,
-      [params.eventId, params.byUserId, params.recipientUserId]
+      [params.eventId, params.byUserId, params.recipientUserId],
     );
     return res.rowCount || 0;
   }
@@ -3630,7 +3692,7 @@ export async function revokeEventShare(params: {
     `update event_shares
      set status = 'revoked', revoked_at = now()
      where event_id = $1 and recipient_user_id = $2 and revoked_at is null`,
-    [params.eventId, params.byUserId]
+    [params.eventId, params.byUserId],
   );
   if ((asRecipient.rowCount || 0) > 0) return asRecipient.rowCount || 0;
   // Otherwise, allow owner to revoke all
@@ -3638,7 +3700,7 @@ export async function revokeEventShare(params: {
     `update event_shares
      set status = 'revoked', revoked_at = now()
      where event_id = $1 and owner_user_id = $2 and revoked_at is null`,
-    [params.eventId, params.byUserId]
+    [params.eventId, params.byUserId],
   );
   return asOwner.rowCount || 0;
 }
@@ -3651,17 +3713,22 @@ export async function listAcceptedSharedEventsForUser(userId: string): Promise<E
      where es.recipient_user_id = $1
        and es.status = 'accepted'
        and es.revoked_at is null
-     order by eh.created_at desc nulls last, eh.id desc` ,
-    [userId]
+     order by eh.created_at desc nulls last, eh.id desc`,
+    [userId],
   );
   return res.rows || [];
 }
 
-export async function listSharesByOwnerForEvents(ownerUserId: string, eventIds: string[]): Promise<{
-  event_id: string;
-  accepted_count: number;
-  pending_count: number;
-}[]> {
+export async function listSharesByOwnerForEvents(
+  ownerUserId: string,
+  eventIds: string[],
+): Promise<
+  {
+    event_id: string;
+    accepted_count: number;
+    pending_count: number;
+  }[]
+> {
   if (eventIds.length === 0) return [];
   const res = await query<{ event_id: string; accepted_count: string; pending_count: string }>(
     `select event_id,
@@ -3670,7 +3737,7 @@ export async function listSharesByOwnerForEvents(ownerUserId: string, eventIds: 
      from event_shares
      where owner_user_id = $1 and event_id = any($2::uuid[])
      group by event_id`,
-    [ownerUserId, eventIds]
+    [ownerUserId, eventIds],
   );
   return (res.rows || []).map((r) => ({
     event_id: r.event_id,
@@ -3679,14 +3746,17 @@ export async function listSharesByOwnerForEvents(ownerUserId: string, eventIds: 
   }));
 }
 
-export async function isEventSharedWithUser(eventId: string, userId: string): Promise<boolean | null> {
+export async function isEventSharedWithUser(
+  eventId: string,
+  userId: string,
+): Promise<boolean | null> {
   try {
     const res = await query<{ exists: boolean }>(
       `select exists(
          select 1 from event_shares
          where event_id = $1 and recipient_user_id = $2 and status = 'accepted' and revoked_at is null
        ) as exists`,
-      [eventId, userId]
+      [eventId, userId],
     );
     return Boolean(res.rows[0]?.exists);
   } catch {
@@ -3695,14 +3765,17 @@ export async function isEventSharedWithUser(eventId: string, userId: string): Pr
   }
 }
 
-export async function isEventSharePendingForUser(eventId: string, userId: string): Promise<boolean | null> {
+export async function isEventSharePendingForUser(
+  eventId: string,
+  userId: string,
+): Promise<boolean | null> {
   try {
     const res = await query<{ exists: boolean }>(
       `select exists(
          select 1 from event_shares
          where event_id = $1 and recipient_user_id = $2 and status = 'pending' and revoked_at is null
        ) as exists`,
-      [eventId, userId]
+      [eventId, userId],
     );
     return Boolean(res.rows[0]?.exists);
   } catch {
@@ -3710,17 +3783,27 @@ export async function isEventSharePendingForUser(eventId: string, userId: string
   }
 }
 
-export async function listShareRecipientsForEvent(ownerUserId: string, eventId: string): Promise<Array<{ id: string; name: string; email: string; status: "pending"|"accepted" }>> {
+export async function listShareRecipientsForEvent(
+  ownerUserId: string,
+  eventId: string,
+): Promise<Array<{ id: string; name: string; email: string; status: "pending" | "accepted" }>> {
   await ensureEventSharesHasRecipientNameColumns();
-  const res = await query<{ id: string; recipient_user_id: string; status: string; recipient_first_name: string | null; recipient_last_name: string | null }>(
+  const res = await query<{
+    id: string;
+    recipient_user_id: string;
+    status: string;
+    recipient_first_name: string | null;
+    recipient_last_name: string | null;
+  }>(
     `select id, recipient_user_id, status, recipient_first_name, recipient_last_name
      from event_shares
      where owner_user_id = $1 and event_id = $2 and revoked_at is null
      order by created_at asc`,
-    [ownerUserId, eventId]
+    [ownerUserId, eventId],
   );
   const rows = res.rows || [];
-  const out: Array<{ id: string; name: string; email: string; status: "pending"|"accepted" }> = [];
+  const out: Array<{ id: string; name: string; email: string; status: "pending" | "accepted" }> =
+    [];
   for (const r of rows) {
     try {
       // Prefer the name captured at share-time; otherwise fall back to the recipient user's profile; finally fall back to email/local-part
@@ -3736,33 +3819,37 @@ export async function listShareRecipientsForEvent(ownerUserId: string, eventId: 
         status: r.status === "accepted" ? "accepted" : "pending",
       });
     } catch {
-      out.push({ id: r.id, name: "Unknown", email: "", status: r.status === "accepted" ? "accepted" : "pending" });
+      out.push({
+        id: r.id,
+        name: "Unknown",
+        email: "",
+        status: r.status === "accepted" ? "accepted" : "pending",
+      });
     }
   }
   return out;
 }
 
-export async function listShareRecipientUserIdsForEvent(
-  eventId: string
-): Promise<string[]> {
+export async function listShareRecipientUserIdsForEvent(eventId: string): Promise<string[]> {
   const res = await query<{ recipient_user_id: string }>(
     `select distinct recipient_user_id
      from event_shares
      where event_id = $1
        and revoked_at is null`,
-    [eventId]
+    [eventId],
   );
-  return (res.rows || [])
-    .map((row) => String(row.recipient_user_id || "").trim())
-    .filter(Boolean);
+  return (res.rows || []).map((row) => String(row.recipient_user_id || "").trim()).filter(Boolean);
 }
 
-export async function revokeShareByOwner(eventShareId: string, ownerUserId: string): Promise<boolean> {
+export async function revokeShareByOwner(
+  eventShareId: string,
+  ownerUserId: string,
+): Promise<boolean> {
   const res = await query<{ id: string }>(
     `update event_shares set revoked_at = now()
      where id = $1 and owner_user_id = $2 and revoked_at is null
      returning id`,
-    [eventShareId, ownerUserId]
+    [eventShareId, ownerUserId],
   );
   return Boolean(res.rows?.[0]?.id);
 }
@@ -3780,7 +3867,10 @@ function generateSecureToken(bytes: number = 32): string {
   return randomBytes(bytes).toString("hex");
 }
 
-export async function createPasswordResetToken(email: string, ttlMinutes = 30): Promise<PasswordResetRow> {
+export async function createPasswordResetToken(
+  email: string,
+  ttlMinutes = 30,
+): Promise<PasswordResetRow> {
   const lower = email.toLowerCase();
   const user = await getUserByEmail(lower);
   if (!user) throw new Error("No account found for this email");
@@ -3791,18 +3881,20 @@ export async function createPasswordResetToken(email: string, ttlMinutes = 30): 
     `insert into password_resets (id, email, token, expires_at)
      values ($1, $2, $3, $4)
      returning id, email, token, expires_at, used_at, created_at`,
-    [id, lower, token, expires.toISOString()]
+    [id, lower, token, expires.toISOString()],
   );
   return res.rows[0];
 }
 
-export async function getValidPasswordResetByToken(token: string): Promise<PasswordResetRow | null> {
+export async function getValidPasswordResetByToken(
+  token: string,
+): Promise<PasswordResetRow | null> {
   const res = await query<PasswordResetRow>(
     `select id, email, token, expires_at, used_at, created_at
      from password_resets
      where token = $1
      limit 1`,
-    [token]
+    [token],
   );
   const row = res.rows[0];
   if (!row) return null;
@@ -3851,7 +3943,7 @@ export async function getSignupFormByEventId(eventId: string): Promise<SignupFor
        from signup_forms
        where event_id = $1
        limit 1`,
-      [eventId]
+      [eventId],
     );
     return res.rows[0] || null;
   } catch (err) {
@@ -3870,7 +3962,7 @@ export async function upsertSignupForm(eventId: string, form: any): Promise<Sign
        on conflict (event_id)
        do update set form = excluded.form, updated_at = now()
        returning event_id, form, created_at, updated_at`,
-      [eventId, JSON.stringify(form ?? {})]
+      [eventId, JSON.stringify(form ?? {})],
     );
     return res.rows[0] || null;
   } catch (err) {
@@ -3945,9 +4037,7 @@ async function ensureRegistryTables(): Promise<void> {
   });
 }
 
-export async function listRegistryItemsByEventId(
-  eventId: string
-): Promise<RegistryItemRow[]> {
+export async function listRegistryItemsByEventId(eventId: string): Promise<RegistryItemRow[]> {
   if (!eventId) return [];
   try {
     await ensureRegistryTables();
@@ -3968,7 +4058,7 @@ export async function listRegistryItemsByEventId(
        from registry_items
        where event_id = $1
        order by created_at asc, id asc`,
-      [eventId]
+      [eventId],
     );
     return res.rows || [];
   } catch (err) {
@@ -3988,17 +4078,7 @@ export async function upsertRegistryItem(params: {
   category?: string | null;
   notes?: string | null;
 }): Promise<RegistryItemRow> {
-  const {
-    id,
-    eventId,
-    title,
-    affiliateUrl,
-    imageUrl,
-    price,
-    quantity,
-    category,
-    notes,
-  } = params;
+  const { id, eventId, title, affiliateUrl, imageUrl, price, quantity, category, notes } = params;
   if (!eventId || !title || !affiliateUrl || !imageUrl) {
     throw new Error("Missing required registry fields");
   }
@@ -4028,7 +4108,7 @@ export async function upsertRegistryItem(params: {
         qty,
         (category ?? "").trim() || null,
         (notes ?? "").trim() || null,
-      ]
+      ],
     );
     if (!res.rows[0]) {
       throw new Error("Registry item not found");
@@ -4058,7 +4138,7 @@ export async function upsertRegistryItem(params: {
       qty,
       (category ?? "").trim() || null,
       (notes ?? "").trim() || null,
-    ]
+    ],
   );
   if (!res.rows[0]) {
     throw new Error("Failed to create registry item");
@@ -4073,10 +4153,7 @@ export async function claimRegistryItem(params: {
   message?: string | null;
 }): Promise<{ item: RegistryItemRow | null; claim: RegistryClaimRow | null }> {
   const qtyRaw = params.quantity ?? 1;
-  const qty = Math.max(
-    1,
-    Math.min(50, Number.isFinite(qtyRaw as any) ? Number(qtyRaw) || 1 : 1)
-  );
+  const qty = Math.max(1, Math.min(50, Number.isFinite(qtyRaw as any) ? Number(qtyRaw) || 1 : 1));
 
   await ensureRegistryTables();
 
@@ -4088,7 +4165,7 @@ export async function claimRegistryItem(params: {
      where id = $1::uuid
        and claimed + $2 <= quantity
      returning id, event_id, title, affiliate_url, image_url, price, quantity, claimed, category, notes, created_at, updated_at`,
-    [params.itemId, qty]
+    [params.itemId, qty],
   );
   const item = updated.rows[0] || null;
   if (!item) {
@@ -4104,7 +4181,7 @@ export async function claimRegistryItem(params: {
       (params.guestName ?? "").trim() || null,
       qty,
       (params.message ?? "").trim() || null,
-    ]
+    ],
   );
 
   return {

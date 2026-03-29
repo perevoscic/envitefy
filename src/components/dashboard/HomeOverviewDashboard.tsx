@@ -106,8 +106,6 @@ type HomeOverviewDashboardProps = {
   onCreateEvent: () => void;
 };
 
-const SHOW_DEV_DIAGNOSTICS = process.env.NODE_ENV !== "production";
-
 type CardTone = "indigo" | "pink" | "sky" | "amber";
 
 const CARD_TONE_STYLES: Record<
@@ -869,28 +867,6 @@ export default function HomeOverviewDashboard({
           </p>
         </div>
       </header>
-
-      {SHOW_DEV_DIAGNOSTICS ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs font-medium text-amber-950">
-          <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <span>
-              dashboard source: {String(data?.diagnostics?.sourceRowCount ?? "-")} rows
-            </span>
-            <span>
-              returned: {String(data?.diagnostics?.returnedEventCount ?? "-")}
-            </span>
-            <span>
-              fallback: {String(data?.diagnostics?.fallbackUsed ?? false)}
-            </span>
-            <span>
-              reason: {String(data?.diagnostics?.fallbackReason ?? data?.diagnostics?.emptyReason ?? "-")}
-            </span>
-          </div>
-          <div className="mt-1 break-all text-[11px] text-amber-900/80">
-            timings: {JSON.stringify(data?.timings ?? null)}
-          </div>
-        </section>
-      ) : null}
 
       <section>
         {nextEvent && nextEventActions ? (

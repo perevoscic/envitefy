@@ -1,10 +1,12 @@
 import * as chrono from "chrono-node";
-import sharp from "sharp";
 import { getServerSession } from "next-auth";
+import sharp from "sharp";
 import { authOptions } from "@/lib/auth";
-import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
-import { corsJson, corsPreflight } from "@/lib/cors";
 import { normalizeBirthdayTemplateHint } from "@/lib/birthday-ocr-template";
+import { corsJson, corsPreflight } from "@/lib/cors";
+import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
+import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
+import { validateUploadFileMeta } from "@/lib/upload-config";
 
 /** Ensure this runs on Node (not Edge) and isn’t cached */
 export const runtime = "nodejs";
@@ -43,7 +45,8 @@ function llmEventToRawText(payload: any): string {
   if (typeof payload?.title === "string" && payload.title.trim()) parts.push(payload.title.trim());
   if (typeof payload?.start === "string" && payload.start.trim()) parts.push(payload.start.trim());
   if (typeof payload?.end === "string" && payload.end.trim()) parts.push(payload.end.trim());
-  if (typeof payload?.address === "string" && payload.address.trim()) parts.push(payload.address.trim());
+  if (typeof payload?.address === "string" && payload.address.trim())
+    parts.push(payload.address.trim());
   if (typeof payload?.description === "string" && payload.description.trim())
     parts.push(payload.description.trim());
   if (typeof payload?.rsvp === "string" && payload.rsvp.trim()) parts.push(payload.rsvp.trim());
@@ -68,7 +71,8 @@ function _isTitleLowConfidence(title: string): boolean {
   const t = title.trim();
   if (t.length < 6) return true;
   // Check if title contains a month name (e.g., "April 10th" or "Birthday Party April 10th")
-  const month = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)/i;
+  const month =
+    /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)/i;
   if (month.test(t)) return true;
   // Generic placeholder titles
   if (/^event from flyer$/i.test(t)) return true;
@@ -84,7 +88,7 @@ async function llmExtractEventFromImage(
   imageBytes: Buffer,
   mime: string,
   timeoutMs = OPENAI_TIMEOUT_MS,
-  modelOverride?: string
+  modelOverride?: string,
 ): Promise<{
   title?: string;
   start?: string | null;
@@ -156,7 +160,7 @@ async function llmExtractEventFromImage(
   OUTPUT (strict JSON only, no extra text):
   { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null }
   `;
-  
+
   const userText = `
   Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge}.
   If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include it in the title. Do not include dates/times in the title.
@@ -168,25 +172,29 @@ async function llmExtractEventFromImage(
   `;
   try {
     log(">>> Making OpenAI Vision API call...");
-    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        temperature: 0.1,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: userText },
-              { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
-            ],
-          },
-        ],
-      }),
-    }, timeoutMs);
+    const res = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0.1,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: system },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: userText },
+                { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
+              ],
+            },
+          ],
+        }),
+      },
+      timeoutMs,
+    );
     log(">>> OpenAI API response status:", res.status);
     if (!res.ok) {
       const errorBody = await res.text();
@@ -206,7 +214,11 @@ async function llmExtractEventFromImage(
       log(">>> OpenAI title:", parsed.title);
       log(">>> OpenAI description:", parsed.description);
       // DEBUG: Check if birthday title is missing age
-      if (parsed.title && /birthday/i.test(parsed.title) && !/\d{1,2}(st|nd|rd|th)/i.test(parsed.title)) {
+      if (
+        parsed.title &&
+        /birthday/i.test(parsed.title) &&
+        !/\d{1,2}(st|nd|rd|th)/i.test(parsed.title)
+      ) {
         log(">>> ⚠️ WARNING: Birthday title is missing age ordinal:", parsed.title);
       }
       return parsed;
@@ -225,7 +237,7 @@ async function llmExtractGymnasticsScheduleFromImage(
   imageBytes: Buffer,
   mime: string,
   timezone: string,
-  timeoutMs = OPENAI_TIMEOUT_MS
+  timeoutMs = OPENAI_TIMEOUT_MS,
 ): Promise<{
   season?: string | null;
   homeTeam?: string | null;
@@ -249,25 +261,29 @@ async function llmExtractGymnasticsScheduleFromImage(
   const userText =
     "Extract gymnastics season schedule as strict JSON with keys: season (string|nullable), homeTeam (string|nullable), homeAddress (string|nullable if visible), events (array).\nRules: If the poster legend shows colors (e.g., red=HOME, black=AWAY), use that to set home vs away. Also use 'VS' for home and 'AT' for away when present. A trailing '*' means MAC MEETS; include 'MAC Meet' in description when starred.\nFor each event include: title (e.g., 'NIU Gymnastics: vs Central Michigan' or 'NIU Gymnastics: at Bowling Green'), start (ISO date at 00:00 local if time missing), end (ISO date next day for all-day), allDay:true, timezone set to provided TZ, location (home uses homeAddress if visible; away: leave empty if flyer doesn't show), description short (opponent + 'home' or 'away', include 'MAC Meet' when starred). Do not include any extra keys. Dates must include year from the poster heading if present.";
   try {
-    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        temperature: 0.1,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: `${userText}\nTIMEZONE: ${timezone}` },
-              { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
-            ],
-          },
-        ],
-      }),
-    }, timeoutMs);
+    const res = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0.1,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: system },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: `${userText}\nTIMEZONE: ${timezone}` },
+                { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
+              ],
+            },
+          ],
+        }),
+      },
+      timeoutMs,
+    );
     if (!res.ok) return null;
     const j: any = await res.json();
     const text = j?.choices?.[0]?.message?.content || "";
@@ -288,7 +304,9 @@ async function llmExtractGymnasticsScheduleFromImage(
             // convert date to all-day UTC boundaries
             s = new Date(`${s}T00:00:00.000Z`).toISOString();
             const d = new Date(s);
-            e = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)).toISOString();
+            e = new Date(
+              Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1),
+            ).toISOString();
           }
         } catch {}
         return {
@@ -338,7 +356,7 @@ async function llmExtractPracticeScheduleFromImage(
   imageBytes: Buffer,
   mime: string,
   timezone: string,
-  timeoutMs = OPENAI_TIMEOUT_MS
+  timeoutMs = OPENAI_TIMEOUT_MS,
 ): Promise<PracticeScheduleLLMResponse | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -346,41 +364,44 @@ async function llmExtractPracticeScheduleFromImage(
   const base64 = imageBytes.toString("base64");
   const system =
     "You read team practice schedules laid out as tables (groups vs. days) and return clean JSON describing weekly recurring sessions.";
-  const userText =
-    [
-      "Extract the practice schedule as strict JSON with keys: title (string|null), timeframe (string|null), timezoneHint (string|null), groups (array).",
-      "Each group object must have: name (string), optional note, sessions (array).",
-      "Each session must include: day (three-letter uppercase code MON/TUE/WED/THU/FRI/SAT/SUN), startTime (HH:MM 24-hour), endTime (HH:MM 24-hour), optional note (string).",
-      "Rules:",
-      "- Ignore cells that only say OFF/Closed." ,
-      "- If a cell contains text like '4:15-6:00 rec', parse startTime=04:15, endTime=06:00, note='rec'.",
-      "- Preserve trailing labels such as 'team gym' or 'conditioning' in the session note (lowercase).",
-      "- If a column header or legend indicates the season (e.g., '2025-2026 School Year'), set timeframe to that exact text.",
-      "- If a headline names the gym/team, set title accordingly (e.g., 'Team Practice Schedule').",
-      "- timezoneHint may include any location or timezone clues shown on the flyer; otherwise null.",
-      "Return strict JSON only; omit any keys with unknown values by setting them to null." ,
-    ].join("\n");
+  const userText = [
+    "Extract the practice schedule as strict JSON with keys: title (string|null), timeframe (string|null), timezoneHint (string|null), groups (array).",
+    "Each group object must have: name (string), optional note, sessions (array).",
+    "Each session must include: day (three-letter uppercase code MON/TUE/WED/THU/FRI/SAT/SUN), startTime (HH:MM 24-hour), endTime (HH:MM 24-hour), optional note (string).",
+    "Rules:",
+    "- Ignore cells that only say OFF/Closed.",
+    "- If a cell contains text like '4:15-6:00 rec', parse startTime=04:15, endTime=06:00, note='rec'.",
+    "- Preserve trailing labels such as 'team gym' or 'conditioning' in the session note (lowercase).",
+    "- If a column header or legend indicates the season (e.g., '2025-2026 School Year'), set timeframe to that exact text.",
+    "- If a headline names the gym/team, set title accordingly (e.g., 'Team Practice Schedule').",
+    "- timezoneHint may include any location or timezone clues shown on the flyer; otherwise null.",
+    "Return strict JSON only; omit any keys with unknown values by setting them to null.",
+  ].join("\n");
 
   try {
-    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        temperature: 0.1,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: `${userText}\nTIMEZONE_GUESS: ${timezone}` },
-              { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
-            ],
-          },
-        ],
-      }),
-    }, timeoutMs);
+    const res = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0.1,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: system },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: `${userText}\nTIMEZONE_GUESS: ${timezone}` },
+                { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
+              ],
+            },
+          ],
+        }),
+      },
+      timeoutMs,
+    );
     if (!res.ok) return null;
     const j: any = await res.json();
     const text = j?.choices?.[0]?.message?.content || "";
@@ -449,9 +470,7 @@ function parseTimeTo24h(value?: string | null): { hour: number; minute: number }
   if (!value) return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
-  const twelveHour = trimmed.match(
-    /^(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?$/i
-  );
+  const twelveHour = trimmed.match(/^(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?$/i);
   if (twelveHour) {
     let hour = Number(twelveHour[1]);
     const minute = Number(twelveHour[2] || "0");
@@ -464,8 +483,7 @@ function parseTimeTo24h(value?: string | null): { hour: number; minute: number }
   if (twentyFour) {
     const hour = Number(twentyFour[1]);
     const minute = Number(twentyFour[2]);
-    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59)
-      return { hour, minute };
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) return { hour, minute };
   }
   return null;
 }
@@ -476,7 +494,9 @@ function parseTimeRange(text?: string | null): {
 } {
   if (!text) return { start: null, end: null };
   const cleaned = text.replace(/–|—/g, "-");
-  const rangeMatch = cleaned.match(/(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?)[^\d]{1,4}(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?)/i);
+  const rangeMatch = cleaned.match(
+    /(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?)[^\d]{1,4}(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?)/i,
+  );
   if (rangeMatch) {
     const start = parseTimeTo24h(rangeMatch[1]);
     const end = parseTimeTo24h(rangeMatch[2]);
@@ -506,7 +526,7 @@ function getLocalNowInTimezone(tz: string): Date {
       Number(obj.day || now.getDate()),
       Number(obj.hour || now.getHours()),
       Number(obj.minute || now.getMinutes()),
-      Number(obj.second || now.getSeconds())
+      Number(obj.second || now.getSeconds()),
     );
   } catch {
     return new Date(now);
@@ -524,7 +544,7 @@ function buildNextOccurrence(
   startHour: number,
   startMinute: number,
   endHour: number,
-  endMinute: number
+  endMinute: number,
 ): { start: string; end: string } {
   const nowLocal = getLocalNowInTimezone(baseTz);
   const currentDay = nowLocal.getDay();
@@ -605,12 +625,14 @@ function parsePracticeTimeRange(value: string): {
     const remainder = noteMatch[1].trim();
     if (remainder && !/^(?:am|pm)$/i.test(remainder)) {
       noteParts.push(remainder);
-      timePart = normalized.slice(0, noteMatch.index! + noteMatch[0].length - remainder.length).trim();
+      timePart = normalized
+        .slice(0, noteMatch.index! + noteMatch[0].length - remainder.length)
+        .trim();
     }
   }
 
   const range = timePart.match(
-    /(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?\s*[-–—]\s*(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?/
+    /(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?\s*[-–—]\s*(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?/,
   );
   if (!range) {
     const single = timePart.match(/(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|am|pm)?/);
@@ -621,7 +643,7 @@ function parsePracticeTimeRange(value: string): {
     const { hour: startHour, minute: startMinute } = convertTo24Hour(
       startHourRaw,
       startMinuteRaw,
-      mer || null
+      mer || null,
     );
     const end = new Date(0, 0, 0, startHour, startMinute + 90);
     return {
@@ -643,13 +665,13 @@ function parsePracticeTimeRange(value: string): {
   const { hour: startHour, minute: startMinute } = convertTo24Hour(
     startHourRaw,
     startMinuteRaw,
-    startMer || null
+    startMer || null,
   );
   const { hour: endHour, minute: endMinute } = convertTo24Hour(
     endHourRaw,
     endMinuteRaw,
     endMer || null,
-    startHour
+    startHour,
   );
 
   return {
@@ -665,7 +687,7 @@ function convertTo24Hour(
   hour: number,
   minute: number,
   meridiem: string | null,
-  fallbackCompareHour?: number
+  fallbackCompareHour?: number,
 ): { hour: number; minute: number } {
   let h = hour % 12;
   if (meridiem) {
@@ -691,7 +713,7 @@ type PracticeHeuristicGroup = {
 
 function parsePracticeScheduleHeuristics(
   lines: string[],
-  timezone: string
+  timezone: string,
 ): {
   title: string | null;
   timeframe: string | null;
@@ -794,7 +816,11 @@ function parsePracticeScheduleHeuristics(
         idx++;
         continue;
       }
-      if (looksLikeGroupName(candidate) && groupKeywords.test(candidate.toLowerCase()) && values.length === 0) {
+      if (
+        looksLikeGroupName(candidate) &&
+        groupKeywords.test(candidate.toLowerCase()) &&
+        values.length === 0
+      ) {
         break;
       }
       if (isDayToken(candidate)) {
@@ -803,7 +829,9 @@ function parsePracticeScheduleHeuristics(
       }
       const { value, consumed } = collectValue(idx);
       idx += consumed;
-      const noteMatch = value.match(/(.*?)(?:\s+(rec|conditioning|team gym|team\s+gym|open gym|weights))$/i);
+      const noteMatch = value.match(
+        /(.*?)(?:\s+(rec|conditioning|team gym|team\s+gym|open gym|weights))$/i,
+      );
       let label = value;
       let note: string | null = null;
       if (noteMatch?.[2]) {
@@ -845,14 +873,17 @@ function parsePracticeScheduleHeuristics(
         });
         return;
       }
-      const dayInfo = DAY_NAME_TO_INDEX[normalizeDayToken(dayCode)] || { index: idxValue, code: dayCode };
+      const dayInfo = DAY_NAME_TO_INDEX[normalizeDayToken(dayCode)] || {
+        index: idxValue,
+        code: dayCode,
+      };
       const occurrence = buildNextOccurrence(
         practiceTimezone,
         dayInfo.index,
         parsed.startHour,
         parsed.startMinute,
         parsed.endHour,
-        parsed.endMinute
+        parsed.endMinute,
       );
       const pad = (n: number) => String(n).padStart(2, "0");
       sessions.push({
@@ -866,7 +897,9 @@ function parsePracticeScheduleHeuristics(
         note: entry.note || parsed.note,
       });
       const descriptionParts = [group.name];
-      descriptionParts.push(`${dayCode} ${pad(parsed.startHour)}:${pad(parsed.startMinute)}-${pad(parsed.endHour)}:${pad(parsed.endMinute)}`);
+      descriptionParts.push(
+        `${dayCode} ${pad(parsed.startHour)}:${pad(parsed.startMinute)}-${pad(parsed.endHour)}:${pad(parsed.endMinute)}`,
+      );
       if (entry.note || parsed.note) descriptionParts.push(entry.note || parsed.note || "");
       events.push({
         title: `${group.name} Practice`,
@@ -898,7 +931,9 @@ function parsePracticeScheduleHeuristics(
 }
 
 // Detect spelled-out time phrases like "four o'clock in the afternoon"
-function detectSpelledTime(raw: string): { hour: number; minute: number; meridiem: "am" | "pm" | null } | null {
+function detectSpelledTime(
+  raw: string,
+): { hour: number; minute: number; meridiem: "am" | "pm" | null } | null {
   const text = (raw || "").toLowerCase();
   const numberMap: Record<string, number> = {
     one: 1,
@@ -949,7 +984,7 @@ function cleanAddressLabel(input: string): string {
 function splitVenueFromAddress(
   input: string,
   description?: string,
-  rawText?: string
+  rawText?: string,
 ): { venue: string | null; address: string } {
   const cleaned = cleanAddressLabel(input || "");
   if (!cleaned) return { venue: null, address: "" };
@@ -961,19 +996,16 @@ function splitVenueFromAddress(
 
   const venueKeywords =
     /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre|Complex|Ballpark|Ball Field)\b/i;
-  const suiteKeywords = /\b(suite|ste|apt|unit|floor|fl|room|rm|bldg|building|wing|hallway|level|lot)\b/i;
-  const candidateRaw = (
-    pickVenueLabelForSentence(cleaned, description, rawText) || ""
-  ).trim();
+  const suiteKeywords =
+    /\b(suite|ste|apt|unit|floor|fl|room|rm|bldg|building|wing|hallway|level|lot)\b/i;
+  const candidateRaw = (pickVenueLabelForSentence(cleaned, description, rawText) || "").trim();
   const candidateParts = candidateRaw
     ? candidateRaw
         .split(",")
         .map((part) => part.trim())
         .filter(Boolean)
     : [];
-  const candidateSet = new Set(
-    candidateParts.map((part) => part.toLowerCase())
-  );
+  const candidateSet = new Set(candidateParts.map((part) => part.toLowerCase()));
 
   let streetIdx = segments.findIndex((segment) => /\d/.test(segment));
   if (streetIdx === -1) streetIdx = 0;
@@ -997,16 +1029,14 @@ function splitVenueFromAddress(
 
   segments.forEach((segment, idx) => {
     const lower = segment.toLowerCase();
-    const betweenStreetAndCity =
-      idx > streetIdx && (cityIdx === -1 || idx < cityIdx);
+    const betweenStreetAndCity = idx > streetIdx && (cityIdx === -1 || idx < cityIdx);
     const matchesCandidate =
       candidateSet.has(lower) ||
       (candidateRaw &&
         !/\d/.test(segment) &&
         candidateRaw.toLowerCase().includes(lower) &&
         lower.length >= 3);
-    const looksVenue =
-      !/\d/.test(segment) && venueKeywords.test(segment);
+    const looksVenue = !/\d/.test(segment) && venueKeywords.test(segment);
     const isSuite = suiteKeywords.test(segment);
     if (!isSuite && (matchesCandidate || (betweenStreetAndCity && looksVenue))) {
       if (!venueParts.some((part) => part.toLowerCase() === lower)) {
@@ -1026,7 +1056,10 @@ function splitVenueFromAddress(
       venue = `${venue}, ${candidateRaw}`.replace(/,\s*,+/g, ", ");
     }
   }
-  let address = addressParts.join(", ").replace(/,\s*,+/g, ", ").trim();
+  let address = addressParts
+    .join(", ")
+    .replace(/,\s*,+/g, ", ")
+    .trim();
   if (!address && cleaned) {
     address = cleaned;
   }
@@ -1041,14 +1074,92 @@ function inferTimezoneFromAddress(addressOrText: string): string | null {
   const s = (addressOrText || "").toLowerCase();
   const has = (...parts: string[]) => parts.some((p) => s.includes(p.toLowerCase()));
   // Direct city hints
-  if (has("fresno", "los angeles", "san francisco", "san jose", "sacramento", "oakland", "san diego")) return "America/Los_Angeles";
+  if (
+    has("fresno", "los angeles", "san francisco", "san jose", "sacramento", "oakland", "san diego")
+  )
+    return "America/Los_Angeles";
   if (has("phoenix", "mesa", "tucson", "az ", " arizona")) return "America/Phoenix";
   if (has("seattle", "spokane", "wa ", " washington")) return "America/Los_Angeles";
   if (has("portland", "or ", " oregon")) return "America/Los_Angeles";
   if (has("boise", "id ", " idaho")) return "America/Boise";
-  if (has("denver", "co ", " colorado", "ut ", " utah", "nm ", " new mexico", "mt ", " montana", "wy ", " wyoming")) return "America/Denver";
-  if (has("chicago", "il ", " illinois", "wi ", " wisconsin", "mn ", " minnesota", "ia ", " iowa", "mo ", " missouri", "ok ", " oklahoma", "ks ", " kansas", "ne ", " nebraska", "tx ", " texas", "la ", " louisiana", "ar ", " arkansas", "tn ", " tennessee")) return "America/Chicago";
-  if (has("new york", "ny ", "nyc", "fl ", " florida", "ga ", " georgia", "nc ", " north carolina", "sc ", " south carolina", "pa ", " pennsylvania", "nj ", " new jersey", "oh ", " ohio", "mi ", " michigan", "va ", " virginia", "dc", "washington, dc", "ma ", " massachusetts", "ct ", " connecticut")) return "America/New_York";
+  if (
+    has(
+      "denver",
+      "co ",
+      " colorado",
+      "ut ",
+      " utah",
+      "nm ",
+      " new mexico",
+      "mt ",
+      " montana",
+      "wy ",
+      " wyoming",
+    )
+  )
+    return "America/Denver";
+  if (
+    has(
+      "chicago",
+      "il ",
+      " illinois",
+      "wi ",
+      " wisconsin",
+      "mn ",
+      " minnesota",
+      "ia ",
+      " iowa",
+      "mo ",
+      " missouri",
+      "ok ",
+      " oklahoma",
+      "ks ",
+      " kansas",
+      "ne ",
+      " nebraska",
+      "tx ",
+      " texas",
+      "la ",
+      " louisiana",
+      "ar ",
+      " arkansas",
+      "tn ",
+      " tennessee",
+    )
+  )
+    return "America/Chicago";
+  if (
+    has(
+      "new york",
+      "ny ",
+      "nyc",
+      "fl ",
+      " florida",
+      "ga ",
+      " georgia",
+      "nc ",
+      " north carolina",
+      "sc ",
+      " south carolina",
+      "pa ",
+      " pennsylvania",
+      "nj ",
+      " new jersey",
+      "oh ",
+      " ohio",
+      "mi ",
+      " michigan",
+      "va ",
+      " virginia",
+      "dc",
+      "washington, dc",
+      "ma ",
+      " massachusetts",
+      "ct ",
+      " connecticut",
+    )
+  )
+    return "America/New_York";
   if (has("anchorage", "ak ", " alaska")) return "America/Anchorage";
   if (has("honolulu", "hi ", " hawaii")) return "Pacific/Honolulu";
   // State-only heuristics
@@ -1057,25 +1168,95 @@ function inferTimezoneFromAddress(addressOrText: string): string | null {
   if (has(" or ", " oregon")) return "America/Los_Angeles";
   if (has(" nv ", " nevada")) return "America/Los_Angeles";
   if (has(" az ", " arizona")) return "America/Phoenix";
-  if (has(" co ", " colorado", " ut ", " utah", " nm ", " new mexico", " mt ", " montana", " wy ", " wyoming", " id ", " idaho")) return "America/Denver";
-  if (has(" il ", " illinois", " wi ", " wisconsin", " mn ", " minnesota", " ia ", " iowa", " mo ", " missouri", " ok ", " oklahoma", " ks ", " kansas", " ne ", " nebraska", " la ", " louisiana", " ar ", " arkansas", " tx ", " texas")) return "America/Chicago";
-  if (has(" ny ", " new york", " nj ", " new jersey", " pa ", " pennsylvania", " oh ", " ohio", " mi ", " michigan", " ga ", " georgia", " fl ", " florida", " ma ", " massachusetts", " ct ", " connecticut", " dc")) return "America/New_York";
+  if (
+    has(
+      " co ",
+      " colorado",
+      " ut ",
+      " utah",
+      " nm ",
+      " new mexico",
+      " mt ",
+      " montana",
+      " wy ",
+      " wyoming",
+      " id ",
+      " idaho",
+    )
+  )
+    return "America/Denver";
+  if (
+    has(
+      " il ",
+      " illinois",
+      " wi ",
+      " wisconsin",
+      " mn ",
+      " minnesota",
+      " ia ",
+      " iowa",
+      " mo ",
+      " missouri",
+      " ok ",
+      " oklahoma",
+      " ks ",
+      " kansas",
+      " ne ",
+      " nebraska",
+      " la ",
+      " louisiana",
+      " ar ",
+      " arkansas",
+      " tx ",
+      " texas",
+    )
+  )
+    return "America/Chicago";
+  if (
+    has(
+      " ny ",
+      " new york",
+      " nj ",
+      " new jersey",
+      " pa ",
+      " pennsylvania",
+      " oh ",
+      " ohio",
+      " mi ",
+      " michigan",
+      " ga ",
+      " georgia",
+      " fl ",
+      " florida",
+      " ma ",
+      " massachusetts",
+      " ct ",
+      " connecticut",
+      " dc",
+    )
+  )
+    return "America/New_York";
   return null;
 }
 
 function stripInvitePhrases(s: string): string {
-  return s
-    // "You're invited" variations
-    .replace(/^\s*(you\s+are\s+invited\s+to[:\s-]*)/i, "")
-    .replace(/^\s*(you'?re\s+invited\s+to[:\s-]*)/i, "")
-    .replace(/^\s*(you\s+are\s+invited[:\s-]*)/i, "")
-    .replace(/^\s*(you'?re\s+invited[:\s-]*)/i, "")
-    // "invites you to (join)" / "cordially invite you to" variants
-    .replace(/^\s*\b(cordially\s+)?invites?\s+you\s+to(?:\s+join)?\b[:\s,-]*/i, "")
-    .replace(/^\s*\b(requests?\s+the\s+(honou?r|pleasure)\s+of\s+your\s+(presence|company))\b[:\s,-]*/i, "")
-    // "please join us" variations
-    .replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,-]*/i, "")
-    .trim();
+  return (
+    s
+      // "You're invited" variations
+      .replace(/^\s*(you\s+are\s+invited\s+to[:\s-]*)/i, "")
+      .replace(/^\s*(you'?re\s+invited\s+to[:\s-]*)/i, "")
+      .replace(/^\s*(you\s+are\s+invited[:\s-]*)/i, "")
+      .replace(/^\s*(you'?re\s+invited[:\s-]*)/i, "")
+      // "invites you to (join)" / "cordially invite you to" variants
+      .replace(/^\s*\b(cordially\s+)?invites?\s+you\s+to(?:\s+join)?\b[:\s,-]*/i, "")
+      .replace(
+        /^\s*\b(requests?\s+the\s+(honou?r|pleasure)\s+of\s+your\s+(presence|company))\b[:\s,-]*/i,
+        "",
+      )
+      // "please join us" variations
+      .replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,-]*/i, "")
+      .trim()
+  );
 }
 
 function stripJoinUsLanguage(description: string): string {
@@ -1086,7 +1267,9 @@ function stripJoinUsLanguage(description: string): string {
     .map((line) => line.replace(/^\s*(please\s+)?join\s+us\s*(for)?[:\s,-]*/i, ""))
     .map((line) => line.replace(/^\s*(let's\s+)?celebrate\s+with\s+us[:\s,-]*/i, ""))
     .map((line) => line.trim())
-    .filter((line, idx, arr) => line.length > 0 || (idx < arr.length - 1 && arr[idx + 1].length > 0));
+    .filter(
+      (line, idx, arr) => line.length > 0 || (idx < arr.length - 1 && arr[idx + 1].length > 0),
+    );
   return cleanedLines.join("\n");
 }
 
@@ -1096,23 +1279,32 @@ function stripJoinUsLanguage(description: string): string {
 // The rewrite avoids invitation phrasing like "Join us" in the final output.
 function improveJoinUsFor(description: string, title: string, location?: string): string {
   try {
-    const lines = (description || "").split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = (description || "")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
     const joinIdx = lines.findIndex((l) => /^join\s+us\s+for\s*$/i.test(l));
     if (joinIdx === -1) return description;
 
-    const possessiveMatch = (title || "").match(/\b([A-Z][A-Za-z-]+(?:\s+[A-Z][A-Za-z-]+){0,2})[’']s\b/);
+    const possessiveMatch = (title || "").match(
+      /\b([A-Z][A-Za-z-]+(?:\s+[A-Z][A-Za-z-]+){0,2})[’']s\b/,
+    );
     if (!possessiveMatch) return description;
 
     const namePossessive = possessiveMatch[0];
-    const nextIsBirthdayParty = !!lines[joinIdx + 1] && /\bbirthday\s*party\b/i.test(lines[joinIdx + 1]);
+    const nextIsBirthdayParty =
+      !!lines[joinIdx + 1] && /\bbirthday\s*party\b/i.test(lines[joinIdx + 1]);
     // Try to pick a concise venue label either from provided location or nearby lines
-    const venueKeywords = /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Bar|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom)\b/i;
+    const venueKeywords =
+      /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Bar|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom)\b/i;
     const timeToken = /\b\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?)\b/i;
     let usedVenueIdx: number | null = null;
     let venue: string = "";
     // 1) From location/address argument
     try {
-      const loc = cleanAddressLabel(String(location || "")).split(",")[0].trim();
+      const loc = cleanAddressLabel(String(location || ""))
+        .split(",")[0]
+        .trim();
       if (loc && !/\d/.test(loc) && venueKeywords.test(loc)) venue = loc;
     } catch {}
     // 2) From nearby lines on the flyer description
@@ -1137,16 +1329,23 @@ function improveJoinUsFor(description: string, title: string, location?: string)
       }
     }
 
-    const replacement = `Celebrating ${namePossessive}${nextIsBirthdayParty ? " Birthday Party" : ""}${venue ? ` at ${venue}` : ""}`
-      .replace(/\s+/g, " ")
-      .trim();
+    const replacement =
+      `Celebrating ${namePossessive}${nextIsBirthdayParty ? " Birthday Party" : ""}${venue ? ` at ${venue}` : ""}`
+        .replace(/\s+/g, " ")
+        .trim();
 
     lines[joinIdx] = replacement;
     if (nextIsBirthdayParty) lines.splice(joinIdx + 1, 1);
     if (usedVenueIdx !== null) {
       // Adjust for previous splice if we removed the Birthday Party line
-      const adjustedIdx = usedVenueIdx > joinIdx && nextIsBirthdayParty ? usedVenueIdx - 1 : usedVenueIdx;
-      if (adjustedIdx >= 0 && adjustedIdx < lines.length && lines[adjustedIdx] && /\b(birthday\s*party)\b/i.test(replacement)) {
+      const adjustedIdx =
+        usedVenueIdx > joinIdx && nextIsBirthdayParty ? usedVenueIdx - 1 : usedVenueIdx;
+      if (
+        adjustedIdx >= 0 &&
+        adjustedIdx < lines.length &&
+        lines[adjustedIdx] &&
+        /\b(birthday\s*party)\b/i.test(replacement)
+      ) {
         // Remove the venue line we inlined to avoid duplication
         lines.splice(adjustedIdx, 1);
       }
@@ -1163,10 +1362,11 @@ function improveJoinUsFor(description: string, title: string, location?: string)
 function pickVenueLabelForSentence(
   location?: string,
   description?: string,
-  rawText?: string
+  rawText?: string,
 ): string {
   try {
-    const venueKeywords = /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre)\b/i;
+    const venueKeywords =
+      /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre)\b/i;
     // 1) Use a non-numeric first segment of the provided location if it looks like a venue
     if (location) {
       const parts = cleanAddressLabel(String(location))
@@ -1231,7 +1431,10 @@ function _buildFriendlyBirthdaySentence(title: string, location?: string): strin
 function extractRsvpCompact(rawText: string, fallbackText?: string): string | null {
   try {
     const text = [rawText || "", fallbackText || ""].join("\n");
-    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = text
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
     const phoneRe = /(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/;
     // Prefer explicit RSVP line - handle both "RSVP to Name: Phone" and "RSVP: Name Phone"
     const rsvpLine = lines.find((l) => /\brsvp\b/i.test(l));
@@ -1246,7 +1449,11 @@ function extractRsvpCompact(rawText: string, fallbackText?: string): string | nu
       // Try "RSVP: Name Phone" pattern
       const colonPattern = rsvpLine.match(/rsvp\s*:\s*([^:\d]+?)\s*(\d)/i);
       if (colonPattern && phoneMatch) {
-        const colonName = colonPattern[1].replace(/\s{2,}/g, " ").trim().replace(/[:,\d]+$/, "").trim();
+        const colonName = colonPattern[1]
+          .replace(/\s{2,}/g, " ")
+          .trim()
+          .replace(/[:,\d]+$/, "")
+          .trim();
         if (colonName) return `RSVP: ${colonName} ${phoneMatch[0]}`.trim();
       }
       if (phoneMatch) return `RSVP: ${phoneMatch[0]}`;
@@ -1256,9 +1463,11 @@ function extractRsvpCompact(rawText: string, fallbackText?: string): string | nu
       const phone = l.match(phoneRe)?.[0] || null;
       if (!phone) continue;
       if (/\b(call|text|contact|rsvp)\b/i.test(l)) {
-        const name = (l.match(/\bwith\s+([A-Z][A-Za-z'-]+)\b/i)?.[1]
-          || l.match(/\bto\s+([A-Z][A-Za-z'-]+)\b/i)?.[1]
-          || "").trim();
+        const name = (
+          l.match(/\bwith\s+([A-Z][A-Za-z'-]+)\b/i)?.[1] ||
+          l.match(/\bto\s+([A-Z][A-Za-z'-]+)\b/i)?.[1] ||
+          ""
+        ).trim();
         return `RSVP: ${name ? `${name} ` : ""}${phone}`.trim();
       }
     }
@@ -1274,7 +1483,7 @@ async function llmRewriteBirthdayDescription(
   title: string,
   location: string,
   description: string,
-  timeoutMs = OPENAI_TIMEOUT_MS
+  timeoutMs = OPENAI_TIMEOUT_MS,
 ): Promise<string | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -1288,18 +1497,22 @@ async function llmRewriteBirthdayDescription(
     "Rules: Extract the person's name from the TITLE (e.g., if title is 'Gemma's 7th Birthday Party at US Gym', use 'Gemma'). Extract the age ordinal from the TITLE (e.g., '7th', '10th', '5th') and include it as '<Age>th'. Format: 'Join us to celebrate Gemma's 7th Birthday at US Gym'. Prefer a concise venue/business name (e.g., 'US Gym', 'US Gold Gymnastics') over a street address. If LOCATION looks like a street address (has numbers) but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. ALWAYS start with 'Join us to celebrate' for birthday parties. Include the age ordinal if present in the title (e.g., '7th', '10th'). Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.";
 
   try {
-    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    }, timeoutMs);
+    const res = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        }),
+      },
+      timeoutMs,
+    );
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     const text = (j?.choices?.[0]?.message?.content || "").trim();
@@ -1316,7 +1529,7 @@ async function llmRewriteWedding(
   rawText: string,
   _title: string,
   location: string,
-  timeoutMs = OPENAI_TIMEOUT_MS
+  timeoutMs = OPENAI_TIMEOUT_MS,
 ): Promise<{ title: string; description: string } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -1332,19 +1545,23 @@ async function llmRewriteWedding(
     `KNOWN LOCATION (optional): ${location || ""}`;
 
   try {
-    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    }, timeoutMs);
+    const res = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        }),
+      },
+      timeoutMs,
+    );
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     const text = j?.choices?.[0]?.message?.content || "";
@@ -1355,7 +1572,10 @@ async function llmRewriteWedding(
     // Guard against templated hallucinations not in the original text
     const rawLower = (rawText || "").toLowerCase();
     if (!/parents?/i.test(rawLower)) {
-      d = d.replace(/\s*together with their parents\s*/i, " ").replace(/\s{2,}/g, " ").trim();
+      d = d
+        .replace(/\s*together with their parents\s*/i, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
     }
     if (!t || !d) return null;
     return { title: t.slice(0, 120), description: d.slice(0, 600) };
@@ -1372,7 +1592,7 @@ async function llmRewriteSmartDescription(
   location: string,
   category: string | null,
   baseline: string,
-  timeoutMs = OPENAI_TIMEOUT_MS
+  timeoutMs = OPENAI_TIMEOUT_MS,
 ): Promise<string | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -1388,18 +1608,22 @@ async function llmRewriteSmartDescription(
     "Rules: Prefer venue/business names over street addresses. Skip RSVP/phone/email/URLs/prices. Don't invent times or places. Keep it natural and concise. Use a straightforward style like '<Team> vs <Team> at <Venue>', 'Don't miss …', or a simple declarative sentence. Avoid phrases like 'Join us' or 'You're invited'. Return only the sentence.";
 
   try {
-    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    }, timeoutMs);
+    const res = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        }),
+      },
+      timeoutMs,
+    );
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     const text = (j?.choices?.[0]?.message?.content || "").replace(/\s+/g, " ").trim();
@@ -1414,13 +1638,24 @@ async function llmRewriteSmartDescription(
 
 function pickTitle(lines: string[], _raw: string): string {
   const cleanedLines = lines
-    .map((l) => stripInvitePhrases(l.replace(/[•·\-–—\s]+$/g, "").replace(/^[•·\-–—\s]+/g, "").trim()))
+    .map((l) =>
+      stripInvitePhrases(
+        l
+          .replace(/[•·\-–—\s]+$/g, "")
+          .replace(/^[•·\-–—\s]+/g, "")
+          .trim(),
+      ),
+    )
     .filter((l) => l.length > 1);
 
-  const weekdays = /^(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(r(s(day)?)?)?|fri(day)?|sat(urday)?|sun(day)?)$/i;
-  const months = /^(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)$/i;
-  const badHints = /(invitation(\s*card)?|rsvp|admission|tickets|door(s)? open|free entry|age|call|visit|www\.|\.com|\b(am|pm)\b|\b\d{1,2}[:.]?\d{0,2}\b)/i;
-  const goodHints = /(baby\s*shower|bridal\s*shower|shower|birthday|party|anniversary|wedding|marriage|nupti(al)?|concert|festival|meet(ing|up)|ceremony|reception|gala|fundraiser|show|conference|appointment|open\s*house|celebration|quincea?ñera|graduation)/i;
+  const weekdays =
+    /^(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(r(s(day)?)?)?|fri(day)?|sat(urday)?|sun(day)?)$/i;
+  const months =
+    /^(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)$/i;
+  const badHints =
+    /(invitation(\s*card)?|rsvp|admission|tickets|door(s)? open|free entry|age|call|visit|www\.|\.com|\b(am|pm)\b|\b\d{1,2}[:.]?\d{0,2}\b)/i;
+  const goodHints =
+    /(baby\s*shower|bridal\s*shower|shower|birthday|party|anniversary|wedding|marriage|nupti(al)?|concert|festival|meet(ing|up)|ceremony|reception|gala|fundraiser|show|conference|appointment|open\s*house|celebration|quincea?ñera|graduation)/i;
   const ordinal = /\b\d{1,2}(st|nd|rd|th)\b/i;
 
   type Candidate = { text: string; score: number };
@@ -1433,7 +1668,8 @@ function pickTitle(lines: string[], _raw: string): string {
     const words = t.split(/\s+/);
     const isOneWord = words.length === 1;
     const isAllCaps = /[A-Z]/.test(t) && !/[a-z]/.test(t);
-    const simpleWord = (isOneWord && (weekdays.test(t) || months.test(t))) || /^[A-Za-z]{3,10}$/.test(t);
+    const simpleWord =
+      (isOneWord && (weekdays.test(t) || months.test(t))) || /^[A-Za-z]{3,10}$/.test(t);
     const hasMonth = months.test(t);
     const hasGood = goodHints.test(t);
     const hasOrdinal = ordinal.test(t);
@@ -1458,13 +1694,17 @@ function pickTitle(lines: string[], _raw: string): string {
 
   for (let i = 0; i < cleanedLines.length - 1; i++) {
     const combined = `${cleanedLines[i]} ${cleanedLines[i + 1]}`.replace(/\s+/g, " ").trim();
-    if (/(birthday|party|wedding|concert|festival|shower)/i.test(combined) && combined.length <= 90) {
+    if (
+      /(birthday|party|wedding|concert|festival|shower)/i.test(combined) &&
+      combined.length <= 90
+    ) {
       candidates.push({ text: combined, score: scoreLine(combined) + 1 });
     }
   }
   for (let i = 0; i < cleanedLines.length - 2; i++) {
     const triple = `${cleanedLines[i]} ${cleanedLines[i + 1]} ${cleanedLines[i + 2]}`
-      .replace(/\s+/g, " ").trim();
+      .replace(/\s+/g, " ")
+      .trim();
     if (/(birthday|party|wedding|concert|festival|shower)/i.test(triple) && triple.length <= 120) {
       let bonus = 2;
       if (/\b\w+(?:[’']s)?\s+birthday\s+party\b/i.test(triple)) bonus += 10;
@@ -1475,8 +1715,12 @@ function pickTitle(lines: string[], _raw: string): string {
   candidates.sort((x, y) => y.score - x.score);
   const best = candidates[0];
   if (best && best.score > 0) {
-    const monthAlt = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?)";
-    const dateTail = new RegExp(`(?:\\s*(?:on|,)?\\s*)?(?:${monthAlt})\\b\\s*\\d{1,2}(?:st|nd|rd|th)?(?:\\s*,?\\s*\\d{4})?\\s*$`, "i");
+    const monthAlt =
+      "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?)";
+    const dateTail = new RegExp(
+      `(?:\\s*(?:on|,)?\\s*)?(?:${monthAlt})\\b\\s*\\d{1,2}(?:st|nd|rd|th)?(?:\\s*,?\\s*\\d{4})?\\s*$`,
+      "i",
+    );
     let candidateText = best.text.replace(dateTail, "").trim();
     candidateText = candidateText.replace(/^(?:st|nd|rd|th)\b[\s\-.,:]*/i, "").trim();
     candidateText = candidateText.replace(/\b\d{1,2}(st|nd|rd|th)\b\s*$/i, "").trim();
@@ -1489,7 +1733,9 @@ function pickTitle(lines: string[], _raw: string): string {
     return normalized;
   }
 
-  const fallback = cleanedLines.find((l) => l.length > 5 && !badHints.test(l) && !weekdays.test(l) && !months.test(l));
+  const fallback = cleanedLines.find(
+    (l) => l.length > 5 && !badHints.test(l) && !weekdays.test(l) && !months.test(l),
+  );
   return fallback || "Event from flyer";
 }
 
@@ -1517,14 +1763,18 @@ export async function POST(request: Request) {
       scheduleMs: 0,
     };
     const url = new URL(request.url);
-    const forceLLM = url.searchParams.get("llm") === "1" || url.searchParams.get("engine") === "openai";
-    const gymOnly = url.searchParams.get("gym") === "1" || url.searchParams.get("sport") === "gymnastics";
+    const forceLLM =
+      url.searchParams.get("llm") === "1" || url.searchParams.get("engine") === "openai";
+    const gymOnly =
+      url.searchParams.get("gym") === "1" || url.searchParams.get("sport") === "gymnastics";
     const fastMode = url.searchParams.get("fast") === "1";
     const turboMode = url.searchParams.get("turbo") === "1";
-    const includeTimings = url.searchParams.get("timing") === "1" || url.searchParams.get("debug") === "1";
+    const includeTimings =
+      url.searchParams.get("timing") === "1" || url.searchParams.get("debug") === "1";
     const ocrModel = resolveOcrModel(fastMode);
     const rewritesRequested = url.searchParams.get("rewrite") === "1";
-    const enableRewrites = rewritesRequested || !fastMode || process.env.OCR_ENABLE_REWRITES === "1";
+    const enableRewrites =
+      rewritesRequested || !fastMode || process.env.OCR_ENABLE_REWRITES === "1";
     const allowDeepScheduleExtraction = !fastMode || forceLLM || gymOnly;
     const formData = await request.formData();
     const file = formData.get("file");
@@ -1532,23 +1782,46 @@ export async function POST(request: Request) {
       return corsJson(request, { error: "No file" }, { status: 400 });
     }
 
-    const mime = file.type || "";
+    const validation = validateUploadFileMeta({
+      fileName: file.name,
+      mimeType: file.type,
+      sizeBytes: file.size,
+      usage: "attachment",
+    });
+    if (!validation.ok) {
+      return corsJson(request, { error: validation.error }, { status: validation.status });
+    }
+
+    const mime = validation.mimeType;
     const inputBuffer = Buffer.from(await file.arrayBuffer());
 
-    // Preprocess image for better OCR; gracefully fall back if sharp can't handle the format
     let ocrBuffer: Buffer = inputBuffer;
-    const preprocessStartedAt = Date.now();
-    if (!/pdf/i.test(mime)) {
-      try {
-        ocrBuffer = await sharp(inputBuffer)
-          .rotate()
-          .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
-          .grayscale()
-          .normalize()
-          .toBuffer();
-      } catch {
-        ocrBuffer = inputBuffer;
+    /** Mime passed to vision/LLM image_url — never application/pdf after rasterize. */
+    let visionMime = mime || "application/octet-stream";
+    if (/pdf/i.test(mime)) {
+      const pagePng = await rasterizePdfPageToPng(inputBuffer, 0);
+      if (!pagePng) {
+        return corsJson(
+          request,
+          { error: "Could not convert PDF to image for OCR" },
+          { status: 422 },
+        );
       }
+      ocrBuffer = pagePng;
+      visionMime = "image/png";
+    }
+
+    // Preprocess image for better OCR; gracefully fall back if sharp can't handle the format
+    const preprocessStartedAt = Date.now();
+    try {
+      ocrBuffer = await sharp(ocrBuffer)
+        .rotate()
+        .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+        .grayscale()
+        .normalize()
+        .toBuffer();
+    } catch {
+      // Keep existing buffer (rasterized PDF page or original image bytes).
     }
     stage.preprocessMs = Date.now() - preprocessStartedAt;
 
@@ -1561,12 +1834,7 @@ export async function POST(request: Request) {
     let _openAiSucceeded = false;
 
     const runOpenAiPrimary = async (timeoutMs: number): Promise<{ rawText: string; llm: any }> => {
-      const llm = await llmExtractEventFromImage(
-        ocrBuffer,
-        mime || "application/octet-stream",
-        timeoutMs,
-        ocrModel
-      );
+      const llm = await llmExtractEventFromImage(ocrBuffer, visionMime, timeoutMs, ocrModel);
       const rawText = llmEventToRawText(llm);
       if (!llm || !rawText) throw new Error("OPENAI_EMPTY");
       return { rawText, llm };
@@ -1576,7 +1844,7 @@ export async function POST(request: Request) {
     if (turboMode && remainingBudgetMs(startedAt, totalBudgetMs, 2_000) > 0) {
       const openAiTimeoutMs = clampTimeoutMs(
         Math.min(12_000, OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 4_000)),
-        OPENAI_TIMEOUT_MS
+        OPENAI_TIMEOUT_MS,
       );
       if (openAiTimeoutMs >= 3_000) {
         try {
@@ -1604,11 +1872,15 @@ export async function POST(request: Request) {
     if (!raw) {
       const primaryTimeoutMs = clampTimeoutMs(
         Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 5_000)),
-        OPENAI_TIMEOUT_MS
+        OPENAI_TIMEOUT_MS,
       );
       if (primaryTimeoutMs >= 3_000) {
         try {
-          log(">>> OCR: Trying OpenAI Vision (primary)...", { timeoutMs: primaryTimeoutMs, fastMode, ocrModel });
+          log(">>> OCR: Trying OpenAI Vision (primary)...", {
+            timeoutMs: primaryTimeoutMs,
+            fastMode,
+            ocrModel,
+          });
           const primary = await runOpenAiPrimary(primaryTimeoutMs);
           raw = primary.rawText;
           llmImage = primary.llm;
@@ -1625,20 +1897,26 @@ export async function POST(request: Request) {
     stage.primaryOcrMs = Date.now() - primaryStartedAt;
 
     // Title detection
-    const lines = raw.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    const lines = raw
+      .split("\n")
+      .map((l: string) => l.trim())
+      .filter(Boolean);
     const title = pickTitle(lines, raw);
 
     // Time parsing via chrono
     const parsed = chrono.parse(raw, new Date(), { forwardDate: true });
     const timeLike = /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
-    const rangeLike = /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b\s*[-–—]\s*\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
+    const rangeLike =
+      /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b\s*[-–—]\s*\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
     let start: Date | null = null;
     let end: Date | null = null;
     let _startHasClockTime = false; // track if a time-of-day is present
     let parsedText: string | null = null;
 
     // Prefer explicit medical/dental Appointment Date/Time labels over DOB when detected
-    const isMedical = /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw) && /(appointment|appt)/i.test(raw);
+    const isMedical =
+      /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw) &&
+      /(appointment|appt)/i.test(raw);
     let medicalStart: Date | null = null;
     let medicalParsedText: string | null = null;
     if (isMedical) {
@@ -1647,17 +1925,24 @@ export async function POST(request: Request) {
       const dobM = raw.match(/\b(dob|date\s*of\s*birth)[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
       const dobStr = dobM?.[2] || null;
       // Labeled same-line patterns
-      const dateLM = raw.match(/\b(appointment\s*date|appt\s*date|date)\b[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
-      const timeLM = raw.match(/\b(appointment\s*time|time)\b[:#-]?\s*(\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?))/i);
-      apptDateStr = (dateLM?.[2] || null);
-      apptTimeStr = (timeLM?.[2] || null);
+      const dateLM = raw.match(
+        /\b(appointment\s*date|appt\s*date|date)\b[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+      );
+      const timeLM = raw.match(
+        /\b(appointment\s*time|time)\b[:#-]?\s*(\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?))/i,
+      );
+      apptDateStr = dateLM?.[2] || null;
+      apptTimeStr = timeLM?.[2] || null;
       // Two-line label followed by value
       if (!apptDateStr || (dobStr && apptDateStr === dobStr)) {
         for (let i = 0; i < lines.length - 1; i++) {
           if (/^\s*(appointment\s*date|appt\s*date|date)\s*:?\s*$/i.test(lines[i])) {
             const next = lines[i + 1];
             const m = next.match(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/);
-            if (m) { apptDateStr = m[0]; break; }
+            if (m) {
+              apptDateStr = m[0];
+              break;
+            }
           }
         }
       }
@@ -1666,13 +1951,16 @@ export async function POST(request: Request) {
           if (/^\s*(appointment\s*time|time)\s*:?\s*$/i.test(lines[i])) {
             const next = lines[i + 1];
             const m = next.match(/\b\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?)\b/i);
-            if (m) { apptTimeStr = m[0]; break; }
+            if (m) {
+              apptTimeStr = m[0];
+              break;
+            }
           }
         }
       }
       if (apptDateStr) {
         const [mm, dd, yy] = apptDateStr.split(/[/-]/).map((x) => x.trim());
-        const year = Number(yy.length === 2 ? (Number(yy) + 2000) : yy);
+        const year = Number(yy.length === 2 ? Number(yy) + 2000 : yy);
         const month = Number(mm) - 1;
         const day = Number(dd);
         let hours = 9;
@@ -1719,7 +2007,9 @@ export async function POST(request: Request) {
       parsedText = (c as any).text || null;
 
       const cAny: any = c as any;
-      const chosenHasExplicitDate = Boolean(cAny?.start?.knownValues?.month && cAny?.start?.knownValues?.day);
+      const chosenHasExplicitDate = Boolean(
+        cAny?.start?.knownValues?.month && cAny?.start?.knownValues?.day,
+      );
       const chosenHasExplicitTime = typeof cAny?.start?.knownValues?.hour === "number";
       if (chosenHasExplicitTime) _startHasClockTime = true;
       if (start && chosenHasExplicitDate && !chosenHasExplicitTime) {
@@ -1761,7 +2051,12 @@ export async function POST(request: Request) {
         if (spelled.meridiem === null) {
           if (hasAfternoon || hasEvening) {
             hour24 += 12;
-          } else if (!hasMorning && /(wedding|ceremony|reception)/i.test(raw) && hour24 >= 1 && hour24 <= 6) {
+          } else if (
+            !hasMorning &&
+            /(wedding|ceremony|reception)/i.test(raw) &&
+            hour24 >= 1 &&
+            hour24 <= 6
+          ) {
             hour24 += 12;
           }
         }
@@ -1807,7 +2102,11 @@ export async function POST(request: Request) {
     let addressOnly = "";
     // Medical-specific: prefer Dept./Address block when present
     if (isMedical) {
-      const idx = lines.findIndex((l: string) => /^(dept\.?\s*\/\s*address|department\s*\/\s*address|dept\.?\s*\/?\s*address|dept\.?\s*\/\s*adr(?:ess)?)$/i.test(l));
+      const idx = lines.findIndex((l: string) =>
+        /^(dept\.?\s*\/\s*address|department\s*\/\s*address|dept\.?\s*\/?\s*address|dept\.?\s*\/\s*adr(?:ess)?)$/i.test(
+          l,
+        ),
+      );
       if (idx >= 0) {
         const block = [lines[idx + 1], lines[idx + 2], lines[idx + 3]].filter(Boolean) as string[];
         const hasStreetNo = /\b\d{1,6}\s+[A-Za-z]/;
@@ -1822,15 +2121,25 @@ export async function POST(request: Request) {
       const prev = lines[locIdx - 1]?.replace(/[–—-]\s*$/g, "").trim();
       const next = lines[locIdx + 1]?.replace(/[–—-]\s*$/g, "").trim();
       const cityStateZip = /\b[A-Za-z.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
-      if (prev && !timeToken.test(prev) && venueOrSuffix.test(prev) && !hasStreetNumber.test(prev)) {
+      if (
+        prev &&
+        !timeToken.test(prev) &&
+        venueOrSuffix.test(prev) &&
+        !hasStreetNumber.test(prev)
+      ) {
         parts.push(prev);
       }
-      const badSegment = /(call|rsvp|tickets?|admission|instagram|facebook|twitter|www\.|\.com|\b(tel|phone)\b)/i;
-      const monthName = /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)/i;
-      const segments = line.split(/\s*[|•·]\s*/).map((s: string) => s.trim()).filter(Boolean);
+      const badSegment =
+        /(call|rsvp|tickets?|admission|instagram|facebook|twitter|www\.|\.com|\b(tel|phone)\b)/i;
+      const monthName =
+        /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)/i;
+      const segments = line
+        .split(/\s*[|•·]\s*/)
+        .map((s: string) => s.trim())
+        .filter(Boolean);
       let bestSegment = "";
       let segScore = -Infinity;
-      for (const s of (segments.length ? segments : [line])) {
+      for (const s of segments.length ? segments : [line]) {
         let sc = 0;
         if (badSegment.test(s)) sc -= 10;
         if (monthName.test(s) && !hasStreetNumber.test(s)) sc -= 4;
@@ -1842,10 +2151,18 @@ export async function POST(request: Request) {
         }
       }
       parts.push(bestSegment || line);
-      if (next && (cityStateZip.test(next) || hasStreetNumber.test(next)) && !timeToken.test(next)) {
+      if (
+        next &&
+        (cityStateZip.test(next) || hasStreetNumber.test(next)) &&
+        !timeToken.test(next)
+      ) {
         parts.push(next);
       }
-      addressOnly = parts.join(", ").replace(/^\s*\|\s*/g, "").replace(/\s{2,}/g, " ").trim();
+      addressOnly = parts
+        .join(", ")
+        .replace(/^\s*\|\s*/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
       if (!/\d/.test(addressOnly)) {
         const withNum = lines.find((l: string) => hasStreetNumber.test(l) && !timeToken.test(l));
         if (withNum) addressOnly = withNum.trim();
@@ -1856,7 +2173,11 @@ export async function POST(request: Request) {
     // Description cleaning
     const cleanDescription = (() => {
       const normalize = (s: string) =>
-        s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+        s
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
       const titleWords = normalize(title).split(" ").filter(Boolean);
       const addressNorm = normalize(addressOnly);
       const parsedNorm = parsedText ? normalize(parsedText) : null;
@@ -1905,7 +2226,8 @@ export async function POST(request: Request) {
         if (stripped.length <= 2) continue;
         if (/^\d+$/.test(stripped)) continue;
         if (/^[A-Za-z]$/.test(stripped)) continue;
-        if (/(^|\s)(ee+|oo+|ll+)(\s|$)/i.test(stripped) && stripped.replace(/\s+/g, "").length <= 3) continue;
+        if (/(^|\s)(ee+|oo+|ll+)(\s|$)/i.test(stripped) && stripped.replace(/\s+/g, "").length <= 3)
+          continue;
         if (inviteRe.test(stripped)) continue;
         if (hasEnoughOverlap(stripped, titleWords)) continue;
 
@@ -1917,7 +2239,12 @@ export async function POST(request: Request) {
           if (!looksEnglishWord(stripped)) continue;
         }
         const strippedNorm = normalize(stripped);
-        if (addressNorm && (strippedNorm.includes(addressNorm) || (strippedNorm.length >= 8 && addressNorm.includes(strippedNorm)))) continue;
+        if (
+          addressNorm &&
+          (strippedNorm.includes(addressNorm) ||
+            (strippedNorm.length >= 8 && addressNorm.includes(strippedNorm)))
+        )
+          continue;
         if (parsedNorm && strippedNorm === parsedNorm) continue;
 
         if (/^[A-Za-z]+$/.test(stripped) && genericWords.has(stripped.toLowerCase())) continue;
@@ -1932,17 +2259,26 @@ export async function POST(request: Request) {
       // Surface key medical fields if present: patient, DOB, provider, facility
       try {
         const full = lines.join("\n");
-        const patientMatch = full.match(/\bpatient\s*(name|id)?[:#-]?\s*([A-Z][A-Za-z'-]+\s+[A-Z][A-Za-z'-]+)\b/i);
-        const dobMatch = full.match(/\b(dob|date\s*of\s*birth)[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
-        const providerMatch = full.match(/\b(dr\.?|doctor)\s*([A-Z][A-Za-z\s\-']+)|\bprovider[:#-]?\s*([A-Z][A-Za-z\s\-']+)/i);
-        const facilityMatch = full.match(/\b(ascension|sacred\s*heart|medical\s+group|clinic|hospital)[^\n]*\b/iu);
+        const patientMatch = full.match(
+          /\bpatient\s*(name|id)?[:#-]?\s*([A-Z][A-Za-z'-]+\s+[A-Z][A-Za-z'-]+)\b/i,
+        );
+        const dobMatch = full.match(
+          /\b(dob|date\s*of\s*birth)[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+        );
+        const providerMatch = full.match(
+          /\b(dr\.?|doctor)\s*([A-Z][A-Za-z\s\-']+)|\bprovider[:#-]?\s*([A-Z][A-Za-z\s\-']+)/i,
+        );
+        const facilityMatch = full.match(
+          /\b(ascension|sacred\s*heart|medical\s+group|clinic|hospital)[^\n]*\b/iu,
+        );
         const extras: string[] = [];
         if (patientMatch) extras.push(`Patient: ${(patientMatch[2] || "").trim()}`);
         if (dobMatch) extras.push(`DOB: ${(dobMatch[2] || "").trim()}`);
         const provider = (providerMatch?.[2] || providerMatch?.[3] || "").trim();
         if (provider) extras.push(`Provider: ${provider}`);
         if (facilityMatch) extras.push(`Facility: ${facilityMatch[0].trim()}`);
-        if (extras.length) return [keep.join("\n"), extras.join(" | ")].filter(Boolean).join("\n\n");
+        if (extras.length)
+          return [keep.join("\n"), extras.join(" | ")].filter(Boolean).join("\n\n");
       } catch {}
       return keep.join("\n");
     })();
@@ -1950,7 +2286,7 @@ export async function POST(request: Request) {
     // Build final fields (llmImage already populated from primary OCR step)
     // Extract compact RSVP early so LLM can override it
     let deferredRsvp: string | null = null;
-    
+
     // If OpenAI Vision was the primary source, prioritize its results
     let finalTitle = title;
     let finalStart = start;
@@ -1967,9 +2303,10 @@ export async function POST(request: Request) {
         const d = new Date(s);
         return Number.isNaN(d.getTime()) ? null : d;
       };
-      
-      finalTitle = (typeof llmImage.title === "string" && llmImage.title.trim()) ? llmImage.title.trim() : title;
-      
+
+      finalTitle =
+        typeof llmImage.title === "string" && llmImage.title.trim() ? llmImage.title.trim() : title;
+
       // IMMEDIATE FIX: If birthday title is missing age, try to extract it NOW from OCR text
       if (/birthday/i.test(finalTitle) && !/\b\d{1,2}(st|nd|rd|th)\b/i.test(finalTitle)) {
         console.log(">>> 🔧 FIXING: Birthday title missing age, searching OCR text...");
@@ -1978,33 +2315,66 @@ export async function POST(request: Request) {
         const ageMatches = [...raw.matchAll(agePattern)];
         // Filter out date-like numbers (check context around them)
         const candidateAges = ageMatches
-          .map(m => ({ num: parseInt(m[1], 10), pos: m.index! }))
+          .map((m) => ({ num: parseInt(m[1], 10), pos: m.index! }))
           .filter(({ num, pos }) => {
             // Check if number is near date indicators (Dec, Jan, etc.) - if so, skip it
             const context = raw.substring(Math.max(0, pos - 20), Math.min(raw.length, pos + 20));
-            const isDate = /\b(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|December|January|February|March|April|May|June|July|August|September|October|November|20th|21st|22nd|23rd|24th|25th|26th|27th|28th|29th|30th|31st)\b/i.test(context);
+            const isDate =
+              /\b(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|December|January|February|March|April|May|June|July|August|September|October|November|20th|21st|22nd|23rd|24th|25th|26th|27th|28th|29th|30th|31st)\b/i.test(
+                context,
+              );
             return !isDate && num >= 1 && num <= 19;
           })
           .map(({ num }) => num)
           .filter((num, idx, arr) => arr.indexOf(num) === idx); // unique
-        
+
         if (candidateAges.length > 0) {
           const age = candidateAges.sort((a, b) => a - b)[0]; // Take smallest (most likely to be age)
-          const suffixes = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th"];
+          const suffixes = [
+            "th",
+            "st",
+            "nd",
+            "rd",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+          ];
           const ageOrdinal = `${age}${suffixes[age]}`;
           // Insert age: "Gemma's Birthday Party" → "Gemma's 7th Birthday Party"
-          finalTitle = finalTitle.replace(/(\w+['']s)\s+(Birthday\s+Party)/i, `$1 ${ageOrdinal} $2`);
+          finalTitle = finalTitle.replace(
+            /(\w+['']s)\s+(Birthday\s+Party)/i,
+            `$1 ${ageOrdinal} $2`,
+          );
           console.log(`>>> ✅ FIXED: Inserted ${ageOrdinal} into title: "${finalTitle}"`);
         } else {
           console.log(">>> ❌ Could not find age number in OCR text");
         }
       }
-      
-      finalAddress = (typeof llmImage.address === "string" && llmImage.address.trim()) ? cleanAddressLabel(llmImage.address) : addressOnly;
-      finalDescription = (typeof llmImage.description === "string" && llmImage.description.trim()) ? llmImage.description.trim() : cleanDescription;
+
+      finalAddress =
+        typeof llmImage.address === "string" && llmImage.address.trim()
+          ? cleanAddressLabel(llmImage.address)
+          : addressOnly;
+      finalDescription =
+        typeof llmImage.description === "string" && llmImage.description.trim()
+          ? llmImage.description.trim()
+          : cleanDescription;
       finalStart = safeDate(llmImage.start) ?? start;
       finalEnd = safeDate(llmImage.end) ?? end;
-      
+
       // RSVP from OpenAI (most reliable)
       if (typeof llmImage.rsvp === "string" && llmImage.rsvp.trim()) {
         deferredRsvp = llmImage.rsvp.trim();
@@ -2040,14 +2410,14 @@ export async function POST(request: Request) {
           /\b(turning|age|aged)\s+(\d{1,2})\b/i, // "turning 7", "age 7"
           /\b(\d{1,2})\s+(years?\s+old|years?)\b/i, // "7 years old", "7 years"
         ];
-        
+
         // Also check for standalone numbers (1-20) that might be the age
         // Look for single-digit or two-digit numbers that are NOT dates (not 20-31 for days, not 4-digit years)
         const standaloneNumber = /\b([1-9]|1[0-9]|20)\b/g;
         const matches = [...raw.matchAll(standaloneNumber)];
-        
+
         let extractedAge: number | null = null;
-        
+
         // First try explicit age patterns
         for (const pattern of agePatterns) {
           const match = raw.match(pattern);
@@ -2064,35 +2434,71 @@ export async function POST(request: Request) {
             if (extractedAge) break;
           }
         }
-        
+
         // If no explicit pattern found, check standalone numbers
         // Prefer numbers that appear near birthday-related text or are prominent
         if (!extractedAge && matches.length > 0) {
           // Filter out date-like numbers (20-31, 4-digit years)
           const candidateNumbers = matches
-            .map(m => parseInt(m[1], 10))
-            .filter(n => n >= 1 && n <= 20 && n !== 20) // Exclude 20+ (likely dates)
-            .filter(n => !raw.match(new RegExp(`\\b${n}\\s*(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|December|January|February|March|April|May|June|July|August|September|October|November|202[0-9]|203[0-9])`, "i"))); // Not near dates
-          
+            .map((m) => parseInt(m[1], 10))
+            .filter((n) => n >= 1 && n <= 20 && n !== 20) // Exclude 20+ (likely dates)
+            .filter(
+              (n) =>
+                !raw.match(
+                  new RegExp(
+                    `\\b${n}\\s*(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|December|January|February|March|April|May|June|July|August|September|October|November|202[0-9]|203[0-9])`,
+                    "i",
+                  ),
+                ),
+            ); // Not near dates
+
           if (candidateNumbers.length > 0) {
             // Prefer smaller numbers (more likely to be ages than dates)
             extractedAge = candidateNumbers.sort((a, b) => a - b)[0];
           }
         }
-        
+
         // If we found an age, convert to ordinal and insert it into the title
         if (extractedAge && extractedAge >= 1 && extractedAge <= 19) {
-          const suffixes = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th", "th"];
+          const suffixes = [
+            "th",
+            "st",
+            "nd",
+            "rd",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+            "th",
+          ];
           ageOrdinal = `${extractedAge}${suffixes[extractedAge]}`;
           // Insert age into title: "Gemma's Birthday Party" → "Gemma's 7th Birthday Party"
-          finalTitle = finalTitle.replace(/(\w+['']s)\s+(Birthday\s+Party)/i, `$1 ${ageOrdinal} $2`);
-          console.log(`>>> [AGE FALLBACK] Extracted age ${extractedAge} (${ageOrdinal}) from OCR text, inserted into title: ${finalTitle}`);
+          finalTitle = finalTitle.replace(
+            /(\w+['']s)\s+(Birthday\s+Party)/i,
+            `$1 ${ageOrdinal} $2`,
+          );
+          console.log(
+            `>>> [AGE FALLBACK] Extracted age ${extractedAge} (${ageOrdinal}) from OCR text, inserted into title: ${finalTitle}`,
+          );
         } else {
-          console.log(`>>> [AGE FALLBACK] Could not extract age from OCR text for birthday title: "${finalTitle}"`);
+          console.log(
+            `>>> [AGE FALLBACK] Could not extract age from OCR text for birthday title: "${finalTitle}"`,
+          );
         }
       }
     }
-    
+
     // Remove month names and date patterns from title
     const monthPatterns = [
       /\b(December|January|February|March|April|May|June|July|August|September|October|November)\b/gi,
@@ -2104,14 +2510,18 @@ export async function POST(request: Request) {
     // Remove date patterns like "20th", "Dec 20", "2025" BUT preserve age ordinals
     if (isBirthdayTitle && ageOrdinal) {
       // Temporarily replace age ordinal to protect it
-      finalTitle = finalTitle.replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, (match, num, suffix) => {
-        return match === ageOrdinal ? `__AGE__${num}${suffix}__` : "";
-      }).trim();
+      finalTitle = finalTitle
+        .replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, (match, num, suffix) => {
+          return match === ageOrdinal ? `__AGE__${num}${suffix}__` : "";
+        })
+        .trim();
     } else {
       // Remove all ordinals if not a birthday (date ordinals like "20th")
       finalTitle = finalTitle.replace(/\b\d{1,2}(st|nd|rd|th)\b/gi, "").trim();
     }
-    finalTitle = finalTitle.replace(/\b(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov)\.?\s+\d{1,2}\b/gi, "").trim(); // Remove "Dec 20"
+    finalTitle = finalTitle
+      .replace(/\b(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov)\.?\s+\d{1,2}\b/gi, "")
+      .trim(); // Remove "Dec 20"
     finalTitle = finalTitle.replace(/\b\d{4}\b/g, "").trim(); // Remove year like "2025"
     // Restore age ordinal if we protected it
     if (isBirthdayTitle && ageOrdinal) {
@@ -2123,13 +2533,15 @@ export async function POST(request: Request) {
     finalTitle = finalTitle.replace(/[,.;:]+$/, "").trim();
 
     const isMedicalAppointment =
-      /(appointment|appt)/i.test(raw) && /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw);
+      /(appointment|appt)/i.test(raw) &&
+      /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw);
 
     // For medical slips, force title to "<Appointment Type> with Dr <Name>" when possible,
     // and keep notes minimal (just the title line)
     if (isMedicalAppointment) {
       // If OpenAI already provided a well-formatted description, preserve it
-      const _openAIHasProvider = ocrSource === "openai" && finalDescription && /Provider:.*Dr/i.test(finalDescription);
+      const _openAIHasProvider =
+        ocrSource === "openai" && finalDescription && /Provider:.*Dr/i.test(finalDescription);
       // 1) Try to read appointment reason near the "Appointment" label
       const appIdx = lines.findIndex((l: string) => /^\s*appointment\s*$/i.test(l));
       let reasonLine: string | null = null;
@@ -2137,35 +2549,53 @@ export async function POST(request: Request) {
         reasonLine = lines[appIdx + 1] || null;
       }
       // 2) Fallback regexes for common reasons (including dental)
-      const reasonMatch = (raw.match(/\b(dental\s+cleaning|teeth\s+cleaning|annual\s+visit|annual\s+physical|follow\s*-?\s*up|new\s*patient(\s*visit)?|consult(ation)?|check\s*-?\s*up|well(ness)?\s*visit|routine\s*(exam|visit|check(\s*-?\s*up)?)|cleaning)\b/i) || [])[0];
-      let apptTypeRaw = (reasonLine?.trim()) || reasonMatch || "Doctor Appointment";
+      const reasonMatch = (raw.match(
+        /\b(dental\s+cleaning|teeth\s+cleaning|annual\s+visit|annual\s+physical|follow\s*-?\s*up|new\s*patient(\s*visit)?|consult(ation)?|check\s*-?\s*up|well(ness)?\s*visit|routine\s*(exam|visit|check(\s*-?\s*up)?)|cleaning)\b/i,
+      ) || [])[0];
+      let apptTypeRaw = reasonLine?.trim() || reasonMatch || "Doctor Appointment";
       // Clean trailing codes (e.g., "Annual Visit 20")
-      apptTypeRaw = apptTypeRaw.replace(/\b\d+\b/g, "").replace(/\s{2,}/g, " ").trim();
+      apptTypeRaw = apptTypeRaw
+        .replace(/\b\d+\b/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
       const apptType = apptTypeRaw;
 
       // Provider detection (enhanced for hyphenated and multi-part names):
       let provider: string | null = null;
-      
+
       // a) Prefixed with Dr./Doctor (handles hyphenated last names like Parris-Ramie)
-      const provA = raw.match(/\b(?:dr\.?\s*|doctor\s+)([A-Z][A-Za-z\-']+(?:\s+[A-Z][A-Za-z\-']+)*(?:\s*-\s*[A-Z][A-Za-z]+)?)\b/i);
+      const provA = raw.match(
+        /\b(?:dr\.?\s*|doctor\s+)([A-Z][A-Za-z\-']+(?:\s+[A-Z][A-Za-z\-']+)*(?:\s*-\s*[A-Z][A-Za-z]+)?)\b/i,
+      );
       if (provA) provider = (provA[1] || "").trim();
-      
+
       // b) "Provider:" or "Physician:" label followed by name
       if (!provider) {
-        const provLabel = raw.match(/(?:Provider|Physician|Doctor):\s*([A-Z][A-Za-z\-'\s]+(?:-[A-Z][A-Za-z]+)?)/i);
-        if (provLabel) provider = (provLabel[1] || "").replace(/\s*,?\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C|FNP|ARNP|CNM|DDS|DMD).*/i, "").trim();
+        const provLabel = raw.match(
+          /(?:Provider|Physician|Doctor):\s*([A-Z][A-Za-z\-'\s]+(?:-[A-Z][A-Za-z]+)?)/i,
+        );
+        if (provLabel)
+          provider = (provLabel[1] || "")
+            .replace(/\s*,?\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C|FNP|ARNP|CNM|DDS|DMD).*/i, "")
+            .trim();
       }
-      
+
       // c) NAME , MD|DO|NP... (uppercase or titlecase, handles hyphens)
       if (!provider) {
-        const provB = raw.match(/\b([A-Z][A-Za-z'-]+(?:\s+[A-Z][A-Za-z'-]+){1,4})\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C|FNP|ARNP|CNM|DDS|DMD)\b/i);
+        const provB = raw.match(
+          /\b([A-Z][A-Za-z'-]+(?:\s+[A-Z][A-Za-z'-]+){1,4})\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C|FNP|ARNP|CNM|DDS|DMD)\b/i,
+        );
         if (provB) provider = (provB[1] || "").trim();
       }
-      
+
       // d) The line immediately after reason (often provider)
       if (!provider && reasonLine) {
         const cand = (lines[appIdx + 2] || "").trim();
-        if (/^[A-Z][A-Za-z'-]+(?:\s+[A-Z][A-Za-z'-]+){1,4}(\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C))?$/i.test(cand)) {
+        if (
+          /^[A-Z][A-Za-z'-]+(?:\s+[A-Z][A-Za-z'-]+){1,4}(\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C))?$/i.test(
+            cand,
+          )
+        ) {
           provider = cand.replace(/\s*,\s*(MD|M\.D\.|DO|D\.O\.|NP|PA-?C)$/i, "").trim();
         }
       }
@@ -2176,13 +2606,21 @@ export async function POST(request: Request) {
       console.log(">>> Extracted provider:", provider || "NOT FOUND");
       console.log(">>> Heuristic appointment type:", apptType);
       console.log(">>> Current title before override:", finalTitle);
-      
+
       // Title-case helper
-      const toTitle = (s: string) => s.replace(/\s+/g, " ").trim().replace(/\b\w/g, (m: string) => m.toUpperCase());
-      
+      const toTitle = (s: string) =>
+        s
+          .replace(/\s+/g, " ")
+          .trim()
+          .replace(/\b\w/g, (m: string) => m.toUpperCase());
+
       // Only override title if OpenAI didn't already extract a good one
-      const openAIHasGoodTitle = ocrSource === "openai" && finalTitle && finalTitle !== "Doctor Appointment" && !/^\s*appointment\s*$/i.test(finalTitle);
-      
+      const openAIHasGoodTitle =
+        ocrSource === "openai" &&
+        finalTitle &&
+        finalTitle !== "Doctor Appointment" &&
+        !/^\s*appointment\s*$/i.test(finalTitle);
+
       if (!openAIHasGoodTitle) {
         // Use heuristic extraction
         if (provider) finalTitle = `${toTitle(apptType)} with Dr ${toTitle(provider)}`;
@@ -2191,11 +2629,11 @@ export async function POST(request: Request) {
       } else {
         console.log(">>> Preserving OpenAI title:", finalTitle);
       }
-      
+
       // Build clinical description from ONLY what we found (no rigid template)
       // Add facts only if they were extracted
       const descParts: string[] = [];
-      
+
       // Only add what we actually found
       if (apptType && apptType !== "Doctor Appointment") {
         descParts.push(`Appointment type: ${toTitle(apptType)}`);
@@ -2207,15 +2645,19 @@ export async function POST(request: Request) {
       if (facilityMatch) {
         descParts.push(`Location: ${facilityMatch[0].trim()}`);
       }
-      
+
       // Use factual description with line breaks, or fallback to title if no details extracted
       // UNLESS OpenAI already provided a good description
-      const openAIHasGoodDesc = ocrSource === "openai" && finalDescription && finalDescription !== "Doctor Appointment." && finalDescription.length > 20;
-      
+      const openAIHasGoodDesc =
+        ocrSource === "openai" &&
+        finalDescription &&
+        finalDescription !== "Doctor Appointment." &&
+        finalDescription.length > 20;
+
       if (!openAIHasGoodDesc) {
         // If we found specific details, use them; otherwise just use a simple message
         if (descParts.length > 0) {
-          finalDescription = descParts.map(p => p.endsWith('.') ? p : `${p}.`).join("\n");
+          finalDescription = descParts.map((p) => (p.endsWith(".") ? p : `${p}.`)).join("\n");
         } else {
           finalDescription = `${toTitle(apptType)}.`;
         }
@@ -2234,14 +2676,40 @@ export async function POST(request: Request) {
     // "Join <Title> on <Month Day[ordinal]> at <Time>." (omit address; it's shown elsewhere)
     try {
       if (!isMedicalAppointment && finalTitle && finalStart instanceof Date) {
-        const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+        const monthNames = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
         const day = finalStart.getDate();
         const ord = (n: number) => {
           if (n % 100 >= 11 && n % 100 <= 13) return "th";
-          switch (n % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; }
+          switch (n % 10) {
+            case 1:
+              return "st";
+            case 2:
+              return "nd";
+            case 3:
+              return "rd";
+            default:
+              return "th";
+          }
         };
         const dateStr = `${monthNames[finalStart.getMonth()]} ${day}${ord(day)}`;
-        const timeStrRaw = finalStart.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+        const timeStrRaw = finalStart.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
         const timeStr = timeStrRaw.replace(":00 ", " "); // 2:00 PM → 2 PM
         finalDescription = `Join ${finalTitle} on ${dateStr}${timeStr ? ` at ${timeStr}` : ""}.`;
         keepTitleInDescription = true;
@@ -2288,14 +2756,15 @@ export async function POST(request: Request) {
         const ageOrdinalInTitle = finalTitle.match(/\b(\d{1,2})(st|nd|rd|th)\s+Birthday/i);
         let age = ageOrdinalInTitle ? `${ageOrdinalInTitle[1]}${ageOrdinalInTitle[2]}` : null;
         if (!age) {
-        // fallback: cardinal in title (e.g., "Gemma's 7 Birthday Party")
+          // fallback: cardinal in title (e.g., "Gemma's 7 Birthday Party")
           const ageCardinal = finalTitle.match(/\b(\d{1,2})\s+Birthday/i)?.[1];
           if (ageCardinal) {
-            const suf = ["th","st","nd","rd"][Math.min(Number(ageCardinal) % 10, 4)] || "th";
-            const ord = (ageCardinal === "11" || ageCardinal === "12" || ageCardinal === "13") ? "th" : suf;
+            const suf = ["th", "st", "nd", "rd"][Math.min(Number(ageCardinal) % 10, 4)] || "th";
+            const ord =
+              ageCardinal === "11" || ageCardinal === "12" || ageCardinal === "13" ? "th" : suf;
             age = `${ageCardinal}${ord}`;
           }
-        }        
+        }
         const name = nameMatch ? nameMatch[1] : null;
         const venue = venueForSentence ? venueForSentence : "";
         // Build inviting description: "Join us to celebrate [Name]'s [Age]th Birthday at [Venue]"
@@ -2314,14 +2783,14 @@ export async function POST(request: Request) {
           const rewriteStartedAt = Date.now();
           const rewriteTimeoutMs = clampTimeoutMs(
             Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_500)),
-            OPENAI_TIMEOUT_MS
+            OPENAI_TIMEOUT_MS,
           );
           if (rewriteTimeoutMs >= 3_000) {
             const rewritten = await llmRewriteBirthdayDescription(
               finalTitle,
               venueForSentence,
               deterministic,
-              rewriteTimeoutMs
+              rewriteTimeoutMs,
             );
             const cleaned = (rewritten || "").replace(/\s+/g, " ").trim();
             // Remove any title repetition from the rewritten description
@@ -2331,8 +2800,14 @@ export async function POST(request: Request) {
               const cleanedLower = cleaned.toLowerCase();
               if (cleanedLower.includes(titleLower)) {
                 // Remove title from description
-                const withoutTitle = cleaned.replace(new RegExp(finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "").trim();
-                finalDescription = withoutTitle.replace(/^[\s\n.,;:!?-]+/, "").replace(/[\s\n.,;:!?-]+$/, "").trim() || deterministic;
+                const withoutTitle = cleaned
+                  .replace(new RegExp(finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "")
+                  .trim();
+                finalDescription =
+                  withoutTitle
+                    .replace(/^[\s\n.,;:!?-]+/, "")
+                    .replace(/[\s\n.,;:!?-]+$/, "")
+                    .trim() || deterministic;
               } else {
                 finalDescription = cleaned;
               }
@@ -2346,28 +2821,37 @@ export async function POST(request: Request) {
     // If this looks like a wedding/marriage invite, produce a clean title and short human sentence
     if (
       enableRewrites &&
-      (/(wedding|marriage|marieage|bride|groom|ceremony|reception|nupti(al)?)/i.test(raw) || /(wedding|marriage)/i.test(finalTitle))
+      (/(wedding|marriage|marieage|bride|groom|ceremony|reception|nupti(al)?)/i.test(raw) ||
+        /(wedding|marriage)/i.test(finalTitle))
     ) {
       try {
         const rewriteStartedAt = Date.now();
         const rewriteTimeoutMs = clampTimeoutMs(
           Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
-          OPENAI_TIMEOUT_MS
+          OPENAI_TIMEOUT_MS,
         );
         if (rewriteTimeoutMs < 3_000) throw new Error("WEDDING_REWRITE_SKIPPED_LOW_BUDGET");
         const wr = await llmRewriteWedding(
           raw,
           finalTitle,
           locationForNarrative || finalAddress,
-          rewriteTimeoutMs
+          rewriteTimeoutMs,
         );
         if (wr?.title) finalTitle = wr.title;
-    if (wr?.description) {
+        if (wr?.description) {
           let desc = wr.description;
           // If model produced a spelled-out phrase not present on the card, prefer numeric time if we have one
-          if (!/o['’]?clock/i.test(raw) && /o['’]?clock/i.test(desc) && finalStart instanceof Date) {
+          if (
+            !/o['’]?clock/i.test(raw) &&
+            /o['’]?clock/i.test(desc) &&
+            finalStart instanceof Date
+          ) {
             try {
-              const timeStr = new Date(finalStart).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+              const timeStr = new Date(finalStart).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
               desc = desc.replace(/at\s+[^,\n]*o['’]?clock[^,\n]*/i, `at ${timeStr}`);
             } catch {}
           }
@@ -2386,7 +2870,7 @@ export async function POST(request: Request) {
         const rewriteStartedAt = Date.now();
         const rewriteTimeoutMs = clampTimeoutMs(
           Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 1_500)),
-          OPENAI_TIMEOUT_MS
+          OPENAI_TIMEOUT_MS,
         );
         if (rewriteTimeoutMs < 3_000) throw new Error("SMART_REWRITE_SKIPPED_LOW_BUDGET");
         const refined = await llmRewriteSmartDescription(
@@ -2398,7 +2882,7 @@ export async function POST(request: Request) {
             locationForNarrative,
           null,
           looksMultiline ? (finalTitle ? `${finalTitle}.` : "") : finalDescription,
-          rewriteTimeoutMs
+          rewriteTimeoutMs,
         );
         const cleaned = (refined || "").replace(/\s+/g, " ").trim();
         if (cleaned && cleaned.length >= 20 && cleaned.length <= 200) {
@@ -2459,7 +2943,9 @@ export async function POST(request: Request) {
         timeTokenSet.add(token.trim());
       }
       const spelledMatches =
-        raw.match(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*o['\u2019]?clock\b/gi) || [];
+        raw.match(
+          /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*o['\u2019]?clock\b/gi,
+        ) || [];
       const totalTimeMentions = timeTokenSet.size + spelledMatches.length;
       const looksLikeSingleTime = !hasExplicitRange && !hasRangeVerb && totalTimeMentions <= 1;
       if (durationMs <= 0 || looksLikeSingleTime) {
@@ -2468,11 +2954,12 @@ export async function POST(request: Request) {
     }
 
     // RSVP is now stored in a separate field, no longer appended to description
-    
+
     // Don't strip "Join us/You're invited" when we intentionally keep the title in description
     // (e.g., deterministic one-liner: "Join <Title> on <Date> at <Time>") or for weddings/birthdays.
     if (typeof finalDescription === "string" && finalDescription.trim()) {
-      const looksWedding = /(wedding|marriage)/i.test(finalTitle) || /(wedding|marriage)/i.test(raw);
+      const looksWedding =
+        /(wedding|marriage)/i.test(finalTitle) || /(wedding|marriage)/i.test(raw);
       if (!descriptionWasGeneratedAsBirthday && !looksWedding && !keepTitleInDescription) {
         finalDescription = stripJoinUsLanguage(finalDescription.trim());
       }
@@ -2482,7 +2969,7 @@ export async function POST(request: Request) {
     if (!keepTitleInDescription && finalTitle && finalDescription) {
       const titleLower = finalTitle.toLowerCase().trim();
       const descLower = finalDescription.toLowerCase();
-      
+
       // Check if description starts with or contains the title
       if (descLower.startsWith(titleLower)) {
         // Remove title from start
@@ -2491,10 +2978,7 @@ export async function POST(request: Request) {
         finalDescription = finalDescription.replace(/^[\s\n.,;:!?-]+/, "").trim();
       } else if (descLower.includes(titleLower)) {
         // Remove title from anywhere in description
-        const titleRegex = new RegExp(
-          finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-          "gi"
-        );
+        const titleRegex = new RegExp(finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
         finalDescription = finalDescription.replace(titleRegex, "").trim();
         // Clean up extra whitespace/punctuation
         finalDescription = finalDescription.replace(/\s{2,}/g, " ").trim();
@@ -2502,14 +2986,11 @@ export async function POST(request: Request) {
         finalDescription = finalDescription.replace(/[\s\n.,;:!?-]+$/, "").trim();
       }
     }
-    
+
     // Secondary guard: remove title unless we intentionally kept it
     if (!keepTitleInDescription && finalTitle && finalDescription) {
       try {
-        const titleRegex = new RegExp(
-          finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-          "gi"
-        );
+        const titleRegex = new RegExp(finalTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
         finalDescription = finalDescription.replace(titleRegex, "").trim();
       } catch {}
     }
@@ -2570,12 +3051,21 @@ export async function POST(request: Request) {
     };
 
     // ---------------- Gymnastics schedule extraction ----------------
-    const schedule = { detected: false as boolean, homeTeam: null as string | null, season: null as string | null, games: [] as any[] };
+    const schedule = {
+      detected: false as boolean,
+      homeTeam: null as string | null,
+      season: null as string | null,
+      games: [] as any[],
+    };
     let events: any[] = [];
 
     // ---------------- Weekly practice schedule extraction ----------------
-    const dayMentions = raw.match(/\b(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(rs(day)?)?|fri(day)?|sat(urday)?|sun(day)?)\b/gi) || [];
-    const hasTimeRange = /\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2}/.test(raw) || /\b\d{1,2}:\d{2}\b/.test(raw);
+    const dayMentions =
+      raw.match(
+        /\b(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(rs(day)?)?|fri(day)?|sat(urday)?|sun(day)?)\b/gi,
+      ) || [];
+    const hasTimeRange =
+      /\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2}/.test(raw) || /\b\d{1,2}:\d{2}\b/.test(raw);
     const hasPracticeKeyword = /(practice|training|schedule|team)/i.test(raw);
     const looksLikePracticeSchedule = hasPracticeKeyword && hasTimeRange && dayMentions.length >= 4;
 
@@ -2605,14 +3095,14 @@ export async function POST(request: Request) {
           const scheduleStartedAt = Date.now();
           const scheduleTimeoutMs = clampTimeoutMs(
             Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
-            OPENAI_TIMEOUT_MS
+            OPENAI_TIMEOUT_MS,
           );
           if (scheduleTimeoutMs >= 3_000) {
             llmPractice = await llmExtractPracticeScheduleFromImage(
               ocrBuffer,
-              mime || "application/octet-stream",
+              visionMime,
               tz,
-              scheduleTimeoutMs
+              scheduleTimeoutMs,
             );
           }
           stage.scheduleMs += Date.now() - scheduleStartedAt;
@@ -2622,7 +3112,8 @@ export async function POST(request: Request) {
       }
 
       if (llmPractice?.groups?.length) {
-        const locationHint = llmPractice?.timezoneHint || finalAddress || fieldsGuess.location || "";
+        const locationHint =
+          llmPractice?.timezoneHint || finalAddress || fieldsGuess.location || "";
         practiceTz = inferTimezoneFromAddress(locationHint || "") || tz;
         const builtGroups: typeof practiceGroups = [];
         for (const group of llmPractice.groups) {
@@ -2654,7 +3145,7 @@ export async function POST(request: Request) {
               startParsed.hour,
               startParsed.minute,
               endParsed.hour,
-              endParsed.minute
+              endParsed.minute,
             );
             const pad = (n: number) => String(n).padStart(2, "0");
             normalizedSessions.push({
@@ -2708,10 +3199,16 @@ export async function POST(request: Request) {
       const heuristic = parsePracticeScheduleHeuristics(lines, practiceTz);
       if (heuristic && Array.isArray(heuristic.groups) && heuristic.groups.length) {
         const seen = new Set(
-          (practiceGroups || []).map((g) => String(g?.name || "").trim().toLowerCase())
+          (practiceGroups || []).map((g) =>
+            String(g?.name || "")
+              .trim()
+              .toLowerCase(),
+          ),
         );
         for (const hg of heuristic.groups) {
-          const key = String(hg?.name || "").trim().toLowerCase();
+          const key = String(hg?.name || "")
+            .trim()
+            .toLowerCase();
           if (!key) continue;
           if (!seen.has(key)) {
             practiceGroups.push(hg);
@@ -2746,7 +3243,11 @@ export async function POST(request: Request) {
           }
           if (order.length >= 3) {
             const seen = new Set(
-              (practiceSchedule.groups || []).map((g: any) => String(g?.name || "").trim().toLowerCase())
+              (practiceSchedule.groups || []).map((g: any) =>
+                String(g?.name || "")
+                  .trim()
+                  .toLowerCase(),
+              ),
             );
             for (let i = 0; i < normalized.length; i++) {
               const line = normalized[i];
@@ -2758,8 +3259,14 @@ export async function POST(request: Request) {
               let j = i + 1;
               while (j < normalized.length && values.length < order.length) {
                 const cand = normalized[j];
-                if (!cand) { j++; continue; }
-                if (isDayToken(cand)) { j++; continue; }
+                if (!cand) {
+                  j++;
+                  continue;
+                }
+                if (isDayToken(cand)) {
+                  j++;
+                  continue;
+                }
                 if (groupNameRe.test(cand)) break; // next group reached
                 values.push(cand);
                 j++;
@@ -2771,14 +3278,17 @@ export async function POST(request: Request) {
                 const label = values[k];
                 const parsed = parsePracticeTimeRange(label);
                 if (!parsed) continue;
-                const dayInfo = DAY_NAME_TO_INDEX[normalizeDayToken(order[k])] || { index: k, code: order[k] };
+                const dayInfo = DAY_NAME_TO_INDEX[normalizeDayToken(order[k])] || {
+                  index: k,
+                  code: order[k],
+                };
                 const occ = buildNextOccurrence(
                   practiceTz,
                   dayInfo.index,
                   parsed.startHour,
                   parsed.startMinute,
                   parsed.endHour,
-                  parsed.endMinute
+                  parsed.endMinute,
                 );
                 const pad = (n: number) => String(n).padStart(2, "0");
                 sessions.push({
@@ -2798,7 +3308,9 @@ export async function POST(request: Request) {
                   allDay: false,
                   timezone: practiceTz,
                   location: "",
-                  description: [practiceTitle, practiceTimeframe, parsed.note].filter(Boolean).join("\n"),
+                  description: [practiceTitle, practiceTimeframe, parsed.note]
+                    .filter(Boolean)
+                    .join("\n"),
                   recurrence: `RRULE:FREQ=WEEKLY;BYDAY=${dayInfo.code}`,
                   reminders: [{ minutes: 1440 }],
                   category: "Sport Events",
@@ -2819,18 +3331,30 @@ export async function POST(request: Request) {
     }
 
     const monthMap: Record<string, number> = {
-      jan: 0, january: 0,
-      feb: 1, february: 1,
-      mar: 2, march: 2,
-      apr: 3, april: 3,
+      jan: 0,
+      january: 0,
+      feb: 1,
+      february: 1,
+      mar: 2,
+      march: 2,
+      apr: 3,
+      april: 3,
       may: 4,
-      jun: 5, june: 5,
-      jul: 6, july: 6,
-      aug: 7, august: 7,
-      sep: 8, sept: 8, september: 8,
-      oct: 9, october: 9,
-      nov: 10, november: 10,
-      dec: 11, december: 11,
+      jun: 5,
+      june: 5,
+      jul: 6,
+      july: 6,
+      aug: 7,
+      august: 7,
+      sep: 8,
+      sept: 8,
+      september: 8,
+      oct: 9,
+      october: 9,
+      nov: 10,
+      november: 10,
+      dec: 11,
+      december: 11,
     };
 
     const hasGymnasticsSchedule = /gymnastics/i.test(raw) && /schedule/i.test(raw);
@@ -2839,15 +3363,15 @@ export async function POST(request: Request) {
       const scheduleStartedAt = Date.now();
       const scheduleTimeoutMs = clampTimeoutMs(
         Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 1_500)),
-        OPENAI_TIMEOUT_MS
+        OPENAI_TIMEOUT_MS,
       );
       const llmSched =
         scheduleTimeoutMs >= 3_000
           ? await llmExtractGymnasticsScheduleFromImage(
               ocrBuffer,
-              mime || "application/octet-stream",
+              visionMime,
               tz,
-              scheduleTimeoutMs
+              scheduleTimeoutMs,
             )
           : null;
       stage.scheduleMs += Date.now() - scheduleStartedAt;
@@ -2883,7 +3407,9 @@ export async function POST(request: Request) {
       schedule.detected = true;
 
       // Try to capture the season year (e.g., 2026) if present near header
-      const yearMatch = raw.match(/\b(20\d{2})\b.*?gymnastics.*?schedule/i) || raw.match(/gymnastics.*?schedule.*?\b(20\d{2})\b/i);
+      const yearMatch =
+        raw.match(/\b(20\d{2})\b.*?gymnastics.*?schedule/i) ||
+        raw.match(/gymnastics.*?schedule.*?\b(20\d{2})\b/i);
       const season = yearMatch ? yearMatch[1] : null;
       schedule.season = season;
 
@@ -2892,7 +3418,8 @@ export async function POST(request: Request) {
       schedule.homeTeam = acr;
 
       // Collapse lines into date-led blocks
-      const monthRe = /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)/i;
+      const monthRe =
+        /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)/i;
       const dateStartRe = new RegExp(`^\\s*${monthRe.source}\\s*\\b(\\d{1,2})\\b`, "i");
 
       type Block = { month: string; day: number; text: string };
@@ -2920,7 +3447,9 @@ export async function POST(request: Request) {
       }
 
       // Opponent parsing: detect at/vs and list of opponents
-      const normalizeOpponents = (s: string): { homeAway: "home" | "away"; opponents: string[]; label: string } | null => {
+      const normalizeOpponents = (
+        s: string,
+      ): { homeAway: "home" | "away"; opponents: string[]; label: string } | null => {
         const t = s.replace(/\s+/g, " ").trim();
         let homeAway: "home" | "away" | null = null;
         let label = t;
@@ -2945,19 +3474,35 @@ export async function POST(request: Request) {
           .split(/\s{2,}/)
           .filter(Boolean);
         // Fallback: further split by separators
-        const dedup = Array.from(new Set(cleaned.split(/[,/]|\s{2,}|\s{1}\u00B7\s{1}/).map((x) => x.trim()).filter(Boolean)));
+        const dedup = Array.from(
+          new Set(
+            cleaned
+              .split(/[,/]|\s{2,}|\s{1}\u00B7\s{1}/)
+              .map((x) => x.trim())
+              .filter(Boolean),
+          ),
+        );
         const finalOpponents = opponents.length >= 1 ? [cleaned] : dedup;
-        return { homeAway, opponents: finalOpponents.length ? finalOpponents : [cleaned], label: cleaned };
+        return {
+          homeAway,
+          opponents: finalOpponents.length ? finalOpponents : [cleaned],
+          label: cleaned,
+        };
       };
 
       // External geocode disabled; return null so away venues remain unchanged
-      const geocode = async (_query: string): Promise<{ label: string; confidence: number } | null> => {
+      const geocode = async (
+        _query: string,
+      ): Promise<{ label: string; confidence: number } | null> => {
         return null;
       };
 
       for (const b of blocks) {
         // Determine at/vs line inside block
-        const linesIn = b.text.split("\n").map((x) => x.trim()).filter(Boolean);
+        const linesIn = b.text
+          .split("\n")
+          .map((x) => x.trim())
+          .filter(Boolean);
         const main = linesIn.find((x) => /\b(vs\.?|at)\b/i.test(x)) || linesIn[0];
         const opp = normalizeOpponents(main || "");
         if (!opp) continue;
@@ -2974,7 +3519,9 @@ export async function POST(request: Request) {
 
         // Times are usually not on schedule images; mark as all-day
         const startISO = new Date(dateLocal).toISOString().slice(0, 10);
-        const endISO = new Date(Date.UTC(year, monthIndex, b.day + 1, 0, 0, 0)).toISOString().slice(0, 10);
+        const endISO = new Date(Date.UTC(year, monthIndex, b.day + 1, 0, 0, 0))
+          .toISOString()
+          .slice(0, 10);
 
         // Location: home uses detected address; away attempts geocode
         let location = "";
@@ -2990,7 +3537,8 @@ export async function POST(request: Request) {
         }
 
         const prettyOpp = opp.label.replace(/\s{2,}/g, " ");
-        const evTitle = `${schedule.homeTeam ? `${schedule.homeTeam} ` : ""}Gymnastics: ${opp.homeAway === "home" ? "vs" : "at"} ${prettyOpp}`.trim();
+        const evTitle =
+          `${schedule.homeTeam ? `${schedule.homeTeam} ` : ""}Gymnastics: ${opp.homeAway === "home" ? "vs" : "at"} ${prettyOpp}`.trim();
 
         // Push both schedule game (semantic) and normalized event
         schedule.games.push({
@@ -3021,10 +3569,7 @@ export async function POST(request: Request) {
       fieldsGuess.location = "";
       fieldsGuess.start = null as any;
       fieldsGuess.end = null as any;
-      const schedLabel = [
-        (practiceSchedule as any).title,
-        (practiceSchedule as any).timeframe,
-      ]
+      const schedLabel = [(practiceSchedule as any).title, (practiceSchedule as any).timeframe]
         .filter((s: string) => (s || "").trim())
         .join(" — ");
       if (schedLabel) fieldsGuess.description = schedLabel;
@@ -3036,24 +3581,43 @@ export async function POST(request: Request) {
         const _text = (fullText || "").toLowerCase();
         // Football handling removed
         // Doctor/Dentist/Clinic appointments
-        const isDoctorLike = /(doctor|dr\.|dentist|dental|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam|ascension|sacred\s*heart)/i.test(fullText);
+        const isDoctorLike =
+          /(doctor|dr\.|dentist|dental|orthodont|clinic|hospital|pediatric|dermatolog|cardiolog|optomet|eye\s+exam|ascension|sacred\s*heart)/i.test(
+            fullText,
+          );
         const hasAppt = /(appointment|appt)/i.test(fullText);
         if (isDoctorLike && hasAppt) return "Doctor Appointments";
         if (isDoctorLike) return "Doctor Appointments";
         if (hasAppt) return "Appointments";
         // Weddings / Birthdays — words-only detection. If both appear, do not prefer either.
-        const hasWedding = /(wedding|marriage|marieage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText);
-        const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(fullText);
+        const hasWedding =
+          /(wedding|marriage|marieage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(
+            fullText,
+          );
+        const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(
+          fullText,
+        );
         if (hasWedding && !hasBirthday) return "Weddings";
         if (hasBirthday && !hasWedding) return "Birthdays";
         // Sports: practice schedules and generic sports
-        if (/(practice\s*schedule|team\s*practice|school\s*year\s*.*practice|group\s+.*\b\d{1,2}:\d{2})/i.test(fullText)) {
+        if (
+          /(practice\s*schedule|team\s*practice|school\s*year\s*.*practice|group\s+.*\b\d{1,2}:\d{2})/i.test(
+            fullText,
+          )
+        ) {
           return "Sport Events";
         }
-        if (/(schedule|game|vs\.|tournament|league)/i.test(fullText) && /(soccer|basketball|baseball|hockey|volleyball|gymnastics|swim|tennis|track|softball)/i.test(fullText)) {
+        if (
+          /(schedule|game|vs\.|tournament|league)/i.test(fullText) &&
+          /(soccer|basketball|baseball|hockey|volleyball|gymnastics|swim|tennis|track|softball)/i.test(
+            fullText,
+          )
+        ) {
           return "Sport Events";
         }
-        if (/(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)) {
+        if (
+          /(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)
+        ) {
           return "Car Pool";
         }
       } catch {}
@@ -3087,10 +3651,9 @@ export async function POST(request: Request) {
             const profileRes = await fetch(`${requestOrigin}/api/user/profile`, {
               headers: { cookie: requestCookie },
             } as any).catch(() => null);
-            const plan =
-              profileRes?.ok
-                ? (await profileRes.json().catch(() => ({}))).subscriptionPlan
-                : null;
+            const plan = profileRes?.ok
+              ? (await profileRes.json().catch(() => ({}))).subscriptionPlan
+              : null;
             if (!plan || plan === "free") {
               await incrementCreditsByEmail(email, -1);
             }
@@ -3136,11 +3699,7 @@ export async function POST(request: Request) {
       responseBody.timing = ocrTiming;
     }
 
-    return corsJson(
-      request,
-      responseBody,
-      { headers: { "Cache-Control": "no-store" } }
-    );
+    return corsJson(request, responseBody, { headers: { "Cache-Control": "no-store" } });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return corsJson(request, { error: "OCR route failed", detail: message }, { status: 500 });

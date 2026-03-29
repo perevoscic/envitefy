@@ -1,3 +1,5 @@
+import { resolveCoverImageUrlFromEventData } from "./upload-config.ts";
+
 export type DashboardEventOwnership = "owned" | "invited";
 export type DashboardEventShareStatus = "accepted" | "pending" | null;
 
@@ -200,12 +202,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     locationText,
     locationLat,
     locationLng,
-    coverImageUrl: firstString(
-      data?.coverImageUrl,
-      data?.thumbnail,
-      data?.heroImage,
-      data?.attachment?.type?.startsWith?.("image/") ? data?.attachment?.dataUrl : null
-    ),
+    coverImageUrl: resolveCoverImageUrlFromEventData(data),
     status: normalizeStatus(data?.status),
     category: firstString(data?.category, row?.data?.category),
     updatedAt: parseIso(data?.updatedAt) ?? parseIso(row?.created_at) ?? null,

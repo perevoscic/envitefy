@@ -12,8 +12,15 @@ import {
   normalizeRegistryLinks,
   validateRegistryUrl,
 } from "@/utils/registry-links";
-import { createThumbnailDataUrl, readFileAsDataUrl } from "@/utils/thumbnail";
 import { extractColorsFromImage, type ImageColors } from "@/utils/image-colors";
+import {
+  createObjectUrlPreview,
+  getUploadAcceptAttribute,
+  mergeUploadedEventMedia,
+  revokeObjectUrl,
+  uploadMediaFile,
+  validateClientUploadFile,
+} from "@/utils/media-upload-client";
 import { buildEventPath } from "@/utils/event-url";
 
 type Props = {
@@ -128,6 +135,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     type: string;
     dataUrl: string;
   } | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
     string | null
   >(null);
@@ -139,6 +147,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const [showAccessCode, setShowAccessCode] = useState<boolean>(false);
   // Separate header image (independent from flyer/attachment)
   const [headerPreviewUrl, setHeaderPreviewUrl] = useState<string | null>(null);
+  const [headerFile, setHeaderFile] = useState<File | null>(null);
   const headerInputRef = useRef<HTMLInputElement | null>(null);
 
   const [connectedCalendars, setConnectedCalendars] =
@@ -216,7 +225,9 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   };
 
   const clearFlyer = () => {
+    revokeObjectUrl(attachmentPreviewUrl);
     setAttachment(null);
+    setAttachmentFile(null);
     setAttachmentPreviewUrl(null);
     setAttachmentError(null);
     if (flyerInputRef.current) flyerInputRef.current.value = "";
@@ -224,6 +235,8 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
 
   // Header image controls (image-only)
   const clearHeader = () => {
+    revokeObjectUrl(headerPreviewUrl);
+    setHeaderFile(null);
     setHeaderPreviewUrl(null);
     setImageColors(null);
     setAttachmentError(null);
@@ -238,27 +251,25 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
       clearHeader();
       return;
     }
-    if (!file.type.startsWith("image/")) {
-      setAttachmentError("Upload an image file");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setAttachmentError("File must be 10 MB or smaller");
+    const validationError = validateClientUploadFile(file, "header");
+    if (validationError) {
+      setAttachmentError(validationError);
       event.target.value = "";
       return;
     }
     setAttachmentError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      const previewUrl =
-        (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
+      const previewUrl = createObjectUrlPreview(file);
       let colors: ImageColors | null = null;
       try {
-        colors = await extractColorsFromImage(dataUrl);
+        if (previewUrl) {
+          colors = await extractColorsFromImage(previewUrl);
+        }
       } catch (err) {
         console.error("Failed to extract colors from image:", err);
       }
+      revokeObjectUrl(headerPreviewUrl);
+      setHeaderFile(file);
       setHeaderPreviewUrl(previewUrl);
       setImageColors(colors);
     } catch {
@@ -273,35 +284,24 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   ) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
-      setAttachment(null);
-      setAttachmentPreviewUrl(null);
-      setAttachmentError(null);
+      clearFlyer();
       return;
     }
-    const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) {
-      setAttachmentError("Upload an image or PDF file");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setAttachmentError("File must be 10 MB or smaller");
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setAttachmentError(validationError);
       event.target.value = "";
       return;
     }
     setAttachmentError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      let previewUrl: string | null = null;
-      if (isImage) {
-        previewUrl = (await createThumbnailDataUrl(file, 1200, 0.85)) || null;
-      }
-      setAttachment({ name: file.name, type: file.type, dataUrl });
+      const previewUrl = createObjectUrlPreview(file);
+      revokeObjectUrl(attachmentPreviewUrl);
+      setAttachmentFile(file);
+      setAttachment({ name: file.name, type: file.type, dataUrl: "" });
       setAttachmentPreviewUrl(previewUrl);
     } catch {
-      setAttachment(null);
-      setAttachmentPreviewUrl(null);
+      clearFlyer();
       setAttachmentError("Could not process the file");
       event.target.value = "";
     }
@@ -422,6 +422,24 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
 
     setSubmitting(true);
     try {
+      const [headerUpload, attachmentUpload] = await Promise.all([
+        headerFile
+          ? uploadMediaFile({
+              file: headerFile,
+              usage: "header",
+            })
+          : Promise.resolve(null),
+        attachmentFile
+          ? uploadMediaFile({
+              file: attachmentFile,
+              usage: "attachment",
+            })
+          : Promise.resolve(null),
+      ]);
+      const mediaPatch = mergeUploadedEventMedia({
+        headerUpload,
+        attachmentUpload,
+      });
       let startISO: string | null = null;
       let endISO: string | null = null;
       if (whenDate) {
@@ -525,14 +543,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           repeat: repeat || undefined,
           repeatFrequency: repeat ? repeatFrequency : undefined,
           recurrence: recurrenceRule || undefined,
-          thumbnail: headerPreviewUrl || undefined,
-          attachment: attachment
-            ? {
-                name: attachment.name,
-                type: attachment.type,
-                dataUrl: attachment.dataUrl,
-              }
-            : undefined,
+          ...mediaPatch,
           imageColors: imageColors || undefined,
           registries:
             sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
@@ -573,13 +584,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         recurrence: recurrenceRule,
         reminders: [{ minutes: 30 }],
         registries: sanitizedRegistries.length ? sanitizedRegistries : null,
-        attachment: attachment
-          ? {
-              name: attachment.name,
-              type: attachment.type,
-              dataUrl: attachment.dataUrl,
-            }
-          : null,
+        attachment: (mediaPatch.attachment as any) || null,
         signupForm: activeSignupForm,
       };
 
@@ -1161,7 +1166,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         <input
           ref={headerInputRef}
           type="file"
-          accept="image/*"
+          accept={getUploadAcceptAttribute("header")}
           onChange={handleHeaderChange}
           className="hidden"
         />
@@ -1205,7 +1210,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           id="evt-flyer"
           ref={flyerInputRef}
           type="file"
-          accept="image/*,application/pdf"
+          accept={getUploadAcceptAttribute("attachment")}
           onChange={handleFlyerChange}
           className="hidden"
         />
@@ -1232,7 +1237,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         )}
         {!attachment && !attachmentError && (
           <p className="mt-2 text-xs text-foreground/60">
-            Images or PDFs up to 10 MB.
+            Images up to 10 MB. PDFs up to 25 MB.
           </p>
         )}
       </div>

@@ -1,146 +1,113 @@
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import nextDynamic from "next/dynamic";
-import EventActions from "@/components/EventActions";
-import ThumbnailModal from "@/components/ThumbnailModal";
-import EventDeleteModal from "@/components/EventDeleteModal";
-import EventRsvpPrompt from "@/components/EventRsvpPrompt";
-import LocationLink from "@/components/LocationLink";
-import EventMap from "@/components/EventMap";
-import ReadOnlyBanner from "./ReadOnlyBanner";
-import AccessCodeGate from "@/components/AccessCodeGate";
-import Link from "next/link";
-import { combineVenueAndLocation } from "@/lib/mappers";
-import {
-  isEventSharedWithUser,
-  isEventSharePendingForUser,
-  acceptEventShare,
-  revokeEventShare,
-} from "@/lib/db";
-import {
-  getEventHistoryPublicRenderBySlugOrId,
-  getUserIdByEmail,
-  getUserById,
-} from "@/lib/db";
-import { invalidateUserHistory } from "@/lib/history-cache";
-import { invalidateUserDashboard } from "@/lib/dashboard-cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { findFirstEmail } from "@/utils/contact";
-import { extractFirstPhoneNumber } from "@/utils/phone";
-import { getEventTheme } from "@/lib/event-theme";
-import {
-  getRegistryBrandByUrl,
-  normalizeRegistryLinks,
-} from "@/utils/registry-links";
-import { resolveEditHref, buildEditLink } from "@/utils/event-edit-route";
+import nextDynamic from "next/dynamic";
+import { cookies } from "next/headers";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 import type { CSSProperties } from "react";
-import type { ImageColors } from "@/utils/image-colors";
-import { decorateAmazonUrl } from "@/utils/affiliates";
-import SponsoredSupplies from "@/components/SponsoredSupplies";
-import { absoluteUrl } from "@/lib/absolute-url";
-import type { SignupForm } from "@/types/signup";
-import { sanitizeSignupForm } from "@/utils/signup";
-import EventRsvpDashboard from "@/components/EventRsvpDashboard";
+import { cache } from "react";
+import AccessCodeGate from "@/components/AccessCodeGate";
+import AppleCalendarLink from "@/components/AppleCalendarLink";
+import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 import {
+  CalendarIconApple,
   CalendarIconGoogle,
   CalendarIconOutlook,
-  CalendarIconApple,
 } from "@/components/CalendarIcons";
-import AppleCalendarLink from "@/components/AppleCalendarLink";
-import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
-import { cleanRsvpContactLabel } from "@/utils/rsvp";
-import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
-import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
-import { cache } from "react";
-import { resolveEventThemeColor } from "@/lib/theme-color";
+import EventActions from "@/components/EventActions";
+import EventDeleteModal from "@/components/EventDeleteModal";
+import EventMap from "@/components/EventMap";
+import EventRsvpDashboard from "@/components/EventRsvpDashboard";
+import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
+import LocationLink from "@/components/LocationLink";
+import SponsoredSupplies from "@/components/SponsoredSupplies";
+import ThumbnailModal from "@/components/ThumbnailModal";
+import { absoluteUrl } from "@/lib/absolute-url";
+import { authOptions } from "@/lib/auth";
+import { isOcrBirthdayRenderer, selectBirthdayOcrThemeId } from "@/lib/birthday-ocr-template";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
+import { isScannedInviteCreatedVia, normalizeDashboardEventOwnership } from "@/lib/dashboard-data";
 import {
-  getEventAccessCookieName,
-  verifyEventAccessCookieValue,
-} from "@/lib/event-access";
-import {
-  isOcrBirthdayRenderer,
-  selectBirthdayOcrThemeId,
-} from "@/lib/birthday-ocr-template";
-import {
-  isScannedInviteCreatedVia,
-  normalizeDashboardEventOwnership,
-} from "@/lib/dashboard-data";
-import {
-  createServerTimingTracker,
-} from "@/lib/server-timing";
+  acceptEventShare,
+  getEventHistoryPublicRenderBySlugOrId,
+  getUserById,
+  getUserIdByEmail,
+  isEventSharedWithUser,
+  isEventSharePendingForUser,
+  revokeEventShare,
+} from "@/lib/db";
+import { redactDiscoverySourceForPublicView } from "@/lib/discovery-public-redact";
+import { getEventAccessCookieName, verifyEventAccessCookieValue } from "@/lib/event-access";
+import { getEventTheme } from "@/lib/event-theme";
+import { invalidateUserHistory } from "@/lib/history-cache";
+import { combineVenueAndLocation } from "@/lib/mappers";
+import { createServerTimingTracker } from "@/lib/server-timing";
+import { resolveEventThemeColor } from "@/lib/theme-color";
+import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
+import type { SignupForm } from "@/types/signup";
+import { decorateAmazonUrl } from "@/utils/affiliates";
+import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
+import { findFirstEmail } from "@/utils/contact";
+import { buildEditLink, resolveEditHref } from "@/utils/event-edit-route";
+import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
+import type { ImageColors } from "@/utils/image-colors";
+import { extractFirstPhoneNumber } from "@/utils/phone";
+import { getRegistryBrandByUrl, normalizeRegistryLinks } from "@/utils/registry-links";
+import { cleanRsvpContactLabel } from "@/utils/rsvp";
+import { sanitizeSignupForm } from "@/utils/signup";
 import { resolveFootballSeasonTemplateChrome } from "../football-season/customize/footballSeasonTemplateTheme";
+import ReadOnlyBanner from "./ReadOnlyBanner";
 
-const SignupViewer = nextDynamic(
-  () => import("@/components/smart-signup-form/SignupViewer"),
-  { loading: () => null }
-);
-const BirthdayTemplateView = nextDynamic(
-  () => import("@/components/BirthdayTemplateView"),
-  { loading: () => null }
-);
-const WeddingTemplateView = nextDynamic(
-  () => import("@/components/WeddingTemplateView"),
-  { loading: () => null }
-);
-const SimpleTemplateView = nextDynamic(
-  () => import("@/components/SimpleTemplateView"),
-  { loading: () => null }
-);
+const SignupViewer = nextDynamic(() => import("@/components/smart-signup-form/SignupViewer"), {
+  loading: () => null,
+});
+const BirthdayTemplateView = nextDynamic(() => import("@/components/BirthdayTemplateView"), {
+  loading: () => null,
+});
+const WeddingTemplateView = nextDynamic(() => import("@/components/WeddingTemplateView"), {
+  loading: () => null,
+});
+const SimpleTemplateView = nextDynamic(() => import("@/components/SimpleTemplateView"), {
+  loading: () => null,
+});
 const FootballDiscoveryContent = nextDynamic(
   () => import("@/components/football-discovery/FootballDiscoveryContent"),
-  { loading: () => null }
+  { loading: () => null },
 );
-const BabyShowerTemplateView = nextDynamic(
-  () => import("@/components/BabyShowerTemplateView"),
-  { loading: () => null }
-);
-const BirthdayRenderer = nextDynamic(
-  () => import("@/components/birthdays/BirthdayRenderer"),
-  { loading: () => null }
-);
-const EventOwnerWorkspace = nextDynamic(
-  () => import("@/components/EventOwnerWorkspace"),
-  { loading: () => null }
-);
+const BabyShowerTemplateView = nextDynamic(() => import("@/components/BabyShowerTemplateView"), {
+  loading: () => null,
+});
+const BirthdayRenderer = nextDynamic(() => import("@/components/birthdays/BirthdayRenderer"), {
+  loading: () => null,
+});
+const EventOwnerWorkspace = nextDynamic(() => import("@/components/EventOwnerWorkspace"), {
+  loading: () => null,
+});
 const DiscoveryEventEditLayout = nextDynamic(
   () => import("@/components/DiscoveryEventEditLayout"),
-  { loading: () => null }
+  { loading: () => null },
 );
 
 export const dynamic = "force-dynamic";
 const EVENT_PAGE_TIMING_ENV = process.env.EVENT_PAGE_TIMING === "1";
 
-const getCachedEventHistoryBySlugOrId = cache(
-  async (value: string, userId?: string | null) =>
-    getEventHistoryPublicRenderBySlugOrId({
-      value,
-      userId: userId || undefined,
-    })
+const getCachedEventHistoryBySlugOrId = cache(async (value: string, userId?: string | null) =>
+  getEventHistoryPublicRenderBySlugOrId({
+    value,
+    userId: userId || undefined,
+  }),
 );
 
-const FLOATING_ISO_REGEX =
-  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
+const FLOATING_ISO_REGEX = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
 
-const parseDatePreserveFloating = (
-  input: string
-): { date: Date; floating: boolean } => {
+const parseDatePreserveFloating = (input: string): { date: Date; floating: boolean } => {
   const floatingMatch = FLOATING_ISO_REGEX.exec(input);
   if (floatingMatch) {
     const [, y, m, d, hh, mm, ss] = floatingMatch;
     const date = new Date(
-      Date.UTC(
-        Number(y),
-        Number(m) - 1,
-        Number(d),
-        Number(hh),
-        Number(mm),
-        Number(ss || "0")
-      )
+      Date.UTC(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm), Number(ss || "0")),
     );
     return { date, floating: true };
   }
@@ -157,24 +124,19 @@ export async function generateMetadata(props: {
   const timing = createServerTimingTracker(EVENT_PAGE_TIMING_ENV);
   const awaitedParams = await props.params;
   const row = await timing.time("metadata_event_lookup", () =>
-    getCachedEventHistoryBySlugOrId(awaitedParams.id, null)
+    getCachedEventHistoryBySlugOrId(awaitedParams.id, null),
   );
   const data: any = row?.data || {};
-  const title =
-    (typeof data?.title === "string" && data.title) || row?.title || "Event";
+  const title = (typeof data?.title === "string" && data.title) || row?.title || "Event";
 
   // Only expose a generic description publicly to avoid leaking private details
   const description = "View the event details, schedule, and RSVP right here.";
 
   // Generate OG image URL
-  const img = await absoluteUrl(
-    `/event/${encodeURIComponent(awaitedParams.id)}/opengraph-image`
-  );
+  const img = await absoluteUrl(`/event/${encodeURIComponent(awaitedParams.id)}/opengraph-image`);
 
   // Generate canonical URL
-  const url = await absoluteUrl(
-    `/event/${encodeURIComponent(awaitedParams.id)}`
-  );
+  const url = await absoluteUrl(`/event/${encodeURIComponent(awaitedParams.id)}`);
 
   if (timing.enabled) {
     console.info("[event-page][metadata]", {
@@ -213,9 +175,7 @@ export async function generateMetadata(props: {
   };
 }
 
-export async function generateViewport(props: {
-  params: Promise<{ id: string }>;
-}) {
+export async function generateViewport(props: { params: Promise<{ id: string }> }) {
   const awaitedParams = await props.params;
   const row = await getCachedEventHistoryBySlugOrId(awaitedParams.id, null);
 
@@ -239,13 +199,10 @@ const extractTimeTokens = (value?: string | null): string[] => {
   return tokens;
 };
 
-const normalizeTimeToken = (
-  token: string | null | undefined
-): number | null => {
+const normalizeTimeToken = (token: string | null | undefined): number | null => {
   if (!token) return null;
   const trimmed = token.trim().toLowerCase().replace(/\s+/g, " ");
-  const ampmMatch =
-    trimmed.match(/^(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)$/i) || null;
+  const ampmMatch = trimmed.match(/^(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)$/i) || null;
   if (ampmMatch) {
     let hour = Number.parseInt(ampmMatch[1], 10);
     if (Number.isNaN(hour)) return null;
@@ -268,7 +225,7 @@ const normalizeTimeToken = (
 
 const timeTokensEquivalent = (
   a: string | null | undefined,
-  b: string | null | undefined
+  b: string | null | undefined,
 ): boolean => {
   if (!a || !b) return false;
   const m1 = normalizeTimeToken(a);
@@ -276,14 +233,13 @@ const timeTokensEquivalent = (
   if (m1 !== null && m2 !== null) {
     return Math.abs(m1 - m2) <= 1;
   }
-  const normalize = (s: string) =>
-    s.trim().toLowerCase().replace(/\./g, "").replace(/\s+/g, " ");
+  const normalize = (s: string) => s.trim().toLowerCase().replace(/\./g, "").replace(/\s+/g, " ");
   return normalize(a) === normalize(b);
 };
 
 const buildFallbackRangeLabel = (
   startLabel?: string | null,
-  endLabel?: string | null
+  endLabel?: string | null,
 ): string | null => {
   if (!startLabel) return null;
   const trimmedStart = startLabel.trim();
@@ -302,17 +258,11 @@ const buildFallbackRangeLabel = (
       .split(",")
       .map((part) => part.trim())
       .filter(Boolean);
-    if (
-      startParts.length &&
-      extractTimeTokens(startParts[startParts.length - 1]).length > 0
-    ) {
+    if (startParts.length && extractTimeTokens(startParts[startParts.length - 1]).length > 0) {
       startParts.pop();
     }
     const datePart = startParts.join(", ");
-    const endRemainder = trimmedEnd
-      .replace(endTime, "")
-      .replace(/,\s*$/, "")
-      .trim();
+    const endRemainder = trimmedEnd.replace(endTime, "").replace(/,\s*$/, "").trim();
     if (endRemainder && endRemainder !== datePart) {
       const prefix = datePart ? `${datePart}, ${startTime}` : startTime;
       return `${prefix} – ${trimmedEnd}`;
@@ -326,10 +276,7 @@ const buildFallbackRangeLabel = (
       .split(",")
       .map((part) => part.trim())
       .filter(Boolean);
-    if (
-      startParts.length &&
-      extractTimeTokens(startParts[startParts.length - 1]).length > 0
-    ) {
+    if (startParts.length && extractTimeTokens(startParts[startParts.length - 1]).length > 0) {
       startParts.pop();
     }
     const datePart = startParts.join(", ");
@@ -343,7 +290,7 @@ const buildFallbackRangeLabel = (
 function formatTimeAndDate(
   startInput: string | null | undefined,
   endInput: string | null | undefined,
-  options?: { timeZone?: string | null; allDay?: boolean }
+  options?: { timeZone?: string | null; allDay?: boolean },
 ): { time: string | null; date: string | null } {
   const { timeZone, allDay } = options || {};
   if (!startInput) return { time: null, date: null };
@@ -459,7 +406,7 @@ function splitAddress(address: string | null | undefined): {
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
   endInput: string | null | undefined,
-  options?: { timeZone?: string | null; allDay?: boolean }
+  options?: { timeZone?: string | null; allDay?: boolean },
 ): string | null {
   const { timeZone, allDay } = options || {};
   if (!startInput) return null;
@@ -506,9 +453,7 @@ function formatEventRangeDisplay(
     });
     if (end) {
       if (sameDay) {
-        return `${dateFmt.format(start)}, ${timeFmt.format(
-          start
-        )} – ${timeFmt.format(end)}`;
+        return `${dateFmt.format(start)}, ${timeFmt.format(start)} – ${timeFmt.format(end)}`;
       }
       const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
         month: "short",
@@ -554,39 +499,28 @@ export default async function EventPage({
   const baseTiming = createServerTimingTracker(EVENT_PAGE_TIMING_ENV);
   const awaitedParams = await params;
   const awaitedSearchParams = await searchParams;
-  const timingRequestedRaw = String(
-    ((awaitedSearchParams as any)?.timing ?? "") as string
-  )
+  const timingRequestedRaw = String(((awaitedSearchParams as any)?.timing ?? "") as string)
     .trim()
     .toLowerCase();
-  const timingRequested =
-    timingRequestedRaw === "1" || timingRequestedRaw === "true";
+  const timingRequested = timingRequestedRaw === "1" || timingRequestedRaw === "true";
   const timing =
-    timingRequested && !baseTiming.enabled
-      ? createServerTimingTracker(true)
-      : baseTiming;
-  const acceptRaw = String(
-    ((awaitedSearchParams as any)?.accept ?? "") as string
-  )
+    timingRequested && !baseTiming.enabled ? createServerTimingTracker(true) : baseTiming;
+  const acceptRaw = String(((awaitedSearchParams as any)?.accept ?? "") as string)
     .trim()
     .toLowerCase();
-  const createdFlag = String(
-    ((awaitedSearchParams as any)?.created ?? "") as string
-  )
+  const createdFlag = String(((awaitedSearchParams as any)?.created ?? "") as string)
     .trim()
     .toLowerCase();
   const createdParam = createdFlag === "1" || createdFlag === "true";
   const autoAccept = acceptRaw === "1" || acceptRaw === "true";
   // Try to resolve by slug, slug-id, or id; prefer user context for slug-only matches
-  const session: any = await timing.time("session", () =>
-    getServerSession(authOptions as any)
-  );
+  const session: any = await timing.time("session", () => getServerSession(authOptions as any));
   const sessionEmail = (session?.user?.email as string | undefined) || null;
   const userId = sessionEmail
     ? await timing.time("user_lookup", () => getUserIdByEmail(sessionEmail))
     : null;
   const row = await timing.time("event_lookup", () =>
-    getCachedEventHistoryBySlugOrId(awaitedParams.id, userId)
+    getCachedEventHistoryBySlugOrId(awaitedParams.id, userId),
   );
   if (!row) return notFound();
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
@@ -597,9 +531,7 @@ export default async function EventPage({
       : null;
   const ownerDisplayName = (() => {
     if (!ownerUser) return "Unknown";
-    const full = [ownerUser.first_name || "", ownerUser.last_name || ""]
-      .join(" ")
-      .trim();
+    const full = [ownerUser.first_name || "", ownerUser.last_name || ""].join(" ").trim();
     return full || ownerUser.email || "Unknown";
   })();
   let recipientAccepted = false;
@@ -614,7 +546,7 @@ export default async function EventPage({
       isReadOnly = true;
     } else {
       const access = await timing.time("share_access_lookup", () =>
-        isEventSharedWithUser(row.id, userId)
+        isEventSharedWithUser(row.id, userId),
       );
       if (access === true) {
         // ok
@@ -622,7 +554,7 @@ export default async function EventPage({
         hasShareRelation = true;
       } else if (access === false) {
         const pending = await timing.time("share_pending_lookup", () =>
-          isEventSharePendingForUser(row.id, userId)
+          isEventSharePendingForUser(row.id, userId),
         );
         if (pending) {
           recipientPending = true;
@@ -663,7 +595,7 @@ export default async function EventPage({
   })();
   const media = row.media;
   const buildMediaUrl = (
-    variant?: "thumbnail" | "attachment" | "profile" | "hero" | "signup-header"
+    variant?: "thumbnail" | "attachment" | "profile" | "hero" | "signup-header",
   ) => {
     const params = new URLSearchParams();
     if (variant) params.set("variant", variant);
@@ -671,12 +603,12 @@ export default async function EventPage({
       variant === "attachment"
         ? media.attachmentSig
         : variant === "profile"
-        ? media.profileImageSig
-        : variant === "hero"
-        ? media.customHeroImageSig || media.heroImageSig
-        : variant === "signup-header"
-        ? media.signupHeaderSig
-        : media.thumbnailSig || media.attachmentSig;
+          ? media.profileImageSig
+          : variant === "hero"
+            ? media.customHeroImageSig || media.heroImageSig
+            : variant === "signup-header"
+              ? media.signupHeaderSig
+              : media.thumbnailSig || media.attachmentSig;
     if (sig) params.set("v", sig);
     const qs = params.toString();
     return `/api/events/${row.id}/thumbnail${qs ? `?${qs}` : ""}`;
@@ -703,9 +635,7 @@ export default async function EventPage({
   if (media.customHeroImageInline) {
     (data as any).customHeroImage = buildMediaUrl("hero");
   }
-  const requestedTab = String(
-    ((awaitedSearchParams as any)?.tab ?? "") as string
-  )
+  const requestedTab = String(((awaitedSearchParams as any)?.tab ?? "") as string)
     .trim()
     .toLowerCase();
   const ownerWorkspaceTab =
@@ -718,20 +648,16 @@ export default async function EventPage({
 
   // Handle edit redirect - if edit param is present and user is owner, redirect to customize
   // (except for discovery gymnastics events: they stay on the event URL and get an inline edit sidebar)
-  const editParam = String(
-    ((awaitedSearchParams as any)?.edit ?? "") as string
-  ).trim();
+  const editParam = String(((awaitedSearchParams as any)?.edit ?? "") as string).trim();
   const discoveryCreatedVia = String((data as any)?.createdVia || "").toLowerCase();
   const isScannedInviteEvent =
     normalizeDashboardEventOwnership(
       (data as any)?.ownership,
       discoveryCreatedVia,
-      (data as any)?.invitedFromScan
+      (data as any)?.invitedFromScan,
     ) === "invited";
   const canManageCreatedEvent = isOwner && !isScannedInviteEvent;
-  const discoveryWorkflow = String(
-    (data as any)?.discoverySource?.workflow || ""
-  ).toLowerCase();
+  const discoveryWorkflow = String((data as any)?.discoverySource?.workflow || "").toLowerCase();
   const discoveryCategory = String((data as any)?.category || "").toLowerCase();
   const discoveryTemplateId = String((data as any)?.templateId || "").toLowerCase();
   const hasDiscoveryInput = Boolean((data as any)?.discoverySource?.input);
@@ -762,31 +688,28 @@ export default async function EventPage({
   const footballPublicChrome = footballPageTemplateId
     ? resolveFootballSeasonTemplateChrome(footballPageTemplateId)
     : null;
-  const discoveryEditConfig:
-    | { customizeUrl: string; workflow: "gymnastics" | "football" }
-    | null = editParam && canManageCreatedEvent
-    ? (() => {
-      if (isGymnasticsDiscoveryTemplate) {
-        return {
-          customizeUrl: `/event/gymnastics/customize?edit=${encodeURIComponent(
-            row.id
-          )}&embed=1`,
-          workflow: "gymnastics",
-        } as const;
-      }
+  const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" | "football" } | null =
+    editParam && canManageCreatedEvent
+      ? (() => {
+          if (isGymnasticsDiscoveryTemplate) {
+            return {
+              customizeUrl: `/event/gymnastics/customize?edit=${encodeURIComponent(
+                row.id,
+              )}&embed=1`,
+              workflow: "gymnastics",
+            } as const;
+          }
 
-      if (isFootballDiscoveryTemplate) {
-        return {
-          customizeUrl: `/event/football/customize?edit=${encodeURIComponent(
-            row.id
-          )}&embed=1`,
-          workflow: "football",
-        } as const;
-      }
+          if (isFootballDiscoveryTemplate) {
+            return {
+              customizeUrl: `/event/football/customize?edit=${encodeURIComponent(row.id)}&embed=1`,
+              workflow: "football",
+            } as const;
+          }
 
-      return null;
-    })()
-    : null;
+          return null;
+        })()
+      : null;
   if (editParam && canManageCreatedEvent && !discoveryEditConfig) {
     const editUrl = resolveEditHref(row.id, data, title);
     redirect(editUrl);
@@ -805,21 +728,16 @@ export default async function EventPage({
   }
 
   const rawThumbnailValue =
-    typeof (data as any)?.thumbnail === "string"
-      ? ((data as any).thumbnail as string)
-      : null;
+    typeof (data as any)?.thumbnail === "string" ? ((data as any).thumbnail as string) : null;
   const thumbnailIsInline =
-    typeof rawThumbnailValue === "string" &&
-    rawThumbnailValue.trim().startsWith("data:");
-  const rawAttachment =
-    data && typeof data.attachment === "object" ? data.attachment : null;
+    typeof rawThumbnailValue === "string" && rawThumbnailValue.trim().startsWith("data:");
+  const rawAttachment = data && typeof data.attachment === "object" ? data.attachment : null;
   const attachmentDataUrl =
     rawAttachment && typeof rawAttachment.dataUrl === "string"
       ? (rawAttachment.dataUrl as string)
       : null;
   const attachmentIsInline =
-    typeof attachmentDataUrl === "string" &&
-    attachmentDataUrl.trim().startsWith("data:");
+    typeof attachmentDataUrl === "string" && attachmentDataUrl.trim().startsWith("data:");
   if (thumbnailIsInline) {
     (data as any).thumbnail = undefined;
   }
@@ -830,11 +748,9 @@ export default async function EventPage({
     };
   }
   const accessControlRaw =
-    data && typeof data.accessControl === "object"
-      ? { ...data.accessControl }
-      : null;
+    data && typeof data.accessControl === "object" ? { ...data.accessControl } : null;
   const requiresPasscode = Boolean(
-    accessControlRaw?.requirePasscode && accessControlRaw?.passcodeHash
+    accessControlRaw?.requirePasscode && accessControlRaw?.passcodeHash,
   );
   let hasPasscodeAccess = false;
   if (!requiresPasscode) {
@@ -848,12 +764,11 @@ export default async function EventPage({
     hasPasscodeAccess = verifyEventAccessCookieValue(
       accessCookieValue,
       row.id,
-      accessControlRaw.passcodeHash
+      accessControlRaw.passcodeHash,
     );
   }
 
-  const passcodeLocked =
-    requiresPasscode && !hasPasscodeAccess && !isOwner && !recipientAccepted;
+  const passcodeLocked = requiresPasscode && !hasPasscodeAccess && !isOwner && !recipientAccepted;
 
   if (passcodeLocked) {
     return (
@@ -862,12 +777,9 @@ export default async function EventPage({
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground/60">
             Private Event
           </p>
-          <h1 className="mt-2 text-2xl md:text-3xl font-semibold text-foreground">
-            {title}
-          </h1>
+          <h1 className="mt-2 text-2xl md:text-3xl font-semibold text-foreground">{title}</h1>
           <p className="mt-3 text-sm text-foreground/75 leading-relaxed">
-            This event requires an access code. Enter the code shared by the
-            organizer to continue.
+            This event requires an access code. Enter the code shared by the organizer to continue.
           </p>
           <div className="mt-6">
             <AccessCodeGate
@@ -892,9 +804,7 @@ export default async function EventPage({
     };
   }
   const numberOfGuests =
-    typeof data?.numberOfGuests === "number" && data.numberOfGuests > 0
-      ? data.numberOfGuests
-      : 0;
+    typeof data?.numberOfGuests === "number" && data.numberOfGuests > 0 ? data.numberOfGuests : 0;
   const isOcrEvent = isScannedInviteCreatedVia((data as any)?.createdVia);
   const attachmentInfo = (() => {
     const raw = data?.attachment;
@@ -904,39 +814,31 @@ export default async function EventPage({
         ? (raw.type as string)
         : "application/octet-stream";
     const name =
-      typeof raw.name === "string" && raw.name.trim()
-        ? (raw.name as string)
-        : "Attachment";
+      typeof raw.name === "string" && raw.name.trim() ? (raw.name as string) : "Attachment";
     const previewUrl = attachmentIsInline
       ? buildMediaUrl("attachment")
-      : typeof raw.dataUrl === "string" && raw.dataUrl
-      ? (raw.dataUrl as string)
-      : thumbnailIsInline
-      ? buildMediaUrl("thumbnail")
-      : null;
+      : resolveAttachmentPreviewUrl(
+          raw as Record<string, unknown>,
+          thumbnailIsInline ? buildMediaUrl("thumbnail") : rawThumbnailValue,
+        );
     return { name, type, dataUrl: previewUrl };
   })();
-  const locationText =
-    typeof data?.location === "string" ? (data.location as string) : "";
+  const locationText = typeof data?.location === "string" ? (data.location as string) : "";
   const venueText = typeof data?.venue === "string" ? (data.venue as string) : "";
-  const hasMapLocation = Boolean(
-    (venueText?.trim()) || (locationText?.trim())
-  );
+  const hasMapLocation = Boolean(venueText?.trim() || locationText?.trim());
   const categoryRaw = typeof data?.category === "string" ? data.category : "";
   const categoryNormalized = categoryRaw.toLowerCase();
   const registriesAllowed =
     categoryNormalized === "birthdays" ||
     categoryNormalized === "weddings" ||
     categoryNormalized === "baby showers";
-  const registryLinksRaw = Array.isArray(data?.registries)
-    ? (data.registries as any[])
-    : [];
+  const registryLinksRaw = Array.isArray(data?.registries) ? (data.registries as any[]) : [];
   const registryLinks = registriesAllowed
     ? normalizeRegistryLinks(
         registryLinksRaw.map((item: any) => ({
           label: typeof item?.label === "string" ? item.label : "",
           url: typeof item?.url === "string" ? item.url : "",
-        }))
+        })),
       )
     : [];
   const registryCards = registryLinks.map((link) => {
@@ -988,28 +890,17 @@ export default async function EventPage({
     (typeof data?.endISO === "string" && data.endISO) ||
     (typeof data?.end === "string" && data.end) ||
     null;
-  const formattedTimeAndDate = formatTimeAndDate(
-    startForDisplay,
-    endForDisplay,
-    {
-      timeZone:
-        (typeof data?.timezone === "string" && data.timezone) || undefined,
-      allDay: Boolean(data?.allDay),
-    }
-  );
-  let whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplay, {
-    timeZone:
-      (typeof data?.timezone === "string" && data.timezone) || undefined,
+  const formattedTimeAndDate = formatTimeAndDate(startForDisplay, endForDisplay, {
+    timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
     allDay: Boolean(data?.allDay),
   });
-  const rawStartLabel =
-    typeof data?.start === "string" ? (data.start as string) : null;
-  const rawEndLabel =
-    typeof data?.end === "string" ? (data.end as string) : null;
-  const fallbackRangeLabel = buildFallbackRangeLabel(
-    rawStartLabel,
-    rawEndLabel
-  );
+  let whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplay, {
+    timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
+    allDay: Boolean(data?.allDay),
+  });
+  const rawStartLabel = typeof data?.start === "string" ? (data.start as string) : null;
+  const rawEndLabel = typeof data?.end === "string" ? (data.end as string) : null;
+  const fallbackRangeLabel = buildFallbackRangeLabel(rawStartLabel, rawEndLabel);
   if (fallbackRangeLabel) {
     if (!whenLabel) {
       whenLabel = fallbackRangeLabel;
@@ -1024,11 +915,9 @@ export default async function EventPage({
       const rawEndToken = extractTimeTokens(rawEndLabel)[0] || null;
       const mismatch =
         (rawStartToken &&
-          (!computedStartToken ||
-            !timeTokensEquivalent(rawStartToken, computedStartToken))) ||
+          (!computedStartToken || !timeTokensEquivalent(rawStartToken, computedStartToken))) ||
         (rawEndToken &&
-          (!computedEndToken ||
-            !timeTokensEquivalent(rawEndToken, computedEndToken)));
+          (!computedEndToken || !timeTokensEquivalent(rawEndToken, computedEndToken)));
       if (mismatch) {
         whenLabel = fallbackRangeLabel;
       }
@@ -1049,11 +938,7 @@ export default async function EventPage({
 
   // Redirect to canonical slug-id URL if needed, preserving key query params
   if (awaitedParams.id !== canonicalSegment || autoAccept) {
-    const next = buildEventPath(
-      row.id,
-      title,
-      createdParam ? { created: true } : undefined
-    );
+    const next = buildEventPath(row.id, title, createdParam ? { created: true } : undefined);
     redirect(next);
   }
 
@@ -1065,9 +950,7 @@ export default async function EventPage({
   } ${(data?.location as string | undefined) || ""}`.trim();
   const rsvpPhone = extractFirstPhoneNumber(aggregateContactText);
   const rsvpEmail =
-    findFirstEmail(rsvpField) ??
-    findFirstEmail(aggregateContactText) ??
-    findFirstEmail(data);
+    findFirstEmail(rsvpField) ?? findFirstEmail(aggregateContactText) ?? findFirstEmail(data);
 
   const rsvpContactSource = rsvpField || rsvpEmail || "";
   // Extract just the name from RSVP field (remove "RSVP:" prefix, phone number, and option text)
@@ -1087,9 +970,7 @@ export default async function EventPage({
     title || "the event",
   ];
   const _isSignedIn = Boolean(sessionEmail);
-  const eventTheme = getEventTheme(
-    (data?.category as string | undefined) || null
-  );
+  const eventTheme = getEventTheme((data?.category as string | undefined) || null);
   const _categoryLabel = eventTheme.categoryLabel;
 
   // Check if image colors are available (from uploaded image)
@@ -1112,13 +993,11 @@ export default async function EventPage({
       ? ((data as any).headerBgCss as string)
       : null;
   const headerBgColor: string | null =
-    typeof (data as any)?.headerBgColor === "string" &&
-    (data as any).headerBgColor
+    typeof (data as any)?.headerBgColor === "string" && (data as any).headerBgColor
       ? ((data as any).headerBgColor as string)
       : null;
   const templateBackgroundCss: string | null =
-    typeof (data as any)?.templateBackgroundCss === "string" &&
-    (data as any).templateBackgroundCss
+    typeof (data as any)?.templateBackgroundCss === "string" && (data as any).templateBackgroundCss
       ? ((data as any).templateBackgroundCss as string)
       : null;
   const profileImageUrl: string | null =
@@ -1130,37 +1009,24 @@ export default async function EventPage({
   // Title style from Birthday editor
   const titleStyle: any = (data as any)?.titleStyle || {};
   const titleColor: string | null =
-    typeof titleStyle?.color === "string" && titleStyle.color
-      ? (titleStyle.color as string)
-      : null;
+    typeof titleStyle?.color === "string" && titleStyle.color ? (titleStyle.color as string) : null;
   const titleFont: string =
     typeof titleStyle?.font === "string" ? (titleStyle.font as string) : "auto";
   const titleWeight: string =
-    typeof titleStyle?.weight === "string"
-      ? (titleStyle.weight as string)
-      : "semibold";
+    typeof titleStyle?.weight === "string" ? (titleStyle.weight as string) : "semibold";
   const titleHAlign: "left" | "center" | "right" =
-    titleStyle?.hAlign === "left" || titleStyle?.hAlign === "right"
-      ? titleStyle.hAlign
-      : "center";
+    titleStyle?.hAlign === "left" || titleStyle?.hAlign === "right" ? titleStyle.hAlign : "center";
   const titleVAlign: "top" | "middle" | "bottom" =
-    titleStyle?.vAlign === "top" || titleStyle?.vAlign === "bottom"
-      ? titleStyle.vAlign
-      : "middle";
-  const titleSize: number =
-    typeof titleStyle?.size === "number" ? (titleStyle.size as number) : 28;
+    titleStyle?.vAlign === "top" || titleStyle?.vAlign === "bottom" ? titleStyle.vAlign : "middle";
+  const titleSize: number = typeof titleStyle?.size === "number" ? (titleStyle.size as number) : 28;
 
   const headerGradientCss =
     headerBgCss ||
     templateBackgroundCss ||
-    (headerBgColor
-      ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
-      : null);
+    (headerBgColor ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})` : null);
 
   const themedHeaderGradient =
-    imageColors?.headerLight ||
-    headerGradientCss ||
-    (eventTheme.headerLight as string);
+    imageColors?.headerLight || headerGradientCss || (eventTheme.headerLight as string);
   const eventPageThemeColor = resolveEventThemeColor(data);
 
   const themeStyleVars = {
@@ -1191,8 +1057,8 @@ export default async function EventPage({
         (headerBgColor
           ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
           : imageColors
-          ? imageColors.headerLight
-          : eventTheme.headerLight),
+            ? imageColors.headerLight
+            : eventTheme.headerLight),
     backgroundSize: headerImageUrl ? "cover" : undefined,
     backgroundPosition: headerImageUrl ? "center" : undefined,
     backgroundRepeat: headerImageUrl ? "no-repeat" : undefined,
@@ -1223,11 +1089,7 @@ export default async function EventPage({
     try {
       const startIso = (data?.startISO as string | undefined) || null;
       const rawStart = (data?.start as string | undefined) || null;
-      const parsed = startIso
-        ? new Date(startIso)
-        : rawStart
-        ? new Date(rawStart)
-        : null;
+      const parsed = startIso ? new Date(startIso) : rawStart ? new Date(rawStart) : null;
       return parsed ? parsed.getTime() > Date.now() : false;
     } catch {
       return false;
@@ -1238,18 +1100,12 @@ export default async function EventPage({
   const _detailsExtraPaddingRight = headerImageUrl ? " pr-40 sm:pr-48" : "";
 
   const calendarStartIso = normalizeIso(
-    (data?.startISO as string | undefined) ||
-      (typeof data?.start === "string" ? data.start : null)
+    (data?.startISO as string | undefined) || (typeof data?.start === "string" ? data.start : null),
   );
   const rawEndIso =
-    (data?.endISO as string | undefined) ||
-    (typeof data?.end === "string" ? data.end : null);
+    (data?.endISO as string | undefined) || (typeof data?.end === "string" ? data.end : null);
   const calendarEndIso = calendarStartIso
-    ? ensureEndIso(
-        calendarStartIso,
-        normalizeIso(rawEndIso),
-        Boolean(data?.allDay)
-      )
+    ? ensureEndIso(calendarStartIso, normalizeIso(rawEndIso), Boolean(data?.allDay))
     : null;
   const calendarLinks =
     calendarStartIso && calendarEndIso
@@ -1276,18 +1132,19 @@ export default async function EventPage({
   const viewerKind: "owner" | "guest" | "readonly" = canManageCreatedEvent
     ? "owner"
     : isReadOnly
-    ? "readonly"
-    : "guest";
+      ? "readonly"
+      : "guest";
 
-  const clientSafeEventData = data;
+  const clientSafeEventData = canManageCreatedEvent
+    ? data
+    : redactDiscoverySourceForPublicView(data);
 
   const _heroDateLine = formattedTimeAndDate.date || whenLabel || null;
   const _heroTimeLine =
     formattedTimeAndDate.time && (formattedTimeAndDate.date || !whenLabel)
       ? formattedTimeAndDate.time
       : null;
-  const locationForHero =
-    typeof data?.location === "string" ? (data.location as string) : "";
+  const locationForHero = typeof data?.location === "string" ? (data.location as string) : "";
   const { street: heroLocationStreet, cityStateZip: heroLocationCity } =
     splitAddress(locationForHero);
   const heroLocationSegments: string[] = [];
@@ -1296,9 +1153,7 @@ export default async function EventPage({
     const trimmed = value.trim();
     if (!trimmed) return;
     const lower = trimmed.toLowerCase();
-    if (
-      heroLocationSegments.some((segment) => segment.toLowerCase() === lower)
-    ) {
+    if (heroLocationSegments.some((segment) => segment.toLowerCase() === lower)) {
       return;
     }
     heroLocationSegments.push(trimmed);
@@ -1313,17 +1168,11 @@ export default async function EventPage({
   }
 
   const templateId =
-    typeof (data as any)?.templateId === "string"
-      ? (data as any).templateId
-      : null;
+    typeof (data as any)?.templateId === "string" ? (data as any).templateId : null;
   const variationId =
-    typeof (data as any)?.variationId === "string"
-      ? (data as any).variationId
-      : null;
+    typeof (data as any)?.variationId === "string" ? (data as any).variationId : null;
   const createdVia =
-    typeof (data as any)?.createdVia === "string"
-      ? (data as any).createdVia
-      : null;
+    typeof (data as any)?.createdVia === "string" ? (data as any).createdVia : null;
   const isBirthdayTemplate =
     templateId &&
     variationId &&
@@ -1332,14 +1181,10 @@ export default async function EventPage({
   const isBirthdayRendererEvent =
     categoryNormalized === "birthdays" &&
     (createdVia === "birthday-renderer" || isOcrBirthdayRenderer(createdVia));
-  const isWeddingTemplate =
-    templateId && variationId && categoryNormalized === "weddings";
-  const isDiscoverySimpleTemplate =
-    isGymnasticsDiscoveryTemplate || isFootballDiscoveryTemplate;
+  const isWeddingTemplate = templateId && variationId && categoryNormalized === "weddings";
+  const isDiscoverySimpleTemplate = isGymnasticsDiscoveryTemplate || isFootballDiscoveryTemplate;
   const isSimpleTemplate =
-    (createdVia === "simple-template" ||
-      createdVia === "template" ||
-      isDiscoverySimpleTemplate) &&
+    (createdVia === "simple-template" || createdVia === "template" || isDiscoverySimpleTemplate) &&
     templateId &&
     !isBirthdayTemplate &&
     !isWeddingTemplate;
@@ -1361,90 +1206,90 @@ export default async function EventPage({
       variationId ||
       birthdayHintThemeId ||
       selectBirthdayOcrThemeId(
-        birthdayAudience === "girl" || birthdayAudience === "boy"
-          ? birthdayAudience
-          : "neutral"
+        birthdayAudience === "girl" || birthdayAudience === "boy" ? birthdayAudience : "neutral",
       );
-    const birthdayTheme =
-      (data.theme?.id)
-        ? data.theme
-        : BIRTHDAY_THEMES.find((t) => t.id === birthdayThemeId) ||
-          BIRTHDAY_THEMES[0];
-    
-    if (isBirthdayRendererEvent || (data.theme?.layout)) {
-        return (
-            <BirthdayRenderer
-                template={birthdayTheme}
-                eventId={row.id}
-                heroImageUrl={
-                  isOcrBirthdayRenderer(createdVia)
-                    ? attachmentInfo?.dataUrl || headerImageUrl || null
-                    : null
-                }
-                event={{
-                    headlineTitle: title || data.headlineTitle,
-                    date: data.startISO || (data.date && data.time ? `${data.date}T${data.time}` : data.date),
-                    location: data.location || [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
-                    story: data.story || data.description || (data.partyDetails?.notes),
-                    schedule: data.schedule,
-                    registries: data.registries,
-                    rsvpEnabled:
-                      Boolean(data.rsvpEnabled) ||
-                      Boolean((data.rsvp?.isEnabled) || data.rsvp),
-                    rsvpLink: "#rsvp",
-                    birthdayName: data.birthdayName || data.childName || "Birthday Star",
-                    age: data.age,
-                    party: data.party || data.partyDetails,
-                    thingsToDo: data.thingsToDo || (data.partyDetails?.activities),
-                    hosts: data.hosts,
-                    gallery: Array.isArray(data.gallery) ? data.gallery.map((item: any) => typeof item === 'string' ? item : item.url) : [],
-                    rsvpDeadline: data.rsvpDeadline || (data.rsvp?.deadline),
-                    numberOfGuests: data.numberOfGuests || 0
-                }}
-                isOwner={isOwner}
-                calendarLinks={calendarLinks}
-                coordinates={data?.coordinates || null}
-                venueText={typeof data?.venue === "string" ? data.venue : null}
-                locationText={typeof data?.location === "string" ? data.location : null}
-                actions={
-                  !isReadOnly && isOwner && (
-                    <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 sm:px-3 py-1.5 shadow">
-                      {canManageCreatedEvent && (
-                        <Link
-                          href={buildEditLink(row.id, data, title)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
-                          title="Edit event"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                          >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                          <span className="hidden sm:inline">Edit</span>
-                        </Link>
-                      )}
-                      <EventDeleteModal eventId={row.id} eventTitle={title} />
-                      <EventActions
-                        shareUrl={shareUrl}
-                        event={data as any}
-                        historyId={!isReadOnly ? row.id : undefined}
-                        className=""
-                        variant="compact"
-                        tone={"default" as any}
-                      />
-                    </div>
-                  )
-                }
-            />
-        );
+    const birthdayTheme = data.theme?.id
+      ? data.theme
+      : BIRTHDAY_THEMES.find((t) => t.id === birthdayThemeId) || BIRTHDAY_THEMES[0];
+
+    if (isBirthdayRendererEvent || data.theme?.layout) {
+      return (
+        <BirthdayRenderer
+          template={birthdayTheme}
+          eventId={row.id}
+          heroImageUrl={
+            isOcrBirthdayRenderer(createdVia)
+              ? attachmentInfo?.dataUrl || headerImageUrl || null
+              : null
+          }
+          event={{
+            headlineTitle: title || data.headlineTitle,
+            date:
+              data.startISO || (data.date && data.time ? `${data.date}T${data.time}` : data.date),
+            location:
+              data.location ||
+              [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
+            story: data.story || data.description || data.partyDetails?.notes,
+            schedule: data.schedule,
+            registries: data.registries,
+            rsvpEnabled: Boolean(data.rsvpEnabled) || Boolean(data.rsvp?.isEnabled || data.rsvp),
+            rsvpLink: "#rsvp",
+            birthdayName: data.birthdayName || data.childName || "Birthday Star",
+            age: data.age,
+            party: data.party || data.partyDetails,
+            thingsToDo: data.thingsToDo || data.partyDetails?.activities,
+            hosts: data.hosts,
+            gallery: Array.isArray(data.gallery)
+              ? data.gallery.map((item: any) => (typeof item === "string" ? item : item.url))
+              : [],
+            rsvpDeadline: data.rsvpDeadline || data.rsvp?.deadline,
+            numberOfGuests: data.numberOfGuests || 0,
+          }}
+          isOwner={isOwner}
+          calendarLinks={calendarLinks}
+          coordinates={data?.coordinates || null}
+          venueText={typeof data?.venue === "string" ? data.venue : null}
+          locationText={typeof data?.location === "string" ? data.location : null}
+          actions={
+            !isReadOnly &&
+            isOwner && (
+              <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 sm:px-3 py-1.5 shadow">
+                {canManageCreatedEvent && (
+                  <Link
+                    href={buildEditLink(row.id, data, title)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
+                    title="Edit event"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    <span className="hidden sm:inline">Edit</span>
+                  </Link>
+                )}
+                <EventDeleteModal eventId={row.id} eventTitle={title} />
+                <EventActions
+                  shareUrl={shareUrl}
+                  event={data as any}
+                  historyId={!isReadOnly ? row.id : undefined}
+                  className=""
+                  variant="compact"
+                  tone={"default" as any}
+                />
+              </div>
+            )
+          }
+        />
+      );
     }
 
     return (
@@ -1519,10 +1364,7 @@ export default async function EventPage({
     );
     if (discoveryEditConfig) {
       return (
-        <DiscoveryEventEditLayout
-          eventId={row.id}
-          customizeUrl={discoveryEditConfig.customizeUrl}
-        >
+        <DiscoveryEventEditLayout eventId={row.id} customizeUrl={discoveryEditConfig.customizeUrl}>
           {footballEventView}
         </DiscoveryEventEditLayout>
       );
@@ -1548,10 +1390,7 @@ export default async function EventPage({
     );
     if (discoveryEditConfig) {
       return (
-        <DiscoveryEventEditLayout
-          eventId={row.id}
-          customizeUrl={discoveryEditConfig.customizeUrl}
-        >
+        <DiscoveryEventEditLayout eventId={row.id} customizeUrl={discoveryEditConfig.customizeUrl}>
           {eventView}
         </DiscoveryEventEditLayout>
       );
@@ -1570,8 +1409,7 @@ export default async function EventPage({
       style={
         {
           // Keep page chrome in the white/purple family for scanned event views.
-          "--theme-hero-gradient":
-            "linear-gradient(180deg, #f7f3ff 0%, #ffffff 55%, #f8f5ff 100%)",
+          "--theme-hero-gradient": "linear-gradient(180deg, #f7f3ff 0%, #ffffff 55%, #f8f5ff 100%)",
         } as CSSProperties
       }
     >
@@ -1585,10 +1423,7 @@ export default async function EventPage({
           );
         }
       `}</style>
-      <div
-        className="event-theme-scope space-y-6"
-        style={themeStyleVars as CSSProperties}
-      >
+      <div className="event-theme-scope space-y-6" style={themeStyleVars as CSSProperties}>
         <section
           className="event-theme-header relative overflow-visible rounded-2xl border shadow-lg px-1 py-6 sm:px-2 min-h-[220px] sm:min-h-[280px]"
           style={headerUserStyle}
@@ -1613,14 +1448,14 @@ export default async function EventPage({
                 titleVAlign === "top"
                   ? "items-start"
                   : titleVAlign === "middle"
-                  ? "items-center"
-                  : "items-end"
+                    ? "items-center"
+                    : "items-end"
               } ${
                 titleHAlign === "left"
                   ? "justify-start"
                   : titleHAlign === "center"
-                  ? "justify-center"
-                  : "justify-end"
+                    ? "justify-center"
+                    : "justify-end"
               }`}
             >
               <h1
@@ -1628,20 +1463,20 @@ export default async function EventPage({
                   titleWeight === "bold"
                     ? "font-bold"
                     : titleWeight === "semibold"
-                    ? "font-semibold"
-                    : "font-normal"
+                      ? "font-semibold"
+                      : "font-normal"
                 } ${
                   titleHAlign === "center"
                     ? "text-center"
                     : titleHAlign === "right"
-                    ? "text-right"
-                    : "text-left"
+                      ? "text-right"
+                      : "text-left"
                 } ${
                   titleColor && !isOcrEvent
                     ? ""
                     : isOcrEvent || headerImageUrl
-                    ? "text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]"
-                    : "text-foreground"
+                      ? "text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]"
+                      : "text-foreground"
                 }`}
                 style={{
                   color: isOcrEvent ? "#ffffff" : titleColor || undefined,
@@ -1649,27 +1484,26 @@ export default async function EventPage({
                     titleFont === "pacifico"
                       ? "var(--font-pacifico)"
                       : titleFont === "montserrat"
-                      ? "var(--font-montserrat)"
-                      : titleFont === "geist"
-                      ? "var(--font-geist-sans)"
-                      : titleFont === "mono"
-                      ? "var(--font-geist-mono)"
-                      : titleFont === "poppins"
-                      ? "var(--font-poppins)"
-                      : titleFont === "raleway"
-                      ? "var(--font-raleway)"
-                      : titleFont === "playfair"
-                      ? "var(--font-playfair)"
-                      : titleFont === "dancing"
-                      ? "var(--font-dancing)"
-                      : titleFont === "serif"
-                      ? 'Georgia, Cambria, "Times New Roman", Times, serif'
-                      : titleFont === "system"
-                      ? 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"'
-                      : undefined,
+                        ? "var(--font-montserrat)"
+                        : titleFont === "geist"
+                          ? "var(--font-geist-sans)"
+                          : titleFont === "mono"
+                            ? "var(--font-geist-mono)"
+                            : titleFont === "poppins"
+                              ? "var(--font-poppins)"
+                              : titleFont === "raleway"
+                                ? "var(--font-raleway)"
+                                : titleFont === "playfair"
+                                  ? "var(--font-playfair)"
+                                  : titleFont === "dancing"
+                                    ? "var(--font-dancing)"
+                                    : titleFont === "serif"
+                                      ? 'Georgia, Cambria, "Times New Roman", Times, serif'
+                                      : titleFont === "system"
+                                        ? 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"'
+                                        : undefined,
                   fontSize: `${titleSize || 28}px`,
-                  transform:
-                    titleVAlign === "middle" ? "translateY(94px)" : undefined,
+                  transform: titleVAlign === "middle" ? "translateY(94px)" : undefined,
                 }}
               >
                 {title}
@@ -1701,9 +1535,7 @@ export default async function EventPage({
                   <span className="hidden sm:inline">Edit</span>
                 </Link>
               )}
-              {!isReadOnly && isOwner && (
-                <EventDeleteModal eventId={row.id} eventTitle={title} />
-              )}
+              {!isReadOnly && isOwner && <EventDeleteModal eventId={row.id} eventTitle={title} />}
               <EventActions
                 shareUrl={shareUrl}
                 event={data as any}
@@ -1734,24 +1566,15 @@ export default async function EventPage({
                     <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                       When
                     </dt>
-                    <dd className="mt-1 text-base font-semibold">
-                      All day event
-                    </dd>
+                    <dd className="mt-1 text-base font-semibold">All day event</dd>
                   </div>
                 )}
                 {whenLabel ? (
                   (() => {
-                    const timeAndDate = formatTimeAndDate(
-                      startForDisplay,
-                      endForDisplay,
-                      {
-                        timeZone:
-                          (typeof data?.timezone === "string" &&
-                            data.timezone) ||
-                          undefined,
-                        allDay: Boolean(data?.allDay),
-                      }
-                    );
+                    const timeAndDate = formatTimeAndDate(startForDisplay, endForDisplay, {
+                      timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
+                      allDay: Boolean(data?.allDay),
+                    });
 
                     return (
                       <div className="col-span-2">
@@ -1761,9 +1584,7 @@ export default async function EventPage({
                         <dd className="mt-1 break-all text-base font-semibold">
                           {timeAndDate.time && <div>{timeAndDate.time}</div>}
                           {timeAndDate.date && (
-                            <div className="mt-1 text-sm text-[#6e629c]">
-                              {timeAndDate.date}
-                            </div>
+                            <div className="mt-1 text-sm text-[#6e629c]">{timeAndDate.date}</div>
                           )}
                           {!timeAndDate.time && !timeAndDate.date && whenLabel}
                         </dd>
@@ -1777,9 +1598,7 @@ export default async function EventPage({
                         <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                           Start
                         </dt>
-                        <dd className="mt-1 break-all text-base font-semibold">
-                          {data.start}
-                        </dd>
+                        <dd className="mt-1 break-all text-base font-semibold">{data.start}</dd>
                       </div>
                     )}
                     {data?.end && (
@@ -1787,9 +1606,7 @@ export default async function EventPage({
                         <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                           End
                         </dt>
-                        <dd className="mt-1 break-all text-base font-semibold">
-                          {data.end}
-                        </dd>
+                        <dd className="mt-1 break-all text-base font-semibold">{data.end}</dd>
                       </div>
                     )}
                   </>
@@ -1805,7 +1622,7 @@ export default async function EventPage({
                     const { street, cityStateZip } = splitAddress(locationText);
                     const fullQuery = combineVenueAndLocation(
                       venueText || null,
-                      locationText || null
+                      locationText || null,
                     );
 
                     return (
@@ -1826,11 +1643,7 @@ export default async function EventPage({
                         )}
                         {cityStateZip && (
                           <div className="mt-1 text-sm text-[#6e629c]">
-                            <LocationLink
-                              location={cityStateZip}
-                              query={fullQuery}
-                              className=""
-                            />
+                            <LocationLink location={cityStateZip} query={fullQuery} className="" />
                           </div>
                         )}
                         {!street && !cityStateZip && locationText && (
@@ -1912,9 +1725,7 @@ export default async function EventPage({
           {/* Share/Email actions moved to header top-right */}
           {attachmentInfo && false && (
             <div className="mt-6 border-t border-[#e7defb] pt-4 text-sm leading-relaxed">
-              <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                Attachment
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Attachment</p>
               <a
                 href={attachmentInfo?.dataUrl ?? undefined}
                 target="_blank"
@@ -1925,33 +1736,27 @@ export default async function EventPage({
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-xs">
                   {attachmentInfo?.type?.startsWith("image/") ? "🖼" : "📄"}
                 </span>
-                <span
-                  className="truncate"
-                  title={attachmentInfo?.name || "Attachment"}
-                >
+                <span className="truncate" title={attachmentInfo?.name || "Attachment"}>
                   {attachmentInfo?.name || "Attachment"}
                 </span>
               </a>
             </div>
           )}
-          {((attachmentInfo?.type?.startsWith?.("image/") &&
-              attachmentInfo?.dataUrl) ||
+          {((attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl) ||
             hasMapLocation) && (
             <div className="mt-6 border-t border-[#e7defb] pt-4 text-sm leading-relaxed">
-              {(attachmentInfo?.type?.startsWith?.("image/") &&
-                attachmentInfo?.dataUrl) ||
+              {(attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl) ||
               hasMapLocation ? (
                 <div className="grid justify-items-center gap-4 md:grid-cols-2">
-                  {attachmentInfo?.type?.startsWith?.("image/") &&
-                    attachmentInfo?.dataUrl && (
-                      <div className="flex justify-center">
-                        <ThumbnailModal
-                          src={attachmentInfo.dataUrl}
-                          alt={`${title} flyer`}
-                          className="relative block w-full max-w-[220px] overflow-hidden rounded-2xl shadow-[0_14px_32px_rgba(79,58,134,0.12)]"
-                        />
-                      </div>
-                    )}
+                  {attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl && (
+                    <div className="flex justify-center">
+                      <ThumbnailModal
+                        src={attachmentInfo.dataUrl}
+                        alt={`${title} flyer`}
+                        className="relative block w-full max-w-[220px] overflow-hidden rounded-2xl shadow-[0_14px_32px_rgba(79,58,134,0.12)]"
+                      />
+                    </div>
+                  )}
                   {hasMapLocation && (
                     <EventMap
                       coordinates={data?.coordinates}
@@ -2001,9 +1806,7 @@ export default async function EventPage({
           )}
           {registriesAllowed && registryCards.length > 0 && (
             <div className="mt-6 border-t border-[#e7defb] pt-4 text-sm leading-relaxed">
-              <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                Registries
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Registries</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {registryCards.map((link) => {
                   const decorated = decorateAmazonUrl(link.url, {
@@ -2058,8 +1861,8 @@ export default async function EventPage({
               </div>
               {!isReadOnly && (
                 <p className="mt-3 text-xs text-foreground/60">
-                  These links open in a new tab. Registries must stay public or
-                  shareable so guests can view them.
+                  These links open in a new tab. Registries must stay public or shareable so guests
+                  can view them.
                 </p>
               )}
             </div>
@@ -2069,18 +1872,13 @@ export default async function EventPage({
 
       <div className="mt-6 flex flex-col gap-3">
         {canManageCreatedEvent && numberOfGuests > 0 && (
-          <EventRsvpDashboard
-            eventId={row.id}
-            initialNumberOfGuests={numberOfGuests}
-          />
+          <EventRsvpDashboard eventId={row.id} initialNumberOfGuests={numberOfGuests} />
         )}
         {/* +Add has been moved to the Shared with box header */}
         {!isReadOnly && !isOwner ? (
           <section className="rounded border border-border p-3 bg-surface">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-foreground/80">
-                Shared by:
-              </h3>
+              <h3 className="text-sm font-semibold text-foreground/80">Shared by:</h3>
               {(isShared || recipientAccepted) && (
                 <form
                   action={async () => {
@@ -2173,15 +1971,13 @@ export default async function EventPage({
         ) : null}
         {isReadOnly && !isOwner ? (
           <section className="rounded border border-border bg-surface p-3 text-sm text-foreground/70">
-            <h3 className="text-sm font-semibold text-foreground/80">
-              View-only access
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground/80">View-only access</h3>
             <p className="mt-2">
               {hasShareRelation
                 ? "This event is available in view-only mode right now."
                 : "This event was opened from a direct link, so it is view-only right now."}{" "}
-              It will only appear on Home or under Invited Events after it is
-              shared to this account.
+              It will only appear on Home or under Invited Events after it is shared to this
+              account.
             </p>
           </section>
         ) : null}
@@ -2205,9 +2001,7 @@ export default async function EventPage({
                 Edit
               </Link>
             )}
-            {isOwner && (
-              <EventDeleteModal eventId={row.id} eventTitle={title} />
-            )}
+            {isOwner && <EventDeleteModal eventId={row.id} eventTitle={title} />}
             <div className="min-w-0 flex-1">
               <EventActions
                 shareUrl={shareUrl}

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import {
+  DEFAULT_GYM_MEET_TEMPLATE_ID,
+  resolveGymMeetTemplateId,
+} from "@/components/gym-meet-templates/registry";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   getEventHistoryById,
   query,
@@ -8,25 +13,20 @@ import {
   updateEventHistoryDataMerge,
   updateEventHistoryTitle,
 } from "@/lib/db";
-import { loadDiscoveryInputBytes } from "@/lib/discovery-input-storage";
+import { hydrateDiscoveryFileInput } from "@/lib/discovery-file-hydration";
 import { invalidateUserHistory } from "@/lib/history-cache";
-import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   computeGymBuilderStatuses,
   createDiscoveryPerformance,
+  type DiscoveryEnrichmentStatus,
+  type DiscoveryPerformance,
+  type DiscoverySourceInput,
   extractDiscoveryText,
   finalizeMeetParseResult,
   isDiscoveryDebugArtifactsEnabled,
   mapParseResultToGymData,
   resolveDiscoveryBudget,
-  type DiscoveryPerformance,
-  type DiscoveryEnrichmentStatus,
-  type DiscoverySourceInput,
 } from "@/lib/meet-discovery";
-import {
-  DEFAULT_GYM_MEET_TEMPLATE_ID,
-  resolveGymMeetTemplateId,
-} from "@/components/gym-meet-templates/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,7 +52,7 @@ function sanitizeExtractionMetaForPersistence(meta: any, debugArtifacts: boolean
 }
 
 function buildPersistedPerformance(
-  performance: Partial<DiscoveryPerformance> | Record<string, any> | null | undefined
+  performance: Partial<DiscoveryPerformance> | Record<string, any> | null | undefined,
 ): DiscoveryPerformance {
   const next = performance && typeof performance === "object" ? performance : {};
   return {
@@ -63,18 +63,13 @@ function buildPersistedPerformance(
 }
 
 function resolveDiscoveryEnrichStaleMs(): number {
-  const parsed = Number.parseInt(
-    process.env.DISCOVERY_ENRICH_STALE_MS || "",
-    10
-  );
-  return Number.isFinite(parsed) && parsed > 0
-    ? parsed
-    : DEFAULT_DISCOVERY_ENRICH_STALE_MS;
+  const parsed = Number.parseInt(process.env.DISCOVERY_ENRICH_STALE_MS || "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_DISCOVERY_ENRICH_STALE_MS;
 }
 
 function isEnrichmentLeaseStale(
   enrichment: Record<string, any> | null | undefined,
-  staleMs: number
+  staleMs: number,
 ) {
   const startedAt = safeString(enrichment?.startedAt);
   if (!startedAt) return true;
@@ -84,7 +79,7 @@ function isEnrichmentLeaseStale(
 }
 
 function buildEnrichmentStatus(
-  overrides: Partial<DiscoveryEnrichmentStatus> = {}
+  overrides: Partial<DiscoveryEnrichmentStatus> = {},
 ): DiscoveryEnrichmentStatus {
   return {
     state: "pending",
@@ -146,7 +141,7 @@ async function tryAcquireEnrichmentLease(params: {
          )
        )
      returning id`,
-    [params.eventId, JSON.stringify(nextDiscoverySource), params.force, staleBefore]
+    [params.eventId, JSON.stringify(nextDiscoverySource), params.force, staleBefore],
   );
 
   if (result.rows[0]) {
@@ -161,20 +156,13 @@ async function tryAcquireEnrichmentLease(params: {
 
   const latestRow = await getEventHistoryById(params.eventId);
   const latestData = (latestRow?.data || {}) as Record<string, any>;
-  const latestDiscoverySource = (latestData.discoverySource || {}) as Record<
-    string,
-    any
-  >;
+  const latestDiscoverySource = (latestData.discoverySource || {}) as Record<string, any>;
   const latestEnrichment =
-    latestDiscoverySource.enrichment &&
-    typeof latestDiscoverySource.enrichment === "object"
+    latestDiscoverySource.enrichment && typeof latestDiscoverySource.enrichment === "object"
       ? latestDiscoverySource.enrichment
       : buildEnrichmentStatus();
 
-  if (
-    safeString(latestEnrichment.state) === "completed" &&
-    !params.force
-  ) {
+  if (safeString(latestEnrichment.state) === "completed" && !params.force) {
     return {
       status: "completed" as const,
       row: latestRow,
@@ -212,12 +200,12 @@ async function tryAcquireEnrichmentLease(params: {
 function collectUpdatedSections(previousData: Record<string, any>, nextData: Record<string, any>) {
   const previousSections = (previousData?.advancedSections || {}) as Record<string, any>;
   const nextSections = (nextData?.advancedSections || {}) as Record<string, any>;
-  const sectionIds = new Set([
-    ...Object.keys(previousSections),
-    ...Object.keys(nextSections),
-  ]);
+  const sectionIds = new Set([...Object.keys(previousSections), ...Object.keys(nextSections)]);
   return [...sectionIds].filter((sectionId) => {
-    return JSON.stringify(previousSections[sectionId] ?? null) !== JSON.stringify(nextSections[sectionId] ?? null);
+    return (
+      JSON.stringify(previousSections[sectionId] ?? null) !==
+      JSON.stringify(nextSections[sectionId] ?? null)
+    );
   });
 }
 
@@ -226,10 +214,7 @@ async function getSessionUserId() {
   return await resolveSessionUserId(session);
 }
 
-export async function POST(
-  req: Request,
-  context: { params: Promise<{ eventId: string }> }
-) {
+export async function POST(req: Request, context: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await context.params;
   const startedAt = Date.now();
   let failureSnapshot: Record<string, any> | null = null;
@@ -258,25 +243,19 @@ export async function POST(
     if (safeString(discoverySource.workflow) === "football") {
       return NextResponse.json(
         { error: "Football discovery does not support enrichment" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const sourceInput = discoverySource.input as DiscoverySourceInput | undefined;
     if (!sourceInput?.type) {
-      return NextResponse.json(
-        { error: "No discovery source input found" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No discovery source input found" }, { status: 400 });
     }
 
     const baseParseResult = discoverySource.parseResult;
     const baseExtractedText = safeString(discoverySource.extractedText);
     if (!baseParseResult || !baseExtractedText) {
-      return NextResponse.json(
-        { error: "Run core parse before enrichment" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "Run core parse before enrichment" }, { status: 409 });
     }
 
     const lease = await tryAcquireEnrichmentLease({
@@ -301,41 +280,30 @@ export async function POST(
           performance: enrichmentState.performance || createDiscoveryPerformance(),
           statuses: computeGymBuilderStatuses(responseData),
         },
-        { status: responseStatus }
+        { status: responseStatus },
       );
     }
     if (lease.status === "blocked") {
-      return NextResponse.json(
-        { error: "Could not acquire enrichment lease" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "Could not acquire enrichment lease" }, { status: 409 });
     }
     failureSnapshot = lease.discoverySource;
     enrichmentStartedAt = lease.startedAt;
 
+    const contentType = safeString(req.headers.get("content-type")).toLowerCase();
+    let uploadFile: File | null = null;
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const f = formData.get("file");
+      if (f instanceof File) uploadFile = f;
+    }
+
     let hydratedSourceInput = sourceInput;
     if (sourceInput.type === "file" && !safeString(sourceInput.dataUrl || "")) {
-      const loaded = await loadDiscoveryInputBytes(eventId);
-      if (!loaded) {
-        return NextResponse.json(
-          { error: "Discovery source file blob not found" },
-          { status: 404 }
-        );
+      const hydrated = await hydrateDiscoveryFileInput(eventId, sourceInput, uploadFile);
+      if (!hydrated.ok) {
+        return NextResponse.json({ error: hydrated.error }, { status: hydrated.status });
       }
-      hydratedSourceInput = {
-        ...sourceInput,
-        fileName: safeString(sourceInput.fileName) || safeString(loaded.file_name) || "upload",
-        mimeType:
-          safeString(sourceInput.mimeType) ||
-          safeString(loaded.mime_type) ||
-          "application/octet-stream",
-        sizeBytes:
-          Number.isFinite(sourceInput.sizeBytes)
-            ? sourceInput.sizeBytes
-            : Number(loaded.size_bytes || loaded.buffer.length),
-        dataUrl: `data:${safeString(loaded.mime_type) || "application/octet-stream"};base64,${loaded.buffer.toString("base64")}`,
-        blobStored: true,
-      };
+      hydratedSourceInput = hydrated.hydrated;
     }
 
     const debugArtifacts = isDiscoveryDebugArtifactsEnabled();
@@ -357,26 +325,24 @@ export async function POST(
         traceId: eventId,
         mode: "enrich",
         performance,
-      }
+      },
     );
 
     const latestRow = await getEventHistoryById(eventId);
     const latestData = ((latestRow?.data || currentData) ?? {}) as Record<string, any>;
-    const latestDiscoverySource = (latestData.discoverySource || discoverySource) as Record<string, any>;
+    const latestDiscoverySource = (latestData.discoverySource || discoverySource) as Record<
+      string,
+      any
+    >;
     const mapped = await mapParseResultToGymData(
       enrichedParseResult,
       latestData,
-      extraction.extractionMeta
+      extraction.extractionMeta,
     );
     const nextGymPageTemplateId =
-      resolveGymMeetTemplateId({ ...latestData, ...mapped }) ||
-      DEFAULT_GYM_MEET_TEMPLATE_ID;
-    const detectedGymLayoutImage =
-      extraction.extractionMeta?.gymLayoutImageDataUrl || null;
-    if (
-      detectedGymLayoutImage &&
-      !mapped?.advancedSections?.logistics?.gymLayoutImage
-    ) {
+      resolveGymMeetTemplateId({ ...latestData, ...mapped }) || DEFAULT_GYM_MEET_TEMPLATE_ID;
+    const detectedGymLayoutImage = extraction.extractionMeta?.gymLayoutImageDataUrl || null;
+    if (detectedGymLayoutImage && !mapped?.advancedSections?.logistics?.gymLayoutImage) {
       mapped.advancedSections = mapped.advancedSections || {};
       mapped.advancedSections.logistics = mapped.advancedSections.logistics || {};
       mapped.advancedSections.logistics.gymLayoutImage = detectedGymLayoutImage;
@@ -388,9 +354,7 @@ export async function POST(
     const enrichmentState = buildEnrichmentStatus({
       state: "completed",
       pending: false,
-      startedAt:
-        safeString(latestDiscoverySource?.enrichment?.startedAt) ||
-        enrichmentStartedAt,
+      startedAt: safeString(latestDiscoverySource?.enrichment?.startedAt) || enrichmentStartedAt,
       finishedAt,
       lastError: null,
       performance: buildPersistedPerformance(performance),
@@ -407,7 +371,7 @@ export async function POST(
         extractedText: extraction.extractedText || baseExtractedText,
         extractionMeta: sanitizeExtractionMetaForPersistence(
           extraction.extractionMeta,
-          debugArtifacts
+          debugArtifacts,
         ),
         parseResult: enrichedParseResult,
         enrichment: enrichmentState,
@@ -462,9 +426,7 @@ export async function POST(
             enrichment: buildEnrichmentStatus({
               state: "failed",
               pending: false,
-              startedAt:
-                safeString(failureSnapshot?.enrichment?.startedAt) ||
-                enrichmentStartedAt,
+              startedAt: safeString(failureSnapshot?.enrichment?.startedAt) || enrichmentStartedAt,
               finishedAt,
               lastError: String(err?.message || err || "Enrichment failed"),
               performance: buildPersistedPerformance(performance),
@@ -476,7 +438,7 @@ export async function POST(
     }
     return NextResponse.json(
       { error: String(err?.message || err || "Enrichment failed") },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

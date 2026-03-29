@@ -1,16 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ArrowRight, CheckCircle2, Globe, Sparkles, Upload, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Globe,
-  Sparkles,
-  Upload,
-  X,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 type GymnasticsLauncherProps = {
   forwardQueryString?: string;
@@ -21,8 +14,7 @@ type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
 const PROCESSING_PROGRESS_CAP = 90;
-const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY =
-  "envitefy:gymnastics-demo-draft:v1";
+const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY = "envitefy:gymnastics-demo-draft:v1";
 
 export default function GymnasticsLauncher({
   forwardQueryString,
@@ -31,9 +23,7 @@ export default function GymnasticsLauncher({
   const router = useRouter();
   const { status } = useSession();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [selectedPath, setSelectedPath] = useState<
-    "upload" | "url" | "scratch"
-  >("upload");
+  const [selectedPath, setSelectedPath] = useState<"upload" | "url" | "scratch">("upload");
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadFileName, setUploadFileName] = useState("");
@@ -46,18 +36,14 @@ export default function GymnasticsLauncher({
   const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
   const ingestAbortRef = useRef<AbortController | null>(null);
   const parseAbortRef = useRef<AbortController | null>(null);
-  const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
+  const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cancelRequestedRef = useRef(false);
   const discoveryLogStateRef = useRef<{
     status: string;
     bucket: number;
   }>({ status: "", bucket: -1 });
   const uploadIndeterminate =
-    uploadBusy &&
-    uploadStatus === "Processing..." &&
-    uploadProgress >= PROCESSING_PROGRESS_CAP;
+    uploadBusy && uploadStatus === "Processing..." && uploadProgress >= PROCESSING_PROGRESS_CAP;
 
   const toErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
@@ -127,10 +113,7 @@ export default function GymnasticsLauncher({
         console.log(`${GYM_DISCOVERY_LOG_PREFIX} [${traceId}] ${message}`);
         return;
       }
-      console.log(
-        `${GYM_DISCOVERY_LOG_PREFIX} [${traceId}] ${message}`,
-        detail
-      );
+      console.log(`${GYM_DISCOVERY_LOG_PREFIX} [${traceId}] ${message}`, detail);
     };
     const reportProgress = (progress: number, status: string) => {
       const bucket = Math.floor(progress / 10);
@@ -162,7 +145,7 @@ export default function GymnasticsLauncher({
         : {
             inputType: "url",
             url,
-          }
+          },
     );
     const formData = new FormData();
     if (file) formData.append("file", file);
@@ -175,51 +158,49 @@ export default function GymnasticsLauncher({
     if (file) {
       reportProgress(4, "Uploading meet file...");
       log("starting ingest upload request");
-      ingestJson = await new Promise<{ eventId?: string; error?: string }>(
-        (resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          uploadXhrRef.current = xhr;
-          xhr.open("POST", "/api/ingest?mode=meet_discovery", true);
-          xhr.withCredentials = true;
+      ingestJson = await new Promise<{ eventId?: string; error?: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        uploadXhrRef.current = xhr;
+        xhr.open("POST", "/api/ingest?mode=meet_discovery", true);
+        xhr.withCredentials = true;
 
-          xhr.upload.onprogress = (event) => {
-            if (!event.lengthComputable) return;
-            const ratio = event.loaded / event.total;
-            reportProgress(5 + ratio * 65, "Uploading meet file...");
-          };
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          const ratio = event.loaded / event.total;
+          reportProgress(5 + ratio * 65, "Uploading meet file...");
+        };
 
-          xhr.onabort = () => {
-            reject(abortError());
-          };
+        xhr.onabort = () => {
+          reject(abortError());
+        };
 
-          xhr.onerror = () => {
-            reject(new Error("Network error while uploading file"));
-          };
+        xhr.onerror = () => {
+          reject(new Error("Network error while uploading file"));
+        };
 
-          xhr.onload = () => {
-            uploadXhrRef.current = null;
-            try {
-              const json = JSON.parse(xhr.responseText || "{}") as {
-                eventId?: string;
-                error?: string;
-              };
-              if (xhr.status >= 200 && xhr.status < 300 && json?.eventId) {
-                log("ingest upload completed", {
-                  status: xhr.status,
-                  eventId: json.eventId,
-                });
-                resolve(json);
-                return;
-              }
-              reject(new Error(json?.error || "Failed to ingest source"));
-            } catch {
-              reject(new Error("Failed to parse ingest response"));
+        xhr.onload = () => {
+          uploadXhrRef.current = null;
+          try {
+            const json = JSON.parse(xhr.responseText || "{}") as {
+              eventId?: string;
+              error?: string;
+            };
+            if (xhr.status >= 200 && xhr.status < 300 && json?.eventId) {
+              log("ingest upload completed", {
+                status: xhr.status,
+                eventId: json.eventId,
+              });
+              resolve(json);
+              return;
             }
-          };
+            reject(new Error(json?.error || "Failed to ingest source"));
+          } catch {
+            reject(new Error("Failed to parse ingest response"));
+          }
+        };
 
-          xhr.send(formData);
-        }
-      );
+        xhr.send(formData);
+      });
       throwIfCancelled();
     } else {
       reportProgress(20, "Submitting meet URL...");
@@ -252,20 +233,24 @@ export default function GymnasticsLauncher({
       parseProgress = Math.min(parseProgress + 3, PROCESSING_PROGRESS_CAP);
       reportProgress(
         parseProgress,
-        parseProgress >= PROCESSING_PROGRESS_CAP
-          ? "Processing..."
-          : "Processing meet file..."
+        parseProgress >= PROCESSING_PROGRESS_CAP ? "Processing..." : "Processing meet file...",
       );
     }, 700);
 
     try {
       parseAbortRef.current = new AbortController();
       const parseStartedAt = Date.now();
-      const parseRes = await fetch(`/api/parse/${eventId}`, {
+      const parseInit: RequestInit = {
         method: "POST",
         credentials: "include",
         signal: parseAbortRef.current.signal,
-      }).finally(() => {
+      };
+      if (file) {
+        const parseBody = new FormData();
+        parseBody.append("file", file);
+        parseInit.body = parseBody;
+      }
+      const parseRes = await fetch(`/api/parse/${eventId}`, parseInit).finally(() => {
         parseAbortRef.current = null;
       });
       const parseJson = await parseRes.json().catch(() => ({}));
@@ -292,9 +277,7 @@ export default function GymnasticsLauncher({
     log("routing to builder", { eventId });
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
-    const baseUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(
-      eventId
-    )}`;
+    const baseUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`;
     if (status === "authenticated") {
       router.push(baseUrl);
       return;
@@ -418,12 +401,9 @@ export default function GymnasticsLauncher({
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8d8ba4]">
               Fastest setup
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">
-              Upload meet file.
-            </h2>
+            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Upload meet file.</h2>
             <p className="mt-3 text-base text-[#66677f]">
-              Upload your meet packet (PDF/JPG) and let us extract the schedule
-              and rosters.
+              Upload your meet packet (PDF/JPG) and let us extract the schedule and rosters.
             </p>
 
             <div className="mt-7">
@@ -452,9 +432,7 @@ export default function GymnasticsLauncher({
                     <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#5530a8]">
                       <span>{uploadStatus || "Processing meet file..."}</span>
                       <div className="flex items-center gap-2">
-                        {!uploadIndeterminate ? (
-                          <span>{uploadProgress}%</span>
-                        ) : null}
+                        {!uploadIndeterminate ? <span>{uploadProgress}%</span> : null}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -496,9 +474,7 @@ export default function GymnasticsLauncher({
                 }}
               />
               {uploadFileName ? (
-                <p className="mt-2 truncate text-xs text-[#6a6782]">
-                  Selected: {uploadFileName}
-                </p>
+                <p className="mt-2 truncate text-xs text-[#6a6782]">Selected: {uploadFileName}</p>
               ) : null}
               {uploadError ? (
                 <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -527,9 +503,7 @@ export default function GymnasticsLauncher({
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a0a5b6]">
               External integration
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">
-              Live URL Sync
-            </h2>
+            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Live URL Sync</h2>
             <p className="mt-3 text-base text-[#66677f]">
               Paste a link to an existing meet page to sync data.
             </p>
@@ -593,12 +567,9 @@ export default function GymnasticsLauncher({
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a0a5b6]">
               Custom design
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">
-              Visual Builder
-            </h2>
+            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Visual Builder</h2>
             <p className="mt-3 text-base text-[#66677f]">
-              The ultimate control. Design your meet page block-by-block using
-              our template gallery.
+              The ultimate control. Design your meet page block-by-block using our template gallery.
             </p>
             <div className="mt-auto pt-6 pb-2">
               <button

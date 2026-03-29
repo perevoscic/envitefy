@@ -6,7 +6,7 @@ import {
   isInvitedEventLikeRecord,
   normalizeDashboardEventOwnership,
   toDashboardEvent,
-} from "./dashboard-data";
+} from "./dashboard-data.ts";
 
 test("normalizeDashboardEventOwnership treats explicit invited ownership as invited", () => {
   assert.equal(normalizeDashboardEventOwnership("invited"), "invited");
@@ -59,6 +59,41 @@ test("toDashboardEvent keeps OCR-created rows owned without invite markers", () 
   assert.equal(event?.ownership, "owned");
 });
 
+test("toDashboardEvent uses image attachment urls as dashboard covers", () => {
+  const event = toDashboardEvent({
+    id: "evt_3",
+    title: "Image Flyer",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-06-03T18:00:00.000Z",
+      attachment: {
+        type: "image/webp",
+        dataUrl: "https://blob.example.com/display.webp",
+      },
+    },
+  });
+
+  assert.equal(event?.coverImageUrl, "https://blob.example.com/display.webp");
+});
+
+test("toDashboardEvent uses pdf preview urls instead of pdf source urls as covers", () => {
+  const event = toDashboardEvent({
+    id: "evt_4",
+    title: "PDF Flyer",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-06-04T18:00:00.000Z",
+      attachment: {
+        type: "application/pdf",
+        dataUrl: "https://blob.example.com/source.pdf",
+        previewImageUrl: "https://blob.example.com/display.webp",
+      },
+    },
+  });
+
+  assert.equal(event?.coverImageUrl, "https://blob.example.com/display.webp");
+});
+
 test("db projections keep invite marker ownership logic in source", () => {
   const source = readFileSync(new URL("./db.ts", import.meta.url), "utf8");
 
@@ -66,4 +101,6 @@ test("db projections keep invite marker ownership logic in source", () => {
   assert.match(source, /->>'ownership'/);
   assert.match(source, /->>'invitedFromScan'/);
   assert.match(source, /'invitedFromScan', \$\{invitedFromScanSql\}/);
+  assert.match(source, /previewImageUrl/);
+  assert.match(source, /thumbnailUrl/);
 });

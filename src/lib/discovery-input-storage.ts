@@ -1,9 +1,16 @@
 import { get, put } from "@vercel/blob";
 import { getEventHistoryInputBlob } from "@/lib/db";
 
-function sanitizeDiscoveryFileName(name: string): string {
+/** Same rules as `scripts/backfill-discovery-blob-pathnames.mjs` — keep in sync. */
+export function sanitizeDiscoveryFileName(name: string): string {
   const base = name.replace(/[/\\?%*:|"<>]/g, "_").slice(0, 200);
   return base || "upload";
+}
+
+/** Canonical Vercel Blob pathname for a discovery ingest file. */
+export function discoveryInputStoragePathname(eventId: string, fileName: string): string {
+  const safe = sanitizeDiscoveryFileName(fileName);
+  return `discovery-input/${eventId}/${safe}`;
 }
 
 export async function uploadDiscoveryInputToBlob(params: {
@@ -12,8 +19,7 @@ export async function uploadDiscoveryInputToBlob(params: {
   mimeType: string;
   bytes: Buffer;
 }): Promise<{ pathname: string; url: string }> {
-  const safe = sanitizeDiscoveryFileName(params.fileName);
-  const pathname = `discovery-input/${params.eventId}/${safe}`;
+  const pathname = discoveryInputStoragePathname(params.eventId, params.fileName);
   const blob = await put(pathname, params.bytes, {
     access: "private",
     contentType: params.mimeType || "application/octet-stream",

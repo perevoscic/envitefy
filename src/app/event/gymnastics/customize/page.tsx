@@ -1,29 +1,30 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import AuthModal from "@/components/auth/AuthModal";
 import {
+  CheckSquare,
   ChevronLeft,
+  ChevronRight,
   Edit2,
   Image as ImageIcon,
+  Link as LinkIcon,
   Menu,
   Palette,
   Type,
-  CheckSquare,
-  ChevronRight,
-  Link as LinkIcon,
 } from "lucide-react";
-import SimpleTemplateView from "@/components/SimpleTemplateView";
-import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { buildEventPath } from "@/utils/event-url";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
-import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AuthModal from "@/components/auth/AuthModal";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
+import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
+import SimpleTemplateView from "@/components/SimpleTemplateView";
+import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { buildEventPath } from "@/utils/event-url";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 type FieldSpec = {
   key: string;
@@ -258,9 +259,7 @@ const InputGroup = ({
   mutedValue?: boolean;
 }) => {
   const [localValue, setLocalValue] = useState(value);
-  const toneClass = mutedValue
-    ? "text-slate-500 focus:text-slate-900"
-    : "text-slate-900";
+  const toneClass = mutedValue ? "text-slate-500 focus:text-slate-900" : "text-slate-900";
 
   // Sync local state when value prop changes (from external updates)
   useEffect(() => {
@@ -356,15 +355,15 @@ const MenuCard = ({
                 status === "ready"
                   ? "bg-emerald-100 text-emerald-700"
                   : status === "in-progress"
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-slate-100 text-slate-500"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-slate-100 text-slate-500"
               }`}
             >
               {status === "ready"
                 ? "Ready"
                 : status === "in-progress"
-                ? "In progress"
-                : "Not started"}
+                  ? "In progress"
+                  : "Not started"}
             </span>
           )}
           <ChevronRight
@@ -375,9 +374,7 @@ const MenuCard = ({
       </div>
       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
       {showsOnEvent && (
-        <p className="text-[11px] text-slate-400 mt-1.5 italic">
-          Shows on event: {showsOnEvent}
-        </p>
+        <p className="text-[11px] text-slate-400 mt-1.5 italic">Shows on event: {showsOnEvent}</p>
       )}
     </div>
   </button>
@@ -415,7 +412,7 @@ const buildMinimalValue = (value: any): any => {
   if (Array.isArray(value)) return [];
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value).map(([key, inner]) => [key, buildMinimalValue(inner)])
+      Object.entries(value).map(([key, inner]) => [key, buildMinimalValue(inner)]),
     );
   }
   if (typeof value === "string") return "";
@@ -425,21 +422,16 @@ const buildMinimalValue = (value: any): any => {
 };
 
 const buildMinimalAdvancedState = (
-  sections: AdvancedSectionSpec[] | undefined
+  sections: AdvancedSectionSpec[] | undefined,
 ): Record<string, any> =>
   Object.fromEntries(
-    (sections || []).map((section) => [
-      section.id,
-      buildMinimalValue(section.initialState),
-    ])
+    (sections || []).map((section) => [section.id, buildMinimalValue(section.initialState)]),
   );
 
 const buildSampleAdvancedState = (
-  sections: AdvancedSectionSpec[] | undefined
+  sections: AdvancedSectionSpec[] | undefined,
 ): Record<string, any> =>
-  Object.fromEntries(
-    (sections || []).map((section) => [section.id, section.initialState])
-  );
+  Object.fromEntries((sections || []).map((section) => [section.id, section.initialState]));
 
 const asTrimmedString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
@@ -474,7 +466,7 @@ const normalizeHostGymName = (value: unknown): string => {
     .replace(/[|•].*$/, "")
     .replace(
       /\b(meet director|registration|session|date|time|location|address|phone|email)\b.*$/i,
-      ""
+      "",
     )
     .trim();
   if (!cleaned || cleaned.length < 3) return "";
@@ -482,30 +474,20 @@ const normalizeHostGymName = (value: unknown): string => {
   return cleaned;
 };
 
-const inferHostGymFromDiscovery = (
-  discoverySource: Record<string, any> | null
-): string => {
+const inferHostGymFromDiscovery = (discoverySource: Record<string, any> | null): string => {
   if (!discoverySource || typeof discoverySource !== "object") return "";
   const parseResult = discoverySource?.parseResult || {};
 
-  const directCandidates = [
-    parseResult?.hostGym,
-    parseResult?.athlete?.team,
-    parseResult?.team,
-  ];
+  const directCandidates = [parseResult?.hostGym, parseResult?.athlete?.team, parseResult?.team];
   for (const candidate of directCandidates) {
     const normalized = normalizeHostGymName(candidate);
     if (normalized) return normalized;
   }
 
-  const evidenceHostHints = Array.isArray(
-    discoverySource?.evidence?.candidates?.hostGymHints
-  )
+  const evidenceHostHints = Array.isArray(discoverySource?.evidence?.candidates?.hostGymHints)
     ? discoverySource.evidence.candidates.hostGymHints
     : [];
-  const evidenceTitleHints = Array.isArray(
-    discoverySource?.evidence?.candidates?.titleHints
-  )
+  const evidenceTitleHints = Array.isArray(discoverySource?.evidence?.candidates?.titleHints)
     ? discoverySource.evidence.candidates.titleHints
     : [];
   const evidenceFirstLines = Array.isArray(discoverySource?.evidence?.snippets?.firstLines)
@@ -513,7 +495,7 @@ const inferHostGymFromDiscovery = (
     : [];
 
   const hostHintLine = [...evidenceHostHints, ...evidenceTitleHints, ...evidenceFirstLines].find(
-    (line) => /(host(ed)? by|host gym|home gym)/i.test(asTrimmedString(line))
+    (line) => /(host(ed)? by|host gym|home gym)/i.test(asTrimmedString(line)),
   );
   const normalizedHostHint = normalizeHostGymName(hostHintLine);
   if (normalizedHostHint) return normalizedHostHint;
@@ -523,10 +505,8 @@ const inferHostGymFromDiscovery = (
       const text = asTrimmedString(line);
       if (!text) return false;
       if (!/(gymnastics|gym club|academy|gym\b)/i.test(text)) return false;
-      return !/(session|schedule|championship|classic|invitational|meet|competition)/i.test(
-        text
-      );
-    }
+      return !/(session|schedule|championship|classic|invitational|meet|competition)/i.test(text);
+    },
   );
   return normalizeHostGymName(gymNameLine);
 };
@@ -550,9 +530,9 @@ const stripDiscoveryGeneratedDetails = (value: unknown): string => {
         (line) =>
           !DISCOVERY_GENERATED_DETAILS_PREFIX.test(line) &&
           !DISCOVERY_GENERATED_DETAILS_INLINE.test(line) &&
-          !DISCOVERY_GENERATED_DATE_LINE.test(line)
+          !DISCOVERY_GENERATED_DATE_LINE.test(line),
       ),
-    8
+    8,
   ).join("\n");
 };
 
@@ -616,34 +596,32 @@ const toIsoDate = (year: number, monthIndex: number, day: number): string => {
   return dt.toISOString().slice(0, 10);
 };
 
-const parseDiscoveryDateRange = (
-  value: unknown
-): { start: string; end: string; label: string } => {
+const parseDiscoveryDateRange = (value: unknown): { start: string; end: string; label: string } => {
   const label = asTrimmedString(value);
   if (!label) return { start: "", end: "", label: "" };
 
   const monthRange =
     label.match(
-      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*[–-]\s*(\d{1,2}),?\s*(\d{4})\b/i
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*[–-]\s*(\d{1,2}),?\s*(\d{4})\b/i,
     ) || null;
   if (monthRange) {
     const monthIdx = monthToIndex(monthRange[1]);
     const start = toIsoDate(
       Number.parseInt(monthRange[4], 10),
       monthIdx,
-      Number.parseInt(monthRange[2], 10)
+      Number.parseInt(monthRange[2], 10),
     );
     const end = toIsoDate(
       Number.parseInt(monthRange[4], 10),
       monthIdx,
-      Number.parseInt(monthRange[3], 10)
+      Number.parseInt(monthRange[3], 10),
     );
     return { start, end: end || start, label };
   }
 
   const monthSingle =
     label.match(
-      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2}),?\s*(\d{4})\b/i
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2}),?\s*(\d{4})\b/i,
     ) || null;
   if (monthSingle) {
     const monthIdx = monthToIndex(monthSingle[1]);
@@ -654,19 +632,17 @@ const parseDiscoveryDateRange = (
   }
 
   const slashRange =
-    label.match(
-      /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[–-]\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\b/
-    ) || null;
+    label.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[–-]\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\b/) || null;
   if (slashRange) {
     const start = toIsoDate(
       Number.parseInt(slashRange[3], 10),
       Number.parseInt(slashRange[1], 10) - 1,
-      Number.parseInt(slashRange[2], 10)
+      Number.parseInt(slashRange[2], 10),
     );
     const end = toIsoDate(
       Number.parseInt(slashRange[6], 10),
       Number.parseInt(slashRange[4], 10) - 1,
-      Number.parseInt(slashRange[5], 10)
+      Number.parseInt(slashRange[5], 10),
     );
     return { start, end: end || start, label };
   }
@@ -676,7 +652,7 @@ const parseDiscoveryDateRange = (
     const date = toIsoDate(
       Number.parseInt(slashSingle[3], 10),
       Number.parseInt(slashSingle[1], 10) - 1,
-      Number.parseInt(slashSingle[2], 10)
+      Number.parseInt(slashSingle[2], 10),
     );
     return { start: date, end: date, label };
   }
@@ -684,8 +660,7 @@ const parseDiscoveryDateRange = (
   return { start: "", end: "", label };
 };
 
-const sanitizeDisplayDateLabel = (value: unknown): string =>
-  parseDiscoveryDateRange(value).label;
+const sanitizeDisplayDateLabel = (value: unknown): string => parseDiscoveryDateRange(value).label;
 
 const isDateWithinRange = (value: string, start: string, end: string) => {
   const normalized = normalizeIsoDate(value);
@@ -710,7 +685,10 @@ function GymnasticsEditorLayout({
 }) {
   return (
     <div className="animate-fade-in-right min-h-0" style={{ pointerEvents: "auto" }}>
-      <div className="mb-6 pb-4 border-b border-slate-100 relative z-10" style={{ pointerEvents: "auto" }}>
+      <div
+        className="mb-6 pb-4 border-b border-slate-100 relative z-10"
+        style={{ pointerEvents: "auto" }}
+      >
         {!isEmbed && (
           <div className="flex items-center">
             <div className="mr-3 w-8">
@@ -780,9 +758,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const isEmbed = search?.get("embed") === "1";
     const defaultDate = search?.get("d") ?? undefined;
     const [demoAuthOpen, setDemoAuthOpen] = useState(false);
-    const [demoAuthMode, setDemoAuthMode] = useState<"login" | "signup">(
-      "signup"
-    );
+    const [demoAuthMode, setDemoAuthMode] = useState<"login" | "signup">("signup");
     const initialDate = useMemo(() => {
       if (!defaultDate) {
         const d = new Date();
@@ -801,7 +777,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const sampleAdvancedState = useMemo(
       () => buildSampleAdvancedState(config.advancedSections),
-      [config.advancedSections]
+      [config.advancedSections],
     );
 
     const [data, setData] = useState(() => ({
@@ -809,8 +785,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       date: initialDate,
       time: "14:00",
       timezone:
-        typeof Intl !== "undefined" &&
-        Intl.DateTimeFormat().resolvedOptions().timeZone
+        typeof Intl !== "undefined" && Intl.DateTimeFormat().resolvedOptions().timeZone
           ? Intl.DateTimeFormat().resolvedOptions().timeZone
           : "America/Chicago",
       hostGym: "",
@@ -836,34 +811,30 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       passcode: "",
       passcodeHint: "",
       simpleDesignTokens: null as any,
-      extra: Object.fromEntries(
-        config.detailFields.map((f) => [f.key, ""])
-      ),
+      extra: Object.fromEntries(config.detailFields.map((f) => [f.key, ""])),
     }));
     const [advancedState, setAdvancedState] = useState(() =>
-      buildMinimalAdvancedState(config.advancedSections)
+      buildMinimalAdvancedState(config.advancedSections),
     );
-    const [themeId, setThemeId] = useState(
-      config.themes[0]?.id ?? "default-theme"
-    );
+    const [themeId, setThemeId] = useState(config.themes[0]?.id ?? "default-theme");
     const [activeView, setActiveView] = useState<string>("main");
     const [_rsvpSubmitted, _setRsvpSubmitted] = useState(false);
     const [_rsvpAttending, _setRsvpAttending] = useState("yes");
-    const [dismissedSuggestedExtraFields, setDismissedSuggestedExtraFields] =
-      useState<Record<string, boolean>>({});
+    const [dismissedSuggestedExtraFields, setDismissedSuggestedExtraFields] = useState<
+      Record<string, boolean>
+    >({});
     const [submitting, setSubmitting] = useState(false);
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
     const [discoverError, setDiscoverError] = useState("");
-    const [loadingExisting, setLoadingExisting] = useState(() =>
-      Boolean(search?.get("edit"))
+    const [loadingExisting, setLoadingExisting] = useState(() => Boolean(search?.get("edit")));
+    const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<Record<string, any> | null>(
+      null,
     );
-    const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<
-      Record<string, any> | null
-    >(null);
-    const [discoveryEnrichmentState, setDiscoveryEnrichmentState] = useState<
-      Record<string, any> | null
-    >(null);
+    const [discoveryEnrichmentState, setDiscoveryEnrichmentState] = useState<Record<
+      string,
+      any
+    > | null>(null);
     const [discoveryEnrichmentBusy, setDiscoveryEnrichmentBusy] = useState(false);
     const [isDiscoveryEdit, setIsDiscoveryEdit] = useState(false);
     const [isInIframe, setIsInIframe] = useState(false);
@@ -900,12 +871,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             {
               method: "POST",
               credentials: "include",
-            }
+            },
           );
           const enrichJson = await enrichRes.json().catch(() => ({}));
           const nextEnrichmentState =
-            enrichJson?.enrichmentState &&
-            typeof enrichJson.enrichmentState === "object"
+            enrichJson?.enrichmentState && typeof enrichJson.enrichmentState === "object"
               ? enrichJson.enrichmentState
               : null;
 
@@ -917,15 +887,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 startedAt: new Date().toISOString(),
                 finishedAt: null,
                 lastError: "",
-              }
+              },
             );
             return { ok: true, status: 202 };
           }
 
           if (!enrichRes.ok) {
-            throw new Error(
-              enrichJson?.error || "Failed discovery enrichment"
-            );
+            throw new Error(enrichJson?.error || "Failed discovery enrichment");
           }
 
           setDiscoveryEnrichmentState(
@@ -933,7 +901,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               state: "completed",
               pending: false,
               lastError: "",
-            }
+            },
           );
           setLoadVersion((prev) => prev + 1);
           return { ok: true, status: enrichRes.status };
@@ -944,16 +912,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             state: "failed",
             pending: false,
             finishedAt: new Date().toISOString(),
-            lastError: String(
-              (err as any)?.message || err || "Failed discovery enrichment"
-            ),
+            lastError: String((err as any)?.message || err || "Failed discovery enrichment"),
           }));
           return { ok: false, status: 500 };
         } finally {
           setDiscoveryEnrichmentBusy(false);
         }
       },
-      [editEventId]
+      [editEventId],
     );
 
     useEffect(() => {
@@ -982,7 +948,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             eventId: editEventId,
             pageTemplateId: resolvedPreviewTemplateId,
           },
-          "*"
+          "*",
         );
       } catch {
         // ignore cross-origin errors in preview mode
@@ -1003,10 +969,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     }, []);
 
-    const currentTheme =
-      config.themes.find((t) => t.id === themeId) || config.themes[0];
-    const selectedFont =
-      GYM_FONTS.find((f) => f.id === data.fontId) || GYM_FONTS[0];
+    const currentTheme = config.themes.find((t) => t.id === themeId) || config.themes[0];
+    const selectedFont = GYM_FONTS.find((f) => f.id === data.fontId) || GYM_FONTS[0];
     const selectedSize = resolveFontSizeOption(data.fontSize);
 
     const isDarkBackground = useMemo(() => {
@@ -1035,23 +999,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, [currentTheme]);
 
     const rawTextClass = currentTheme?.text || "";
-    const forceLightText =
-      isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
-    const textClass = forceLightText
-      ? "text-white"
-      : rawTextClass || "text-white";
-    const _accentClass = forceLightText
-      ? "text-white"
-      : currentTheme?.accent || textClass;
-    const usesLightText = /text-(white|slate-50|neutral-50|gray-50)/.test(
-      textClass
-    );
-    const headingShadow = usesLightText
-      ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" }
-      : undefined;
-    const _bodyShadow = usesLightText
-      ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
-      : undefined;
+    const forceLightText = isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
+    const textClass = forceLightText ? "text-white" : rawTextClass || "text-white";
+    const _accentClass = forceLightText ? "text-white" : currentTheme?.accent || textClass;
+    const usesLightText = /text-(white|slate-50|neutral-50|gray-50)/.test(textClass);
+    const headingShadow = usesLightText ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" } : undefined;
+    const _bodyShadow = usesLightText ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" } : undefined;
     // Title color for dark backgrounds - light gold/beige
     const titleColor = isDarkBackground
       ? { color: "#f5e6d3" } // Light beige/gold
@@ -1061,8 +1014,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
-    const _headingSizeClass =
-      selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
+    const _headingSizeClass = selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
     const locationParts = data.venue || "";
     const _addressLine = data.address || "";
@@ -1084,20 +1036,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         advancedState?.meet?.scoringInfo ||
         advancedState?.meet?.resultsInfo ||
         advancedState?.meet?.rotationSheetsInfo ||
-        advancedState?.meet?.awardsInfo
+        advancedState?.meet?.awardsInfo,
     );
     const hasPractice =
       advancedState?.practice?.enabled !== false &&
       (advancedState?.practice?.blocks?.length ?? 0) > 0;
     const hasSchedule =
       advancedState?.schedule?.enabled !== false &&
-      (advancedState?.schedule?.days || []).some(
-        (day: any) =>
-          (day?.sessions || []).some(
-            (session: any) =>
-              (session?.clubs?.length ?? 0) > 0 ||
-              Boolean(session?.group || session?.startTime || session?.code)
-          )
+      (advancedState?.schedule?.days || []).some((day: any) =>
+        (day?.sessions || []).some(
+          (session: any) =>
+            (session?.clubs?.length ?? 0) > 0 ||
+            Boolean(session?.group || session?.startTime || session?.code),
+        ),
       );
     const hasLogistics =
       advancedState?.logistics?.enabled !== false &&
@@ -1105,19 +1056,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         Boolean(
           advancedState?.logistics?.travelMode ||
             advancedState?.logistics?.callTime ||
-            advancedState?.logistics?.pickupWindow
+            advancedState?.logistics?.pickupWindow,
         )) ||
         (advancedState?.logistics?.showAccommodations !== false &&
           Boolean(
             advancedState?.logistics?.hotelName ||
               advancedState?.logistics?.hotelAddress ||
-              advancedState?.logistics?.hotelCheckIn
+              advancedState?.logistics?.hotelCheckIn,
           )) ||
         (advancedState?.logistics?.showFees !== false &&
-          Boolean(
-            advancedState?.logistics?.feeAmount ||
-              advancedState?.logistics?.feeDueDate
-          )) ||
+          Boolean(advancedState?.logistics?.feeAmount || advancedState?.logistics?.feeDueDate)) ||
         (advancedState?.logistics?.showMeals !== false &&
           Boolean(advancedState?.logistics?.mealPlan)) ||
         (advancedState?.logistics?.showAdditionalDocuments !== false &&
@@ -1133,11 +1081,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           (advancedState?.volunteers?.carpoolOffers?.length ??
             advancedState?.volunteers?.carpools?.length ??
             0) > 0));
-    const hasAnnouncements =
-      (advancedState?.announcements?.items?.length ?? 0) > 0;
+    const hasAnnouncements = (advancedState?.announcements?.items?.length ?? 0) > 0;
     const hasAnnouncementEntries =
-      hasAnnouncements ||
-      (advancedState?.announcements?.announcements?.length ?? 0) > 0;
+      hasAnnouncements || (advancedState?.announcements?.announcements?.length ?? 0) > 0;
     const parseResult = loadedDiscoverySource?.parseResult || {};
     const parseCommunications = parseResult?.communications || {};
     const parseAthlete = parseResult?.athlete || {};
@@ -1150,7 +1096,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       parseAthlete?.name,
       parseAthlete?.level,
       parseAthlete?.team,
-      parseAthlete?.session
+      parseAthlete?.session,
     );
     const parseHasMeet = hasAnyText(
       parseMeetDetails?.warmup,
@@ -1167,7 +1113,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       parseMeetDetails?.awardsInfo,
       parseAthlete?.stretchTime,
       parseAthlete?.marchIn,
-      parseAthlete?.session
+      parseAthlete?.session,
     );
     const parseHasSchedule =
       Array.isArray(parseResult?.schedule?.days) &&
@@ -1177,8 +1123,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           day.sessions.some(
             (session: any) =>
               (session?.clubs?.length ?? 0) > 0 ||
-              hasAnyText(session?.group, session?.startTime, session?.code)
-          )
+              hasAnyText(session?.group, session?.startTime, session?.code),
+          ),
       );
     const parseHasLogistics = hasAnyText(
       parseLogistics?.parking,
@@ -1186,15 +1132,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       parseLogistics?.hotel,
       parseLogistics?.meals,
       parseLogistics?.fees,
-      parseLogistics?.waivers
+      parseLogistics?.waivers,
     );
     const parseHasGear =
       hasAnyText(parseGear?.uniform) ||
       (Array.isArray(parseGear?.checklist) && parseGear.checklist.length > 0);
-    const parseHasVolunteers = hasAnyText(
-      parseVolunteers?.signupLink,
-      parseVolunteers?.notes
-    );
+    const parseHasVolunteers = hasAnyText(parseVolunteers?.signupLink, parseVolunteers?.notes);
     const parseHasAnnouncements =
       Array.isArray(parseCommunications?.announcements) &&
       parseCommunications.announcements.length > 0;
@@ -1213,7 +1156,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         parseCoachInfo?.meetFormat,
         parseCoachInfo?.equipment,
         parseCoachInfo?.refundPolicy,
-        parseCoachInfo?.paymentInstructions
+        parseCoachInfo?.paymentInstructions,
       ) ||
       (Array.isArray(parseCoachInfo?.entryFees) && parseCoachInfo.entryFees.length > 0) ||
       (Array.isArray(parseCoachInfo?.teamFees) && parseCoachInfo.teamFees.length > 0) ||
@@ -1224,16 +1167,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       (Array.isArray(loadedDiscoverySource?.extractionMeta?.coachPageHints) &&
         loadedDiscoverySource.extractionMeta.coachPageHints.length > 0);
     const parseHasGymLayoutImage = hasAnyText(
-      loadedDiscoverySource?.extractionMeta?.gymLayoutImageDataUrl
+      loadedDiscoverySource?.extractionMeta?.gymLayoutImageDataUrl,
     );
     const parseHasGymLayoutFacts =
       Array.isArray(loadedDiscoverySource?.extractionMeta?.gymLayoutFacts) &&
       loadedDiscoverySource.extractionMeta.gymLayoutFacts.length > 0;
     const hasDiscoveryParsePayload = Boolean(
-      loadedDiscoverySource?.input || loadedDiscoverySource?.parseResult
+      loadedDiscoverySource?.input || loadedDiscoverySource?.parseResult,
     );
     const useParseDrivenSections = Boolean(
-      editEventId && (isDiscoveryEdit || hasDiscoveryParsePayload)
+      editEventId && (isDiscoveryEdit || hasDiscoveryParsePayload),
     );
     const visibleAdvancedSections = useMemo(() => {
       const allSections = config.advancedSections || [];
@@ -1250,10 +1193,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             return hasSchedule || parseHasSchedule;
           case "logistics":
             return (
-              hasLogistics ||
-              parseHasLogistics ||
-              parseHasGymLayoutImage ||
-              parseHasGymLayoutFacts
+              hasLogistics || parseHasLogistics || parseHasGymLayoutImage || parseHasGymLayoutFacts
             );
           case "coaches":
             return (
@@ -1261,7 +1201,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 advancedState?.coaches?.signIn,
                 advancedState?.coaches?.hospitality,
                 advancedState?.coaches?.floorAccess,
-                advancedState?.coaches?.paymentInstructions
+                advancedState?.coaches?.paymentInstructions,
               ) ||
               (advancedState?.coaches?.entryFees?.length ?? 0) > 0 ||
               (advancedState?.coaches?.teamFees?.length ?? 0) > 0 ||
@@ -1302,7 +1242,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     ]);
     const visibleAdvancedSectionIds = useMemo(
       () => new Set(visibleAdvancedSections.map((section) => section.id)),
-      [visibleAdvancedSections]
+      [visibleAdvancedSections],
     );
 
     const headlineStatus: "not-started" | "in-progress" | "ready" = (() => {
@@ -1329,13 +1269,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           advancedState?.meet?.scoringInfo ||
           advancedState?.meet?.resultsInfo ||
           advancedState?.meet?.rotationSheetsInfo ||
-          advancedState?.meet?.awardsInfo
-      )
+          advancedState?.meet?.awardsInfo,
+      ),
     );
     const detailsStatus: "not-started" | "in-progress" | "ready" = (() => {
       const base = Boolean(data.details?.trim());
       const extrasFilled = Object.values(data.extra || {}).filter((value) =>
-        String(value || "").trim()
+        String(value || "").trim(),
       ).length;
       if (!base && !hasStructuredDetailsContent && extrasFilled === 0) {
         return "not-started";
@@ -1353,9 +1293,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       if (!data.passcode?.trim()) return "in-progress";
       return data.passcode.trim().length >= 4 ? "ready" : "in-progress";
     })();
-    const rsvpStatus: "not-started" | "ready" = data.rsvpEnabled
-      ? "ready"
-      : "not-started";
+    const rsvpStatus: "not-started" | "ready" = data.rsvpEnabled ? "ready" : "not-started";
 
     const missingEssentials = [
       !data.title?.trim() ? { label: "Event title", view: "headline" } : null,
@@ -1405,12 +1343,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         hasRoster,
         hasVolunteers,
         data.rsvpEnabled,
-      ]
+      ],
     );
 
-    const [activeSection, setActiveSection] = useState<string>(
-      navItems[0]?.id || "details"
-    );
+    const [activeSection, setActiveSection] = useState<string>(navItems[0]?.id || "details");
 
     useEffect(() => {
       if (!navItems.length) return;
@@ -1460,12 +1396,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }
           const json = await res.json();
           const existing = json?.data || {};
-          const existingCreatedVia = asTrimmedString(existing?.createdVia)
-            .toLowerCase()
-            .trim();
+          const existingCreatedVia = asTrimmedString(existing?.createdVia).toLowerCase().trim();
           const existingDiscoverySource =
-            existing?.discoverySource &&
-            typeof existing.discoverySource === "object"
+            existing?.discoverySource && typeof existing.discoverySource === "object"
               ? (existing.discoverySource as Record<string, any>)
               : null;
           const inferredHostGym = inferHostGymFromDiscovery(existingDiscoverySource);
@@ -1474,11 +1407,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existingDiscoverySource?.enrichment &&
               typeof existingDiscoverySource.enrichment === "object"
               ? existingDiscoverySource.enrichment
-              : null
+              : null,
           );
           setIsDiscoveryEdit(
-            existingCreatedVia === "meet-discovery" ||
-              Boolean(existingDiscoverySource?.input)
+            existingCreatedVia === "meet-discovery" || Boolean(existingDiscoverySource?.input),
           );
 
           console.log("[Edit] Loaded event data:", {
@@ -1494,14 +1426,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existing,
           });
 
-          const startIso =
-            existing.start || existing.startISO || existing.startIso;
-          let loadedDate: string | undefined ;
-          let loadedTime: string | undefined ;
+          const startIso = existing.start || existing.startISO || existing.startIso;
+          let loadedDate: string | undefined;
+          let loadedTime: string | undefined;
           if (typeof startIso === "string") {
-            const isoMatch = startIso.match(
-              /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/
-            );
+            const isoMatch = startIso.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
             if (isoMatch) {
               loadedDate = isoMatch[1];
               loadedTime = isoMatch[2];
@@ -1521,29 +1450,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             existingDiscoverySource?.parseResult?.dates ||
             existing?.customFields?.meetDateRangeLabel;
           const parsedRange = parseDiscoveryDateRange(parseDatesLabel);
-          const existingDateCandidate = normalizeIsoDate(
-            existing.date || loadedDate
-          );
+          const existingDateCandidate = normalizeIsoDate(existing.date || loadedDate);
           const resolvedDate =
             parsedRange.start &&
             (!existingDateCandidate ||
-              !isDateWithinRange(
-                existingDateCandidate,
-                parsedRange.start,
-                parsedRange.end
-              ))
+              !isDateWithinRange(existingDateCandidate, parsedRange.start, parsedRange.end))
               ? parsedRange.start
               : existingDateCandidate || "";
           const isExistingDiscoveryEvent =
-            existingCreatedVia === "meet-discovery" ||
-            Boolean(existingDiscoverySource?.input);
-          const resolvedTime =
-            asTrimmedString(existing.time) || asTrimmedString(loadedTime);
+            existingCreatedVia === "meet-discovery" || Boolean(existingDiscoverySource?.input);
+          const resolvedTime = asTrimmedString(existing.time) || asTrimmedString(loadedTime);
 
           // Load all data fields, prioritizing existing values
           const accessControl = existing.accessControl || {};
           const hasPasscode = Boolean(
-            accessControl?.passcodeHash || accessControl?.requirePasscode
+            accessControl?.passcodeHash || accessControl?.requirePasscode,
           );
 
           const editableDetails = isExistingDiscoveryEvent
@@ -1570,24 +1491,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             hero: existing.heroImage || existing.hero || prev.hero,
             pageTemplateId: resolveGymMeetTemplateId(existing),
             rsvpEnabled:
-              typeof existing.rsvpEnabled === "boolean"
-                ? existing.rsvpEnabled
-                : prev.rsvpEnabled,
+              typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : prev.rsvpEnabled,
             rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
             fontId:
               existing.fontId != null
                 ? existing.fontId
                 : prev.fontId || GYM_FONTS[0]?.id || "inter",
-            fontSize:
-              existing.fontSize != null
-                ? existing.fontSize
-                : prev.fontSize || "medium",
+            fontSize: existing.fontSize != null ? existing.fontSize : prev.fontSize || "medium",
             passcodeRequired: hasPasscode,
             passcode: "", // Never load plain passcode for security
             passcodeHint:
-              typeof accessControl?.passcodeHint === "string"
-                ? accessControl.passcodeHint
-                : "",
+              typeof accessControl?.passcodeHint === "string" ? accessControl.passcodeHint : "",
             simpleDesignTokens:
               existing.designTokens ||
               existing.customFields?.designTokens ||
@@ -1619,39 +1533,25 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           // Load theme - this is critical!
           if (existing.themeId) {
             // Validate themeId exists in config
-            const themeExists = config.themes.find(
-              (t) => t.id === existing.themeId
-            );
+            const themeExists = config.themes.find((t) => t.id === existing.themeId);
             if (themeExists) {
               console.log("[Edit] Setting themeId:", existing.themeId);
               setThemeId(existing.themeId);
             } else {
-              console.warn(
-                "[Edit] ThemeId not found in config, using default:",
-                existing.themeId
-              );
+              console.warn("[Edit] ThemeId not found in config, using default:", existing.themeId);
               setThemeId(config.themes[0]?.id || "default-theme");
             }
           } else if (existing.theme?.id) {
-            const themeExists = config.themes.find(
-              (t) => t.id === existing.theme.id
-            );
+            const themeExists = config.themes.find((t) => t.id === existing.theme.id);
             if (themeExists) {
-              console.log(
-                "[Edit] Setting themeId from theme object:",
-                existing.theme.id
-              );
+              console.log("[Edit] Setting themeId from theme object:", existing.theme.id);
               setThemeId(existing.theme.id);
             } else {
-              console.warn(
-                "[Edit] Theme from object not found in config, using default"
-              );
+              console.warn("[Edit] Theme from object not found in config, using default");
               setThemeId(config.themes[0]?.id || "default-theme");
             }
           } else {
-            console.warn(
-              "[Edit] No themeId found in existing data, using default"
-            );
+            console.warn("[Edit] No themeId found in existing data, using default");
             setThemeId(config.themes[0]?.id || "default-theme");
           }
 
@@ -1659,9 +1559,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           setTimeout(() => {
             setData((prev) => {
               const fontExists = GYM_FONTS.find((f) => f.id === prev.fontId);
-              const sizeExists = FONT_SIZE_OPTIONS.find(
-                (o) => o.id === prev.fontSize
-              );
+              const sizeExists = FONT_SIZE_OPTIONS.find((o) => o.id === prev.fontSize);
               if (!fontExists || !sizeExists) {
                 console.warn("[Edit] Invalid fontId or fontSize, fixing:", {
                   fontId: prev.fontId,
@@ -1671,9 +1569,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 });
                 return {
                   ...prev,
-                  fontId: fontExists
-                    ? prev.fontId
-                    : GYM_FONTS[0]?.id || "inter",
+                  fontId: fontExists ? prev.fontId : GYM_FONTS[0]?.id || "inter",
                   fontSize: sizeExists ? prev.fontSize : "medium",
                 };
               }
@@ -1707,8 +1603,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         Boolean(parsedRange.start) &&
         Boolean(normalizedDataDate) &&
         !isDateWithinRange(normalizedDataDate, parsedRange.start, parsedRange.end);
-      const missingDateWithKnownRange =
-        Boolean(parsedRange.start) && !normalizedDataDate;
+      const missingDateWithKnownRange = Boolean(parsedRange.start) && !normalizedDataDate;
 
       const extractionMeta = loadedDiscoverySource?.extractionMeta || {};
       const parseHasMeetCore =
@@ -1717,7 +1612,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           parseMeetDetails?.arrivalGuidance,
           parseMeetDetails?.registrationInfo,
           parseMeetDetails?.facilityLayout,
-          parseMeetDetails?.scoringInfo
+          parseMeetDetails?.scoringInfo,
         ) ||
         (Array.isArray(parseMeetDetails?.operationalNotes) &&
           parseMeetDetails.operationalNotes.length > 0);
@@ -1731,19 +1626,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           advancedState?.meet?.arrivalGuidance,
           advancedState?.meet?.registrationInfo,
           advancedState?.meet?.facilityLayout,
-          advancedState?.meet?.scoringInfo
+          advancedState?.meet?.scoringInfo,
         ) || mappedOperationalNotes.length > 0;
 
       const hasLayoutEvidence =
         hasAnyText(extractionMeta?.gymLayoutImageDataUrl) ||
-        (Array.isArray(extractionMeta?.gymLayoutFacts) &&
-          extractionMeta.gymLayoutFacts.length > 0);
+        (Array.isArray(extractionMeta?.gymLayoutFacts) && extractionMeta.gymLayoutFacts.length > 0);
       const hasMappedLayoutEvidence =
         hasAnyText(advancedState?.logistics?.gymLayoutImage) ||
         mappedOperationalNotes.some((line: string) =>
           /(hall|registration|awards area|competition area|guest services|gym\s*[a-f]|coffee bar)/i.test(
-            asTrimmedString(line)
-          )
+            asTrimmedString(line),
+          ),
         );
 
       const needsRepair =
@@ -1807,11 +1701,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ...prev,
               state: "running",
               pending: true,
-              startedAt:
-                asTrimmedString(prev.startedAt) || new Date().toISOString(),
+              startedAt: asTrimmedString(prev.startedAt) || new Date().toISOString(),
               lastError: "",
             }
-          : prev
+          : prev,
       );
 
       (async () => {
@@ -1839,13 +1732,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return () => {
         window.clearInterval(intervalId);
       };
-    }, [
-      discoveryEnrichmentState?.state,
-      editEventId,
-      isDiscoveryEdit,
-      loadingExisting,
-      demoMode,
-    ]);
+    }, [discoveryEnrichmentState?.state, editEventId, isDiscoveryEdit, loadingExisting, demoMode]);
 
     useEffect(() => {
       if (!navItems.length) return;
@@ -1857,10 +1744,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               const id = entry.target.id;
               if (id && navItems.some((i) => i.id === id)) {
                 setActiveSection(id);
-                if (
-                  typeof window !== "undefined" &&
-                  window.location.hash !== `#${id}`
-                ) {
+                if (typeof window !== "undefined" && window.location.hash !== `#${id}`) {
                   window.history.replaceState(null, "", `#${id}`);
                 }
               }
@@ -1871,7 +1755,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           root: null,
           rootMargin: "-25% 0px -60% 0px",
           threshold: 0,
-        }
+        },
       );
 
       const targets = navItems
@@ -1893,9 +1777,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     };
 
     const updateExtra = useCallback((key: string, value: string) => {
-      setDismissedSuggestedExtraFields((prev) =>
-        prev[key] ? prev : { ...prev, [key]: true }
-      );
+      setDismissedSuggestedExtraFields((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
       setData((prev) => ({
         ...prev,
         extra: { ...prev.extra, [key]: value },
@@ -1925,40 +1807,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           endISO = end.toISOString();
         }
 
-        // Convert blob URLs to data URLs for saving
-        let heroToSave = "";
-        if (data.hero) {
-          if (/^blob:/i.test(data.hero)) {
-            // Convert blob URL to data URL
-            try {
-              const response = await fetch(data.hero);
-              const blob = await response.blob();
-              const reader = new FileReader();
-              heroToSave = await new Promise<string>((resolve, reject) => {
-                reader.onloadend = () => {
-                  const result = reader.result as string;
-                  resolve(result || "");
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-              });
-            } catch (err) {
-              console.error("Failed to convert blob URL:", err);
-              heroToSave = "";
-            }
-          } else if (/^data:/i.test(data.hero)) {
-            // Already a data URL, use as-is
-            heroToSave = data.hero;
-          } else {
-            // Regular URL (http/https), use as-is
-            heroToSave = data.hero;
-          }
-        }
+        const heroToSave =
+          (await persistImageMediaValue({
+            value: data.hero,
+            eventId: editEventId || undefined,
+            fileName: "gymnastics-hero.png",
+          })) || "";
 
         const resolvedPageTemplateId =
-          data.pageTemplateId ||
-          resolveGymMeetTemplateId(data) ||
-          DEFAULT_GYM_MEET_TEMPLATE_ID;
+          data.pageTemplateId || resolveGymMeetTemplateId(data) || DEFAULT_GYM_MEET_TEMPLATE_ID;
 
         console.log("[Publish] Saving meet page template:", {
           pageTemplateId: resolvedPageTemplateId,
@@ -1966,7 +1823,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         });
 
         const isDiscoveryUpdate = Boolean(
-          editEventId && (isDiscoveryEdit || loadedDiscoverySource)
+          editEventId && (isDiscoveryEdit || loadedDiscoverySource),
         );
         const payload: any = {
           title: data.title || config.displayName,
@@ -2024,14 +1881,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   },
                 }
               : data.passcodeRequired === false
-              ? {
-                  accessControl: {
-                    mode: "public",
-                    passcodeHint: "",
-                    requirePasscode: false,
-                  },
-                }
-              : {}),
+                ? {
+                    accessControl: {
+                      mode: "public",
+                      passcodeHint: "",
+                      requirePasscode: false,
+                    },
+                  }
+                : {}),
           },
         };
 
@@ -2064,7 +1921,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             window.dispatchEvent(
               new CustomEvent("history:updated", {
                 detail: { id: editEventId },
-              })
+              }),
             );
           }
 
@@ -2087,7 +1944,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   eventId: editEventId,
                   redirectUrl,
                 },
-                window.location.origin
+                window.location.origin,
               );
             } catch {}
             return;
@@ -2112,7 +1969,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   created_at: (json as any)?.created_at || new Date().toISOString(),
                   data: payload.data,
                 },
-              })
+              }),
             );
           }
           router.push(buildEventPath(id, payload.title, { created: true }));
@@ -2170,8 +2027,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       toggleLabel: config.rsvpCopy?.toggleLabel || "Enable RSVP",
       deadlineLabel: config.rsvpCopy?.deadlineLabel || "RSVP Deadline",
       helperText:
-        config.rsvpCopy?.helperText ||
-        "The RSVP card in the preview updates with these settings.",
+        config.rsvpCopy?.helperText || "The RSVP card in the preview updates with these settings.",
       nameLabel: config.rsvpCopy?.nameLabel || "Full Name",
       namePlaceholder: config.rsvpCopy?.namePlaceholder || "Guest Name",
     };
@@ -2207,10 +2063,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       return `/api/ics?${params.toString()}`;
     };
 
-    const openWithFallback = (
-      primaryUrl: string,
-      onFallback: () => void
-    ) => {
+    const openWithFallback = (primaryUrl: string, onFallback: () => void) => {
       if (typeof window === "undefined") return;
       const timer = setTimeout(() => {
         onFallback();
@@ -2232,13 +2085,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const _handleShare = () => {
       const details = buildEventDetails();
-      const shareUrl =
-        typeof window !== "undefined" ? window.location.href : undefined;
-      if (
-        typeof navigator !== "undefined" &&
-        (navigator as any).share &&
-        shareUrl
-      ) {
+      const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
+      if (typeof navigator !== "undefined" && (navigator as any).share && shareUrl) {
         (navigator as any)
           .share({
             title: details.title,
@@ -2258,9 +2106,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const start = toGoogleDate(details.start);
       const end = toGoogleDate(details.end);
       const query = `action=TEMPLATE&text=${encodeURIComponent(
-        details.title
+        details.title,
       )}&dates=${start}/${end}&location=${encodeURIComponent(
-        details.location
+        details.location,
       )}&details=${encodeURIComponent(details.description || "")}`;
       const webUrl = `https://calendar.google.com/calendar/render?${query}`;
       const appUrl = `comgooglecalendar://?${query}`;
@@ -2272,22 +2120,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const _handleOutlookCalendar = () => {
       const details = buildEventDetails();
       const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
-        details.title
-      )}&body=${encodeURIComponent(
-        details.description || ""
-      )}&location=${encodeURIComponent(
-        details.location
+        details.title,
+      )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
+        details.location,
       )}&startdt=${encodeURIComponent(
-        details.start.toISOString()
+        details.start.toISOString(),
       )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
       const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
-        details.title
-      )}&body=${encodeURIComponent(
-        details.description || ""
-      )}&location=${encodeURIComponent(
-        details.location
+        details.title,
+      )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
+        details.location,
       )}&startdt=${encodeURIComponent(
-        details.start.toISOString()
+        details.start.toISOString(),
       )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
       openWithFallback(appUrl, () => {
         window.open(webUrl, "_blank", "noopener,noreferrer");
@@ -2407,7 +2251,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         advancedState?.coaches?.signIn,
                         advancedState?.coaches?.hospitality,
                         advancedState?.coaches?.floorAccess,
-                        advancedState?.coaches?.paymentInstructions
+                        advancedState?.coaches?.paymentInstructions,
                       ) ||
                       (advancedState?.coaches?.entryFees?.length ?? 0) > 0 ||
                       (advancedState?.coaches?.teamFees?.length ?? 0) > 0 ||
@@ -2483,11 +2327,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const _handleDesignTokensChange = useCallback((tokens: any) => {
       setData((prev) => {
         const prevTokens = prev.simpleDesignTokens;
-        if (
-          prevTokens &&
-          tokens &&
-          JSON.stringify(prevTokens) === JSON.stringify(tokens)
-        ) {
+        if (prevTokens && tokens && JSON.stringify(prevTokens) === JSON.stringify(tokens)) {
           return prev;
         }
         return { ...prev, simpleDesignTokens: tokens };
@@ -2511,10 +2351,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         details: config.prefill?.details || prev.details,
         hero: config.prefill?.hero || prev.hero,
         extra: Object.fromEntries(
-          config.detailFields.map((f) => [
-            f.key,
-            config.prefill?.extra?.[f.key] ?? "",
-          ])
+          config.detailFields.map((f) => [f.key, config.prefill?.extra?.[f.key] ?? ""]),
         ),
       }));
       setAdvancedState(sampleAdvancedState);
@@ -2551,7 +2388,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     const renderHeadlineEditor = useMemo(
       () => (
-        <GymnasticsEditorLayout isEmbed={isEmbed} title="Event Basics" onBack={handleBackToMain} showBack>
+        <GymnasticsEditorLayout
+          isEmbed={isEmbed}
+          title="Event Basics"
+          onBack={handleBackToMain}
+          showBack
+        >
           <div className="space-y-6">
             <InputGroup
               label="Event Title"
@@ -2580,9 +2422,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 onChange={(v) =>
                   setAdvancedState((prev: Record<string, any>) => {
                     const roster = prev?.roster || {};
-                    const athletes = Array.isArray(roster.athletes)
-                      ? [...roster.athletes]
-                      : [];
+                    const athletes = Array.isArray(roster.athletes) ? [...roster.athletes] : [];
                     if (athletes.length === 0) {
                       athletes.push({
                         id: "athlete-1",
@@ -2634,10 +2474,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               placeholder="e.g. March 6-8, 2026"
             />
             <p className="text-xs text-slate-500 -mt-2">
-              Set the exact event start above. For multi-day meets, use Display
-              Date to show a range (e.g. March 6-8, 2026) in the header. Leave
-              blank to use the single date. Session timing:{" "}
-              <strong>Operations → Meet Details</strong>.
+              Set the exact event start above. For multi-day meets, use Display Date to show a range
+              (e.g. March 6-8, 2026) in the header. Leave blank to use the single date. Session
+              timing: <strong>Operations → Meet Details</strong>.
             </p>
             <InputGroup
               label="Timezone"
@@ -2682,11 +2521,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         handleBackToMain,
         updateExtra,
         config.displayName,
-      ]
+      ],
     );
 
     const renderImagesEditor = () => (
-      <GymnasticsEditorLayout isEmbed={isEmbed}
+      <GymnasticsEditorLayout
+        isEmbed={isEmbed}
         title="Images"
         onBack={() => setActiveView("main")}
         showBack
@@ -2698,11 +2538,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <div className="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:bg-slate-50 transition-colors relative">
             {data.hero ? (
               <div className="relative w-full h-40 rounded-lg overflow-hidden">
-                <img
-                  src={data.hero}
-                  alt="Hero"
-                  className="w-full h-full object-cover"
-                />
+                <img src={data.hero} alt="Hero" className="w-full h-full object-cover" />
                 <button
                   onClick={() => setData((p) => ({ ...p, hero: "" }))}
                   className="absolute top-2 right-2 px-2 py-1 text-xs bg-white rounded-full shadow hover:bg-red-50 text-red-500"
@@ -2715,12 +2551,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
                   <ImageIcon size={20} />
                 </div>
-                <p className="text-sm text-slate-600 mb-1">
-                  Upload header photo
-                </p>
-                <p className="text-xs text-slate-400">
-                  Recommended: 1600x900px
-                </p>
+                <p className="text-sm text-slate-600 mb-1">Upload header photo</p>
+                <p className="text-xs text-slate-400">Recommended: 1600x900px</p>
               </>
             )}
             <input
@@ -2735,7 +2567,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderDesignEditor = () => (
-      <GymnasticsEditorLayout isEmbed={isEmbed}
+      <GymnasticsEditorLayout
+        isEmbed={isEmbed}
         title="Design"
         onBack={() => setActiveView("main")}
         showBack
@@ -2784,7 +2617,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderDetailsEditor = () => (
-      <GymnasticsEditorLayout isEmbed={isEmbed}
+      <GymnasticsEditorLayout
+        isEmbed={isEmbed}
         title="Details"
         onBack={() => setActiveView("main")}
         showBack
@@ -2832,9 +2666,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </label>
             <textarea
               className={`w-full p-3 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-shadow ${
-                config.detailsDescriptionPopup
-                  ? "min-h-[160px]"
-                  : "min-h-[130px]"
+                config.detailsDescriptionPopup ? "min-h-[160px]" : "min-h-[130px]"
               }`}
               rows={config.detailsDescriptionRows || 6}
               value={data.details}
@@ -2870,7 +2702,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 mutedValue={Boolean(
                   useParseDrivenSections &&
                     data.extra[field.key] &&
-                    !dismissedSuggestedExtraFields[field.key]
+                    !dismissedSuggestedExtraFields[field.key],
                 )}
               />
             ))}
@@ -2917,8 +2749,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         log("ingest completed", { eventId, status: ingestRes.status });
         const parseStartedAt = Date.now();
         log("starting parse request", { eventId });
+        const parseBody = new FormData();
+        parseBody.append("file", discoverFile);
         const parseRes = await fetch(`/api/parse/${eventId}`, {
           method: "POST",
+          body: parseBody,
           credentials: "include",
         });
         const parseJson = await parseRes.json().catch(() => ({}));
@@ -2942,15 +2777,15 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, [discoverBusy, discoverFile, router]);
 
     const renderDiscoverEditor = () => (
-      <GymnasticsEditorLayout isEmbed={isEmbed}
+      <GymnasticsEditorLayout
+        isEmbed={isEmbed}
         title="Upload to Prefill"
         onBack={() => setActiveView("main")}
         showBack
       >
         <div className="space-y-4">
           <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900">
-            Upload a PDF/JPG/PNG file. We will parse details and prefill your
-            meet page builder.
+            Upload a PDF/JPG/PNG file. We will parse details and prefill your meet page builder.
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
@@ -2987,20 +2822,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderRsvpEditor = () => (
-      <GymnasticsEditorLayout isEmbed={isEmbed}
+      <GymnasticsEditorLayout
+        isEmbed={isEmbed}
         title={rsvpCopy.editorTitle}
         onBack={() => setActiveView("main")}
         showBack
       >
         <div className="space-y-6">
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <span className="font-medium text-slate-700 text-sm">
-              {rsvpCopy.toggleLabel}
-            </span>
+            <span className="font-medium text-slate-700 text-sm">{rsvpCopy.toggleLabel}</span>
             <button
-              onClick={() =>
-                setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))
-              }
+              onClick={() => setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))}
               className={`w-11 h-6 rounded-full transition-colors relative ${
                 data.rsvpEnabled ? "bg-indigo-600" : "bg-slate-300"
               }`}
@@ -3027,7 +2859,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                           d.setDate(d.getDate() + 10);
                           return d.toISOString().split("T")[0];
                         })()
-                    : ""
+                    : "",
                 )
               }
             />
@@ -3050,7 +2882,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const renderPasscodeEditor = () => (
-      <GymnasticsEditorLayout isEmbed={isEmbed}
+      <GymnasticsEditorLayout
+        isEmbed={isEmbed}
         title="Passcode"
         onBack={() => setActiveView("main")}
         showBack
@@ -3069,9 +2902,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               <input
                 type="checkbox"
                 checked={data.passcodeRequired}
-                onChange={(e) =>
-                  updateData("passcodeRequired", e.target.checked)
-                }
+                onChange={(e) => updateData("passcodeRequired", e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -3098,24 +2929,23 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           )}
 
           <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
-            <strong>How it works:</strong> Guests need both the event link and
-            this code. If you rotate codes often, update it here before sharing
-            to families.
+            <strong>How it works:</strong> Guests need both the event link and this code. If you
+            rotate codes often, update it here before sharing to families.
           </div>
         </div>
       </GymnasticsEditorLayout>
     );
 
     const renderAdvancedEditor = (section: AdvancedSectionSpec) => (
-      <GymnasticsEditorLayout isEmbed={isEmbed}
+      <GymnasticsEditorLayout
+        isEmbed={isEmbed}
         title={section.menuTitle}
         onBack={() => setActiveView("main")}
         showBack
       >
         {section.renderEditor({
           state: advancedState?.[section.id],
-          setState: (updater: any) =>
-            setAdvancedSectionState(section.id, updater),
+          setState: (updater: any) => setAdvancedSectionState(section.id, updater),
           setActiveView,
           inputClass: baseInputClass,
           textareaClass: baseTextareaClass,
@@ -3143,7 +2973,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
       // For existing meet-discovery edits, keep the discovery layout in preview
       const isDiscoveryPreview = Boolean(
-        editEventId && (isDiscoveryEdit || loadedDiscoverySource || useParseDrivenSections)
+        editEventId && (isDiscoveryEdit || loadedDiscoverySource || useParseDrivenSections),
       );
 
       return {
@@ -3199,14 +3029,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               },
             }
           : data.passcodeRequired === false
-          ? {
-              accessControl: {
-                mode: "public",
-                passcodeHint: "",
-                requirePasscode: false,
-              },
-            }
-          : {}),
+            ? {
+                accessControl: {
+                  mode: "public",
+                  passcodeHint: "",
+                  requirePasscode: false,
+                },
+              }
+            : {}),
       };
     }, [
       advancedState,
@@ -3242,9 +3072,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       locationParts,
     ]);
     const previewEventId = editEventId || `preview-${config.slug}`;
-    const previewDisplayId = demoMode
-      ? "demo-gymnastic"
-      : previewEventId;
+    const previewDisplayId = demoMode ? "demo-gymnastic" : previewEventId;
     const isDemoPreview = demoMode;
 
     useEffect(() => {
@@ -3264,24 +3092,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               eventTitle: liveTitle,
             },
           },
-          "*"
+          "*",
         );
       } catch {
         // Best effort only for live preview.
       }
-    }, [
-      config.displayName,
-      editEventId,
-      isEmbed,
-      loadingExisting,
-      previewEventData,
-      data.title,
-    ]);
+    }, [config.displayName, editEventId, isEmbed, loadingExisting, previewEventData, data.title]);
 
     const discoveryEnrichmentBanner =
       isDiscoveryEdit && discoveryEnrichmentState ? (
-        discoveryEnrichmentState.pending ||
-        discoveryEnrichmentState.state === "running" ? (
+        discoveryEnrichmentState.pending || discoveryEnrichmentState.state === "running" ? (
           <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
             <p className="text-xs font-bold uppercase tracking-wider text-sky-700">
               Finishing Details
@@ -3307,9 +3127,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 disabled={discoveryEnrichmentBusy}
                 className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {discoveryEnrichmentBusy
-                  ? "Retrying..."
-                  : "Retry finishing details"}
+                {discoveryEnrichmentBusy ? "Retrying..." : "Retry finishing details"}
               </button>
             </div>
           </div>
@@ -3345,26 +3163,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 <ChevronLeft size={14} />
                 Back to preview
               </button>
-              <span className="text-sm font-semibold text-slate-700">
-                Customize
-              </span>
+              <span className="text-sm font-semibold text-slate-700">Customize</span>
             </div>
           )}
 
-          <div
-            className="p-6 pt-4 pb-8 md:pt-6 md:pb-10"
-            style={{ pointerEvents: "auto" }}
-          >
+          <div className="p-6 pt-4 pb-8 md:pt-6 md:pb-10" style={{ pointerEvents: "auto" }}>
             {discoveryEnrichmentBanner}
             {activeView === "main" &&
               (editEventId && loadingExisting ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <p className="text-sm font-medium text-slate-600">
-                    Loading event…
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Preparing edit sidebar
-                  </p>
+                  <p className="text-sm font-medium text-slate-600">Loading event…</p>
+                  <p className="mt-1 text-xs text-slate-400">Preparing edit sidebar</p>
                 </div>
               ) : (
                 renderMainMenu()
@@ -3378,90 +3187,88 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             {activeView === "passcode" && renderPasscodeEditor()}
             {visibleAdvancedSections.map((section) =>
               activeView === section.id ? (
-                <React.Fragment key={section.id}>
-                  {renderAdvancedEditor(section)}
-                </React.Fragment>
-              ) : null
+                <React.Fragment key={section.id}>{renderAdvancedEditor(section)}</React.Fragment>
+              ) : null,
             )}
           </div>
         </div>
 
-          <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50">
-            <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                Before Publish
+        <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50">
+          <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Before Publish
+            </p>
+            {missingEssentials.length === 0 ? (
+              <p className="mt-1 text-xs text-emerald-700 font-medium">
+                Essentials complete. You are ready to publish.
               </p>
-              {missingEssentials.length === 0 ? (
-                <p className="mt-1 text-xs text-emerald-700 font-medium">
-                  Essentials complete. You are ready to publish.
-                </p>
-              ) : (
-                <p className="mt-1 text-xs text-amber-700">
-                  <span>Missing: </span>
-                  {missingEssentials.map((item, index) => (
-                    <React.Fragment key={`${item.view}-${item.label}`}>
-                      {index > 0 ? <span>, </span> : null}
-                      <button
-                        type="button"
-                        onClick={() => openEditorView(item.view)}
-                        className="font-medium underline underline-offset-2 decoration-amber-400 hover:text-amber-800"
-                      >
-                        {item.label}
-                      </button>
-                    </React.Fragment>
-                  ))}
-                </p>
-              )}
-            </div>
-            <div className="flex gap-3">
-              {editEventId && (
-                <button
-                  onClick={() => {
-                    if (isEmbed && typeof window !== "undefined") {
-                      try {
-                        window.parent?.postMessage(
-                          {
-                            type: "envitefy:discovery-preview-reset",
-                            eventId: editEventId,
-                          },
-                          "*"
-                        );
-                      } catch {
-                        // Best effort only for live preview reset.
-                      }
-                      const href = `${window.location.origin}${buildEventPath(editEventId, data.title || "Event")}`;
-                      try {
-                        (window as any).parent.location.href = href;
-                      } catch {
-                        router.push(`/event/${editEventId}`);
-                      }
-                    } else {
+            ) : (
+              <p className="mt-1 text-xs text-amber-700">
+                <span>Missing: </span>
+                {missingEssentials.map((item, index) => (
+                  <React.Fragment key={`${item.view}-${item.label}`}>
+                    {index > 0 ? <span>, </span> : null}
+                    <button
+                      type="button"
+                      onClick={() => openEditorView(item.view)}
+                      className="font-medium underline underline-offset-2 decoration-amber-400 hover:text-amber-800"
+                    >
+                      {item.label}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-3">
+            {editEventId && (
+              <button
+                onClick={() => {
+                  if (isEmbed && typeof window !== "undefined") {
+                    try {
+                      window.parent?.postMessage(
+                        {
+                          type: "envitefy:discovery-preview-reset",
+                          eventId: editEventId,
+                        },
+                        "*",
+                      );
+                    } catch {
+                      // Best effort only for live preview reset.
+                    }
+                    const href = `${window.location.origin}${buildEventPath(editEventId, data.title || "Event")}`;
+                    try {
+                      (window as any).parent.location.href = href;
+                    } catch {
                       router.push(`/event/${editEventId}`);
                     }
-                  }}
-                  className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
-                >
-                  Cancel
-                </button>
-              )}
-              <button
-                onClick={handlePublish}
-                disabled={submitting || missingEssentials.length > 0}
-                className={`${
-                  editEventId ? "flex-1" : "w-full"
-                } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+                  } else {
+                    router.push(`/event/${editEventId}`);
+                  }
+                }}
+                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
               >
-                {submitting
-                  ? editEventId
-                    ? "Saving..."
-                    : "Publishing..."
-                  : editEventId
+                Cancel
+              </button>
+            )}
+            <button
+              onClick={handlePublish}
+              disabled={submitting || missingEssentials.length > 0}
+              className={`${
+                editEventId ? "flex-1" : "w-full"
+              } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {submitting
+                ? editEventId
+                  ? "Saving..."
+                  : "Publishing..."
+                : editEventId
                   ? "Save"
                   : "Publish"}
-              </button>
-            </div>
+            </button>
           </div>
         </div>
+      </div>
     );
 
     if (isDemoPreview) {
@@ -3478,7 +3285,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     {data.title || config.displayName}
                   </h2>
                   <p className="mt-1 text-sm text-[#667085]">
-                    Preview URL: <span className="font-semibold text-[#0f1935]">demo-gymnastic</span>
+                    Preview URL:{" "}
+                    <span className="font-semibold text-[#0f1935]">demo-gymnastic</span>
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -3510,9 +3318,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {editEventId && loadingExisting ? (
                 <div className="flex min-h-[780px] items-center justify-center bg-white text-center">
                   <div>
-                    <p className="text-sm font-semibold text-slate-700">
-                      Loading demo preview...
-                    </p>
+                    <p className="text-sm font-semibold text-slate-700">Loading demo preview...</p>
                     <p className="mt-1 text-xs text-slate-500">
                       Preparing your uploaded meet content.
                     </p>
@@ -3577,12 +3383,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {editEventId && loadingExisting ? (
                 <div className="flex min-h-[780px] items-center justify-center bg-white text-center">
                   <div>
-                    <p className="text-sm font-semibold text-slate-700">
-                      Loading event preview...
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Replacing previous event data.
-                    </p>
+                    <p className="text-sm font-semibold text-slate-700">Loading event preview...</p>
+                    <p className="mt-1 text-xs text-slate-500">Replacing previous event data.</p>
                   </div>
                 </div>
               ) : (
@@ -3639,9 +3441,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 // GYMNASTICS TEAM MANAGEMENT - TYPES & HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
-import {
-  config,
-} from "@/components/event-templates/GymnasticsTemplate";
+import { config } from "@/components/event-templates/GymnasticsTemplate";
 
 const Page = createSimpleCustomizePage(config);
 export default Page;

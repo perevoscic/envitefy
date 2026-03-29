@@ -36,6 +36,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 function getTemplateById(id?: string | null): GenderRevealTemplateDefinition {
   if (!id) return genderRevealTemplateCatalog[0];
@@ -755,62 +756,11 @@ export default function GenderRevealTemplateCustomizePage() {
       const selectedFont = FONTS[data.theme.font] || FONTS.playfair;
       const selectedSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
-      // Persist hero image (convert blob URLs to data URLs)
-      const heroImageToSave = await (async () => {
-        if (!data.images.hero) {
-          console.log("[Gender Reveal Publish] No hero image to save");
-          return undefined;
-        }
-        console.log("[Gender Reveal Publish] Hero image found:", {
-          type: data.images.hero.startsWith("blob:")
-            ? "blob"
-            : data.images.hero.startsWith("data:")
-            ? "data-url"
-            : "other",
-          length: data.images.hero.length,
-        });
-        if (/^data:/i.test(data.images.hero)) {
-          console.log("[Gender Reveal Publish] Using existing data URL");
-          return data.images.hero;
-        }
-        if (data.images.hero.startsWith("blob:")) {
-          try {
-            console.log(
-              "[Gender Reveal Publish] Converting blob to data URL..."
-            );
-            const response = await fetch(data.images.hero);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            const result = await new Promise<string>((resolve, reject) => {
-              reader.onloadend = () => {
-                const dataUrl = (reader.result as string) || "";
-                console.log(
-                  "[Gender Reveal Publish] Blob converted, length:",
-                  dataUrl.length
-                );
-                resolve(dataUrl);
-              };
-              reader.onerror = (err) => {
-                console.error(
-                  "[Gender Reveal Publish] Blob conversion error:",
-                  err
-                );
-                reject(err);
-              };
-              reader.readAsDataURL(blob);
-            });
-            return result;
-          } catch (err) {
-            console.error(
-              "[Gender Reveal Publish] Failed to convert blob URL",
-              err
-            );
-            return undefined;
-          }
-        }
-        console.log("[Gender Reveal Publish] Using image as-is");
-        return data.images.hero;
-      })();
+      const heroImageToSave = await persistImageMediaValue({
+        value: data.images.hero,
+        eventId: editEventId || undefined,
+        fileName: "gender-reveal-hero.png",
+      });
 
       console.log("[Gender Reveal Publish] Final heroImageToSave:", {
         exists: !!heroImageToSave,

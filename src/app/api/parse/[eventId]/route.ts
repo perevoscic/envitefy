@@ -1,36 +1,36 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import {
+  DEFAULT_GYM_MEET_TEMPLATE_ID,
+  resolveGymMeetTemplateId,
+} from "@/components/gym-meet-templates/registry";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import {
-  getEventHistoryById,
-  updateEventHistoryData,
-  updateEventHistoryTitle,
-} from "@/lib/db";
-import { loadDiscoveryInputBytes } from "@/lib/discovery-input-storage";
-import { invalidateUserHistory } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
+import { getEventHistoryById, updateEventHistoryData, updateEventHistoryTitle } from "@/lib/db";
 import {
-  computeGymBuilderStatuses,
-  createDiscoveryPerformance,
-  extractDiscoveryText,
-  isDiscoveryDebugArtifactsEnabled,
-  mapParseResultToGymData,
-  parseMeetFromExtractedText,
-  resolveDiscoveryBudget,
-  type DiscoveryPerformance,
-  type DiscoveryEnrichmentStatus,
-  type DiscoverySourceInput,
-  type DiscoveryWorkflow,
-} from "@/lib/meet-discovery";
+  hydrateDiscoveryFileInput,
+  requiresClientPdfReupload,
+} from "@/lib/discovery-file-hydration";
+import { runInlineGymnasticsEnrichmentPhase } from "@/lib/discovery-gymnastics-enrich-inline";
 import {
   computeFootballBuilderStatuses,
   mapParseResultToFootballData,
   parseFootballFromExtractedText,
 } from "@/lib/football-discovery";
+import { invalidateUserHistory } from "@/lib/history-cache";
 import {
-  DEFAULT_GYM_MEET_TEMPLATE_ID,
-  resolveGymMeetTemplateId,
-} from "@/components/gym-meet-templates/registry";
+  computeGymBuilderStatuses,
+  createDiscoveryPerformance,
+  type DiscoveryEnrichmentStatus,
+  type DiscoveryPerformance,
+  type DiscoverySourceInput,
+  type DiscoveryWorkflow,
+  extractDiscoveryText,
+  isDiscoveryDebugArtifactsEnabled,
+  mapParseResultToGymData,
+  parseMeetFromExtractedText,
+  resolveDiscoveryBudget,
+} from "@/lib/meet-discovery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,9 +57,7 @@ function sanitizeExtractionMetaForPersistence(meta: any, debugArtifacts: boolean
   return next;
 }
 
-function buildPersistedPerformance(
-  performance: DiscoveryPerformance
-): DiscoveryPerformance {
+function buildPersistedPerformance(performance: DiscoveryPerformance): DiscoveryPerformance {
   return {
     ...performance,
     persistMs: 0,
@@ -68,7 +66,7 @@ function buildPersistedPerformance(
 
 function buildEnrichmentStatus(
   workflow: DiscoveryWorkflow,
-  overrides: Partial<DiscoveryEnrichmentStatus> = {}
+  overrides: Partial<DiscoveryEnrichmentStatus> = {},
 ): DiscoveryEnrichmentStatus {
   const pending = workflow === "gymnastics";
   return {
@@ -87,10 +85,7 @@ async function getSessionUserId() {
   return await resolveSessionUserId(session);
 }
 
-export async function POST(
-  req: Request,
-  context: { params: Promise<{ eventId: string }> }
-) {
+export async function POST(req: Request, context: { params: Promise<{ eventId: string }> }) {
   try {
     const startedAt = Date.now();
     const url = new URL(req.url);
@@ -118,8 +113,7 @@ export async function POST(
       eventId,
       workflow,
       sourceType: sourceInput?.type || null,
-      blobStored:
-        sourceInput?.type === "file" ? Boolean(sourceInput?.blobStored) : null,
+      blobStored: sourceInput?.type === "file" ? Boolean(sourceInput?.blobStored) : null,
       fileName: sourceInput?.type === "file" ? sourceInput.fileName : null,
       sizeBytes: sourceInput?.type === "file" ? sourceInput.sizeBytes : null,
     });
@@ -127,36 +121,43 @@ export async function POST(
       return NextResponse.json({ error: "No discovery source input found" }, { status: 400 });
     }
 
+    const contentType = safeString(req.headers.get("content-type")).toLowerCase();
+    let uploadFile: File | null = null;
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const f = formData.get("file");
+      if (f instanceof File) uploadFile = f;
+    }
+
+    if (
+      repairMode &&
+      sourceInput.type === "file" &&
+      requiresClientPdfReupload(sourceInput) &&
+      !uploadFile
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Repair for this PDF requires re-uploading the file. Send the same PDF as multipart field "file".',
+        },
+        { status: 400 },
+      );
+    }
+
     let hydratedSourceInput = sourceInput;
     if (sourceInput.type === "file" && !safeString(sourceInput.dataUrl || "")) {
       const hydrateStartedAt = Date.now();
-      console.log(`${MEET_PARSE_LOG_PREFIX} hydrating blob-backed input`, {
+      console.log(`${MEET_PARSE_LOG_PREFIX} hydrating file discovery input`, {
         eventId,
+        hasUpload: Boolean(uploadFile),
       });
-      const loaded = await loadDiscoveryInputBytes(eventId);
-      if (!loaded) {
-        return NextResponse.json(
-          { error: "Discovery source file blob not found" },
-          { status: 404 }
-        );
+      const hydrated = await hydrateDiscoveryFileInput(eventId, sourceInput, uploadFile);
+      if (!hydrated.ok) {
+        return NextResponse.json({ error: hydrated.error }, { status: hydrated.status });
       }
-      hydratedSourceInput = {
-        ...sourceInput,
-        fileName: safeString(sourceInput.fileName) || safeString(loaded.file_name) || "upload",
-        mimeType:
-          safeString(sourceInput.mimeType) ||
-          safeString(loaded.mime_type) ||
-          "application/octet-stream",
-        sizeBytes:
-          Number.isFinite(sourceInput.sizeBytes)
-            ? sourceInput.sizeBytes
-            : Number(loaded.size_bytes || loaded.buffer.length),
-        dataUrl: `data:${safeString(loaded.mime_type) || "application/octet-stream"};base64,${loaded.buffer.toString("base64")}`,
-        blobStored: true,
-      };
-      console.log(`${MEET_PARSE_LOG_PREFIX} hydrated blob-backed input`, {
+      hydratedSourceInput = hydrated.hydrated;
+      console.log(`${MEET_PARSE_LOG_PREFIX} hydrated file input`, {
         eventId,
-        sizeBytes: loaded.size_bytes || loaded.buffer.length,
         durationMs: durationMs(hydrateStartedAt),
       });
     }
@@ -202,7 +203,7 @@ export async function POST(
       const footballParsed = await parseFootballFromExtractedText(
         extraction.extractedText,
         extraction.extractionMeta,
-        { performance }
+        { performance },
       );
       parsed = footballParsed;
       console.log(`${MEET_PARSE_LOG_PREFIX} model parse finished`, {
@@ -217,10 +218,7 @@ export async function POST(
         eventId,
         workflow,
       });
-      mapped = await mapParseResultToFootballData(
-        footballParsed.parseResult,
-        currentData
-      );
+      mapped = await mapParseResultToFootballData(footballParsed.parseResult, currentData);
       console.log(`${MEET_PARSE_LOG_PREFIX} mapping finished`, {
         eventId,
         workflow,
@@ -235,7 +233,7 @@ export async function POST(
           traceId: eventId,
           mode: "core",
           performance,
-        }
+        },
       );
       parsed = gymnasticsParsed;
       console.log(`${MEET_PARSE_LOG_PREFIX} model parse finished`, {
@@ -253,7 +251,7 @@ export async function POST(
       mapped = await mapParseResultToGymData(
         gymnasticsParsed.parseResult,
         currentData,
-        extraction.extractionMeta
+        extraction.extractionMeta,
       );
       console.log(`${MEET_PARSE_LOG_PREFIX} mapping finished`, {
         eventId,
@@ -264,8 +262,7 @@ export async function POST(
     }
     const nextGymPageTemplateId =
       workflow === "gymnastics"
-        ? resolveGymMeetTemplateId({ ...currentData, ...mapped }) ||
-          DEFAULT_GYM_MEET_TEMPLATE_ID
+        ? resolveGymMeetTemplateId({ ...currentData, ...mapped }) || DEFAULT_GYM_MEET_TEMPLATE_ID
         : null;
     const detectedGymLayoutImage = extraction.extractionMeta?.gymLayoutImageDataUrl || null;
     if (workflow === "gymnastics") {
@@ -275,10 +272,7 @@ export async function POST(
         mapped.advancedSections.logistics.gymLayoutImage = "";
         mapped.customFields = mapped.customFields || {};
         mapped.customFields.advancedSections = mapped.advancedSections;
-      } else if (
-        detectedGymLayoutImage &&
-        !mapped?.advancedSections?.logistics?.gymLayoutImage
-      ) {
+      } else if (detectedGymLayoutImage && !mapped?.advancedSections?.logistics?.gymLayoutImage) {
         mapped.advancedSections = mapped.advancedSections || {};
         mapped.advancedSections.logistics = mapped.advancedSections.logistics || {};
         mapped.advancedSections.logistics.gymLayoutImage = detectedGymLayoutImage;
@@ -292,15 +286,14 @@ export async function POST(
         nextGymPageTemplateId,
       });
     }
-    const enrichment = buildEnrichmentStatus(workflow, {
+    const coreUpdatedAt = new Date().toISOString();
+    const enrichmentPending = buildEnrichmentStatus(workflow, {
       state: workflow === "gymnastics" ? "pending" : "not_applicable",
       pending: workflow === "gymnastics",
     });
-    const nextData = {
+    let nextData: Record<string, any> = {
       ...mapped,
-      ...(workflow === "gymnastics"
-        ? { pageTemplateId: nextGymPageTemplateId }
-        : {}),
+      ...(workflow === "gymnastics" ? { pageTemplateId: nextGymPageTemplateId } : {}),
       discoverySource: {
         ...(currentData.discoverySource || {}),
         status: "parsed",
@@ -309,21 +302,38 @@ export async function POST(
         extractedText: extraction.extractedText,
         extractionMeta: sanitizeExtractionMetaForPersistence(
           extraction.extractionMeta,
-          debugArtifacts
+          debugArtifacts,
         ),
-        ...(workflow === "gymnastics" && "evidence" in parsed
-          ? { evidence: parsed.evidence }
-          : {}),
+        ...(workflow === "gymnastics" && "evidence" in parsed ? { evidence: parsed.evidence } : {}),
         parseResult: parsed.parseResult,
         rawModelOutput: parsed.rawModelOutput,
         modelUsed: parsed.modelUsed,
         performance: buildPersistedPerformance(performance),
-        enrichment,
-        coreUpdatedAt: new Date().toISOString(),
+        enrichment: enrichmentPending,
+        coreUpdatedAt,
         enrichedAt: null,
-        updatedAt: new Date().toISOString(),
+        updatedAt: coreUpdatedAt,
       },
     };
+
+    if (workflow === "gymnastics") {
+      const enrichStartedAt = Date.now();
+      console.log(`${MEET_PARSE_LOG_PREFIX} inline enrichment started`, { eventId });
+      const { nextData: enrichedData } = await runInlineGymnasticsEnrichmentPhase({
+        eventId,
+        hydratedSourceInput,
+        mergedCoreEventData: nextData,
+        sourceInput,
+        performance,
+      });
+      nextData = enrichedData;
+      console.log(`${MEET_PARSE_LOG_PREFIX} inline enrichment finished`, {
+        eventId,
+        durationMs: durationMs(enrichStartedAt),
+      });
+    }
+
+    const enrichment = (nextData.discoverySource as any)?.enrichment ?? enrichmentPending;
 
     const persistStartedAt = Date.now();
     console.log(`${MEET_PARSE_LOG_PREFIX} persistence started`, {
@@ -379,7 +389,7 @@ export async function POST(
     });
     return NextResponse.json(
       { error: String(err?.message || err || "Parse failed") },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
