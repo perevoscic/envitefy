@@ -354,7 +354,7 @@ export const normalizeGymMeetEventData = ({
 
   const heroBadges = unique(
     [
-      sanitizeGymMeetDisplayDateLabel(customFields?.meetDateRangeLabel),
+      // Date is already shown as `dateLabel` under the title; omit here to avoid duplicate chips.
       collapseRepeatedDisplayText(meet?.sessionNumber || meet?.session),
       rosterAthletes.length
         ? unique(

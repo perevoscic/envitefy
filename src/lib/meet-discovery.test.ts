@@ -19,6 +19,8 @@ const {
   routeCoachDeadlines,
   deriveScheduleFromTextFallback,
   deriveScheduleFromExtractedText,
+  alignScheduleDatesToEventRange,
+  deriveDateRangeFromScheduleDays,
   parseNarrativeScheduleSessionsFromPage,
   parseScheduleAnnotationsFromPages,
   parseScheduleAssignmentsFromPages,
@@ -1880,6 +1882,26 @@ Friday, March 13, 2026
   );
 });
 
+test("deriveScheduleFromTextFallback preserves non-club session detail rows as session notes", () => {
+  const fallback = deriveScheduleFromTextFallback(`
+-- 1 of 1 --
+Friday, April 10, 2026
+Session W01 \tSession B01
+SILVER \tGOLD
+8:00 AM \t8:00 AM
+1/17/2018 & Younger \tGr: 1,24,37,38,57,64
+  `);
+
+  assert.equal(fallback.days.length, 1);
+  assert.equal(fallback.days[0]?.date, "Friday, April 10, 2026");
+  assert.equal(fallback.days[0]?.sessions[0]?.code, "W01");
+  assert.equal(fallback.days[0]?.sessions[0]?.note, "Stretch/warmup • 1/17/2018 & Younger");
+  assert.equal(fallback.days[0]?.sessions[1]?.code, "B01");
+  assert.equal(fallback.days[0]?.sessions[1]?.note, "Stretch/warmup • Gr: 1,24,37,38,57,64");
+  assert.deepEqual(fallback.days[0]?.sessions[0]?.clubs, []);
+  assert.deepEqual(fallback.days[0]?.sessions[1]?.clubs, []);
+});
+
 test("classifySchedulePageText separates grid, narrative, and assignment packets", () => {
   assert.equal(
     classifySchedulePageText(
@@ -2111,6 +2133,54 @@ test("shouldUseVisualScheduleRepair keeps image repair enabled when text parsing
     ),
     true
   );
+});
+
+test("alignScheduleDatesToEventRange shifts consistently offset schedule days onto the meet range", () => {
+  const aligned = alignScheduleDatesToEventRange(
+    {
+      venueLabel: null,
+      supportEmail: null,
+      notes: [],
+      annotations: [],
+      assignments: [],
+      days: [
+        {
+          date: "Thursday, April 9, 2026",
+          shortDate: "Thu • Apr 9",
+          sessions: [{ code: "B01", group: "Gold", startTime: "8:00 AM", warmupTime: "8:00 AM", note: "Stretch/warmup", clubs: [] }],
+        },
+        {
+          date: "Friday, April 10, 2026",
+          shortDate: "Fri • Apr 10",
+          sessions: [{ code: "B02", group: "Gold", startTime: "11:30 AM", warmupTime: "11:30 AM", note: "Stretch/warmup", clubs: [] }],
+        },
+        {
+          date: "Saturday, April 11, 2026",
+          shortDate: "Sat • Apr 11",
+          sessions: [{ code: "B03", group: "Gold", startTime: "2:45 PM", warmupTime: "2:45 PM", note: "Stretch/warmup", clubs: [] }],
+        },
+      ],
+    },
+    {
+      label: "April 10-12, 2026",
+      startDate: "2026-04-10",
+      endDate: "2026-04-12",
+    }
+  );
+
+  assert.deepEqual(
+    aligned.days.map((day) => [day.date, day.shortDate, day.isoDate]),
+    [
+      ["April 10, 2026", "Friday • Apr 10", "2026-04-10"],
+      ["April 11, 2026", "Saturday • Apr 11", "2026-04-11"],
+      ["April 12, 2026", "Sunday • Apr 12", "2026-04-12"],
+    ]
+  );
+  assert.deepEqual(deriveDateRangeFromScheduleDays(aligned), {
+    label: "April 10-12, 2026",
+    startDate: "2026-04-10",
+    endDate: "2026-04-12",
+  });
 });
 
 test("parseNarrativeScheduleSessionsFromPage extracts narrative schedule sessions without club leakage", () => {

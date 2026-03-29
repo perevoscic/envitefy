@@ -2233,6 +2233,123 @@ function deriveDateRangeFromText(value: string): DateRangeInfo {
   return { label: text || null, startDate: null, endDate: null };
 }
 
+function formatMeetDateRangeLabel(startDate: string, endDate: string): string {
+  const start = new Date(`${startDate}T12:00:00.000Z`);
+  const end = new Date(`${endDate}T12:00:00.000Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return startDate === endDate ? startDate : `${startDate} - ${endDate}`;
+  }
+  const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
+  const sameMonth = sameYear && start.getUTCMonth() === end.getUTCMonth();
+  const monthFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  const monthYearFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  if (startDate === endDate) {
+    return monthYearFormatter.format(start);
+  }
+  if (sameMonth) {
+    return `${new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      timeZone: "UTC",
+    }).format(start)} ${start.getUTCDate()}-${end.getUTCDate()}, ${start.getUTCFullYear()}`;
+  }
+  if (sameYear) {
+    return `${monthFormatter.format(start)} - ${monthYearFormatter.format(end)}`;
+  }
+  return `${monthYearFormatter.format(start)} - ${monthYearFormatter.format(end)}`;
+}
+
+function getInclusiveIsoDateRange(startDate: string, endDate: string): string[] {
+  if (!startDate || !endDate) return [];
+  const start = new Date(`${startDate}T12:00:00.000Z`);
+  const end = new Date(`${endDate}T12:00:00.000Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return [];
+  const dates: string[] = [];
+  for (let cursor = new Date(start); cursor <= end; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    if (dates.length > 14) break;
+  }
+  return dates;
+}
+
+function deriveDateRangeFromScheduleDays(
+  schedule: ParseResult["schedule"] | null | undefined
+): DateRangeInfo {
+  const days = normalizeStoredSchedule(schedule || {}).days;
+  const isoDates = days
+    .map((day) => safeString(day.isoDate) || formatScheduleIsoDate(day.date))
+    .filter(Boolean);
+  if (!isoDates.length) {
+    return { label: null, startDate: null, endDate: null };
+  }
+  const sortedDates = [...isoDates].sort();
+  const startDate = sortedDates[0] || null;
+  const endDate = sortedDates[sortedDates.length - 1] || startDate;
+  return {
+    label: startDate && endDate ? formatMeetDateRangeLabel(startDate, endDate) : null,
+    startDate,
+    endDate,
+  };
+}
+
+function alignScheduleDatesToEventRange(
+  schedule: ParseResult["schedule"] | null | undefined,
+  dateRange: DateRangeInfo
+): ParseResult["schedule"] {
+  const normalized = normalizeStoredSchedule(schedule || {});
+  if (!normalized.days.length || !dateRange.startDate || !dateRange.endDate) {
+    return toParseScheduleShape(normalized);
+  }
+  const expectedDates = getInclusiveIsoDateRange(dateRange.startDate, dateRange.endDate);
+  if (!expectedDates.length || expectedDates.length !== normalized.days.length) {
+    return toParseScheduleShape(normalized);
+  }
+  const actualDates = normalized.days.map(
+    (day) => safeString(day.isoDate) || formatScheduleIsoDate(day.date)
+  );
+  if (actualDates.some((item) => !item)) {
+    return toParseScheduleShape(normalized);
+  }
+  const shifts = actualDates.map((actualDate, index) => {
+    const actual = new Date(`${actualDate}T12:00:00.000Z`);
+    const expected = new Date(`${expectedDates[index]}T12:00:00.000Z`);
+    if (Number.isNaN(actual.getTime()) || Number.isNaN(expected.getTime())) return null;
+    return Math.round((expected.getTime() - actual.getTime()) / 86_400_000);
+  });
+  if (shifts.some((shift) => shift == null)) {
+    return toParseScheduleShape(normalized);
+  }
+  const shift = shifts[0] || 0;
+  const shouldRealign =
+    shift !== 0 &&
+    Math.abs(shift) <= 2 &&
+    shifts.every((value) => value === shift);
+  if (!shouldRealign) {
+    return toParseScheduleShape(normalized);
+  }
+  return toParseScheduleShape({
+    ...normalized,
+    days: normalized.days.map((day, index) => {
+      const nextIsoDate = expectedDates[index];
+      const nextDate = formatMeetDateRangeLabel(nextIsoDate, nextIsoDate);
+      return {
+        ...day,
+        isoDate: nextIsoDate,
+        date: nextDate,
+        shortDate: formatScheduleShortDate(nextDate),
+      };
+    }),
+  });
+}
+
 function extractHallFactsFromText(text: string): string[] {
   const normalizedLines = safeString(text)
     .split(/\n+/)
@@ -2840,6 +2957,35 @@ function parseScheduleClubCell(value: string) {
   };
 }
 
+function appendScheduleSessionNote(
+  currentNote: string | null | undefined,
+  nextNote: string | null | undefined
+): string | null {
+  const parts = uniqueBy(
+    [safeString(currentNote), safeString(nextNote)].filter(Boolean),
+    (item) => item.toLowerCase()
+  );
+  return parts.length > 0 ? parts.join(" • ") : null;
+}
+
+function looksLikeScheduleSessionDetailCell(value: string): boolean {
+  const normalized = safeString(value).replace(/\s+/g, " ");
+  if (!normalized) return false;
+  if (/^(?:gr|group(?:s)?)\s*:/i.test(normalized)) return true;
+  if (
+    /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/.test(normalized) &&
+    (/\b(?:younger|older)\b/i.test(normalized) ||
+      /\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4}/i.test(
+        normalized
+      ))
+  ) {
+    return true;
+  }
+  if (/^(?:age groups?|born)\b/i.test(normalized)) return true;
+  if (/^\d+(?:\s*,\s*\d+){2,}$/.test(normalized)) return true;
+  return false;
+}
+
 function assignScheduleClubRowToColumns(
   rawCells: string[],
   activeColumns: ScheduleBlockColumnAssignment[]
@@ -2929,6 +3075,13 @@ function buildScheduleSessionsFromBlock(
 
     const assignedCells = assignScheduleClubRowToColumns(rawCells, activeColumns);
     for (const assignment of assignedCells) {
+      if (looksLikeScheduleSessionDetailCell(assignment.value)) {
+        const session = sessions[assignment.column.sessionIndex];
+        if (session) {
+          session.note = appendScheduleSessionNote(session.note, assignment.value);
+        }
+        continue;
+      }
       const club = parseScheduleClubCell(assignment.value);
       if (!club.name) continue;
       sessions[assignment.column.sessionIndex]?.clubs.push({
@@ -10181,12 +10334,38 @@ export async function finalizeMeetParseResult(
     diagnostics: derivedSchedule.diagnostics || null,
   });
   extractionMeta.scheduleDiagnostics = derivedSchedule.diagnostics;
+  const alignedSchedule = alignScheduleDatesToEventRange(
+    derivedSchedule.schedule,
+    deriveDateRangeFromText(reconciled.dates)
+  );
+  const scheduleRange = deriveDateRangeFromScheduleDays(alignedSchedule);
+  const reconciledRange = deriveDateRangeFromText(reconciled.dates);
+  const shouldPreferScheduleRange =
+    Boolean(scheduleRange.startDate) &&
+    Boolean(scheduleRange.endDate) &&
+    alignedSchedule.days.length >= 2 &&
+    (!reconciledRange.startDate ||
+      !reconciledRange.endDate ||
+      reconciledRange.startDate !== scheduleRange.startDate ||
+      reconciledRange.endDate !== scheduleRange.endDate);
+  const dateCorrected = shouldPreferScheduleRange
+    ? {
+        ...reconciled,
+        dates: scheduleRange.label || reconciled.dates,
+        startAt: scheduleRange.startDate
+          ? `${scheduleRange.startDate}T00:00:00.000Z`
+          : reconciled.startAt,
+        endAt: scheduleRange.endDate
+          ? `${scheduleRange.endDate}T00:00:00.000Z`
+          : reconciled.endAt,
+      }
+    : reconciled;
   const finalized = {
-    ...reconciled,
+    ...dateCorrected,
     schedule:
-      derivedSchedule.schedule.days.length > 0
-        ? derivedSchedule.schedule
-        : reconciled.schedule || buildEmptyParseResult().schedule,
+      alignedSchedule.days.length > 0
+        ? alignedSchedule
+        : dateCorrected.schedule || buildEmptyParseResult().schedule,
   };
   console.log("[meet-discovery] finalize parse result finished", {
     traceId,
@@ -11135,6 +11314,8 @@ export const __testUtils = {
   hasCoachInfoContent,
   deriveScheduleFromTextFallback,
   deriveScheduleFromExtractedText,
+  alignScheduleDatesToEventRange,
+  deriveDateRangeFromScheduleDays,
   parseNarrativeScheduleSessionsFromPage,
   parseScheduleAnnotationsFromPages,
   parseScheduleAssignmentsFromPages,

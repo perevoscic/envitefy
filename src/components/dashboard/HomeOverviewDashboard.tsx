@@ -403,10 +403,12 @@ function InvitationEventCard({
               </span>
             </div>
 
-            <div className="absolute bottom-8 left-8 right-8 md:bottom-10 md:left-10 md:right-10">
+            <div className="absolute bottom-8 left-8 right-8 top-20 flex flex-col justify-end md:bottom-10 md:left-10 md:right-10 md:top-24">
               <h3
-                className={`mb-4 font-black leading-tight tracking-tighter text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.7)] ${
-                  primary ? "text-3xl md:text-5xl" : "text-3xl md:text-4xl"
+                className={`mb-3 font-black leading-snug tracking-tight text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.7)] ${
+                  primary
+                    ? "text-2xl sm:text-3xl md:text-4xl"
+                    : "text-xl sm:text-2xl md:text-3xl"
                 }`}
                 style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
               >
@@ -588,7 +590,7 @@ function getEventStatusLabel(item: DashboardEventItem | null): string {
   if (rsvp === "yes") return "Confirmed";
   if (rsvp === "maybe") return "Maybe";
   if (rsvp === "no") return "Declined";
-  return "Invited";
+  return "Upcoming";
 }
 
 function getInvitationStatusTone(
@@ -709,18 +711,15 @@ function buildInvitationActions(
   }
 
   return {
-    primaryAction: item.mapsUrl
+    primaryAction: { href: `/event/${item.id}`, label: "Open Event" },
+    secondaryAction: item.mapsUrl
       ? {
           href: item.mapsUrl,
           label: "Get Directions",
           icon: Navigation,
           external: true,
         }
-      : { href: `/event/${item.id}`, label: "Open Event" },
-    secondaryAction: {
-      href: `/event/${item.id}`,
-      label: "Open Event",
-    },
+      : null,
   };
 }
 

@@ -15,6 +15,14 @@ test("formatGymMeetTime extracts the first clean time token", () => {
   assert.equal(formatGymMeetTime("13:45 warmup"), "1:45 PM");
 });
 
+test("formatGymMeetTime hides placeholder midnight when no real time was parsed", () => {
+  assert.equal(formatGymMeetTime(""), "");
+  assert.equal(formatGymMeetTime("2026-04-10"), "");
+  assert.equal(formatGymMeetTime("2026-04-10T00:00:00.000Z"), "");
+  assert.equal(formatGymMeetTime("2026-04-10T00:00:00"), "");
+  assert.equal(formatGymMeetTime("00:00"), "");
+});
+
 test("collapseRepeatedDisplayText removes duplicated gym strings", () => {
   assert.equal(
     collapseRepeatedDisplayText("360 Gymnastics FL 360 Gymnastics FL"),

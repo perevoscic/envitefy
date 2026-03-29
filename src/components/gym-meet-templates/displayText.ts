@@ -190,9 +190,24 @@ export const stripLinkedDomainMentions = (
   return isLowSignalLinkedText(fallback) ? "" : fallback;
 };
 
+const ISO_DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 export const formatGymMeetTime = (value: unknown): string => {
   const text = toDisplayString(value);
   if (!text) return "";
+
+  const trimmed = text.trim();
+  // Date-only ISO or midnight placeholder from pipelines when PDF had no real start time
+  if (ISO_DATE_ONLY_PATTERN.test(trimmed)) return "";
+  if (
+    /^\d{4}-\d{2}-\d{2}[T\s]00:00:00(?:\.0+)?(?:Z|[+-]\d{2}:?\d{2})?$/i.test(
+      trimmed
+    )
+  ) {
+    return "";
+  }
+  if (/^\d{4}-\d{2}-\d{2}T00:00:00(?:\.0+)?$/i.test(trimmed)) return "";
+  if (/^0{0,2}:00$/i.test(trimmed)) return "";
 
   const meridianMatch = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*([AaPp])\.?\s*M\.?\b/);
   if (meridianMatch) {
@@ -213,7 +228,6 @@ export const formatGymMeetTime = (value: unknown): string => {
   return `${hour12}:${minute} ${meridian}`;
 };
 
-const ISO_DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_DATE_TIME_PATTERN =
   /^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/i;
 const MONTH_NAME_DATE_RANGE_PATTERN =
