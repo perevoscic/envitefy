@@ -855,6 +855,10 @@ export default function LeftSidebar() {
     Boolean((session?.user as any)?.isAdmin)
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const userTitleLabel = useMemo(
+    () => (isAdmin ? `${displayName} (Admin)` : displayName),
+    [displayName, isAdmin]
+  );
   const footerMenuItems = useMemo(
     () =>
       [
@@ -3048,7 +3052,7 @@ export default function LeftSidebar() {
                       </span>
                       <div className="min-w-0 flex-1 text-left">
                         <div className="truncate text-[14px] font-bold leading-tight text-slate-700">
-                          {displayName}
+                          {userTitleLabel}
                         </div>
                         {userEmail && (
                           <div className="truncate text-[12px] text-slate-400">
