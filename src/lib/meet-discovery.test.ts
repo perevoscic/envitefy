@@ -1,22 +1,35 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
 
 import {
   __testUtils,
+  buildDiscoveryEvidence,
   computeGymBuilderStatuses,
   extractDiscoveryText,
   mapParseResultToGymData,
   parseMeetFromExtractedText,
-} from "./meet-discovery";
+} from "./meet-discovery.ts";
 
 const {
   deriveDateRangeFromText,
   classifyMeetDateCandidates,
   sanitizeHostGymValue,
   normalizeParseResult,
+  normalizeParseClassification,
+  inferHeuristicParseClassification,
+  selectParsePromptProfiles,
+  selectEvidenceForParseProfile,
+  mergeParseResultsByProfile,
   sanitizeDiscoveryParseResult,
   mergeCoachFeesFromAdmission,
   routeCoachDeadlines,
+  backfillDeterministicParseFields,
+  computeParseCompletenessSnapshot,
+  computeMappedCompletenessSnapshot,
+  determineCompletenessSparsity,
+  resolveDiscoveryEventTitle,
   deriveScheduleFromTextFallback,
   deriveScheduleFromExtractedText,
   alignScheduleDatesToEventRange,
@@ -122,6 +135,16 @@ test("sanitizeHostGymValue strips packet intro prose from host gym text", () => 
       "Recognized at the Awards Ceremony following the last L9 session on Sunday"
     ),
     null
+  );
+});
+
+test("resolveDiscoveryEventTitle rejects packet section headings in favor of fallback titles", () => {
+  assert.equal(
+    resolveDiscoveryEventTitle(
+      "Club and General Information",
+      "2026 Florida USA Gymnastics Xcel Bronze, Silver & Gold State Championships"
+    ),
+    "2026 Florida USA Gymnastics Xcel Bronze, Silver & Gold State Championships"
   );
 });
 
@@ -231,6 +254,519 @@ const emptyQualitySignals = {
   looksLikePdfInternals: false,
 };
 
+const pdfFixtureCache = new Map<string, Promise<Awaited<ReturnType<typeof extractDiscoveryText>>>>();
+
+function loadPdfFixture(relPath: string) {
+  if (!pdfFixtureCache.has(relPath)) {
+    pdfFixtureCache.set(
+      relPath,
+      (async () => {
+        const buffer = fs.readFileSync(path.join(process.cwd(), relPath));
+        return extractDiscoveryText(
+          {
+            type: "file",
+            dataUrl: `data:application/pdf;base64,${buffer.toString("base64")}`,
+            mimeType: "application/pdf",
+          },
+          {
+            workflow: "gymnastics",
+            mode: "enrich",
+          }
+        );
+      })()
+    );
+  }
+  return pdfFixtureCache.get(relPath)!;
+}
+
+function buildExtractionMeta(overrides: Record<string, any> = {}) {
+  return {
+    sourceType: "file" as const,
+    usedOcr: false,
+    linkedAssets: [],
+    discoveredLinks: [],
+    resourceLinks: [],
+    crawledPages: [],
+    pageTitle: "",
+    textQuality: "good" as const,
+    qualitySignals: emptyQualitySignals,
+    coachPageHints: [],
+    schedulePageTexts: [],
+    schedulePageImages: [],
+    ...overrides,
+  };
+}
+
+const parentPacketFixture = `
+2026 Florida Crown Championships
+March 13-15, 2026
+Coral Springs Gymnasium
+Doors Open 7:15 AM
+Spectator Admission: Adult $20 / Child $10 / Weekend Pass $45
+Parking is available in the north garage. Expect heavy traffic near the venue from 6:45-8:15 AM.
+Guest services is located in the east hall. Outside food is not permitted.
+Service animals are allowed in accordance with venue policy.
+`;
+
+const registrationPacketFixture = `
+2026 Florida Crown Championships
+Hosted by USA Competitions
+Entry Fee: $145 per athlete
+Team Fee: $60 per team
+Late Fee: $25 after February 28, 2026
+Refund requests must be submitted by March 1, 2026.
+All entries must be submitted in Meet Maker.
+Coach sign-in opens at 6:30 AM. Floor music must be uploaded before the session.
+Meet Director: Jamie Coach jamie@example.com 555-333-2222
+`;
+
+const athleteSessionFixture = `
+2026 Florida Crown Championships
+March 13-15, 2026
+Session A - Level 8 Seniors
+Stretch 7:30 AM
+Warm Up 7:45 AM
+March In 8:05 AM
+Awards immediately following Session A in Awards Hall
+Assigned Gym: Arena B
+Rotation Order: Vault, Bars, Beam, Floor
+`;
+
+const mixedPacketFixture = `
+2026 Florida Crown Championships
+March 13-15, 2026
+Entry Fee: $145 per athlete
+Late Fee: $25 after February 28, 2026
+Coach sign-in opens at 6:30 AM.
+Spectator Admission: Adult $20 / Child $10
+Parking is available in the north garage.
+Session A - Level 8 Seniors
+Stretch 7:30 AM
+March In 8:05 AM
+`;
+
+test("heuristic classifier separates parent, registration, athlete, and mixed fixture types", () => {
+  const cases = [
+    {
+      text: parentPacketFixture,
+      meta: buildExtractionMeta({ pageTitle: "Parent Packet" }),
+      expectedProfile: "parent_packet",
+      expectedFlags: { parentPacketHeavy: true, registrationHeavy: false, scheduleHeavy: false, mixed: false },
+      expectedPrompts: ["parent_public"],
+    },
+    {
+      text: registrationPacketFixture,
+      meta: buildExtractionMeta({
+        pageTitle: "Registration Packet",
+        coachPageHints: [{ page: 2, heading: "Coach Information", excerpt: "Coach sign-in opens at 6:30 AM." }],
+      }),
+      expectedProfile: "registration_packet",
+      expectedFlags: { parentPacketHeavy: false, registrationHeavy: true, scheduleHeavy: false, mixed: false },
+      expectedPrompts: ["registration_coach"],
+    },
+    {
+      text: athleteSessionFixture,
+      meta: buildExtractionMeta({
+        pageTitle: "Session A Schedule",
+        schedulePageTexts: [{ pageNumber: 3, text: athleteSessionFixture }],
+      }),
+      expectedProfile: "athlete_session",
+      expectedFlags: { parentPacketHeavy: false, registrationHeavy: false, scheduleHeavy: true, mixed: false },
+      expectedPrompts: ["athlete_session"],
+    },
+    {
+      text: mixedPacketFixture,
+      meta: buildExtractionMeta({
+        pageTitle: "Mixed Packet",
+        coachPageHints: [{ page: 2, heading: "Coach Information", excerpt: "Coach sign-in opens at 6:30 AM." }],
+        schedulePageTexts: [{ pageNumber: 4, text: "Session A\nStretch 7:30 AM\nMarch In 8:05 AM" }],
+      }),
+      expectedProfile: "registration_packet",
+      expectedFlags: { parentPacketHeavy: true, registrationHeavy: true, scheduleHeavy: true, mixed: true },
+      expectedPrompts: ["athlete_session", "registration_coach"],
+    },
+  ] as const;
+
+  for (const fixture of cases) {
+    const evidence = buildDiscoveryEvidence(fixture.text, fixture.meta);
+    const classification = inferHeuristicParseClassification(evidence, fixture.meta);
+    assert.equal(classification.eventType, "gymnastics_meet");
+    assert.equal(classification.documentProfile, fixture.expectedProfile);
+    assert.deepEqual(classification.contentMix, fixture.expectedFlags);
+    assert.deepEqual(selectParsePromptProfiles(classification), fixture.expectedPrompts);
+  }
+});
+
+test("selectEvidenceForParseProfile narrows evidence and excerpts per targeted extractor", () => {
+  const extractionMeta = buildExtractionMeta({
+    pageTitle: "Mixed Packet",
+    coachPageHints: [{ page: 2, heading: "Coach Information", excerpt: "Coach sign-in opens at 6:30 AM." }],
+    schedulePageTexts: [{ pageNumber: 4, text: "Session A\nStretch 7:30 AM\nMarch In 8:05 AM" }],
+  });
+  const evidence = buildDiscoveryEvidence(mixedPacketFixture, extractionMeta);
+
+  const parent = selectEvidenceForParseProfile(
+    "parent_public",
+    mixedPacketFixture,
+    evidence,
+    extractionMeta
+  );
+  assert.ok(parent.evidenceLabels.includes("spectator"));
+  assert.ok(parent.evidenceLabels.includes("traffic"));
+  assert.ok(!parent.evidenceLabels.includes("coachPageHints"));
+  assert.ok(parent.excerpts.some((item) => /Spectator Admission|Parking/i.test(item.text)));
+
+  const registration = selectEvidenceForParseProfile(
+    "registration_coach",
+    mixedPacketFixture,
+    evidence,
+    extractionMeta
+  );
+  assert.ok(registration.evidenceLabels.includes("coachPageHints"));
+  assert.ok(registration.evidenceLabels.includes("registration"));
+  assert.ok(registration.excerpts.some((item) => /Entry Fee|Coach sign-in/i.test(item.text)));
+
+  const athlete = selectEvidenceForParseProfile(
+    "athlete_session",
+    mixedPacketFixture,
+    evidence,
+    extractionMeta
+  );
+  assert.ok(athlete.evidenceLabels.includes("schedulePages"));
+  assert.ok(athlete.excerpts.some((item) => /Session A|Stretch 7:30 AM|March In/i.test(item.text)));
+});
+
+test("mergeParseResultsByProfile uses deterministic precedence across targeted outputs", () => {
+  const overview = normalizeParseResult({
+    eventType: "gymnastics_meet",
+    documentProfile: "meet_overview",
+    title: "Florida Crown Championships",
+    dates: "March 13-15, 2026",
+    timezone: "America/New_York",
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+    links: [{ label: "Main packet", url: "https://example.com/packet.pdf" }],
+    athlete: {},
+    meetDetails: { resultsInfo: "Live scoring on MeetScoresOnline" },
+    logistics: {},
+    policies: {},
+    coachInfo: {},
+    contacts: [],
+    deadlines: [],
+    gear: {},
+    volunteers: {},
+    communications: {},
+    unmappedFacts: [],
+  })!;
+  const registration = normalizeParseResult({
+    eventType: "gymnastics_meet",
+    documentProfile: "registration_packet",
+    title: "",
+    dates: "",
+    athlete: {},
+    meetDetails: { registrationInfo: "Use Meet Maker for entries." },
+    logistics: {},
+    policies: {},
+    coachInfo: {
+      signIn: "Coach sign-in opens at 6:30 AM.",
+      entryFees: [{ label: "Entry Fee", amount: "$145", note: null }],
+      contacts: [{ role: "Meet Director", name: "Jamie Coach", email: "jamie@example.com", phone: null }],
+    },
+    contacts: [],
+    deadlines: [],
+    gear: {},
+    volunteers: {},
+    communications: {},
+    links: [],
+    unmappedFacts: [],
+  })!;
+  const athlete = normalizeParseResult({
+    eventType: "gymnastics_meet",
+    documentProfile: "athlete_session",
+    title: "",
+    dates: "",
+    athlete: {
+      session: "Session A",
+      assignedGym: "Arena B",
+    },
+    meetDetails: {
+      warmup: "7:45 AM",
+      marchIn: "8:05 AM",
+      rotationOrder: "Vault, Bars, Beam, Floor",
+    },
+    logistics: {},
+    policies: {},
+    coachInfo: {},
+    contacts: [],
+    deadlines: [],
+    gear: {},
+    volunteers: {},
+    communications: {},
+    links: [],
+    unmappedFacts: [],
+  })!;
+  const merged = mergeParseResultsByProfile([
+    { profile: "registration_coach", result: registration },
+    { profile: "athlete_session", result: athlete },
+    { profile: "overview_core", result: overview },
+  ]);
+
+  assert.equal(merged.title, "Florida Crown Championships");
+  assert.equal(merged.venue, "Coral Springs Gymnasium");
+  assert.equal(merged.meetDetails.registrationInfo, "Use Meet Maker for entries.");
+  assert.equal(merged.coachInfo.signIn, "Coach sign-in opens at 6:30 AM.");
+  assert.equal(merged.athlete.assignedGym, "Arena B");
+  assert.equal(merged.meetDetails.rotationOrder, "Vault, Bars, Beam, Floor");
+  assert.equal(merged.links[0]?.url, "https://example.com/packet.pdf");
+});
+
+test("normalizeParseClassification repairs invalid classifier payloads to stable enums", () => {
+  const normalized = normalizeParseClassification({
+    eventType: "not-real",
+    documentProfile: "weird",
+    confidence: "0.91",
+    contentMix: {
+      scheduleHeavy: 1,
+      registrationHeavy: 0,
+      parentPacketHeavy: true,
+      mixed: false,
+    },
+  });
+  assert.deepEqual(normalized, {
+    eventType: "unknown",
+    documentProfile: "unknown",
+    confidence: 0.91,
+    contentMix: {
+      scheduleHeavy: true,
+      registrationHeavy: false,
+      parentPacketHeavy: true,
+      mixed: false,
+    },
+  });
+});
+
+test("completeness audit helpers backfill core fields and identify sparse stage", async () => {
+  const extractionMeta = buildExtractionMeta({
+    pageTitle: "2026 Florida Crown Championships",
+  });
+  const evidence = buildDiscoveryEvidence(parentPacketFixture, extractionMeta);
+  const raw = normalizeParseResult({
+    eventType: "gymnastics_meet",
+    documentProfile: "parent_packet",
+    title: "",
+    dates: "",
+    athlete: {},
+    meetDetails: {
+      operationalNotes: ["Visit Lauderdale is a sponsor and encourages visitors to tag #VisitLauderdale."],
+    },
+    logistics: {},
+    policies: {},
+    coachInfo: {},
+    contacts: [],
+    deadlines: [],
+    gear: {
+      uniform: "Venue is chilly inside. Bring a jacket.",
+    },
+    volunteers: {},
+    communications: {},
+    links: [],
+    unmappedFacts: [],
+  })!;
+  const rawSnapshot = computeParseCompletenessSnapshot(raw);
+  const sanitized = sanitizeDiscoveryParseResult(raw);
+  const sanitizedSnapshot = computeParseCompletenessSnapshot(sanitized);
+  const backfilled = backfillDeterministicParseFields(
+    sanitized,
+    evidence,
+    "2026 Florida Crown Championships"
+  );
+  const backfilledSnapshot = computeParseCompletenessSnapshot(backfilled);
+
+  assert.ok(backfilledSnapshot.core.score > sanitizedSnapshot.core.score);
+  assert.equal(determineCompletenessSparsity(6, 0.1, 0.1, 0.1), "extraction");
+  assert.equal(determineCompletenessSparsity(1, 0.8, 0.4, 0.4), "sanitization");
+  assert.equal(determineCompletenessSparsity(1, 0.8, 0.8, 0.3), "mapping");
+
+  const mappedMeta = buildExtractionMeta({
+    pageTitle: "2026 Florida Crown Championships",
+  });
+  const mapped = await mapParseResultToGymData(
+    sanitized,
+    {
+      discoverySource: {
+        extractedText: parentPacketFixture,
+        extractionMeta: mappedMeta,
+      },
+      advancedSections: {},
+    },
+    mappedMeta
+  );
+  const mappedSnapshot = computeMappedCompletenessSnapshot(mapped);
+  assert.ok(mappedSnapshot.core.score > 0);
+  assert.ok(mappedMeta.parseDiagnostics?.completeness);
+  assert.ok(
+    mappedMeta.parseDiagnostics?.completeness?.sectionScores?.core?.backfilled >=
+      rawSnapshot.core.score
+  );
+});
+
+test("fixture PDFs expose packet-aware resource links and schedule pages from file extraction", async () => {
+  const parent = await loadPdfFixture("docs/2026wgaspparentinfo.pdf");
+  const men = await loadPdfFixture("docs/2026gaspinfomen.pdf");
+  const xcel = await loadPdfFixture(
+    "docs/Xcel-BSG-State-2026-Info-Schedule-Updated-3.22-Afternoon.pdf"
+  );
+  const state710 = await loadPdfFixture("docs/2026-7.9.10-State-Info-3.4.264.pdf");
+  const crown = await loadPdfFixture("docs/2026-FL-Crown-Event-Schedule-Info-Packet-3.8.26.pdf");
+
+  assert.ok(
+    parent.extractionMeta.resourceLinks?.filter((item: any) => item.kind === "parking").length >= 3
+  );
+  assert.ok(
+    parent.extractionMeta.resourceLinks?.some((item: any) =>
+      /location of lots and garages|rates|pay by mobile app|pay by phone parking/i.test(
+        item.label
+      )
+    )
+  );
+
+  assert.equal((men.extractionMeta.schedulePageTexts || []).length, 0);
+
+  assert.ok((xcel.extractionMeta.schedulePageTexts || []).length >= 2);
+  assert.ok(
+    xcel.extractionMeta.resourceLinks?.some((item: any) => item.kind === "hotel_booking")
+  );
+
+  assert.ok(
+    state710.extractionMeta.resourceLinks?.some((item: any) => item.kind === "rotation_hub")
+  );
+  assert.ok(
+    state710.extractionMeta.resourceLinks?.some((item: any) => item.kind === "hotel_booking")
+  );
+
+  assert.ok((crown.extractionMeta.schedulePageTexts || []).length >= 3);
+  assert.ok(
+    crown.extractionMeta.resourceLinks?.some((item: any) => item.kind === "admission")
+  );
+  assert.ok(
+    crown.extractionMeta.resourceLinks?.some((item: any) => item.kind === "hotel_booking")
+  );
+  assert.ok(
+    crown.extractionMeta.resourceLinks?.some((item: any) => item.kind === "rotation_hub")
+  );
+});
+
+test("fixture PDFs classify into parent, registration, and mixed schedule-plus-coach packet shapes", async () => {
+  const parent = await loadPdfFixture("docs/2026wgaspparentinfo.pdf");
+  const men = await loadPdfFixture("docs/2026gaspinfomen.pdf");
+  const xcel = await loadPdfFixture(
+    "docs/Xcel-BSG-State-2026-Info-Schedule-Updated-3.22-Afternoon.pdf"
+  );
+  const state710 = await loadPdfFixture("docs/2026-7.9.10-State-Info-3.4.264.pdf");
+  const crown = await loadPdfFixture("docs/2026-FL-Crown-Event-Schedule-Info-Packet-3.8.26.pdf");
+
+  const parentClassification = inferHeuristicParseClassification(
+    buildDiscoveryEvidence(parent.extractedText, parent.extractionMeta),
+    parent.extractionMeta
+  );
+  assert.equal(parentClassification.documentProfile, "parent_packet");
+  assert.deepEqual(selectParsePromptProfiles(parentClassification), ["parent_public"]);
+
+  const menClassification = inferHeuristicParseClassification(
+    buildDiscoveryEvidence(men.extractedText, men.extractionMeta),
+    men.extractionMeta
+  );
+  assert.equal(menClassification.documentProfile, "registration_packet");
+  assert.deepEqual(selectParsePromptProfiles(menClassification), ["registration_coach"]);
+
+  for (const fixture of [xcel, state710, crown]) {
+    const classification = inferHeuristicParseClassification(
+      buildDiscoveryEvidence(fixture.extractedText, fixture.extractionMeta),
+      fixture.extractionMeta
+    );
+    assert.equal(classification.contentMix.mixed, true);
+    assert.equal(classification.contentMix.scheduleHeavy, true);
+    assert.deepEqual(selectParsePromptProfiles(classification), [
+      "athlete_session",
+      "registration_coach",
+    ]);
+  }
+});
+
+test("fixture-derived backfills reject posting metadata and section headings", async () => {
+  const crown = await loadPdfFixture("docs/2026-FL-Crown-Event-Schedule-Info-Packet-3.8.26.pdf");
+  const xcel = await loadPdfFixture(
+    "docs/Xcel-BSG-State-2026-Info-Schedule-Updated-3.22-Afternoon.pdf"
+  );
+
+  const crownEvidence = buildDiscoveryEvidence(crown.extractedText, crown.extractionMeta);
+  assert.equal(crownEvidence.dateAnalysis.primaryCandidate?.label, "March 13-15, 2026");
+
+  const xcelFallbackTitle =
+    "2026 Florida USA Gymnastics Xcel Bronze, Silver & Gold State Championships";
+  const backfilled = backfillDeterministicParseFields(
+    normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "meet_overview",
+      title: "Club and General Information",
+      dates: "",
+      athlete: {},
+      meetDetails: {},
+      logistics: {},
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      schedule: {},
+      links: [],
+      unmappedFacts: [],
+    })!,
+    buildDiscoveryEvidence(xcel.extractedText, xcel.extractionMeta),
+    xcelFallbackTitle
+  );
+
+  assert.equal(backfilled.title, xcelFallbackTitle);
+});
+
+test("fixture-derived schedule parsing keeps assignments for mixed packets and stays blank for registration-only docs", async () => {
+  const men = await loadPdfFixture("docs/2026gaspinfomen.pdf");
+  const xcel = await loadPdfFixture(
+    "docs/Xcel-BSG-State-2026-Info-Schedule-Updated-3.22-Afternoon.pdf"
+  );
+  const state710 = await loadPdfFixture("docs/2026-7.9.10-State-Info-3.4.264.pdf");
+  const crown = await loadPdfFixture("docs/2026-FL-Crown-Event-Schedule-Info-Packet-3.8.26.pdf");
+
+  const menSchedule = await deriveScheduleFromExtractedText(
+    men.extractedText,
+    men.extractionMeta
+  );
+  assert.equal(menSchedule.schedule.days.length, 0);
+  assert.equal(menSchedule.schedule.assignments.length, 0);
+
+  const xcelSchedule = await deriveScheduleFromExtractedText(
+    xcel.extractedText,
+    xcel.extractionMeta
+  );
+  assert.ok(xcelSchedule.schedule.days.length > 0);
+  assert.ok(xcelSchedule.schedule.assignments.length > 0);
+
+  const state710Schedule = await deriveScheduleFromExtractedText(
+    state710.extractedText,
+    state710.extractionMeta
+  );
+  assert.ok(state710Schedule.schedule.days.length > 0);
+  assert.ok(state710Schedule.schedule.assignments.length > 0);
+
+  const crownSchedule = await deriveScheduleFromExtractedText(
+    crown.extractedText,
+    crown.extractionMeta
+  );
+  assert.ok(crownSchedule.schedule.days.length > 0);
+});
+
 test("deriveDateRangeFromText handles month ranges with OCR spacing", () => {
   assert.deepEqual(deriveDateRangeFromText("March 20 -22, 2026"), {
     label: "March 20 -22, 2026",
@@ -291,6 +827,22 @@ test("resource helpers classify statuses, kinds, and reject conflicting hub date
       "application/pdf"
     ),
     "team_divisions"
+  );
+  assert.equal(
+    classifyResourceLink(
+      "Schedule & Info",
+      "https://usacompetitions.com/docs/state-info.pdf",
+      "application/pdf"
+    ),
+    "packet"
+  );
+  assert.equal(
+    classifyResourceLink(
+      "Rosters",
+      "https://usacompetitions.com/docs/rosters.pdf",
+      "application/pdf"
+    ),
+    "roster"
   );
 
   const fingerprint = buildEventFingerprint(
@@ -1079,6 +1631,214 @@ test("extractDiscoveryText merges Playwright-discovered resources and child-page
         item.url === photoUrl &&
         item.discoveryMethod === "playwright"
     )
+  );
+});
+
+test("extractDiscoveryText warns once and continues when Playwright Chromium is unavailable", async (t) => {
+  const rootUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/";
+  const originalWarn = console.warn;
+  const warnCalls: Array<{ message: string; detail: any }> = [];
+
+  t.after(() => {
+    console.warn = originalWarn;
+    resetUrlDiscoveryTestHooks();
+  });
+
+  console.warn = ((message?: unknown, detail?: unknown) => {
+    warnCalls.push({ message: String(message || ""), detail });
+  }) as typeof console.warn;
+
+  setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url: string) => {
+      if (url !== rootUrl) throw new Error(`Unexpected fetch: ${url}`);
+      const text = `
+        <html>
+          <head><title>2026 Xcel State Championships</title></head>
+          <body>April 10-12, 2026 Gainesville, FL</body>
+        </html>
+      `;
+      return { contentType: "text/html", buffer: Buffer.from(text), text };
+    },
+    collectBrowserData: async () => {
+      throw new Error(
+        "browserType.launch: Executable doesn't exist at /Users/test/.cache/ms-playwright/chromium\nPlease run the following command to download new browsers: npx playwright install"
+      );
+    },
+    extractTextFromPdf: async (buffer: Buffer) => ({
+      text: buffer.toString("utf8"),
+      usedOcr: false,
+      coachPageHints: [],
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+    }),
+    extractTextFromImage: async () => "",
+    extractGymLayoutImageFromPdf: async () => ({
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+    }),
+    openAiExtractGymLayoutZones: async () => [],
+    toOptimizedImageDataUrl: async () => null,
+  });
+
+  const result = await extractDiscoveryText({ type: "url", url: rootUrl });
+
+  assert.match(result.extractedText, /April 10-12, 2026 Gainesville, FL/);
+  assert.equal(warnCalls.length, 1);
+  assert.match(warnCalls[0]?.message || "", /playwright browser discovery unavailable, skipping/);
+});
+
+test("extractDiscoveryText passes remaining budget to fetched asset PDF parses", async (t) => {
+  const rootUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/";
+  const packetUrl = "https://usacompetitions.com/wp-content/uploads/2026/03/state-info.pdf";
+  const originalDateNow = Date.now;
+  let now = 0;
+  const receivedBudgets: number[] = [];
+
+  t.after(() => {
+    Date.now = originalDateNow;
+    resetUrlDiscoveryTestHooks();
+  });
+
+  Date.now = () => now;
+
+  setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url: string) => {
+      if (url === rootUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Xcel State Championships</title></head>
+            <body><a href="/wp-content/uploads/2026/03/state-info.pdf">Schedule &amp; Info</a></body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === packetUrl) {
+        now += 500;
+        return {
+          contentType: "application/pdf",
+          buffer: Buffer.from("shared deadline packet"),
+          text: "",
+        };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+    extractTextFromPdf: async (_buffer: Buffer, options?: { budgetMs?: number }) => {
+      receivedBudgets.push(Number(options?.budgetMs || 0));
+      now += 200;
+      return {
+        text: "PDF:shared deadline packet",
+        usedOcr: false,
+        coachPageHints: [],
+        textQuality: "good",
+        qualitySignals: emptyQualitySignals,
+      };
+    },
+    extractTextFromImage: async () => "",
+    extractGymLayoutImageFromPdf: async () => ({
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+    }),
+    openAiExtractGymLayoutZones: async () => [],
+    toOptimizedImageDataUrl: async () => null,
+  });
+
+  await extractDiscoveryText(
+    { type: "url", url: rootUrl },
+    { budgetMs: 1_500, workflow: "gymnastics", mode: "core" }
+  );
+
+  assert.equal(receivedBudgets.length, 1);
+  assert.equal(receivedBudgets[0], 1_000);
+});
+
+test("extractDiscoveryText stops lower-priority URL follow-ups once the shared crawl deadline is exhausted", async (t) => {
+  const rootUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/";
+  const packetUrl = "https://usacompetitions.com/wp-content/uploads/2026/03/state-info.pdf";
+  const rosterUrl = "https://usacompetitions.com/wp-content/uploads/2026/03/rosters.pdf";
+  const hotelUrl = "https://api.groupbook.io/group/usag-state-2026";
+  const resultsHubUrl = "https://usacompetitions.com/results/";
+  const originalDateNow = Date.now;
+  const originalLog = console.log;
+  let now = 0;
+  const fetchCalls: string[] = [];
+  const logMessages: string[] = [];
+
+  t.after(() => {
+    Date.now = originalDateNow;
+    console.log = originalLog;
+    resetUrlDiscoveryTestHooks();
+  });
+
+  Date.now = () => now;
+  console.log = ((message?: unknown) => {
+    logMessages.push(String(message || ""));
+  }) as typeof console.log;
+
+  setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url: string) => {
+      fetchCalls.push(url);
+      if (url === rootUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Xcel State Championships</title></head>
+            <body>
+              <a href="/wp-content/uploads/2026/03/state-info.pdf">Schedule &amp; Info</a>
+              <a href="/wp-content/uploads/2026/03/rosters.pdf">Rosters</a>
+              <a href="https://api.groupbook.io/group/usag-state-2026">Host Hotels</a>
+              <a href="/results/">Results</a>
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === packetUrl || url === rosterUrl) {
+        now += 100;
+        return {
+          contentType: "application/pdf",
+          buffer: Buffer.from(url === packetUrl ? "packet" : "roster"),
+          text: "",
+        };
+      }
+      if (url === hotelUrl || url === resultsHubUrl) {
+        throw new Error(`Follow-up should have been skipped for ${url}`);
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+    extractTextFromPdf: async (buffer: Buffer) => {
+      now += 700;
+      return {
+        text: `PDF:${buffer.toString("utf8")}`,
+        usedOcr: false,
+        coachPageHints: [],
+        textQuality: "good",
+        qualitySignals: emptyQualitySignals,
+      };
+    },
+    extractTextFromImage: async () => "",
+    extractGymLayoutImageFromPdf: async () => ({
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+    }),
+    openAiExtractGymLayoutZones: async () => [],
+    toOptimizedImageDataUrl: async () => null,
+  });
+
+  const result = await extractDiscoveryText(
+    { type: "url", url: rootUrl },
+    { budgetMs: 1_500, workflow: "gymnastics", mode: "core" }
+  );
+
+  assert.match(result.extractedText, /PDF:packet/);
+  assert.match(result.extractedText, /PDF:roster/);
+  assert.deepEqual(fetchCalls, [rootUrl, packetUrl, rosterUrl]);
+  assert.ok(
+    logMessages.some((message) => /budget exhausted, skipping remaining follow-ups/.test(message))
   );
 });
 

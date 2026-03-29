@@ -42,3 +42,19 @@ test("findInlineEventMedia reports inline paths and setValueAtPath updates them"
   setValueAtPath(data, ["images", "hero"], "https://blob.example.com/event-media/hero.webp");
   assert.equal(data.images.hero, "https://blob.example.com/event-media/hero.webp");
 });
+
+test("collectAppOwnedBlobUrls normalizes app blob proxy urls to blob pathnames", () => {
+  const data = {
+    attachment: {
+      dataUrl: "https://envitefy.com/api/blob/event-media/upload-123/attachment/source.pdf",
+      previewImageUrl:
+        "https://envitefy.com/api/blob/event-media/upload-123/attachment/display.webp",
+    },
+  };
+
+  const blobUrls = collectAppOwnedBlobUrls(data);
+  assert.deepEqual(blobUrls, [
+    "event-media/upload-123/attachment/source.pdf",
+    "event-media/upload-123/attachment/display.webp",
+  ]);
+});

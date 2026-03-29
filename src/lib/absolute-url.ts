@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { headers } from "next/headers.js";
 
 const ensureLeadingAppend = (path: string): string => {
   const trimmed = path.trim();

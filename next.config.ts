@@ -1,9 +1,16 @@
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 import type { NextConfig } from "next";
 
+const resolveDevDistDir = () => {
+  const port = (process.env.PORT || "").trim();
+  if (!port || port === "3000") return ".next-dev";
+  const sanitizedPort = port.replace(/[^a-zA-Z0-9_-]+/g, "-");
+  return `.next-dev-${sanitizedPort}`;
+};
+
 const nextConfig = (phase: string): NextConfig => ({
   // Keep dev artifacts out of `.next` so `next build` doesn't race with `next dev`.
-  distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
+  distDir: phase === PHASE_DEVELOPMENT_SERVER ? resolveDevDistDir() : ".next",
   devIndicators: false,
   typescript: {
     ignoreBuildErrors: true,

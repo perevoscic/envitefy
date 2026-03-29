@@ -693,7 +693,11 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
   }
 
   const documentsMatch = takeSection("documents");
-  if (documentsMatch && isSparseSection(documentsMatch.section)) {
+  if (
+    documentsMatch &&
+    !documentsMatch.section?.preserveStandalone &&
+    isSparseSection(documentsMatch.section)
+  ) {
     const documentText = [
       documentsMatch.section.label,
       ...(documentsMatch.section.blocks || []).flatMap((block: any) =>
@@ -1310,6 +1314,16 @@ export function buildGymMeetDiscoveryContent({
       eventDatesLabelNormalized.includes(normalized)
     );
   };
+  const isTabularScheduleNoiseLine = (line: string) => {
+    const text = safeString(line);
+    if (!text) return false;
+    if (!/\t/.test(text) && !/\s{2,}/.test(text)) return false;
+    if (/^(?:gym\s+[a-z0-9]+|session\s+[a-z0-9]+|levels?\b)/i.test(text)) return true;
+    return (
+      (text.match(/\b\d{1,2}:\d{2}\s*[AP]M\b/gi) || []).length >= 2 ||
+      /\b[a-z]{1,3}\d{1,2}\b/i.test(text)
+    );
+  };
   const isMeetDetailsExcludedLine = (line: string) =>
     isMeetDateLine(line) ||
     isAdmissionLine(line) ||
@@ -1321,6 +1335,7 @@ export function buildGymMeetDiscoveryContent({
     isDaylightLine(line) ||
     isSafetyObjectsLine(line) ||
     isMarketingLikeSourceLine(line) ||
+    isTabularScheduleNoiseLine(line) ||
     isScheduleGridLikeSourceLine(line) ||
     isClubParticipationLikeSourceLine(line);
   const meetsAnyLine = (line: string, candidates: string[]) => {
@@ -2349,6 +2364,81 @@ export function buildGymMeetDiscoveryContent({
     }
   );
   const scheduleHasContent = scheduleInfo.enabled !== false && hasScheduleInfoContent(scheduleInfo);
+  const sessionAssignmentCards = ensureUniqueDiscoveryCardKeys(
+    scheduleInfo.assignments.map((item, index) => {
+      const label = [safeString(item.level), safeString(item.groupLabel || item.divisionLabel)]
+        .filter(Boolean)
+        .join(" • ");
+      const sessionCode = safeString(item.sessionCode);
+      const body = [safeString(item.birthDateRange), safeString(item.note)]
+        .filter(Boolean)
+        .join("\n");
+      return {
+        key: safeString(item.id || `session-assignment-${index + 1}`),
+        label: label || (sessionCode ? `Session ${sessionCode}` : `Assignment ${index + 1}`),
+        value: sessionCode ? `Session ${sessionCode}` : "",
+        body,
+      };
+    }),
+    "session-assignment"
+  );
+  const sessionAssignmentNotes = uniqueTextLines(
+    [
+      ...sourceLines.filter((line) =>
+        /(session assignments? are listed|incorrect session assignment|verify athlete|check your team rosters|official session assignment document|club roster will always be considered the official session assignment document|make sure athlete birth dates are correct|designated by her birthday|designated by their birthday)/i.test(
+          line
+        )
+      ),
+      ...(Array.isArray(scheduleInfo.notes) ? scheduleInfo.notes : []).filter((line) =>
+        /(session assignments?|rosters?|birth date|official session assignment)/i.test(
+          safeString(line)
+        )
+      ),
+    ],
+    8
+  );
+  const sessionAssignmentLinks = uniqueLinks(
+    [
+      ...toResourceActions("roster", "team_divisions"),
+      ...documentLinks.filter((item) =>
+        /(roster|session assignment|team divisions?|age groups?)/i.test(
+          `${item.label} ${item.url}`
+        )
+      ),
+    ],
+    8
+  );
+  const visitorGuideLinks = uniqueLinks(
+    normalizedLinks.filter((item) =>
+      /(visitor|guide|travel|sports and events center)/i.test(`${item.label} ${item.url}`)
+    ),
+    6
+  );
+  const resourceLinksForSection = uniqueLinks(
+    [
+      ...documentLinks,
+      ...resultsLinkItems.map((item) => ({
+        label: item.label || "Results",
+        url: item.url,
+      })),
+      ...admissionLinks,
+      ...hotelLinks,
+      ...parkingLinks,
+      ...visitorGuideLinks,
+    ],
+    16
+  );
+  const hasOperationalResourceLinks = resourceLinksForSection.some((item) =>
+    /(result|score|rotation|roster|hotel|travel|visitor|ticket|admission|parking)/i.test(
+      `${item.label} ${item.url}`
+    )
+  );
+  const documentSectionLabel =
+    hasOperationalResourceLinks
+      ? "Resources"
+      : /faq/i.test(documentLinks.map((item) => item.label).join(" "))
+      ? "FAQ"
+      : "Documents";
 
   const sections: GymMeetDiscoverySection[] = [
     {
@@ -2430,24 +2520,65 @@ export function buildGymMeetDiscoveryContent({
       ],
     },
     {
-      id: "results",
-      label: "Results",
-      kind: "results",
+      id: "schedule",
+      label: "Schedule",
+      kind: "schedule",
+      priority: 20,
+      hasContent: scheduleHasContent,
+      hideSectionHeading: true,
+      blocks: scheduleHasContent
+        ? [
+            {
+              id: "schedule-board",
+              type: "schedule-board" as const,
+              data: scheduleInfo,
+            },
+          ]
+        : [],
+    },
+    {
+      id: "session-assignments",
+      label: "Session Assignments",
+      kind: "session_assignments",
       priority: 25,
-      preserveStandalone: communicationCards.length > 0,
-      hasContent: communicationCards.length > 0,
-      blocks:
-        communicationCards.length > 0
+      preserveStandalone:
+        sessionAssignmentCards.length > 0 || sessionAssignmentLinks.length > 0,
+      hasContent:
+        sessionAssignmentCards.length > 0 ||
+        sessionAssignmentNotes.length > 0 ||
+        sessionAssignmentLinks.length > 0,
+      blocks: [
+        ...(sessionAssignmentCards.length > 0
           ? [
               {
-                id: "results-cards",
+                id: "session-assignment-cards",
                 type: "card-grid" as const,
-                title: "Results & Links",
-                columns: 2 as const,
-                cards: communicationCards,
+                columns: 3 as const,
+                cards: sessionAssignmentCards,
               },
             ]
-          : [],
+          : []),
+        ...(sessionAssignmentNotes.length > 0
+          ? [
+              {
+                id: "session-assignment-notes",
+                type: "line-list" as const,
+                title: "Roster & Verification Notes",
+                lines: sessionAssignmentNotes.map((line) => ({ text: line })),
+              },
+            ]
+          : []),
+        ...(sessionAssignmentLinks.length > 0
+          ? [
+              {
+                id: "session-assignment-links",
+                type: "link-list" as const,
+                title: "Session Resources",
+                links: sessionAssignmentLinks,
+              },
+            ]
+          : []),
+      ],
     },
     {
       id: "admission",
@@ -2604,23 +2735,6 @@ export function buildGymMeetDiscoveryContent({
       ],
     },
     {
-      id: "schedule",
-      label: "Schedule",
-      kind: "schedule",
-      priority: 45,
-      hasContent: scheduleHasContent,
-      hideSectionHeading: true,
-      blocks: scheduleHasContent
-        ? [
-            {
-              id: "schedule-board",
-              type: "schedule-board" as const,
-              data: scheduleInfo,
-            },
-          ]
-        : [],
-    },
-    {
       id: "venue-details",
       label: "Venue Details",
       kind: "venue",
@@ -2690,7 +2804,7 @@ export function buildGymMeetDiscoveryContent({
       id: "traffic-parking",
       label: "Traffic & Parking",
       kind: "traffic_parking",
-      priority: 70,
+      priority: 60,
       hasContent:
         trafficPrimaryCards.length > 0 ||
         trafficSecondaryCards.length > 0 ||
@@ -2750,7 +2864,7 @@ export function buildGymMeetDiscoveryContent({
       id: "hotels",
       label: "Hotels",
       kind: "hotels",
-      priority: 80,
+      priority: 70,
       preserveStandalone:
         hotelCards.length > 0 ||
         structuredHotelLinks.length > 0 ||
@@ -2780,6 +2894,26 @@ export function buildGymMeetDiscoveryContent({
       ],
     },
     {
+      id: "results",
+      label: "Results",
+      kind: "results",
+      priority: 80,
+      preserveStandalone: communicationCards.length > 0,
+      hasContent: communicationCards.length > 0,
+      blocks:
+        communicationCards.length > 0
+          ? [
+              {
+                id: "results-cards",
+                type: "card-grid" as const,
+                title: "Results & Links",
+                columns: 2 as const,
+                cards: communicationCards,
+              },
+            ]
+          : [],
+    },
+    {
       id: "safety-policy",
       label: "Safety Policy",
       kind: "safety",
@@ -2800,18 +2934,22 @@ export function buildGymMeetDiscoveryContent({
     },
     {
       id: "documents",
-      label: /faq/i.test(documentLinks.map((item) => item.label).join(" ")) ? "FAQ" : "Documents",
+      label: documentSectionLabel,
       kind: "documents",
       priority: 100,
-      hasContent: documentLinks.length > 0,
+      preserveStandalone: hasOperationalResourceLinks,
+      hasContent: resourceLinksForSection.length > 0,
       blocks: [
-        ...(documentLinks.length > 0
+        ...(resourceLinksForSection.length > 0
           ? [
               {
                 id: "document-links",
                 type: "link-list" as const,
-                title: "Supporting Documents",
-                links: documentLinks,
+                title:
+                  documentSectionLabel === "Resources"
+                    ? "Official Resources"
+                    : "Supporting Documents",
+                links: resourceLinksForSection,
               },
             ]
           : []),

@@ -2009,17 +2009,31 @@ export default function LeftSidebar() {
   const openGuestEventContext = useCallback(
     (row: HistoryRow, href: string) => {
       const nextHref = buildEventGuestHref(href, row.id);
+      blurActiveElement();
       // Invited events should navigate directly to the event page and never
       // transition into the event context/sidebar preview panel.
       clearEventContext();
-      setSidebarPage("invitedEvents");
+      if (isDesktop) {
+        setSidebarPage("invitedEvents");
+      } else {
+        setSidebarPage("root");
+        setIsCollapsed(true);
+      }
       invitedNavigationPendingRef.current = true;
       try {
         router.prefetch(nextHref);
       } catch {}
       router.push(nextHref);
     },
-    [buildEventGuestHref, clearEventContext, router, setSidebarPage]
+    [
+      blurActiveElement,
+      buildEventGuestHref,
+      clearEventContext,
+      isDesktop,
+      router,
+      setIsCollapsed,
+      setSidebarPage,
+    ]
   );
 
   const isHistoryRowActive = useCallback(

@@ -34,6 +34,10 @@ import {
   collectDiscoveryBrowserData,
   type BrowserDiscoveryResult,
 } from "@/lib/discovery-browser";
+import {
+  resolveDiscoveryBudget as resolveSharedDiscoveryBudget,
+  type DiscoveryBudgetSource,
+} from "@/lib/discovery-budget";
 
 export { computeGymBuilderStatuses };
 
@@ -482,6 +486,43 @@ type ExtractionResult = {
       tableRepairApplied?: boolean;
       fallbackMetadataApplied?: boolean;
     };
+    parseDiagnostics?: {
+      staged?: {
+        classifier: {
+          eventType: ParseResult["eventType"];
+          documentProfile: ParseResult["documentProfile"];
+          confidence: number;
+          contentMix: {
+            scheduleHeavy: boolean;
+            registrationHeavy: boolean;
+            parentPacketHeavy: boolean;
+            mixed: boolean;
+          };
+          selectedProfiles: string[];
+          usedHeuristicFallback?: boolean;
+        };
+        extractorCalls: Array<{
+          profile: string;
+          selectedEvidenceLabels: string[];
+          selectedExcerptLabels: string[];
+          evidenceChars: number;
+          excerptChars: number;
+        }>;
+      };
+      completeness?: {
+        sectionScores: Record<
+          string,
+          {
+            raw: number;
+            sanitized: number;
+            backfilled: number;
+            mapped: number;
+            evidenceSignals: number;
+            sparseAt: "none" | "extraction" | "sanitization" | "mapping";
+          }
+        >;
+      };
+    };
   };
   performance: DiscoveryPerformance;
 };
@@ -549,15 +590,53 @@ export type DiscoveryEvidence = {
   };
 };
 
+type ParsePromptProfile =
+  | "overview_core"
+  | "parent_public"
+  | "registration_coach"
+  | "athlete_session";
+
+type ParseContentMix = {
+  scheduleHeavy: boolean;
+  registrationHeavy: boolean;
+  parentPacketHeavy: boolean;
+  mixed: boolean;
+};
+
+type ParseClassification = {
+  eventType: ParseResult["eventType"];
+  documentProfile: ParseResult["documentProfile"];
+  confidence: number;
+  contentMix: ParseContentMix;
+};
+
+type SelectedParseEvidence = {
+  evidence: Record<string, unknown>;
+  evidenceChars: number;
+  evidenceLabels: string[];
+  excerpts: Array<{ label: string; text: string }>;
+  excerptChars: number;
+  excerptLabels: string[];
+};
+
+type ParseCompletenessSnapshot = Record<
+  "core" | "athlete" | "meetDetails" | "logistics" | "coachInfo" | "schedule",
+  { filled: number; total: number; score: number }
+>;
+
 type CrawlCandidate = DiscoveredLink & {
   score: number;
 };
 
 type UrlDiscoveryTestHooks = {
   fetchWithLimit?: (
-    url: string
+    url: string,
+    options?: { timeoutMs?: number }
   ) => Promise<{ contentType: string; buffer: Buffer; text: string }>;
-  collectBrowserData?: (url: string) => Promise<BrowserDiscoveryResult>;
+  collectBrowserData?: (
+    url: string,
+    options?: { timeoutMs?: number; maxChildPages?: number; maxActionablesPerPage?: number }
+  ) => Promise<BrowserDiscoveryResult>;
   extractTextFromPdf?: (
     buffer: Buffer,
     options?: {
@@ -605,8 +684,6 @@ const MAX_FOLLOWED_CHILD_PAGES = 3;
 const MAX_DISCOVERED_LINKS = 24;
 const MAX_FETCH_BYTES = 7 * 1024 * 1024;
 const LOW_TEXT_THRESHOLD = 200;
-const DEFAULT_DISCOVERY_CORE_BUDGET_MS = 25_000;
-const DEFAULT_DISCOVERY_ENRICH_BUDGET_MS = 45_000;
 const execFileAsync = promisify(execFile);
 let urlDiscoveryTestHooks: UrlDiscoveryTestHooks | null = null;
 
@@ -628,17 +705,11 @@ export function createDiscoveryPerformance(
   };
 }
 
-export function resolveDiscoveryBudget(mode: DiscoveryMode): number {
-  const raw =
-    mode === "enrich"
-      ? process.env.DISCOVERY_ENRICH_BUDGET_MS
-      : process.env.DISCOVERY_CORE_BUDGET_MS;
-  const fallback =
-    mode === "enrich"
-      ? DEFAULT_DISCOVERY_ENRICH_BUDGET_MS
-      : DEFAULT_DISCOVERY_CORE_BUDGET_MS;
-  const parsed = Number.parseInt(safeString(raw), 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+export function resolveDiscoveryBudget(
+  mode: DiscoveryMode,
+  sourceType: DiscoveryBudgetSource = "file"
+): number {
+  return resolveSharedDiscoveryBudget(mode, sourceType);
 }
 
 export function isDiscoveryDebugArtifactsEnabled(): boolean {
@@ -646,7 +717,8 @@ export function isDiscoveryDebugArtifactsEnabled(): boolean {
 }
 
 function normalizeDiscoveryExtractionOptions(
-  options?: DiscoveryExtractionOptions
+  options?: DiscoveryExtractionOptions,
+  sourceType: DiscoveryBudgetSource = "file"
 ): Required<DiscoveryExtractionOptions> {
   return {
     workflow: options?.workflow || "gymnastics",
@@ -654,13 +726,28 @@ function normalizeDiscoveryExtractionOptions(
     budgetMs:
       typeof options?.budgetMs === "number" && Number.isFinite(options.budgetMs) && options.budgetMs > 0
         ? options.budgetMs
-        : resolveDiscoveryBudget(options?.mode || "core"),
+        : resolveDiscoveryBudget(options?.mode || "core", sourceType),
     debugArtifacts:
       typeof options?.debugArtifacts === "boolean"
         ? options.debugArtifacts
         : isDiscoveryDebugArtifactsEnabled(),
     performance: options?.performance || createDiscoveryPerformance(),
   };
+}
+
+function deadlineAt(budgetMs?: number): number {
+  return typeof budgetMs === "number" && Number.isFinite(budgetMs) && budgetMs > 0
+    ? Date.now() + budgetMs
+    : Number.POSITIVE_INFINITY;
+}
+
+function remainingBudgetMs(nextDeadlineAt: number): number {
+  if (!Number.isFinite(nextDeadlineAt)) return Number.POSITIVE_INFINITY;
+  return Math.max(0, nextDeadlineAt - Date.now());
+}
+
+function isBudgetExhausted(nextDeadlineAt: number): boolean {
+  return remainingBudgetMs(nextDeadlineAt) <= 0;
 }
 
 function normalizeTokenUsage(usage: any) {
@@ -1652,7 +1739,10 @@ function classifySchedulePageText(text: string): {
   const normalized = safeString(text);
   if (!normalized) return { kind: "other", reason: "empty" };
   const tabularSignals = getScheduleTabularSignals(normalized);
-  if (looksLikeScheduleAssignmentText(normalized)) {
+  if (
+    looksLikeScheduleAssignmentText(normalized) &&
+    tabularSignals.repeatedTimeValueCount < 3
+  ) {
     return { kind: "assignment", reason: "assignment_table_signals" };
   }
   if (
@@ -2437,7 +2527,7 @@ export function buildDiscoveryEvidence(
   const athleteHints = matchLines(/(athlete|gymnast|level|team|march in|stretch|assigned gym|awards)/i, 14);
   const sessionHints = matchLines(/(session|stretch|march in|warm ?up|rotation|awards)/i, 14);
   const logisticsHints = matchLines(
-    /(parking|traffic|hotel|meal|food|waiver|rideshare|uber|lyft|map|directions|drop[- ]?off)/i,
+    /(parking|traffic|hotel|meal|food|waiver|rideshare|uber|lyft|map|directions|drop[- ]?off|visitor guide|host hotels?|reservation deadline|pay by mobile)/i,
     14
   );
   const policyHints = matchLines(
@@ -2466,12 +2556,14 @@ export function buildDiscoveryEvidence(
     10
   );
   const spectatorSection = sectionMatchLines(
-    [/(spectator admission|admission|ticket|door fees?|weekend passes?|adult|child|cash only)/i],
+    [
+      /(spectator admission|spectator admissions|admission|ticket|door fees?|weekend passes?|adult|child|cash only|parents?\/spectators?|additional info)/i,
+    ],
     12
   );
   const venueSection = sectionMatchLines(
     [
-      /(east hall|west hall|central hall|guest services|registration|competition area|venue|facility layout|awards area|entrance)/i,
+      /(east hall|west hall|central hall|guest services|registration desk|competition area|venue|facility layout|awards area|entrance|meet site|assigned halls?|lobby)/i,
     ],
     12
   );
@@ -2485,12 +2577,14 @@ export function buildDiscoveryEvidence(
   );
   const coachOpsSection = sectionMatchLines(
     [
-      /(coach(?:es)?|sign[- ]?in|floor access|attire|hospitality|scratches|rotation sheets?|floor music|regional commitment|qualification)/i,
+      /(coach(?:es)?|sign[- ]?in|floor access|attire|hospitality|scratches|rotation sheets?|floor music|regional commitment|qualification|coaches information|athlete\s*&\s*coach registration|regional meet coaches information)/i,
     ],
     12
   );
   const registrationSection = sectionMatchLines(
-    [/(entry fees?|team fees?|late fees?|how to enter|payment|refund|deadline|meet maker|reservation)/i],
+    [
+      /(entry fees?|team fees?|late fees?|how to enter|payment|refund|deadline|meet maker|reservation|meet entry summary|athlete\s*&\s*coach registration|regional meet coaches information)/i,
+    ],
     12
   );
   const titleHints = uniqueLines(
@@ -2722,7 +2816,7 @@ function resolveOpenAiMiniModel(): string {
 }
 
 function resolveDiscoveryParseModel(): string {
-  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-4.1-mini";
+  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-5.4-nano";
 }
 
 function resolveDiscoveryVisionModel(): string {
@@ -2755,7 +2849,15 @@ async function getPdfPageImage(
 function selectSchedulePageNumbersFromPdfPages(pages: Array<{ num: number; text: string }>): number[] {
   return uniqueBy(
     pages
-      .filter((page) => looksLikeSchedulePageText(page.text))
+      .filter((page) => {
+        const classification = classifySchedulePageText(page.text);
+        return (
+          classification.kind === "grid" ||
+          classification.kind === "assignment" ||
+          (classification.kind === "narrative" &&
+            classification.reason === "narrative_session_signals")
+        );
+      })
       .map((page) => Number(page.num) || 0)
       .filter((pageNumber) => pageNumber > 0),
     (pageNumber) => String(pageNumber)
@@ -4636,8 +4738,7 @@ function collectJsonLdMetadataStrings(
 function extractJsonLdMetadataText(html: string): string[] {
   const snippets: string[] = [];
   const jsonLdRegex = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  let match = jsonLdRegex.exec(html);
-  while (match) {
+  for (let match = jsonLdRegex.exec(html); match; match = jsonLdRegex.exec(html)) {
     const content = safeString(match[1]);
     if (!content) continue;
     try {
@@ -4646,7 +4747,6 @@ function extractJsonLdMetadataText(html: string): string[] {
     } catch {
       // Ignore malformed JSON-LD.
     }
-    match = jsonLdRegex.exec(html);
   }
   return uniqueLines(snippets.filter(Boolean), 12);
 }
@@ -4856,7 +4956,10 @@ function classifyResourceLink(
     /\/results\/?$/i.test(pathname) ||
     (/\bresults?\b/i.test(haystack) && !assetLike && !liveResultsDomain);
 
-  if (/\bgroupbook\b/i.test(haystack) || /\b(hotel|lodging|travel|stay|booking|room block)\b/i.test(haystack)) {
+  if (
+    /\bgroupbook\b/i.test(haystack) ||
+    /\b(hotels?|lodging|travel|stay|booking|room block)\b/i.test(haystack)
+  ) {
     return "hotel_booking";
   }
   if (
@@ -4881,13 +4984,13 @@ function classifyResourceLink(
     return "results_pdf";
   }
   if (
-    /\b(packet|program|meet packet|info packet|schedule packet|meet info|information packet)\b/i.test(
+    /\b(packet|program|meet packet|info packet|schedule(?:\s*&|\s+and)?\s*info|schedule packet|meet info|information packet)\b/i.test(
       haystack
     )
   ) {
     return "packet";
   }
-  if (/\b(roster|athlete\s*&?\s*coach registration|athlete registration)\b/i.test(haystack)) {
+  if (/\b(rosters?|athlete\s*&?\s*coach registration|athlete registration)\b/i.test(haystack)) {
     return "roster";
   }
   if (/\b(team divisions?|divisions?|session assignments?)\b/i.test(haystack)) {
@@ -4896,7 +4999,11 @@ function classifyResourceLink(
   if (/\b(admission|ticket|spectator|purchase|buy)\b/i.test(haystack)) {
     return "admission";
   }
-  if (/\b(parking|garage|parkmobile|map dashboard|rates info|parking map)\b/i.test(haystack)) {
+  if (
+    /\b(parking|garage|garages|parkmobile|arcgis|dashboard|lots and garages|rates info|parking map)\b/i.test(
+      haystack
+    )
+  ) {
     return "parking";
   }
   return "other";
@@ -5051,8 +5158,9 @@ function scoreEventResourceMatch(
 
 function shouldTreatResourceAsTrustedHtmlFetch(resource: DiscoveryResourceLink): boolean {
   return (
-    ["hotel_booking", "photo_video", "results_live"].includes(resource.kind) &&
-    isTrustedExternalResourceUrl(resource.url)
+    (["hotel_booking", "photo_video", "results_live"].includes(resource.kind) &&
+      isTrustedExternalResourceUrl(resource.url)) ||
+    ["roster", "team_divisions", "rotation_hub", "results_hub"].includes(resource.kind)
   );
 }
 
@@ -5082,7 +5190,7 @@ function shouldFollowDiscoveryChildPage(
   }
 
   if (
-    /\b(info|details|schedule|venue|parking|hotel|travel|faq|packet|document|program|admission|ticket|rotation|result)\b/i.test(
+    /\b(info|details|schedule|venue|parking|hotel|travel|faq|packet|document|program|admission|ticket|rotation|result|roster|division|session assignment)\b/i.test(
       haystack
     )
   ) {
@@ -5197,6 +5305,57 @@ function compareDiscoveryCandidates(a: CrawlCandidate, b: CrawlCandidate): numbe
   return a.url.localeCompare(b.url);
 }
 
+function scoreResourceFollowUpPriority(
+  resource: DiscoveryResourceLink,
+  rootHost: string
+): number {
+  let score = 0;
+  const sameHost = (() => {
+    try {
+      return new URL(resource.url).host === rootHost;
+    } catch {
+      return false;
+    }
+  })();
+  const isPdf =
+    /\.pdf(\?|#|$)/i.test(resource.url) || /pdf/i.test(safeString(resource.contentType));
+  const kindWeight: Record<DiscoveryResourceKind, number> = {
+    packet: 24,
+    roster: 22,
+    team_divisions: 18,
+    rotation_sheet: 16,
+    rotation_hub: 15,
+    results_pdf: 14,
+    results_live: 12,
+    results_hub: 11,
+    admission: 5,
+    parking: 4,
+    hotel_booking: 2,
+    photo_video: 1,
+    other: 0,
+  };
+  score += kindWeight[resource.kind] || 0;
+  if (sameHost) score += 14;
+  if (isPdf) score += 8;
+  if (resource.origin === "root") score += 4;
+  if (resource.status === "not_posted") score -= 6;
+  if (resource.followed) score -= 20;
+  return score;
+}
+
+function compareResourceLinksForFollowUp(
+  a: DiscoveryResourceLink,
+  b: DiscoveryResourceLink,
+  rootHost: string
+): number {
+  const scoreDelta =
+    scoreResourceFollowUpPriority(b, rootHost) - scoreResourceFollowUpPriority(a, rootHost);
+  if (scoreDelta !== 0) return scoreDelta;
+  const matchDelta = (b.matchScore || 0) - (a.matchScore || 0);
+  if (matchDelta !== 0) return matchDelta;
+  return a.url.localeCompare(b.url);
+}
+
 function shouldReplaceDiscoveryLink(existing: CrawlCandidate, next: CrawlCandidate): boolean {
   if (next.score !== existing.score) return next.score > existing.score;
   if (next.label.length !== existing.label.length) return next.label.length > existing.label.length;
@@ -5225,8 +5384,7 @@ function upsertDiscoveredLink(map: Map<string, CrawlCandidate>, candidate: Crawl
 function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): CrawlCandidate[] {
   const links: CrawlCandidate[] = [];
   const anchorRegex = /<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi;
-  let match = anchorRegex.exec(html);
-  while (match) {
+  for (let match = anchorRegex.exec(html); match; match = anchorRegex.exec(html)) {
     const rawAttrs = `${match[1] || ""} ${match[3] || ""}`;
     const url = linkUrlFromHref(baseUrl, match[2] || "");
     if (!url) continue;
@@ -5247,7 +5405,6 @@ function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): C
       contentType: null,
       score: scoreDiscoveryCandidate(candidateBase),
     });
-    match = anchorRegex.exec(html);
   }
   return uniqueBy(links, (item) => item.url).sort(compareDiscoveryCandidates);
 }
@@ -5334,10 +5491,195 @@ function fallbackLabelFromPdfAnnotation(url: URL): string {
   return pathLabel || fallbackLinkLabel(url);
 }
 
+function looksLikeGenericResourceLabel(label: string): boolean {
+  const normalized = safeString(label).replace(/\s+/g, " ").trim();
+  if (!normalized) return true;
+  return /^(?:click here(?: for .+)?|here|resource link|open link|link|website)$/i.test(
+    normalized
+  );
+}
+
+function splitPdfPageLinesForLabeling(pageText: string): string[] {
+  return cleanExtractedText(pageText)
+    .split(/\n+/)
+    .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function normalizeUrlForLooseSearch(url: string): string[] {
+  const normalized = normalizeUrl(url);
+  if (!normalized) return [];
+  try {
+    const parsed = new URL(normalized);
+    const pathname = decodeURIComponent(parsed.pathname).replace(/\/+$/, "");
+    return uniqueBy(
+      [
+        normalized.toLowerCase(),
+        `${parsed.hostname}${pathname}`.toLowerCase(),
+        parsed.hostname.toLowerCase(),
+        pathname.toLowerCase(),
+        `${parsed.hostname}${pathname}`.replace(/^www\./, "").toLowerCase(),
+      ].filter(Boolean),
+      (item) => item
+    );
+  } catch {
+    return [normalized.toLowerCase()];
+  }
+}
+
+function inferKindBasedPdfLabel(
+  kind: DiscoveryResourceKind,
+  pageText: string,
+  url: string
+): string {
+  const normalizedPageText = safeString(pageText).replace(/\s+/g, " ").trim();
+  switch (kind) {
+    case "parking":
+      if (/pay by (?:mobile|phone)|mobile app/i.test(normalizedPageText)) {
+        return "Pay By Phone Parking";
+      }
+      if (/\brates?\b/i.test(normalizedPageText)) return "Parking Rates";
+      if (/\blots and garages\b|\bparking map\b/i.test(normalizedPageText)) {
+        return "Parking Map";
+      }
+      return "Parking";
+    case "hotel_booking":
+      if (/click here for all host hotels|host hotels?/i.test(normalizedPageText)) {
+        return "Host Hotels";
+      }
+      if (/\breservations link\b/i.test(normalizedPageText)) {
+        return "Reservations Link";
+      }
+      if (/\bhost hotel information\b/i.test(normalizedPageText)) {
+        return "Host Hotel Information";
+      }
+      if (/\bgroup hotel\b/i.test(normalizedPageText)) return "Group Hotel";
+      return "Hotel Booking";
+    case "results_live":
+      return /live scoring/i.test(normalizedPageText) ? "Live Scoring" : "Results";
+    case "results_hub":
+    case "results_pdf":
+      if (/event info and results|complete meet results/i.test(normalizedPageText)) {
+        return "Event Info & Results";
+      }
+      return "Official Results";
+    case "rotation_hub":
+    case "rotation_sheet":
+      if (/master rotation sheet/i.test(normalizedPageText)) {
+        return "Master Rotation Sheet";
+      }
+      return "Rotation Sheets";
+    case "packet":
+      if (/schedule & team entries|competition schedule/i.test(normalizedPageText)) {
+        return "Competition Schedule";
+      }
+      return "Schedule & Info Packet";
+    case "roster":
+      return "Rosters";
+    case "team_divisions":
+      return /session assignments?/i.test(normalizedPageText)
+        ? "Session Assignments"
+        : "Team Divisions";
+    case "admission":
+      if (/\bpre[-\s]?sale\b|\bpurchase\b|\bsquare\.site\b/i.test(`${normalizedPageText} ${url}`)) {
+        return "Admission Pre-Sale";
+      }
+      return "Admission";
+    case "photo_video":
+      return "Photo / Video Order Form";
+    case "other":
+    default:
+      if (/visit lauderdale|visit gainesville|visitor guide/i.test(normalizedPageText)) {
+        return "Visitor Guide";
+      }
+      break;
+  }
+  try {
+    return fallbackLabelFromPdfAnnotation(new URL(url));
+  } catch {
+    return "Resource link";
+  }
+}
+
+function derivePdfAnnotationLabel(
+  link: PdfAnnotationLink,
+  pages: Array<{ num: number; text: string }> = []
+): string {
+  const explicitLabel = safeString(link.label);
+  const pageText =
+    safeString(
+      pages.find((page) => Number(page?.num) === Number(link.pageNumber))?.text || ""
+    ) || "";
+  if (explicitLabel && !looksLikeGenericResourceLabel(explicitLabel)) {
+    return explicitLabel;
+  }
+
+  const lines = splitPdfPageLinesForLabeling(pageText);
+  const looseTargets = normalizeUrlForLooseSearch(link.url);
+  const exactTargets = looseTargets.filter((target) => target.includes("/"));
+  const broadTargets = looseTargets.filter((target) => !exactTargets.includes(target));
+  const findMatchingIndex = (targets: string[]) =>
+    lines.findIndex((line) => {
+      const lowered = line.toLowerCase();
+      return targets.some((target) => target && lowered.includes(target));
+    });
+  const matchingIndex =
+    findMatchingIndex(exactTargets) >= 0
+      ? findMatchingIndex(exactTargets)
+      : findMatchingIndex(broadTargets);
+
+  if (matchingIndex >= 0) {
+    const matchingLine = safeString(lines[matchingIndex]);
+    const prefixLabel = safeString(
+      matchingLine
+        .replace(/https?:\/\/[^\s)]+/gi, "")
+        .replace(/www\.[^\s)]+/gi, "")
+        .replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s),;!?]*)?\b/gi, "")
+        .replace(/\s+/g, " ")
+        .replace(/[:\-–—]\s*$/g, "")
+    );
+    if (prefixLabel && !looksLikeGenericResourceLabel(prefixLabel)) {
+      return prefixLabel;
+    }
+    const previousLine = safeString(lines[matchingIndex - 1]);
+    if (
+      previousLine &&
+      previousLine.length <= 96 &&
+      !/https?:\/\/|www\./i.test(previousLine) &&
+      !looksLikeGenericResourceLabel(previousLine)
+    ) {
+      return previousLine.replace(/[:\-–—]\s*$/g, "").trim();
+    }
+  }
+
+  if (/click here for all host hotels|host hotels?|reservations link|group hotel/i.test(pageText)) {
+    return inferKindBasedPdfLabel("hotel_booking", pageText, link.url);
+  }
+  if (/pre[-\s]?sale|spectator admissions?|tickets?/i.test(pageText)) {
+    return inferKindBasedPdfLabel("admission", pageText, link.url);
+  }
+  if (/for event info and results|live scoring|official results|complete meet results/i.test(pageText)) {
+    return inferKindBasedPdfLabel("results_hub", pageText, link.url);
+  }
+  if (/location of lots and garages|pay by (?:mobile|phone)|parking rates|parking map/i.test(pageText)) {
+    return inferKindBasedPdfLabel("parking", pageText, link.url);
+  }
+  if (/rotation sheets?|master rotation sheet/i.test(pageText)) {
+    return inferKindBasedPdfLabel("rotation_hub", pageText, link.url);
+  }
+  if (/session assignments?|team rosters?|birth date divisions/i.test(pageText)) {
+    return inferKindBasedPdfLabel("team_divisions", pageText, link.url);
+  }
+
+  const inferredKind = classifyResourceLink(explicitLabel, link.url, null);
+  return inferKindBasedPdfLabel(inferredKind, pageText, link.url);
+}
+
 function toCrawlCandidateFromPdfAnnotation(
   link: PdfAnnotationLink,
   assetUrl: URL,
-  rootUrl: URL
+  rootUrl: URL,
+  pages: Array<{ num: number; text: string }>
 ): CrawlCandidate | null {
   const normalizedUrl = normalizeUrl(link.url);
   if (!normalizedUrl || normalizedUrl === assetUrl.toString()) return null;
@@ -5345,7 +5687,8 @@ function toCrawlCandidateFromPdfAnnotation(
   const kind = classifyDiscoveryLink(resolvedUrl, rootUrl);
   const baseCandidate = {
     url: normalizedUrl,
-    label: safeString(link.label) || fallbackLabelFromPdfAnnotation(resolvedUrl),
+    label:
+      derivePdfAnnotationLabel(link, pages) || fallbackLabelFromPdfAnnotation(resolvedUrl),
     sourceUrl: assetUrl.toString(),
     depth: 1 as const,
     kind,
@@ -5383,9 +5726,30 @@ function looksLikeDiscoveryPlaceholderTitle(title: string): boolean {
   return /^[a-z0-9.-]+\.(?:com|org|net|io|co|us|info)\s+(?:Meet|Football)$/i.test(normalized);
 }
 
+function looksLikeDiscoverySectionTitle(title: string): boolean {
+  const normalized = decodeHtmlEntities(safeString(title)).replace(/\s+/g, " ").trim();
+  if (!normalized) return false;
+  if (
+    /^(?:club and general information|general information|club information|coach information|parent information|meet information|session information|registration information|spectator information|travel information|parking information)$/i.test(
+      normalized
+    )
+  ) {
+    return true;
+  }
+  if (
+    /^(?:club|general|coach|parent|meet|session|registration|spectator|travel|parking|venue|facility|schedule|admission|awards?|results?|logistics|policies?)\s+(?:information|details?)$/i.test(
+      normalized
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function scoreDiscoveryTitleFragment(value: string): number {
   const candidate = decodeHtmlEntities(safeString(value)).replace(/\s+/g, " ").trim();
   if (!candidate) return Number.NEGATIVE_INFINITY;
+  if (looksLikeDiscoverySectionTitle(candidate)) return -8;
   if (
     /^(skip to content|search for:?|menu|home|about us|events?|registration|results?|contact|blog|resources?)$/i.test(
       candidate
@@ -5462,6 +5826,7 @@ function resolveDiscoveryEventTitle(parsedTitle: string, fallbackTitle: string):
   if (!normalizedParsed) return normalizedFallback;
   if (!normalizedFallback) return normalizedParsed;
   if (looksLikeDiscoveryPlaceholderTitle(normalizedParsed)) return normalizedFallback;
+  if (looksLikeDiscoverySectionTitle(normalizedParsed)) return normalizedFallback;
   const parsedKey = normalizeDiscoveryTitleForCompare(normalizedParsed);
   const fallbackKey = normalizeDiscoveryTitleForCompare(normalizedFallback);
   if (!parsedKey) return normalizedFallback;
@@ -5473,9 +5838,16 @@ function resolveDiscoveryEventTitle(parsedTitle: string, fallbackTitle: string):
   return normalizedParsed;
 }
 
-async function fetchWithLimit(url: string): Promise<{ contentType: string; buffer: Buffer; text: string }> {
+async function fetchWithLimit(
+  url: string,
+  options?: { timeoutMs?: number }
+): Promise<{ contentType: string; buffer: Buffer; text: string }> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeoutMs =
+    typeof options?.timeoutMs === "number" && Number.isFinite(options.timeoutMs) && options.timeoutMs > 0
+      ? Math.max(250, Math.min(12_000, Math.floor(options.timeoutMs)))
+      : 12_000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const response = await fetch(url, {
     redirect: "follow",
     signal: controller.signal,
@@ -5513,6 +5885,14 @@ function getUrlDiscoveryHooks(): Required<UrlDiscoveryTestHooks> {
   };
 }
 
+function isMissingPlaywrightBrowserError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return (
+    /chromium/i.test(message) &&
+    /executable|install/i.test(message)
+  ) || /playwright install/i.test(message);
+}
+
 async function appendFetchedAssetText(
   assetUrl: URL,
   fetched: { contentType: string; buffer: Buffer; text: string },
@@ -5539,15 +5919,43 @@ async function appendFetchedAssetText(
   context: {
     discoveryMethod: "http" | "playwright";
   },
+  crawlBudget: {
+    deadlineAt: number;
+    onBudgetExhausted: (stage: string) => void;
+  },
   requestCache?: DiscoveryRequestCache
 ) {
+  const assetUrlString = assetUrl.toString();
+  const resolveRemainingAssetBudget = (stage: string): number | null => {
+    const remainingMs = remainingBudgetMs(crawlBudget.deadlineAt);
+    if (remainingMs > 0) return remainingMs;
+    crawlBudget.onBudgetExhausted(stage);
+    return null;
+  };
   accumulators.linkedMeta.push({ url: assetUrl.toString(), contentType: fetched.contentType });
   if (/pdf/i.test(fetched.contentType) || /\.pdf(\?|#|$)/i.test(assetUrl.pathname)) {
+    const pdfBudgetMs = resolveRemainingAssetBudget(`asset_parse:${assetUrlString}`);
+    if (pdfBudgetMs == null) return;
+    const assetParseStartedAt = Date.now();
+    console.log("[meet-discovery] asset parse started", {
+      url: assetUrlString,
+      contentType: fetched.contentType || "application/pdf",
+      assetType: "pdf",
+      budgetMs: pdfBudgetMs,
+    });
     const parsed = await hooks.extractTextFromPdf(fetched.buffer, {
-      budgetMs: options.budgetMs,
+      budgetMs: pdfBudgetMs,
       performance: options.performance,
       cache: requestCache,
       mode: options.mode,
+    });
+    console.log("[meet-discovery] asset parse finished", {
+      url: assetUrlString,
+      contentType: fetched.contentType || "application/pdf",
+      assetType: "pdf",
+      durationMs: Date.now() - assetParseStartedAt,
+      textChars: parsed.text.length,
+      usedOcr: parsed.usedOcr,
     });
     if (parsed.textQuality === "good" && parsed.text.length >= 1500) {
       accumulators.highConfidencePdfFound = true;
@@ -5562,7 +5970,13 @@ async function appendFetchedAssetText(
       const discovered = toCrawlCandidateFromPdfAnnotation(
         annotationLink as PdfAnnotationLink,
         assetUrl,
-        accumulators.rootUrl
+        accumulators.rootUrl,
+        pickArray(parsed.pages)
+          .map((page) => ({
+            num: Number(page?.num) || 0,
+            text: safeString(page?.text || ""),
+          }))
+          .filter((page) => page.num > 0 && page.text)
       );
       if (!discovered) continue;
       upsertDiscoveredLink(accumulators.discoveredLinkMap, discovered);
@@ -5584,11 +5998,13 @@ async function appendFetchedAssetText(
       options.mode === "enrich" &&
       !accumulators.gymLayoutImageDataUrl
     ) {
+      const layoutBudgetMs = resolveRemainingAssetBudget(`asset_layout:${assetUrlString}`);
+      if (layoutBudgetMs == null) return;
       const layout = await hooks.extractGymLayoutImageFromPdf(fetched.buffer, {
         maxPages: 4,
         maxAiCandidates: 2,
         performance: options.performance,
-        budgetMs: options.budgetMs,
+        budgetMs: layoutBudgetMs,
         cache: requestCache,
       });
       accumulators.gymLayoutImageDataUrl = layout.dataUrl;
@@ -5638,7 +6054,24 @@ async function appendFetchedAssetText(
     /image\/(png|jpe?g|webp)/i.test(fetched.contentType) ||
     /\.(png|jpe?g|webp)(\?|#|$)/i.test(assetUrl.pathname)
   ) {
+    const imageBudgetMs = resolveRemainingAssetBudget(`asset_parse:${assetUrlString}`);
+    if (imageBudgetMs == null) return;
+    const assetParseStartedAt = Date.now();
+    console.log("[meet-discovery] asset parse started", {
+      url: assetUrlString,
+      contentType: fetched.contentType || "image/png",
+      assetType: "image",
+      budgetMs: imageBudgetMs,
+    });
     const imageText = await hooks.extractTextFromImage(fetched.buffer, requestCache);
+    console.log("[meet-discovery] asset parse finished", {
+      url: assetUrlString,
+      contentType: fetched.contentType || "image/png",
+      assetType: "image",
+      durationMs: Date.now() - assetParseStartedAt,
+      textChars: imageText.length,
+      usedOcr: true,
+    });
     accumulators.linkedChunks.push(imageText);
     accumulators.usedOcr = true;
     if (
@@ -5647,10 +6080,12 @@ async function appendFetchedAssetText(
       !accumulators.gymLayoutImageDataUrl &&
       looksLikeGymLayoutText(imageText)
     ) {
+      if (resolveRemainingAssetBudget(`asset_layout:${assetUrlString}`) == null) return;
       accumulators.gymLayoutImageDataUrl = await hooks.toOptimizedImageDataUrl(
         fetched.buffer,
         requestCache
       );
+      if (resolveRemainingAssetBudget(`asset_layout_zones:${assetUrlString}`) == null) return;
       accumulators.gymLayoutZones = await hooks.openAiExtractGymLayoutZones(
         fetched.buffer,
         fetched.contentType || "image/png",
@@ -5721,10 +6156,21 @@ async function fetchResourceCandidateText(
   resource: DiscoveryResourceLink,
   hooks: Required<UrlDiscoveryTestHooks>,
   options: Required<DiscoveryExtractionOptions>,
+  crawlBudget: {
+    deadlineAt: number;
+    onBudgetExhausted: (stage: string) => void;
+  },
   requestCache?: DiscoveryRequestCache
 ): Promise<{ contentType: string; text: string } | null> {
+  const remainingFetchBudgetMs = remainingBudgetMs(crawlBudget.deadlineAt);
+  if (remainingFetchBudgetMs <= 0) {
+    crawlBudget.onBudgetExhausted(`hub_candidate_fetch:${resource.url}`);
+    return null;
+  }
   try {
-    const fetched = await hooks.fetchWithLimit(resource.url);
+    const fetched = await hooks.fetchWithLimit(resource.url, {
+      timeoutMs: remainingFetchBudgetMs,
+    });
     if (/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)) {
       const htmlChunk = buildFetchedHtmlTextChunk(resource.url, fetched);
       return {
@@ -5735,8 +6181,13 @@ async function fetchResourceCandidateText(
       };
     }
     if (/pdf/i.test(fetched.contentType) || /\.pdf(\?|#|$)/i.test(resource.url)) {
+      const remainingParseBudgetMs = remainingBudgetMs(crawlBudget.deadlineAt);
+      if (remainingParseBudgetMs <= 0) {
+        crawlBudget.onBudgetExhausted(`hub_candidate_parse:${resource.url}`);
+        return null;
+      }
       const parsed = await hooks.extractTextFromPdf(fetched.buffer, {
-        budgetMs: options.budgetMs,
+        budgetMs: remainingParseBudgetMs,
         performance: options.performance,
         cache: requestCache,
         mode: options.mode,
@@ -5766,23 +6217,54 @@ async function resolveHubResourceLinks(
   fingerprint: EventFingerprint,
   hooks: Required<UrlDiscoveryTestHooks>,
   options: Required<DiscoveryExtractionOptions>,
+  crawlBudget: {
+    deadlineAt: number;
+    onBudgetExhausted: (stage: string) => void;
+  },
   requestCache?: DiscoveryRequestCache
 ): Promise<DiscoveryResourceLink[]> {
+  const hubResolveStartedAt = Date.now();
+  const finalizeHubResolve = (resolved: DiscoveryResourceLink[]) => {
+    console.log("[meet-discovery] hub resolve finished", {
+      url: hubResource.url,
+      kind: hubResource.kind,
+      durationMs: Date.now() - hubResolveStartedAt,
+      promotedCount: resolved.length,
+    });
+    return resolved;
+  };
+  console.log("[meet-discovery] hub resolve started", {
+    url: hubResource.url,
+    kind: hubResource.kind,
+  });
+  const remainingHubBudgetMs = remainingBudgetMs(crawlBudget.deadlineAt);
+  if (remainingHubBudgetMs <= 0) {
+    crawlBudget.onBudgetExhausted(`hub_resolve:${hubResource.url}`);
+    return finalizeHubResolve([]);
+  }
   let hubFetched: { contentType: string; buffer: Buffer; text: string } | null = null;
   try {
-    hubFetched = await hooks.fetchWithLimit(hubResource.url);
+    hubFetched = await hooks.fetchWithLimit(hubResource.url, {
+      timeoutMs: remainingHubBudgetMs,
+    });
   } catch {
-    return [];
+    return finalizeHubResolve([]);
   }
   if (!hubFetched || !/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(hubFetched.contentType)) {
-    return [];
+    return finalizeHubResolve([]);
   }
   const hubUrl = new URL(hubResource.url);
   const hubHtml = hubFetched.text || hubFetched.buffer.toString("utf8");
-  const hubCandidates = collectDiscoveryCandidates(hubHtml, hubUrl, 1).slice(0, 16);
+  const hubCandidates = collectDiscoveryCandidates(hubHtml, hubUrl, 1)
+    .sort(compareDiscoveryCandidates)
+    .slice(0, 16);
   const resolved: DiscoveryResourceLink[] = [];
 
   for (const candidate of hubCandidates) {
+    if (isBudgetExhausted(crawlBudget.deadlineAt)) {
+      crawlBudget.onBudgetExhausted(`hub_resolve:${hubResource.url}`);
+      break;
+    }
     const baseResource = buildResourceLinkFromCandidate(
       { ...candidate, followed: false },
       "hub_descendant",
@@ -5815,7 +6297,13 @@ async function resolveHubResourceLinks(
     if (!sameHostAsHub && !isTrustedExternalResourceUrl(baseResource.url)) {
       continue;
     }
-    const fetchedText = await fetchResourceCandidateText(baseResource, hooks, options, requestCache);
+    const fetchedText = await fetchResourceCandidateText(
+      baseResource,
+      hooks,
+      options,
+      crawlBudget,
+      requestCache
+    );
     const match = scoreEventResourceMatch(
       fingerprint,
       fetchedText?.text || `${candidate.label}\n${candidate.url}`,
@@ -5833,7 +6321,9 @@ async function resolveHubResourceLinks(
     });
   }
 
-  return resolved.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+  return finalizeHubResolve(
+    resolved.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+  );
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } | null {
@@ -5991,7 +6481,7 @@ export async function extractDiscoveryText(
   input: DiscoverySourceInput,
   options?: DiscoveryExtractionOptions
 ): Promise<ExtractionResult> {
-  const resolvedOptions = normalizeDiscoveryExtractionOptions(options);
+  const resolvedOptions = normalizeDiscoveryExtractionOptions(options, input.type);
   const performance = resolvedOptions.performance;
   const requestCache = createDiscoveryRequestCache();
   if (input.type === "file") {
@@ -5999,7 +6489,7 @@ export async function extractDiscoveryText(
     if (!parsed) throw new Error("Invalid file payload");
     const mime = (parsed.mimeType || input.mimeType || "").toLowerCase();
     if (/pdf/.test(mime)) {
-      const { text, usedOcr, coachPageHints, textQuality, qualitySignals, pages } =
+      const { text, usedOcr, coachPageHints, textQuality, qualitySignals, pages, annotationLinks } =
         await extractTextFromPdf(parsed.buffer, {
           budgetMs: resolvedOptions.budgetMs,
           performance,
@@ -6047,14 +6537,59 @@ export async function extractDiscoveryText(
           ],
         }
       );
+      const referenceYear =
+        classifyMeetDateCandidates(text).primary?.startDate?.slice(0, 4) ||
+        deriveDateRangeFromText(text).startDate?.slice(0, 4) ||
+        null;
+      const fileRootUrl = new URL("https://envitefy.local/discovery/file.pdf");
+      const discoveredLinkMap = new Map<string, CrawlCandidate>();
+      const resourceLinkMap = new Map<string, DiscoveryResourceLink>();
+      for (const annotationLink of pickArray(annotationLinks)) {
+        const pageAssetUrl = new URL(
+          `https://envitefy.local/discovery/file-page-${Number(annotationLink?.pageNumber) || 1}.pdf`
+        );
+        const discovered = toCrawlCandidateFromPdfAnnotation(
+          annotationLink as PdfAnnotationLink,
+          pageAssetUrl,
+          fileRootUrl,
+          pages
+        );
+        if (!discovered) continue;
+        upsertDiscoveredLink(discoveredLinkMap, discovered);
+        const resource = buildResourceLinkFromCandidate(
+          discovered,
+          "linked_asset",
+          null,
+          {
+            referenceYear,
+            discoveryMethod: "http",
+          }
+        );
+        if (resource) {
+          upsertResourceLink(resourceLinkMap, resource);
+        }
+      }
+      const discoveredLinks = [...discoveredLinkMap.values()]
+        .sort(compareDiscoveryCandidates)
+        .slice(0, MAX_DISCOVERED_LINKS)
+        .map(({ score: _score, ...item }) => item);
+      const resourceLinks = [...resourceLinkMap.values()]
+        .sort((a, b) => {
+          const scoreDelta = (b.matchScore || 0) - (a.matchScore || 0);
+          if (scoreDelta !== 0) return scoreDelta;
+          const kindDelta = a.kind.localeCompare(b.kind);
+          if (kindDelta !== 0) return kindDelta;
+          return a.url.localeCompare(b.url);
+        })
+        .slice(0, MAX_DISCOVERED_LINKS);
       return {
         extractedText: text,
         extractionMeta: {
           sourceType: "file",
           usedOcr,
           linkedAssets: [],
-          discoveredLinks: [],
-          resourceLinks: [],
+          discoveredLinks,
+          resourceLinks,
           crawledPages: [],
           gymLayoutImageDataUrl: gymLayout.dataUrl || null,
           gymLayoutFacts: combinedLayoutFacts,
@@ -6117,7 +6652,19 @@ export async function extractDiscoveryText(
 
   const url = new URL(input.url);
   const hooks = getUrlDiscoveryHooks();
+  console.log("[meet-discovery] url root fetch started", {
+    url: url.toString(),
+    budgetMs: resolvedOptions.budgetMs,
+    workflow: resolvedOptions.workflow,
+    mode: resolvedOptions.mode,
+  });
   const page = await hooks.fetchWithLimit(url.toString());
+  console.log("[meet-discovery] url root fetch finished", {
+    url: url.toString(),
+    contentType: page.contentType || null,
+    textChars: page.text?.length || 0,
+    bytes: page.buffer.length,
+  });
   const html = page.text || page.buffer.toString("utf8");
   const readable = stripHtml(html);
   const metadata = extractMetadataText(html);
@@ -6153,6 +6700,37 @@ export async function extractDiscoveryText(
       upsertResourceLink(resourceLinkMap, resource);
     }
   }
+  console.log("[meet-discovery] url root candidates collected", {
+    url: url.toString(),
+    rootCandidateCount: rootCandidates.length,
+    seededResourceCount: resourceLinkMap.size,
+  });
+  const crawlDeadlineAt = deadlineAt(resolvedOptions.budgetMs);
+  let crawlBudgetExhaustedLogged = false;
+  const logCrawlBudgetExhausted = (stage: string) => {
+    if (crawlBudgetExhaustedLogged) return;
+    crawlBudgetExhaustedLogged = true;
+    console.log("[meet-discovery] budget exhausted, skipping remaining follow-ups", {
+      url: url.toString(),
+      stage,
+      budgetMs: resolvedOptions.budgetMs,
+    });
+  };
+  const hasFollowUpBudget = (stage: string) => {
+    if (!isBudgetExhausted(crawlDeadlineAt)) return true;
+    logCrawlBudgetExhausted(stage);
+    return false;
+  };
+  const getRemainingFollowUpBudgetMs = (stage: string) => {
+    const remainingMs = remainingBudgetMs(crawlDeadlineAt);
+    if (remainingMs > 0) return remainingMs;
+    logCrawlBudgetExhausted(stage);
+    return 0;
+  };
+  const crawlBudget = {
+    deadlineAt: crawlDeadlineAt,
+    onBudgetExhausted: logCrawlBudgetExhausted,
+  };
 
   const accumulators = {
     rootUrl: url,
@@ -6181,9 +6759,22 @@ export async function extractDiscoveryText(
     urlDiscoveryTestHooks?.collectBrowserData || collectDiscoveryBrowserData;
   const shouldRunBrowserDiscovery =
     !urlDiscoveryTestHooks?.fetchWithLimit || Boolean(urlDiscoveryTestHooks?.collectBrowserData);
-  if (shouldRunBrowserDiscovery) {
+  const browserDiscoveryBudgetMs = Math.min(
+    getRemainingFollowUpBudgetMs("browser_discovery"),
+    2_000
+  );
+  if (shouldRunBrowserDiscovery && browserDiscoveryBudgetMs >= 750) {
+    const browserDiscoveryStartedAt = Date.now();
+    console.log("[meet-discovery] browser discovery started", {
+      url: url.toString(),
+      maxChildPages: 3,
+      budgetMs: browserDiscoveryBudgetMs,
+    });
     try {
-      const browserDiscovery = await browserCollector(url.toString());
+      const browserDiscovery = await browserCollector(url.toString(), {
+        maxChildPages: 3,
+        timeoutMs: browserDiscoveryBudgetMs,
+      });
       for (const browserCandidate of browserDiscovery.candidates) {
         const normalizedCandidate = toCrawlCandidateFromBrowserDiscovery(
           browserCandidate,
@@ -6225,19 +6816,55 @@ export async function extractDiscoveryText(
           );
         }
       }
-    } catch (error) {
-      console.warn("[meet-discovery] playwright browser discovery failed", {
+      console.log("[meet-discovery] browser discovery finished", {
         url: url.toString(),
-        message: error instanceof Error ? error.message : String(error || ""),
+        durationMs: Date.now() - browserDiscoveryStartedAt,
+        candidateCount: browserDiscovery.candidates.length,
+        pageCount: browserDiscovery.pages.length,
       });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error || "");
+      if (isMissingPlaywrightBrowserError(error)) {
+        console.warn("[meet-discovery] playwright browser discovery unavailable, skipping", {
+          url: url.toString(),
+          message,
+        });
+      } else {
+        console.warn("[meet-discovery] playwright browser discovery failed", {
+          url: url.toString(),
+          message,
+        });
+      }
     }
+  } else if (shouldRunBrowserDiscovery && browserDiscoveryBudgetMs > 0) {
+    console.log("[meet-discovery] browser discovery skipped", {
+      url: url.toString(),
+      reason: "insufficient_budget",
+      budgetMs: browserDiscoveryBudgetMs,
+    });
   }
 
   const fetchAssetCandidate = async (candidate: CrawlCandidate) => {
     if (fetchedAssetUrls.has(candidate.url)) return;
     if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) return;
+    const fetchBudgetMs = getRemainingFollowUpBudgetMs(`asset_fetch:${candidate.url}`);
+    if (fetchBudgetMs <= 0) return;
+    const assetFetchStartedAt = Date.now();
+    console.log("[meet-discovery] asset fetch started", {
+      url: candidate.url,
+      label: candidate.label,
+      budgetMs: fetchBudgetMs,
+    });
     try {
-      const fetched = await hooks.fetchWithLimit(candidate.url);
+      const fetched = await hooks.fetchWithLimit(candidate.url, {
+        timeoutMs: fetchBudgetMs,
+      });
+      console.log("[meet-discovery] asset fetch finished", {
+        url: candidate.url,
+        contentType: fetched.contentType || null,
+        durationMs: Date.now() - assetFetchStartedAt,
+        bytes: fetched.buffer.length,
+      });
       fetchedAssetUrls.add(candidate.url);
       upsertDiscoveredLink(discoveredLinkMap, {
         ...candidate,
@@ -6253,6 +6880,7 @@ export async function extractDiscoveryText(
         {
           discoveryMethod: resolveDiscoveryMethodForUrl(candidate.url),
         },
+        crawlBudget,
         requestCache
       );
     } catch {
@@ -6271,8 +6899,30 @@ export async function extractDiscoveryText(
       }
     })();
     if (!sameHost && !isTrustedExternalResourceUrl(resource.url)) return;
+    const fetchBudgetMs = getRemainingFollowUpBudgetMs(`resource_fetch:${resource.url}`);
+    if (fetchBudgetMs <= 0) return;
+    const assetLike =
+      /pdf|image\//i.test(safeString(resource.contentType)) || isAssetUrl(resource.url);
+    if (assetLike) {
+      console.log("[meet-discovery] asset fetch started", {
+        url: resource.url,
+        label: resource.label,
+        budgetMs: fetchBudgetMs,
+      });
+    }
+    const fetchStartedAt = Date.now();
     try {
-      const fetched = await hooks.fetchWithLimit(resource.url);
+      const fetched = await hooks.fetchWithLimit(resource.url, {
+        timeoutMs: fetchBudgetMs,
+      });
+      if (assetLike || /pdf|image\//i.test(fetched.contentType)) {
+        console.log("[meet-discovery] asset fetch finished", {
+          url: resource.url,
+          contentType: fetched.contentType || null,
+          durationMs: Date.now() - fetchStartedAt,
+          bytes: fetched.buffer.length,
+        });
+      }
       fetchedCanonicalUrls.add(canonicalUrl);
       upsertResourceLink(resourceLinkMap, {
         ...resource,
@@ -6299,6 +6949,7 @@ export async function extractDiscoveryText(
           {
             discoveryMethod: resource.discoveryMethod,
           },
+          crawlBudget,
           requestCache
         );
       }
@@ -6324,6 +6975,7 @@ export async function extractDiscoveryText(
 
   const fetchAssetCandidates = async (candidates: CrawlCandidate[]) => {
     for (let index = 0; index < candidates.length; index += 2) {
+      if (!hasFollowUpBudget("asset_fetch_batch")) break;
       if (!shouldContinueFetchingAssets()) break;
       await Promise.all(
         candidates.slice(index, index + 2).map((candidate) => fetchAssetCandidate(candidate))
@@ -6334,10 +6986,13 @@ export async function extractDiscoveryText(
   await fetchAssetCandidates(
     [...discoveredLinkMap.values()].filter(
       (candidate) => candidate.kind === "asset" && candidate.depth === 0
-    )
+    ).sort(compareDiscoveryCandidates)
   );
 
-  for (const resource of [...resourceLinkMap.values()]) {
+  for (const resource of [...resourceLinkMap.values()].sort((a, b) =>
+    compareResourceLinksForFollowUp(a, b, url.host)
+  )) {
+    if (!hasFollowUpBudget("resource_follow_up")) break;
     if (shouldTreatResourceAsTrustedHtmlFetch(resource)) {
       await appendCanonicalResourceToText(resource);
     }
@@ -6346,11 +7001,16 @@ export async function extractDiscoveryText(
   for (const childPage of [...discoveredLinkMap.values()]
     .filter((candidate) => shouldFollowDiscoveryChildPage(candidate, fingerprint))
     .sort(compareDiscoveryCandidates)) {
+    if (!hasFollowUpBudget("child_page_fetch")) break;
     if (crawledPages.length - 1 >= MAX_FOLLOWED_CHILD_PAGES) break;
     const childPageKey = `${childPage.url}|1`;
     if (crawledPageKeys.has(childPageKey)) continue;
+    const childPageBudgetMs = getRemainingFollowUpBudgetMs(`child_page_fetch:${childPage.url}`);
+    if (childPageBudgetMs <= 0) break;
     try {
-      const fetched = await hooks.fetchWithLimit(childPage.url);
+      const fetched = await hooks.fetchWithLimit(childPage.url, {
+        timeoutMs: childPageBudgetMs,
+      });
       upsertDiscoveredLink(discoveredLinkMap, {
         ...childPage,
         followed: true,
@@ -6367,6 +7027,7 @@ export async function extractDiscoveryText(
             {
               discoveryMethod: resolveDiscoveryMethodForUrl(childPage.url),
             },
+            crawlBudget,
             requestCache
           );
           fetchedAssetUrls.add(childPage.url);
@@ -6390,7 +7051,9 @@ export async function extractDiscoveryText(
         upsertDiscoveredLink(discoveredLinkMap, candidate);
       }
       await fetchAssetCandidates(
-        childCandidates.filter((candidate) => candidate.kind === "asset")
+        childCandidates
+          .filter((candidate) => candidate.kind === "asset")
+          .sort(compareDiscoveryCandidates)
       );
     } catch {
       // Best-effort child pages.
@@ -6398,7 +7061,9 @@ export async function extractDiscoveryText(
   }
 
   await fetchAssetCandidates(
-    [...discoveredLinkMap.values()].filter((candidate) => candidate.kind === "asset")
+    [...discoveredLinkMap.values()]
+      .filter((candidate) => candidate.kind === "asset")
+      .sort(compareDiscoveryCandidates)
   );
 
   usedOcr = accumulators.usedOcr;
@@ -6414,15 +7079,20 @@ export async function extractDiscoveryText(
   const hubResources = [...resourceLinkMap.values()].filter(
     (item) => item.kind === "results_hub" || item.kind === "rotation_hub"
   );
-  for (const hubResource of hubResources) {
+  for (const hubResource of hubResources.sort((a, b) =>
+    compareResourceLinksForFollowUp(a, b, url.host)
+  )) {
+    if (!hasFollowUpBudget("hub_resolve")) break;
     const promotedResources = await resolveHubResourceLinks(
       hubResource,
       fingerprint,
       hooks,
       resolvedOptions,
+      crawlBudget,
       requestCache
     );
     for (const promoted of promotedResources) {
+      if (!hasFollowUpBudget("hub_promoted_resource")) break;
       upsertResourceLink(resourceLinkMap, promoted);
       await appendCanonicalResourceToText(promoted);
     }
@@ -6505,6 +7175,55 @@ function jsonObject(properties: Record<string, unknown>) {
     required: Object.keys(properties),
   };
 }
+
+const GYMNASTICS_SCHEDULE_SCHEMA = jsonObject({
+  venueLabel: jsonNullable(JSON_STRING),
+  supportEmail: jsonNullable(JSON_STRING),
+  notes: jsonArray(JSON_STRING),
+  annotations: jsonArray(
+    jsonObject({
+      kind: jsonNullable(JSON_STRING),
+      level: jsonNullable(JSON_STRING),
+      sessionCode: jsonNullable(JSON_STRING),
+      date: jsonNullable(JSON_STRING),
+      time: jsonNullable(JSON_STRING),
+      text: JSON_STRING,
+    })
+  ),
+  assignments: jsonArray(
+    jsonObject({
+      level: jsonNullable(JSON_STRING),
+      groupLabel: jsonNullable(JSON_STRING),
+      sessionCode: jsonNullable(JSON_STRING),
+      birthDateRange: jsonNullable(JSON_STRING),
+      divisionLabel: jsonNullable(JSON_STRING),
+      note: jsonNullable(JSON_STRING),
+    })
+  ),
+  days: jsonArray(
+    jsonObject({
+      date: jsonNullable(JSON_STRING),
+      shortDate: jsonNullable(JSON_STRING),
+      sessions: jsonArray(
+        jsonObject({
+          code: jsonNullable(JSON_STRING),
+          group: jsonNullable(JSON_STRING),
+          startTime: jsonNullable(JSON_STRING),
+          warmupTime: jsonNullable(JSON_STRING),
+          note: jsonNullable(JSON_STRING),
+          clubs: jsonArray(
+            jsonObject({
+              name: jsonNullable(JSON_STRING),
+              teamAwardEligible: jsonNullable(JSON_BOOLEAN),
+              athleteCount: jsonNullable(JSON_NUMBER),
+              divisionLabel: jsonNullable(JSON_STRING),
+            })
+          ),
+        })
+      ),
+    })
+  ),
+});
 
 const GYMNASTICS_PARSE_JSON_SCHEMA = {
   name: "gymnastics_meet_parse",
@@ -6691,54 +7410,7 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
       ),
       passcode: jsonNullable(JSON_STRING),
     }),
-    schedule: jsonObject({
-      venueLabel: jsonNullable(JSON_STRING),
-      supportEmail: jsonNullable(JSON_STRING),
-      notes: jsonArray(JSON_STRING),
-      annotations: jsonArray(
-        jsonObject({
-          kind: jsonNullable(JSON_STRING),
-          level: jsonNullable(JSON_STRING),
-          sessionCode: jsonNullable(JSON_STRING),
-          date: jsonNullable(JSON_STRING),
-          time: jsonNullable(JSON_STRING),
-          text: JSON_STRING,
-        })
-      ),
-      assignments: jsonArray(
-        jsonObject({
-          level: jsonNullable(JSON_STRING),
-          groupLabel: jsonNullable(JSON_STRING),
-          sessionCode: jsonNullable(JSON_STRING),
-          birthDateRange: jsonNullable(JSON_STRING),
-          divisionLabel: jsonNullable(JSON_STRING),
-          note: jsonNullable(JSON_STRING),
-        })
-      ),
-      days: jsonArray(
-        jsonObject({
-          date: jsonNullable(JSON_STRING),
-          shortDate: jsonNullable(JSON_STRING),
-          sessions: jsonArray(
-            jsonObject({
-              code: jsonNullable(JSON_STRING),
-              group: jsonNullable(JSON_STRING),
-              startTime: jsonNullable(JSON_STRING),
-              warmupTime: jsonNullable(JSON_STRING),
-              note: jsonNullable(JSON_STRING),
-              clubs: jsonArray(
-                jsonObject({
-                  name: jsonNullable(JSON_STRING),
-                  teamAwardEligible: jsonNullable(JSON_BOOLEAN),
-                  athleteCount: jsonNullable(JSON_NUMBER),
-                  divisionLabel: jsonNullable(JSON_STRING),
-                })
-              ),
-            })
-          ),
-        })
-      ),
-    }),
+    schedule: GYMNASTICS_SCHEDULE_SCHEMA,
     links: jsonArray(
       jsonObject({
         label: JSON_STRING,
@@ -6752,6 +7424,37 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
         confidence: { type: "string", enum: ["high", "medium", "low"] },
       })
     ),
+  }),
+} as const;
+
+const GYMNASTICS_SCHEDULE_JSON_SCHEMA = {
+  name: "gymnastics_schedule_parse",
+  strict: true,
+  schema: GYMNASTICS_SCHEDULE_SCHEMA,
+} as const;
+
+const GYMNASTICS_CLASSIFIER_JSON_SCHEMA = {
+  name: "gymnastics_discovery_classifier",
+  strict: true,
+  schema: jsonObject({
+    eventType: { type: "string", enum: ["gymnastics_meet", "unknown"] },
+    documentProfile: {
+      type: "string",
+      enum: [
+        "athlete_session",
+        "parent_packet",
+        "registration_packet",
+        "meet_overview",
+        "unknown",
+      ],
+    },
+    confidence: JSON_NUMBER,
+    contentMix: jsonObject({
+      scheduleHeavy: JSON_BOOLEAN,
+      registrationHeavy: JSON_BOOLEAN,
+      parentPacketHeavy: JSON_BOOLEAN,
+      mixed: JSON_BOOLEAN,
+    }),
   }),
 } as const;
 
@@ -6924,6 +7627,808 @@ function buildParsePromptEvidence(
     },
   };
   return JSON.stringify(compactEvidence);
+}
+
+function clampParseConfidence(value: unknown, fallback = 0.5): number {
+  const num =
+    typeof value === "number"
+      ? value
+      : Number.parseFloat(safeString(value));
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(0, Math.min(1, num));
+}
+
+function normalizeParseClassification(value: any): ParseClassification | null {
+  if (!value || typeof value !== "object") return null;
+  const eventType = value.eventType === "gymnastics_meet" ? "gymnastics_meet" : "unknown";
+  const documentProfile =
+    value.documentProfile === "athlete_session" ||
+    value.documentProfile === "parent_packet" ||
+    value.documentProfile === "registration_packet" ||
+    value.documentProfile === "meet_overview"
+      ? value.documentProfile
+      : "unknown";
+  return {
+    eventType,
+    documentProfile,
+    confidence: clampParseConfidence(value.confidence, 0.5),
+    contentMix: {
+      scheduleHeavy: Boolean(value?.contentMix?.scheduleHeavy),
+      registrationHeavy: Boolean(value?.contentMix?.registrationHeavy),
+      parentPacketHeavy: Boolean(value?.contentMix?.parentPacketHeavy),
+      mixed: Boolean(value?.contentMix?.mixed),
+    },
+  };
+}
+
+function inferHeuristicParseClassification(
+  evidence: DiscoveryEvidence,
+  extractionMeta?: ExtractionResult["extractionMeta"]
+): ParseClassification {
+  const combinedEvidenceText = [
+    ...evidence.snippets.firstLines,
+    ...evidence.snippets.additionalInfoLines,
+    ...evidence.sections.spectator,
+    ...evidence.sections.venue,
+    ...evidence.sections.traffic,
+    ...evidence.sections.policy,
+    ...evidence.sections.coachOps,
+    ...evidence.sections.registration,
+    ...evidence.candidates.sessionHints,
+    ...evidence.candidates.coachHints,
+    ...pickArray(extractionMeta?.schedulePageTexts).map((item) => safeString(item?.text)),
+    ...pickArray(extractionMeta?.coachPageHints).map((item) => safeString(item?.excerpt)),
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const hasPacketCoverSignal =
+    /please review the following items enclosed in this packet|the following items are included/i.test(
+      combinedEvidenceText
+    );
+  const hasRegistrationHeadingSignal =
+    /athlete\s*&\s*coach registration|meet entry summary|regional meet coaches information|coaches information(?:—|-)important/i.test(
+      combinedEvidenceText
+    );
+  const hasParentHeadingSignal =
+    /parents?\/spectators?|additional info|spectator admissions?/i.test(
+      combinedEvidenceText
+    );
+  const hasAssignmentSignal =
+    /age groups?\s+and\s+session assignments|birth date(?:\s*range)?\s+divisions?\s+session/i.test(
+      combinedEvidenceText
+    );
+  const hasScheduleGridSignal =
+    /session\s+[a-z]{1,3}\d{1,2}|\bstretch\/warmup:|warm-?up\. competition to follow|team entries/i.test(
+      combinedEvidenceText
+    );
+  const scheduleHintPattern =
+    /session\s+[a-z0-9]+|session assignments?|stretch|warm-?up|competition to follow|march in|age groups?|birth date|team entries|awards (?:ceremony|cadence|by session)/i;
+  const scheduleSessionHintCount = evidence.candidates.sessionHints.filter((line) =>
+    scheduleHintPattern.test(line)
+  ).length;
+  const scheduleAthleteHintCount = evidence.candidates.athleteHints.filter((line) =>
+    scheduleHintPattern.test(line)
+  ).length;
+  const schedulePageWeight = hasScheduleGridSignal || hasAssignmentSignal
+    ? pickArray(extractionMeta?.schedulePageTexts).length * 2
+    : 0;
+  const sessionSignals =
+    scheduleSessionHintCount +
+    scheduleAthleteHintCount +
+    schedulePageWeight +
+    (hasAssignmentSignal ? 3 : 0) +
+    (hasScheduleGridSignal ? 2 : 0);
+  const registrationSignals =
+    evidence.sections.registration.length +
+    evidence.sections.coachOps.length +
+    evidence.candidates.coachHints.length +
+    (hasRegistrationHeadingSignal ? 3 : 0);
+  const parentSignals =
+    evidence.sections.spectator.length +
+    evidence.sections.traffic.length +
+    evidence.sections.policy.length +
+    evidence.sections.venue.length +
+    (hasParentHeadingSignal ? 2 : 0);
+  const scheduleHeavy =
+    sessionSignals >= 8 ||
+    hasAssignmentSignal ||
+    (hasScheduleGridSignal &&
+      (pickArray(extractionMeta?.schedulePageTexts).length > 0 ||
+        scheduleSessionHintCount >= 2 ||
+        scheduleAthleteHintCount >= 2));
+  const registrationHeavy = registrationSignals >= 6 || hasRegistrationHeadingSignal;
+  const parentPacketHeavy =
+    parentSignals >= 5 ||
+    (evidence.sections.spectator.length > 0 && evidence.sections.traffic.length > 0) ||
+    hasParentHeadingSignal;
+  const signalBuckets = [scheduleHeavy, registrationHeavy, parentPacketHeavy].filter(Boolean).length;
+  const mixed = signalBuckets >= 2;
+  let documentProfile: ParseResult["documentProfile"] = "meet_overview";
+  const strongestSignal = Math.max(sessionSignals, registrationSignals, parentSignals);
+  if (hasPacketCoverSignal && !mixed) {
+    documentProfile = "meet_overview";
+  } else if (mixed && registrationHeavy) {
+    documentProfile = "registration_packet";
+  } else if (mixed && parentPacketHeavy) {
+    documentProfile = "parent_packet";
+  } else if (strongestSignal === sessionSignals && sessionSignals >= 5) {
+    documentProfile = "athlete_session";
+  } else if (strongestSignal === registrationSignals && registrationSignals >= 5) {
+    documentProfile = "registration_packet";
+  } else if (strongestSignal === parentSignals && parentSignals >= 5) {
+    documentProfile = "parent_packet";
+  }
+  const eventType =
+    /gymnastics|usag|xcel|state championships?|session\s+[a-z0-9]|entry fee|spectator admission|march in|warm ?up/i.test(
+      [
+        ...evidence.candidates.titleHints,
+        ...evidence.candidates.sessionHints,
+        ...evidence.candidates.coachHints,
+        ...evidence.sections.spectator,
+        ...evidence.sections.registration,
+      ].join("\n")
+    )
+      ? "gymnastics_meet"
+      : "unknown";
+  return {
+    eventType,
+    documentProfile,
+    confidence: clampParseConfidence(
+      0.45 + Math.min(0.45, strongestSignal / 24) - (mixed ? 0.05 : 0),
+      0.55
+    ),
+    contentMix: {
+      scheduleHeavy,
+      registrationHeavy,
+      parentPacketHeavy,
+      mixed,
+    },
+  };
+}
+
+function profileFromDocumentProfile(
+  profile: ParseResult["documentProfile"]
+): ParsePromptProfile {
+  if (profile === "athlete_session") return "athlete_session";
+  if (profile === "registration_packet") return "registration_coach";
+  if (profile === "parent_packet") return "parent_public";
+  return "overview_core";
+}
+
+function selectParsePromptProfiles(classification: ParseClassification): ParsePromptProfile[] {
+  if (
+    classification.documentProfile === "parent_packet" &&
+    !classification.contentMix.registrationHeavy
+  ) {
+    return ["parent_public"];
+  }
+
+  if (!classification.contentMix.mixed) {
+    return [profileFromDocumentProfile(classification.documentProfile)];
+  }
+
+  if (classification.contentMix.scheduleHeavy) {
+    const dominantSecondary =
+      classification.documentProfile === "parent_packet"
+        ? "parent_public"
+        : classification.documentProfile === "registration_packet"
+        ? "registration_coach"
+        : classification.contentMix.registrationHeavy
+        ? "registration_coach"
+        : classification.contentMix.parentPacketHeavy
+        ? "parent_public"
+        : "overview_core";
+    return uniqueBy(
+      ["athlete_session", dominantSecondary].filter(
+        (item): item is ParsePromptProfile => item !== "overview_core"
+      ),
+      (item) => item
+    ).slice(0, 2);
+  }
+
+  if (classification.documentProfile === "meet_overview") {
+    const dominantSecondary =
+      classification.contentMix.registrationHeavy
+        ? "registration_coach"
+        : classification.contentMix.parentPacketHeavy
+        ? "parent_public"
+        : classification.contentMix.scheduleHeavy
+        ? "athlete_session"
+        : "overview_core";
+    return uniqueBy(["overview_core", dominantSecondary], (item) => item).slice(0, 2);
+  }
+
+  const primary = profileFromDocumentProfile(classification.documentProfile);
+  const secondary =
+    primary === "registration_coach"
+      ? classification.contentMix.parentPacketHeavy
+        ? "parent_public"
+        : "overview_core"
+      : primary === "parent_public"
+      ? classification.contentMix.registrationHeavy
+        ? "registration_coach"
+        : "overview_core"
+      : "overview_core";
+  return uniqueBy([primary, secondary], (item) => item).slice(0, 2);
+}
+
+function buildClassifierPrompt(
+  evidence: DiscoveryEvidence,
+  extractedText: string
+): string {
+  const boundedText = cleanExtractedText(extractedText).slice(0, 12000);
+  const classifierEvidence = {
+    source: evidence.source,
+    candidates: {
+      titleHints: evidence.candidates.titleHints.slice(0, 4),
+      dateHints: evidence.candidates.dateHints.slice(0, 4),
+      sessionHints: evidence.candidates.sessionHints.slice(0, 6),
+      coachHints: evidence.candidates.coachHints.slice(0, 6),
+      logisticsHints: evidence.candidates.logisticsHints.slice(0, 6),
+      policyHints: evidence.candidates.policyHints.slice(0, 6),
+    },
+    sections: {
+      spectator: evidence.sections.spectator.slice(0, 6),
+      venue: evidence.sections.venue.slice(0, 6),
+      traffic: evidence.sections.traffic.slice(0, 6),
+      policy: evidence.sections.policy.slice(0, 6),
+      coachOps: evidence.sections.coachOps.slice(0, 6),
+      registration: evidence.sections.registration.slice(0, 6),
+    },
+    snippets: {
+      firstLines: evidence.snippets.firstLines.slice(0, 8),
+      coachLines: evidence.snippets.coachLines.slice(0, 6),
+      trafficLines: evidence.snippets.trafficLines.slice(0, 6),
+    },
+  };
+  return [
+    "Classify a gymnastics meet document for staged extraction.",
+    "Return only strict JSON that matches the schema.",
+    "",
+    "Rules:",
+    "- `documentProfile` is the primary dominant packet type.",
+    "- Set `scheduleHeavy` when session grids, warmups, march-in, awards, or assignment tables dominate.",
+    "- Set `registrationHeavy` when entry fees, deadlines, refunds, qualification, payment, or coach operations dominate.",
+    "- Set `parentPacketHeavy` when parking, admissions, doors, traffic, venue layout, or public policies dominate.",
+    "- Packet covers often include phrases like `Please review the following items enclosed in this packet` or `The following items are included`.",
+    "- Coach/registration packets often include headings like `Athlete & Coach Registration`, `Meet Entry Summary`, or `REGIONAL MEET COACHES INFORMATION`.",
+    "- Session packets often include headings like `Age Groups and Session Assignments` or `Birth Date Divisions Session` plus repeated session/stretch/warm-up lines.",
+    "- Treat `Updated`, `Posted`, and `Final Posting` lines as document metadata, not meet-date evidence.",
+    "- Set `mixed` when two or more of those buckets are materially present.",
+    "- Use `meet_overview` for general meet summaries that are not clearly dominated by one packet type.",
+    "- Use `unknown` only if the content does not look like a gymnastics meet document.",
+    "",
+    "Evidence JSON:",
+    JSON.stringify(classifierEvidence),
+    "",
+    "Source excerpt:",
+    boundedText,
+  ].join("\n");
+}
+
+function selectExcerptWindows(
+  sourceText: string,
+  patterns: RegExp[],
+  options?: { limit?: number; radius?: number; fallbackLines?: number }
+): Array<{ label: string; text: string }> {
+  const cleaned = cleanExtractedText(sourceText);
+  const lines = stitchDiscoveryLines(
+    cleaned
+      .split(/\n+/)
+      .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
+      .filter(Boolean)
+  );
+  const radius = options?.radius ?? 1;
+  const selectedIndexes = new Set<number>();
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!patterns.some((pattern) => pattern.test(lines[index]))) continue;
+    for (
+      let target = Math.max(0, index - radius);
+      target <= Math.min(lines.length - 1, index + radius);
+      target += 1
+    ) {
+      selectedIndexes.add(target);
+    }
+  }
+  if (!selectedIndexes.size) {
+    for (let index = 0; index < Math.min(lines.length, options?.fallbackLines ?? 10); index += 1) {
+      selectedIndexes.add(index);
+    }
+  }
+  const sorted = [...selectedIndexes].sort((a, b) => a - b);
+  const windows: Array<{ label: string; text: string }> = [];
+  let start = -1;
+  let previous = -1;
+  const flush = () => {
+    if (start < 0 || previous < start) return;
+    windows.push({
+      label: `lines_${start + 1}_${previous + 1}`,
+      text: lines.slice(start, previous + 1).join("\n"),
+    });
+  };
+  for (const index of sorted) {
+    if (start < 0) {
+      start = index;
+      previous = index;
+      continue;
+    }
+    if (index === previous + 1) {
+      previous = index;
+      continue;
+    }
+    flush();
+    start = index;
+    previous = index;
+  }
+  flush();
+  return windows.slice(0, options?.limit ?? 8);
+}
+
+function selectEvidenceForParseProfile(
+  profile: ParsePromptProfile,
+  extractedText: string,
+  evidence: DiscoveryEvidence,
+  extractionMeta?: ExtractionResult["extractionMeta"]
+): SelectedParseEvidence {
+  const resourceLinks = pickArray(evidence.resources.links);
+  const resourceLinksForProfile =
+    profile === "registration_coach"
+      ? resourceLinks.filter((item) =>
+          ["packet", "rotation_hub", "rotation_sheet", "results_hub", "results_live", "results_pdf"].includes(
+            item.kind
+          )
+        )
+      : profile === "parent_public"
+      ? resourceLinks.filter((item) =>
+          ["admission", "parking", "hotel_booking", "packet", "photo_video"].includes(item.kind)
+        )
+      : profile === "athlete_session"
+      ? resourceLinks.filter((item) =>
+          ["rotation_hub", "rotation_sheet", "results_hub", "results_live", "results_pdf"].includes(
+            item.kind
+          )
+        )
+      : resourceLinks.slice(0, 8);
+
+  const profileEvidenceByType: Record<ParsePromptProfile, Record<string, unknown>> = {
+    overview_core: {
+      source: evidence.source,
+      primaryDates: evidence.dateAnalysis.primaryCandidate,
+      titleHints: evidence.candidates.titleHints.slice(0, 6),
+      dateHints: evidence.candidates.dateHints.slice(0, 6),
+      timeHints: evidence.candidates.timeHints.slice(0, 6),
+      timezoneHints: evidence.candidates.timezoneHints.slice(0, 4),
+      venueHints: evidence.candidates.venueHints.slice(0, 6),
+      addressHints: evidence.candidates.addressHints.slice(0, 4),
+      hostGymHints: evidence.candidates.hostGymHints.slice(0, 4),
+      firstLines: evidence.snippets.firstLines.slice(0, 10),
+      additionalInfoLines: evidence.snippets.additionalInfoLines.slice(0, 8),
+      linkHints: evidence.candidates.linkHints.slice(0, 10),
+      resources: resourceLinksForProfile.slice(0, 10),
+    },
+    parent_public: {
+      source: evidence.source,
+      titleHints: evidence.candidates.titleHints.slice(0, 4),
+      spectator: evidence.sections.spectator.slice(0, 10),
+      venue: evidence.sections.venue.slice(0, 10),
+      traffic: evidence.sections.traffic.slice(0, 10),
+      policy: evidence.sections.policy.slice(0, 10),
+      trafficLines: evidence.snippets.trafficLines.slice(0, 8),
+      hallLayoutLines: evidence.snippets.hallLayoutLines.slice(0, 8),
+      linkHints: evidence.candidates.linkHints.slice(0, 8),
+      resources: resourceLinksForProfile.slice(0, 10),
+    },
+    registration_coach: {
+      source: evidence.source,
+      titleHints: evidence.candidates.titleHints.slice(0, 4),
+      coachHints: evidence.candidates.coachHints.slice(0, 12),
+      coachOps: evidence.sections.coachOps.slice(0, 10),
+      registration: evidence.sections.registration.slice(0, 10),
+      coachLines: evidence.snippets.coachLines.slice(0, 8),
+      dateHints: evidence.candidates.dateHints.slice(0, 6),
+      linkHints: evidence.candidates.linkHints.slice(0, 8),
+      resources: resourceLinksForProfile.slice(0, 10),
+      coachPageHints: pickArray(extractionMeta?.coachPageHints)
+        .map((item) => ({
+          page: Number(item?.page) || 0,
+          heading: safeString(item?.heading) || null,
+          excerpt: safeString(item?.excerpt),
+        }))
+        .filter((item) => item.excerpt)
+        .slice(0, 8),
+    },
+    athlete_session: {
+      source: evidence.source,
+      titleHints: evidence.candidates.titleHints.slice(0, 4),
+      dateHints: evidence.candidates.dateHints.slice(0, 6),
+      timeHints: evidence.candidates.timeHints.slice(0, 10),
+      athleteHints: evidence.candidates.athleteHints.slice(0, 10),
+      sessionHints: evidence.candidates.sessionHints.slice(0, 10),
+      firstLines: evidence.snippets.firstLines.slice(0, 8),
+      resources: resourceLinksForProfile.slice(0, 8),
+      schedulePages: pickArray(extractionMeta?.schedulePageTexts)
+        .slice(0, 4)
+        .map((item) => ({
+          pageNumber: Number(item?.pageNumber) || 0,
+          excerpt: cleanExtractedText(safeString(item?.text)).slice(0, 3500),
+        }))
+        .filter((item) => item.pageNumber > 0 && item.excerpt),
+    },
+  };
+
+  const excerptPatternsByType: Record<ParsePromptProfile, RegExp[]> = {
+    overview_core: [
+      /\b(?:when|dates?|hosted by|venue|location|address|timezone|schedule|results|rotation|admission)\b/i,
+      /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b/i,
+    ],
+    parent_public: [
+      /\b(?:admission|ticket|cash|parking|traffic|doors|arrival|entrance|facility|layout|guest services|outside food|service animal|parents?\/spectators?|additional info|spectator admissions?)\b/i,
+    ],
+    registration_coach: [
+      /\b(?:coach|entry fee|team fee|late fee|deadline|refund|payment|qualification|regional commitment|meet maker|reservation|rotation sheet|floor music|scratches|athlete\s*&\s*coach registration|meet entry summary|regional meet coaches information)\b/i,
+    ],
+    athlete_session: [
+      /\b(?:session|stretch|warm ?up|march in|awards|assigned gym|rotation|apparatus|flight|division|age groups?\s+and\s+session assignments|birth date divisions? session)\b/i,
+    ],
+  };
+
+  const excerpts = selectExcerptWindows(extractedText, excerptPatternsByType[profile], {
+    limit: profile === "athlete_session" ? 10 : 8,
+    radius: profile === "athlete_session" ? 2 : 1,
+    fallbackLines: 10,
+  });
+  const boundedExcerpts = excerpts
+    .map((item) => ({
+      ...item,
+      text: item.text.slice(0, 2600),
+    }))
+    .slice(0, profile === "athlete_session" ? 10 : 8);
+  const evidenceJson = JSON.stringify(profileEvidenceByType[profile]);
+  return {
+    evidence: profileEvidenceByType[profile],
+    evidenceChars: evidenceJson.length,
+    evidenceLabels: Object.keys(profileEvidenceByType[profile]),
+    excerpts: boundedExcerpts,
+    excerptChars: boundedExcerpts.reduce((sum, item) => sum + item.text.length, 0),
+    excerptLabels: boundedExcerpts.map((item) => item.label),
+  };
+}
+
+function buildTargetedParsePrompt(
+  profile: ParsePromptProfile,
+  classification: ParseClassification,
+  selected: SelectedParseEvidence
+): string {
+  const focusByProfile: Record<ParsePromptProfile, string[]> = {
+    overview_core: [
+      "Focus on title, dates, venue, address, host gym, timezone, and high-level links.",
+      "Also keep only brief public meet summary facts that clearly fit dedicated fields.",
+    ],
+    parent_public: [
+      "Focus on doors, arrival, parking, traffic, admissions, venue logistics, public policies, and public announcements.",
+      "Populate public-facing meet details and logistics before using generic leftovers.",
+    ],
+    registration_coach: [
+      "Focus on fees, deadlines, qualification, payment, refund, coach operations, and coach contacts.",
+      "Coach/admin items belong in `coachInfo` before generic `contacts`, `deadlines`, or `unmappedFacts`.",
+    ],
+    athlete_session: [
+      "Focus on athlete session facts, stretch/warmup, march-in, assigned gym, awards, and session windows.",
+      "Only populate rotation order when an explicit apparatus sequence is shown.",
+    ],
+  };
+  return [
+    OPENAI_SCHEMA_INSTRUCTIONS,
+    "",
+    `Targeted extraction profile: ${profile}`,
+    `Classifier decision: ${classification.documentProfile} (confidence ${classification.confidence.toFixed(2)})`,
+    "",
+    "Source priority:",
+    "1) Evidence JSON",
+    "2) Source excerpts",
+    "3) Otherwise null or []",
+    "",
+    "Routing rules:",
+    "- Keep strings short and factual.",
+    "- Preserve meet date ranges exactly when explicit.",
+    "- Do not use update stamps, posted timestamps, or deadline dates as event dates.",
+    "- Section headings are not titles.",
+    "- Packet intro prose is not hero copy or meet-details summary text.",
+    "- `Updated`, `Posted`, and `Final Posting` lines are document metadata.",
+    "- Ignore `Hosted by:` when no host value is provided.",
+    "- Sponsor thanks, hashtag campaigns, and vendor promotions are not meet announcements.",
+    "- Prefer structured resource fields/links for results, rotation sheets, rosters, tickets, hotels, and travel hubs.",
+    "- Use `schedule.assignments` for age-group or birth-date to session mappings.",
+    "- Use only absolute URLs from evidence/resources when URLs are available there.",
+    "- Public admission pricing belongs only in `admission`.",
+    "- Coach entry/team/late fees belong only in `coachInfo`.",
+    "- Keep parking maps/rates in parking link fields, not generic notes.",
+    "- Do not convert schedule grids or club lists into operational notes or announcements.",
+    "- Use `unmappedFacts` only for grounded leftovers that clearly do not fit elsewhere.",
+    "- Leave unrelated fields empty instead of stretching evidence.",
+    "",
+    ...focusByProfile[profile],
+    "",
+    "Evidence JSON:",
+    JSON.stringify(selected.evidence),
+    "",
+    "Source excerpts:",
+    ...selected.excerpts.map((item) => `## ${item.label}\n${item.text}`),
+  ].join("\n");
+}
+
+function mergeUniqueStrings(existing: string[], incoming: string[]): string[] {
+  return uniqueBy(
+    [...existing, ...incoming].map((item) => safeString(item)).filter(Boolean),
+    (item) => item
+  );
+}
+
+function fillScalar<T>(current: T, candidate: T, emptyCheck?: (value: T) => boolean): T {
+  const isEmpty = emptyCheck || ((value: T) => !value);
+  return isEmpty(current) && !isEmpty(candidate) ? candidate : current;
+}
+
+function mergeObjectArray<T>(
+  existing: T[],
+  incoming: T[],
+  keyFn: (value: T) => string
+): T[] {
+  return uniqueBy([...existing, ...incoming].filter(Boolean), keyFn);
+}
+
+function mergeParseResultsByProfile(
+  results: Array<{ profile: ParsePromptProfile; result: ParseResult }>
+): ParseResult {
+  const merged = buildEmptyParseResult();
+  const ordered = [...results].sort(
+    (a, b) =>
+      ["overview_core", "parent_public", "registration_coach", "athlete_session"].indexOf(a.profile) -
+      ["overview_core", "parent_public", "registration_coach", "athlete_session"].indexOf(b.profile)
+  );
+  for (const { result } of ordered) {
+    merged.eventType = fillScalar(merged.eventType, result.eventType, (value) => value === "unknown");
+    merged.documentProfile = fillScalar(
+      merged.documentProfile,
+      result.documentProfile,
+      (value) => value === "unknown"
+    );
+    merged.title = fillScalar(merged.title, result.title);
+    merged.dates = fillScalar(merged.dates, result.dates);
+    merged.startAt = fillScalar(merged.startAt, result.startAt);
+    merged.endAt = fillScalar(merged.endAt, result.endAt);
+    merged.timezone = fillScalar(merged.timezone, result.timezone);
+    merged.venue = fillScalar(merged.venue, result.venue);
+    merged.address = fillScalar(merged.address, result.address);
+    merged.hostGym = fillScalar(merged.hostGym, result.hostGym);
+    merged.admission = mergeObjectArray(
+      merged.admission,
+      result.admission,
+      (item) => [item.label, item.price, item.note || ""].join("|")
+    );
+    merged.contacts = mergeObjectArray(
+      merged.contacts,
+      result.contacts,
+      (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+    );
+    merged.deadlines = mergeObjectArray(
+      merged.deadlines,
+      result.deadlines,
+      (item) => [item.label, item.date || "", item.note || ""].join("|")
+    );
+    merged.links = mergeObjectArray(
+      merged.links,
+      result.links,
+      (item) => [item.label, item.url].join("|")
+    );
+    merged.unmappedFacts = mergeObjectArray(
+      merged.unmappedFacts,
+      result.unmappedFacts,
+      (item) => [item.category, item.detail, item.confidence].join("|")
+    );
+  }
+
+  const overview = results.find((item) => item.profile === "overview_core")?.result;
+  const parent = results.find((item) => item.profile === "parent_public")?.result;
+  const registration = results.find((item) => item.profile === "registration_coach")?.result;
+  const athlete = results.find((item) => item.profile === "athlete_session")?.result;
+
+  const corePriority = [overview, parent, registration, athlete].filter(
+    (item): item is ParseResult => Boolean(item)
+  );
+  for (const candidate of corePriority) {
+    merged.title = fillScalar(merged.title, candidate.title);
+    merged.dates = fillScalar(merged.dates, candidate.dates);
+    merged.startAt = fillScalar(merged.startAt, candidate.startAt);
+    merged.endAt = fillScalar(merged.endAt, candidate.endAt);
+    merged.timezone = fillScalar(merged.timezone, candidate.timezone);
+    merged.venue = fillScalar(merged.venue, candidate.venue);
+    merged.address = fillScalar(merged.address, candidate.address);
+    merged.hostGym = fillScalar(merged.hostGym, candidate.hostGym);
+  }
+
+  if (parent) {
+    merged.meetDetails.doorsOpen = fillScalar(merged.meetDetails.doorsOpen, parent.meetDetails.doorsOpen);
+    merged.meetDetails.arrivalGuidance = fillScalar(
+      merged.meetDetails.arrivalGuidance,
+      parent.meetDetails.arrivalGuidance
+    );
+    merged.meetDetails.facilityLayout = fillScalar(
+      merged.meetDetails.facilityLayout,
+      parent.meetDetails.facilityLayout
+    );
+    merged.meetDetails.scoringInfo = fillScalar(merged.meetDetails.scoringInfo, parent.meetDetails.scoringInfo);
+    merged.meetDetails.resultsInfo = fillScalar(merged.meetDetails.resultsInfo, parent.meetDetails.resultsInfo);
+    merged.meetDetails.rotationSheetsInfo = fillScalar(
+      merged.meetDetails.rotationSheetsInfo,
+      parent.meetDetails.rotationSheetsInfo
+    );
+    merged.meetDetails.awardsInfo = fillScalar(merged.meetDetails.awardsInfo, parent.meetDetails.awardsInfo);
+    merged.meetDetails.operationalNotes = mergeUniqueStrings(
+      merged.meetDetails.operationalNotes,
+      parent.meetDetails.operationalNotes
+    );
+    merged.logistics.parking = fillScalar(merged.logistics.parking, parent.logistics.parking);
+    merged.logistics.trafficAlerts = fillScalar(
+      merged.logistics.trafficAlerts,
+      parent.logistics.trafficAlerts
+    );
+    merged.logistics.hotel = fillScalar(merged.logistics.hotel, parent.logistics.hotel);
+    merged.logistics.meals = fillScalar(merged.logistics.meals, parent.logistics.meals);
+    merged.logistics.rideShare = fillScalar(merged.logistics.rideShare, parent.logistics.rideShare);
+    merged.logistics.accessibility = fillScalar(
+      merged.logistics.accessibility,
+      parent.logistics.accessibility
+    );
+    merged.logistics.parkingLinks = mergeObjectArray(
+      merged.logistics.parkingLinks,
+      parent.logistics.parkingLinks,
+      (item) => [item.label, item.url].join("|")
+    );
+    merged.logistics.parkingPricingLinks = mergeObjectArray(
+      merged.logistics.parkingPricingLinks,
+      parent.logistics.parkingPricingLinks,
+      (item) => [item.label, item.url].join("|")
+    );
+    merged.policies.food = fillScalar(merged.policies.food, parent.policies.food);
+    merged.policies.hydration = fillScalar(merged.policies.hydration, parent.policies.hydration);
+    merged.policies.safety = fillScalar(merged.policies.safety, parent.policies.safety);
+    merged.policies.animals = fillScalar(merged.policies.animals, parent.policies.animals);
+    merged.policies.misc = mergeUniqueStrings(merged.policies.misc, parent.policies.misc);
+    merged.communications.announcements = mergeObjectArray(
+      merged.communications.announcements,
+      parent.communications.announcements,
+      (item) => [item.title, item.body].join("|")
+    );
+    merged.communications.passcode = fillScalar(
+      merged.communications.passcode,
+      parent.communications.passcode
+    );
+  }
+
+  if (registration) {
+    merged.meetDetails.registrationInfo = fillScalar(
+      merged.meetDetails.registrationInfo,
+      registration.meetDetails.registrationInfo
+    );
+    merged.coachInfo = {
+      ...merged.coachInfo,
+      signIn: fillScalar(merged.coachInfo.signIn, registration.coachInfo.signIn),
+      attire: fillScalar(merged.coachInfo.attire, registration.coachInfo.attire),
+      hospitality: fillScalar(merged.coachInfo.hospitality, registration.coachInfo.hospitality),
+      floorAccess: fillScalar(merged.coachInfo.floorAccess, registration.coachInfo.floorAccess),
+      scratches: fillScalar(merged.coachInfo.scratches, registration.coachInfo.scratches),
+      floorMusic: fillScalar(merged.coachInfo.floorMusic, registration.coachInfo.floorMusic),
+      rotationSheets: fillScalar(merged.coachInfo.rotationSheets, registration.coachInfo.rotationSheets),
+      awards: fillScalar(merged.coachInfo.awards, registration.coachInfo.awards),
+      regionalCommitment: fillScalar(
+        merged.coachInfo.regionalCommitment,
+        registration.coachInfo.regionalCommitment
+      ),
+      qualification: fillScalar(merged.coachInfo.qualification, registration.coachInfo.qualification),
+      meetFormat: fillScalar(merged.coachInfo.meetFormat, registration.coachInfo.meetFormat),
+      equipment: fillScalar(merged.coachInfo.equipment, registration.coachInfo.equipment),
+      refundPolicy: fillScalar(merged.coachInfo.refundPolicy, registration.coachInfo.refundPolicy),
+      paymentInstructions: fillScalar(
+        merged.coachInfo.paymentInstructions,
+        registration.coachInfo.paymentInstructions
+      ),
+      entryFees: mergeObjectArray(
+        merged.coachInfo.entryFees,
+        registration.coachInfo.entryFees,
+        (item) => [item.label, item.amount, item.note || ""].join("|")
+      ),
+      teamFees: mergeObjectArray(
+        merged.coachInfo.teamFees,
+        registration.coachInfo.teamFees,
+        (item) => [item.label, item.amount, item.note || ""].join("|")
+      ),
+      lateFees: mergeObjectArray(
+        merged.coachInfo.lateFees,
+        registration.coachInfo.lateFees,
+        (item) => [item.label, item.amount, item.trigger || "", item.note || ""].join("|")
+      ),
+      contacts: mergeObjectArray(
+        merged.coachInfo.contacts,
+        registration.coachInfo.contacts,
+        (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+      ),
+      deadlines: mergeObjectArray(
+        merged.coachInfo.deadlines,
+        registration.coachInfo.deadlines,
+        (item) => [item.label, item.date || "", item.note || ""].join("|")
+      ),
+      links: mergeObjectArray(
+        merged.coachInfo.links,
+        registration.coachInfo.links,
+        (item) => [item.label, item.url].join("|")
+      ),
+      notes: mergeUniqueStrings(merged.coachInfo.notes, registration.coachInfo.notes),
+    };
+  }
+
+  if (athlete) {
+    merged.athlete = {
+      ...merged.athlete,
+      name: fillScalar(merged.athlete.name, athlete.athlete.name),
+      level: fillScalar(merged.athlete.level, athlete.athlete.level),
+      team: fillScalar(merged.athlete.team, athlete.athlete.team),
+      session: fillScalar(merged.athlete.session, athlete.athlete.session),
+      competitionDate: fillScalar(
+        merged.athlete.competitionDate,
+        athlete.athlete.competitionDate
+      ),
+      stretchTime: fillScalar(merged.athlete.stretchTime, athlete.athlete.stretchTime),
+      marchIn: fillScalar(merged.athlete.marchIn, athlete.athlete.marchIn),
+      assignedGym: fillScalar(merged.athlete.assignedGym, athlete.athlete.assignedGym),
+      awards: fillScalar(merged.athlete.awards, athlete.athlete.awards),
+    };
+    merged.meetDetails.warmup = fillScalar(merged.meetDetails.warmup, athlete.meetDetails.warmup);
+    merged.meetDetails.marchIn = fillScalar(merged.meetDetails.marchIn, athlete.meetDetails.marchIn);
+    merged.meetDetails.rotationOrder = fillScalar(
+      merged.meetDetails.rotationOrder,
+      athlete.meetDetails.rotationOrder
+    );
+    merged.meetDetails.judgingNotes = fillScalar(
+      merged.meetDetails.judgingNotes,
+      athlete.meetDetails.judgingNotes
+    );
+    merged.meetDetails.awardsInfo = fillScalar(
+      merged.meetDetails.awardsInfo,
+      athlete.meetDetails.awardsInfo
+    );
+    merged.meetDetails.sessionWindows = mergeObjectArray(
+      merged.meetDetails.sessionWindows,
+      athlete.meetDetails.sessionWindows,
+      (item) => [item.date || "", item.start || "", item.end || "", item.note || ""].join("|")
+    );
+    merged.gear.uniform = fillScalar(merged.gear.uniform, athlete.gear.uniform);
+    merged.gear.checklist = mergeUniqueStrings(merged.gear.checklist, athlete.gear.checklist);
+    merged.schedule.notes = mergeUniqueStrings(merged.schedule.notes, athlete.schedule.notes);
+    merged.schedule.annotations = mergeObjectArray(
+      merged.schedule.annotations || [],
+      athlete.schedule.annotations || [],
+      (item) =>
+        [item.kind || "", item.level || "", item.sessionCode || "", item.date || "", item.time || "", item.text].join(
+          "|"
+        )
+    );
+    merged.schedule.assignments = mergeObjectArray(
+      merged.schedule.assignments || [],
+      athlete.schedule.assignments || [],
+      (item) =>
+        [
+          item.level || "",
+          item.groupLabel || "",
+          item.sessionCode || "",
+          item.birthDateRange || "",
+          item.divisionLabel || "",
+          item.note || "",
+        ].join("|")
+    );
+  }
+
+  return normalizeParseResult(merged) || buildEmptyParseResult();
 }
 
 function buildProfessionalParsePrompt(
@@ -9075,6 +10580,10 @@ async function callOpenAiScheduleParse(
     const completion = await client.chat.completions.create({
       model: resolveDiscoveryParseModel(),
       temperature: 0,
+      response_format: {
+        type: "json_schema",
+        json_schema: GYMNASTICS_SCHEDULE_JSON_SCHEMA,
+      } as any,
       messages: [
         {
           role: "system",
@@ -9842,6 +11351,7 @@ async function deriveScheduleFromExtractedText(
     traceId?: string;
     mode?: DiscoveryMode;
     performance?: DiscoveryPerformance;
+    classification?: ParseClassification;
   }
 ): Promise<{
   schedule: ParseResult["schedule"];
@@ -9931,6 +11441,10 @@ async function deriveScheduleFromExtractedText(
     segmentKinds: selectedSegments.map((segment) => `${segment.pageNumber}:${segment.kind}`),
   });
   const gridFallback = deriveScheduleFromTextFallback(gridPages);
+  const shouldEngageAdvancedScheduleParsing =
+    Boolean(options?.classification?.contentMix.scheduleHeavy) ||
+    countDistinctDetectedScheduleCodes(gridPages) >= 2 ||
+    countScheduleDaysWithSessions(gridFallback) > 0;
   const shouldSkipScheduleTextLlm = shouldSkipOpenAiScheduleParse(
     gridFallback,
     gridPages,
@@ -9944,7 +11458,7 @@ async function deriveScheduleFromExtractedText(
     });
   }
   let parsed: ParseResult["schedule"] | null = null;
-  if (scheduleText && !shouldSkipScheduleTextLlm) {
+  if (scheduleText && shouldEngageAdvancedScheduleParsing && !shouldSkipScheduleTextLlm) {
     const scheduleTextStartedAt = Date.now();
     parsed = await callOpenAiScheduleParse(scheduleText, traceId, options?.performance);
     if (options?.performance) {
@@ -9992,6 +11506,7 @@ async function deriveScheduleFromExtractedText(
     gridPageNumbers.has(Number(item?.pageNumber) || 0)
   );
   if (
+    !shouldEngageAdvancedScheduleParsing ||
     !gridPages.length ||
     scheduleImagesForSelectedPages.length === 0 ||
     !shouldUseVisualScheduleRepair(gridTextSchedule, gridFallback, gridPages)
@@ -10201,7 +11716,7 @@ function buildEmptyParseResult(): ParseResult {
   };
 }
 
-async function callOpenAiParse(
+async function _callOpenAiParse(
   text: string,
   evidence: DiscoveryEvidence,
   traceId?: string,
@@ -10248,6 +11763,104 @@ async function callOpenAiParse(
   const raw = completion.choices?.[0]?.message?.content || "";
   const parsed = normalizeParseResult(extractJsonObject(raw));
   return { result: parsed, raw, usage: completion.usage || null };
+}
+
+async function callOpenAiClassification(
+  extractedText: string,
+  evidence: DiscoveryEvidence,
+  traceId?: string,
+  performance?: DiscoveryPerformance
+): Promise<{ result: ParseClassification | null; raw: string; usage: any }> {
+  const client = getOpenAiClient();
+  const prompt = buildClassifierPrompt(evidence, extractedText);
+  const startedAt = Date.now();
+  console.log("[meet-discovery] openai classifier request started", {
+    traceId: traceId || null,
+    model: resolveDiscoveryParseModel(),
+    promptChars: prompt.length,
+  });
+  const completion = await client.chat.completions.create({
+    model: resolveDiscoveryParseModel(),
+    temperature: 0,
+    response_format: {
+      type: "json_schema",
+      json_schema: GYMNASTICS_CLASSIFIER_JSON_SCHEMA,
+    } as any,
+    messages: [
+      {
+        role: "system",
+        content: "You classify gymnastics meet documents for staged extraction. Return only strict JSON.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  });
+  console.log("[meet-discovery] openai classifier request finished", {
+    traceId: traceId || null,
+    durationMs: Date.now() - startedAt,
+    usage: completion.usage || null,
+  });
+  recordDiscoveryUsage(performance, "parse", completion.usage);
+  const raw = completion.choices?.[0]?.message?.content || "";
+  return {
+    result: normalizeParseClassification(extractJsonObject(raw)),
+    raw,
+    usage: completion.usage || null,
+  };
+}
+
+async function callOpenAiTargetedParse(
+  profile: ParsePromptProfile,
+  classification: ParseClassification,
+  selected: SelectedParseEvidence,
+  traceId?: string,
+  performance?: DiscoveryPerformance
+): Promise<{ result: ParseResult | null; raw: string; usage: any }> {
+  const client = getOpenAiClient();
+  const prompt = buildTargetedParsePrompt(profile, classification, selected);
+  const startedAt = Date.now();
+  console.log("[meet-discovery] openai targeted parse request started", {
+    traceId: traceId || null,
+    profile,
+    model: resolveDiscoveryParseModel(),
+    promptChars: prompt.length,
+    evidenceChars: selected.evidenceChars,
+    excerptChars: selected.excerptChars,
+  });
+  const completion = await client.chat.completions.create({
+    model: resolveDiscoveryParseModel(),
+    temperature: 0,
+    response_format: {
+      type: "json_schema",
+      json_schema: GYMNASTICS_PARSE_JSON_SCHEMA,
+    } as any,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You extract structured gymnastics meet data for one targeted packet profile. Return only strict JSON.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  });
+  console.log("[meet-discovery] openai targeted parse request finished", {
+    traceId: traceId || null,
+    profile,
+    durationMs: Date.now() - startedAt,
+    usage: completion.usage || null,
+  });
+  recordDiscoveryUsage(performance, "parse", completion.usage);
+  const raw = completion.choices?.[0]?.message?.content || "";
+  return {
+    result: normalizeParseResult(extractJsonObject(raw)),
+    raw,
+    usage: completion.usage || null,
+  };
 }
 
 async function callGeminiParse(
@@ -10302,6 +11915,7 @@ export async function finalizeMeetParseResult(
     traceId?: string;
     mode?: DiscoveryMode;
     performance?: DiscoveryPerformance;
+    classification?: ParseClassification;
   }
 ): Promise<ParseResult> {
   const traceId = options?.traceId || null;
@@ -10325,6 +11939,7 @@ export async function finalizeMeetParseResult(
       traceId: options?.traceId,
       mode: options?.mode,
       performance: options?.performance,
+      classification: options?.classification,
     }
   );
   console.log("[meet-discovery] schedule derivation finished", {
@@ -10418,30 +12033,113 @@ export async function parseMeetFromExtractedText(
   let openAiErrorMessage = "";
   try {
     const modelStartedAt = Date.now();
-    const first = await callOpenAiParse(
+    const stagedRaw: {
+      classifier: string;
+      extractions: Array<{ profile: ParsePromptProfile; raw: string }>;
+    } = {
+      classifier: "",
+      extractions: [],
+    };
+    const classifier = await callOpenAiClassification(
       extractedText,
       evidence,
       options?.traceId,
       options?.performance
     );
+    stagedRaw.classifier = classifier.raw;
+    const classification =
+      classifier.result || inferHeuristicParseClassification(evidence, extractionMeta);
+    const selectedProfiles = selectParsePromptProfiles(classification);
+    const extractorCalls: NonNullable<
+      NonNullable<ExtractionResult["extractionMeta"]["parseDiagnostics"]>["staged"]
+    >["extractorCalls"] = [];
+    const extractedResults: Array<{ profile: ParsePromptProfile; result: ParseResult }> = [];
+
+    console.log("[meet-discovery] staged classifier parsed", {
+      traceId,
+      documentProfile: classification.documentProfile,
+      confidence: classification.confidence,
+      selectedProfiles,
+      usedHeuristicFallback: !classifier.result,
+    });
+
+    for (const profile of selectedProfiles) {
+      const selected = selectEvidenceForParseProfile(
+        profile,
+        extractedText,
+        evidence,
+        extractionMeta
+      );
+      extractorCalls.push({
+        profile,
+        selectedEvidenceLabels: selected.evidenceLabels,
+        selectedExcerptLabels: selected.excerptLabels,
+        evidenceChars: selected.evidenceChars,
+        excerptChars: selected.excerptChars,
+      });
+      try {
+        const parsed = await callOpenAiTargetedParse(
+          profile,
+          classification,
+          selected,
+          options?.traceId,
+          options?.performance
+        );
+        stagedRaw.extractions.push({
+          profile,
+          raw: parsed.raw,
+        });
+        if (parsed.result) {
+          extractedResults.push({
+            profile,
+            result: parsed.result,
+          });
+        }
+      } catch (error: any) {
+        console.error("[meet-discovery] targeted parse failed", {
+          traceId,
+          profile,
+          message: error?.message || String(error),
+        });
+      }
+    }
     if (options?.performance) {
       options.performance.modelParseMs += Date.now() - modelStartedAt;
     }
-    openAiRaw = first.raw;
-    console.log("[meet-discovery] openai parse parsed", {
-      traceId,
-      hasResult: Boolean(first.result),
-      rawChars: first.raw.length,
-    });
-    if (first.result) {
+    extractionMeta.parseDiagnostics = {
+      ...(extractionMeta.parseDiagnostics || {}),
+      staged: {
+        classifier: {
+          eventType: classification.eventType,
+          documentProfile: classification.documentProfile,
+          confidence: classification.confidence,
+          contentMix: classification.contentMix,
+          selectedProfiles,
+          usedHeuristicFallback: !classifier.result,
+        },
+        extractorCalls,
+      },
+    };
+    openAiRaw = JSON.stringify(stagedRaw);
+    if (extractedResults.length > 0) {
+      const merged = mergeParseResultsByProfile(extractedResults);
+      const stagedMerged = normalizeParseResult({
+        ...merged,
+        eventType: classification.eventType,
+        documentProfile: classification.documentProfile,
+      });
+      if (!stagedMerged) {
+        throw new Error("Staged parse merge returned invalid structured output.");
+      }
       const finalized = await finalizeMeetParseResult(
-        first.result,
+        stagedMerged,
         extractedText,
         extractionMeta,
         {
           traceId: options?.traceId,
           mode: options?.mode,
           performance: options?.performance,
+          classification,
         }
       );
       return {
@@ -10450,11 +12148,11 @@ export async function parseMeetFromExtractedText(
           title: resolveDiscoveryEventTitle(finalized.title, fallbackTitle),
         },
         modelUsed: "openai",
-        rawModelOutput: first.raw,
+        rawModelOutput: openAiRaw,
         evidence,
       };
     }
-    openAiErrorMessage = "OpenAI returned invalid structured output.";
+    openAiErrorMessage = "OpenAI returned invalid staged structured output.";
   } catch (err: any) {
     console.error("[meet-discovery] openai parse failed", {
       traceId,
@@ -10601,17 +12299,363 @@ function isLowSignalOperationalNote(value: unknown): boolean {
   return false;
 }
 
+function scoreCompletenessSection(filled: number, total: number) {
+  return total > 0 ? filled / total : 0;
+}
+
+function hasMeaningfulArrayContent(value: unknown): boolean {
+  return Array.isArray(value) && value.length > 0;
+}
+
+function computeParseCompletenessSnapshot(parseResult: ParseResult): ParseCompletenessSnapshot {
+  const coreFilled = [
+    parseResult.title,
+    parseResult.dates,
+    parseResult.startAt,
+    parseResult.endAt,
+    parseResult.timezone,
+    parseResult.venue,
+    parseResult.address,
+    parseResult.hostGym,
+  ].filter(Boolean).length + (parseResult.links.length > 0 ? 1 : 0);
+
+  const athleteFilled = [
+    parseResult.athlete.name,
+    parseResult.athlete.level,
+    parseResult.athlete.team,
+    parseResult.athlete.session,
+    parseResult.athlete.competitionDate,
+    parseResult.athlete.stretchTime,
+    parseResult.athlete.marchIn,
+    parseResult.athlete.assignedGym,
+    parseResult.athlete.awards,
+  ].filter(Boolean).length;
+
+  const meetDetailsFilled = [
+    parseResult.meetDetails.warmup,
+    parseResult.meetDetails.marchIn,
+    parseResult.meetDetails.rotationOrder,
+    parseResult.meetDetails.judgingNotes,
+    parseResult.meetDetails.doorsOpen,
+    parseResult.meetDetails.arrivalGuidance,
+    parseResult.meetDetails.registrationInfo,
+    parseResult.meetDetails.facilityLayout,
+    parseResult.meetDetails.scoringInfo,
+    parseResult.meetDetails.resultsInfo,
+    parseResult.meetDetails.rotationSheetsInfo,
+    parseResult.meetDetails.awardsInfo,
+  ].filter(Boolean).length +
+    (parseResult.meetDetails.sessionWindows.length > 0 ? 1 : 0) +
+    (parseResult.meetDetails.operationalNotes.length > 0 ? 1 : 0);
+
+  const logisticsFilled = [
+    parseResult.logistics.parking,
+    parseResult.logistics.trafficAlerts,
+    parseResult.logistics.hotel,
+    parseResult.logistics.meals,
+    parseResult.logistics.fees,
+    parseResult.logistics.waivers,
+    parseResult.logistics.rideShare,
+    parseResult.logistics.accessibility,
+  ].filter(Boolean).length +
+    (parseResult.logistics.parkingLinks.length > 0 ? 1 : 0) +
+    (parseResult.logistics.parkingPricingLinks.length > 0 ? 1 : 0);
+
+  const coachInfoFilled = [
+    parseResult.coachInfo.signIn,
+    parseResult.coachInfo.attire,
+    parseResult.coachInfo.hospitality,
+    parseResult.coachInfo.floorAccess,
+    parseResult.coachInfo.scratches,
+    parseResult.coachInfo.floorMusic,
+    parseResult.coachInfo.rotationSheets,
+    parseResult.coachInfo.awards,
+    parseResult.coachInfo.regionalCommitment,
+    parseResult.coachInfo.qualification,
+    parseResult.coachInfo.meetFormat,
+    parseResult.coachInfo.equipment,
+    parseResult.coachInfo.refundPolicy,
+    parseResult.coachInfo.paymentInstructions,
+  ].filter(Boolean).length +
+    (parseResult.coachInfo.entryFees.length > 0 ? 1 : 0) +
+    (parseResult.coachInfo.teamFees.length > 0 ? 1 : 0) +
+    (parseResult.coachInfo.lateFees.length > 0 ? 1 : 0) +
+    (parseResult.coachInfo.contacts.length > 0 ? 1 : 0) +
+    (parseResult.coachInfo.deadlines.length > 0 ? 1 : 0) +
+    (parseResult.coachInfo.links.length > 0 ? 1 : 0) +
+    (parseResult.coachInfo.notes.length > 0 ? 1 : 0);
+
+  const scheduleFilled = [
+    parseResult.schedule.venueLabel,
+    parseResult.schedule.supportEmail,
+  ].filter(Boolean).length +
+    (parseResult.schedule.notes.length > 0 ? 1 : 0) +
+    (hasMeaningfulArrayContent(parseResult.schedule.annotations) ? 1 : 0) +
+    (hasMeaningfulArrayContent(parseResult.schedule.assignments) ? 1 : 0) +
+    (parseResult.schedule.days.length > 0 ? 1 : 0);
+
+  return {
+    core: {
+      filled: coreFilled,
+      total: 9,
+      score: scoreCompletenessSection(coreFilled, 9),
+    },
+    athlete: {
+      filled: athleteFilled,
+      total: 9,
+      score: scoreCompletenessSection(athleteFilled, 9),
+    },
+    meetDetails: {
+      filled: meetDetailsFilled,
+      total: 14,
+      score: scoreCompletenessSection(meetDetailsFilled, 14),
+    },
+    logistics: {
+      filled: logisticsFilled,
+      total: 10,
+      score: scoreCompletenessSection(logisticsFilled, 10),
+    },
+    coachInfo: {
+      filled: coachInfoFilled,
+      total: 21,
+      score: scoreCompletenessSection(coachInfoFilled, 21),
+    },
+    schedule: {
+      filled: scheduleFilled,
+      total: 6,
+      score: scoreCompletenessSection(scheduleFilled, 6),
+    },
+  };
+}
+
+function computeEvidenceSignalCounts(
+  evidence: DiscoveryEvidence,
+  extractionMeta?: ExtractionResult["extractionMeta"]
+): Record<keyof ParseCompletenessSnapshot, number> {
+  return {
+    core:
+      evidence.candidates.titleHints.length +
+      evidence.candidates.dateHints.length +
+      evidence.candidates.venueHints.length +
+      evidence.candidates.addressHints.length +
+      evidence.candidates.hostGymHints.length,
+    athlete:
+      evidence.candidates.athleteHints.length + evidence.candidates.sessionHints.length,
+    meetDetails:
+      evidence.sections.venue.length +
+      evidence.sections.spectator.length +
+      evidence.snippets.additionalInfoLines.length,
+    logistics:
+      evidence.candidates.logisticsHints.length +
+      evidence.sections.traffic.length +
+      evidence.sections.policy.length,
+    coachInfo:
+      evidence.candidates.coachHints.length +
+      evidence.sections.coachOps.length +
+      evidence.sections.registration.length,
+    schedule:
+      evidence.candidates.sessionHints.length +
+      pickArray(extractionMeta?.schedulePageTexts).length * 2,
+  };
+}
+
+function backfillDeterministicParseFields(
+  parseResult: ParseResult,
+  evidence: DiscoveryEvidence | null,
+  fallbackTitle: string
+): ParseResult {
+  if (!evidence) {
+    return {
+      ...parseResult,
+      title: resolveDiscoveryEventTitle(parseResult.title, fallbackTitle),
+    };
+  }
+  const next = normalizeParseResult(parseResult) || buildEmptyParseResult();
+  const primaryDate = evidence.dateAnalysis.primaryCandidate;
+  next.title = resolveDiscoveryEventTitle(next.title, fallbackTitle);
+  next.dates = next.dates || safeString(primaryDate?.label);
+  next.timezone = next.timezone || safeString(evidence.candidates.timezoneHints[0]) || null;
+  next.venue = next.venue || safeString(evidence.candidates.venueHints[0]) || null;
+  next.address = next.address || safeString(evidence.candidates.addressHints[0]) || null;
+  next.hostGym = next.hostGym || safeString(evidence.candidates.hostGymHints[0]) || null;
+  const notPostedUrls = new Set(
+    evidence.resources.links
+      .filter((item) => item.status === "not_posted")
+      .map((item) => normalizeUrl(item.url))
+      .filter(Boolean)
+  );
+  next.links = mergeObjectArray(
+    next.links,
+    evidence.candidates.linkHints.map((item) => ({
+      label: safeString(item?.label) || "Source link",
+      url: safeString(item?.url),
+    }))
+      .filter((item) => item.url && !notPostedUrls.has(normalizeUrl(item.url))),
+    (item) => `${item.label}|${item.url}`
+  );
+  const parkingLinks = evidence.resources.links
+    .filter((item) => item.kind === "parking" && item.status !== "not_posted")
+    .map((item) => ({
+      label: item.label || "Parking",
+      url: item.url,
+    }));
+  next.logistics.parkingLinks = mergeObjectArray(
+    next.logistics.parkingLinks,
+    parkingLinks,
+    (item) => `${item.label}|${item.url}`
+  );
+  if (!next.meetDetails.resultsInfo) {
+    const resultsLink = evidence.resources.links.find(
+      (item) =>
+        item.status !== "not_posted" &&
+        ["results_live", "results_hub", "results_pdf"].includes(item.kind)
+    );
+    next.meetDetails.resultsInfo = resultsLink?.label || null;
+  }
+  if (!next.meetDetails.rotationSheetsInfo) {
+    const rotationLink = evidence.resources.links.find(
+      (item) =>
+        item.status !== "not_posted" &&
+        ["rotation_sheet", "rotation_hub"].includes(item.kind)
+    );
+    next.meetDetails.rotationSheetsInfo = rotationLink?.label || null;
+  }
+  return next;
+}
+
+function computeMappedCompletenessSnapshot(mapped: any): ParseCompletenessSnapshot {
+  const advanced = (mapped?.advancedSections as Record<string, any>) || {};
+  const coreFilled = [
+    safeString(mapped?.title),
+    safeString(mapped?.date),
+    safeString(mapped?.time),
+    safeString(mapped?.startISO),
+    safeString(mapped?.endISO),
+    safeString(mapped?.location),
+    safeString(mapped?.address),
+    safeString(mapped?.website),
+  ].filter(Boolean).length +
+    (pickArray(mapped?.links).length > 0 ? 1 : 0);
+  const athleteFilled = [
+    safeString(advanced?.roster?.athletes?.[0]?.name),
+    safeString(advanced?.roster?.athletes?.[0]?.level),
+    safeString(advanced?.roster?.athletes?.[0]?.team),
+    safeString(advanced?.roster?.athletes?.[0]?.session),
+    safeString(advanced?.meet?.warmUpTime),
+    safeString(advanced?.meet?.marchInTime),
+    safeString(advanced?.meet?.assignedGym),
+    safeString(advanced?.meet?.awardsInfo),
+  ].filter(Boolean).length;
+  const meetDetailsFilled = [
+    safeString(advanced?.meet?.warmUpTime),
+    safeString(advanced?.meet?.marchInTime),
+    safeString(advanced?.meet?.judgingNotes),
+    safeString(advanced?.meet?.doorsOpen),
+    safeString(advanced?.meet?.arrivalGuidance),
+    safeString(advanced?.meet?.registrationInfo),
+    safeString(advanced?.meet?.facilityLayout),
+    safeString(advanced?.meet?.scoringInfo),
+    safeString(advanced?.meet?.resultsInfo),
+    safeString(advanced?.meet?.rotationSheetsInfo),
+    safeString(advanced?.meet?.awardsInfo),
+  ].filter(Boolean).length +
+    (pickArray(advanced?.meet?.sessionWindows).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.meet?.operationalNotes).length > 0 ? 1 : 0);
+  const logisticsFilled = [
+    safeString(advanced?.logistics?.hotelName),
+    safeString(advanced?.logistics?.hotelInfo),
+    safeString(advanced?.logistics?.mealPlan),
+    safeString(advanced?.logistics?.feeAmount),
+    safeString(advanced?.logistics?.parking),
+    safeString(advanced?.logistics?.trafficAlerts),
+    safeString(advanced?.logistics?.rideShare),
+    safeString(advanced?.logistics?.accessibility),
+  ].filter(Boolean).length +
+    (pickArray(advanced?.logistics?.parkingLinks).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.logistics?.parkingPricingLinks).length > 0 ? 1 : 0);
+  const coachFilled = [
+    safeString(advanced?.coaches?.signIn),
+    safeString(advanced?.coaches?.attire),
+    safeString(advanced?.coaches?.hospitality),
+    safeString(advanced?.coaches?.floorAccess),
+    safeString(advanced?.coaches?.scratches),
+    safeString(advanced?.coaches?.floorMusic),
+    safeString(advanced?.coaches?.rotationSheets),
+    safeString(advanced?.coaches?.awards),
+    safeString(advanced?.coaches?.regionalCommitment),
+    safeString(advanced?.coaches?.qualification),
+    safeString(advanced?.coaches?.meetFormat),
+    safeString(advanced?.coaches?.equipment),
+    safeString(advanced?.coaches?.refundPolicy),
+    safeString(advanced?.coaches?.paymentInstructions),
+  ].filter(Boolean).length +
+    (pickArray(advanced?.coaches?.entryFees).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.coaches?.teamFees).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.coaches?.lateFees).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.coaches?.contacts).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.coaches?.deadlines).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.coaches?.links).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.coaches?.notes).length > 0 ? 1 : 0);
+  const scheduleFilled = [
+    safeString(advanced?.schedule?.venueLabel),
+    safeString(advanced?.schedule?.supportEmail),
+  ].filter(Boolean).length +
+    (pickArray(advanced?.schedule?.notes).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.schedule?.annotations).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.schedule?.assignments).length > 0 ? 1 : 0) +
+    (pickArray(advanced?.schedule?.days).length > 0 ? 1 : 0);
+  return {
+    core: { filled: coreFilled, total: 9, score: scoreCompletenessSection(coreFilled, 9) },
+    athlete: { filled: athleteFilled, total: 9, score: scoreCompletenessSection(athleteFilled, 9) },
+    meetDetails: {
+      filled: meetDetailsFilled,
+      total: 14,
+      score: scoreCompletenessSection(meetDetailsFilled, 14),
+    },
+    logistics: {
+      filled: logisticsFilled,
+      total: 10,
+      score: scoreCompletenessSection(logisticsFilled, 10),
+    },
+    coachInfo: { filled: coachFilled, total: 21, score: scoreCompletenessSection(coachFilled, 21) },
+    schedule: { filled: scheduleFilled, total: 6, score: scoreCompletenessSection(scheduleFilled, 6) },
+  };
+}
+
+function determineCompletenessSparsity(
+  evidenceSignals: number,
+  rawScore: number,
+  sanitizedScore: number,
+  mappedScore: number
+): "none" | "extraction" | "sanitization" | "mapping" {
+  if (mappedScore + 0.15 < sanitizedScore) return "mapping";
+  if (sanitizedScore + 0.15 < rawScore) return "sanitization";
+  if (evidenceSignals >= 4 && sanitizedScore < 0.2) return "extraction";
+  return "none";
+}
+
 export async function mapParseResultToGymData(
   parseResult: ParseResult,
   baseData: any = {},
   extractionMeta?: ExtractionResult["extractionMeta"]
 ) {
+  const rawSnapshot = computeParseCompletenessSnapshot(parseResult);
   parseResult = sanitizeDiscoveryParseResult(parseResult);
   const effectiveExtractionMeta = extractionMeta || baseData?.discoverySource?.extractionMeta;
   const fallbackTitle = deriveDiscoveryFallbackTitle(
     safeString(baseData?.discoverySource?.extractedText || ""),
     effectiveExtractionMeta
   );
+  const auditEvidence =
+    effectiveExtractionMeta && safeString(baseData?.discoverySource?.extractedText)
+      ? buildDiscoveryEvidence(
+          safeString(baseData?.discoverySource?.extractedText || ""),
+          effectiveExtractionMeta
+        )
+      : null;
+  const sanitizedSnapshot = computeParseCompletenessSnapshot(parseResult);
+  parseResult = backfillDeterministicParseFields(parseResult, auditEvidence, fallbackTitle);
+  const backfilledSnapshot = computeParseCompletenessSnapshot(parseResult);
   const baseTitle = safeString(baseData?.title);
   const mappedTitle =
     resolveDiscoveryEventTitle(parseResult.title, fallbackTitle) ||
@@ -11241,7 +13285,7 @@ export async function mapParseResultToGymData(
     return null;
   })();
 
-  return {
+  const finalMapped = {
     ...baseData,
     title: mappedTitle,
     details: safeString(baseData?.details),
@@ -11298,6 +13342,53 @@ export async function mapParseResultToGymData(
     pageTemplateId: resolvedPageTemplateId,
     category: "sport_gymnastics_schedule",
   };
+  if (effectiveExtractionMeta) {
+    const mappedSnapshot = computeMappedCompletenessSnapshot(finalMapped);
+    const evidenceSignals = auditEvidence
+      ? computeEvidenceSignalCounts(auditEvidence, effectiveExtractionMeta)
+      : {
+          core: 0,
+          athlete: 0,
+          meetDetails: 0,
+          logistics: 0,
+          coachInfo: 0,
+          schedule: 0,
+        };
+    effectiveExtractionMeta.parseDiagnostics = {
+      ...(effectiveExtractionMeta.parseDiagnostics || {}),
+      completeness: {
+        sectionScores: Object.fromEntries(
+          (Object.keys(rawSnapshot) as Array<keyof ParseCompletenessSnapshot>).map((key) => [
+            key,
+            {
+              raw: rawSnapshot[key].score,
+              sanitized: sanitizedSnapshot[key].score,
+              backfilled: backfilledSnapshot[key].score,
+              mapped: mappedSnapshot[key].score,
+              evidenceSignals: evidenceSignals[key],
+              sparseAt: determineCompletenessSparsity(
+                evidenceSignals[key],
+                rawSnapshot[key].score,
+                sanitizedSnapshot[key].score,
+                mappedSnapshot[key].score
+              ),
+            },
+          ])
+        ) as Record<
+          string,
+          {
+            raw: number;
+            sanitized: number;
+            backfilled: number;
+            mapped: number;
+            evidenceSignals: number;
+            sparseAt: "none" | "extraction" | "sanitization" | "mapping";
+          }
+        >,
+      },
+    };
+  }
+  return finalMapped;
 }
 
 export const __testUtils = {
@@ -11308,10 +13399,19 @@ export const __testUtils = {
   findBestScheduleClubColorBox,
   deriveScheduleLegendEntriesFromOcrTextBoxes,
   normalizeParseResult,
+  normalizeParseClassification,
+  inferHeuristicParseClassification,
+  selectParsePromptProfiles,
+  selectEvidenceForParseProfile,
+  mergeParseResultsByProfile,
   sanitizeDiscoveryParseResult,
   mergeCoachFeesFromAdmission,
   routeCoachDeadlines,
   hasCoachInfoContent,
+  backfillDeterministicParseFields,
+  computeParseCompletenessSnapshot,
+  computeMappedCompletenessSnapshot,
+  determineCompletenessSparsity,
   deriveScheduleFromTextFallback,
   deriveScheduleFromExtractedText,
   alignScheduleDatesToEventRange,
@@ -11333,6 +13433,7 @@ export const __testUtils = {
   scoreEventResourceMatch,
   collectDiscoveryCandidates,
   compareDiscoveryCandidates,
+  resolveDiscoveryEventTitle,
   setUrlDiscoveryTestHooks(hooks: UrlDiscoveryTestHooks | null) {
     urlDiscoveryTestHooks = hooks;
   },

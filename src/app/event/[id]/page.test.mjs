@@ -43,4 +43,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /createdVia === "birthday-renderer" \|\| isOcrBirthdayRenderer\(createdVia\)/);
   assert.match(source, /selectBirthdayOcrThemeId/);
   assert.match(source, /calendarLinks=\{calendarLinks\}/);
+  assert.match(source, /const hideHostDashboard =/);
+  assert.match(source, /const showHostDashboard = canManageCreatedEvent && !hideHostDashboard/);
+  assert.match(source, /showHostDashboard=\{showHostDashboard\}/);
 });

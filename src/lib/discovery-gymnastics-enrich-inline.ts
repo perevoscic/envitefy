@@ -56,7 +56,7 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
   }
 
   const debugArtifacts = isDiscoveryDebugArtifactsEnabled();
-  const enrichBudgetMs = resolveDiscoveryBudget("enrich");
+  const enrichBudgetMs = resolveDiscoveryBudget("enrich", params.hydratedSourceInput.type);
 
   const extraction = await extractDiscoveryText(params.hydratedSourceInput, {
     workflow: "gymnastics",

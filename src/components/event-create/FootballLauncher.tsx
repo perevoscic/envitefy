@@ -1,8 +1,12 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Globe, Upload, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, Globe, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import DiscoveryProgressPanel, {
+  type DiscoveryProgressTheme,
+} from "@/components/event-create/DiscoveryProgressPanel";
+import { getDiscoveryStageLabel } from "@/components/event-create/discovery-progress";
 
 type FootballLauncherProps = {
   forwardQueryString?: string;
@@ -11,6 +15,22 @@ type FootballLauncherProps = {
 
 type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
+const FOOTBALL_DISCOVERY_LOG_PREFIX = "[football-launcher]";
+const INGEST_REQUEST_TIMEOUT_MS = 15_000;
+const PARSE_REQUEST_TIMEOUT_MS = 45_000;
+const FOOTBALL_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
+  badgeBackground: "rgba(255,255,255,0.12)",
+  badgeBorder: "rgba(255,255,255,0.22)",
+  baseBackground: "#63514a",
+  borderColor: "#7c6660",
+  cancelBorderColor: "#e8d2ca",
+  cancelHoverBackground: "#fff1eb",
+  cancelTextColor: "#7a4129",
+  fillEnd: "#ffd4c3",
+  fillMiddle: "#ea7a41",
+  fillStart: "#d44f19",
+  textColor: "#ffffff",
+};
 
 export default function FootballLauncher({
   forwardQueryString,
@@ -23,8 +43,8 @@ export default function FootballLauncher({
   const [uploadError, setUploadError] = useState("");
   const [uploadFileName, setUploadFileName] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState("");
   const [urlBusy, setUrlBusy] = useState(false);
+  const [urlProgress, setUrlProgress] = useState(0);
   const [urlError, setUrlError] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
@@ -33,6 +53,8 @@ export default function FootballLauncher({
   const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cancelRequestedRef = useRef(false);
   const discoveryBusy = uploadBusy || urlBusy;
+  const uploadStageLabel = getDiscoveryStageLabel("football-upload", uploadProgress);
+  const urlStageLabel = getDiscoveryStageLabel("football-url", urlProgress);
 
   const toErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
@@ -51,6 +73,17 @@ export default function FootballLauncher({
     const err = new Error("Discovery cancelled");
     (err as Error & { name: string }).name = "AbortError";
     return err;
+  };
+
+  const buildTimeoutError = (phase: "ingest" | "parse") => {
+    if (phase === "ingest") {
+      return new Error(
+        "Football URL sync timed out before the server responded. Check that your local Next server is healthy and retry.",
+      );
+    }
+    return new Error(
+      "Football discovery timed out while waiting for the server. Check the Next server logs for extraction progress and retry.",
+    );
   };
 
   const clearDiscoveryHandles = () => {
@@ -73,12 +106,13 @@ export default function FootballLauncher({
   };
 
   const cancelDiscovery = () => {
+    console.log(`${FOOTBALL_DISCOVERY_LOG_PREFIX} cancel requested`);
     cancelRequestedRef.current = true;
     clearDiscoveryHandles();
     setUploadBusy(false);
     setUrlBusy(false);
     setUploadProgress(0);
-    setUploadStatus("");
+    setUrlProgress(0);
     setUploadError("");
     setUrlError("");
   };
@@ -145,14 +179,30 @@ export default function FootballLauncher({
     } else {
       reportProgress(20, "Submitting football URL...");
       ingestAbortRef.current = new AbortController();
-      const ingestRes = await fetch("/api/ingest?mode=football_discovery", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-        signal: ingestAbortRef.current.signal,
-      }).finally(() => {
+      let ingestTimedOut = false;
+      const ingestTimeoutId = window.setTimeout(() => {
+        ingestTimedOut = true;
+        console.log(`${FOOTBALL_DISCOVERY_LOG_PREFIX} ingest url request timed out`, {
+          timeoutMs: INGEST_REQUEST_TIMEOUT_MS,
+          url,
+        });
+        ingestAbortRef.current?.abort();
+      }, INGEST_REQUEST_TIMEOUT_MS);
+      let ingestRes: Response;
+      try {
+        ingestRes = await fetch("/api/ingest?mode=football_discovery", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          signal: ingestAbortRef.current.signal,
+        });
+      } catch (err) {
+        if (ingestTimedOut) throw buildTimeoutError("ingest");
+        throw err;
+      } finally {
+        window.clearTimeout(ingestTimeoutId);
         ingestAbortRef.current = null;
-      });
+      }
       ingestJson = await ingestRes.json().catch(() => ({}));
       if (!ingestRes.ok || !ingestJson?.eventId) {
         throw new Error(ingestJson?.error || "Failed to ingest source");
@@ -170,6 +220,15 @@ export default function FootballLauncher({
 
     try {
       parseAbortRef.current = new AbortController();
+      let parseTimedOut = false;
+      const parseTimeoutId = window.setTimeout(() => {
+        parseTimedOut = true;
+        console.log(`${FOOTBALL_DISCOVERY_LOG_PREFIX} parse request timed out`, {
+          eventId,
+          timeoutMs: PARSE_REQUEST_TIMEOUT_MS,
+        });
+        parseAbortRef.current?.abort();
+      }, PARSE_REQUEST_TIMEOUT_MS);
       const parseInit: RequestInit = {
         method: "POST",
         credentials: "include",
@@ -180,9 +239,16 @@ export default function FootballLauncher({
         parseBody.append("file", file);
         parseInit.body = parseBody;
       }
-      const parseRes = await fetch(`/api/parse/${eventId}`, parseInit).finally(() => {
+      let parseRes: Response;
+      try {
+        parseRes = await fetch(`/api/parse/${eventId}`, parseInit);
+      } catch (err) {
+        if (parseTimedOut) throw buildTimeoutError("parse");
+        throw err;
+      } finally {
+        window.clearTimeout(parseTimeoutId);
         parseAbortRef.current = null;
-      });
+      }
       const parseJson = await parseRes.json().catch(() => ({}));
       if (!parseRes.ok) {
         throw new Error(parseJson?.error || "Failed to parse source");
@@ -208,23 +274,19 @@ export default function FootballLauncher({
     setUploadBusy(true);
     setUploadFileName(pickedFile.name);
     setUploadProgress(0);
-    setUploadStatus("Uploading football file...");
     try {
       await startDiscovery({
         file: pickedFile,
-        onProgress: (progress, status) => {
+        onProgress: (progress) => {
           setUploadProgress(progress);
-          setUploadStatus(status);
         },
       });
     } catch (err: unknown) {
       if (isAbortError(err)) {
-        setUploadStatus("");
         setUploadProgress(0);
         return;
       }
       setUploadError(toErrorMessage(err, "Failed to parse file"));
-      setUploadStatus("");
     } finally {
       setUploadBusy(false);
     }
@@ -246,10 +308,24 @@ export default function FootballLauncher({
       return;
     }
     setUrlBusy(true);
+    setUrlProgress(0);
+    console.log(`${FOOTBALL_DISCOVERY_LOG_PREFIX} URL sync requested`, {
+      url: trimmed,
+      ingestTimeoutMs: INGEST_REQUEST_TIMEOUT_MS,
+      parseTimeoutMs: PARSE_REQUEST_TIMEOUT_MS,
+    });
     try {
-      await startDiscovery({ url: trimmed });
+      await startDiscovery({
+        url: trimmed,
+        onProgress: (progress) => {
+          setUrlProgress(progress);
+        },
+      });
     } catch (err: unknown) {
-      if (isAbortError(err)) return;
+      if (isAbortError(err)) {
+        setUrlProgress(0);
+        return;
+      }
       setUrlError(toErrorMessage(err, "Failed to sync URL"));
     } finally {
       setUrlBusy(false);
@@ -327,34 +403,13 @@ export default function FootballLauncher({
                   </p>
                 </button>
               ) : (
-                <div className="w-full rounded-2xl border-2 border-dashed border-[#d7d4e5] bg-[#f8f8fc] px-4 py-4">
-                  <div className="mx-auto w-full max-w-sm">
-                    <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#a23a13]">
-                      <span>{uploadStatus || "Processing football file..."}</span>
-                      <div className="flex items-center gap-2">
-                        <span>{uploadProgress}%</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            cancelDiscovery();
-                          }}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#f2c7b7] bg-white text-[#d44f19] hover:bg-[#ffede4]"
-                          aria-label="Cancel upload"
-                          title="Cancel"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#f8d8ca]">
-                      <div
-                        className="h-full rounded-full bg-[#d44f19] transition-[width] duration-300 ease-out"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <DiscoveryProgressPanel
+                  cancelLabel="Cancel upload"
+                  label={uploadStageLabel}
+                  onCancel={() => cancelDiscovery()}
+                  progress={uploadProgress}
+                  theme={FOOTBALL_DISCOVERY_PROGRESS_THEME}
+                />
               )}
               <input
                 ref={fileInputRef}
@@ -410,18 +465,28 @@ export default function FootballLauncher({
                 placeholder="https://school.edu/football/schedule"
                 className="w-full rounded-2xl border border-[#d7d4e5] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#d44f19]"
               />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void handleUrlSync();
-                }}
-                disabled={discoveryBusy}
-                className="mt-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d44f19] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#ba4313] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {urlBusy ? "Syncing..." : "Sync URL"}
-                <ArrowRight className="h-4 w-4" />
-              </button>
+              {urlBusy ? (
+                <DiscoveryProgressPanel
+                  cancelLabel="Cancel sync"
+                  label={urlStageLabel}
+                  onCancel={() => cancelDiscovery()}
+                  progress={urlProgress}
+                  theme={FOOTBALL_DISCOVERY_PROGRESS_THEME}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleUrlSync();
+                  }}
+                  disabled={discoveryBusy}
+                  className="mt-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d44f19] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#ba4313] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  Sync URL
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
               {urlError ? (
                 <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
                   {urlError}

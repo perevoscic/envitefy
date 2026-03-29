@@ -27,3 +27,36 @@ test("meet discovery no longer gates visual schedule repair behind enrich mode",
   assert.match(source, /scheduleImagesForSelectedPages\.length === 0/);
   assert.doesNotMatch(source, /mode !== "enrich"/);
 });
+
+test("meet discovery uses json schema output for schedule text parsing", () => {
+  const source = readSource("src/lib/meet-discovery.ts");
+
+  assert.match(source, /json_schema:\s*GYMNASTICS_SCHEDULE_JSON_SCHEMA/);
+  assert.doesNotMatch(
+    source,
+    /callOpenAiScheduleParse[\s\S]*response_format:\s*\{\s*type:\s*"json_object"/
+  );
+});
+
+test("meet discovery defaults staged structured parsing to gpt-5.4-nano", () => {
+  const source = readSource("src/lib/meet-discovery.ts");
+
+  assert.match(source, /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-5\.4-nano";/);
+  assert.match(source, /callOpenAiClassification/);
+  assert.match(source, /callOpenAiTargetedParse/);
+});
+
+test("meet discovery advances regex scans even when skipping invalid anchors or empty json-ld blocks", () => {
+  const source = readSource("src/lib/meet-discovery.ts");
+
+  assert.match(
+    source,
+    /for \(let match = jsonLdRegex\.exec\(html\); match; match = jsonLdRegex\.exec\(html\)\) \{/
+  );
+  assert.match(
+    source,
+    /for \(let match = anchorRegex\.exec\(html\); match; match = anchorRegex\.exec\(html\)\) \{/
+  );
+  assert.doesNotMatch(source, /while \(match\) \{[\s\S]*if \(!content\) continue;[\s\S]*jsonLdRegex\.exec\(html\);/);
+  assert.doesNotMatch(source, /while \(match\) \{[\s\S]*if \(!url\) continue;[\s\S]*anchorRegex\.exec\(html\);/);
+});

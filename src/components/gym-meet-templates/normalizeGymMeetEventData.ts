@@ -197,6 +197,8 @@ const DISCOVERY_GENERATED_DETAILS_INLINE =
   /(spectator admission|on-site adult|on-site senior|on-site child|weekend pass|pre[-\s]?sale|ticket(?:s)?|credit\/debit|debit\/credit|credit card|debit card|cash is not accepted|cash not accepted|no cash|checks? payable|make payable to|payable to)/i;
 const DISCOVERY_GENERATED_DATE_LINE =
   /^(?:(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s*[-–]\s*\d{1,2})?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}(?:\s*[-–]\s*\d{1,2}\/\d{1,2}\/\d{2,4})?)$/i;
+const DISCOVERY_PACKET_INTRO_LINE =
+  /\bis proud to host\b.*\bplease review the following items enclosed in this packet\b/i;
 
 const stripDiscoveryGeneratedDetails = (value: unknown): string => {
   const text = safeString(value);
@@ -210,7 +212,8 @@ const stripDiscoveryGeneratedDetails = (value: unknown): string => {
         (line) =>
           !DISCOVERY_GENERATED_DETAILS_PREFIX.test(line) &&
           !DISCOVERY_GENERATED_DETAILS_INLINE.test(line) &&
-          !DISCOVERY_GENERATED_DATE_LINE.test(line)
+          !DISCOVERY_GENERATED_DATE_LINE.test(line) &&
+          !DISCOVERY_PACKET_INTRO_LINE.test(line)
       ),
     8
   ).join("\n");

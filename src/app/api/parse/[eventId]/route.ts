@@ -107,7 +107,6 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
     const sourceInput = currentData?.discoverySource?.input as DiscoverySourceInput | undefined;
     const workflow = normalizeWorkflow(currentData?.discoverySource?.workflow);
     const debugArtifacts = isDiscoveryDebugArtifactsEnabled();
-    const coreBudgetMs = resolveDiscoveryBudget("core");
     const performance = createDiscoveryPerformance();
     console.log(`${MEET_PARSE_LOG_PREFIX} source resolved`, {
       eventId,
@@ -120,6 +119,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
     if (!sourceInput || !sourceInput.type) {
       return NextResponse.json({ error: "No discovery source input found" }, { status: 400 });
     }
+    const coreBudgetMs = resolveDiscoveryBudget("core", sourceInput.type);
 
     const contentType = safeString(req.headers.get("content-type")).toLowerCase();
     let uploadFile: File | null = null;

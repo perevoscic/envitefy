@@ -661,6 +661,7 @@ export default async function EventPage({
   const discoveryCategory = String((data as any)?.category || "").toLowerCase();
   const discoveryTemplateId = String((data as any)?.templateId || "").toLowerCase();
   const hasDiscoveryInput = Boolean((data as any)?.discoverySource?.input);
+  const isOcrEvent = isScannedInviteCreatedVia(discoveryCreatedVia);
   const isGymnasticsDiscoveryTemplate =
     (discoveryCreatedVia === "meet-discovery" ||
       discoveryWorkflow === "gymnastics" ||
@@ -688,6 +689,13 @@ export default async function EventPage({
   const footballPublicChrome = footballPageTemplateId
     ? resolveFootballSeasonTemplateChrome(footballPageTemplateId)
     : null;
+  const hideHostDashboard =
+    isScannedInviteEvent ||
+    isOcrEvent ||
+    hasDiscoveryInput ||
+    discoveryCreatedVia === "meet-discovery" ||
+    discoveryCreatedVia === "football-discovery";
+  const showHostDashboard = canManageCreatedEvent && !hideHostDashboard;
   const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" | "football" } | null =
     editParam && canManageCreatedEvent
       ? (() => {
@@ -805,7 +813,6 @@ export default async function EventPage({
   }
   const numberOfGuests =
     typeof data?.numberOfGuests === "number" && data.numberOfGuests > 0 ? data.numberOfGuests : 0;
-  const isOcrEvent = isScannedInviteCreatedVia((data as any)?.createdVia);
   const attachmentInfo = (() => {
     const raw = data?.attachment;
     if (!raw || typeof raw !== "object") return null;
@@ -1246,6 +1253,7 @@ export default async function EventPage({
             numberOfGuests: data.numberOfGuests || 0,
           }}
           isOwner={isOwner}
+          showHostDashboard={showHostDashboard}
           calendarLinks={calendarLinks}
           coordinates={data?.coordinates || null}
           venueText={typeof data?.venue === "string" ? data.venue : null}
@@ -1300,6 +1308,7 @@ export default async function EventPage({
         templateId={templateId || "party-pop"}
         variationId={variationId || "classic"}
         isOwner={isOwner}
+        showHostDashboard={showHostDashboard}
         canEdit={canManageCreatedEvent}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
@@ -1871,7 +1880,7 @@ export default async function EventPage({
       </div>
 
       <div className="mt-6 flex flex-col gap-3">
-        {canManageCreatedEvent && numberOfGuests > 0 && (
+        {showHostDashboard && numberOfGuests > 0 && (
           <EventRsvpDashboard eventId={row.id} initialNumberOfGuests={numberOfGuests} />
         )}
         {/* +Add has been moved to the Shared with box header */}

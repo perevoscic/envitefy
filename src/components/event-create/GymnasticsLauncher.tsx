@@ -1,9 +1,19 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Globe, Sparkles, Upload, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, Globe, Sparkles, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
+import DiscoveryProgressPanel, {
+  type DiscoveryProgressTheme,
+} from "@/components/event-create/DiscoveryProgressPanel";
+import {
+  GYMNASTICS_URL_PARSE_START_PROGRESS,
+  GYMNASTICS_URL_PARSE_TAIL_LABEL,
+  getDiscoveryStageLabel,
+  resolveGymnasticsUrlParseProgress,
+} from "@/components/event-create/discovery-progress";
+import { resolveDiscoveryClientParseTimeoutMs } from "@/lib/discovery-budget";
 
 type GymnasticsLauncherProps = {
   forwardQueryString?: string;
@@ -14,7 +24,23 @@ type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
 const PROCESSING_PROGRESS_CAP = 90;
+const INGEST_REQUEST_TIMEOUT_MS = 15_000;
+const FILE_PARSE_REQUEST_TIMEOUT_MS = 45_000;
+const URL_PARSE_REQUEST_TIMEOUT_MS = resolveDiscoveryClientParseTimeoutMs("url");
 const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY = "envitefy:gymnastics-demo-draft:v1";
+const GYM_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
+  badgeBackground: "rgba(255,255,255,0.12)",
+  badgeBorder: "rgba(255,255,255,0.22)",
+  baseBackground: "#4a526d",
+  borderColor: "#5f6784",
+  cancelBorderColor: "#d7d9e5",
+  cancelHoverBackground: "#f7f3ff",
+  cancelTextColor: "#4c5370",
+  fillEnd: "#cab9ff",
+  fillMiddle: "#8e63ff",
+  fillStart: "#6d35f5",
+  textColor: "#ffffff",
+};
 
 export default function GymnasticsLauncher({
   forwardQueryString,
@@ -30,6 +56,9 @@ export default function GymnasticsLauncher({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState("");
   const [urlBusy, setUrlBusy] = useState(false);
+  const [urlProgress, setUrlProgress] = useState(0);
+  const [urlStatus, setUrlStatus] = useState("");
+  const [urlIndeterminate, setUrlIndeterminate] = useState(false);
   const [urlError, setUrlError] = useState("");
   const [meetUrl, setMeetUrl] = useState("");
   const discoveryBusy = uploadBusy || urlBusy;
@@ -44,6 +73,10 @@ export default function GymnasticsLauncher({
   }>({ status: "", bucket: -1 });
   const uploadIndeterminate =
     uploadBusy && uploadStatus === "Processing..." && uploadProgress >= PROCESSING_PROGRESS_CAP;
+  const uploadStageLabel = getDiscoveryStageLabel("gymnastics-upload", uploadProgress);
+  const urlStageLabel = urlStatus || getDiscoveryStageLabel("gymnastics-url", urlProgress);
+  const resolveParseTimeoutMs = (inputType: "file" | "url") =>
+    inputType === "url" ? URL_PARSE_REQUEST_TIMEOUT_MS : FILE_PARSE_REQUEST_TIMEOUT_MS;
 
   const toErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
@@ -62,6 +95,17 @@ export default function GymnasticsLauncher({
     const err = new Error("Discovery cancelled");
     (err as Error & { name: string }).name = "AbortError";
     return err;
+  };
+
+  const buildTimeoutError = (phase: "ingest" | "parse") => {
+    if (phase === "ingest") {
+      return new Error(
+        "Live URL Sync timed out before the server responded. Check that your local Next server is healthy and retry.",
+      );
+    }
+    return new Error(
+      "Meet discovery timed out while waiting for the server. Check the Next server logs for extraction progress and retry.",
+    );
   };
 
   const clearDiscoveryHandles = () => {
@@ -91,6 +135,9 @@ export default function GymnasticsLauncher({
     setUrlBusy(false);
     setUploadProgress(0);
     setUploadStatus("");
+    setUrlProgress(0);
+    setUrlStatus("");
+    setUrlIndeterminate(false);
     setUploadError("");
     setUrlError("");
   };
@@ -206,14 +253,27 @@ export default function GymnasticsLauncher({
       reportProgress(20, "Submitting meet URL...");
       log("starting ingest url request");
       ingestAbortRef.current = new AbortController();
-      const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-        signal: ingestAbortRef.current.signal,
-      }).finally(() => {
+      let ingestTimedOut = false;
+      const ingestTimeoutId = window.setTimeout(() => {
+        ingestTimedOut = true;
+        log("ingest url request timed out", { timeoutMs: INGEST_REQUEST_TIMEOUT_MS });
+        ingestAbortRef.current?.abort();
+      }, INGEST_REQUEST_TIMEOUT_MS);
+      let ingestRes: Response;
+      try {
+        ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          signal: ingestAbortRef.current.signal,
+        });
+      } catch (err) {
+        if (ingestTimedOut) throw buildTimeoutError("ingest");
+        throw err;
+      } finally {
+        window.clearTimeout(ingestTimeoutId);
         ingestAbortRef.current = null;
-      });
+      }
       ingestJson = await ingestRes.json().catch(() => ({}));
       if (!ingestRes.ok || !ingestJson?.eventId) {
         throw new Error(ingestJson?.error || "Failed to ingest source");
@@ -226,20 +286,36 @@ export default function GymnasticsLauncher({
     }
 
     const eventId = String(ingestJson.eventId);
-    reportProgress(72, "Processing meet file...");
     log("starting parse request", { eventId });
-    let parseProgress = 72;
-    parseProgressTimerRef.current = setInterval(() => {
-      parseProgress = Math.min(parseProgress + 3, PROCESSING_PROGRESS_CAP);
-      reportProgress(
-        parseProgress,
-        parseProgress >= PROCESSING_PROGRESS_CAP ? "Processing..." : "Processing meet file...",
-      );
-    }, 700);
+    const parseStartedAt = Date.now();
+    if (file) {
+      reportProgress(GYMNASTICS_URL_PARSE_START_PROGRESS, "Processing meet file...");
+      let parseProgress = GYMNASTICS_URL_PARSE_START_PROGRESS;
+      parseProgressTimerRef.current = setInterval(() => {
+        parseProgress = Math.min(parseProgress + 3, PROCESSING_PROGRESS_CAP);
+        reportProgress(
+          parseProgress,
+          parseProgress >= PROCESSING_PROGRESS_CAP ? "Processing..." : "Processing meet file...",
+        );
+      }, 700);
+    } else {
+      const initialUrlParseState = resolveGymnasticsUrlParseProgress(0);
+      reportProgress(initialUrlParseState.progress, initialUrlParseState.label);
+      parseProgressTimerRef.current = setInterval(() => {
+        const nextUrlParseState = resolveGymnasticsUrlParseProgress(Date.now() - parseStartedAt);
+        reportProgress(nextUrlParseState.progress, nextUrlParseState.label);
+      }, 500);
+    }
 
     try {
       parseAbortRef.current = new AbortController();
-      const parseStartedAt = Date.now();
+      const parseTimeoutMs = resolveParseTimeoutMs(file ? "file" : "url");
+      let parseTimedOut = false;
+      const parseTimeoutId = window.setTimeout(() => {
+        parseTimedOut = true;
+        log("parse request timed out", { eventId, timeoutMs: parseTimeoutMs });
+        parseAbortRef.current?.abort();
+      }, parseTimeoutMs);
       const parseInit: RequestInit = {
         method: "POST",
         credentials: "include",
@@ -250,9 +326,16 @@ export default function GymnasticsLauncher({
         parseBody.append("file", file);
         parseInit.body = parseBody;
       }
-      const parseRes = await fetch(`/api/parse/${eventId}`, parseInit).finally(() => {
+      let parseRes: Response;
+      try {
+        parseRes = await fetch(`/api/parse/${eventId}`, parseInit);
+      } catch (err) {
+        if (parseTimedOut) throw buildTimeoutError("parse");
+        throw err;
+      } finally {
+        window.clearTimeout(parseTimeoutId);
         parseAbortRef.current = null;
-      });
+      }
       const parseJson = await parseRes.json().catch(() => ({}));
       log("parse request completed", {
         status: parseRes.status,
@@ -273,8 +356,10 @@ export default function GymnasticsLauncher({
       }
     }
 
-    reportProgress(100, "Opening meet builder...");
     log("routing to builder", { eventId });
+    if (file) {
+      reportProgress(100, "Opening meet builder...");
+    }
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
     const baseUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`;
@@ -346,11 +431,33 @@ export default function GymnasticsLauncher({
     }
 
     setUrlBusy(true);
+    setUrlProgress(0);
+    setUrlStatus("");
+    setUrlIndeterminate(false);
+    console.log(`${GYM_DISCOVERY_LOG_PREFIX} URL sync requested`, {
+      url: trimmed,
+      ingestTimeoutMs: INGEST_REQUEST_TIMEOUT_MS,
+      parseTimeoutMs: resolveParseTimeoutMs("url"),
+    });
     try {
-      await startDiscovery({ url: trimmed });
+      await startDiscovery({
+        url: trimmed,
+        onProgress: (progress, status) => {
+          setUrlProgress(progress);
+          setUrlStatus(status);
+          setUrlIndeterminate(status === GYMNASTICS_URL_PARSE_TAIL_LABEL);
+        },
+      });
     } catch (err: unknown) {
-      if (isAbortError(err)) return;
+      if (isAbortError(err)) {
+        setUrlProgress(0);
+        setUrlStatus("");
+        setUrlIndeterminate(false);
+        return;
+      }
       setUrlError(toErrorMessage(err, "Failed to sync URL"));
+      setUrlStatus("");
+      setUrlIndeterminate(false);
     } finally {
       setUrlBusy(false);
     }
@@ -427,40 +534,14 @@ export default function GymnasticsLauncher({
                   </p>
                 </button>
               ) : (
-                <div className="w-full rounded-2xl border-2 border-dashed border-[#d7d4e5] bg-[#f8f8fc] px-4 py-4">
-                  <div className="mx-auto w-full max-w-sm">
-                    <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#5530a8]">
-                      <span>{uploadStatus || "Processing meet file..."}</span>
-                      <div className="flex items-center gap-2">
-                        {!uploadIndeterminate ? <span>{uploadProgress}%</span> : null}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            cancelDiscovery();
-                          }}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d9cdfc] bg-white text-[#6d35f5] hover:bg-[#f3ebff]"
-                          aria-label="Cancel upload"
-                          title="Cancel"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#e6defa]">
-                      {uploadIndeterminate ? (
-                        <div className="relative h-full w-full overflow-hidden">
-                          <div className="launcher-indeterminate-bar absolute inset-y-0 left-0 w-2/5 rounded-full bg-[#6d35f5]" />
-                        </div>
-                      ) : (
-                        <div
-                          className="h-full rounded-full bg-[#6d35f5] transition-[width] duration-300 ease-out"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <DiscoveryProgressPanel
+                  cancelLabel="Cancel upload"
+                  indeterminate={uploadIndeterminate}
+                  label={uploadStageLabel}
+                  onCancel={() => cancelDiscovery()}
+                  progress={uploadProgress}
+                  theme={GYM_DISCOVERY_PROGRESS_THEME}
+                />
               )}
               <input
                 ref={fileInputRef}
@@ -516,30 +597,28 @@ export default function GymnasticsLauncher({
                 placeholder="https://gym-results.com/meet/123"
                 className="w-full rounded-2xl border border-[#d7d9e5] bg-white px-4 py-3 text-sm text-[#1c2040] outline-none ring-[#6d35f5] placeholder:text-[#a3a7b8] focus:ring-2"
               />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void handleUrlSync();
-                }}
-                disabled={discoveryBusy}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-[#0f1935] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0b1430] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {urlBusy ? "Syncing..." : "Sync URL"}
-              </button>
               {urlBusy ? (
+                <DiscoveryProgressPanel
+                  cancelLabel="Cancel sync"
+                  indeterminate={urlIndeterminate}
+                  label={urlStageLabel}
+                  onCancel={() => cancelDiscovery()}
+                  progress={urlProgress}
+                  theme={GYM_DISCOVERY_PROGRESS_THEME}
+                />
+              ) : (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    cancelDiscovery();
+                    void handleUrlSync();
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d7d9e5] bg-white px-4 py-2.5 text-xs font-semibold text-[#4c5370] hover:bg-slate-50"
+                  disabled={discoveryBusy}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-[#0f1935] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0b1430] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <X className="h-3.5 w-3.5" />
-                  Cancel Sync
+                  Sync URL
                 </button>
-              ) : null}
+              )}
               {urlError ? (
                 <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
                   {urlError}
@@ -592,19 +671,6 @@ export default function GymnasticsLauncher({
           </section>
         </div>
       </div>
-      <style jsx>{`
-        @keyframes launcher-indeterminate {
-          0% {
-            transform: translateX(-120%);
-          }
-          100% {
-            transform: translateX(280%);
-          }
-        }
-        .launcher-indeterminate-bar {
-          animation: launcher-indeterminate 1.15s linear infinite;
-        }
-      `}</style>
     </main>
   );
 }

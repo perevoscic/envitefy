@@ -75,7 +75,7 @@ test("mixed packet content keeps rich operational sections separate while preser
   assert.ok(findSection(discovery, "coaches"));
   assert.ok(findSection(discovery, "traffic-parking"));
   assert.ok(findSection(discovery, "results"));
-  assert.equal(findSection(discovery, "documents"), undefined);
+  assert.equal(findSection(discovery, "documents")?.label, "Resources");
   assert.equal(findSection(discovery, "hotels"), undefined);
   assert.match(JSON.stringify(findSection(discovery, "results")), /Live scoring available online/);
   assert.match(JSON.stringify(findSection(discovery, "coaches")), /Athlete Entry Fee|MeetMaker/);
@@ -100,7 +100,7 @@ test("payment instructions do not leak into the hero header", () => {
   assert.equal(model.detailsText, "");
 });
 
-test("schedule section renders between coaches and venue details when populated", () => {
+test("schedule and session assignments render ahead of venue details when populated", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
       discoverySource: {
@@ -122,6 +122,15 @@ test("schedule section renders between coaches and venue details when populated"
         enabled: true,
         venueLabel: "Greater Fort Lauderdale / Broward County Convention Center",
         supportEmail: "director@example.com",
+        assignments: [
+          {
+            id: "assign-1",
+            level: "Level 9",
+            groupLabel: "Group 1",
+            birthDateRange: "7/3/2010 — 10/27/2011",
+            sessionCode: "SU2",
+          },
+        ],
         days: [
           {
             id: "fri",
@@ -149,16 +158,19 @@ test("schedule section renders between coaches and venue details when populated"
   });
 
   const schedule = findSection(discovery, "schedule");
+  const assignments = findSection(discovery, "session-assignments");
   const orderedIds = discovery.sections.map((section: any) => section.id);
 
   assert.ok(schedule);
+  assert.ok(assignments);
   assert.ok(findBlock(schedule, "schedule-board"));
+  assert.ok(findBlock(assignments, "session-assignment-cards"));
   assert.equal(schedule?.hideSectionHeading, true);
   assert.deepEqual(
     orderedIds.filter((id: string) =>
-      ["admission", "coaches", "schedule", "venue-details"].includes(id)
+      ["admission", "coaches", "schedule", "session-assignments", "venue-details"].includes(id)
     ),
-    ["admission", "coaches", "schedule", "venue-details"]
+    ["schedule", "session-assignments", "admission", "coaches", "venue-details"]
   );
 });
 
@@ -303,13 +315,14 @@ test("resource links drive documents, hotels, and results without rewriting even
     address: "123 Main St, Chicago, IL 60601",
   });
 
-  const _documents = findSection(discovery, "documents");
+  const resources = findSection(discovery, "documents");
   const coaches = findSection(discovery, "coaches");
   const _admission = findSection(discovery, "admission");
   const trafficParking = findSection(discovery, "traffic-parking");
   const allContent = JSON.stringify(discovery.sections);
 
   assert.ok(findSection(discovery, "meet-details"));
+  assert.equal(resources?.label, "Resources");
   assert.ok(coaches);
   assert.ok(trafficParking);
   assert.match(allContent, /https:\/\/usacompetitions\.com\/docs\/event-rotation-sheet\.pdf/i);
@@ -319,6 +332,51 @@ test("resource links drive documents, hotels, and results without rewriting even
   assert.match(JSON.stringify(trafficParking), /https:\/\/example\.com\/parking-map/i);
   assert.match(allContent, /https:\/\/results\.scorecatonline\.com\/state-2026/i);
   assert.doesNotMatch(allContent, /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
+});
+
+test("session assignment verification notes stay in their own section", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          links: [],
+        },
+        extractionMeta: {},
+        extractedText: [
+          "Session assignments are listed on club rosters, posted at usacompetitions.com",
+          "***If there is an incorrect session assignment listed on your roster, email info@usacompetitions.com ASAP***",
+        ].join("\n"),
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {},
+      logistics: {},
+      coaches: {},
+      schedule: {
+        enabled: true,
+        assignments: [
+          {
+            id: "assign-1",
+            level: "XCEL GOLD",
+            groupLabel: "Group 1",
+            birthDateRange: "9/30/2017 — Younger",
+            sessionCode: "B1",
+          },
+        ],
+        days: [],
+      },
+    },
+    venue: "State Arena",
+    address: "123 Main St, Chicago, IL 60601",
+  });
+
+  const assignments = findSection(discovery, "session-assignments");
+
+  assert.ok(assignments);
+  assert.match(JSON.stringify(assignments), /Group 1/);
+  assert.match(JSON.stringify(assignments), /incorrect session assignment/i);
+  assert.equal(findSection(discovery, "documents")?.label, undefined);
 });
 
 test("rotation hub with not_posted shows neutral status instead of a wrong PDF", () => {
@@ -449,6 +507,23 @@ test("normalizeGymMeetEventData strips discovery-generated description text", ()
       },
     },
     eventTitle: "Florida Crown Championships",
+    navItems: [],
+    rosterAthletes: [],
+  });
+
+  assert.equal(model.detailsText, "Parents should bring a refillable water bottle.");
+});
+
+test("normalizeGymMeetEventData strips packet intro boilerplate from discovery details", () => {
+  const model = normalizeGymMeetEventData({
+    eventData: {
+      createdVia: "meet-discovery",
+      details: [
+        "Team Twisters & USA Competitions is proud to host the 2026 Florida USA Gymnastics Xcel Bronze, Silver & Gold State Championships. Please review the following items enclosed in this packet:",
+        "Parents should bring a refillable water bottle.",
+      ].join("\n"),
+    },
+    eventTitle: "2026 Florida USA Gymnastics Xcel Bronze, Silver & Gold State Championships",
     navItems: [],
     rosterAthletes: [],
   });
@@ -813,7 +888,7 @@ test("normalized operational-note noise stays out of meet details and coach note
   const meetDetails = findSection(discovery, "meet-details");
   const coaches = findSection(discovery, "coaches");
 
-  assert.doesNotMatch(JSON.stringify(meetDetails), /Gym A|B1|W04|12:30 PM/);
+  assert.doesNotMatch(JSON.stringify(meetDetails || {}), /Gym A|B1|W04|12:30 PM/);
   assert.match(JSON.stringify(coaches), /Coaches sign in at the registration table/i);
 });
 

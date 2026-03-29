@@ -186,6 +186,7 @@ type Props = {
   templateId: string;
   variationId: string;
   isOwner: boolean;
+  showHostDashboard?: boolean;
   canEdit?: boolean;
   isReadOnly: boolean;
   viewerKind: "owner" | "guest" | "readonly";
@@ -251,6 +252,7 @@ export default function BirthdayTemplateView({
   templateId,
   variationId,
   isOwner,
+  showHostDashboard = isOwner,
   canEdit: canEditProp,
   isReadOnly,
   viewerKind,
@@ -1005,7 +1007,7 @@ export default function BirthdayTemplateView({
       <div className="event-modern-container py-6 md:py-10">
         {pageContent}
 
-        {isOwner && eventId && (
+        {showHostDashboard && eventId && (
           <div className="mx-auto mt-12 w-full max-w-7xl">
             <EventRsvpDashboard
               eventId={eventId}

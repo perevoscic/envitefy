@@ -121,6 +121,14 @@ export function isSiteStaticAssetPath(value: string): boolean {
 }
 
 export function isAppOwnedBlobUrl(value: string): boolean {
+  const proxyPathPrefix = "/api/blob/";
+  try {
+    const parsed = new URL(value, "https://envitefy.com");
+    if (parsed.pathname.startsWith(proxyPathPrefix)) {
+      return true;
+    }
+  } catch {}
+
   if (!isRemoteMediaUrl(value)) return false;
   try {
     const parsed = new URL(value);
@@ -134,6 +142,29 @@ export function isAppOwnedBlobUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function extractAppOwnedBlobRef(value: string): string | null {
+  try {
+    const parsed = new URL(value, "https://envitefy.com");
+    if (parsed.pathname.startsWith("/api/blob/")) {
+      const pathname = parsed.pathname
+        .slice("/api/blob/".length)
+        .split("/")
+        .filter(Boolean)
+        .map((segment) => {
+          try {
+            return decodeURIComponent(segment);
+          } catch {
+            return segment;
+          }
+        })
+        .join("/");
+      return pathname || null;
+    }
+  } catch {}
+
+  return isAppOwnedBlobUrl(value) ? value : null;
 }
 
 export function findInlineEventMedia(source: unknown): EventMediaIssue[] {
@@ -153,9 +184,8 @@ export function findTransientEventMedia(source: unknown): EventMediaIssue[] {
 export function collectAppOwnedBlobUrls(source: unknown): string[] {
   const urls = new Set<string>();
   for (const entry of listEventMediaEntries(source)) {
-    if (isAppOwnedBlobUrl(entry.value)) {
-      urls.add(entry.value);
-    }
+    const ref = extractAppOwnedBlobRef(entry.value);
+    if (ref) urls.add(ref);
   }
   return Array.from(urls);
 }
