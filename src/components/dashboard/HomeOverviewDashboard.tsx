@@ -108,6 +108,20 @@ type HomeOverviewDashboardProps = {
 
 type CardTone = "indigo" | "pink" | "sky" | "amber";
 
+/** Internal `event_history.data.category` slugs → human copy for the invite card pill (avoids SPORT_* raw strings). */
+const INVITE_CARD_CATEGORY_BADGE: Record<string, string> = {
+  sport_gymnastics_schedule: "Gymnastics",
+};
+
+function inviteCardCategoryBadge(
+  category: string | null | undefined,
+  fallback: string,
+): string {
+  const raw = String(category || "").trim();
+  if (!raw) return fallback;
+  return INVITE_CARD_CATEGORY_BADGE[raw] ?? raw;
+}
+
 const CARD_TONE_STYLES: Record<
   CardTone,
   { iconClassName: string; shadowClassName: string }
@@ -385,7 +399,7 @@ function InvitationEventCard({
 
             <div className="absolute left-6 top-6">
               <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-xl">
-                {item.category || relationLabel}
+                {inviteCardCategoryBadge(item.category, relationLabel)}
               </span>
             </div>
 
@@ -683,10 +697,8 @@ function buildInvitationActions(
       primaryAction: { href: `/event/${item.id}`, label: "RSVP Now" },
       secondaryAction: item.mapsUrl
         ? {
-            href: item.mapsUrl,
-            label: "Get Directions",
-            icon: Navigation,
-            external: true,
+            href: `/event/${item.id}`,
+            label: "View details",
           }
         : {
             label: "Estimate Travel",
