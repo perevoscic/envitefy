@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useInstalledAppState } from "@/lib/pwa/install-state";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -298,7 +299,6 @@ const resolveInstallGuide = (win: Window): InstallGuide => {
 
 const BRIDGE_EVENT_NAME = "envitefy:beforeinstallprompt";
 const DEBUG_STORE_KEY = "__snapInstallDebugLog";
-const INSTALLED_FLAG_KEY = "snapmydate:pwa-installed";
 const MAX_DEBUG_ENTRIES = 50;
 const APP_ICON_SRC = "/icons/icon-192.png?v=v8";
 
@@ -388,10 +388,10 @@ export default function PwaInstallButton({
     null
   );
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const { installState, markInstalled } = useInstalledAppState(pushDebug);
   const [canInstall, setCanInstall] = useState(false);
   const [showIosTip, setShowIosTip] = useState(false);
-  const [hideUi, setHideUi] = useState(false);
-  const [_allowedDevice, setAllowedDevice] = useState(false);
+  const [allowedDevice, setAllowedDevice] = useState(false);
   const [maybeInstallable, setMaybeInstallable] = useState(false);
   const [expanded, setExpanded] = useState(startExpanded);
   const [wasManuallyClosed, setWasManuallyClosed] = useState(false);
@@ -400,206 +400,44 @@ export default function PwaInstallButton({
   const _observerRef = useRef<IntersectionObserver | null>(null);
   const [installGuide, setInstallGuide] = useState<InstallGuide | null>(null);
   const [guidePulse, setGuidePulse] = useState(false);
-  const [installedState, setInstalledState] = useState(false);
 
   const openGuide = useCallback(() => {
     setWasManuallyClosed(false);
     setExpanded(true);
   }, []);
 
-  const markInstalled = useCallback(
-    (reason: string, meta?: Record<string, unknown>) => {
-      setInstalledState(true);
-      setCanInstall(false);
-      setShowIosTip(false);
-      setMaybeInstallable(false);
-      setExpanded(false);
-      setHideUi(true);
-      try {
-        localStorage.setItem(INSTALLED_FLAG_KEY, "1");
-      } catch {
-        // ignore
-      }
-      pushDebug(reason, meta);
-      return true;
-    },
-    [pushDebug]
-  );
+  useEffect(() => {
+    if (installState.status !== "installed") return;
+    setCanInstall(false);
+    setShowIosTip(false);
+    setMaybeInstallable(false);
+    setExpanded(false);
+    setGuidePulse(false);
+    deferredPromptRef.current = null;
+    setDeferred(null);
+    try {
+      (window as SnapWindow).__snapInstallDeferredPrompt = null;
+    } catch {
+      // ignore prompt cleanup failures
+    }
+  }, [installState.status]);
 
-  // Check early if we have previously persisted an install event
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem(INSTALLED_FLAG_KEY);
-      if (stored === "1") {
-        markInstalled("persisted install flag found");
-      }
-    } catch {
-      // ignore
-    }
-  }, [markInstalled]);
-
-  // Helper to check if app is installed (synchronous check)
-  const checkIsInstalled = useCallback(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      // iOS/iPadOS Safari exposes `navigator.standalone`
-      if ((window.navigator as any).standalone === true) return true;
-      if (!window.matchMedia) return false;
-      const standaloneMatch = window.matchMedia(
-        "(display-mode: standalone)"
-      ).matches;
-      const fullscreenMatch = window.matchMedia(
-        "(display-mode: fullscreen)"
-      ).matches;
-      const minimalUiMatch = window.matchMedia(
-        "(display-mode: minimal-ui)"
-      ).matches;
-
-      // If any display-mode indicates standalone, trust it (app is installed)
-      // This is especially important for Android where referrer checks can be unreliable
-      if (standaloneMatch || fullscreenMatch || minimalUiMatch) {
-        return true;
-      }
-
-      // Additional Android-specific check: if referrer indicates app launch
-      const isAndroid = /Android/i.test(navigator.userAgent || "");
-      if (isAndroid) {
-        const ref = document.referrer || "";
-        const androidStandalone =
-          ref.startsWith("android-app://") ||
-          ref.startsWith("chrome-extension://");
-        if (androidStandalone) return true;
-      }
-
-      return false;
-    } catch {
-      // best effort only
-    }
-    return false;
-  }, []);
-
-  // Hide if already installed or running in standalone
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const checkInstalled = () => {
-      const standalone = checkIsInstalled();
-      if (standalone) {
-        return markInstalled("display-mode standalone detected; hiding CTA", {
-          referrer: document.referrer || "",
-        });
-      }
-      return false;
-    };
-
-    // Check immediately
-    if (checkInstalled()) {
-      return;
-    }
-
-    // Listen for display-mode changes
-    const mql = window.matchMedia
-      ? window.matchMedia("(display-mode: standalone)")
-      : null;
-    const mqlFullscreen = window.matchMedia
-      ? window.matchMedia("(display-mode: fullscreen)")
-      : null;
-    const mqlMinimalUi = window.matchMedia
-      ? window.matchMedia("(display-mode: minimal-ui)")
-      : null;
-    const onChange = () => {
-      checkInstalled();
-    };
-    try {
-      mql?.addEventListener("change", onChange);
-      mqlFullscreen?.addEventListener("change", onChange);
-      mqlMinimalUi?.addEventListener("change", onChange);
-    } catch {
-      (mql as any)?.addListener?.(onChange);
-      (mqlFullscreen as any)?.addListener?.(onChange);
-      (mqlMinimalUi as any)?.addListener?.(onChange);
-    }
-
-    // Periodic check for installed state (in case detection missed it initially)
-    let intervalId: NodeJS.Timeout | null = null;
-    const startInterval = () => {
-      if (intervalId) return;
-      intervalId = setInterval(() => {
-        if (checkInstalled()) {
-          if (intervalId) {
-            clearInterval(intervalId);
-            intervalId = null;
-          }
-          return;
-        }
-        void maybeCheckRelated();
-      }, 2000); // Check every 2 seconds
-    };
-
-    // Check for installed related apps immediately (best-effort)
-    const maybeCheckRelated = async () => {
-      try {
-        const anyNav = navigator as any;
-        if (anyNav.getInstalledRelatedApps) {
-          const related = await anyNav.getInstalledRelatedApps();
-          if (Array.isArray(related) && related.length > 0) {
-            if (intervalId) {
-              clearInterval(intervalId);
-              intervalId = null;
-            }
-            return markInstalled("checked installed related apps; hiding CTA", {
-              count: Array.isArray(related) ? related.length : null,
-            });
-          }
-          pushDebug("checked installed related apps", {
-            count: Array.isArray(related) ? related.length : null,
-          });
-        }
-      } catch {}
-      return false;
-    };
-
-    // Call immediately and start interval if not installed
-    maybeCheckRelated().then((installed) => {
-      if (!installed) {
-        startInterval();
-      }
-    });
-
-    // Heuristic: mark as maybe-installable for fallback flows on browsers
-    // that don't expose beforeinstallprompt or haven't fired it yet
+    if (installState.status === "installed") return;
     try {
       const hasManifest = !!document.querySelector('link[rel="manifest"]');
       const isSecure =
         window.isSecureContext || location.hostname === "localhost";
       const hasSW = "serviceWorker" in navigator;
-      const isStandaloneNow =
-        (window.navigator as any).standalone === true ||
-        (window.matchMedia?.("(display-mode: standalone)").matches);
-      if (hasManifest && isSecure && hasSW && !isStandaloneNow) {
+      if (hasManifest && isSecure && hasSW) {
         setMaybeInstallable(true);
         pushDebug("heuristic installable", { hasManifest, isSecure, hasSW });
       }
-    } catch {}
-
-    // Cleanup function
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-      try {
-        mql?.removeEventListener("change", onChange);
-        mqlFullscreen?.removeEventListener("change", onChange);
-        mqlMinimalUi?.removeEventListener("change", onChange);
-      } catch {
-        (mql as any)?.removeListener?.(onChange);
-        (mqlFullscreen as any)?.removeListener?.(onChange);
-        (mqlMinimalUi as any)?.removeListener?.(onChange);
-      }
-    };
-  }, [checkIsInstalled, markInstalled, pushDebug]);
+    } catch {
+      // ignore best-effort heuristic failures
+    }
+  }, [installState.status, pushDebug]);
 
   // Nudge the FAB above the reCAPTCHA badge when present
   useEffect(() => {
@@ -747,15 +585,6 @@ export default function PwaInstallButton({
     };
   }, []);
 
-  useEffect(() => {
-    const onInstalled = () => {
-      markInstalled("appinstalled event observed");
-      deferredPromptRef.current = null;
-    };
-    window.addEventListener("appinstalled", onInstalled);
-    return () => window.removeEventListener("appinstalled", onInstalled);
-  }, [markInstalled]);
-
   // Observe hero visibility
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -789,10 +618,15 @@ export default function PwaInstallButton({
     (window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1" ||
       window.location.hostname === "[::1]");
+  const usesNativePromptUi =
+    installGuide?.browser === "chrome" || installGuide?.browser === "edge";
   const showGenericFallback =
     !canInstall &&
     !showIosFallback &&
-    (maybeInstallable || isLocalhost || installGuide !== null);
+    (isLocalhost ||
+      (maybeInstallable &&
+        installGuide?.supported === true &&
+        !usesNativePromptUi));
   const guideOs = installGuide?.os ?? "unknown";
   const guideBrowser = installGuide?.browser ?? "unknown";
   const guideSupported = installGuide?.supported ?? null;
@@ -877,10 +711,9 @@ export default function PwaInstallButton({
           platform: choice?.platform ?? "unknown",
         });
         if (choice?.outcome === "accepted") {
-          setShowIosTip(false);
-          setMaybeInstallable(false);
-          setExpanded(false);
-          setHideUi(true);
+          markInstalled("install CTA accepted", {
+            platform: choice?.platform ?? "unknown",
+          });
         } else {
           setGuidePulse(true);
           openGuide();
@@ -909,16 +742,12 @@ export default function PwaInstallButton({
     setShowIosTip(false);
     setGuidePulse(true);
     openGuide();
-  }, [deferred, openGuide, pushDebug]);
+  }, [deferred, markInstalled, openGuide, pushDebug]);
 
   if (shouldHideInstallUi()) return null;
-
-  // Additional safety check: hide if running in standalone mode
-  // This check runs synchronously on every render to ensure we never show when installed
-  const isInstalled = installedState || checkIsInstalled();
-  if (isInstalled) return null;
-
-  if (hideUi) return null;
+  if (installState.status === "checking") return null;
+  if (installState.status === "installed") return null;
+  if (!allowedDevice) return null;
 
   if (!heroOutOfView) return null; // Always hide if hero is in view
 
@@ -964,25 +793,31 @@ export default function PwaInstallButton({
     .join(" ");
   return (
     <div
-      className="fixed right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-2"
-      style={{ bottom: 16 + recaptchaOffset }}
+      className="fixed z-[1000] pointer-events-auto flex flex-col items-end gap-2"
+      style={{
+        right: "calc(0.5rem + env(safe-area-inset-right, 0px))",
+        bottom: `calc(${88 + recaptchaOffset}px + env(safe-area-inset-bottom, 0px))`,
+      }}
     >
       {!expanded && (
         <button
           type="button"
           onClick={showInstallCta ? handleInstallAction : openGuide}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/70 bg-[linear-gradient(135deg,#6b3cff_0%,#6757ff_40%,#5a7dff_100%)] px-4 text-sm font-semibold text-white shadow-[0_20px_40px_rgba(103,87,255,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(103,87,255,0.42)]"
-          aria-label="Open install options"
+          className="group inline-flex h-12 w-12 items-center justify-start overflow-hidden rounded-full border border-white/70 bg-[linear-gradient(135deg,#6b3cff_0%,#6757ff_40%,#5a7dff_100%)] pl-3 pr-4 text-sm font-semibold text-white shadow-[0_20px_40px_rgba(103,87,255,0.35)] transition-[width,transform,box-shadow] duration-200 ease-out hover:w-[140px] hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(103,87,255,0.42)] focus-visible:w-[140px] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_24px_44px_rgba(103,87,255,0.42)]"
+          aria-label={showInstallCta ? "Install app" : "Open install options"}
+          title="Install app"
         >
           <Image
             src={APP_ICON_SRC}
             alt=""
             width={20}
             height={20}
-            className="h-5 w-5 rounded-md"
+            className="h-5 w-5 shrink-0 rounded-md"
             unoptimized
           />
-          <span>Install app</span>
+          <span className="ml-2 whitespace-nowrap opacity-0 transition-all duration-200 ease-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 translate-x-1">
+            Install app
+          </span>
         </button>
       )}
       {expanded && (

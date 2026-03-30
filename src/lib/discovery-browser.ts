@@ -4,6 +4,7 @@ type BrowserDiscoveryAction = {
   tag: "a" | "button";
   label: string;
   href: string | null;
+  contextText?: string;
 };
 
 export type BrowserDiscoveryCandidate = {
@@ -13,6 +14,7 @@ export type BrowserDiscoveryCandidate = {
   depth: BrowserDiscoveryDepth;
   sameHost: boolean;
   contentType?: string | null;
+  contextText?: string | null;
   openedVia: "anchor" | "button" | "popup" | "download" | "navigation";
   discoveryMethod: "playwright";
 };
@@ -112,9 +114,12 @@ function isTrustedExternalResourceUrl(input: string): boolean {
     const hostname = new URL(input).hostname.toLowerCase();
     return [
       "api.groupbook.io",
+      "app.eventpipe.com",
+      "eventpipe.com",
       "jotform.com",
       "form.jotform.com",
       "pci.jotform.com",
+      "forms.office.com",
       "meetscoresonline.com",
       "results.scorecatonline.com",
     ].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
@@ -163,17 +168,52 @@ async function collectVisibleActions(page: PlaywrightPage): Promise<BrowserDisco
       };
 
       const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+      const isGenericLabel = (value: string) =>
+        /^(?:click here(?: for .+)?|here|resource link|open link|link|website)$/i.test(
+          normalize(value)
+        );
+      const findContextText = (node: HTMLElement) => {
+        const candidates: string[] = [];
+        const container = node.closest("p, li, td, section, article, div");
+        if (container) candidates.push(normalize(container.innerText || ""));
+        let current: HTMLElement | null = node;
+        for (let depth = 0; depth < 4 && current; depth += 1) {
+          let sibling = current.previousElementSibling as HTMLElement | null;
+          while (sibling) {
+            const looksHeading =
+              /^H[1-6]$/.test(sibling.tagName) ||
+              /\b(sectionheader|section-header|sectiontitle|section-title|widgettitle)\b/i.test(
+                sibling.className || ""
+              ) ||
+              /^(STRONG|B)$/i.test(sibling.tagName);
+            const text = normalize(sibling.innerText || "");
+            if (looksHeading && text) {
+              candidates.unshift(text);
+              return candidates.filter(Boolean).join(" ").trim();
+            }
+            sibling = sibling.previousElementSibling as HTMLElement | null;
+          }
+          current = current.parentElement;
+        }
+        return candidates.filter(Boolean).join(" ").trim();
+      };
       const anchors = Array.from(document.querySelectorAll("a[href]"))
         .filter(isVisible)
         .map((el) => {
           const node = el as HTMLAnchorElement;
-          const label = normalize(
+          const rawLabel = normalize(
             node.innerText || node.getAttribute("aria-label") || node.title || node.href || ""
           );
+          const contextText = findContextText(node);
+          const label =
+            !rawLabel || isGenericLabel(rawLabel)
+              ? normalize(contextText || rawLabel || node.href || "")
+              : rawLabel;
           return {
             tag: "a" as const,
             label,
             href: normalize(node.href || ""),
+            contextText,
           };
         });
 
@@ -181,13 +221,16 @@ async function collectVisibleActions(page: PlaywrightPage): Promise<BrowserDisco
         .filter(isVisible)
         .map((el) => {
           const node = el as HTMLElement;
-          const label = normalize(
+          const rawLabel = normalize(
             node.innerText || node.getAttribute("aria-label") || node.getAttribute("title") || ""
           );
+          const contextText = findContextText(node);
+          const label = !rawLabel || isGenericLabel(rawLabel) ? normalize(contextText || rawLabel) : rawLabel;
           return {
             tag: "button" as const,
             label,
             href: null,
+            contextText,
           };
         });
 
@@ -269,6 +312,7 @@ export async function collectDiscoveryBrowserData(
   const buildCandidate = (
     url: string,
     label: string,
+    contextText: string,
     sourceUrl: string,
     depth: BrowserDiscoveryDepth,
     openedVia: BrowserDiscoveryCandidate["openedVia"]
@@ -285,6 +329,7 @@ export async function collectDiscoveryBrowserData(
       depth,
       sameHost,
       contentType: null,
+      contextText: normalizeText(contextText) || null,
       openedVia,
       discoveryMethod: "playwright",
     };
@@ -300,7 +345,14 @@ export async function collectDiscoveryBrowserData(
       .filter((item) => item.tag === "a" && item.href)
       .slice(0, maxActionablesPerPage);
     for (const item of anchors) {
-      const candidate = buildCandidate(item.href || "", item.label, sourceUrl, depth, "anchor");
+      const candidate = buildCandidate(
+        item.href || "",
+        item.label,
+        item.contextText || "",
+        sourceUrl,
+        depth,
+        "anchor"
+      );
       addCandidate(candidate);
     }
   };
@@ -346,7 +398,7 @@ export async function collectDiscoveryBrowserData(
         const popupUrl = normalizeUrl(popup.url());
         const popupText = await collectPageText(popup);
         if (popupUrl) {
-          addCandidate(buildCandidate(popupUrl, label, beforeUrl, 1, "popup"));
+          addCandidate(buildCandidate(popupUrl, label, label, beforeUrl, 1, "popup"));
           addPage({
             url: popupUrl,
             title: normalizeText(await popup.title().catch(() => "")) || null,
@@ -361,15 +413,13 @@ export async function collectDiscoveryBrowserData(
       }
 
       if (download) {
-        addCandidate(
-          buildCandidate(download.url(), label, beforeUrl, 1, "download")
-        );
+        addCandidate(buildCandidate(download.url(), label, label, beforeUrl, 1, "download"));
         continue;
       }
 
       const afterUrl = normalizeUrl(page.url());
       if (afterUrl && afterUrl !== beforeUrl) {
-        addCandidate(buildCandidate(afterUrl, label, beforeUrl, 1, "navigation"));
+        addCandidate(buildCandidate(afterUrl, label, label, beforeUrl, 1, "navigation"));
         const navigationText = await collectPageText(page);
         addPage({
           url: afterUrl,

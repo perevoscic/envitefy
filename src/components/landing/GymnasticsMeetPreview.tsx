@@ -20,7 +20,7 @@ const quickTabs = ["Sessions", "Venue", "Hotels", "Updates"];
 export default function GymnasticsMeetPreview({ className = "" }: Props) {
   return (
     <div
-      className={`relative flex h-[560px] items-center justify-center ${className}`}
+      className={`relative flex min-h-[520px] items-start justify-center overflow-x-clip pb-2 pt-2 sm:min-h-[560px] ${className}`}
     >
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-1/2 top-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-tr from-indigo-200/70 via-violet-100/60 to-transparent blur-3xl" />

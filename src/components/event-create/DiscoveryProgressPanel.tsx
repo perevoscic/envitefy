@@ -145,17 +145,17 @@ export default function DiscoveryProgressPanel({
         }
         @keyframes launcher-progress-indeterminate {
           0% {
-            background-position: 0% 50%;
+            background-position: 200% 50%;
           }
           100% {
-            background-position: 200% 50%;
+            background-position: 0% 50%;
           }
         }
         .launcher-progress-shimmer {
           animation: launcher-progress-shimmer 2.2s ease-in-out infinite;
         }
         .launcher-progress-indeterminate {
-          animation: launcher-progress-indeterminate 1.2s linear infinite;
+          animation: launcher-progress-indeterminate 1.2s ease-in-out infinite alternate;
         }
         .discovery-progress-cancel:hover {
           background-color: var(--cancel-hover-background);

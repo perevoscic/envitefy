@@ -16,6 +16,7 @@ import {
 import { hydrateDiscoveryFileInput } from "@/lib/discovery-file-hydration";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import {
+  buildGymDiscoveryPublicPageArtifacts,
   computeGymBuilderStatuses,
   createDiscoveryPerformance,
   type DiscoveryEnrichmentStatus,
@@ -340,6 +341,11 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       latestData,
       extraction.extractionMeta,
     );
+    const publicArtifacts = buildGymDiscoveryPublicPageArtifacts({
+      parseResult: enrichedParseResult,
+      baseData: latestData,
+      extractionMeta: extraction.extractionMeta,
+    });
     const nextGymPageTemplateId =
       resolveGymMeetTemplateId({ ...latestData, ...mapped }) || DEFAULT_GYM_MEET_TEMPLATE_ID;
     const detectedGymLayoutImage = extraction.extractionMeta?.gymLayoutImageDataUrl || null;
@@ -374,7 +380,16 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
           extraction.extractionMeta,
           debugArtifacts,
         ),
-        parseResult: stripGymScheduleGridsFromParseResult(enrichedParseResult),
+        ...(publicArtifacts
+          ? {
+              pipelineVersion: publicArtifacts.pipelineVersion,
+              publicPageSections: publicArtifacts.publicPageSections,
+              publishAssessment: publicArtifacts.publishAssessment,
+            }
+          : {}),
+        parseResult: stripGymScheduleGridsFromParseResult(
+          publicArtifacts?.parseResult || enrichedParseResult
+        ),
         enrichment: enrichmentState,
         enrichedAt: finishedAt,
         updatedAt: finishedAt,

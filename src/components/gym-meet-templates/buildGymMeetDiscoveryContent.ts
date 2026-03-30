@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
 // @ts-nocheck
+import { inflateGymDiscoveryV2EventData, isGymDiscoveryV2EventData } from "@/lib/discovery/event-data";
+import { isGymDiscoveryScheduleGridEnabled } from "@/lib/meet-discovery/constants";
 import {
   normalizeVenueFactForCompare,
   sanitizeVenueFactLines,
@@ -42,6 +44,12 @@ const uniqueTextLines = (items: string[], limit = 20) => {
   }
   return out;
 };
+
+const normalizeLinkDedupLabel = (value: unknown) =>
+  safeString(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 
 const uniqueBy = <T,>(items: T[], getKey: (item: T) => string): T[] => {
   const seen = new Set<string>();
@@ -253,17 +261,22 @@ const toAction = (item: any): GymMeetLinkAction | undefined => {
 };
 
 const uniqueLinks = (items: any[], limit = 8) => {
-  const seen = new Set<string>();
+  const seenUrls = new Set<string>();
+  const seenLabels = new Set<string>();
   const out: Array<{ label: string; url: string }> = [];
   for (const item of Array.isArray(items) ? items : []) {
     const normalizedItem = normalizeRotationSheetsLink(item);
     const url = safeString(normalizedItem?.url);
     if (!/^https?:\/\//i.test(url)) continue;
-    const key = url.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const urlKey = url.toLowerCase();
+    const label = safeString(normalizedItem?.label || normalizedItem?.title || "Open Link");
+    const labelKey = normalizeLinkDedupLabel(label);
+    if (seenUrls.has(urlKey)) continue;
+    if (labelKey && seenLabels.has(labelKey)) continue;
+    seenUrls.add(urlKey);
+    if (labelKey) seenLabels.add(labelKey);
     out.push({
-      label: safeString(normalizedItem?.label || normalizedItem?.title || "Open Link"),
+      label,
       url,
     });
     if (out.length >= limit) break;
@@ -288,10 +301,379 @@ const normalizeDiscoveryResourceLinks = (items: any[]) =>
             ? item.matchScore
             : null,
         matchReason: safeString(item?.matchReason),
+        audience: safeString(item?.audience),
+        renderTarget: safeString(item?.renderTarget),
       }))
       .filter((item) => /^https?:\/\//i.test(item.url)),
     (item) => `${item.kind}|${item.url}`
   );
+
+const PUBLIC_DISCOVERY_ATTENDEE_PATTERN =
+  /\b(admission|ticket|spectator|adults?|children|child|under\s*\d|free|venue|address|parking|garage|drop[-\s]?off|ride[-\s]?share|accessible|accessibility|guest services|awards?|hotel|lodging|travel|results?|live scoring|map|doors open|arrival|welcome|hosted by|meet site|food|hydration|animals?|photo|video|order form|apparel|sizing)\b/i;
+const PUBLIC_DISCOVERY_OVERVIEW_PATTERN =
+  /\b(championships?|classic|invitational|state meet|regional meet|national meet|takes place|host(?:ed)? by|awards ceremon|team awards?|all around awards?)\b/i;
+const PUBLIC_DISCOVERY_COACH_OPS_PATTERN =
+  /\b(coach(?:es)?(?:\s+only)?|meet reservations?|membership verification|pro member|sign[-\s]?in|attire|competition floor access|scratches?|master rotation sheet|floor music|regional(?:s)?|qualification|entry fees?|late fee|meetmaker|payment instructions?|check payable|coach hospitality)\b/i;
+const PUBLIC_DISCOVERY_SESSION_OPS_PATTERN =
+  /\b(session assignments?|verify athlete session assignment|club rosters?|roster corrections?|athlete birth[-\s]?date|birth[-\s]?date correction|age[-\s]?group|group\/session|session code|division table|team divisions?|session eligibility|rotation ops?)\b/i;
+const PUBLIC_DISCOVERY_DOCUMENT_PATTERN =
+  /\b(faq|program|spectator guide|visitor guide|event guide|public document|order form|sizing form|apparel form|photo\s*\/?\s*video)\b/i;
+const PUBLIC_DISCOVERY_MIXED_DOCUMENT_PATTERN =
+  /\b(packet|info packet|meet packet|schedule(?:\s*&|\s+and)?\s*info|schedule packet)\b/i;
+const PUBLIC_DISCOVERY_NOT_MEET_DETAILS_PATTERN =
+  /\b(admission|ticket|parking|hotel|lodging|results?|live scoring|faq|program|packet|document|venue map|parking map)\b/i;
+
+const classifyPublicAudience = (text: unknown) => {
+  const normalized = safeString(text).replace(/\s+/g, " ").trim();
+  if (!normalized) return "unknown";
+  const hasCoachOps = PUBLIC_DISCOVERY_COACH_OPS_PATTERN.test(normalized);
+  const hasSessionOps = PUBLIC_DISCOVERY_SESSION_OPS_PATTERN.test(normalized);
+  const hasPublicAttendee =
+    PUBLIC_DISCOVERY_ATTENDEE_PATTERN.test(normalized) ||
+    PUBLIC_DISCOVERY_OVERVIEW_PATTERN.test(normalized) ||
+    /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|\d{1,2}\/\d{1,2}\/\d{2,4})\b/i.test(
+      normalized
+    ) ||
+    /\b\d{3,5}\s+[a-z0-9].*,\s*[a-z]{2}\s+\d{5}\b/i.test(normalized);
+  if ((hasCoachOps || hasSessionOps) && hasPublicAttendee) return "mixed";
+  if (hasSessionOps) return "session_ops";
+  if (hasCoachOps) return "coach_ops";
+  if (hasPublicAttendee) return "public_attendee";
+  if (PUBLIC_DISCOVERY_MIXED_DOCUMENT_PATTERN.test(normalized)) return "mixed";
+  return "unknown";
+};
+
+const classifyResourceRenderTarget = (item: any) => {
+  const audience = safeString(item?.audience) || classifyPublicAudience(`${item?.label || ""} ${item?.url || ""}`);
+  const kind = safeString(item?.kind);
+  const haystack = `${safeString(item?.label)} ${safeString(item?.url)}`.toLowerCase();
+  if (audience === "coach_ops" || audience === "session_ops") {
+    return "hidden";
+  }
+  if (["roster", "team_divisions", "rotation_hub", "rotation_sheet"].includes(kind)) {
+    return "hidden";
+  }
+  if (kind === "hotel_booking") return "hotels";
+  if (["results_hub", "results_live", "results_pdf"].includes(kind)) return "results";
+  if (kind === "admission") return "admission";
+  if (kind === "parking") return "traffic_parking";
+  if (["photo_video", "apparel_form"].includes(kind)) return "documents";
+  if (audience === "unknown") return "hidden";
+  if (PUBLIC_DISCOVERY_DOCUMENT_PATTERN.test(haystack)) return "documents";
+  if (kind === "packet") {
+    return audience === "public_attendee" && PUBLIC_DISCOVERY_DOCUMENT_PATTERN.test(haystack)
+      ? "documents"
+      : "hidden";
+  }
+  if (/venue|facility|guest services|entrance|map/i.test(haystack)) return "venue";
+  return audience === "public_attendee" ? "meet_details" : "hidden";
+};
+
+const normalizePublicSection = (section: any, title: string, fallback?: { body?: unknown; bullets?: unknown[]; hideReason?: string }) => {
+  const existing = section && typeof section === "object" ? section : null;
+  const body = collapseRepeatedDisplayText(existing ? existing?.body : fallback?.body || "");
+  const bulletSource = existing
+    ? Array.isArray(existing?.bullets)
+      ? existing.bullets
+      : []
+    : Array.isArray(fallback?.bullets)
+    ? fallback.bullets
+    : [];
+  const bullets = uniqueTextLines(
+    bulletSource.map((item) => safeString(item)),
+    8
+  );
+  const explicitVisibility = safeString(existing?.visibility);
+  const visibility =
+    explicitVisibility === "visible" || explicitVisibility === "hidden"
+      ? explicitVisibility
+      : body || bullets.length > 0
+      ? "visible"
+      : "hidden";
+  return {
+    title: safeString(existing?.title || title) || title,
+    body,
+    bullets,
+    visibility,
+    hideReason:
+      visibility === "hidden"
+        ? safeString(existing ? existing?.hideReason : fallback?.hideReason) ||
+          "No attendee-safe content survived filtering."
+        : null,
+  };
+};
+
+const normalizePublicDocumentSection = (section: any) => {
+  const links = uniqueLinks(
+    (Array.isArray(section?.links) ? section.links : []).filter((item: any) =>
+      PUBLIC_DISCOVERY_DOCUMENT_PATTERN.test(`${safeString(item?.label)} ${safeString(item?.url)}`)
+    ),
+    12
+  );
+  const explicitVisibility = safeString(section?.visibility);
+  const visibility =
+    explicitVisibility === "visible" || explicitVisibility === "hidden"
+      ? explicitVisibility
+      : links.length > 0
+      ? "visible"
+      : "hidden";
+  return {
+    title: safeString(section?.title || "Documents") || "Documents",
+    links,
+    visibility,
+    hideReason:
+      visibility === "hidden"
+        ? safeString(section?.hideReason) || "No public-safe documents survived filtering."
+        : null,
+  };
+};
+
+const selectSectionResourceLinks = (resourceLinks: any[], target: string, limit = 8) =>
+  uniqueLinks(
+    resourceLinks
+      .filter((item) => safeString(item?.renderTarget) === target)
+      .filter((item) => safeString(item?.audience || "public_attendee") === "public_attendee")
+      .map((item) => ({ label: item.label, url: item.url })),
+    limit
+  );
+
+const collectPublicBodyLines = (value: unknown, options?: { excludeMeetDetailKeywords?: boolean; limit?: number }) =>
+  uniqueTextLines(
+    safeString(value)
+      .split(/\n+/)
+      .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
+      .filter(Boolean)
+      .filter((line) => classifyPublicAudience(line) === "public_attendee")
+      .filter((line) =>
+        options?.excludeMeetDetailKeywords ? !PUBLIC_DISCOVERY_NOT_MEET_DETAILS_PATTERN.test(line) : true
+      ),
+    options?.limit || 6
+  );
+
+const buildFallbackPublicMeetDetailsBody = (params: {
+  detailsText: unknown;
+  title?: unknown;
+  dateLabel?: unknown;
+  venueLabel?: unknown;
+  hostGym?: unknown;
+  doorsOpen?: unknown;
+  arrivalGuidance?: unknown;
+  awardsInfo?: unknown;
+}) => {
+  const overviewLine = (() => {
+    const title = safeString(params.title);
+    const dateLabel = safeString(params.dateLabel);
+    const venueLabel = safeString(params.venueLabel);
+    const hostGym = safeString(params.hostGym);
+    if (title && dateLabel && venueLabel) {
+      return `${title} takes place ${dateLabel} at ${venueLabel}${hostGym ? ` and is hosted by ${hostGym}` : ""}.`;
+    }
+    return "";
+  })();
+  return uniqueTextLines(
+    [
+      overviewLine,
+      ...collectPublicBodyLines(params.detailsText, {
+        excludeMeetDetailKeywords: true,
+        limit: 4,
+      }),
+      safeString(params.doorsOpen),
+      safeString(params.arrivalGuidance),
+      safeString(params.awardsInfo),
+    ],
+    5
+  ).join(" ");
+};
+
+const normalizeAdmissionAudience = (label: unknown) => {
+  const normalized = safeString(label).toLowerCase();
+  if (!normalized) return "Admission";
+  if (/\b(adults?|13\+|13\s*(?:and|&)\s*up)\b/i.test(normalized)) return "Adults (13+)";
+  if (/\b(children|child|kids?|5[-–]\s*12|5\s*(?:to|-)\s*12)\b/i.test(normalized)) {
+    return "Children (5-12)";
+  }
+  if (/\b(under\s*5|5\s*(?:and|&)\s*under|4\s*(?:and|&)\s*under)\b/i.test(normalized)) {
+    return "Under 5";
+  }
+  return safeString(label) || "Admission";
+};
+
+const normalizeCurrencyDisplay = (value: unknown) => {
+  const raw = safeString(value).replace(/\s+/g, "");
+  if (!raw) return "";
+  const numeric = Number.parseFloat(raw.replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(numeric)) return raw;
+  return Number.isInteger(numeric) ? `$${numeric}` : `$${numeric.toFixed(2)}`;
+};
+
+const parseCurrencyAmount = (value: unknown) => {
+  const numeric = Number.parseFloat(safeString(value).replace(/[^0-9.]/g, ""));
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const extractAdmissionVariantAmounts = (item: any) => {
+  const label = safeString(item?.label);
+  const price = safeString(item?.price);
+  const note = safeString(item?.note);
+  const text = [label, price, note]
+    .filter(Boolean)
+    .join(" ");
+  const amounts = Array.from(text.matchAll(/\$\s*\d+(?:\.\d{2})?/g)).map((match) =>
+    normalizeCurrencyDisplay(match[0])
+  );
+  const priceAmount = normalizeCurrencyDisplay(price);
+  const cashBeforeAmount = normalizeCurrencyDisplay(
+    (text.match(/\bcash\b[^$]*(\$\s*\d+(?:\.\d{2})?)/i) || [])[1]
+  );
+  const cardBeforeAmount = normalizeCurrencyDisplay(
+    (text.match(/\b(card|credit|debit)\b[^$]*(\$\s*\d+(?:\.\d{2})?)/i) || [])[2]
+  );
+  const cashAfterAmount = normalizeCurrencyDisplay(
+    (text.match(/(\$\s*\d+(?:\.\d{2})?)\s*\/?\s*(?:adult|child|children)?.*?\bcash\b/i) || [])[1]
+  );
+  const cardAfterAmount = normalizeCurrencyDisplay(
+    (text.match(/(\$\s*\d+(?:\.\d{2})?)\s*\/?\s*(?:adult|child|children)?.*?\b(card|credit|debit)\b/i) || [])[1]
+  );
+  const relativeCashDiscount = parseCurrencyAmount(
+    (text.match(/\bcash(?:\s+price)?(?:\s+is)?\s+\$?\s*(\d+(?:\.\d{2})?)\s+less\b/i) || [])[1]
+  );
+  const cashMarker = /\bcash\b/i.test(`${label} ${note}`);
+  const cardMarker = /\b(card|credit|debit)\b/i.test(`${label} ${note}`);
+  const isFree = /\bfree\b/i.test(text);
+  return {
+    cardAmount: cardBeforeAmount || cardAfterAmount || (cardMarker ? priceAmount : ""),
+    cashAmount: cashBeforeAmount || cashAfterAmount || (cashMarker ? priceAmount : ""),
+    defaultAmount: priceAmount || amounts[0] || "",
+    relativeCashDiscount,
+    isFree,
+  };
+};
+
+const mergeAdmissionVariants = (items: any[]) => {
+  const merged = new Map<
+    string,
+    {
+      label: string;
+      card?: string;
+      cash?: string;
+      standard?: string;
+      note?: string;
+      free?: boolean;
+      relativeCashDiscount?: number | null;
+    }
+  >();
+  for (const item of Array.isArray(items) ? items : []) {
+    const combined = [safeString(item?.label), safeString(item?.price), safeString(item?.note)]
+      .filter(Boolean)
+      .join(" ");
+    if (classifyPublicAudience(combined) !== "public_attendee") continue;
+    const label = normalizeAdmissionAudience(item?.label);
+    const current = merged.get(label) || { label };
+    const variants = extractAdmissionVariantAmounts(item);
+    if (variants.isFree) current.free = true;
+    if (variants.cardAmount) current.card = variants.cardAmount;
+    if (variants.cashAmount) current.cash = variants.cashAmount;
+    if (!variants.cardAmount && !variants.cashAmount && variants.defaultAmount) {
+      current.standard = current.standard || variants.defaultAmount;
+    }
+    if (variants.relativeCashDiscount != null) {
+      current.relativeCashDiscount = variants.relativeCashDiscount;
+    }
+    if (!current.note && safeString(item?.note) && !/\$/.test(safeString(item?.note))) {
+      current.note = safeString(item?.note);
+    }
+    const relativeBase = parseCurrencyAmount(current.card || current.standard);
+    if (!current.cash && relativeBase != null && current.relativeCashDiscount != null) {
+      current.cash = normalizeCurrencyDisplay(relativeBase - current.relativeCashDiscount);
+      if (!current.card && current.standard) current.card = current.standard;
+    }
+    merged.set(label, current);
+  }
+  return Array.from(merged.values()).map((item, index) => {
+    const value = item.free
+      ? "Free"
+      : item.card && item.cash
+      ? `Card ${item.card}`
+      : item.card
+      ? item.card
+      : item.cash
+      ? `Cash ${item.cash}`
+      : item.standard || "";
+    const body = item.free
+      ? item.note || ""
+      : item.card && item.cash
+      ? `Cash ${item.cash}`
+      : item.note || "";
+    return {
+      key: `admission-${index + 1}`,
+      label: item.label,
+      value,
+      body,
+    };
+  });
+};
+
+const sanitizeVenueSectionForMap = (section: any, venueLabel: string, addressLabel: string) => {
+  const bodyLines = uniqueTextLines(
+    safeString(section?.body)
+      .split(/\n+|(?<=[.!?])\s+/)
+      .map((line) => line.trim())
+      .filter(Boolean),
+    6
+  );
+  const removableVenueTokens = uniqueTextLines(
+    [
+      venueLabel,
+      addressLabel,
+      [venueLabel, addressLabel].filter(Boolean).join(", "),
+      [venueLabel, addressLabel].filter(Boolean).join(" "),
+    ].filter(Boolean),
+    8
+  ).map((item) => item.toLowerCase().replace(/\s+/g, " ").trim());
+
+  const filteredBody = bodyLines.filter((line) => {
+    const key = line.toLowerCase().replace(/\s+/g, " ").trim();
+    return key && !removableVenueTokens.includes(key);
+  });
+  const filteredBullets = uniqueTextLines(
+    (Array.isArray(section?.bullets) ? section.bullets : [])
+      .map((item: any) => safeString(item))
+      .filter(Boolean)
+      .filter((line) => {
+        const key = line.toLowerCase().replace(/\s+/g, " ").trim();
+        return key && !removableVenueTokens.includes(key);
+      }),
+    6
+  );
+
+  return {
+    ...section,
+    body: filteredBody.join(" "),
+    bullets: filteredBullets,
+  };
+};
+
+const sanitizeSpectatorBody = (body: unknown, hasStructuredAdmissionCards: boolean) => {
+  const normalized = collapseRepeatedDisplayText(body);
+  if (!normalized) return "";
+  const lines = uniqueTextLines(normalized.split(/(?<=[.!?])\s+|\n+/), 6).filter(
+    (line) => !hasStructuredAdmissionCards || !/\b(adults?|children|under\s*5|cash|card|credit|debit|\$\d)/i.test(line)
+  );
+  return lines.join(" ");
+};
+
+const shouldRenderPublicAnnouncementCard = (item: any) => {
+  const title = safeString(item?.title || item?.label);
+  const body = safeString(item?.body || item?.message || item?.text || item?.title);
+  const text = `${title} ${body}`.trim();
+  if (!text) return false;
+  if (classifyPublicAudience(text) !== "public_attendee") return false;
+  if (STRUCTURED_ANNOUNCEMENT_PATTERN.test(text)) return false;
+  if (/\b(schedule|coach|session|results?|admission|venue|hotel|packet|document)\b/i.test(text)) {
+    return false;
+  }
+  return TRANSIENT_ANNOUNCEMENT_HINT_PATTERN.test(text);
+};
 
 const ensureUniqueDiscoveryCardKeys = <T extends { key?: string }>(
   items: T[],
@@ -308,6 +690,31 @@ const ensureUniqueDiscoveryCardKeys = <T extends { key?: string }>(
       key: occurrence === 1 ? baseKey : `${baseKey}-${occurrence}`,
     };
   });
+};
+
+const buildPublicSectionBlocks = (section: any) => {
+  const titleKey = safeString(section?.title || "section")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "section";
+  const blocks: any[] = [];
+  const body = safeString(section?.body);
+  const bullets = uniqueTextLines(Array.isArray(section?.bullets) ? section.bullets : [], 8);
+  if (body) {
+    blocks.push({
+      id: `${titleKey}-body`,
+      type: "text" as const,
+      text: body,
+    });
+  }
+  if (bullets.length > 0) {
+    blocks.push({
+      id: `${titleKey}-bullets`,
+      type: "line-list" as const,
+      lines: bullets.map((text) => ({ text })),
+    });
+  }
+  return blocks;
 };
 
 const normalizeAnnouncementCards = (items: any[], source: "builder" | "parsed") => {
@@ -400,6 +807,7 @@ const _normalizeLineKey = (value: string) => safeString(value).toLowerCase().rep
 const isUsableEmail = (value: unknown) => USABLE_EMAIL_PATTERN.test(safeString(value));
 const isUsablePhone = (value: unknown) => safeString(value).replace(/\D/g, "").length >= 7;
 const isMarketingLikeSourceLine = (value: string) => MARKETING_SOURCE_PATTERN.test(safeString(value));
+/** Sync string heuristic only: keeps obvious session/schedule *table rows* out of Meet Details prose. Unrelated to gym-layout vision in meet-discovery. Structured schedule derivation is gated by `GYM_DISCOVERY_SCHEDULE_GRID_ENABLED`. */
 const isScheduleGridLikeSourceLine = (value: string) => {
   const text = safeString(value);
   if (!text) return false;
@@ -408,6 +816,22 @@ const isScheduleGridLikeSourceLine = (value: string) => {
   const allCapsWords = text.match(/\b[A-Z][A-Za-z'.&-]+\b/g) || [];
   if (allCapsWords.length >= 4 && /\b(gym|gymnastics|fl)\b/i.test(text)) return true;
   return false;
+};
+
+/** Long sentence-like packet prose; avoids classifying "Xcel Bronze/Silver…" cover copy as schedule grid noise. */
+const isNarrativeMeetPacketLine = (value: string) => {
+  const text = safeString(value).trim();
+  if (text.length < 45) return false;
+  if (CLUB_PARTICIPATION_SOURCE_PATTERN.test(text)) return false;
+  const words = text.split(/\s+/).filter(Boolean).length;
+  if (words < 10) return false;
+  const timeTokens = (text.match(/\b\d{1,2}:\d{2}\s*[AP]M\b/gi) || []).length;
+  if (timeTokens >= 1 && words < 22) return false;
+  if (/^session\s+[a-z]?\d+/i.test(text) && words < 16) return false;
+  if (!/[.!?]/.test(text) && words < 15) return false;
+  return /\b(coaches?|athletes?|awards?\s+ceremon|awards?\b|membership|rosters?|sanction|hospitality|regionals?|qualif|ineligible|attire|dress\s+code|sign[-\s]?in\b|usa\s+gymnastics|rotation\s+sheet|scratches?|professional\s+membership|competition\s+floor|team\s+twisters|twisters\b|packet|enclosed|birth\s+dates?|meet\s+reservations?|session\s+assignments?|xcel\b|championship|proud\s+to\s+host|director\s+of\s+operations|meet\s+director)\b/i.test(
+    text
+  );
 };
 const isClubParticipationLikeSourceLine = (value: string) =>
   CLUB_PARTICIPATION_SOURCE_PATTERN.test(safeString(value));
@@ -451,6 +875,14 @@ const splitExtractedDiscoveryPages = (text: string) => {
   }
 
   const pages: Array<{ pageNumber: number; text: string; lines: string[] }> = [];
+  const firstMarkerIndex = matches[0]?.index ?? 0;
+  if (firstMarkerIndex > 0) {
+    const preamble = normalized.slice(0, firstMarkerIndex).trim();
+    if (preamble) {
+      const lines = preamble.split(/\n+/).map((line) => safeString(line)).filter(Boolean);
+      pages.push({ pageNumber: 0, text: preamble, lines });
+    }
+  }
   for (let index = 0; index < matches.length; index += 1) {
     const match = matches[index];
     const pageNumber = Number.parseInt(match[1] || `${index + 1}`, 10) || index + 1;
@@ -709,7 +1141,11 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
       .join(" ")
       .toLowerCase();
     const targetId =
-      /(coach|meetmaker|entry|registration|regional)/i.test(documentText)
+      /(parking|garage|parkmobile|pay\s+by\s+phone|lots\s+and\s+garages|parking\s+rates?|hourly\s+and\s+daily\s+rates)/i.test(
+        documentText
+      )
+        ? "traffic-parking"
+        : /(coach|meetmaker|entry|registration|regional)/i.test(documentText)
         ? "coaches"
         : /(venue|floor|hall|map|facility)/i.test(documentText)
         ? "venue-details"
@@ -723,6 +1159,17 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
               label: "Meet Details",
               kind: "meet_overview",
               priority: 10,
+            });
+            working.push(synthetic);
+            return { section: synthetic, index: working.length - 1 };
+          })()
+        : targetId === "traffic-parking"
+        ? (() => {
+            const synthetic = createSyntheticSection({
+              id: "traffic-parking",
+              label: "Traffic & Parking",
+              kind: "traffic_parking",
+              priority: 60,
             });
             working.push(synthetic);
             return { section: synthetic, index: working.length - 1 };
@@ -752,6 +1199,8 @@ export function buildGymMeetDiscoveryContent({
   advancedSections,
   date,
   detailsText,
+  /** Unstripped packet prose for Meet Details routing; hero still uses stripped `detailsText` from normalize. */
+  detailsTextForDiscovery,
   venue,
   address,
 }: {
@@ -760,14 +1209,26 @@ export function buildGymMeetDiscoveryContent({
   advancedSections: any;
   date?: string;
   detailsText?: string;
+  detailsTextForDiscovery?: string;
   venue?: string;
   address?: string;
 }): GymMeetDiscoveryContent {
+  eventData = inflateGymDiscoveryV2EventData(eventData);
+  const scheduleGridsEnabled = isGymDiscoveryScheduleGridEnabled();
   const logistics = advancedSections?.logistics || {};
   const meetSection = advancedSections?.meet || {};
   const gearSection = advancedSections?.gear || {};
   const coachesSection = advancedSections?.coaches || {};
   const parseResult = eventData?.discoverySource?.parseResult || {};
+  const discoveryV2 = isGymDiscoveryV2EventData(eventData);
+  const isGymDiscoveryEvent =
+    discoveryV2 ||
+    safeString(eventData?.createdVia) === "meet-discovery" ||
+    safeString(eventData?.discoverySource?.workflow) === "gymnastics" ||
+    Boolean(eventData?.discoverySource?.input || eventData?.discoverySource?.parseResult);
+  const isPublicPageV2 =
+    isGymDiscoveryEvent || eventData?.discoverySource?.pipelineVersion === "gym-public-v2";
+  const publicPageSections = eventData?.discoverySource?.publicPageSections || {};
   const parseGear = parseResult?.gear || {};
   const parseLogistics = parseResult?.logistics || {};
   const parseMeetDetails = parseResult?.meetDetails || {};
@@ -779,7 +1240,16 @@ export function buildGymMeetDiscoveryContent({
     : [];
   const resourceLinks = normalizeDiscoveryResourceLinks(
     eventData?.discoverySource?.extractionMeta?.resourceLinks
-  );
+  ).map((item: any) => {
+    const audience =
+      safeString(item?.audience) ||
+      classifyPublicAudience(`${safeString(item?.label)} ${safeString(item?.url)} ${safeString(item?.sourceUrl)}`);
+    return {
+      ...item,
+      audience,
+      renderTarget: safeString(item?.renderTarget) || classifyResourceRenderTarget({ ...item, audience }),
+    };
+  });
   const hasStructuredResources = resourceLinks.length > 0;
   const pickStructuredResourceLinks = (...kinds: string[]) =>
     resourceLinks.filter((item) => kinds.includes(item.kind));
@@ -907,7 +1377,7 @@ export function buildGymMeetDiscoveryContent({
     (date ? formatGymMeetDate(date, { withWeekday: true }) : "");
   const venueLabel = collapseRepeatedDisplayText(venue || eventData?.venue);
   const addressLabel = collapseRepeatedDisplayText(address || eventData?.address);
-  const normalizedDetailsText = safeString(detailsText);
+  const normalizedDetailsText = safeString(detailsTextForDiscovery ?? detailsText);
   const facilityMapAddress = addressLabel || venueLabel;
   const gymLayoutImageUrl = safeString(
     advancedSections?.logistics?.gymLayoutImage ||
@@ -923,6 +1393,323 @@ export function buildGymMeetDiscoveryContent({
   const gymLayoutLabelValue = gymLayoutLabel
     ? gymLayoutLabel.replace(/^assigned gym location:\s*/i, "").trim() || gymLayoutLabel
     : "";
+
+  if (isPublicPageV2) {
+    const fallbackMeetDetailsBody = buildFallbackPublicMeetDetailsBody({
+      detailsText: normalizedDetailsText,
+      title: eventData?.eventTitle || eventData?.title,
+      dateLabel: eventDatesLabel,
+      venueLabel,
+      hostGym: eventData?.hostGym,
+      doorsOpen: meetSection?.doorsOpen || parseMeetDetails?.doorsOpen,
+      arrivalGuidance: meetSection?.arrivalGuidance || parseMeetDetails?.arrivalGuidance,
+      awardsInfo: meetSection?.awardsInfo || parseMeetDetails?.awardsInfo,
+    });
+    const fallbackParkingBody =
+      collectPublicBodyLines(
+        [
+          safeString(logistics?.parking || parseLogistics?.parking),
+          safeString(logistics?.rideShare || parseLogistics?.rideShare),
+          safeString(logistics?.accessibility || parseLogistics?.accessibility),
+        ].join("\n"),
+        { limit: 3 }
+      ).join(" ") ||
+      (facilityMapAddress
+        ? `Parking details were not listed in the packet. Plan to arrive early at ${facilityMapAddress} and follow on-site signage for spectator parking and drop-off.`
+        : "");
+    const fallbackTrafficBody =
+      collectPublicBodyLines(
+        safeString(logistics?.trafficAlerts || parseLogistics?.trafficAlerts),
+        { limit: 2 }
+      ).join(" ") ||
+      (facilityMapAddress
+        ? "Allow extra arrival time near the venue and follow posted event traffic direction on arrival."
+        : "");
+    const fallbackVenueBody = uniqueTextLines(
+      [
+        venueLabel,
+        addressLabel,
+        ...collectPublicBodyLines(safeString(meetSection?.facilityLayout || parseMeetDetails?.facilityLayout), {
+          limit: 2,
+        }),
+      ],
+      3
+    ).join(" ");
+    const fallbackSpectatorBody = uniqueTextLines(
+      [
+        ...parseResultAdmission.map((item: any) =>
+          [safeString(item?.label), safeString(item?.price), safeString(item?.note)]
+            .filter(Boolean)
+            .join(": ")
+        ),
+        ...collectPublicBodyLines(
+          [
+            safeString(logistics?.policyFood),
+            safeString(logistics?.policyHydration),
+            safeString(logistics?.policySafety),
+            safeString(logistics?.policyAnimals),
+          ].join("\n"),
+          { limit: 4 }
+        ),
+      ],
+      5
+    ).join(" ");
+    const fallbackTravelBody =
+      collectPublicBodyLines(safeString(logistics?.hotelInfo || parseLogistics?.hotel), {
+        limit: 2,
+      }).join(" ");
+    const effectivePublicSections = {
+      meetDetails: normalizePublicSection(publicPageSections?.meetDetails, "Meet Details", {
+        body: fallbackMeetDetailsBody,
+        hideReason: "No attendee-safe meet overview survived filtering.",
+      }),
+      parking: normalizePublicSection(publicPageSections?.parking, "Parking", {
+        body: fallbackParkingBody,
+        hideReason: "No attendee-safe parking guidance survived filtering.",
+      }),
+      traffic: normalizePublicSection(publicPageSections?.traffic, "Traffic", {
+        body: fallbackTrafficBody,
+        hideReason: "No attendee-safe traffic guidance survived filtering.",
+      }),
+      venue: normalizePublicSection(publicPageSections?.venue, "Venue Details", {
+        body: fallbackVenueBody,
+        hideReason: "Venue details are incomplete.",
+      }),
+      spectatorInfo: normalizePublicSection(publicPageSections?.spectatorInfo, "Spectator Info", {
+        body: fallbackSpectatorBody,
+        hideReason: "No attendee-safe admission or spectator policies survived filtering.",
+      }),
+      travel: normalizePublicSection(publicPageSections?.travel, "Hotels", {
+        body: fallbackTravelBody,
+        hideReason: "No attendee-safe hotel or travel guidance survived filtering.",
+      }),
+      documents: publicPageSections?.documents
+        ? normalizePublicDocumentSection(publicPageSections.documents)
+        : normalizePublicDocumentSection({
+            title: "Documents",
+            links: selectSectionResourceLinks(resourceLinks, "documents", 12),
+          }),
+    };
+    const sanitizedVenueSection = sanitizeVenueSectionForMap(
+      effectivePublicSections?.venue,
+      venueLabel,
+      addressLabel
+    );
+    const admissionCardsNormalized = mergeAdmissionVariants(
+      Array.isArray(parseResult?.admission) && parseResult.admission.length > 0
+        ? parseResult.admission
+        : rawAdmissionCards
+    );
+    const spectatorBody = sanitizeSpectatorBody(
+      effectivePublicSections?.spectatorInfo?.body,
+      admissionCardsNormalized.length > 0
+    );
+    const resultLinks = selectSectionResourceLinks(resourceLinks, "results", 8);
+    const hotelLinks = selectSectionResourceLinks(resourceLinks, "hotels", 8);
+    const parkingLinks = selectSectionResourceLinks(resourceLinks, "traffic_parking", 8);
+    const documentLinks = effectivePublicSections?.documents?.visibility === "visible"
+      ? uniqueLinks(effectivePublicSections.documents.links, 12)
+      : [];
+    const resultsBody =
+      classifyPublicAudience(safeString(parseMeetDetails?.resultsInfo)) === "public_attendee"
+        ? safeString(parseMeetDetails?.resultsInfo)
+        : "";
+    const announcementCards = uniqueBy(
+      [
+        ...(Array.isArray(parseCommunications?.announcements) ? parseCommunications.announcements : []),
+        ...(Array.isArray(advancedSections?.announcements?.announcements)
+          ? advancedSections.announcements.announcements
+          : []),
+      ]
+        .filter((item: any) => shouldRenderPublicAnnouncementCard(item))
+        .map((item: any, index: number) => ({
+          key: `announcement-${index + 1}`,
+          label: safeString(item?.title),
+          body: safeString(item?.body || item?.text || item?.message || item?.title),
+        }))
+        .filter((item) => item.body),
+      (item) => `${item.label}|${item.body}`
+    );
+
+    const sections: GymMeetDiscoverySection[] = [
+      {
+        id: "meet-details",
+        label: "Meet Details",
+        kind: "meet_overview",
+        priority: 10,
+        hasContent:
+          safeString(effectivePublicSections?.meetDetails?.visibility) === "visible" &&
+          Boolean(safeString(effectivePublicSections?.meetDetails?.body)),
+        blocks: buildPublicSectionBlocks(effectivePublicSections?.meetDetails),
+      },
+      {
+        id: "admission",
+        label: "Admission",
+        kind: "admission",
+        priority: 20,
+        hasContent:
+          admissionCardsNormalized.length > 0 ||
+          (safeString(effectivePublicSections?.spectatorInfo?.visibility) === "visible" &&
+            Boolean(spectatorBody)),
+        blocks: [
+          ...(admissionCardsNormalized.length > 0
+            ? [
+                {
+                  id: "admission-cards",
+                  type: "card-grid" as const,
+                  columns: 3 as const,
+                  cards: admissionCardsNormalized,
+                },
+              ]
+            : []),
+          ...buildPublicSectionBlocks({
+            ...effectivePublicSections?.spectatorInfo,
+            body: spectatorBody,
+          }),
+        ],
+      },
+      {
+        id: "venue-details",
+        label: "Venue Details",
+        kind: "venue",
+        priority: 30,
+        hasContent:
+          (safeString(sanitizedVenueSection?.visibility) === "visible" &&
+            Boolean(safeString(sanitizedVenueSection?.body))) ||
+          Boolean(facilityMapAddress),
+        blocks: [
+          ...buildPublicSectionBlocks(sanitizedVenueSection),
+          ...(facilityMapAddress
+            ? [
+                {
+                  id: "venue-map",
+                  type: "map" as const,
+                  title: "Arrival Map",
+                  address: facilityMapAddress,
+                },
+              ]
+            : []),
+        ],
+      },
+      {
+        id: "traffic-parking",
+        label: "Traffic & Parking",
+        kind: "traffic_parking",
+        priority: 40,
+        hasContent:
+          (safeString(effectivePublicSections?.parking?.visibility) === "visible" &&
+            Boolean(safeString(effectivePublicSections?.parking?.body))) ||
+          (safeString(effectivePublicSections?.traffic?.visibility) === "visible" &&
+            Boolean(safeString(effectivePublicSections?.traffic?.body))) ||
+          parkingLinks.length > 0,
+        blocks: [
+          ...buildPublicSectionBlocks(effectivePublicSections?.parking),
+          ...buildPublicSectionBlocks(effectivePublicSections?.traffic),
+          ...(parkingLinks.length > 0
+            ? [
+                {
+                  id: "parking-links",
+                  type: "link-list" as const,
+                  title: "Parking Links",
+                  links: parkingLinks,
+                },
+              ]
+            : []),
+        ],
+      },
+      {
+        id: "hotels",
+        label: "Hotels",
+        kind: "hotels",
+        priority: 50,
+        hasContent:
+          (safeString(effectivePublicSections?.travel?.visibility) === "visible" &&
+            Boolean(safeString(effectivePublicSections?.travel?.body))) ||
+          hotelLinks.length > 0,
+        blocks: [
+          ...buildPublicSectionBlocks(effectivePublicSections?.travel),
+          ...(hotelLinks.length > 0
+            ? [
+                {
+                  id: "hotel-links",
+                  type: "link-list" as const,
+                  title: "Hotel & Travel Links",
+                  links: hotelLinks,
+                },
+              ]
+            : []),
+        ],
+      },
+      {
+        id: "results",
+        label: "Results",
+        kind: "results",
+        priority: 60,
+        hasContent: resultLinks.length > 0 || Boolean(resultsBody),
+        blocks: [
+          ...(resultsBody
+            ? [
+                {
+                  id: "results-info",
+                  type: "text" as const,
+                  text: resultsBody,
+                },
+              ]
+            : []),
+          ...(resultLinks.length > 0
+            ? [
+                {
+                  id: "results-links",
+                  type: "link-list" as const,
+                  title: "Results & Links",
+                  links: resultLinks,
+                },
+              ]
+            : []),
+        ],
+      },
+      {
+        id: "documents",
+        label: "Documents",
+        kind: "documents",
+        priority: 70,
+        hasContent:
+          safeString(effectivePublicSections?.documents?.visibility) === "visible" &&
+          documentLinks.length > 0,
+        blocks:
+          documentLinks.length > 0
+            ? [
+                {
+                  id: "document-links",
+                  type: "link-list" as const,
+                  title: "Official Resources",
+                  links: documentLinks,
+                },
+              ]
+            : [],
+      },
+      {
+        id: "announcements",
+        label: "Announcements",
+        kind: "announcements",
+        priority: 80,
+        hasContent: announcementCards.length > 0,
+        blocks:
+          announcementCards.length > 0
+            ? [
+                {
+                  id: "announcement-cards",
+                  type: "card-grid" as const,
+                  columns: 2 as const,
+                  cards: announcementCards,
+                },
+              ]
+            : [],
+      },
+    ].filter((section) => section.hasContent);
+
+    return { sections };
+  }
 
   const extractedDiscoveryText = safeString(eventData?.discoverySource?.extractedText);
   const isHtmlNoiseLine = (line: string) =>
@@ -1131,7 +1918,8 @@ export function buildGymMeetDiscoveryContent({
     "roster",
     "team_divisions",
     "rotation_sheet",
-    "photo_video"
+    "photo_video",
+    "apparel_form"
   );
   const structuredHotelLinks = toResourceActions("hotel_booking");
 
@@ -1188,27 +1976,41 @@ export function buildGymMeetDiscoveryContent({
 
   const stripKnownLabelPrefix = (value: string, labelPattern: RegExp) =>
     safeString(value).replace(labelPattern, "").trim();
+  const extractLabeledDetailLine = (text: string, pattern: RegExp) => {
+    const lines = safeString(text)
+      .split(/\n+/)
+      .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
+      .filter(Boolean);
+    for (const line of lines) {
+      const match = line.match(pattern);
+      if (match?.[1]) return safeString(match[1]);
+    }
+    return "";
+  };
   const spectatorLogisticsItems = [
     {
       key: "doors-open",
       label: "Doors Open",
       value:
         safeString(parseMeetDetails?.doorsOpen) ||
-        stripKnownLabelPrefix(sourceDoorsOpenLine, /^doors\s+open:\s*/i),
+        stripKnownLabelPrefix(sourceDoorsOpenLine, /^doors\s+open:\s*/i) ||
+        extractLabeledDetailLine(normalizedDetailsText, /^doors\s*open:\s*(.+)$/i),
     },
     {
       key: "arrival-guidance",
       label: "Arrival Guidance",
       value:
         safeString(parseMeetDetails?.arrivalGuidance) ||
-        stripKnownLabelPrefix(sourceArrivalGuidanceLine, /^arrival guidance:\s*/i),
+        stripKnownLabelPrefix(sourceArrivalGuidanceLine, /^arrival guidance:\s*/i) ||
+        extractLabeledDetailLine(normalizedDetailsText, /^arrival\s*guidance:\s*(.+)$/i),
     },
     {
       key: "registration",
       label: "Registration",
       value:
         safeString(parseMeetDetails?.registrationInfo) ||
-        stripKnownLabelPrefix(sourceRegistrationLine, /^registration:\s*/i),
+        stripKnownLabelPrefix(sourceRegistrationLine, /^registration:\s*/i) ||
+        extractLabeledDetailLine(normalizedDetailsText, /^registration:\s*(.+)$/i),
     },
   ].filter((item) => Boolean(safeString(item.value)));
 
@@ -1236,6 +2038,7 @@ export function buildGymMeetDiscoveryContent({
         line
       )
     ),
+    ...sourceLines.filter((line) => isNarrativeMeetPacketLine(line)),
   ];
   const stitchedMeetDetails = meetDetailCandidateLines.reduce((acc: string[], rawLine: string) => {
     const line = rawLine.trim();
@@ -1336,7 +2139,7 @@ export function buildGymMeetDiscoveryContent({
     isSafetyObjectsLine(line) ||
     isMarketingLikeSourceLine(line) ||
     isTabularScheduleNoiseLine(line) ||
-    isScheduleGridLikeSourceLine(line) ||
+    (!isNarrativeMeetPacketLine(line) && isScheduleGridLikeSourceLine(line)) ||
     isClubParticipationLikeSourceLine(line);
   const meetsAnyLine = (line: string, candidates: string[]) => {
     const normalized = normalizeCompareText(line);
@@ -2363,7 +3166,8 @@ export function buildGymMeetDiscoveryContent({
       supportEmail: scheduleSupportEmail,
     }
   );
-  const scheduleHasContent = scheduleInfo.enabled !== false && hasScheduleInfoContent(scheduleInfo);
+  const scheduleHasContent =
+    scheduleGridsEnabled && scheduleInfo.enabled !== false && hasScheduleInfoContent(scheduleInfo);
   const sessionAssignmentCards = ensureUniqueDiscoveryCardKeys(
     scheduleInfo.assignments.map((item, index) => {
       const label = [safeString(item.level), safeString(item.groupLabel || item.divisionLabel)]
@@ -2423,13 +3227,12 @@ export function buildGymMeetDiscoveryContent({
       })),
       ...admissionLinks,
       ...hotelLinks,
-      ...parkingLinks,
       ...visitorGuideLinks,
     ],
     16
   );
   const hasOperationalResourceLinks = resourceLinksForSection.some((item) =>
-    /(result|score|rotation|roster|hotel|travel|visitor|ticket|admission|parking)/i.test(
+    /(result|score|rotation|roster|hotel|travel|visitor|ticket|admission)/i.test(
       `${item.label} ${item.url}`
     )
   );
@@ -2452,8 +3255,7 @@ export function buildGymMeetDiscoveryContent({
         meetStaffCards.length > 0 ||
         announcementCards.length > 0 ||
         gearCards.length > 0 ||
-        gearLinks.length > 0 ||
-        communicationCards.length > 0,
+        gearLinks.length > 0,
       blocks: [
         ...(meetOverviewCards.length > 0
           ? [
@@ -2542,11 +3344,13 @@ export function buildGymMeetDiscoveryContent({
       kind: "session_assignments",
       priority: 25,
       preserveStandalone:
-        sessionAssignmentCards.length > 0 || sessionAssignmentLinks.length > 0,
+        scheduleGridsEnabled &&
+        (sessionAssignmentCards.length > 0 || sessionAssignmentLinks.length > 0),
       hasContent:
-        sessionAssignmentCards.length > 0 ||
-        sessionAssignmentNotes.length > 0 ||
-        sessionAssignmentLinks.length > 0,
+        scheduleGridsEnabled &&
+        (sessionAssignmentCards.length > 0 ||
+          sessionAssignmentNotes.length > 0 ||
+          sessionAssignmentLinks.length > 0),
       blocks: [
         ...(sessionAssignmentCards.length > 0
           ? [
@@ -2809,7 +3613,8 @@ export function buildGymMeetDiscoveryContent({
         trafficPrimaryCards.length > 0 ||
         trafficSecondaryCards.length > 0 ||
         parkingLinks.length > 0 ||
-        trafficSlots.length > 0,
+        trafficSlots.length > 0 ||
+        Boolean(facilityMapAddress),
       blocks: [
         ...(trafficPrimaryCards.length > 0
           ? [
@@ -2955,7 +3760,9 @@ export function buildGymMeetDiscoveryContent({
           : []),
       ],
     },
-  ].filter((section) => section.hasContent);
+  ]
+    .filter((section) => !["schedule", "session-assignments", "coaches"].includes(section.id))
+    .filter((section) => section.hasContent);
 
   return {
     sections: mergeSparseDiscoverySections(sections),

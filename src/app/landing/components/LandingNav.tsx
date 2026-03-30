@@ -48,10 +48,10 @@ export default function LandingNav() {
   };
 
   const navLinks = [
-    { name: "Gymnastics", href: "#gymnastics-hero" },
-    { name: "How it works", href: "#how-it-works" },
-    { name: "Features", href: "#features" },
-    { name: "FAQ", href: "#faq" },
+    { name: "Gymnastics", href: "/gymnastics" },
+    { name: "How it works", href: "/#how-it-works" },
+    { name: "Features", href: "/#features" },
+    { name: "FAQ", href: "/#faq" },
   ];
 
   return (
