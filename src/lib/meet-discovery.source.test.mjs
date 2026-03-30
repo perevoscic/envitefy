@@ -13,7 +13,7 @@ test("meet discovery extracts schedule page images during gymnastics core parse 
 
   assert.match(
     source,
-    /const shouldExtractSchedulePageImages = resolvedOptions\.workflow === "gymnastics";/
+    /const shouldExtractSchedulePageImages =\s*resolvedOptions\.workflow === "gymnastics" && GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;/
   );
   assert.doesNotMatch(
     source,
@@ -44,6 +44,19 @@ test("meet discovery defaults staged structured parsing to gpt-5.4-nano", () => 
   assert.match(source, /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-5\.4-nano";/);
   assert.match(source, /callOpenAiClassification/);
   assert.match(source, /callOpenAiTargetedParse/);
+});
+
+test("meet discovery always routes staged parsing through attendee profiles and bypasses schedule derivation", () => {
+  const source = readSource("src/lib/meet-discovery.ts");
+
+  assert.match(
+    source,
+    /return uniqueBy\(\["overview_core", "parent_public"\], \(item\) => item\)\.slice\(0, 2\);/
+  );
+  assert.doesNotMatch(source, /return \["athlete_session"/);
+  assert.doesNotMatch(source, /return \["registration_coach"/);
+  assert.doesNotMatch(source, /const withCoachRouting = routeCoachDeadlines\(mergeCoachFeesFromAdmission\(sanitized\)\);/);
+  assert.match(source, /reason: "public-page-v2"/);
 });
 
 test("meet discovery advances regex scans even when skipping invalid anchors or empty json-ld blocks", () => {

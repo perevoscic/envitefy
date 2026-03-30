@@ -29,6 +29,7 @@ import { authOptions } from "@/lib/auth";
 import { isOcrBirthdayRenderer, selectBirthdayOcrThemeId } from "@/lib/birthday-ocr-template";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { isScannedInviteCreatedVia, normalizeDashboardEventOwnership } from "@/lib/dashboard-data";
+import { isGymDiscoveryV2EventData } from "@/lib/discovery/event-data";
 import {
   acceptEventShare,
   getEventHistoryPublicRenderBySlugOrId,
@@ -650,6 +651,7 @@ export default async function EventPage({
   // (except for discovery gymnastics events: they stay on the event URL and get an inline edit sidebar)
   const editParam = String(((awaitedSearchParams as any)?.edit ?? "") as string).trim();
   const discoveryCreatedVia = String((data as any)?.createdVia || "").toLowerCase();
+  const isDiscoveryV2 = isGymDiscoveryV2EventData(data);
   const isScannedInviteEvent =
     normalizeDashboardEventOwnership(
       (data as any)?.ownership,
@@ -657,10 +659,12 @@ export default async function EventPage({
       (data as any)?.invitedFromScan,
     ) === "invited";
   const canManageCreatedEvent = isOwner && !isScannedInviteEvent;
-  const discoveryWorkflow = String((data as any)?.discoverySource?.workflow || "").toLowerCase();
+  const discoveryWorkflow = isDiscoveryV2
+    ? "gymnastics"
+    : String((data as any)?.discoverySource?.workflow || "").toLowerCase();
   const discoveryCategory = String((data as any)?.category || "").toLowerCase();
   const discoveryTemplateId = String((data as any)?.templateId || "").toLowerCase();
-  const hasDiscoveryInput = Boolean((data as any)?.discoverySource?.input);
+  const hasDiscoveryInput = isDiscoveryV2 || Boolean((data as any)?.discoverySource?.input);
   const isOcrEvent = isScannedInviteCreatedVia(discoveryCreatedVia);
   const isGymnasticsDiscoveryTemplate =
     (discoveryCreatedVia === "meet-discovery" ||
@@ -694,6 +698,7 @@ export default async function EventPage({
     isOcrEvent ||
     hasDiscoveryInput ||
     discoveryCreatedVia === "meet-discovery" ||
+    discoveryCreatedVia === "meet-discovery-v2" ||
     discoveryCreatedVia === "football-discovery";
   const showHostDashboard = canManageCreatedEvent && !hideHostDashboard;
   const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" | "football" } | null =

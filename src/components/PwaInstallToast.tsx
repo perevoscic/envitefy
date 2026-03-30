@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useInstalledAppState } from "@/lib/pwa/install-state";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -31,92 +32,28 @@ const shouldHideInstallUi = (): boolean => {
   return inIframe || isEmbedQuery;
 };
 
-// Helper function to check if app is installed
-const isAppInstalled = (): boolean => {
-  if (typeof window === "undefined") return false;
-
-  // Check for iOS standalone mode
-  if ((window.navigator as any).standalone === true) {
-    return true;
-  }
-
-  // Check for display mode (PWA installed)
-  if (window.matchMedia) {
-    if (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.matchMedia("(display-mode: fullscreen)").matches ||
-      window.matchMedia("(display-mode: minimal-ui)").matches
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
 export default function PwaInstallToast() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null
   );
+  const { installState, markInstalled } = useInstalledAppState();
   const [isVisible, setIsVisible] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
-  // Check if already installed - run on mount and periodically
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const checkInstalled = () => {
-      const installed = isAppInstalled();
-      setIsInstalled(installed);
-      if (installed) {
-        setIsVisible(false);
-        setIsAnimating(false);
-      }
-    };
-
-    // Check immediately
-    checkInstalled();
-
-    // Check periodically in case install state changes
-    const interval = setInterval(checkInstalled, 1000);
-
-    // Also listen for display mode changes
-    if (window.matchMedia) {
-      const mediaQueries = [
-        window.matchMedia("(display-mode: standalone)"),
-        window.matchMedia("(display-mode: fullscreen)"),
-        window.matchMedia("(display-mode: minimal-ui)"),
-      ];
-
-      const handleChange = () => checkInstalled();
-      mediaQueries.forEach((mq) => {
-        if (mq.addEventListener) {
-          mq.addEventListener("change", handleChange);
-        } else {
-          // Fallback for older browsers
-          mq.addListener(handleChange);
-        }
-      });
-
-      return () => {
-        clearInterval(interval);
-        mediaQueries.forEach((mq) => {
-          if (mq.removeEventListener) {
-            mq.removeEventListener("change", handleChange);
-          } else {
-            mq.removeListener(handleChange);
-          }
-        });
-      };
+    if (installState.status !== "installed") return;
+    setIsVisible(false);
+    setIsAnimating(false);
+    deferredPromptRef.current = null;
+    setDeferred(null);
+    try {
+      (window as SnapWindow).__snapInstallDeferredPrompt = null;
+    } catch {
+      // ignore prompt cleanup failures
     }
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
+  }, [installState.status]);
 
   // Listen for install prompt
   useEffect(() => {
@@ -126,46 +63,9 @@ export default function PwaInstallToast() {
     const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
 
-      // Don't show toast if app is already installed
-      if (isAppInstalled()) {
-        setIsInstalled(true);
-        setIsVisible(false);
-        return;
-      }
-
       w.__snapInstallDeferredPrompt = evt;
       deferredPromptRef.current = evt;
       setDeferred(evt);
-
-      // Show toast after a short delay, but only if not installed
-      setTimeout(() => {
-        // Double-check installation status and dismissed state before showing
-        const installed = isAppInstalled();
-        let dismissed = false;
-        try {
-          dismissed = localStorage.getItem("pwa-install-dismissed") === "true";
-        } catch {
-          // ignore
-        }
-
-        if (!installed && !dismissed) {
-          setIsAnimating(true);
-          setTimeout(() => {
-            // Final check before showing
-            const stillInstalled = isAppInstalled();
-            let stillDismissed = false;
-            try {
-              stillDismissed =
-                localStorage.getItem("pwa-install-dismissed") === "true";
-            } catch {
-              // ignore
-            }
-            if (!stillInstalled && !stillDismissed) {
-              setIsVisible(true);
-            }
-          }, 50);
-        }
-      }, 2000);
     };
 
     // Check if prompt already exists
@@ -184,6 +84,29 @@ export default function PwaInstallToast() {
       window.removeEventListener(BRIDGE_EVENT_NAME, onPromptReady as any);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (installState.status !== "not_installed" || isDismissed || !deferred) {
+      setIsVisible(false);
+      setIsAnimating(false);
+      return;
+    }
+
+    let revealTimer = 0;
+    let visibleTimer = 0;
+    revealTimer = window.setTimeout(() => {
+      setIsAnimating(true);
+      visibleTimer = window.setTimeout(() => {
+        setIsVisible(true);
+      }, 50);
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(revealTimer);
+      window.clearTimeout(visibleTimer);
+    };
+  }, [deferred, installState.status, isDismissed]);
 
   // Check localStorage for dismissed state
   useEffect(() => {
@@ -211,6 +134,9 @@ export default function PwaInstallToast() {
       const choiceResult = await prompt.userChoice;
 
       if (choiceResult.outcome === "accepted") {
+        markInstalled("install toast accepted", {
+          platform: choiceResult.platform ?? "unknown",
+        });
         setIsVisible(false);
         // Clear the prompt
         const w = window as SnapWindow;
@@ -221,7 +147,7 @@ export default function PwaInstallToast() {
     } catch (error) {
       console.error("Error showing install prompt:", error);
     }
-  }, []);
+  }, [markInstalled]);
 
   const handleDismiss = useCallback(() => {
     setIsVisible(false);
@@ -244,7 +170,13 @@ export default function PwaInstallToast() {
   if (shouldHideInstallUi()) return null;
 
   // Don't show if installed, dismissed, no prompt, or not visible
-  if (isInstalled || !isVisible || isDismissed || !deferred) {
+  if (
+    installState.status === "checking" ||
+    installState.status === "installed" ||
+    !isVisible ||
+    isDismissed ||
+    !deferred
+  ) {
     return null;
   }
 

@@ -196,16 +196,14 @@ test("mixed packet content keeps rich operational sections separate while preser
 
   assert.ok(findSection(discovery, "admission"));
   assert.equal(findSection(discovery, "registration"), undefined);
-  assert.ok(findSection(discovery, "coaches"));
+  assert.equal(findSection(discovery, "coaches"), undefined);
   assert.ok(findSection(discovery, "traffic-parking"));
   assert.ok(findSection(discovery, "results"));
   const documentsSection = findSection(discovery, "documents");
-  assert.equal(documentsSection?.label, "Resources");
-  assert.doesNotMatch(JSON.stringify(documentsSection), /parking-map/i);
+  assert.equal(documentsSection, undefined);
   assert.equal(findSection(discovery, "hotels"), undefined);
   assert.match(JSON.stringify(findSection(discovery, "results")), /Live scoring available online/);
-  assert.match(JSON.stringify(findSection(discovery, "coaches")), /Athlete Entry Fee|MeetMaker/);
-  assert.match(JSON.stringify(findSection(discovery, "traffic-parking")), /Host Hotel/);
+  assert.doesNotMatch(JSON.stringify(findSection(discovery, "traffic-parking")), /Host Hotel|MeetMaker/i);
 });
 
 test("payment instructions do not leak into the hero header", () => {
@@ -224,6 +222,33 @@ test("payment instructions do not leak into the hero header", () => {
 
   assert.equal(model.hostGym, "");
   assert.equal(model.detailsText, "");
+});
+
+test("discovery hero summary excludes arrival guidance cards", () => {
+  const model = normalizeGymMeetEventData({
+    eventData: {
+      createdVia: "meet-discovery",
+      eventTitle: "Florida Crown",
+      advancedSections: {
+        meet: {
+          doorsOpen: "7:15 AM",
+          arrivalGuidance: "Use the north entrance and arrive 30 minutes early.",
+          resultsInfo: "Live scoring available online.",
+        },
+      },
+      discoverySource: {
+        parseResult: {},
+      },
+    },
+    eventTitle: "Florida Crown",
+    navItems: [],
+    rosterAthletes: [],
+  });
+
+  assert.deepEqual(
+    model.summaryItems.map((item) => item.label),
+    ["Doors Open"]
+  );
 });
 
 test("normalizeGymMeetEventData passes unstripped details into discovery for Meet Details prose", () => {
@@ -406,7 +431,7 @@ test("schedule section renders when only session codes are present", () => {
   assert.ok(findSection(discovery, "schedule"));
 });
 
-test("resource links drive documents, hotels, and results without rewriting event-specific rotation links", () => {
+test("resource links route only approved public links into hotels and results", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
       discoverySource: {
@@ -465,6 +490,12 @@ test("resource links drive documents, hotels, and results without rewriting even
               label: "Photo / Video Order Form",
               url: "https://form.jotform.com/state-photo-video",
             },
+            {
+              kind: "apparel_form",
+              status: "available",
+              label: "Apparel Sizing Form",
+              url: "https://forms.office.com/state-apparel-sizing",
+            },
           ],
         },
         extractedText: "",
@@ -492,18 +523,23 @@ test("resource links drive documents, hotels, and results without rewriting even
   const coaches = findSection(discovery, "coaches");
   const _admission = findSection(discovery, "admission");
   const trafficParking = findSection(discovery, "traffic-parking");
+  const hotels = findSection(discovery, "hotels");
+  const results = findSection(discovery, "results");
   const allContent = JSON.stringify(discovery.sections);
 
   assert.ok(findSection(discovery, "meet-details"));
-  assert.equal(resources?.label, "Resources");
-  assert.ok(coaches);
+  assert.ok(resources);
+  assert.equal(coaches, undefined);
   assert.ok(trafficParking);
-  assert.match(allContent, /https:\/\/usacompetitions\.com\/docs\/event-rotation-sheet\.pdf/i);
-  assert.match(allContent, /https:\/\/usacompetitions\.com\/docs\/state-packet\.pdf/i);
-  assert.match(allContent, /https:\/\/api\.groupbook\.io\/booking\/state-host-hotel/i);
-  assert.match(allContent, /https:\/\/tickets\.example\.com\/admission/i);
-  assert.match(JSON.stringify(trafficParking), /https:\/\/example\.com\/parking-map/i);
-  assert.match(allContent, /https:\/\/results\.scorecatonline\.com\/state-2026/i);
+  assert.ok(hotels);
+  assert.ok(results);
+  assert.match(JSON.stringify(resources), /https:\/\/form\.jotform\.com\/state-photo-video/i);
+  assert.match(JSON.stringify(resources), /https:\/\/forms\.office\.com\/state-apparel-sizing/i);
+  assert.match(JSON.stringify(hotels), /https:\/\/api\.groupbook\.io\/booking\/state-host-hotel/i);
+  assert.match(JSON.stringify(results), /https:\/\/results\.scorecatonline\.com\/state-2026/i);
+  assert.doesNotMatch(JSON.stringify(trafficParking), /https:\/\/example\.com\/parking-map/i);
+  assert.doesNotMatch(allContent, /https:\/\/usacompetitions\.com\/docs\/event-rotation-sheet\.pdf/i);
+  assert.doesNotMatch(allContent, /https:\/\/usacompetitions\.com\/docs\/state-packet\.pdf/i);
   assert.doesNotMatch(allContent, /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
 });
 
@@ -1649,4 +1685,460 @@ test("duplicate announcement ids are normalized to unique card keys", () => {
 
   assert.deepEqual(cardKeys, ["announcement-2", "announcement-2-2"]);
   assert.equal(new Set(cardKeys).size, cardKeys.length);
+});
+
+test("public-page-v2 discovery renders attendee sections and suppresses schedule/coaches", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        pipelineVersion: "gym-public-v2",
+        parseResult: {
+          admission: [{ label: "Adults", price: "$20", note: "Cashless" }],
+          meetDetails: {
+            resultsInfo: "Live scoring is available online.",
+          },
+          logistics: {
+            parkingLinks: [{ label: "Parking Map", url: "https://example.com/parking" }],
+          },
+          communications: {
+            announcements: [{ title: "Arrival", body: "Arrive early for parking." }],
+          },
+          links: [{ label: "Packet", url: "https://example.com/packet.pdf" }],
+        },
+        publicPageSections: {
+          meetDetails: {
+            title: "Meet Details",
+            body: "This page brings together the key venue, parking, and document details for the meet.",
+            bullets: ["Doors open at 7:15 AM"],
+            visibility: "visible",
+          },
+          venue: {
+            title: "Venue Details",
+            body: "Coral Springs Gymnasium, 123 Main St, Coral Springs, FL 33065.",
+            bullets: [],
+            visibility: "visible",
+          },
+          parking: {
+            title: "Parking",
+            body: "Parking details were not listed in the packet. Follow on-site signage.",
+            bullets: [],
+            visibility: "visible",
+          },
+          traffic: {
+            title: "Traffic",
+            body: "Allow extra arrival time near the venue before the event begins.",
+            bullets: [],
+            visibility: "visible",
+          },
+          spectatorInfo: {
+            title: "Spectator Info",
+            body: "Adults: $20. Cashless on site.",
+            bullets: [],
+            visibility: "visible",
+          },
+          travel: {
+            title: "Travel",
+            body: "Host hotels are posted on the event site.",
+            bullets: [],
+            visibility: "visible",
+          },
+          documents: {
+            title: "Documents",
+            links: [{ label: "Packet", url: "https://example.com/packet.pdf" }],
+            visibility: "hidden",
+            hideReason: "No public-safe documents survived filtering.",
+          },
+        },
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {},
+      logistics: {},
+      coaches: { enabled: true, signIn: "Legacy coach sign-in" },
+      schedule: {
+        enabled: true,
+        days: [{ id: "fri", date: "Friday", shortDate: "Fri", sessions: [{ id: "s1", label: "S1", group: "Gold", startTime: "8:00 AM", clubs: [] }] }],
+      },
+    },
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+  });
+
+  assert.ok(findSection(discovery, "meet-details"));
+  assert.ok(findSection(discovery, "traffic-parking"));
+  assert.equal(findSection(discovery, "documents"), undefined);
+  assert.equal(findSection(discovery, "announcements"), undefined);
+  assert.equal(findSection(discovery, "schedule"), undefined);
+  assert.equal(findSection(discovery, "coaches"), undefined);
+  assert.match(JSON.stringify(findSection(discovery, "traffic-parking")), /Follow on-site signage|arrival time/i);
+});
+
+test("legacy gymnastics discovery without pipeline version still suppresses schedule/coaches", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      createdVia: "meet-discovery",
+      discoverySource: {
+        workflow: "gymnastics",
+        parseResult: {
+          admission: [{ label: "Adults", price: "$20", note: "Cashless" }],
+          meetDetails: {
+            doorsOpen: "Doors open at 7:15 AM",
+            arrivalGuidance: "Arrive early for parking.",
+          },
+          logistics: {
+            parking: "Use the north garage.",
+            trafficAlerts: "Expect delays before doors open.",
+            hotel: "Host hotels are posted online.",
+          },
+          links: [{ label: "Packet", url: "https://example.com/packet.pdf" }],
+        },
+      },
+      details:
+        "This event page brings together venue guidance, parking, documents, and attendee updates.",
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {},
+      logistics: {},
+      coaches: { enabled: true, signIn: "Legacy coach sign-in" },
+      schedule: {
+        enabled: true,
+        days: [{ id: "fri", date: "Friday", shortDate: "Fri", sessions: [{ id: "s1", label: "S1", group: "Gold", startTime: "8:00 AM", clubs: [] }] }],
+      },
+    },
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+  });
+
+  assert.ok(findSection(discovery, "meet-details"));
+  assert.ok(findSection(discovery, "traffic-parking"));
+  assert.equal(findSection(discovery, "schedule"), undefined);
+  assert.equal(findSection(discovery, "coaches"), undefined);
+  assert.match(JSON.stringify(findSection(discovery, "meet-details")), /venue guidance|Doors open/i);
+});
+
+test("mixed public packet hides weak sections, merges admission variants, and limits quick access to approved links", () => {
+  const eventData = {
+    createdVia: "meet-discovery",
+    eventTitle: "2026 Florida USA Gymnastics Xcel Bronze, Silver & Gold State Championships",
+    venue: "Alachua County Sports & Events Center",
+    address: "4870 Celebration Pointe Ave, Gainesville, FL 32608",
+    discoverySource: {
+      pipelineVersion: "gym-public-v2",
+      parseResult: {
+        admission: [
+          { label: "Adults (13+)", price: "$26.00", note: "Cash Price is $1.00 less." },
+          { label: "Children (5-12)", price: "$16.00", note: "Cash Price is $1.00 less." },
+          { label: "Under 5", price: "Free", note: "" },
+          { label: "Coach Hospitality", price: "Provided", note: "" },
+        ],
+        meetDetails: {
+          doorsOpen: "Doors open at 7:15 AM.",
+          arrivalGuidance:
+            "Make sure athlete birth dates are correct in Meet Reservations before arrival.",
+          awardsInfo: "Awards ceremonies follow each session.",
+          registrationInfo: "Verify athlete session assignment before arrival.",
+          resultsInfo: "Live scoring available at USACompetitions.com.",
+        },
+        logistics: {
+          hotel: "Host hotels are available for traveling families.",
+          parking: "",
+          trafficAlerts: "",
+        },
+        communications: {
+          announcements: [{ title: "Arrival", body: "Venue details are posted on the packet." }],
+        },
+      },
+      extractionMeta: {
+        resourceLinks: [
+          {
+            kind: "hotel_booking",
+            status: "available",
+            label: "Host Hotels",
+            url: "https://example.com/hotels",
+          },
+          {
+            kind: "results_hub",
+            status: "available",
+            label: "USACompetitions.com Results",
+            url: "https://example.com/results",
+          },
+          {
+            kind: "team_divisions",
+            status: "available",
+            label: "Session Assignments",
+            url: "https://example.com/session-assignments",
+          },
+          {
+            kind: "packet",
+            status: "available",
+            label: "Schedule & Info Packet",
+            url: "https://example.com/info-packet.pdf",
+          },
+        ],
+      },
+      publicPageSections: {
+        meetDetails: {
+          title: "Meet Details",
+          body: "Team Twisters and USA Competitions welcome families to the state championships. Awards ceremonies follow each session.",
+          bullets: [],
+          visibility: "visible",
+        },
+        parking: {
+          title: "Parking",
+          body: "Parking details were not listed in the packet. Plan to arrive early and follow on-site signage for spectator parking and drop-off.",
+          bullets: [],
+          visibility: "visible",
+        },
+        traffic: {
+          title: "Traffic",
+          body: "Allow extra arrival time near the venue before the event begins.",
+          bullets: [],
+          visibility: "visible",
+        },
+        venue: {
+          title: "Venue Details",
+          body: "Alachua County Sports & Events Center, 4870 Celebration Pointe Ave, Gainesville, FL 32608.",
+          bullets: [
+            "Alachua County Sports & Events Center",
+            "4870 Celebration Pointe Ave, Gainesville, FL 32608",
+          ],
+          visibility: "visible",
+        },
+        spectatorInfo: {
+          title: "Spectator Info",
+          body: "Adults (13+): $26 card, $25 cash. Children (5-12): $16 card, $15 cash. Under 5: free.",
+          bullets: [],
+          visibility: "visible",
+        },
+        travel: {
+          title: "Hotels",
+          body: "Host hotels are available for traveling families.",
+          bullets: [],
+          visibility: "visible",
+        },
+        documents: {
+          title: "Documents",
+          links: [],
+          visibility: "hidden",
+          hideReason: "No public-safe documents survived filtering.",
+        },
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+  };
+
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData,
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+    venue: eventData.venue,
+    address: eventData.address,
+  });
+  const admission = findSection(discovery, "admission");
+  const hotels = findSection(discovery, "hotels");
+  const results = findSection(discovery, "results");
+  const traffic = findSection(discovery, "traffic-parking");
+
+  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map((card: any) => ({
+    label: card.label,
+    value: card.value,
+    body: card.body,
+  }));
+
+  assert.deepEqual(admissionCards, [
+    { label: "Adults (13+)", value: "Card $26", body: "Cash $25" },
+    { label: "Children (5-12)", value: "Card $16", body: "Cash $15" },
+    { label: "Under 5", value: "Free", body: "" },
+  ]);
+  assert.ok(findSection(discovery, "meet-details"));
+  assert.ok(traffic);
+  assert.ok(hotels);
+  assert.ok(results);
+  assert.equal(findSection(discovery, "documents"), undefined);
+  assert.equal(findSection(discovery, "announcements"), undefined);
+  assert.doesNotMatch(JSON.stringify(discovery), /session-assignments|info-packet\.pdf/i);
+  assert.doesNotMatch(JSON.stringify(traffic), /https:\/\/example\.com\/session-assignments/i);
+  assert.match(JSON.stringify(hotels), /https:\/\/example\.com\/hotels/i);
+  assert.match(JSON.stringify(results), /https:\/\/example\.com\/results/i);
+  const venue = findSection(discovery, "venue-details");
+  assert.ok(venue);
+  assert.equal(findBlock(venue, "venue-details-body"), undefined);
+  assert.equal(findBlock(venue, "venue-details-bullets"), undefined);
+  assert.ok(findBlock(venue, "venue-map"));
+
+  const model = normalizeGymMeetEventData({
+    eventData,
+    eventTitle: eventData.eventTitle,
+    navItems: [],
+    rosterAthletes: [],
+  });
+  assert.ok(!model.summaryItems.some((item) => item.label === "Arrival"));
+  assert.deepEqual(model.quickLinks, [
+    { label: "Host Hotels", url: "https://example.com/hotels" },
+    { label: "USACompetitions.com Results", url: "https://example.com/results" },
+  ]);
+});
+
+test("quick access collapses duplicate labels even when discovery finds multiple urls", () => {
+  const eventData = {
+    eventTitle: "Florida Crown Championships",
+    title: "Florida Crown Championships",
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL",
+    createdVia: "meet-discovery",
+    discoverySource: {
+      pipelineVersion: "gym-public-v2",
+      parseResult: {
+        admission: [],
+        meetDetails: {},
+        logistics: {},
+        communications: {},
+      },
+      extractionMeta: {
+        resourceLinks: [
+          {
+            kind: "hotel_booking",
+            status: "available",
+            label: "Host Hotels",
+            url: "https://example.com/hotels",
+          },
+          {
+            kind: "hotel_booking",
+            status: "available",
+            label: "Host Hotels",
+            url: "https://example.com/hotels?source=packet",
+          },
+          {
+            kind: "results_hub",
+            status: "available",
+            label: "Official Results",
+            url: "https://example.com/results",
+          },
+          {
+            kind: "results_live",
+            status: "available",
+            label: "Official Results",
+            url: "https://example.com/results/live",
+          },
+        ],
+      },
+      publicPageSections: {
+        meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
+        travel: {
+          title: "Hotels",
+          body: "Use the host hotel booking page.",
+          bullets: [],
+          visibility: "visible",
+        },
+        documents: {
+          title: "Documents",
+          links: [
+            { label: "Photo / Video Order Form", url: "https://pci.jotform.com/photo-video" },
+            { label: "Apparel Sizing Form", url: "https://forms.office.com/apparel" },
+          ],
+          visibility: "visible",
+        },
+        spectatorInfo: { title: "Spectator Info", body: "", bullets: [], visibility: "hidden" },
+        venue: { title: "Venue Details", body: "", bullets: [], visibility: "hidden" },
+        parking: { title: "Parking", body: "", bullets: [], visibility: "hidden" },
+        traffic: { title: "Traffic", body: "", bullets: [], visibility: "hidden" },
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+  };
+
+  const model = normalizeGymMeetEventData({
+    eventData,
+    eventTitle: eventData.eventTitle,
+    navItems: [],
+    rosterAthletes: [],
+  });
+
+  assert.deepEqual(model.quickLinks, [
+    { label: "Host Hotels", url: "https://example.com/hotels" },
+    { label: "Official Results", url: "https://example.com/results" },
+  ]);
+});
+
+test("quick access prioritizes parking, hotels, documents, then results", () => {
+  const eventData = {
+    eventTitle: "Eastern Nationals",
+    title: "Eastern Nationals",
+    venue: "Palm Beach County Convention Center",
+    address: "650 Okeechobee Blvd, West Palm Beach, FL 33401",
+    createdVia: "meet-discovery",
+    discoverySource: {
+      pipelineVersion: "gym-public-v2",
+      parseResult: {
+        admission: [],
+        meetDetails: {},
+        logistics: {},
+        communications: {},
+      },
+      extractionMeta: {
+        resourceLinks: [
+          {
+            kind: "parking",
+            status: "available",
+            label: "Parking Garage Directions",
+            url: "https://static.usagym.org/parking.jpg",
+          },
+          {
+            kind: "hotel_booking",
+            status: "available",
+            label: "Hotel Reservations",
+            url: "https://app.eventpipe.com/hotel-booking",
+          },
+          {
+            kind: "photo_video",
+            status: "available",
+            label: "Photo / Video Order Form",
+            url: "https://pci.jotform.com/photo-video",
+          },
+          {
+            kind: "apparel_form",
+            status: "available",
+            label: "Apparel Sizing Form",
+            url: "https://forms.office.com/apparel",
+          },
+          {
+            kind: "results_hub",
+            status: "available",
+            label: "Official Results",
+            url: "https://example.com/results",
+          },
+        ],
+      },
+      publicPageSections: {
+        meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
+        parking: { title: "Parking", body: "Use the parking garage.", bullets: [], visibility: "visible" },
+        traffic: { title: "Traffic", body: "", bullets: [], visibility: "hidden" },
+        travel: { title: "Hotels", body: "Reserve nearby rooms.", bullets: [], visibility: "visible" },
+        documents: { title: "Documents", links: [], visibility: "hidden" },
+        spectatorInfo: { title: "Spectator Info", body: "", bullets: [], visibility: "hidden" },
+        venue: { title: "Venue Details", body: "", bullets: [], visibility: "hidden" },
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+  };
+
+  const model = normalizeGymMeetEventData({
+    eventData,
+    eventTitle: eventData.eventTitle,
+    navItems: [],
+    rosterAthletes: [],
+  });
+
+  assert.deepEqual(model.quickLinks, [
+    { label: "Parking Garage Directions", url: "https://static.usagym.org/parking.jpg" },
+    { label: "Hotel Reservations", url: "https://app.eventpipe.com/hotel-booking" },
+    { label: "Photo / Video Order Form", url: "https://pci.jotform.com/photo-video" },
+    { label: "Apparel Sizing Form", url: "https://forms.office.com/apparel" },
+    { label: "Official Results", url: "https://example.com/results" },
+  ]);
 });

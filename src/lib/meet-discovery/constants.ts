@@ -8,11 +8,22 @@
  * Standalone module so client bundles (e.g. gymnastics customize) can import without pulling
  * `meet-discovery.ts` → `pdf-raster` → `@napi-rs/canvas`.
  */
-/** Read env at call time (e.g. tests) — client/server const snapshot uses the value at bundle load. */
+/**
+ * Schedule/session grid extraction is temporarily disabled across gymnastics discovery.
+ * Keep the helper as a stable import surface for older callers/tests.
+ */
 export function isGymDiscoveryScheduleGridEnabled(): boolean {
-  if (typeof process === "undefined" || !process.env) return false;
-  const v = process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
-  return typeof v === "string" && v.trim() === "1";
+  return false;
 }
 
 export const GYM_DISCOVERY_SCHEDULE_GRID_ENABLED = isGymDiscoveryScheduleGridEnabled();
+
+/**
+ * Gymnastics discovery now always runs through the attendee-first public-page pipeline.
+ * Keep the helper as a stable import surface for older callers/tests.
+ */
+export function isGymDiscoveryPublicPageV2Enabled(): boolean {
+  return true;
+}
+
+export const GYM_DISCOVERY_PUBLIC_PAGE_V2 = isGymDiscoveryPublicPageV2Enabled();

@@ -20,6 +20,7 @@ import {
 } from "@/lib/football-discovery";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import {
+  buildGymDiscoveryPublicPageArtifacts,
   computeGymBuilderStatuses,
   createDiscoveryPerformance,
   type DiscoveryEnrichmentStatus,
@@ -196,6 +197,9 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       | Awaited<ReturnType<typeof parseFootballFromExtractedText>>
       | Awaited<ReturnType<typeof parseMeetFromExtractedText>>;
     let mapped: Record<string, any>;
+    let gymnasticsPublicArtifacts:
+      | ReturnType<typeof buildGymDiscoveryPublicPageArtifacts>
+      | null = null;
 
     const modelStartedAt = Date.now();
     console.log(`${MEET_PARSE_LOG_PREFIX} model parse started`, {
@@ -256,6 +260,12 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
         currentData,
         extraction.extractionMeta,
       );
+      gymnasticsPublicArtifacts = buildGymDiscoveryPublicPageArtifacts({
+        parseResult: gymnasticsParsed.parseResult,
+        baseData: currentData,
+        evidence: gymnasticsParsed.evidence,
+        extractionMeta: extraction.extractionMeta,
+      });
       console.log(`${MEET_PARSE_LOG_PREFIX} mapping finished`, {
         eventId,
         workflow,
@@ -308,9 +318,18 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
           debugArtifacts,
         ),
         ...(workflow === "gymnastics" && "evidence" in parsed ? { evidence: parsed.evidence } : {}),
+        ...(workflow === "gymnastics" && gymnasticsPublicArtifacts
+          ? {
+              pipelineVersion: gymnasticsPublicArtifacts.pipelineVersion,
+              publicPageSections: gymnasticsPublicArtifacts.publicPageSections,
+              publishAssessment: gymnasticsPublicArtifacts.publishAssessment,
+            }
+          : {}),
         parseResult:
           workflow === "gymnastics"
-            ? stripGymScheduleGridsFromParseResult(parsed.parseResult as ParseResult)
+            ? stripGymScheduleGridsFromParseResult(
+                (gymnasticsPublicArtifacts?.parseResult || parsed.parseResult) as ParseResult
+              )
             : parsed.parseResult,
         rawModelOutput: parsed.rawModelOutput,
         modelUsed: parsed.modelUsed,

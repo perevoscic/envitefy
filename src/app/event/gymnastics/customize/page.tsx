@@ -22,10 +22,15 @@ import {
 import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
+import {
+  buildLegacyDiscoverySourceFromV2,
+  getGymDiscoveryV2BuilderDraft,
+  getGymDiscoveryV2PipelineSummary,
+  isGymDiscoveryV2EventData,
+} from "@/lib/discovery/event-data";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
-import { GYM_DISCOVERY_SCHEDULE_GRID_ENABLED } from "@/lib/meet-discovery/constants";
 
 type FieldSpec = {
   key: string;
@@ -310,17 +315,21 @@ const SECTION_SHOWS_ON_EVENT: Record<string, string> = {
   details: "Meet Essentials card + description in Meet Details tab",
   design: "Theme & typography across the whole page",
   images: "Hero image and header area",
-  roster: "Team Roster & Attendance section",
-  meet: "Meet Details tab (warm-up, march-in, apparatus, judging, scores link)",
-  practice: "Practice Planner section",
+  meet: "Meet Details tab and supporting attendee guidance",
   logistics: "Logistics & Travel section",
-  schedule: "Schedule tab between Coaches and Venue Details",
-  gear: "Gear & Uniform section",
-  volunteers: "Volunteers & Carpool section",
   announcements: "Announcements section",
   rsvp: "Attendance / RSVP area",
   passcode: "Access gate for the whole page",
 };
+
+const REMOVED_GYM_EDITOR_SECTIONS = new Set([
+  "roster",
+  "practice",
+  "schedule",
+  "coaches",
+  "gear",
+  "volunteers",
+]);
 
 const MenuCard = ({
   title,
@@ -832,6 +841,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [loadedDiscoverySource, setLoadedDiscoverySource] = useState<Record<string, any> | null>(
       null,
     );
+    const [loadedDiscoveryPublicArtifacts, setLoadedDiscoveryPublicArtifacts] = useState<Record<
+      string,
+      any
+    > | null>(null);
+    const [loadedDiscoveryPipelineSummary, setLoadedDiscoveryPipelineSummary] = useState<Record<
+      string,
+      any
+    > | null>(null);
     const [discoveryEnrichmentState, setDiscoveryEnrichmentState] = useState<Record<
       string,
       any
@@ -1020,9 +1037,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const locationParts = data.venue || "";
     const _addressLine = data.address || "";
 
-    const hasRoster =
-      advancedState?.roster?.enabled !== false &&
-      (advancedState?.roster?.athletes?.length ?? 0) > 0;
     const hasMeet = Boolean(
       advancedState?.meet?.sessionNumber ||
         advancedState?.meet?.warmUpTime ||
@@ -1039,18 +1053,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         advancedState?.meet?.rotationSheetsInfo ||
         advancedState?.meet?.awardsInfo,
     );
-    const hasPractice =
-      advancedState?.practice?.enabled !== false &&
-      (advancedState?.practice?.blocks?.length ?? 0) > 0;
-    const hasSchedule =
-      advancedState?.schedule?.enabled !== false &&
-      (advancedState?.schedule?.days || []).some((day: any) =>
-        (day?.sessions || []).some(
-          (session: any) =>
-            (session?.clubs?.length ?? 0) > 0 ||
-            Boolean(session?.group || session?.startTime || session?.code),
-        ),
-      );
     const hasLogistics =
       advancedState?.logistics?.enabled !== false &&
       ((advancedState?.logistics?.showTransportation !== false &&
@@ -1071,34 +1073,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           Boolean(advancedState?.logistics?.mealPlan)) ||
         (advancedState?.logistics?.showAdditionalDocuments !== false &&
           Boolean(advancedState?.logistics?.additionalDocuments?.length)));
-    const hasGear = (advancedState?.gear?.items?.length ?? 0) > 0;
-    const hasVolunteers =
-      advancedState?.volunteers?.enabled !== false &&
-      ((advancedState?.volunteers?.showVolunteerSlots !== false &&
-        (advancedState?.volunteers?.volunteerSlots?.length ??
-          advancedState?.volunteers?.slots?.length ??
-          0) > 0) ||
-        (advancedState?.volunteers?.showCarpool !== false &&
-          (advancedState?.volunteers?.carpoolOffers?.length ??
-            advancedState?.volunteers?.carpools?.length ??
-            0) > 0));
     const hasAnnouncements = (advancedState?.announcements?.items?.length ?? 0) > 0;
     const hasAnnouncementEntries =
       hasAnnouncements || (advancedState?.announcements?.announcements?.length ?? 0) > 0;
     const parseResult = loadedDiscoverySource?.parseResult || {};
     const parseCommunications = parseResult?.communications || {};
-    const parseAthlete = parseResult?.athlete || {};
     const parseMeetDetails = parseResult?.meetDetails || {};
     const parseLogistics = parseResult?.logistics || {};
-    const parseGear = parseResult?.gear || {};
-    const parseVolunteers = parseResult?.volunteers || {};
-    const parseCoachInfo = parseResult?.coachInfo || {};
-    const parseHasRoster = hasAnyText(
-      parseAthlete?.name,
-      parseAthlete?.level,
-      parseAthlete?.team,
-      parseAthlete?.session,
-    );
     const parseHasMeet = hasAnyText(
       parseMeetDetails?.warmup,
       parseMeetDetails?.marchIn,
@@ -1112,21 +1093,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       parseMeetDetails?.resultsInfo,
       parseMeetDetails?.rotationSheetsInfo,
       parseMeetDetails?.awardsInfo,
-      parseAthlete?.stretchTime,
-      parseAthlete?.marchIn,
-      parseAthlete?.session,
     );
-    const parseHasSchedule =
-      Array.isArray(parseResult?.schedule?.days) &&
-      parseResult.schedule.days.some(
-        (day: any) =>
-          Array.isArray(day?.sessions) &&
-          day.sessions.some(
-            (session: any) =>
-              (session?.clubs?.length ?? 0) > 0 ||
-              hasAnyText(session?.group, session?.startTime, session?.code),
-          ),
-      );
     const parseHasLogistics = hasAnyText(
       parseLogistics?.parking,
       parseLogistics?.trafficAlerts,
@@ -1135,38 +1102,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       parseLogistics?.fees,
       parseLogistics?.waivers,
     );
-    const parseHasGear =
-      hasAnyText(parseGear?.uniform) ||
-      (Array.isArray(parseGear?.checklist) && parseGear.checklist.length > 0);
-    const parseHasVolunteers = hasAnyText(parseVolunteers?.signupLink, parseVolunteers?.notes);
     const parseHasAnnouncements =
       Array.isArray(parseCommunications?.announcements) &&
       parseCommunications.announcements.length > 0;
-    const parseHasCoaches =
-      hasAnyText(
-        parseCoachInfo?.signIn,
-        parseCoachInfo?.attire,
-        parseCoachInfo?.hospitality,
-        parseCoachInfo?.floorAccess,
-        parseCoachInfo?.scratches,
-        parseCoachInfo?.floorMusic,
-        parseCoachInfo?.rotationSheets,
-        parseCoachInfo?.awards,
-        parseCoachInfo?.regionalCommitment,
-        parseCoachInfo?.qualification,
-        parseCoachInfo?.meetFormat,
-        parseCoachInfo?.equipment,
-        parseCoachInfo?.refundPolicy,
-        parseCoachInfo?.paymentInstructions,
-      ) ||
-      (Array.isArray(parseCoachInfo?.entryFees) && parseCoachInfo.entryFees.length > 0) ||
-      (Array.isArray(parseCoachInfo?.teamFees) && parseCoachInfo.teamFees.length > 0) ||
-      (Array.isArray(parseCoachInfo?.lateFees) && parseCoachInfo.lateFees.length > 0) ||
-      (Array.isArray(parseCoachInfo?.deadlines) && parseCoachInfo.deadlines.length > 0) ||
-      (Array.isArray(parseCoachInfo?.contacts) && parseCoachInfo.contacts.length > 0) ||
-      (Array.isArray(parseCoachInfo?.links) && parseCoachInfo.links.length > 0) ||
-      (Array.isArray(loadedDiscoverySource?.extractionMeta?.coachPageHints) &&
-        loadedDiscoverySource.extractionMeta.coachPageHints.length > 0);
     const parseHasGymLayoutImage = hasAnyText(
       loadedDiscoverySource?.extractionMeta?.gymLayoutImageDataUrl,
     );
@@ -1181,42 +1119,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
     const visibleAdvancedSections = useMemo(() => {
       const allSections = config.advancedSections || [];
-      const base =
-        !GYM_DISCOVERY_SCHEDULE_GRID_ENABLED
-          ? allSections.filter((section) => section.id !== "schedule")
-          : allSections;
+      const base = allSections.filter((section) => !REMOVED_GYM_EDITOR_SECTIONS.has(section.id));
       if (!useParseDrivenSections) return base;
       return base.filter((section) => {
         switch (section.id) {
-          case "roster":
-            return hasRoster || parseHasRoster;
           case "meet":
             return hasMeet || parseHasMeet;
-          case "practice":
-            return hasPractice;
-          case "schedule":
-            return hasSchedule || parseHasSchedule;
           case "logistics":
             return (
               hasLogistics || parseHasLogistics || parseHasGymLayoutImage || parseHasGymLayoutFacts
             );
-          case "coaches":
-            return (
-              hasAnyText(
-                advancedState?.coaches?.signIn,
-                advancedState?.coaches?.hospitality,
-                advancedState?.coaches?.floorAccess,
-                advancedState?.coaches?.paymentInstructions,
-              ) ||
-              (advancedState?.coaches?.entryFees?.length ?? 0) > 0 ||
-              (advancedState?.coaches?.teamFees?.length ?? 0) > 0 ||
-              (advancedState?.coaches?.lateFees?.length ?? 0) > 0 ||
-              parseHasCoaches
-            );
-          case "gear":
-            return hasGear || parseHasGear;
-          case "volunteers":
-            return hasVolunteers || parseHasVolunteers;
           case "announcements":
             return hasAnnouncementEntries || parseHasAnnouncements;
           default:
@@ -1225,25 +1137,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     }, [
       config.advancedSections,
-      GYM_DISCOVERY_SCHEDULE_GRID_ENABLED,
       hasAnnouncementEntries,
-      hasGear,
       hasLogistics,
       hasMeet,
-      hasPractice,
-      hasSchedule,
-      hasRoster,
-      hasVolunteers,
       parseHasAnnouncements,
-      parseHasCoaches,
-      parseHasGear,
       parseHasGymLayoutImage,
       parseHasGymLayoutFacts,
       parseHasLogistics,
       parseHasMeet,
-      parseHasRoster,
-      parseHasSchedule,
-      parseHasVolunteers,
       useParseDrivenSections,
     ]);
     const visibleAdvancedSectionIds = useMemo(
@@ -1325,13 +1226,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       () =>
         [
           { id: "details", label: "Details", enabled: true },
-          { id: "roster", label: "Roster", enabled: hasRoster },
           { id: "meet", label: "Meet", enabled: hasMeet },
-          { id: "practice", label: "Practice", enabled: hasPractice },
-          { id: "schedule", label: "Schedule", enabled: hasSchedule },
           { id: "logistics", label: "Logistics", enabled: hasLogistics },
-          { id: "gear", label: "Gear", enabled: hasGear },
-          { id: "volunteers", label: "Volunteers", enabled: hasVolunteers },
           {
             id: "announcements",
             label: "Announcements",
@@ -1339,21 +1235,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           },
           { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
           { id: "passcode", label: "Passcode", enabled: true },
-        ].filter(
-          (item) =>
-            item.enabled &&
-            (GYM_DISCOVERY_SCHEDULE_GRID_ENABLED || item.id !== "schedule"),
-        ),
+        ].filter((item) => item.enabled),
       [
         hasAnnouncementEntries,
-        hasGear,
         hasLogistics,
         hasMeet,
-        hasPractice,
-        hasRoster,
-        hasVolunteers,
         data.rsvpEnabled,
-        GYM_DISCOVERY_SCHEDULE_GRID_ENABLED,
       ],
     );
 
@@ -1415,37 +1302,87 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const json = await res.json();
           if (!active || controller.signal.aborted) return;
           const existing = json?.data || {};
+          const isDiscoveryV2 = isGymDiscoveryV2EventData(existing);
+          const existingBuilderDraft = getGymDiscoveryV2BuilderDraft(existing);
+          const existingPipelineSummary = getGymDiscoveryV2PipelineSummary(existing);
+          const builderEvent =
+            existingBuilderDraft?.event && typeof existingBuilderDraft.event === "object"
+              ? (existingBuilderDraft.event as Record<string, any>)
+              : {};
+          const builderVenue =
+            existingBuilderDraft?.venue && typeof existingBuilderDraft.venue === "object"
+              ? (existingBuilderDraft.venue as Record<string, any>)
+              : {};
+          const effectiveExisting = isDiscoveryV2
+            ? {
+                ...existing,
+                ...builderEvent,
+                ...builderVenue,
+                advancedSections:
+                  existingBuilderDraft?.advancedSections && typeof existingBuilderDraft.advancedSections === "object"
+                    ? existingBuilderDraft.advancedSections
+                    : existing.advancedSections,
+              }
+            : existing;
           const existingCreatedVia = asTrimmedString(existing?.createdVia).toLowerCase().trim();
           const existingDiscoverySource =
-            existing?.discoverySource && typeof existing.discoverySource === "object"
+            isDiscoveryV2
+              ? buildLegacyDiscoverySourceFromV2(existing)
+              : existing?.discoverySource && typeof existing.discoverySource === "object"
               ? (existing.discoverySource as Record<string, any>)
               : null;
           const inferredHostGym = inferHostGymFromDiscovery(existingDiscoverySource);
           setLoadedDiscoverySource(existingDiscoverySource);
-          setDiscoveryEnrichmentState(
-            existingDiscoverySource?.enrichment &&
-              typeof existingDiscoverySource.enrichment === "object"
-              ? existingDiscoverySource.enrichment
+          setLoadedDiscoveryPublicArtifacts(
+            isDiscoveryV2 && existing?.publicArtifacts && typeof existing.publicArtifacts === "object"
+              ? (existing.publicArtifacts as Record<string, any>)
               : null,
           );
+          setLoadedDiscoveryPipelineSummary(
+            isDiscoveryV2 && existingPipelineSummary
+              ? (existingPipelineSummary as Record<string, any>)
+              : null,
+          );
+          setDiscoveryEnrichmentState(
+            isDiscoveryV2
+              ? {
+                  state:
+                    existingPipelineSummary?.processingStage === "review_ready"
+                      ? "completed"
+                      : "running",
+                  pending: existingPipelineSummary?.processingStage !== "review_ready",
+                  finishedAt:
+                    existingPipelineSummary?.processingStage === "review_ready"
+                      ? new Date().toISOString()
+                      : null,
+                  lastError: "",
+                }
+              : existingDiscoverySource?.enrichment &&
+                  typeof existingDiscoverySource.enrichment === "object"
+                ? existingDiscoverySource.enrichment
+                : null,
+          );
           setIsDiscoveryEdit(
-            existingCreatedVia === "meet-discovery" || Boolean(existingDiscoverySource?.input),
+            isDiscoveryV2 ||
+              existingCreatedVia === "meet-discovery" ||
+              Boolean(existingDiscoverySource?.input),
           );
 
           console.log("[Edit] Loaded event data:", {
             title: json?.title,
-            pageTemplateId: existing.pageTemplateId,
-            heroImage: existing.heroImage,
-            themeId: existing.themeId,
-            theme: existing.theme,
-            fontId: existing.fontId,
-            fontSize: existing.fontSize,
-            fontFamily: existing.fontFamily,
-            fontSizeClass: existing.fontSizeClass,
-            existing,
+            pageTemplateId: effectiveExisting.pageTemplateId,
+            heroImage: effectiveExisting.heroImage,
+            themeId: effectiveExisting.themeId,
+            theme: effectiveExisting.theme,
+            fontId: effectiveExisting.fontId,
+            fontSize: effectiveExisting.fontSize,
+            fontFamily: effectiveExisting.fontFamily,
+            fontSizeClass: effectiveExisting.fontSizeClass,
+            existing: effectiveExisting,
           });
 
-          const startIso = existing.start || existing.startISO || existing.startIso;
+          const startIso =
+            effectiveExisting.start || effectiveExisting.startISO || effectiveExisting.startIso;
           let loadedDate: string | undefined;
           let loadedTime: string | undefined;
           if (typeof startIso === "string") {
@@ -1462,14 +1399,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             }
           }
           const resolvedDisplayDateLabel =
-            sanitizeDisplayDateLabel(existing?.customFields?.meetDateRangeLabel) ||
+            sanitizeDisplayDateLabel(effectiveExisting?.customFields?.meetDateRangeLabel) ||
             sanitizeDisplayDateLabel(existingDiscoverySource?.parseResult?.dates);
           const parseDatesLabel =
             resolvedDisplayDateLabel ||
             existingDiscoverySource?.parseResult?.dates ||
-            existing?.customFields?.meetDateRangeLabel;
+            effectiveExisting?.customFields?.meetDateRangeLabel;
           const parsedRange = parseDiscoveryDateRange(parseDatesLabel);
-          const existingDateCandidate = normalizeIsoDate(existing.date || loadedDate);
+          const existingDateCandidate = normalizeIsoDate(effectiveExisting.date || loadedDate);
           const resolvedDate =
             parsedRange.start &&
             (!existingDateCandidate ||
@@ -1477,63 +1414,70 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               ? parsedRange.start
               : existingDateCandidate || "";
           const isExistingDiscoveryEvent =
-            existingCreatedVia === "meet-discovery" || Boolean(existingDiscoverySource?.input);
-          const resolvedTime = asTrimmedString(existing.time) || asTrimmedString(loadedTime);
+            isDiscoveryV2 ||
+            existingCreatedVia === "meet-discovery" ||
+            Boolean(existingDiscoverySource?.input);
+          const resolvedTime = asTrimmedString(effectiveExisting.time) || asTrimmedString(loadedTime);
 
           // Load all data fields, prioritizing existing values
-          const accessControl = existing.accessControl || {};
+          const accessControl = effectiveExisting.accessControl || {};
           const hasPasscode = Boolean(
             accessControl?.passcodeHash || accessControl?.requirePasscode,
           );
 
           const editableDetails = isExistingDiscoveryEvent
-            ? stripDiscoveryGeneratedDetails(existing.details || existing.description)
-            : existing.details || existing.description || "";
+            ? stripDiscoveryGeneratedDetails(effectiveExisting.details || effectiveExisting.description)
+            : effectiveExisting.details || effectiveExisting.description || "";
 
           setData((prev) => ({
             ...prev,
-            title: json?.title || existing.title || prev.title,
+            title: json?.title || effectiveExisting.title || prev.title,
             date: resolvedDate || (isExistingDiscoveryEvent ? "" : prev.date),
             time: resolvedTime || (isExistingDiscoveryEvent ? "" : prev.time),
-            timezone: existing.timezone || prev.timezone,
+            timezone: effectiveExisting.timezone || prev.timezone,
             hostGym:
-              existing.hostGym ||
-              existing.team ||
-              existing.customFields?.team ||
+              effectiveExisting.hostGym ||
+              effectiveExisting.team ||
+              effectiveExisting.customFields?.team ||
               inferredHostGym ||
               prev.hostGym,
-            city: existing.city || prev.city,
-            state: existing.state || prev.state,
-            address: existing.address || prev.address,
-            venue: existing.venue || existing.location || prev.venue,
+            city: effectiveExisting.city || prev.city,
+            state: effectiveExisting.state || prev.state,
+            address: effectiveExisting.address || prev.address,
+            venue: effectiveExisting.venue || effectiveExisting.location || prev.venue,
             details: editableDetails,
-            hero: existing.heroImage || existing.hero || prev.hero,
-            pageTemplateId: resolveGymMeetTemplateId(existing),
+            hero: effectiveExisting.heroImage || effectiveExisting.hero || prev.hero,
+            pageTemplateId: resolveGymMeetTemplateId(effectiveExisting),
             rsvpEnabled:
-              typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : prev.rsvpEnabled,
-            rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
+              typeof effectiveExisting.rsvpEnabled === "boolean"
+                ? effectiveExisting.rsvpEnabled
+                : prev.rsvpEnabled,
+            rsvpDeadline: effectiveExisting.rsvpDeadline || prev.rsvpDeadline,
             fontId:
-              existing.fontId != null
-                ? existing.fontId
+              effectiveExisting.fontId != null
+                ? effectiveExisting.fontId
                 : prev.fontId || GYM_FONTS[0]?.id || "inter",
-            fontSize: existing.fontSize != null ? existing.fontSize : prev.fontSize || "medium",
+            fontSize:
+              effectiveExisting.fontSize != null
+                ? effectiveExisting.fontSize
+                : prev.fontSize || "medium",
             passcodeRequired: hasPasscode,
             passcode: "", // Never load plain passcode for security
             passcodeHint:
               typeof accessControl?.passcodeHint === "string" ? accessControl.passcodeHint : "",
             simpleDesignTokens:
-              existing.designTokens ||
-              existing.customFields?.designTokens ||
+              effectiveExisting.designTokens ||
+              effectiveExisting.customFields?.designTokens ||
               prev.simpleDesignTokens ||
               null,
             extra: {
               ...prev.extra,
-              ...(existing.extra || {}),
-              ...(existing.customFields || {}),
+              ...(effectiveExisting.extra || {}),
+              ...(effectiveExisting.customFields || {}),
               meetDateRangeLabel: resolvedDisplayDateLabel,
               team:
-                existing.team ||
-                existing.customFields?.team ||
+                effectiveExisting.team ||
+                effectiveExisting.customFields?.team ||
                 inferredHostGym ||
                 prev.extra?.team ||
                 "",
@@ -1541,30 +1485,36 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           }));
 
           const incomingAdvanced =
-            existing.advancedSections ||
-            existing.customFields?.advancedSections ||
-            existing.advanced ||
+            effectiveExisting.advancedSections ||
+            effectiveExisting.customFields?.advancedSections ||
+            effectiveExisting.advanced ||
             {};
           if (incomingAdvanced && Object.keys(incomingAdvanced).length) {
             setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
           }
 
           // Load theme - this is critical!
-          if (existing.themeId) {
+          if (effectiveExisting.themeId) {
             // Validate themeId exists in config
-            const themeExists = config.themes.find((t) => t.id === existing.themeId);
+            const themeExists = config.themes.find((t) => t.id === effectiveExisting.themeId);
             if (themeExists) {
-              console.log("[Edit] Setting themeId:", existing.themeId);
-              setThemeId(existing.themeId);
+              console.log("[Edit] Setting themeId:", effectiveExisting.themeId);
+              setThemeId(effectiveExisting.themeId);
             } else {
-              console.warn("[Edit] ThemeId not found in config, using default:", existing.themeId);
+              console.warn(
+                "[Edit] ThemeId not found in config, using default:",
+                effectiveExisting.themeId,
+              );
               setThemeId(config.themes[0]?.id || "default-theme");
             }
-          } else if (existing.theme?.id) {
-            const themeExists = config.themes.find((t) => t.id === existing.theme.id);
+          } else if (effectiveExisting.theme?.id) {
+            const themeExists = config.themes.find((t) => t.id === effectiveExisting.theme.id);
             if (themeExists) {
-              console.log("[Edit] Setting themeId from theme object:", existing.theme.id);
-              setThemeId(existing.theme.id);
+              console.log(
+                "[Edit] Setting themeId from theme object:",
+                effectiveExisting.theme.id,
+              );
+              setThemeId(effectiveExisting.theme.id);
             } else {
               console.warn("[Edit] Theme from object not found in config, using default");
               setThemeId(config.themes[0]?.id || "default-theme");
@@ -1867,16 +1817,123 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           editEventId,
         });
 
-        const isDiscoveryUpdate = Boolean(
-          editEventId && (isDiscoveryEdit || loadedDiscoverySource),
+        const isDiscoveryV2Update = Boolean(
+          editEventId &&
+            loadedDiscoveryPipelineSummary?.discoveryId &&
+            loadedDiscoverySource?.pipelineVersion === "gym-public-v3",
         );
+        const isDiscoveryUpdate = Boolean(
+          editEventId && (isDiscoveryEdit || loadedDiscoverySource || isDiscoveryV2Update),
+        );
+        const builderDraft = {
+          event: {
+            title: data.title || config.displayName,
+            startISO,
+            endISO,
+            timezone: data.timezone || undefined,
+            location: locationParts || undefined,
+            address: data.address || undefined,
+            venue: data.venue || undefined,
+            hostGym: data.hostGym || undefined,
+            city: data.city || undefined,
+            state: data.state || undefined,
+            details: data.details || undefined,
+            description: data.details || undefined,
+            rsvpEnabled: data.rsvpEnabled,
+            rsvpDeadline: data.rsvpDeadline || undefined,
+            templateId: config.slug,
+            pageTemplateId: resolvedPageTemplateId,
+            fontSize: selectedSize.id,
+            fontSizeClass: selectedSize.className,
+            customFields: {
+              ...extraFieldsForSave,
+              team: extraFieldsForSave?.team || "",
+              advancedSections: advancedState,
+            },
+            heroImage: heroToSave,
+            time: data.time,
+            date: data.date,
+            ...(data.passcodeRequired && data.passcode
+              ? {
+                  accessControl: {
+                    mode: "access-code",
+                    passcodePlain: data.passcode,
+                    passcodeHint: data.passcodeHint || undefined,
+                    requirePasscode: true,
+                  },
+                }
+              : data.passcodeRequired === false
+                ? {
+                    accessControl: {
+                      mode: "public",
+                      passcodeHint: "",
+                      requirePasscode: false,
+                    },
+                  }
+                : {}),
+          },
+          venue: {
+            location: locationParts || undefined,
+            address: data.address || undefined,
+            venue: data.venue || undefined,
+            city: data.city || undefined,
+            state: data.state || undefined,
+          },
+          advancedSections: advancedState,
+          canonicalLinks: {
+            links: Array.isArray(loadedDiscoveryPublicArtifacts?.quickAccess)
+              ? loadedDiscoveryPublicArtifacts.quickAccess
+              : [],
+          },
+          reviewFlags: Array.isArray(loadedDiscoveryPipelineSummary?.reviewFlags)
+            ? loadedDiscoveryPipelineSummary.reviewFlags
+            : [],
+        };
         const payload: any = {
           title: data.title || config.displayName,
           data: {
-            category: config.category,
-            createdVia: isDiscoveryUpdate ? "meet-discovery" : "simple-template",
+            category: isDiscoveryV2Update ? "gymnastics" : config.category,
+            createdVia: isDiscoveryV2Update
+              ? "meet-discovery-v2"
+              : isDiscoveryUpdate
+                ? "meet-discovery"
+                : "simple-template",
             createdManually: !isDiscoveryUpdate,
-            ...(loadedDiscoverySource && {
+            ...(isDiscoveryV2Update
+              ? {
+                  builderDraft,
+                  publicArtifacts:
+                    loadedDiscoveryPublicArtifacts ||
+                    ({
+                      pipelineVersion: "gym-public-v3",
+                      publishAssessment: {
+                        state: "needs_review",
+                        reasons: [],
+                      },
+                      hero: {
+                        title: data.title || config.displayName,
+                        dateLabel: data.date || "",
+                        venue: data.venue || data.address || "",
+                        badges: data.hostGym ? [data.hostGym] : [],
+                      },
+                      sections: loadedDiscoverySource?.publicPageSections || {},
+                      quickAccess: [],
+                    } as Record<string, any>),
+                  pipelineSummary: {
+                    ...(loadedDiscoveryPipelineSummary || {}),
+                    processingStage:
+                      loadedDiscoveryPipelineSummary?.processingStage || "review_ready",
+                    needsHumanReview: Boolean(
+                      loadedDiscoveryPipelineSummary?.needsHumanReview,
+                    ),
+                    publishReady:
+                      loadedDiscoveryPipelineSummary?.publishReady === true,
+                    discoveryId: loadedDiscoveryPipelineSummary?.discoveryId || "",
+                  },
+                }
+              : {}),
+            ...(!isDiscoveryV2Update &&
+              loadedDiscoverySource && {
               discoverySource: {
                 ...loadedDiscoverySource,
                 updatedAt: new Date().toISOString(),
@@ -2061,6 +2118,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       selectedSize,
       editEventId,
       isDiscoveryEdit,
+      loadedDiscoveryPipelineSummary,
+      loadedDiscoveryPublicArtifacts,
       loadedDiscoverySource,
       router,
     ]);
@@ -2243,7 +2302,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </p>
           <MenuCard
             title="Event Basics"
-            desc="Title, date, time, venue, session & team level."
+            desc="Title, date, time, host, and venue."
             icon={<Type size={18} />}
             status={headlineStatus}
             onClick={() => setActiveView("headline")}
@@ -2251,7 +2310,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           />
           <MenuCard
             title="Details"
-            desc="Description, coaches, and season context."
+            desc="Meet details, venue guidance, and attendee context."
             icon={<Edit2 size={18} />}
             status={detailsStatus}
             onClick={() => setActiveView("details")}
@@ -2282,32 +2341,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             .map((section) => {
               const sectionEnabled = (() => {
                 switch (section.id) {
-                  case "roster":
-                    return hasRoster;
                   case "meet":
                     return hasMeet;
-                  case "practice":
-                    return hasPractice;
                   case "logistics":
                     return hasLogistics;
-                  case "coaches":
-                    return (
-                      hasAnyText(
-                        advancedState?.coaches?.signIn,
-                        advancedState?.coaches?.hospitality,
-                        advancedState?.coaches?.floorAccess,
-                        advancedState?.coaches?.paymentInstructions,
-                      ) ||
-                      (advancedState?.coaches?.entryFees?.length ?? 0) > 0 ||
-                      (advancedState?.coaches?.teamFees?.length ?? 0) > 0 ||
-                      (advancedState?.coaches?.lateFees?.length ?? 0) > 0
-                    );
-                  case "schedule":
-                    return hasSchedule;
-                  case "gear":
-                    return hasGear;
-                  case "volunteers":
-                    return hasVolunteers;
                   default:
                     return Boolean(advancedState?.[section.id]);
                 }
@@ -2444,59 +2481,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               label="Event Title"
               value={data.title}
               onChange={(v) => updateData("title", v)}
-              placeholder="Level 6 Invitational - Session 2"
+              placeholder="e.g. 2026 Florida Xcel State Championships"
             />
-            <div className="grid grid-cols-2 gap-4">
-              <InputGroup
-                label="Session"
-                value={advancedState?.meet?.sessionNumber || ""}
-                onChange={(v) =>
-                  setAdvancedState((prev: Record<string, any>) => ({
-                    ...prev,
-                    meet: {
-                      ...(prev?.meet || {}),
-                      sessionNumber: v,
-                    },
-                  }))
-                }
-                placeholder="e.g. Session 2 - Level 5-7"
-              />
-              <InputGroup
-                label="Team Level"
-                value={advancedState?.roster?.athletes?.[0]?.level || ""}
-                onChange={(v) =>
-                  setAdvancedState((prev: Record<string, any>) => {
-                    const roster = prev?.roster || {};
-                    const athletes = Array.isArray(roster.athletes) ? [...roster.athletes] : [];
-                    if (athletes.length === 0) {
-                      athletes.push({
-                        id: "athlete-1",
-                        name: "",
-                        level: v,
-                        primaryEvents: [],
-                        parentName: "",
-                        parentPhone: "",
-                        parentEmail: "",
-                        medicalNotes: "",
-                        status: "pending",
-                        team: "",
-                        session: "",
-                      });
-                    } else {
-                      athletes[0] = { ...(athletes[0] || {}), level: v };
-                    }
-                    return {
-                      ...prev,
-                      roster: {
-                        ...roster,
-                        athletes,
-                      },
-                    };
-                  })
-                }
-                placeholder="e.g. Level 4"
-              />
-            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <InputGroup
@@ -2520,8 +2506,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             />
             <p className="text-xs text-slate-500 -mt-2">
               Set the exact event start above. For multi-day meets, use Display Date to show a range
-              (e.g. March 6-8, 2026) in the header. Leave blank to use the single date. Session
-              timing: <strong>Operations → Meet Details</strong>.
+              (e.g. March 6-8, 2026) in the header. Leave blank to use the single date.
             </p>
             <InputGroup
               label="Timezone"
@@ -2557,8 +2542,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         data.extra?.meetDateRangeLabel,
         data.timezone,
         data.hostGym,
-        advancedState?.meet?.sessionNumber,
-        advancedState?.roster?.athletes?.[0]?.level,
         data.venue,
         data.address,
         data.city,
@@ -2781,7 +2764,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           mimeType: discoverFile.type || "application/octet-stream",
         });
 
-        const ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
+        const ingestRes = await fetch("/api/discovery/intake", {
           method: "POST",
           body: formData,
           credentials: "include",
@@ -2793,12 +2776,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         const eventId = String(ingestJson.eventId);
         log("ingest completed", { eventId, status: ingestRes.status });
         const parseStartedAt = Date.now();
-        log("starting parse request", { eventId });
-        const parseBody = new FormData();
-        parseBody.append("file", discoverFile);
-        const parseRes = await fetch(`/api/parse/${eventId}`, {
+        log("starting discovery run", { eventId });
+        const parseRes = await fetch(`/api/discovery/${eventId}/run`, {
           method: "POST",
-          body: parseBody,
           credentials: "include",
         });
         const parseJson = await parseRes.json().catch(() => ({}));
@@ -2806,10 +2786,26 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           eventId,
           status: parseRes.status,
           durationMs: Date.now() - parseStartedAt,
-          modelUsed: parseJson?.modelUsed || null,
+          processingStage: parseJson?.processingStage || null,
         });
         if (!parseRes.ok) {
-          throw new Error(parseJson?.error || "Failed to parse source");
+          throw new Error(parseJson?.error || "Failed to start discovery");
+        }
+        let builderReady = false;
+        while (!builderReady) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1000));
+          const statusRes = await fetch(`/api/discovery/${eventId}/status`, {
+            credentials: "include",
+            cache: "no-store",
+          });
+          const statusJson = await statusRes.json().catch(() => ({}));
+          if (!statusRes.ok) {
+            throw new Error(statusJson?.error || "Failed to load discovery status");
+          }
+          if (statusJson?.errorCode) {
+            throw new Error(statusJson.errorCode);
+          }
+          builderReady = statusJson?.builderReady === true;
         }
         log("routing to builder", { eventId });
         router.push(`/event/gymnastics/customize?edit=${eventId}`);
@@ -3020,11 +3016,27 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const isDiscoveryPreview = Boolean(
         editEventId && (isDiscoveryEdit || loadedDiscoverySource || useParseDrivenSections),
       );
+      const isDiscoveryV2Preview = Boolean(
+        isDiscoveryPreview &&
+          loadedDiscoveryPublicArtifacts &&
+          loadedDiscoveryPipelineSummary &&
+          loadedDiscoverySource?.pipelineVersion === "gym-public-v3",
+      );
 
       return {
         category: config.category,
-        createdVia: isDiscoveryPreview ? "meet-discovery" : "simple-template",
+        createdVia: isDiscoveryV2Preview
+          ? "meet-discovery-v2"
+          : isDiscoveryPreview
+            ? "meet-discovery"
+            : "simple-template",
         createdManually: !isDiscoveryPreview,
+        ...(isDiscoveryV2Preview
+          ? {
+              publicArtifacts: loadedDiscoveryPublicArtifacts,
+              pipelineSummary: loadedDiscoveryPipelineSummary,
+            }
+          : {}),
         ...(loadedDiscoverySource
           ? {
               discoverySource: loadedDiscoverySource,
@@ -3094,6 +3106,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       config.slug,
       editEventId,
       isDiscoveryEdit,
+      loadedDiscoveryPipelineSummary,
+      loadedDiscoveryPublicArtifacts,
       loadedDiscoverySource,
       useParseDrivenSections,
       data.address,
@@ -3152,7 +3166,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               Finishing Details
             </p>
             <p className="mt-1 text-sm text-sky-800">
-              Finishing schedule and venue details in the background.
+              Finishing venue, parking, and attendee details in the background.
             </p>
           </div>
         ) : discoveryEnrichmentState.state === "failed" ? (
@@ -3161,7 +3175,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               Enrichment Incomplete
             </p>
             <p className="mt-1 text-sm text-amber-800">
-              Schedule and venue details could not finish automatically.
+              Venue, parking, and attendee details could not finish automatically.
             </p>
             <div className="mt-3">
               <button

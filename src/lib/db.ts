@@ -2,6 +2,13 @@ import { scrypt as nodeScrypt, randomBytes, randomUUID, timingSafeEqual } from "
 import { promisify } from "node:util";
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
 import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
+import type {
+  CanonicalDiscoveryParse,
+  DiscoveryDocument,
+  DiscoveryPipelineState,
+  DiscoverySourceRecord,
+  EventDiscoveryRow,
+} from "@/lib/discovery/types";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
 
@@ -1625,6 +1632,20 @@ export type EventHistoryInputBlobRow = {
   storage_url?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+};
+
+type EventDiscoveryQueryRow = {
+  id: string;
+  eventId: string;
+  workflow: "gymnastics";
+  source: DiscoverySourceRecord;
+  document: DiscoveryDocument | null;
+  canonicalParse: CanonicalDiscoveryParse | null;
+  enrichment: Record<string, unknown> | null;
+  pipeline: DiscoveryPipelineState;
+  debug: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 function jsonbArrayOrEmpty(expr: string): string {
@@ -3519,6 +3540,281 @@ async function ensureEventHistoryInputBlobsTable(): Promise<void> {
         alter column data drop not null
     `);
   });
+}
+
+async function ensureEventDiscoveriesTable(): Promise<void> {
+  await ensureOnce("event_discoveries_table", async () => {
+    await query(`
+      create table if not exists event_discoveries (
+        id uuid primary key default gen_random_uuid(),
+        event_id uuid not null unique references event_history(id) on delete cascade,
+        workflow text not null,
+        source jsonb not null default '{}'::jsonb,
+        document jsonb null,
+        canonical_parse jsonb null,
+        enrichment jsonb null,
+        pipeline jsonb not null default '{}'::jsonb,
+        debug jsonb null,
+        created_at timestamptz default now(),
+        updated_at timestamptz default now()
+      )
+    `);
+    await query(`
+      create index if not exists idx_event_discoveries_workflow_updated
+        on event_discoveries(workflow, updated_at desc)
+    `);
+  });
+  await ensureOnce("event_discoveries_columns", async () => {
+    await query(`
+      alter table event_discoveries
+        add column if not exists source jsonb not null default '{}'::jsonb
+    `);
+    await query(`
+      alter table event_discoveries
+        add column if not exists document jsonb null
+    `);
+    await query(`
+      alter table event_discoveries
+        add column if not exists canonical_parse jsonb null
+    `);
+    await query(`
+      alter table event_discoveries
+        add column if not exists enrichment jsonb null
+    `);
+    await query(`
+      alter table event_discoveries
+        add column if not exists pipeline jsonb not null default '{}'::jsonb
+    `);
+    await query(`
+      alter table event_discoveries
+        add column if not exists debug jsonb null
+    `);
+    await query(`
+      alter table event_discoveries
+        add column if not exists created_at timestamptz default now()
+    `);
+    await query(`
+      alter table event_discoveries
+        add column if not exists updated_at timestamptz default now()
+    `);
+  });
+}
+
+function mapEventDiscoveryRow(row: EventDiscoveryQueryRow | null | undefined): EventDiscoveryRow | null {
+  if (!row) return null;
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    workflow: row.workflow,
+    source: row.source,
+    document: row.document,
+    canonicalParse: row.canonicalParse,
+    enrichment: row.enrichment,
+    pipeline: row.pipeline,
+    debug: row.debug,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export async function insertEventDiscovery(params: {
+  id?: string;
+  eventId: string;
+  workflow: "gymnastics";
+  source: DiscoverySourceRecord;
+  document?: DiscoveryDocument | null;
+  canonicalParse?: CanonicalDiscoveryParse | null;
+  enrichment?: Record<string, unknown> | null;
+  pipeline: DiscoveryPipelineState;
+  debug?: Record<string, unknown> | null;
+}): Promise<EventDiscoveryRow> {
+  await ensureEventDiscoveriesTable();
+  const id = params.id || randomUUID();
+  const res = await query<EventDiscoveryQueryRow>(
+    `insert into event_discoveries (
+       id,
+       event_id,
+       workflow,
+       source,
+       document,
+       canonical_parse,
+       enrichment,
+       pipeline,
+       debug
+     )
+     values ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb, $8::jsonb, $9::jsonb)
+     returning
+       id,
+       event_id as "eventId",
+       workflow,
+       source,
+       document,
+       canonical_parse as "canonicalParse",
+       enrichment,
+       pipeline,
+       debug,
+       created_at as "createdAt",
+       updated_at as "updatedAt"`,
+    [
+      id,
+      params.eventId,
+      params.workflow,
+      JSON.stringify(sanitizeJsonValueForPostgres(params.source)),
+      JSON.stringify(sanitizeJsonValueForPostgres(params.document ?? null)),
+      JSON.stringify(sanitizeJsonValueForPostgres(params.canonicalParse ?? null)),
+      JSON.stringify(sanitizeJsonValueForPostgres(params.enrichment ?? null)),
+      JSON.stringify(sanitizeJsonValueForPostgres(params.pipeline)),
+      JSON.stringify(sanitizeJsonValueForPostgres(params.debug ?? null)),
+    ],
+  );
+  return mapEventDiscoveryRow(res.rows[0])!;
+}
+
+export async function getEventDiscoveryByEventId(
+  eventId: string,
+): Promise<EventDiscoveryRow | null> {
+  if (!eventId) return null;
+  try {
+    await ensureEventDiscoveriesTable();
+    const res = await query<EventDiscoveryQueryRow>(
+      `select
+         id,
+         event_id as "eventId",
+         workflow,
+         source,
+         document,
+         canonical_parse as "canonicalParse",
+         enrichment,
+         pipeline,
+         debug,
+         created_at as "createdAt",
+         updated_at as "updatedAt"
+       from event_discoveries
+       where event_id = $1
+       limit 1`,
+      [eventId],
+    );
+    return mapEventDiscoveryRow(res.rows[0]);
+  } catch (err) {
+    if (isTableMissingError(err)) return null;
+    throw err;
+  }
+}
+
+export async function getEventDiscoveryById(id: string): Promise<EventDiscoveryRow | null> {
+  if (!id) return null;
+  try {
+    await ensureEventDiscoveriesTable();
+    const res = await query<EventDiscoveryQueryRow>(
+      `select
+         id,
+         event_id as "eventId",
+         workflow,
+         source,
+         document,
+         canonical_parse as "canonicalParse",
+         enrichment,
+         pipeline,
+         debug,
+         created_at as "createdAt",
+         updated_at as "updatedAt"
+       from event_discoveries
+       where id = $1
+       limit 1`,
+      [id],
+    );
+    return mapEventDiscoveryRow(res.rows[0]);
+  } catch (err) {
+    if (isTableMissingError(err)) return null;
+    throw err;
+  }
+}
+
+export async function updateEventDiscovery(params: {
+  eventId: string;
+  source?: DiscoverySourceRecord;
+  document?: DiscoveryDocument | null;
+  canonicalParse?: CanonicalDiscoveryParse | null;
+  enrichment?: Record<string, unknown> | null;
+  pipeline?: DiscoveryPipelineState;
+  debug?: Record<string, unknown> | null;
+}): Promise<EventDiscoveryRow | null> {
+  await ensureEventDiscoveriesTable();
+  const existing = await getEventDiscoveryByEventId(params.eventId);
+  if (!existing) return null;
+  const res = await query<EventDiscoveryQueryRow>(
+    `update event_discoveries
+     set source = $2::jsonb,
+         document = $3::jsonb,
+         canonical_parse = $4::jsonb,
+         enrichment = $5::jsonb,
+         pipeline = $6::jsonb,
+         debug = $7::jsonb,
+         updated_at = now()
+     where event_id = $1
+     returning
+       id,
+       event_id as "eventId",
+       workflow,
+       source,
+       document,
+       canonical_parse as "canonicalParse",
+       enrichment,
+       pipeline,
+       debug,
+       created_at as "createdAt",
+       updated_at as "updatedAt"`,
+    [
+      params.eventId,
+      JSON.stringify(sanitizeJsonValueForPostgres(params.source ?? existing.source)),
+      JSON.stringify(sanitizeJsonValueForPostgres(params.document ?? existing.document ?? null)),
+      JSON.stringify(
+        sanitizeJsonValueForPostgres(params.canonicalParse ?? existing.canonicalParse ?? null),
+      ),
+      JSON.stringify(sanitizeJsonValueForPostgres(params.enrichment ?? existing.enrichment ?? null)),
+      JSON.stringify(sanitizeJsonValueForPostgres(params.pipeline ?? existing.pipeline)),
+      JSON.stringify(sanitizeJsonValueForPostgres(params.debug ?? existing.debug ?? null)),
+    ],
+  );
+  return mapEventDiscoveryRow(res.rows[0]);
+}
+
+export async function tryAcquireEventDiscoveryLease(params: {
+  eventId: string;
+  leaseOwnerId: string;
+  leaseExpiresAt: string;
+  nextPipeline: DiscoveryPipelineState;
+}): Promise<EventDiscoveryRow | null> {
+  await ensureEventDiscoveriesTable();
+  const res = await query<EventDiscoveryQueryRow>(
+    `update event_discoveries
+     set pipeline = $2::jsonb,
+         updated_at = now()
+     where event_id = $1
+       and (
+         nullif(pipeline #>> '{lease,expiresAt}', '') is null
+         or (nullif(pipeline #>> '{lease,expiresAt}', ''))::timestamptz <= now()
+         or coalesce(pipeline #>> '{lease,ownerId}', '') = $3
+       )
+     returning
+       id,
+       event_id as "eventId",
+       workflow,
+       source,
+       document,
+       canonical_parse as "canonicalParse",
+       enrichment,
+       pipeline,
+       debug,
+       created_at as "createdAt",
+       updated_at as "updatedAt"`,
+    [
+      params.eventId,
+      JSON.stringify(sanitizeJsonValueForPostgres(params.nextPipeline)),
+      params.leaseOwnerId,
+    ],
+  );
+  return mapEventDiscoveryRow(res.rows[0]);
 }
 
 export async function upsertEventHistoryInputBlob(params: {

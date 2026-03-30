@@ -3,6 +3,7 @@ import {
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
 import {
+  buildGymDiscoveryPublicPageArtifacts,
   createDiscoveryPerformance,
   type DiscoveryEnrichmentStatus,
   type DiscoveryPerformance,
@@ -83,6 +84,11 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
     params.mergedCoreEventData,
     extraction.extractionMeta,
   );
+  const publicArtifacts = buildGymDiscoveryPublicPageArtifacts({
+    parseResult: enrichedParseResult,
+    baseData: params.mergedCoreEventData,
+    extractionMeta: extraction.extractionMeta,
+  });
   const nextGymPageTemplateId =
     resolveGymMeetTemplateId({ ...params.mergedCoreEventData, ...mapped }) ||
     DEFAULT_GYM_MEET_TEMPLATE_ID;
@@ -122,7 +128,16 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
         extraction.extractionMeta,
         debugArtifacts,
       ),
-      parseResult: stripGymScheduleGridsFromParseResult(enrichedParseResult),
+      ...(publicArtifacts
+        ? {
+            pipelineVersion: publicArtifacts.pipelineVersion,
+            publicPageSections: publicArtifacts.publicPageSections,
+            publishAssessment: publicArtifacts.publishAssessment,
+          }
+        : {}),
+      parseResult: stripGymScheduleGridsFromParseResult(
+        publicArtifacts?.parseResult || enrichedParseResult
+      ),
       enrichment: enrichmentState,
       enrichedAt: finishedAt,
       updatedAt: finishedAt,

@@ -38,10 +38,14 @@ import {
   resolveDiscoveryBudget as resolveSharedDiscoveryBudget,
   type DiscoveryBudgetSource,
 } from "@/lib/discovery-budget";
-import { GYM_DISCOVERY_SCHEDULE_GRID_ENABLED } from "./meet-discovery/constants";
+import {
+  GYM_DISCOVERY_PUBLIC_PAGE_V2,
+  GYM_DISCOVERY_SCHEDULE_GRID_ENABLED,
+} from "./meet-discovery/constants";
 
 export { computeGymBuilderStatuses };
 export { GYM_DISCOVERY_SCHEDULE_GRID_ENABLED };
+export { GYM_DISCOVERY_PUBLIC_PAGE_V2 };
 
 export type DiscoverySourceInput =
   | {
@@ -339,11 +343,29 @@ export type DiscoveryResourceKind =
   | "results_pdf"
   | "hotel_booking"
   | "photo_video"
+  | "apparel_form"
   | "admission"
   | "parking"
   | "other";
 
 export type DiscoveryResourceStatus = "available" | "not_posted" | "unknown";
+
+export type GymContentAudience =
+  | "public_attendee"
+  | "coach_ops"
+  | "session_ops"
+  | "mixed"
+  | "unknown";
+
+export type GymResourceRenderTarget =
+  | "meet_details"
+  | "admission"
+  | "venue"
+  | "traffic_parking"
+  | "hotels"
+  | "results"
+  | "documents"
+  | "hidden";
 
 type DiscoveryResourceOrigin =
   | "root"
@@ -357,7 +379,7 @@ export type DiscoveryResourceLink = {
   status: DiscoveryResourceStatus;
   label: string;
   url: string;
-  sourceUrl: string;
+  sourceUrl?: string | null;
   origin: DiscoveryResourceOrigin;
   contentType: string | null;
   followed: boolean;
@@ -366,6 +388,8 @@ export type DiscoveryResourceLink = {
   availabilityText: string | null;
   availabilityDate: string | null;
   discoveryMethod: "http" | "playwright";
+  audience?: GymContentAudience;
+  renderTarget?: GymResourceRenderTarget;
 };
 
 type EventFingerprint = {
@@ -441,6 +465,65 @@ export type DiscoveryEnrichmentStatus = {
   finishedAt: string | null;
   lastError: string | null;
   performance: DiscoveryPerformance;
+};
+
+export type GymPublicSectionOrigin =
+  | "pdf_grounded"
+  | "derived_summary"
+  | "venue_enriched"
+  | "mixed";
+
+export type GymPublicSectionVisibility = "visible" | "hidden";
+
+export type GymPublicPageSection = {
+  title: string;
+  body: string;
+  bullets: string[];
+  origin: GymPublicSectionOrigin;
+  confidence: number;
+  evidenceRefs: string[];
+  visibility?: GymPublicSectionVisibility;
+  hideReason?: string | null;
+};
+
+export type GymPublicDocumentSection = {
+  title: "Documents";
+  links: Array<{ label: string; url: string }>;
+  origin: "pdf_grounded";
+  confidence: number;
+  evidenceRefs: string[];
+  visibility?: GymPublicSectionVisibility;
+  hideReason?: string | null;
+};
+
+export type GymPublicPageSections = {
+  meetDetails: GymPublicPageSection | null;
+  parking: GymPublicPageSection | null;
+  traffic: GymPublicPageSection | null;
+  venue: GymPublicPageSection | null;
+  spectatorInfo: GymPublicPageSection | null;
+  travel: GymPublicPageSection | null;
+  documents: GymPublicDocumentSection | null;
+};
+
+type GymAudienceClassifiedText = {
+  text: string;
+  audience: GymContentAudience;
+  source: "parse_field" | "operational_note" | "unmapped_fact" | "resource_hint" | "raw_detail";
+};
+
+export type GymDiscoveryPublishAssessment = {
+  state: "auto_publish" | "review" | "draft";
+  reasons: string[];
+  sectionScores: {
+    core: number;
+    meetDetails: number;
+    parking: number;
+    traffic: number;
+    venue: number;
+    spectatorInfo: number;
+    documents: number;
+  };
 };
 
 type ExtractionResult = {
@@ -4832,6 +4915,105 @@ function normalizeLinkLabel(innerHtml: string, rawAttrs: string, url: URL): stri
   return label || fallbackLinkLabel(url);
 }
 
+function normalizeResourceLinkLabel(label: string, url: string, contextText = ""): string {
+  const cleanedLabel = safeString(label).replace(/\s{2,}/g, " ").trim();
+  const normalizedContext = safeString(contextText).replace(/\s{2,}/g, " ").trim();
+  const kind = classifyResourceLink(
+    [cleanedLabel, normalizedContext].filter(Boolean).join(" "),
+    url,
+    null
+  );
+  switch (kind) {
+    case "hotel_booking":
+      if (/\bhost hotels?\b/i.test(normalizedContext) && !/\breserv|book/i.test(normalizedContext)) {
+        return "Host Hotels";
+      }
+      if (/\breserv|book/i.test(normalizedContext)) return "Hotel Reservations";
+      return "Hotel Booking";
+    case "photo_video":
+      return "Photo / Video Order Form";
+    case "apparel_form":
+      return "Apparel Sizing Form";
+    case "parking":
+      if (/\bgarage\b/i.test(normalizedContext) && /\bdirection/i.test(normalizedContext)) {
+        return "Parking Garage Directions";
+      }
+      if (/\bparking map\b|\blots? and garages?\b|\bwayfinding\b/i.test(normalizedContext)) {
+        return "Parking Map";
+      }
+      return "Parking";
+    default:
+      if (cleanedLabel) return cleanedLabel;
+      try {
+        return fallbackLinkLabel(new URL(url));
+      } catch {
+        return "Resource link";
+      }
+  }
+}
+
+function extractLastHtmlMatch(html: string, pattern: RegExp): string {
+  let last = "";
+  for (let match = pattern.exec(html); match; match = pattern.exec(html)) {
+    const text = safeString(stripHtml(match[1] || ""));
+    if (text) last = text;
+  }
+  return last;
+}
+
+function extractContainingHtmlBlock(
+  html: string,
+  anchorIndex: number,
+  openTag: string,
+  closeTag: string
+): string {
+  const start = html.lastIndexOf(openTag, anchorIndex);
+  const end = html.indexOf(closeTag, anchorIndex);
+  if (start < 0 || end < 0 || end <= anchorIndex) return "";
+  return html.slice(start, end + closeTag.length);
+}
+
+function extractDiscoveryAnchorContext(
+  html: string,
+  anchorIndex: number
+): { heading: string; blockText: string; contextText: string } {
+  const windowStart = Math.max(0, anchorIndex - 1800);
+  const windowEnd = Math.min(html.length, anchorIndex + 1200);
+  const before = html.slice(windowStart, anchorIndex);
+  const heading =
+    extractLastHtmlMatch(
+      before,
+      /<(?:h[1-6]|div)[^>]*class=["'][^"']*(?:sectionheader|section-header|sectiontitle|section-title|widgettitle|pageSectionHeader)[^"']*["'][^>]*>([\s\S]*?)<\/(?:h[1-6]|div)>/gi
+    ) ||
+    extractLastHtmlMatch(before, /<(?:h[1-6]|strong|b)[^>]*>([\s\S]*?)<\/(?:h[1-6]|strong|b)>/gi);
+  const blockHtml =
+    extractContainingHtmlBlock(html, anchorIndex, "<p", "</p>") ||
+    extractContainingHtmlBlock(html, anchorIndex, "<li", "</li>") ||
+    extractContainingHtmlBlock(html, anchorIndex, "<td", "</td>") ||
+    html.slice(windowStart, windowEnd);
+  const blockText = safeString(stripHtml(blockHtml))
+    .replace(/\b(?:click here(?: for .+?)?|here|open link|resource link)\b/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  const contextText = [heading, blockText].filter(Boolean).join(" ").trim();
+  return { heading, blockText, contextText };
+}
+
+function deriveDiscoveryAnchorLabel(
+  innerHtml: string,
+  rawAttrs: string,
+  url: URL,
+  fullHtml: string,
+  anchorIndex: number
+): string {
+  const baseLabel = normalizeLinkLabel(innerHtml, rawAttrs, url);
+  if (!looksLikeGenericResourceLabel(baseLabel)) return baseLabel;
+  const context = extractDiscoveryAnchorContext(fullHtml, anchorIndex);
+  const preferredLabel =
+    (!looksLikeGenericResourceLabel(context.heading) && context.heading) || baseLabel;
+  return normalizeResourceLinkLabel(preferredLabel, url.toString(), context.contextText);
+}
+
 function classifyDiscoveryLink(url: URL, baseUrl: URL): DiscoveryLinkKind {
   if (url.host !== baseUrl.host) return "external";
   return isAssetUrl(url) ? "asset" : "html";
@@ -4924,9 +5106,12 @@ function isTrustedExternalResourceUrl(input: string): boolean {
     const hostname = new URL(input).hostname.toLowerCase();
     return [
       "api.groupbook.io",
+      "app.eventpipe.com",
+      "eventpipe.com",
       "jotform.com",
       "form.jotform.com",
       "pci.jotform.com",
+      "forms.office.com",
       "meetscoresonline.com",
       "results.scorecatonline.com",
     ].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
@@ -4967,8 +5152,17 @@ function classifyResourceLink(
     return "hotel_booking";
   }
   if (
+    /\b(apparel|uniform|sizing|size)\b/i.test(haystack) &&
+    /\b(form|e-form|eform|survey|office\.com|forms\.office\.com)\b/i.test(haystack)
+  ) {
+    return "apparel_form";
+  }
+  if (
     /\bjotform\b/i.test(haystack) ||
-    /\b(photo|video|media|picture|pictures|order photos?|photo\/video)\b/i.test(haystack)
+    (/\b(photo|video|picture|pictures|order photos?|photo\/video)\b/i.test(haystack) &&
+      !/\b(media resources?|media release|pressbox|press box|press|media credential)\b/i.test(
+        haystack
+      ))
   ) {
     return "photo_video";
   }
@@ -5011,6 +5205,124 @@ function classifyResourceLink(
     return "parking";
   }
   return "other";
+}
+
+const GYM_PUBLIC_ANNOUNCEMENT_PATTERN =
+  /\b(urgent|reminder|delay|changed|change|closed|closing|today|tomorrow|tonight|this morning|this afternoon|this evening|weather|alert|update)\b/i;
+const GYM_PUBLIC_ATTENDEE_TEXT_PATTERN =
+  /\b(admission|ticket|spectator|adults?|children|child|under\s*\d|free|venue|address|parking|garage|drop[-\s]?off|ride[-\s]?share|accessible|accessibility|guest services|awards?|hotel|lodging|travel|results?|live scoring|map|doors open|arrival|welcome|hosted by|meet site|food|hydration|animals?|service animals?|photo|video|order form|apparel|sizing)\b/i;
+const GYM_PUBLIC_OVERVIEW_TEXT_PATTERN =
+  /\b(championships?|classic|invitational|state meet|regional meet|national meet|takes place|host(?:ed)? by|awards ceremon|team awards?|all around awards?)\b/i;
+const GYM_COACH_OPS_TEXT_PATTERN =
+  /\b(coach(?:es)?(?:\s+only)?|meet reservations?|membership verification|pro member|sign[-\s]?in|attire|competition floor access|scratches?|master rotation sheet|floor music|regional(?:s)?|qualification|entry fees?|late fee|meetmaker|payment instructions?|check payable|coach hospitality)\b/i;
+const GYM_SESSION_OPS_TEXT_PATTERN =
+  /\b(session assignments?|verify athlete session assignment|club rosters?|roster corrections?|athlete birth[-\s]?date|birth[-\s]?date correction|age[-\s]?group|group\/session|session code|division table|team divisions?|session eligibility|rotation ops?)\b/i;
+const GYM_PUBLIC_DOCUMENT_PATTERN =
+  /\b(faq|program|spectator guide|visitor guide|event guide|public document|order form|sizing form|apparel form|photo\s*\/?\s*video)\b/i;
+const GYM_MIXED_DOCUMENT_PATTERN =
+  /\b(packet|info packet|meet packet|schedule(?:\s*&|\s+and)?\s*info|schedule packet)\b/i;
+
+function classifyGymPublicAudience(text: string): GymContentAudience {
+  const normalized = safeString(text).replace(/\s+/g, " ").trim();
+  if (!normalized) return "unknown";
+  const lowered = normalized.toLowerCase();
+  const hasCoachOps = GYM_COACH_OPS_TEXT_PATTERN.test(lowered);
+  const hasSessionOps = GYM_SESSION_OPS_TEXT_PATTERN.test(lowered);
+  const hasPublicAttendee =
+    GYM_PUBLIC_ATTENDEE_TEXT_PATTERN.test(lowered) ||
+    GYM_PUBLIC_OVERVIEW_TEXT_PATTERN.test(lowered) ||
+    /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|\d{1,2}\/\d{1,2}\/\d{2,4})\b/i.test(
+      lowered
+    ) ||
+    /\b\d{3,5}\s+[a-z0-9].*,\s*[a-z]{2}\s+\d{5}\b/i.test(lowered);
+  if ((hasCoachOps || hasSessionOps) && hasPublicAttendee) return "mixed";
+  if (hasSessionOps) return "session_ops";
+  if (hasCoachOps) return "coach_ops";
+  if (hasPublicAttendee) return "public_attendee";
+  if (GYM_MIXED_DOCUMENT_PATTERN.test(lowered)) return "mixed";
+  return "unknown";
+}
+
+function classifyGymResourceRenderTarget(link: DiscoveryResourceLink): GymResourceRenderTarget {
+  const audience = link.audience || classifyGymPublicAudience(`${link.label} ${link.url}`);
+  const haystack = `${safeString(link.label)} ${safeString(link.url)}`.toLowerCase();
+  if (audience === "coach_ops" || audience === "session_ops") {
+    return "hidden";
+  }
+  if (
+    link.kind === "roster" ||
+    link.kind === "team_divisions" ||
+    link.kind === "rotation_hub" ||
+    link.kind === "rotation_sheet"
+  ) {
+    return "hidden";
+  }
+  if (link.kind === "hotel_booking") return "hotels";
+  if (link.kind === "results_hub" || link.kind === "results_live" || link.kind === "results_pdf") {
+    return "results";
+  }
+  if (link.kind === "admission") return "admission";
+  if (link.kind === "parking") return "traffic_parking";
+  if (link.kind === "photo_video" || link.kind === "apparel_form") return "documents";
+  if (audience === "unknown") return "hidden";
+  if (GYM_PUBLIC_DOCUMENT_PATTERN.test(haystack)) return "documents";
+  if (link.kind === "packet") {
+    return audience === "public_attendee" && GYM_PUBLIC_DOCUMENT_PATTERN.test(haystack)
+      ? "documents"
+      : "hidden";
+  }
+  if (/venue|facility|guest services|entrance|map/i.test(haystack)) return "venue";
+  return audience === "public_attendee" ? "meet_details" : "hidden";
+}
+
+function classifyGymAudienceText(
+  text: unknown,
+  source: GymAudienceClassifiedText["source"]
+): GymAudienceClassifiedText | null {
+  const normalized = safeString(text).replace(/\s+/g, " ").trim();
+  if (!normalized) return null;
+  return {
+    text: normalized,
+    audience: classifyGymPublicAudience(normalized),
+    source,
+  };
+}
+
+function isPublicAudienceText(
+  text: unknown,
+  source: GymAudienceClassifiedText["source"] = "raw_detail"
+): boolean {
+  return classifyGymAudienceText(text, source)?.audience === "public_attendee";
+}
+
+function filterPublicAudienceTexts(
+  items: Array<unknown>,
+  source: GymAudienceClassifiedText["source"],
+  limit = 8
+): string[] {
+  return uniqueBy(
+    items
+      .map((item) => classifyGymAudienceText(item, source))
+      .filter((item): item is GymAudienceClassifiedText => Boolean(item))
+      .filter((item) => item.audience === "public_attendee")
+      .map((item) => item.text),
+    (item) => item.toLowerCase()
+  ).slice(0, limit);
+}
+
+function isTransientPublicAnnouncement(text: string): boolean {
+  const normalized = safeString(text).replace(/\s+/g, " ").trim();
+  if (!normalized) return false;
+  const audience = classifyGymPublicAudience(normalized);
+  if (audience !== "public_attendee") return false;
+  if (
+    /\b(schedule|coaches?|results?|admission|venue|host hotels?|packet|document|live scoring)\b/i.test(
+      normalized
+    )
+  ) {
+    return false;
+  }
+  return GYM_PUBLIC_ANNOUNCEMENT_PATTERN.test(normalized);
 }
 
 const EVENT_TOKEN_STOP_WORDS = new Set([
@@ -5236,6 +5548,16 @@ function upsertResourceLink(
       ? resource.matchScore
       : Math.max(existing.matchScore, resource.matchScore);
   merged.matchReason = resource.matchReason || existing.matchReason || null;
+  merged.audience =
+    merged.audience ||
+    resource.audience ||
+    existing.audience ||
+    classifyGymPublicAudience(`${merged.label} ${merged.url}`);
+  merged.renderTarget =
+    merged.renderTarget ||
+    resource.renderTarget ||
+    existing.renderTarget ||
+    classifyGymResourceRenderTarget(merged);
   if (existing.status === "not_posted" || resource.status === "not_posted") {
     merged.status = "not_posted";
   } else if (existing.status === "available" || resource.status === "available") {
@@ -5336,6 +5658,7 @@ function scoreResourceFollowUpPriority(
     parking: 4,
     hotel_booking: 2,
     photo_video: 1,
+    apparel_form: 1,
     other: 0,
   };
   score += kindWeight[resource.kind] || 0;
@@ -5397,7 +5720,7 @@ function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): C
     const sameHost = url.host === baseUrl.host;
     const candidateBase = {
       url: url.toString(),
-      label: normalizeLinkLabel(match[4] || "", rawAttrs, url),
+      label: deriveDiscoveryAnchorLabel(match[4] || "", rawAttrs, url, html, match.index || 0),
       sourceUrl: baseUrl.toString(),
       depth,
       kind,
@@ -5421,6 +5744,7 @@ function toCrawlCandidateFromBrowserDiscovery(
     depth: 0 | 1;
     sameHost: boolean;
     contentType?: string | null;
+    contextText?: string | null;
   },
   rootUrl: URL
 ): CrawlCandidate | null {
@@ -5435,7 +5759,11 @@ function toCrawlCandidateFromBrowserDiscovery(
     : "external";
   const baseCandidate = {
     url: normalizedUrl,
-    label: safeString(candidate.label) || fallbackLinkLabel(resolvedUrl),
+    label: normalizeResourceLinkLabel(
+      safeString(candidate.label) || fallbackLinkLabel(resolvedUrl),
+      normalizedUrl,
+      `${safeString(candidate.contextText)} ${safeString(candidate.label)}`
+    ),
     sourceUrl: normalizeUrl(candidate.sourceUrl) || rootUrl.toString(),
     depth: candidate.depth,
     kind,
@@ -5466,6 +5794,8 @@ function fallbackLabelFromPdfAnnotation(url: URL): string {
       return "Hotel Booking";
     case "photo_video":
       return "Photo / Video Order Form";
+    case "apparel_form":
+      return "Apparel Sizing Form";
     case "results_live":
     case "results_hub":
     case "results_pdf":
@@ -5591,7 +5921,8 @@ function inferKindBasedPdfLabel(
       return "Admission";
     case "photo_video":
       return "Photo / Video Order Form";
-    case "other":
+    case "apparel_form":
+      return "Apparel Sizing Form";
     default:
       if (/visit lauderdale|visit gainesville|visitor guide/i.test(normalizedPageText)) {
         return "Visitor Guide";
@@ -5667,6 +5998,9 @@ function derivePdfAnnotationLabel(
   }
   if (/location of lots and garages|pay by (?:mobile|phone)|parking rates|parking map/i.test(pageText)) {
     return inferKindBasedPdfLabel("parking", pageText, link.url);
+  }
+  if (/apparel sizing form|sizing e-form|complete the sizing/i.test(pageText)) {
+    return inferKindBasedPdfLabel("apparel_form", pageText, link.url);
   }
   if (/rotation sheets?|master rotation sheet/i.test(pageText)) {
     return inferKindBasedPdfLabel("rotation_hub", pageText, link.url);
@@ -6141,7 +6475,7 @@ function buildResourceLinkFromCandidate(
     });
   const kind = classifyResourceLink(cleanedLabel || candidate.label, normalizedUrl, contentType);
   if (kind === "other") return null;
-  return {
+  const baseResource: DiscoveryResourceLink = {
     kind,
     status,
     label: cleanedLabel || candidate.label || "Resource link",
@@ -6156,6 +6490,11 @@ function buildResourceLinkFromCandidate(
     availabilityDate,
     discoveryMethod: options?.discoveryMethod || "http",
   };
+  baseResource.audience = classifyGymPublicAudience(
+    `${baseResource.label} ${baseResource.url} ${baseResource.sourceUrl || ""}`
+  );
+  baseResource.renderTarget = classifyGymResourceRenderTarget(baseResource);
+  return baseResource;
 }
 
 async function fetchResourceCandidateText(
@@ -7795,15 +8134,6 @@ function inferHeuristicParseClassification(
   };
 }
 
-function profileFromDocumentProfile(
-  profile: ParseResult["documentProfile"]
-): ParsePromptProfile {
-  if (profile === "athlete_session") return "athlete_session";
-  if (profile === "registration_packet") return "registration_coach";
-  if (profile === "parent_packet") return "parent_public";
-  return "overview_core";
-}
-
 function selectParsePromptProfiles(classification: ParseClassification): ParsePromptProfile[] {
   if (
     classification.documentProfile === "parent_packet" &&
@@ -7812,62 +8142,7 @@ function selectParsePromptProfiles(classification: ParseClassification): ParsePr
     return ["parent_public"];
   }
 
-  if (!classification.contentMix.mixed) {
-    const single = profileFromDocumentProfile(classification.documentProfile);
-    if (!GYM_DISCOVERY_SCHEDULE_GRID_ENABLED && single === "athlete_session") {
-      return ["overview_core"];
-    }
-    return [single];
-  }
-
-  if (classification.contentMix.scheduleHeavy) {
-    const dominantSecondary =
-      classification.documentProfile === "parent_packet"
-        ? "parent_public"
-        : classification.documentProfile === "registration_packet"
-        ? "registration_coach"
-        : classification.contentMix.registrationHeavy
-        ? "registration_coach"
-        : classification.contentMix.parentPacketHeavy
-        ? "parent_public"
-        : "parent_public";
-    if (!GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
-      return uniqueBy(["overview_core", dominantSecondary], (item) => item).slice(0, 2);
-    }
-    return uniqueBy(
-      ["athlete_session", dominantSecondary].filter(
-        (item): item is ParsePromptProfile => item !== "overview_core"
-      ),
-      (item) => item
-    ).slice(0, 2);
-  }
-
-  if (classification.documentProfile === "meet_overview") {
-    const dominantSecondary =
-      classification.contentMix.registrationHeavy
-        ? "registration_coach"
-        : classification.contentMix.parentPacketHeavy
-        ? "parent_public"
-        : classification.contentMix.scheduleHeavy
-        ? GYM_DISCOVERY_SCHEDULE_GRID_ENABLED
-          ? "athlete_session"
-          : "parent_public"
-        : "overview_core";
-    return uniqueBy(["overview_core", dominantSecondary], (item) => item).slice(0, 2);
-  }
-
-  const primary = profileFromDocumentProfile(classification.documentProfile);
-  const secondary =
-    primary === "registration_coach"
-      ? classification.contentMix.parentPacketHeavy
-        ? "parent_public"
-        : "overview_core"
-      : primary === "parent_public"
-      ? classification.contentMix.registrationHeavy
-        ? "registration_coach"
-        : "overview_core"
-      : "overview_core";
-  return uniqueBy([primary, secondary], (item) => item).slice(0, 2);
+  return uniqueBy(["overview_core", "parent_public"], (item) => item).slice(0, 2);
 }
 
 function buildClassifierPrompt(
@@ -7998,7 +8273,9 @@ function selectEvidenceForParseProfile(
         )
       : profile === "parent_public"
       ? resourceLinks.filter((item) =>
-          ["admission", "parking", "hotel_booking", "packet", "photo_video"].includes(item.kind)
+          ["admission", "parking", "hotel_booking", "packet", "photo_video", "apparel_form"].includes(
+            item.kind
+          )
         )
       : profile === "athlete_session"
       ? resourceLinks.filter((item) =>
@@ -11736,7 +12013,6 @@ function buildEmptyParseResult(): ParseResult {
 }
 
 export function stripGymScheduleGridsFromParseResult(parseResult: ParseResult): ParseResult {
-  if (GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) return parseResult;
   const empty = buildEmptyParseResult().schedule;
   return {
     ...parseResult,
@@ -11960,76 +12236,16 @@ export async function finalizeMeetParseResult(
     mode: options?.mode || "core",
   });
   const sanitized = sanitizeDiscoveryParseResult(value);
-  const withCoachRouting = routeCoachDeadlines(mergeCoachFeesFromAdmission(sanitized));
-  const reconciled = reconcileParsedDates(withCoachRouting, extractedText);
-  if (!GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
-    const emptySchedule = buildEmptyParseResult().schedule;
-    delete extractionMeta.scheduleDiagnostics;
-    console.log("[meet-discovery] schedule derivation skipped (grids disabled)", { traceId });
-    const finalized = {
-      ...reconciled,
-      schedule: emptySchedule,
-    };
-    console.log("[meet-discovery] finalize parse result finished", {
-      traceId,
-      durationMs: Date.now() - finalizeStartedAt,
-    });
-    return finalized;
-  }
-  const scheduleStartedAt = Date.now();
-  console.log("[meet-discovery] schedule derivation started", {
+  const reconciled = reconcileParsedDates(sanitized, extractedText);
+  const emptySchedule = buildEmptyParseResult().schedule;
+  delete extractionMeta.scheduleDiagnostics;
+  console.log("[meet-discovery] schedule derivation skipped", {
     traceId,
-    mode: options?.mode || "core",
+    reason: "public-page-v2",
   });
-  const derivedSchedule = await deriveScheduleFromExtractedText(
-    extractedText,
-    extractionMeta,
-    {
-      traceId: options?.traceId,
-      mode: options?.mode,
-      performance: options?.performance,
-      classification: options?.classification,
-    }
-  );
-  console.log("[meet-discovery] schedule derivation finished", {
-    traceId,
-    durationMs: Date.now() - scheduleStartedAt,
-    dayCount: derivedSchedule.schedule.days.length,
-    diagnostics: derivedSchedule.diagnostics || null,
-  });
-  extractionMeta.scheduleDiagnostics = derivedSchedule.diagnostics;
-  const alignedSchedule = alignScheduleDatesToEventRange(
-    derivedSchedule.schedule,
-    deriveDateRangeFromText(reconciled.dates)
-  );
-  const scheduleRange = deriveDateRangeFromScheduleDays(alignedSchedule);
-  const reconciledRange = deriveDateRangeFromText(reconciled.dates);
-  const shouldPreferScheduleRange =
-    Boolean(scheduleRange.startDate) &&
-    Boolean(scheduleRange.endDate) &&
-    alignedSchedule.days.length >= 2 &&
-    (!reconciledRange.startDate ||
-      !reconciledRange.endDate ||
-      reconciledRange.startDate !== scheduleRange.startDate ||
-      reconciledRange.endDate !== scheduleRange.endDate);
-  const dateCorrected = shouldPreferScheduleRange
-    ? {
-        ...reconciled,
-        dates: scheduleRange.label || reconciled.dates,
-        startAt: scheduleRange.startDate
-          ? `${scheduleRange.startDate}T00:00:00.000Z`
-          : reconciled.startAt,
-        endAt: scheduleRange.endDate
-          ? `${scheduleRange.endDate}T00:00:00.000Z`
-          : reconciled.endAt,
-      }
-    : reconciled;
   const finalized = {
-    ...dateCorrected,
-    schedule:
-      alignedSchedule.days.length > 0
-        ? alignedSchedule
-        : dateCorrected.schedule || buildEmptyParseResult().schedule,
+    ...reconciled,
+    schedule: emptySchedule,
   };
   console.log("[meet-discovery] finalize parse result finished", {
     traceId,
@@ -12683,11 +12899,479 @@ function determineCompletenessSparsity(
   return "none";
 }
 
+function normalizeSectionBullets(items: unknown[], limit = 6): string[] {
+  return uniqueLines(
+    pickArray(items)
+      .map((item) => safeString(item))
+      .filter(Boolean),
+    limit
+  );
+}
+
+function normalizeSentence(value: unknown): string {
+  const text = safeString(value).replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+function joinSectionSentences(...values: unknown[]): string {
+  return values
+    .map((value) => normalizeSentence(value))
+    .filter(Boolean)
+    .join(" ");
+}
+
+function buildGymSectionVisibility(
+  body: string,
+  bullets: string[],
+  requestedVisibility?: GymPublicSectionVisibility
+): GymPublicSectionVisibility {
+  if (requestedVisibility === "visible" || requestedVisibility === "hidden") {
+    return requestedVisibility;
+  }
+  return body || bullets.length > 0 ? "visible" : "hidden";
+}
+
+function createGymPublicPageSection(params: {
+  title: string;
+  body?: string;
+  bullets?: unknown[];
+  origin: GymPublicSectionOrigin;
+  evidenceRefs?: string[];
+  visibility?: GymPublicSectionVisibility;
+  hideReason?: string | null;
+}): GymPublicPageSection {
+  const body = safeString(params.body).replace(/\s+/g, " ").trim();
+  const bullets = normalizeSectionBullets(params.bullets || []);
+  const visibility = buildGymSectionVisibility(body, bullets, params.visibility);
+  const confidenceByOrigin: Record<GymPublicSectionOrigin, number> = {
+    pdf_grounded: 0.9,
+    mixed: 0.8,
+    derived_summary: 0.65,
+    venue_enriched: 0.55,
+  };
+  return {
+    title: params.title,
+    body,
+    bullets,
+    origin: params.origin,
+    confidence: confidenceByOrigin[params.origin],
+    evidenceRefs: normalizeSectionBullets(params.evidenceRefs || [], 8),
+    visibility,
+    hideReason:
+      visibility === "hidden"
+        ? safeString(params.hideReason) || "No attendee-safe content survived filtering."
+        : null,
+  };
+}
+
+function createGymDocumentsSection(
+  links: Array<{ label?: string; url?: string }>,
+  evidenceRefs?: string[],
+  options?: {
+    visibility?: GymPublicSectionVisibility;
+    hideReason?: string | null;
+  }
+): GymPublicPageSections["documents"] {
+  const normalizedLinks = uniqueBy(
+    links
+      .map((item) => ({
+        label: safeString(item?.label) || "Document",
+        url: normalizeUrl(item?.url),
+      }))
+      .filter((item) => item.url),
+    (item) => item.url!
+  ).slice(0, 12) as Array<{ label: string; url: string }>;
+  const visibility = buildGymSectionVisibility(
+    "",
+    normalizedLinks.map((item) => item.label),
+    options?.visibility
+  );
+  return {
+    title: "Documents",
+    links: normalizedLinks,
+    origin: "pdf_grounded",
+    confidence: 0.9,
+    evidenceRefs: normalizeSectionBullets(evidenceRefs || [], 8),
+    visibility,
+    hideReason:
+      visibility === "hidden"
+        ? safeString(options?.hideReason) || "No public-safe documents survived filtering."
+        : null,
+  };
+}
+
+function buildDerivedPublicMeetOverview(params: {
+  title: string;
+  dates: string;
+  venue: string;
+  hostGym: string;
+  hasCoreLocation: boolean;
+}): string {
+  const { title, dates, venue, hostGym, hasCoreLocation } = params;
+  if (title && dates && venue) {
+    return normalizeSentence(
+      `${title} takes place ${dates} at ${venue}${hostGym ? ` and is hosted by ${hostGym}` : ""}`
+    );
+  }
+  if (title && hasCoreLocation) {
+    return normalizeSentence(
+      `${title} is your central hub for venue guidance, admissions, hotels, and event-day updates.`
+    );
+  }
+  return "";
+}
+
+function buildGymPublicPageSections(params: {
+  parseResult: ParseResult;
+  evidence: DiscoveryEvidence | null;
+  resourceLinks: DiscoveryResourceLink[];
+  baseData?: any;
+}): GymPublicPageSections {
+  const { parseResult, evidence, resourceLinks, baseData } = params;
+  const title = safeString(parseResult.title) || safeString(baseData?.title);
+  const dates = safeString(parseResult.dates) || safeString(baseData?.customFields?.meetDateRangeLabel);
+  const venue = safeString(parseResult.venue) || safeString(baseData?.venue);
+  const address = safeString(parseResult.address) || safeString(baseData?.address);
+  const hostGym =
+    sanitizeHostGymValue(parseResult.hostGym) ||
+    sanitizeHostGymValue(baseData?.hostGym) ||
+    "";
+  const venueLabel = [venue, address].filter(Boolean).join(", ");
+  const hasCoreLocation = Boolean(venue || address);
+  const publicResourceLinks = resourceLinks
+    .map((item) => ({
+      ...item,
+      audience:
+        item.audience || classifyGymPublicAudience(`${item.label} ${item.url} ${item.sourceUrl || ""}`),
+    }))
+    .map((item) => ({
+      ...item,
+      renderTarget: item.renderTarget || classifyGymResourceRenderTarget(item),
+    }));
+  const hotelLinks = publicResourceLinks
+    .filter((item) => item.renderTarget === "hotels")
+    .map((item) => ({ label: item.label, url: item.url }));
+  const documentLinks = publicResourceLinks
+    .filter((item) => item.renderTarget === "documents")
+    .map((item) => ({ label: item.label, url: item.url }));
+  const publicAnnouncementLines = pickArray(parseResult.communications?.announcements)
+    .map((item) => safeString(item?.title || item?.body || item?.text || item?.message))
+    .filter((item) => isTransientPublicAnnouncement(item));
+  const meetDetailBody = joinSectionSentences(
+    buildDerivedPublicMeetOverview({
+      title,
+      dates,
+      venue,
+      hostGym,
+      hasCoreLocation,
+    }),
+    ...filterPublicAudienceTexts(
+      [
+        parseResult.meetDetails.doorsOpen,
+        parseResult.meetDetails.arrivalGuidance,
+        parseResult.meetDetails.awardsInfo,
+        ...parseResult.meetDetails.operationalNotes,
+      ],
+      "parse_field",
+      4
+    )
+  );
+  const meetDetails = createGymPublicPageSection({
+    title: "Meet Details",
+    body: meetDetailBody,
+    bullets: [],
+    origin:
+      meetDetailBody && meetDetailBody !== buildDerivedPublicMeetOverview({
+        title,
+        dates,
+        venue,
+        hostGym,
+        hasCoreLocation,
+      })
+        ? "mixed"
+        : "derived_summary",
+    evidenceRefs: [
+      "meet_details",
+      ...(publicAnnouncementLines.length > 0 ? ["announcements"] : []),
+      ...(evidence?.sections.spectator.slice(0, 2) || []),
+      ...(evidence?.snippets.additionalInfoLines.slice(0, 2) || []),
+    ],
+    visibility: meetDetailBody ? "visible" : "hidden",
+    hideReason: "No attendee-safe meet overview survived filtering.",
+  });
+
+  const publicParkingBody = joinSectionSentences(
+    ...filterPublicAudienceTexts(
+      [
+        parseResult.logistics.parking,
+        parseResult.logistics.rideShare,
+        parseResult.logistics.accessibility,
+      ],
+      "parse_field",
+      4
+    )
+  );
+  const parkingBody =
+    publicParkingBody ||
+    (hasCoreLocation
+      ? normalizeSentence(
+          `Parking details were not listed in the packet. Plan to arrive early at ${venue || address} and follow on-site signage for spectator parking and drop-off.`
+        )
+      : "");
+  const parking = createGymPublicPageSection({
+    title: "Parking",
+    body: parkingBody,
+    bullets: [],
+    origin: publicParkingBody ? "pdf_grounded" : "venue_enriched",
+    evidenceRefs: [
+      "parking",
+      ...(evidence?.sections.traffic.slice(0, 2) || []),
+      ...(evidence?.snippets.trafficLines.slice(0, 2) || []),
+    ],
+    visibility: parkingBody ? "visible" : "hidden",
+    hideReason: "No attendee-safe parking guidance survived filtering.",
+  });
+
+  const publicTrafficBody = joinSectionSentences(
+    ...filterPublicAudienceTexts([parseResult.logistics.trafficAlerts], "parse_field", 2)
+  );
+  const trafficBody =
+    publicTrafficBody ||
+    (hasCoreLocation
+      ? normalizeSentence(
+          `Allow extra arrival time near the venue, especially before the event begins, and use posted venue traffic direction on arrival.`
+        )
+      : "");
+  const traffic = createGymPublicPageSection({
+    title: "Traffic",
+    body: trafficBody,
+    bullets: publicTrafficBody ? [] : [dates ? `Arrive early for ${dates}` : ""],
+    origin: publicTrafficBody ? "pdf_grounded" : "venue_enriched",
+    evidenceRefs: ["traffic", ...(evidence?.snippets.trafficLines.slice(0, 3) || [])],
+    visibility: trafficBody ? "visible" : "hidden",
+    hideReason: "No attendee-safe traffic guidance survived filtering.",
+  });
+
+  const publicFacilityLayout = filterPublicAudienceTexts(
+    [parseResult.meetDetails.facilityLayout],
+    "parse_field",
+    2
+  );
+  const venueSection = createGymPublicPageSection({
+    title: "Venue Details",
+    body: joinSectionSentences(venueLabel, ...publicFacilityLayout),
+    bullets: [venue, address],
+    origin: publicFacilityLayout.length > 0 ? "mixed" : "pdf_grounded",
+    evidenceRefs: [
+      "venue",
+      ...(evidence?.sections.venue.slice(0, 3) || []),
+      ...(evidence?.snippets.hallLayoutLines.slice(0, 2) || []),
+    ],
+    visibility: venueLabel || publicFacilityLayout.length > 0 ? "visible" : "hidden",
+    hideReason: "Venue details are incomplete.",
+  });
+
+  const admissionSummary = parseResult.admission
+    .map((item) =>
+      [safeString(item.label), safeString(item.price), safeString(item.note)]
+        .filter(Boolean)
+        .join(": ")
+    )
+    .filter((item) => isPublicAudienceText(item, "parse_field"))
+    .filter(Boolean)
+    .join(" ");
+  const publicSpectatorBullets = filterPublicAudienceTexts(parseResult.policies.misc, "parse_field", 6);
+  const spectatorInfo = createGymPublicPageSection({
+    title: "Spectator Info",
+    body: joinSectionSentences(
+      admissionSummary,
+      ...filterPublicAudienceTexts(
+        [
+          parseResult.policies.food,
+          parseResult.policies.hydration,
+          parseResult.policies.safety,
+          parseResult.policies.animals,
+        ],
+        "parse_field",
+        4
+      )
+    ),
+    bullets: publicSpectatorBullets,
+    origin: admissionSummary || publicSpectatorBullets.length > 0 ? "pdf_grounded" : "derived_summary",
+    evidenceRefs: ["spectator", ...(evidence?.sections.spectator.slice(0, 3) || [])],
+    visibility:
+      admissionSummary || publicSpectatorBullets.length > 0 ? "visible" : "hidden",
+    hideReason: "No attendee-safe admission or spectator policies survived filtering.",
+  });
+
+  const travelBody = joinSectionSentences(
+    ...filterPublicAudienceTexts([parseResult.logistics.hotel], "parse_field", 2)
+  );
+  const travel = createGymPublicPageSection({
+    title: "Travel",
+    body: travelBody,
+    bullets: hotelLinks.map((item) => item.label),
+    origin: travelBody ? "pdf_grounded" : hotelLinks.length > 0 ? "mixed" : "derived_summary",
+    evidenceRefs: ["travel", ...(evidence?.resources.hotelHints.slice(0, 3) || [])],
+    visibility: travelBody || hotelLinks.length > 0 ? "visible" : "hidden",
+    hideReason: "No attendee-safe hotel or travel guidance survived filtering.",
+  });
+
+  const documents = createGymDocumentsSection(
+    documentLinks,
+    ["documents", ...(evidence?.candidates.linkHints.slice(0, 4).map((item) => item.label) || [])],
+    {
+      visibility: documentLinks.length > 0 ? "visible" : "hidden",
+      hideReason: "No public-safe documents survived filtering.",
+    }
+  );
+
+  return {
+    meetDetails,
+    parking,
+    traffic,
+    venue: venueSection,
+    spectatorInfo,
+    travel,
+    documents,
+  };
+}
+
+function computeGymDiscoveryPublishAssessment(
+  parseResult: ParseResult,
+  sections: GymPublicPageSections
+): GymDiscoveryPublishAssessment {
+  const isVisible = (section: { visibility?: GymPublicSectionVisibility } | null | undefined) =>
+    Boolean(section && section.visibility === "visible");
+  const hasCore = Boolean(
+    safeString(parseResult.title) &&
+      safeString(parseResult.dates) &&
+      (safeString(parseResult.venue) || safeString(parseResult.address))
+  );
+  const sectionScores = {
+    core: hasCore ? 1 : 0,
+    meetDetails: isVisible(sections.meetDetails) ? sections.meetDetails?.confidence || 0 : 0,
+    parking: isVisible(sections.parking) ? sections.parking?.confidence || 0 : 0,
+    traffic: isVisible(sections.traffic) ? sections.traffic?.confidence || 0 : 0,
+    venue: isVisible(sections.venue) ? sections.venue?.confidence || 0 : 0,
+    spectatorInfo: isVisible(sections.spectatorInfo)
+      ? sections.spectatorInfo?.confidence || 0
+      : 0,
+    documents: isVisible(sections.documents) ? sections.documents?.confidence || 0 : 0,
+  };
+  const hasUtility = Boolean(
+    parseResult.admission.length > 0 ||
+      isVisible(sections.spectatorInfo) ||
+      isVisible(sections.documents) ||
+      isVisible(sections.travel) ||
+      parseResult.links.some(
+        (item) =>
+          classifyGymPublicAudience(`${safeString(item?.label)} ${safeString(item?.url)}`) ===
+          "public_attendee"
+      )
+  );
+  const reasons: string[] = [];
+  if (!hasCore) reasons.push("Missing title, dates, or venue/address.");
+  if (!isVisible(sections.meetDetails)) reasons.push("Meet Details section could not be generated.");
+  if (!isVisible(sections.parking)) reasons.push("Parking guidance is missing.");
+  if (!isVisible(sections.traffic)) reasons.push("Traffic guidance is missing.");
+  if (!hasUtility) reasons.push("No spectator, document, or utility links were found.");
+  const state: GymDiscoveryPublishAssessment["state"] =
+    !hasCore
+      ? "draft"
+      : !isVisible(sections.meetDetails) || !isVisible(sections.parking) || !isVisible(sections.traffic)
+      ? "review"
+      : hasUtility
+      ? "auto_publish"
+      : "review";
+  return {
+    state,
+    reasons,
+    sectionScores,
+  };
+}
+
+function stripGymPublicPageV2ParseResult(parseResult: ParseResult): ParseResult {
+  return normalizeParseResult({
+    ...parseResult,
+    athlete: buildEmptyParseResult().athlete,
+    coachInfo: buildEmptyParseResult().coachInfo,
+    gear: buildEmptyParseResult().gear,
+    volunteers: buildEmptyParseResult().volunteers,
+    schedule: buildEmptyParseResult().schedule,
+    meetDetails: {
+      ...parseResult.meetDetails,
+      warmup: null,
+      marchIn: null,
+      rotationOrder: null,
+      judgingNotes: null,
+      sessionWindows: [],
+    },
+  }) || buildEmptyParseResult();
+}
+
+export function buildGymDiscoveryPublicPageArtifacts(params: {
+  parseResult: ParseResult;
+  baseData?: any;
+  evidence?: DiscoveryEvidence | null;
+  extractionMeta?: ExtractionResult["extractionMeta"];
+}): {
+  parseResult: ParseResult;
+  publicPageSections: GymPublicPageSections;
+  publishAssessment: GymDiscoveryPublishAssessment;
+  pipelineVersion: "gym-public-v2";
+} {
+  const nextParseResult = stripGymPublicPageV2ParseResult(params.parseResult);
+  const resourceLinks = uniqueBy(
+    pickArray(params.extractionMeta?.resourceLinks)
+      .map((item) => ({
+        kind: (safeString(item?.kind) as DiscoveryResourceKind) || "other",
+        status: (safeString(item?.status) as DiscoveryResourceStatus) || "unknown",
+        label: safeString(item?.label) || "Resource link",
+        url: normalizeUrl(item?.url),
+        sourceUrl: normalizeUrl(item?.sourceUrl) || safeString(item?.sourceUrl) || null,
+        audience:
+          (safeString(item?.audience) as GymContentAudience) ||
+          classifyGymPublicAudience(
+            `${safeString(item?.label)} ${safeString(item?.url)} ${safeString(item?.sourceUrl)}`
+          ),
+        renderTarget: (safeString(item?.renderTarget) as GymResourceRenderTarget) || "hidden",
+      }))
+      .filter((item) => item.url),
+    (item) => `${item.kind}|${item.url}`
+  )
+    .map((item) => ({
+      ...item,
+      renderTarget:
+        item.renderTarget === "hidden" && item.audience !== "coach_ops" && item.audience !== "session_ops"
+          ? classifyGymResourceRenderTarget(item as DiscoveryResourceLink)
+          : item.renderTarget,
+    })) as DiscoveryResourceLink[];
+  const publicPageSections = buildGymPublicPageSections({
+    parseResult: nextParseResult,
+    evidence: params.evidence || null,
+    resourceLinks,
+    baseData: params.baseData,
+  });
+  const publishAssessment = computeGymDiscoveryPublishAssessment(
+    nextParseResult,
+    publicPageSections
+  );
+  return {
+    parseResult: nextParseResult,
+    publicPageSections,
+    publishAssessment,
+    pipelineVersion: "gym-public-v2",
+  };
+}
+
 export async function mapParseResultToGymData(
   parseResult: ParseResult,
   baseData: any = {},
   extractionMeta?: ExtractionResult["extractionMeta"]
 ) {
+  const usePublicPageV2 = true;
   const rawSnapshot = computeParseCompletenessSnapshot(parseResult);
   parseResult = sanitizeDiscoveryParseResult(parseResult);
   const effectiveExtractionMeta = extractionMeta || baseData?.discoverySource?.extractionMeta;
@@ -12704,6 +13388,17 @@ export async function mapParseResultToGymData(
       : null;
   const sanitizedSnapshot = computeParseCompletenessSnapshot(parseResult);
   parseResult = backfillDeterministicParseFields(parseResult, auditEvidence, fallbackTitle);
+  const publicArtifacts = usePublicPageV2
+    ? buildGymDiscoveryPublicPageArtifacts({
+        parseResult,
+        baseData,
+        evidence: auditEvidence,
+        extractionMeta: effectiveExtractionMeta,
+      })
+    : null;
+  if (publicArtifacts) {
+    parseResult = publicArtifacts.parseResult;
+  }
   const backfilledSnapshot = computeParseCompletenessSnapshot(parseResult);
   const baseTitle = safeString(baseData?.title);
   const mappedTitle =
@@ -12760,6 +13455,7 @@ export async function mapParseResultToGymData(
     packet: ["packet"],
     roster: ["roster"],
     photo_video: ["photo_video"],
+    apparel_form: ["apparel_form"],
     hotel_booking: ["hotel_booking"],
     admission: ["admission"],
     parking: ["parking"],
@@ -12906,6 +13602,10 @@ export async function mapParseResultToGymData(
     )
     .filter(Boolean)
     .join("\n");
+  const publicMeetDetails = publicArtifacts?.publicPageSections.meetDetails || null;
+  const publicParking = publicArtifacts?.publicPageSections.parking || null;
+  const publicTraffic = publicArtifacts?.publicPageSections.traffic || null;
+  const publicTravel = publicArtifacts?.publicPageSections.travel || null;
   const athlete = parseResult.athlete;
   const existingDocuments = pickArray(existingAdvanced.logistics?.additionalDocuments)
     .map((item) => ({
@@ -12919,7 +13619,8 @@ export async function mapParseResultToGymData(
     "roster",
     "team_divisions",
     "rotation_sheet",
-    "photo_video"
+    "photo_video",
+    "apparel_form"
   ).map((item, idx) => ({
     id: `resource-doc-${idx + 1}`,
     name: item.label || `Document ${idx + 1}`,
@@ -13120,9 +13821,11 @@ export async function mapParseResultToGymData(
     ...existingAdvanced,
     roster: {
       ...(existingAdvanced.roster || {}),
-      enabled: true,
-      showAttendance: true,
-      athletes: athlete.name
+      enabled: !usePublicPageV2,
+      showAttendance: !usePublicPageV2,
+      athletes: usePublicPageV2
+        ? []
+        : athlete.name
         ? [
             {
               id: "athlete-1",
@@ -13142,15 +13845,15 @@ export async function mapParseResultToGymData(
     },
     meet: {
       ...(existingAdvanced.meet || {}),
-      sessionNumber: athlete.session || "",
-      warmUpTime: parseResult.meetDetails.warmup || athlete.stretchTime || "",
-      marchInTime: parseResult.meetDetails.marchIn || athlete.marchIn || "",
+      sessionNumber: usePublicPageV2 ? "" : athlete.session || "",
+      warmUpTime: usePublicPageV2 ? "" : parseResult.meetDetails.warmup || athlete.stretchTime || "",
+      marchInTime: usePublicPageV2 ? "" : parseResult.meetDetails.marchIn || athlete.marchIn || "",
       assignedGym: assignedGym || safeString(existingAdvanced.meet?.assignedGym) || "",
-      rotationOrder,
-      judgingNotes: [parseResult.meetDetails.judgingNotes, rotationNarrative]
-        .filter(Boolean)
-        .join("\n\n"),
-      startApparatus: rotationOrder[0] || "",
+      rotationOrder: usePublicPageV2 ? [] : rotationOrder,
+      judgingNotes: usePublicPageV2
+        ? ""
+        : [parseResult.meetDetails.judgingNotes, rotationNarrative].filter(Boolean).join("\n\n"),
+      startApparatus: usePublicPageV2 ? "" : rotationOrder[0] || "",
       scoresLink:
         canonicalScoresLink ||
         safeString(existingAdvanced.meet?.scoresLink) ||
@@ -13163,8 +13866,10 @@ export async function mapParseResultToGymData(
       resultsInfo: parseResult.meetDetails.resultsInfo || "",
       rotationSheetsInfo: parseResult.meetDetails.rotationSheetsInfo || "",
       awardsInfo: parseResult.meetDetails.awardsInfo || "",
-      sessionWindows: parseResult.meetDetails.sessionWindows || [],
-      operationalNotes,
+      sessionWindows: usePublicPageV2 ? [] : parseResult.meetDetails.sessionWindows || [],
+      operationalNotes: usePublicPageV2
+        ? publicMeetDetails?.bullets || []
+        : operationalNotes,
       pendingResources,
       staffContacts: publicMeetContacts.map((item, idx) => ({
         id: `meet-staff-${idx + 1}`,
@@ -13176,15 +13881,17 @@ export async function mapParseResultToGymData(
     },
     logistics: {
       ...(existingAdvanced.logistics || {}),
-      enabled: existingAdvanced.logistics?.enabled ?? false,
+      enabled: usePublicPageV2 ? true : existingAdvanced.logistics?.enabled ?? false,
       hotelName: compactHotelName || safeString(existingAdvanced.logistics?.hotelName) || "",
       hotelAddress: safeString(existingAdvanced.logistics?.hotelAddress) || "",
-      hotelInfo: hotelNarrative,
+      hotelInfo: usePublicPageV2 ? publicTravel?.body || hotelNarrative : hotelNarrative,
       mealPlan: parseResult.logistics.meals || "",
       feeAmount: parseResult.logistics.fees || "",
       additionalDocuments,
-      parking: parseResult.logistics.parking || "",
-      trafficAlerts: parseResult.logistics.trafficAlerts || "",
+      parking: usePublicPageV2 ? publicParking?.body || "" : parseResult.logistics.parking || "",
+      trafficAlerts: usePublicPageV2
+        ? publicTraffic?.body || ""
+        : parseResult.logistics.trafficAlerts || "",
       rideShare: parseResult.logistics.rideShare || "",
       accessibility: parseResult.logistics.accessibility || "",
       parkingLinks: parseResult.logistics.parkingLinks || [],
@@ -13206,61 +13913,73 @@ export async function mapParseResultToGymData(
     },
     coaches: {
       ...(existingAdvanced.coaches || {}),
-      enabled: coachSectionEnabled,
-      signIn: parseResult.coachInfo.signIn || "",
-      attire: parseResult.coachInfo.attire || "",
-      hospitality: parseResult.coachInfo.hospitality || "",
-      floorAccess: parseResult.coachInfo.floorAccess || "",
-      scratches: parseResult.coachInfo.scratches || "",
-      floorMusic: parseResult.coachInfo.floorMusic || "",
-      rotationSheets: parseResult.coachInfo.rotationSheets || "",
-      awards: parseResult.coachInfo.awards || "",
-      regionalCommitment: parseResult.coachInfo.regionalCommitment || "",
-      qualification: parseResult.coachInfo.qualification || "",
-      meetFormat: parseResult.coachInfo.meetFormat || "",
-      equipment: parseResult.coachInfo.equipment || "",
-      refundPolicy: parseResult.coachInfo.refundPolicy || "",
-      paymentInstructions: parseResult.coachInfo.paymentInstructions || "",
-      entryFees: parseResult.coachInfo.entryFees.map((item, idx) => ({
+      enabled: usePublicPageV2 ? false : coachSectionEnabled,
+      signIn: usePublicPageV2 ? "" : parseResult.coachInfo.signIn || "",
+      attire: usePublicPageV2 ? "" : parseResult.coachInfo.attire || "",
+      hospitality: usePublicPageV2 ? "" : parseResult.coachInfo.hospitality || "",
+      floorAccess: usePublicPageV2 ? "" : parseResult.coachInfo.floorAccess || "",
+      scratches: usePublicPageV2 ? "" : parseResult.coachInfo.scratches || "",
+      floorMusic: usePublicPageV2 ? "" : parseResult.coachInfo.floorMusic || "",
+      rotationSheets: usePublicPageV2 ? "" : parseResult.coachInfo.rotationSheets || "",
+      awards: usePublicPageV2 ? "" : parseResult.coachInfo.awards || "",
+      regionalCommitment: usePublicPageV2 ? "" : parseResult.coachInfo.regionalCommitment || "",
+      qualification: usePublicPageV2 ? "" : parseResult.coachInfo.qualification || "",
+      meetFormat: usePublicPageV2 ? "" : parseResult.coachInfo.meetFormat || "",
+      equipment: usePublicPageV2 ? "" : parseResult.coachInfo.equipment || "",
+      refundPolicy: usePublicPageV2 ? "" : parseResult.coachInfo.refundPolicy || "",
+      paymentInstructions: usePublicPageV2 ? "" : parseResult.coachInfo.paymentInstructions || "",
+      entryFees: usePublicPageV2 ? [] : parseResult.coachInfo.entryFees.map((item, idx) => ({
         id: `entry-fee-${idx + 1}`,
         label: item.label,
         amount: item.amount,
         note: item.note || "",
       })),
-      teamFees: parseResult.coachInfo.teamFees.map((item, idx) => ({
+      teamFees: usePublicPageV2 ? [] : parseResult.coachInfo.teamFees.map((item, idx) => ({
         id: `team-fee-${idx + 1}`,
         label: item.label,
         amount: item.amount,
         note: item.note || "",
       })),
-      lateFees: parseResult.coachInfo.lateFees.map((item, idx) => ({
+      lateFees: usePublicPageV2 ? [] : parseResult.coachInfo.lateFees.map((item, idx) => ({
         id: `late-fee-${idx + 1}`,
         label: item.label,
         amount: item.amount,
         trigger: item.trigger || "",
         note: item.note || "",
       })),
-      deadlines: coachDeadlines.map((item, idx) => ({
+      deadlines: usePublicPageV2 ? [] : coachDeadlines.map((item, idx) => ({
         id: `coach-deadline-${idx + 1}`,
         label: item.label,
         date: item.date,
         note: item.note,
       })),
-      contacts: coachContacts.map((item, idx) => ({
+      contacts: usePublicPageV2 ? [] : coachContacts.map((item, idx) => ({
         id: `coach-contact-${idx + 1}`,
         role: item.role,
         name: item.name || "",
         email: item.email || "",
         phone: item.phone || "",
       })),
-      links: coachLinks.map((item, idx) => ({
+      links: usePublicPageV2 ? [] : coachLinks.map((item, idx) => ({
         id: `coach-link-${idx + 1}`,
         label: item.label,
         url: item.url,
       })),
-      notes: coachNotes,
+      notes: usePublicPageV2 ? [] : coachNotes,
     },
     schedule: (() => {
+      if (usePublicPageV2) {
+        return {
+          ...existingScheduleWithoutColors,
+          enabled: false,
+          days: [],
+          assignments: [],
+          annotations: [],
+          notes: [],
+          venueLabel: derivedScheduleVenueLabel || existingScheduleWithoutColors.venueLabel || null,
+          supportEmail: derivedScheduleSupportEmail || existingScheduleWithoutColors.supportEmail || null,
+        };
+      }
       if (GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
         return {
           ...existingScheduleWithoutColors,
@@ -13288,9 +14007,9 @@ export async function mapParseResultToGymData(
     })(),
     gear: {
       ...(existingAdvanced.gear || {}),
-      enabled: existingAdvanced.gear?.enabled ?? false,
-      leotardOfDay: parseResult.gear.uniform || "",
-      items: (parseResult.gear.checklist || []).map((item, idx) => ({
+      enabled: usePublicPageV2 ? false : existingAdvanced.gear?.enabled ?? false,
+      leotardOfDay: usePublicPageV2 ? "" : parseResult.gear.uniform || "",
+      items: usePublicPageV2 ? [] : (parseResult.gear.checklist || []).map((item, idx) => ({
         id: `gear-${idx + 1}`,
         name: item,
         required: true,
@@ -13299,9 +14018,9 @@ export async function mapParseResultToGymData(
     },
     volunteers: {
       ...(existingAdvanced.volunteers || {}),
-      enabled: existingAdvanced.volunteers?.enabled ?? false,
-      signupLink: parseResult.volunteers.signupLink || "",
-      notes: parseResult.volunteers.notes || "",
+      enabled: usePublicPageV2 ? false : existingAdvanced.volunteers?.enabled ?? false,
+      signupLink: usePublicPageV2 ? "" : parseResult.volunteers.signupLink || "",
+      notes: usePublicPageV2 ? "" : parseResult.volunteers.notes || "",
     },
     announcements: {
       ...(existingAdvanced.announcements || {}),
@@ -13359,7 +14078,9 @@ export async function mapParseResultToGymData(
   const finalMapped = {
     ...baseData,
     title: mappedTitle,
-    details: safeString(baseData?.details),
+    details: usePublicPageV2
+      ? safeString(publicMeetDetails?.body) || safeString(baseData?.details)
+      : safeString(baseData?.details),
     date: mappedDate,
     time: mappedTime,
     startISO: mappedStartISO,

@@ -65,9 +65,18 @@ export default function AuthModal({
 
   useEffect(() => {
     if (open) {
-      // Collapse the left sidebar when the auth modal opens
+      // Only force-collapse compact layouts; on desktop the sidebar should
+      // remain expanded by default after auth succeeds.
       try {
-        setIsCollapsed(true);
+        const shouldCollapseForAuth =
+          typeof window !== "undefined" &&
+          typeof window.matchMedia === "function" &&
+          window.matchMedia(
+            "(max-width: 1023px), (hover: none), (pointer: coarse)",
+          ).matches;
+        if (shouldCollapseForAuth) {
+          setIsCollapsed(true);
+        }
       } catch {}
       document.body.style.overflow = "hidden";
       return () => {

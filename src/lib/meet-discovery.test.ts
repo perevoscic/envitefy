@@ -6,6 +6,7 @@ import test from "node:test";
 import { GYM_DISCOVERY_SCHEDULE_GRID_ENABLED } from "./meet-discovery/constants";
 import {
   __testUtils,
+  buildGymDiscoveryPublicPageArtifacts,
   buildDiscoveryEvidence,
   computeGymBuilderStatuses,
   extractDiscoveryText,
@@ -301,6 +302,113 @@ function buildExtractionMeta(overrides: Record<string, any> = {}): MeetDiscovery
     ...overrides,
   } as MeetDiscoveryExtractionMeta;
 }
+
+test("buildGymDiscoveryPublicPageArtifacts strips ops-only fields and creates attendee sections", () => {
+  const parseResult = normalizeParseResult({
+    eventType: "gymnastics_meet",
+    documentProfile: "parent_packet",
+    title: "Florida Crown Championships",
+    dates: "March 13-15, 2026",
+    timezone: "America/New_York",
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+    hostGym: "USA Competitions",
+    admission: [{ label: "Adults", price: "$20", note: "Cashless" }],
+    athlete: { session: "Session 4", team: "Alpha Gymnastics" },
+    meetDetails: {
+      warmup: "7:00 AM",
+      marchIn: "7:30 AM",
+      rotationOrder: "Vault > Bars > Beam > Floor",
+      doorsOpen: "Doors open at 7:15 AM",
+      arrivalGuidance: "Arrive 30 minutes early",
+      facilityLayout: "Guest services is in the east hall",
+      resultsInfo: "Live scoring is available online",
+      operationalNotes: ["Bring athlete card to check-in"],
+    },
+    logistics: {
+      parking: "Park in the north garage",
+      trafficAlerts: "Expect heavy traffic from 6:45-8:15 AM",
+      parkingLinks: [{ label: "Parking Map", url: "https://example.com/parking" }],
+      parkingPricingLinks: [],
+    },
+    policies: { food: "Outside food is not permitted", misc: [] },
+    coachInfo: {
+      signIn: "Coaches sign in at the scorer table",
+      contacts: [{ role: "Coach", email: "coach@example.com" }],
+      entryFees: [{ label: "Entry", amount: "$120" }],
+    },
+    schedule: {
+      venueLabel: "Main hall",
+      days: [{ date: "Friday", shortDate: "Fri", sessions: [{ code: "S1", label: "S1", group: "Gold", startTime: "8:00 AM", clubs: [] }] }],
+    },
+    links: [{ label: "Packet", url: "https://example.com/packet.pdf" }],
+  });
+  assert.ok(parseResult);
+  const artifacts = buildGymDiscoveryPublicPageArtifacts({
+    parseResult,
+    extractionMeta: buildExtractionMeta({
+      resourceLinks: [{ kind: "packet", status: "posted", label: "Packet", url: "https://example.com/packet.pdf" }],
+    }),
+  });
+
+  assert.equal(artifacts.pipelineVersion, "gym-public-v2");
+  assert.equal(artifacts.parseResult.athlete.session, null);
+  assert.equal(artifacts.parseResult.coachInfo.signIn, null);
+  assert.equal(artifacts.parseResult.schedule.days.length, 0);
+  assert.equal(artifacts.parseResult.meetDetails.warmup, null);
+  assert.match(artifacts.publicPageSections.meetDetails?.body || "", /Florida Crown Championships|Doors open/i);
+  assert.match(artifacts.publicPageSections.parking?.body || "", /north garage|Parking details/i);
+  assert.match(artifacts.publicPageSections.traffic?.body || "", /traffic|arrival/i);
+  assert.equal(artifacts.publicPageSections.meetDetails?.visibility, "visible");
+  assert.equal(artifacts.publicPageSections.documents?.visibility, "hidden");
+  assert.equal(artifacts.publishAssessment.state, "auto_publish");
+});
+
+test("mapParseResultToGymData uses public-page-v2 summaries and suppresses schedule/coaches", async () => {
+  const parseResult = normalizeParseResult({
+    eventType: "gymnastics_meet",
+    documentProfile: "parent_packet",
+    title: "Florida Crown Championships",
+    dates: "March 13-15, 2026",
+    startAt: "2026-03-13T12:00:00.000Z",
+    timezone: "America/New_York",
+    venue: "Coral Springs Gymnasium",
+    address: "123 Main St, Coral Springs, FL 33065",
+    meetDetails: {
+      doorsOpen: "Doors open at 7:15 AM",
+      arrivalGuidance: "Arrive 30 minutes early",
+      operationalNotes: ["Bring athlete card to check-in"],
+    },
+    logistics: {
+      parking: "Park in the north garage",
+      trafficAlerts: "Expect heavy traffic from 6:45-8:15 AM",
+      hotel: "Host hotels are posted on the event site",
+      parkingLinks: [{ label: "Parking Map", url: "https://example.com/parking" }],
+      parkingPricingLinks: [],
+    },
+    links: [{ label: "Packet", url: "https://example.com/packet.pdf" }],
+  });
+  assert.ok(parseResult);
+
+  const mapped = await mapParseResultToGymData(
+    parseResult,
+    {
+      discoverySource: {
+        pipelineVersion: "gym-public-v2",
+        extractedText: parentPacketFixture,
+      },
+    },
+    buildExtractionMeta({
+      resourceLinks: [{ kind: "packet", status: "posted", label: "Packet", url: "https://example.com/packet.pdf" }],
+    })
+  );
+
+  assert.match(mapped.details || "", /Florida Crown Championships|Doors open/i);
+  assert.equal(mapped.advancedSections.coaches.enabled, false);
+  assert.equal(mapped.advancedSections.schedule.enabled, false);
+  assert.deepEqual(mapped.advancedSections.roster.athletes, []);
+  assert.match(mapped.advancedSections.logistics.parking || "", /north garage|Parking details/i);
+});
 
 const parentPacketFixture = `
 2026 Florida Crown Championships
@@ -667,6 +775,46 @@ test("fixture PDFs expose packet-aware resource links and schedule pages from fi
   );
   assert.ok(
     crown.extractionMeta.resourceLinks?.some((item: any) => item.kind === "rotation_hub")
+  );
+});
+
+test("xcel mixed fixture classifies attendee-safe resource routing and hides ops links", async () => {
+  const xcel = await loadPdfFixture(
+    "docs/Xcel-BSG-State-2026-Info-Schedule-Updated-3.22-Afternoon.pdf"
+  );
+  const resourceLinks = Array.isArray(xcel.extractionMeta.resourceLinks)
+    ? xcel.extractionMeta.resourceLinks
+    : [];
+
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.audience === "public_attendee" &&
+        item.renderTarget === "hotels"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        ["results_hub", "results_live", "results_pdf"].includes(item.kind) &&
+        item.audience === "public_attendee" &&
+        item.renderTarget === "results"
+    )
+  );
+  assert.ok(
+    resourceLinks.every((item: any) =>
+      item.kind === "team_divisions" || item.kind === "roster"
+        ? item.renderTarget === "hidden"
+        : true
+    )
+  );
+  assert.ok(
+    resourceLinks.every((item: any) =>
+      item.kind === "packet" && !/faq|program|guide/i.test(item.label)
+        ? item.renderTarget === "hidden"
+        : true
+    )
   );
 });
 
@@ -1400,6 +1548,121 @@ test("extractDiscoveryText persists canonical resource links, fetches trusted ex
   assert.ok(!fetchCalls.includes(unrelatedExternalUrl), "expected non-whitelisted external links to stay unfetched");
   assert.match(result.extractedText, /Groupbook reservation deadline March 1, 2026/i);
   assert.match(result.extractedText, /Photo and video ordering form/i);
+});
+
+test("extractDiscoveryText contextualizes generic click-here resource links and keeps media resources out of photo-video", async (t) => {
+  const rootUrl = "https://usagym.org/events/2026-mens-eastern-national-championships/";
+  const parkingUrl = "https://static.usagym.org/PDFs/Men/events/24eastern_parking.jpg";
+  const photoUrl = "https://pci.jotform.com/form/260264120380142";
+  const hotelUrl = "https://app.eventpipe.com/event/3a7535fa-4825-4591-a651-76088cdf701c/book/";
+  const apparelUrl =
+    "https://forms.office.com/Pages/ResponsePage.aspx?id=tsdG2kR_OkyBTuWoxa1Dv4DHFmJf-E5EnPHQicjWXmtUOEw5S1FGMVJCUzA0N0xVUlhVRlYwVjRUNi4u";
+  const mediaUrl = "https://usagym.org/pressbox/";
+
+  t.after(() => resetUrlDiscoveryTestHooks());
+  setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url: string) => {
+      if (url === rootUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Men’s Eastern National Championships</title></head>
+            <body>
+              <div class="pageSectionHeader">Parking</div>
+              <p>Paid Parking Garage<br /><a href="${parkingUrl}">Click here</a> for directions to the parking garage.</p>
+              <hr />
+              <div class="pageSectionHeader">Photo/Video</div>
+              <p>EBS Productions will be onsite taking pictures and videos. Please <a href="${photoUrl}">click here</a> to view the order form.</p>
+              <hr />
+              <div class="pageSectionHeader">Hotel Information</div>
+              <p><a href="${hotelUrl}">Click here</a> to make hotel reservations.</p>
+              <hr />
+              <div class="pageSectionHeader">Apparel Sizing Form</div>
+              <p><a href="${apparelUrl}">Click here</a> to complete the sizing e-form.</p>
+              <hr />
+              <div class="pageSectionHeader">Links</div>
+              <p><a href="${mediaUrl}">Media Resources</a></p>
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === parkingUrl) {
+        return {
+          contentType: "image/jpeg",
+          buffer: Buffer.from("parking map text"),
+          text: "",
+        };
+      }
+      if (url === photoUrl) {
+        const text = `<html><head><title>Photo Orders</title></head><body>Photo and video ordering form.</body></html>`;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === hotelUrl) {
+        const text = `<html><head><title>Hotel Reservations</title></head><body>Book hotel reservations for traveling families.</body></html>`;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+    extractTextFromPdf: async (buffer: Buffer) => ({
+      text: buffer.toString("utf8"),
+      usedOcr: false,
+      coachPageHints: [],
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+    }),
+    extractTextFromImage: async (buffer: Buffer) => `IMG:${buffer.toString("utf8")}`,
+    extractGymLayoutImageFromPdf: async () => ({
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+    }),
+    openAiExtractGymLayoutZones: async () => [],
+    toOptimizedImageDataUrl: async () => null,
+  });
+
+  const result = await extractDiscoveryText({ type: "url", url: rootUrl });
+  const resourceLinks = result.extractionMeta.resourceLinks || [];
+
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "parking" &&
+        item.url === parkingUrl &&
+        item.label === "Parking Garage Directions"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "photo_video" &&
+        item.url === photoUrl &&
+        item.label === "Photo / Video Order Form"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.url === hotelUrl &&
+        item.label === "Hotel Reservations"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "apparel_form" &&
+        item.url === apparelUrl &&
+        item.label === "Apparel Sizing Form"
+    )
+  );
+  assert.ok(
+    !resourceLinks.some(
+      (item: any) => item.url === mediaUrl && item.kind === "photo_video"
+    )
+  );
+  assert.match(result.extractedText, /IMG:parking map text/);
+  assert.match(result.extractedText, /Book hotel reservations for traveling families/i);
 });
 
 test("extractDiscoveryText ignores raw JSON-LD blobs when scoring URL extraction quality", async (t) => {

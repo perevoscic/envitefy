@@ -133,10 +133,10 @@
 
 @keyframes landingIndeterminateSlide {
   0% {
-    transform: translateX(-100%);
+    transform: translateX(150%);
   }
   100% {
-    transform: translateX(350%);
+    transform: translateX(-150%);
   }
 }
 
@@ -154,5 +154,5 @@
   width: 40%;
   border-radius: 9999px;
   background: #d4af37;
-  animation: landingIndeterminateSlide 1.2s linear infinite;
+  animation: landingIndeterminateSlide 1.2s ease-in-out infinite alternate;
 }

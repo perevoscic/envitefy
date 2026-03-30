@@ -4,6 +4,7 @@ import { resolveGymMeetTemplateId } from "./registry";
 import { GymMeetRenderModel } from "./types";
 import { buildGymMeetDiscoveryContent } from "./buildGymMeetDiscoveryContent";
 import { normalizeGymMeetTitleSize } from "./titleSizing";
+import { inflateGymDiscoveryV2EventData } from "@/lib/discovery/event-data";
 import {
   collapseRepeatedDisplayText,
   formatGymMeetDate,
@@ -219,6 +220,38 @@ const stripDiscoveryGeneratedDetails = (value: unknown): string => {
   ).join("\n");
 };
 
+const buildPublicQuickAccessLinks = (discovery: any) => {
+  const priority = ["traffic-parking", "hotels", "documents", "results"];
+  const seenUrls = new Set<string>();
+  const seenLabels = new Set<string>();
+  const out: Array<{ label: string; url: string }> = [];
+  for (const sectionId of priority) {
+    const section = Array.isArray(discovery?.sections)
+      ? discovery.sections.find((item: any) => safeString(item?.id) === sectionId)
+      : null;
+    const linkBlocks = Array.isArray(section?.blocks)
+      ? section.blocks.filter((block: any) => block?.type === "link-list" && Array.isArray(block?.links))
+      : [];
+    for (const block of linkBlocks) {
+      for (const link of block.links) {
+        const url = safeString(link?.url);
+        const label = safeString(link?.label || "Open Link");
+        const labelKey = label.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+        if (!url || seenUrls.has(url.toLowerCase())) continue;
+        if (labelKey && seenLabels.has(labelKey)) continue;
+        seenUrls.add(url.toLowerCase());
+        if (labelKey) seenLabels.add(labelKey);
+        out.push({
+          label,
+          url,
+        });
+        if (out.length >= 5) return out.length >= 2 ? out : [];
+      }
+    }
+  }
+  return out.length >= 2 ? out : [];
+};
+
 export const normalizeGymMeetEventData = ({
   eventData,
   eventTitle,
@@ -234,6 +267,7 @@ export const normalizeGymMeetEventData = ({
   mapAddress?: string;
   headerLocation?: string;
 }): GymMeetRenderModel => {
+  eventData = inflateGymDiscoveryV2EventData(eventData);
   const customFields = eventData?.customFields || {};
   const advancedSections = eventData?.advancedSections || customFields?.advancedSections || {};
   const meet = advancedSections?.meet || {};
@@ -284,7 +318,7 @@ export const normalizeGymMeetEventData = ({
     }
     return null;
   })();
-  const quickLinks = (() => {
+  const baseQuickLinks = (() => {
     const out: Array<{ label: string; url: string }> = [];
     const seen = new Set<string>();
     const candidates = [
@@ -357,14 +391,6 @@ export const normalizeGymMeetEventData = ({
 
   const heroBadges = unique(
     [
-      // Date is already shown as `dateLabel` under the title; omit here to avoid duplicate chips.
-      collapseRepeatedDisplayText(meet?.sessionNumber || meet?.session),
-      rosterAthletes.length
-        ? unique(
-            rosterAthletes.map((athlete) => safeString(athlete?.level)).filter(Boolean),
-            3
-          ).join(" / ")
-        : "",
       collapseRepeatedDisplayText(meet?.assignedGym || logistics?.gymLayoutLabel),
     ],
     4
@@ -372,20 +398,8 @@ export const normalizeGymMeetEventData = ({
 
   const summaryItems = [
     {
-      label: "Warm-up",
-      value: formatGymMeetTime(meet?.warmUpTime || meet?.warmupTime),
-    },
-    {
-      label: "March-in",
-      value: formatGymMeetTime(meet?.marchInTime || meet?.marchinTime),
-    },
-    {
-      label: "Start Event",
-      value: safeString(meet?.startApparatus),
-    },
-    {
-      label: "Roster",
-      value: rosterAthletes.length ? `${rosterAthletes.length} athletes` : "",
+      label: "Doors Open",
+      value: safeString(meet?.doorsOpen),
     },
   ].filter((item) => safeString(item.value));
 
@@ -413,6 +427,7 @@ export const normalizeGymMeetEventData = ({
     venue: safeString(eventData?.venue),
     address: resolvedAddress,
   });
+  const quickLinks = isDiscoveryEvent ? buildPublicQuickAccessLinks(discovery) : baseQuickLinks;
 
   return {
     pageTemplateId: resolveGymMeetTemplateId(eventData),
@@ -435,11 +450,9 @@ export const normalizeGymMeetEventData = ({
       sanitizeDisplayHostGym(customFields?.team || eventData?.extra?.team)
     ),
     season: collapseRepeatedDisplayText(customFields?.season || eventData?.extra?.season),
-    coach: collapseRepeatedDisplayText(customFields?.coach || eventData?.extra?.coach),
-    assistantCoach: safeString(
-      customFields?.assistantCoach || eventData?.extra?.assistantCoach
-    ),
-    coachPhone: safeString(customFields?.coachPhone || eventData?.extra?.coachPhone),
+    coach: "",
+    assistantCoach: "",
+    coachPhone: "",
     heroBadges,
     navItems,
     summaryItems,

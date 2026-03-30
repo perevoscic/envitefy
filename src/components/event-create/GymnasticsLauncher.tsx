@@ -197,7 +197,7 @@ export default function GymnasticsLauncher({
     if (file) formData.append("file", file);
     if (url) formData.append("url", url);
 
-    let ingestJson: { eventId?: string; error?: string } = {};
+    let ingestJson: { eventId?: string; discoveryId?: string; error?: string } = {};
     cancelRequestedRef.current = false;
     discoveryLogStateRef.current = { status: "", bucket: -1 };
 
@@ -207,7 +207,7 @@ export default function GymnasticsLauncher({
       ingestJson = await new Promise<{ eventId?: string; error?: string }>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         uploadXhrRef.current = xhr;
-        xhr.open("POST", "/api/ingest?mode=meet_discovery", true);
+        xhr.open("POST", "/api/discovery/intake", true);
         xhr.withCredentials = true;
 
         xhr.upload.onprogress = (event) => {
@@ -229,6 +229,7 @@ export default function GymnasticsLauncher({
           try {
             const json = JSON.parse(xhr.responseText || "{}") as {
               eventId?: string;
+              discoveryId?: string;
               error?: string;
             };
             if (xhr.status >= 200 && xhr.status < 300 && json?.eventId) {
@@ -260,9 +261,10 @@ export default function GymnasticsLauncher({
       }, INGEST_REQUEST_TIMEOUT_MS);
       let ingestRes: Response;
       try {
-        ingestRes = await fetch("/api/ingest?mode=meet_discovery", {
+        ingestRes = await fetch("/api/discovery/intake", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
           credentials: "include",
           signal: ingestAbortRef.current.signal,
         });
@@ -285,7 +287,10 @@ export default function GymnasticsLauncher({
     }
 
     const eventId = String(ingestJson.eventId);
-    log("starting parse request", { eventId });
+    log("starting discovery pipeline", {
+      eventId,
+      discoveryId: ingestJson.discoveryId || null,
+    });
     const parseStartedAt = Date.now();
     if (file) {
       reportProgress(GYMNASTICS_URL_PARSE_START_PROGRESS, "Processing meet file...");
@@ -309,50 +314,47 @@ export default function GymnasticsLauncher({
     try {
       parseAbortRef.current = new AbortController();
       const parseTimeoutMs = resolveParseTimeoutMs(file ? "file" : "url");
-      let parseTimedOut = false;
-      const parseTimeoutId = window.setTimeout(() => {
-        parseTimedOut = true;
-        log("parse request timed out", { eventId, timeoutMs: parseTimeoutMs });
-        parseAbortRef.current?.abort();
-      }, parseTimeoutMs);
-      const parseInit: RequestInit = {
+      const runInit: RequestInit = {
         method: "POST",
         credentials: "include",
         signal: parseAbortRef.current.signal,
       };
-      if (file) {
-        const parseBody = new FormData();
-        parseBody.append("file", file);
-        parseInit.body = parseBody;
+      const runRes = await fetch(`/api/discovery/${eventId}/run`, runInit);
+      const runJson = await runRes.json().catch(() => ({}));
+      if (!runRes.ok) {
+        throw new Error(runJson?.error || "Failed to start discovery pipeline");
       }
-      let parseRes: Response;
-      try {
-        parseRes = await fetch(`/api/parse/${eventId}`, parseInit);
-      } catch (err) {
-        if (parseTimedOut) throw buildTimeoutError("parse");
-        throw err;
-      } finally {
-        window.clearTimeout(parseTimeoutId);
-        parseAbortRef.current = null;
+      while (Date.now() - parseStartedAt < parseTimeoutMs) {
+        throwIfCancelled();
+        const statusRes = await fetch(`/api/discovery/${eventId}/status`, {
+          credentials: "include",
+          signal: parseAbortRef.current.signal,
+          cache: "no-store",
+        });
+        const statusJson = await statusRes.json().catch(() => ({}));
+        if (!statusRes.ok) {
+          throw new Error(statusJson?.error || "Failed to poll discovery status");
+        }
+        if (statusJson?.errorCode) {
+          throw new Error(statusJson.errorCode);
+        }
+        log("status poll", {
+          processingStage: statusJson?.processingStage ?? null,
+          lastSuccessfulStage: statusJson?.lastSuccessfulStage ?? null,
+          needsHumanReview: statusJson?.needsHumanReview ?? null,
+          builderReady: statusJson?.builderReady ?? null,
+        });
+        if (statusJson?.builderReady === true) {
+          break;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 1000));
       }
-      const parseJson = await parseRes.json().catch(() => ({}));
-      const clientDurationMs = Date.now() - parseStartedAt;
-      log("parse request completed", {
-        status: parseRes.status,
-        clientDurationMs,
-        durationMs: clientDurationMs,
-        modelUsed: parseJson?.modelUsed ?? null,
-        repaired: parseJson?.repaired ?? null,
-        phase: parseJson?.phase ?? null,
-        enrichmentPending: parseJson?.enrichment?.pending ?? null,
-        performance: parseJson?.performance ?? null,
-        parseSummary: parseJson?.parseSummary ?? null,
-      });
-      if (!parseRes.ok) {
-        throw new Error(parseJson?.error || "Failed to parse source");
+      if (Date.now() - parseStartedAt >= parseTimeoutMs) {
+        log("discovery pipeline timed out", { eventId, timeoutMs: parseTimeoutMs });
+        throw buildTimeoutError("parse");
       }
-      throwIfCancelled();
     } finally {
+      parseAbortRef.current = null;
       if (parseProgressTimerRef.current) {
         clearInterval(parseProgressTimerRef.current);
         parseProgressTimerRef.current = null;
