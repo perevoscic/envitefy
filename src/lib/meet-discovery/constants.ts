@@ -8,8 +8,11 @@
  * Standalone module so client bundles (e.g. gymnastics customize) can import without pulling
  * `meet-discovery.ts` → `pdf-raster` → `@napi-rs/canvas`.
  */
-export const GYM_DISCOVERY_SCHEDULE_GRID_ENABLED = (() => {
+/** Read env at call time (e.g. tests) — client/server const snapshot uses the value at bundle load. */
+export function isGymDiscoveryScheduleGridEnabled(): boolean {
   if (typeof process === "undefined" || !process.env) return false;
   const v = process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
   return typeof v === "string" && v.trim() === "1";
-})();
+}
+
+export const GYM_DISCOVERY_SCHEDULE_GRID_ENABLED = isGymDiscoveryScheduleGridEnabled();

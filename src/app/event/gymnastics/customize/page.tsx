@@ -1393,19 +1393,27 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
     // Load existing event data when editing
     useEffect(() => {
+      if (!editEventId) return;
+      const controller = new AbortController();
+      let active = true;
+      let finished = false;
+
       const loadExisting = async () => {
-        if (!editEventId) return;
         setLoadingExisting(true);
         try {
           const res = await fetch(`/api/history/${editEventId}`, {
             cache: "no-store",
+            credentials: "include",
+            signal: controller.signal,
           });
+          if (!active || controller.signal.aborted) return;
           if (!res.ok) {
             console.error("[Edit] Failed to load event:", res.status);
             setLoadingExisting(false);
             return;
           }
           const json = await res.json();
+          if (!active || controller.signal.aborted) return;
           const existing = json?.data || {};
           const existingCreatedVia = asTrimmedString(existing?.createdVia).toLowerCase().trim();
           const existingDiscoverySource =
@@ -1568,6 +1576,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
           // Validate fontId and fontSize after state updates
           setTimeout(() => {
+            if (!active) return;
             setData((prev) => {
               const fontExists = GYM_FONTS.find((f) => f.id === prev.fontId);
               const sizeExists = FONT_SIZE_OPTIONS.find((o) => o.id === prev.fontSize);
@@ -1588,15 +1597,30 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             });
           }, 100);
 
+          finished = true;
           setLoadingExisting(false);
-        } catch (err) {
+        } catch (err: unknown) {
+          if (!active || controller.signal.aborted) return;
+          const isAbort =
+            err instanceof DOMException && err.name === "AbortError";
+          if (isAbort) return;
           console.error("[Edit] Error loading event:", err);
           setLoadingExisting(false);
-          // Don't silently fail - show error to user
-          alert("Failed to load event data. Please refresh the page.");
+          const message =
+            err instanceof TypeError && /fetch/i.test(String(err.message))
+              ? "Could not reach the server. Check your connection and that the app is running, then refresh."
+              : "Failed to load event data. Please refresh the page.";
+          alert(message);
         }
       };
-      loadExisting();
+      void loadExisting();
+      return () => {
+        active = false;
+        controller.abort();
+        if (!finished) {
+          setLoadingExisting(false);
+        }
+      };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editEventId, loadVersion]);
 
@@ -1660,27 +1684,37 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       if (!needsRepair) return;
 
       repairAttemptedRef.current = true;
-      let cancelled = false;
+      const repairController = new AbortController();
+      let repairActive = true;
       (async () => {
         try {
           const repairRes = await fetch(`/api/parse/${editEventId}?repair=1`, {
             method: "POST",
             credentials: "include",
+            signal: repairController.signal,
           });
+          if (!repairActive || repairController.signal.aborted) return;
           if (!repairRes.ok) {
             const repairJson = await repairRes.json().catch(() => ({}));
             throw new Error(repairJson?.error || "Failed discovery repair parse");
           }
-          if (!cancelled) {
+          if (repairActive) {
             setLoadVersion((prev) => prev + 1);
           }
-        } catch (err) {
+        } catch (err: unknown) {
+          if (
+            repairController.signal.aborted ||
+            (err instanceof DOMException && err.name === "AbortError")
+          ) {
+            return;
+          }
           console.error("[Edit] Discovery repair parse failed", err);
         }
       })();
 
       return () => {
-        cancelled = true;
+        repairActive = false;
+        repairController.abort();
       };
     }, [
       advancedState?.logistics?.gymLayoutImage,

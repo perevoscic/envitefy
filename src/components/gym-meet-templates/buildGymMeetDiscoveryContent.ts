@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
 // @ts-nocheck
+import { isGymDiscoveryScheduleGridEnabled } from "@/lib/meet-discovery/constants";
 import {
   normalizeVenueFactForCompare,
   sanitizeVenueFactLines,
@@ -400,6 +401,7 @@ const _normalizeLineKey = (value: string) => safeString(value).toLowerCase().rep
 const isUsableEmail = (value: unknown) => USABLE_EMAIL_PATTERN.test(safeString(value));
 const isUsablePhone = (value: unknown) => safeString(value).replace(/\D/g, "").length >= 7;
 const isMarketingLikeSourceLine = (value: string) => MARKETING_SOURCE_PATTERN.test(safeString(value));
+/** Sync string heuristic only: keeps obvious session/schedule *table rows* out of Meet Details prose. Unrelated to gym-layout vision in meet-discovery. Structured schedule derivation is gated by `GYM_DISCOVERY_SCHEDULE_GRID_ENABLED`. */
 const isScheduleGridLikeSourceLine = (value: string) => {
   const text = safeString(value);
   if (!text) return false;
@@ -408,6 +410,22 @@ const isScheduleGridLikeSourceLine = (value: string) => {
   const allCapsWords = text.match(/\b[A-Z][A-Za-z'.&-]+\b/g) || [];
   if (allCapsWords.length >= 4 && /\b(gym|gymnastics|fl)\b/i.test(text)) return true;
   return false;
+};
+
+/** Long sentence-like packet prose; avoids classifying "Xcel Bronze/Silver…" cover copy as schedule grid noise. */
+const isNarrativeMeetPacketLine = (value: string) => {
+  const text = safeString(value).trim();
+  if (text.length < 45) return false;
+  if (CLUB_PARTICIPATION_SOURCE_PATTERN.test(text)) return false;
+  const words = text.split(/\s+/).filter(Boolean).length;
+  if (words < 10) return false;
+  const timeTokens = (text.match(/\b\d{1,2}:\d{2}\s*[AP]M\b/gi) || []).length;
+  if (timeTokens >= 1 && words < 22) return false;
+  if (/^session\s+[a-z]?\d+/i.test(text) && words < 16) return false;
+  if (!/[.!?]/.test(text) && words < 15) return false;
+  return /\b(coaches?|athletes?|awards?\s+ceremon|awards?\b|membership|rosters?|sanction|hospitality|regionals?|qualif|ineligible|attire|dress\s+code|sign[-\s]?in\b|usa\s+gymnastics|rotation\s+sheet|scratches?|professional\s+membership|competition\s+floor|team\s+twisters|twisters\b|packet|enclosed|birth\s+dates?|meet\s+reservations?|session\s+assignments?|xcel\b|championship|proud\s+to\s+host|director\s+of\s+operations|meet\s+director)\b/i.test(
+    text
+  );
 };
 const isClubParticipationLikeSourceLine = (value: string) =>
   CLUB_PARTICIPATION_SOURCE_PATTERN.test(safeString(value));
@@ -451,6 +469,14 @@ const splitExtractedDiscoveryPages = (text: string) => {
   }
 
   const pages: Array<{ pageNumber: number; text: string; lines: string[] }> = [];
+  const firstMarkerIndex = matches[0]?.index ?? 0;
+  if (firstMarkerIndex > 0) {
+    const preamble = normalized.slice(0, firstMarkerIndex).trim();
+    if (preamble) {
+      const lines = preamble.split(/\n+/).map((line) => safeString(line)).filter(Boolean);
+      pages.push({ pageNumber: 0, text: preamble, lines });
+    }
+  }
   for (let index = 0; index < matches.length; index += 1) {
     const match = matches[index];
     const pageNumber = Number.parseInt(match[1] || `${index + 1}`, 10) || index + 1;
@@ -709,7 +735,11 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
       .join(" ")
       .toLowerCase();
     const targetId =
-      /(coach|meetmaker|entry|registration|regional)/i.test(documentText)
+      /(parking|garage|parkmobile|pay\s+by\s+phone|lots\s+and\s+garages|parking\s+rates?|hourly\s+and\s+daily\s+rates)/i.test(
+        documentText
+      )
+        ? "traffic-parking"
+        : /(coach|meetmaker|entry|registration|regional)/i.test(documentText)
         ? "coaches"
         : /(venue|floor|hall|map|facility)/i.test(documentText)
         ? "venue-details"
@@ -723,6 +753,17 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
               label: "Meet Details",
               kind: "meet_overview",
               priority: 10,
+            });
+            working.push(synthetic);
+            return { section: synthetic, index: working.length - 1 };
+          })()
+        : targetId === "traffic-parking"
+        ? (() => {
+            const synthetic = createSyntheticSection({
+              id: "traffic-parking",
+              label: "Traffic & Parking",
+              kind: "traffic_parking",
+              priority: 60,
             });
             working.push(synthetic);
             return { section: synthetic, index: working.length - 1 };
@@ -752,6 +793,8 @@ export function buildGymMeetDiscoveryContent({
   advancedSections,
   date,
   detailsText,
+  /** Unstripped packet prose for Meet Details routing; hero still uses stripped `detailsText` from normalize. */
+  detailsTextForDiscovery,
   venue,
   address,
 }: {
@@ -760,9 +803,11 @@ export function buildGymMeetDiscoveryContent({
   advancedSections: any;
   date?: string;
   detailsText?: string;
+  detailsTextForDiscovery?: string;
   venue?: string;
   address?: string;
 }): GymMeetDiscoveryContent {
+  const scheduleGridsEnabled = isGymDiscoveryScheduleGridEnabled();
   const logistics = advancedSections?.logistics || {};
   const meetSection = advancedSections?.meet || {};
   const gearSection = advancedSections?.gear || {};
@@ -907,7 +952,7 @@ export function buildGymMeetDiscoveryContent({
     (date ? formatGymMeetDate(date, { withWeekday: true }) : "");
   const venueLabel = collapseRepeatedDisplayText(venue || eventData?.venue);
   const addressLabel = collapseRepeatedDisplayText(address || eventData?.address);
-  const normalizedDetailsText = safeString(detailsText);
+  const normalizedDetailsText = safeString(detailsTextForDiscovery ?? detailsText);
   const facilityMapAddress = addressLabel || venueLabel;
   const gymLayoutImageUrl = safeString(
     advancedSections?.logistics?.gymLayoutImage ||
@@ -1188,27 +1233,41 @@ export function buildGymMeetDiscoveryContent({
 
   const stripKnownLabelPrefix = (value: string, labelPattern: RegExp) =>
     safeString(value).replace(labelPattern, "").trim();
+  const extractLabeledDetailLine = (text: string, pattern: RegExp) => {
+    const lines = safeString(text)
+      .split(/\n+/)
+      .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
+      .filter(Boolean);
+    for (const line of lines) {
+      const match = line.match(pattern);
+      if (match?.[1]) return safeString(match[1]);
+    }
+    return "";
+  };
   const spectatorLogisticsItems = [
     {
       key: "doors-open",
       label: "Doors Open",
       value:
         safeString(parseMeetDetails?.doorsOpen) ||
-        stripKnownLabelPrefix(sourceDoorsOpenLine, /^doors\s+open:\s*/i),
+        stripKnownLabelPrefix(sourceDoorsOpenLine, /^doors\s+open:\s*/i) ||
+        extractLabeledDetailLine(normalizedDetailsText, /^doors\s*open:\s*(.+)$/i),
     },
     {
       key: "arrival-guidance",
       label: "Arrival Guidance",
       value:
         safeString(parseMeetDetails?.arrivalGuidance) ||
-        stripKnownLabelPrefix(sourceArrivalGuidanceLine, /^arrival guidance:\s*/i),
+        stripKnownLabelPrefix(sourceArrivalGuidanceLine, /^arrival guidance:\s*/i) ||
+        extractLabeledDetailLine(normalizedDetailsText, /^arrival\s*guidance:\s*(.+)$/i),
     },
     {
       key: "registration",
       label: "Registration",
       value:
         safeString(parseMeetDetails?.registrationInfo) ||
-        stripKnownLabelPrefix(sourceRegistrationLine, /^registration:\s*/i),
+        stripKnownLabelPrefix(sourceRegistrationLine, /^registration:\s*/i) ||
+        extractLabeledDetailLine(normalizedDetailsText, /^registration:\s*(.+)$/i),
     },
   ].filter((item) => Boolean(safeString(item.value)));
 
@@ -1236,6 +1295,7 @@ export function buildGymMeetDiscoveryContent({
         line
       )
     ),
+    ...sourceLines.filter((line) => isNarrativeMeetPacketLine(line)),
   ];
   const stitchedMeetDetails = meetDetailCandidateLines.reduce((acc: string[], rawLine: string) => {
     const line = rawLine.trim();
@@ -1336,7 +1396,7 @@ export function buildGymMeetDiscoveryContent({
     isSafetyObjectsLine(line) ||
     isMarketingLikeSourceLine(line) ||
     isTabularScheduleNoiseLine(line) ||
-    isScheduleGridLikeSourceLine(line) ||
+    (!isNarrativeMeetPacketLine(line) && isScheduleGridLikeSourceLine(line)) ||
     isClubParticipationLikeSourceLine(line);
   const meetsAnyLine = (line: string, candidates: string[]) => {
     const normalized = normalizeCompareText(line);
@@ -2363,7 +2423,8 @@ export function buildGymMeetDiscoveryContent({
       supportEmail: scheduleSupportEmail,
     }
   );
-  const scheduleHasContent = scheduleInfo.enabled !== false && hasScheduleInfoContent(scheduleInfo);
+  const scheduleHasContent =
+    scheduleGridsEnabled && scheduleInfo.enabled !== false && hasScheduleInfoContent(scheduleInfo);
   const sessionAssignmentCards = ensureUniqueDiscoveryCardKeys(
     scheduleInfo.assignments.map((item, index) => {
       const label = [safeString(item.level), safeString(item.groupLabel || item.divisionLabel)]
@@ -2423,13 +2484,12 @@ export function buildGymMeetDiscoveryContent({
       })),
       ...admissionLinks,
       ...hotelLinks,
-      ...parkingLinks,
       ...visitorGuideLinks,
     ],
     16
   );
   const hasOperationalResourceLinks = resourceLinksForSection.some((item) =>
-    /(result|score|rotation|roster|hotel|travel|visitor|ticket|admission|parking)/i.test(
+    /(result|score|rotation|roster|hotel|travel|visitor|ticket|admission)/i.test(
       `${item.label} ${item.url}`
     )
   );
@@ -2452,8 +2512,7 @@ export function buildGymMeetDiscoveryContent({
         meetStaffCards.length > 0 ||
         announcementCards.length > 0 ||
         gearCards.length > 0 ||
-        gearLinks.length > 0 ||
-        communicationCards.length > 0,
+        gearLinks.length > 0,
       blocks: [
         ...(meetOverviewCards.length > 0
           ? [
@@ -2542,11 +2601,13 @@ export function buildGymMeetDiscoveryContent({
       kind: "session_assignments",
       priority: 25,
       preserveStandalone:
-        sessionAssignmentCards.length > 0 || sessionAssignmentLinks.length > 0,
+        scheduleGridsEnabled &&
+        (sessionAssignmentCards.length > 0 || sessionAssignmentLinks.length > 0),
       hasContent:
-        sessionAssignmentCards.length > 0 ||
-        sessionAssignmentNotes.length > 0 ||
-        sessionAssignmentLinks.length > 0,
+        scheduleGridsEnabled &&
+        (sessionAssignmentCards.length > 0 ||
+          sessionAssignmentNotes.length > 0 ||
+          sessionAssignmentLinks.length > 0),
       blocks: [
         ...(sessionAssignmentCards.length > 0
           ? [
@@ -2809,7 +2870,8 @@ export function buildGymMeetDiscoveryContent({
         trafficPrimaryCards.length > 0 ||
         trafficSecondaryCards.length > 0 ||
         parkingLinks.length > 0 ||
-        trafficSlots.length > 0,
+        trafficSlots.length > 0 ||
+        Boolean(facilityMapAddress),
       blocks: [
         ...(trafficPrimaryCards.length > 0
           ? [

@@ -15,8 +15,9 @@ test("normalizeGymMeetEventData maps long packet text to detailsText instead of 
 
   assert.match(
     source,
-    /const detailsText = isDiscoveryEvent[\s\S]*stripDiscoveryGeneratedDetails\(eventData\?\.details \|\| eventData\?\.description\)[\s\S]*safeString\(eventData\?\.details \|\| eventData\?\.description\);/
+    /const rawDiscoveryDetails = safeString\(eventData\?\.details \|\| eventData\?\.description\);[\s\S]*stripDiscoveryGeneratedDetails\(rawDiscoveryDetails\)/
   );
+  assert.match(source, /detailsTextForDiscovery: isDiscoveryEvent \? rawDiscoveryDetails : undefined/);
   assert.match(source, /buildGymMeetDiscoveryContent\(\{[\s\S]*detailsText,/);
   assert.match(source, /detailsText,\s*\n\s*heroSummary: undefined,/);
   assert.doesNotMatch(

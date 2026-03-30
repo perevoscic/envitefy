@@ -9,6 +9,130 @@ const findSection = (discovery: any, id: string) =>
 const findBlock = (section: any, id: string) =>
   (section?.blocks || []).find((block: any) => block.id === id);
 
+function withScheduleGridsEnabled<T>(fn: () => T): T {
+  const prev = process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
+  process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED = "1";
+  try {
+    return fn();
+  } finally {
+    if (prev === undefined) {
+      delete process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
+    } else {
+      process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED = prev;
+    }
+  }
+}
+
+test("USAG packet cover prose yields a meet-details section (not only admission)", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {},
+        extractedText: [
+          "Team Twisters & USA Competitions is proud to host the 2026 Florida USA Gymnastics Xcel Bronze, Silver & Gold State Championships.",
+          "Awards Ceremonies: Individual and All Around awards will take place immediately following the end of each session.",
+          "USA Gymnastics Membership",
+          "• Coaches: If you did not register attendance via Meet Reservations, you will not be listed on the sanction's official sign-in sheet.",
+          "-- 1 of 5 --",
+          "Session R01 BRONZE",
+          "Session R02 BRONZE",
+          "Session R03 BRONZE",
+          "Session R04 BRONZE",
+        ].join("\n"),
+      },
+    },
+    customFields: {},
+    advancedSections: {},
+    date: "2026-04-10",
+  });
+  const meet = findSection(discovery, "meet-details");
+  assert.ok(meet?.hasContent, "expected meet-details tab content from narrative packet lines");
+  const linesBlock = findBlock(meet, "meet-lines");
+  assert.ok(linesBlock?.lines?.length, "expected meet-lines from cover letter + coach membership prose");
+});
+
+test("preamble before the first -- N of M -- PDF marker is included in routable extracted text", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {},
+        extractedText: [
+          "Team Twisters hosts the 2026 State Championships.",
+          "Spectator Admissions: Adults (13+): $26.00, Children (5-12): $16.00.",
+          "Awards ceremonies follow each session.",
+          "-- 1 of 5 --",
+          "Session R01 BRONZE",
+          "Session R02 BRONZE",
+          "Session R03 BRONZE",
+          "Session R04 BRONZE",
+        ].join("\n"),
+      },
+    },
+    customFields: {},
+    advancedSections: {},
+    date: "2026-04-10",
+  });
+
+  const blob = JSON.stringify(discovery);
+  assert.match(blob, /\$26\.00/i, "preamble with pricing must survive page splitting (real PDFs put cover letter before page 1 marker)");
+});
+
+test("meet-details is not a ghost tab when only results links exist (communication cards live on results section)", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          links: [
+            { label: "Host Hotels", url: "https://example.com/hotels" },
+            { label: "USA Competitions results", url: "https://usacompetitions.net/event/123" },
+          ],
+        },
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {},
+    date: "2026-03-20",
+  });
+
+  assert.equal(
+    findSection(discovery, "meet-details"),
+    undefined,
+    "meet-details must not claim hasContent from communicationCards; those blocks are only on results"
+  );
+  const results = findSection(discovery, "results");
+  assert.ok(results?.hasContent);
+  assert.ok(findBlock(results, "results-cards"));
+});
+
+test("traffic-parking stays visible with map-only content when address is set and logistics parking fields are empty", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: {
+          logistics: {},
+        },
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      logistics: {},
+    },
+    date: "2026-03-20",
+    venue: "State Arena",
+    address: "123 Main St, Chicago, IL 60601",
+  });
+
+  const traffic = findSection(discovery, "traffic-parking");
+  assert.ok(traffic, "expected traffic-parking section");
+  assert.equal(traffic.hasContent, true);
+  const mapBlock = findBlock(traffic, "parking-map");
+  assert.ok(mapBlock, "expected parking-map block");
+  assert.equal(mapBlock.type, "map");
+  assert.equal(mapBlock.address, "123 Main St, Chicago, IL 60601");
+});
+
 test("mixed packet content keeps rich operational sections separate while preserving results", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
@@ -75,7 +199,9 @@ test("mixed packet content keeps rich operational sections separate while preser
   assert.ok(findSection(discovery, "coaches"));
   assert.ok(findSection(discovery, "traffic-parking"));
   assert.ok(findSection(discovery, "results"));
-  assert.equal(findSection(discovery, "documents")?.label, "Resources");
+  const documentsSection = findSection(discovery, "documents");
+  assert.equal(documentsSection?.label, "Resources");
+  assert.doesNotMatch(JSON.stringify(documentsSection), /parking-map/i);
   assert.equal(findSection(discovery, "hotels"), undefined);
   assert.match(JSON.stringify(findSection(discovery, "results")), /Live scoring available online/);
   assert.match(JSON.stringify(findSection(discovery, "coaches")), /Athlete Entry Fee|MeetMaker/);
@@ -100,62 +226,107 @@ test("payment instructions do not leak into the hero header", () => {
   assert.equal(model.detailsText, "");
 });
 
-test("schedule and session assignments render ahead of venue details when populated", () => {
+test("normalizeGymMeetEventData passes unstripped details into discovery for Meet Details prose", () => {
+  const model = normalizeGymMeetEventData({
+    eventData: {
+      createdVia: "meet-discovery",
+      eventTitle: "Florida Crown",
+      details:
+        "Doors open: 7:15 AM\nArrival guidance: Allow 30 minutes for parking.\nSpectator Admission: Adult $20",
+      venue: "Coral Springs Gymnasium",
+      address: "123 Main St, Coral Springs, FL",
+    },
+    eventTitle: "Florida Crown",
+    navItems: [],
+    rosterAthletes: [],
+  });
+
+  assert.equal(model.detailsText, "");
+  const meet = findSection(model.discovery, "meet-details");
+  assert.ok(meet);
+  assert.match(JSON.stringify(meet), /7:15\s*AM/i);
+  assert.match(JSON.stringify(meet), /30 minutes for parking/i);
+});
+
+test("detailsTextForDiscovery alone can populate doors open when hero detailsText is empty", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
       discoverySource: {
-        parseResult: {
-          admission: [{ label: "Adults", price: "$20", note: "" }],
-          contacts: [{ role: "Meet Director", email: "director@example.com" }],
-          links: [],
-        },
+        parseResult: {},
         extractionMeta: {},
         extractedText: "",
       },
     },
-    customFields: { admission: "Adults: $20" },
-    advancedSections: {
-      meet: {},
-      logistics: { gymLayoutLabel: "Assigned gym location: Hall B" },
-      coaches: { enabled: true, signIn: "Sign in at the scoring table." },
-      schedule: {
-        enabled: true,
-        venueLabel: "Greater Fort Lauderdale / Broward County Convention Center",
-        supportEmail: "director@example.com",
-        assignments: [
-          {
-            id: "assign-1",
-            level: "Level 9",
-            groupLabel: "Group 1",
-            birthDateRange: "7/3/2010 — 10/27/2011",
-            sessionCode: "SU2",
-          },
-        ],
-        days: [
-          {
-            id: "fri",
-            date: "Friday, March 13, 2026",
-            shortDate: "Friday • Mar 13",
-            sessions: [
-              {
-                id: "fri-1",
-                code: "FR1",
-                label: "Session FR1",
-                group: "Bronze",
-                startTime: "8:00 AM",
-                clubs: [
-                  { id: "club-1", name: "Browns Gym", teamAwardEligible: true },
-                  { id: "club-2", name: "Twisters Canada", teamAwardEligible: false },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    },
-    venue: "Coral Springs Gymnasium",
-    address: "123 Main St, Coral Springs, FL 33065",
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+    venue: "Arena",
+    address: "1 Main St",
+    detailsText: "",
+    detailsTextForDiscovery: "Doors open: 7:15 AM\nGuest services is in the east hall.",
   });
+  const meet = findSection(discovery, "meet-details");
+  assert.ok(meet);
+  assert.match(JSON.stringify(meet), /7:15\s*AM/i);
+});
+
+test("schedule and session assignments render ahead of venue details when populated", () => {
+  const discovery = withScheduleGridsEnabled(() =>
+    buildGymMeetDiscoveryContent({
+      eventData: {
+        discoverySource: {
+          parseResult: {
+            admission: [{ label: "Adults", price: "$20", note: "" }],
+            contacts: [{ role: "Meet Director", email: "director@example.com" }],
+            links: [],
+          },
+          extractionMeta: {},
+          extractedText: "",
+        },
+      },
+      customFields: { admission: "Adults: $20" },
+      advancedSections: {
+        meet: {},
+        logistics: { gymLayoutLabel: "Assigned gym location: Hall B" },
+        coaches: { enabled: true, signIn: "Sign in at the scoring table." },
+        schedule: {
+          enabled: true,
+          venueLabel: "Greater Fort Lauderdale / Broward County Convention Center",
+          supportEmail: "director@example.com",
+          assignments: [
+            {
+              id: "assign-1",
+              level: "Level 9",
+              groupLabel: "Group 1",
+              birthDateRange: "7/3/2010 — 10/27/2011",
+              sessionCode: "SU2",
+            },
+          ],
+          days: [
+            {
+              id: "fri",
+              date: "Friday, March 13, 2026",
+              shortDate: "Friday • Mar 13",
+              sessions: [
+                {
+                  id: "fri-1",
+                  code: "FR1",
+                  label: "Session FR1",
+                  group: "Bronze",
+                  startTime: "8:00 AM",
+                  clubs: [
+                    { id: "club-1", name: "Browns Gym", teamAwardEligible: true },
+                    { id: "club-2", name: "Twisters Canada", teamAwardEligible: false },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      },
+      venue: "Coral Springs Gymnasium",
+      address: "123 Main St, Coral Springs, FL 33065",
+    })
+  );
 
   const schedule = findSection(discovery, "schedule");
   const assignments = findSection(discovery, "session-assignments");
@@ -201,34 +372,36 @@ test("schedule section stays hidden when no usable schedule sessions exist", () 
 });
 
 test("schedule section renders when only session codes are present", () => {
-  const discovery = buildGymMeetDiscoveryContent({
-    eventData: {
-      discoverySource: {
-        parseResult: { links: [] },
-        extractionMeta: {},
-        extractedText: "",
+  const discovery = withScheduleGridsEnabled(() =>
+    buildGymMeetDiscoveryContent({
+      eventData: {
+        discoverySource: {
+          parseResult: { links: [] },
+          extractionMeta: {},
+          extractedText: "",
+        },
       },
-    },
-    customFields: {},
-    advancedSections: {
-      meet: {},
-      logistics: {},
-      coaches: {},
-      schedule: {
-        enabled: true,
-        days: [
-          {
-            id: "fri",
-            date: "Friday, March 13, 2026",
-            shortDate: "Friday • Mar 13",
-            sessions: [{ id: "fri-1", code: "FR1", clubs: [] }],
-          },
-        ],
+      customFields: {},
+      advancedSections: {
+        meet: {},
+        logistics: {},
+        coaches: {},
+        schedule: {
+          enabled: true,
+          days: [
+            {
+              id: "fri",
+              date: "Friday, March 13, 2026",
+              shortDate: "Friday • Mar 13",
+              sessions: [{ id: "fri-1", code: "FR1", clubs: [] }],
+            },
+          ],
+        },
       },
-    },
-    venue: "Coral Springs Gymnasium",
-    address: "123 Main St, Coral Springs, FL 33065",
-  });
+      venue: "Coral Springs Gymnasium",
+      address: "123 Main St, Coral Springs, FL 33065",
+    })
+  );
 
   assert.ok(findSection(discovery, "schedule"));
 });
@@ -335,41 +508,43 @@ test("resource links drive documents, hotels, and results without rewriting even
 });
 
 test("session assignment verification notes stay in their own section", () => {
-  const discovery = buildGymMeetDiscoveryContent({
-    eventData: {
-      discoverySource: {
-        parseResult: {
-          links: [],
-        },
-        extractionMeta: {},
-        extractedText: [
-          "Session assignments are listed on club rosters, posted at usacompetitions.com",
-          "***If there is an incorrect session assignment listed on your roster, email info@usacompetitions.com ASAP***",
-        ].join("\n"),
-      },
-    },
-    customFields: {},
-    advancedSections: {
-      meet: {},
-      logistics: {},
-      coaches: {},
-      schedule: {
-        enabled: true,
-        assignments: [
-          {
-            id: "assign-1",
-            level: "XCEL GOLD",
-            groupLabel: "Group 1",
-            birthDateRange: "9/30/2017 — Younger",
-            sessionCode: "B1",
+  const discovery = withScheduleGridsEnabled(() =>
+    buildGymMeetDiscoveryContent({
+      eventData: {
+        discoverySource: {
+          parseResult: {
+            links: [],
           },
-        ],
-        days: [],
+          extractionMeta: {},
+          extractedText: [
+            "Session assignments are listed on club rosters, posted at usacompetitions.com",
+            "***If there is an incorrect session assignment listed on your roster, email info@usacompetitions.com ASAP***",
+          ].join("\n"),
+        },
       },
-    },
-    venue: "State Arena",
-    address: "123 Main St, Chicago, IL 60601",
-  });
+      customFields: {},
+      advancedSections: {
+        meet: {},
+        logistics: {},
+        coaches: {},
+        schedule: {
+          enabled: true,
+          assignments: [
+            {
+              id: "assign-1",
+              level: "XCEL GOLD",
+              groupLabel: "Group 1",
+              birthDateRange: "9/30/2017 — Younger",
+              sessionCode: "B1",
+            },
+          ],
+          days: [],
+        },
+      },
+      venue: "State Arena",
+      address: "123 Main St, Chicago, IL 60601",
+    })
+  );
 
   const assignments = findSection(discovery, "session-assignments");
 
@@ -377,6 +552,106 @@ test("session assignment verification notes stay in their own section", () => {
   assert.match(JSON.stringify(assignments), /Group 1/);
   assert.match(JSON.stringify(assignments), /incorrect session assignment/i);
   assert.equal(findSection(discovery, "documents")?.label, undefined);
+});
+
+test("schedule and session assignments stay hidden when GYM_DISCOVERY_SCHEDULE_GRID_ENABLED is unset", () => {
+  const prev = process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
+  delete process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
+  try {
+    const discovery = buildGymMeetDiscoveryContent({
+      eventData: {
+        discoverySource: {
+          parseResult: { links: [] },
+          extractionMeta: {},
+          extractedText:
+            "Session assignments are listed on club rosters. Incorrect session assignment email info@example.com",
+        },
+      },
+      customFields: {},
+      advancedSections: {
+        meet: {},
+        logistics: {},
+        coaches: {},
+        schedule: {
+          enabled: true,
+          assignments: [
+            {
+              id: "assign-1",
+              level: "Level 4",
+              groupLabel: "Group 1",
+              sessionCode: "B1",
+            },
+          ],
+          days: [
+            {
+              id: "fri",
+              date: "Friday, March 13, 2026",
+              shortDate: "Friday • Mar 13",
+              sessions: [
+                {
+                  id: "fri-1",
+                  code: "FR1",
+                  group: "Gold",
+                  startTime: "8:00 AM",
+                  clubs: [{ id: "c1", name: "Test Gym" }],
+                },
+              ],
+            },
+          ],
+        },
+      },
+      venue: "Arena",
+      address: "1 Main St",
+    });
+    assert.equal(findSection(discovery, "schedule"), undefined);
+    assert.equal(findSection(discovery, "session-assignments"), undefined);
+  } finally {
+    if (prev === undefined) {
+      delete process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
+    } else {
+      process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED = prev;
+    }
+  }
+});
+
+test("parking resource links render under Traffic and Parking without a Resources tab", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: { links: [] },
+        extractionMeta: {
+          resourceLinks: [
+            {
+              kind: "parking",
+              status: "posted",
+              label: "Parking lots and garages map",
+              url: "https://maps.example.com/parking",
+            },
+            {
+              kind: "parking",
+              status: "posted",
+              label: "Pay by phone parking",
+              url: "https://park.example.com/pay",
+            },
+          ],
+        },
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      meet: {},
+      logistics: {},
+      coaches: {},
+    },
+    venue: "Convention Center",
+    address: "100 Center Dr",
+  });
+
+  const traffic = findSection(discovery, "traffic-parking");
+  assert.ok(traffic);
+  assert.match(JSON.stringify(traffic), /maps\.example\.com\/parking/i);
+  assert.equal(findSection(discovery, "documents"), undefined);
 });
 
 test("rotation hub with not_posted shows neutral status instead of a wrong PDF", () => {
@@ -450,11 +725,14 @@ test("lightweight results stay in the results section without leaking into admis
   });
 
   const results = findSection(discovery, "results");
-  const meetDetails = findSection(discovery, "meet-details");
   const admission = findSection(discovery, "admission");
 
   assert.ok(results);
-  assert.ok(meetDetails);
+  assert.equal(
+    findSection(discovery, "meet-details"),
+    undefined,
+    "results copy and links belong on the results section, not an empty meet-details shell"
+  );
   assert.match(JSON.stringify(results), /Live scoring available online/);
   assert.ok(admission);
   assert.doesNotMatch(JSON.stringify(admission), /Live scoring available online/);
@@ -1152,12 +1430,17 @@ test("venue details stay venue-only and absorb the venue map blocks", () => {
   const gearBlock = findBlock(meetDetails, "gear");
   const venueImageBlock = findBlock(venueDetails, "gym-layout-image");
   const venueMapBlock = findBlock(venueDetails, "venue-map-address");
+  const arrivalMapBlock = trafficParking ? findBlock(trafficParking, "parking-map") : null;
   const allContent = JSON.stringify(discovery.sections);
 
   assert.ok(meetDetails);
   assert.ok(admission);
   assert.ok(venueDetails);
-  assert.equal(trafficParking, undefined);
+  assert.ok(trafficParking);
+  assert.equal(trafficParking.hasContent, true);
+  assert.ok(arrivalMapBlock);
+  assert.equal(arrivalMapBlock.type, "map");
+  assert.equal(arrivalMapBlock.address, "123 Main St, Coral Springs, FL 33065");
   assert.equal(venueMap, undefined);
   assert.equal(meetOverviewBlock?.title, undefined);
   assert.equal(gearBlock, undefined);

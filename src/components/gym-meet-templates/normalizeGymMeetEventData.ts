@@ -392,9 +392,10 @@ export const normalizeGymMeetEventData = ({
   const isDiscoveryEvent =
     safeString(eventData?.createdVia) === "meet-discovery" ||
     Boolean(eventData?.discoverySource?.input || eventData?.discoverySource?.parseResult);
+  const rawDiscoveryDetails = safeString(eventData?.details || eventData?.description);
   const detailsText = isDiscoveryEvent
-    ? stripDiscoveryGeneratedDetails(eventData?.details || eventData?.description)
-    : safeString(eventData?.details || eventData?.description);
+    ? stripDiscoveryGeneratedDetails(rawDiscoveryDetails)
+    : rawDiscoveryDetails;
   const resolvedAddress = collapseRepeatedDisplayText(
     eventData?.address || parseResult?.address || mapAddress
   );
@@ -408,6 +409,7 @@ export const normalizeGymMeetEventData = ({
     advancedSections,
     date: safeString(eventData?.date || eventData?.startISO),
     detailsText,
+    detailsTextForDiscovery: isDiscoveryEvent ? rawDiscoveryDetails : undefined,
     venue: safeString(eventData?.venue),
     address: resolvedAddress,
   });
