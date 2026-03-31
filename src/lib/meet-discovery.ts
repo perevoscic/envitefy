@@ -5423,7 +5423,17 @@ function shouldTreatResourceAsTrustedHtmlFetch(resource: DiscoveryResourceLink):
   return (
     (["hotel_booking", "photo_video", "results_live"].includes(resource.kind) &&
       isTrustedExternalResourceUrl(resource.url)) ||
-    ["roster", "team_divisions", "rotation_hub", "results_hub"].includes(resource.kind)
+    ["roster", "team_divisions", "rotation_hub", "results_hub"].includes(resource.kind) ||
+    isTraversableHotelHubResource(resource)
+  );
+}
+
+function isTraversableHotelHubResource(resource: DiscoveryResourceLink): boolean {
+  if (resource.kind !== "hotel_booking") return false;
+  if (!safeString(resource.url) || isTrustedExternalResourceUrl(resource.url)) return false;
+  const hotelHubLabel = `${safeString(resource.label)} ${safeString(resource.url)}`;
+  return /\b(click here for all host hotels|host hotels?|host hotel information|hotel information)\b/i.test(
+    hotelHubLabel
   );
 }
 
@@ -6579,6 +6589,9 @@ async function resolveHubResourceLinks(
     ) {
       continue;
     }
+    if (hubResource.kind === "hotel_booking" && baseResource.kind !== "hotel_booking") {
+      continue;
+    }
     const sameHostAsHub = (() => {
       try {
         return new URL(baseResource.url).host === hubUrl.host;
@@ -7370,7 +7383,10 @@ export async function extractDiscoveryText(
   schedulePageTexts = accumulators.schedulePageTexts;
 
   const hubResources = [...resourceLinkMap.values()].filter(
-    (item) => item.kind === "results_hub" || item.kind === "rotation_hub"
+    (item) =>
+      item.kind === "results_hub" ||
+      item.kind === "rotation_hub" ||
+      isTraversableHotelHubResource(item)
   );
   for (const hubResource of hubResources.sort((a, b) =>
     compareResourceLinksForFollowUp(a, b, url.host)
@@ -13152,16 +13168,55 @@ function buildGymPublicPageSections(params: {
     hideReason: "No attendee-safe admission or spectator policies survived filtering.",
   });
 
-  const travelBody = joinSectionSentences(
+  const travelAccommodation = (baseData?.discoverySource?.travelAccommodation || null) as any;
+  const travelAccommodationHotels = Array.isArray(travelAccommodation?.hotels)
+    ? travelAccommodation.hotels
+    : [];
+  const travelAccommodationFallbackLink =
+    travelAccommodation?.fallbackLink && typeof travelAccommodation.fallbackLink === "object"
+      ? {
+          label: safeString(travelAccommodation.fallbackLink.label),
+          url: safeString(travelAccommodation.fallbackLink.url),
+        }
+      : null;
+  const firecrawlInPlay =
+    Boolean(safeString(process.env.FIRECRAWL_API_KEY)) || Boolean(travelAccommodation);
+  const legacyTravelBody = joinSectionSentences(
     ...filterPublicAudienceTexts([parseResult.logistics.hotel], "parse_field", 2)
   );
+  const travelHubLink =
+    travelAccommodationFallbackLink ||
+    (firecrawlInPlay && hotelLinks[0] ? { label: hotelLinks[0].label, url: hotelLinks[0].url } : null);
+  const travelBody = firecrawlInPlay
+    ? travelHubLink?.url || travelAccommodationHotels.length > 0
+      ? "Hotel booking links are listed below."
+      : ""
+    : legacyTravelBody;
   const travel = createGymPublicPageSection({
     title: "Travel",
     body: travelBody,
-    bullets: hotelLinks.map((item) => item.label),
-    origin: travelBody ? "pdf_grounded" : hotelLinks.length > 0 ? "mixed" : "derived_summary",
+    bullets: firecrawlInPlay
+      ? travelHubLink?.label
+        ? [travelHubLink.label]
+        : []
+      : hotelLinks.map((item) => item.label),
+    origin: firecrawlInPlay
+      ? travelBody || travelHubLink?.url || travelAccommodationHotels.length > 0
+        ? "mixed"
+        : "derived_summary"
+      : legacyTravelBody
+      ? "pdf_grounded"
+      : hotelLinks.length > 0
+      ? "mixed"
+      : "derived_summary",
     evidenceRefs: ["travel", ...(evidence?.resources.hotelHints.slice(0, 3) || [])],
-    visibility: travelBody || hotelLinks.length > 0 ? "visible" : "hidden",
+    visibility: firecrawlInPlay
+      ? travelBody || travelHubLink?.url || travelAccommodationHotels.length > 0
+        ? "visible"
+        : "hidden"
+      : legacyTravelBody || hotelLinks.length > 0
+      ? "visible"
+      : "hidden",
     hideReason: "No attendee-safe hotel or travel guidance survived filtering.",
   });
 
@@ -13436,25 +13491,49 @@ export async function mapParseResultToGymData(
       }),
     (item) => `${item.kind}|${item.label}|${item.availabilityDate}`
   );
-  const hotelNarrative =
+  const travelAccommodation = (baseData?.discoverySource?.travelAccommodation || null) as any;
+  const firecrawlInPlay =
+    Boolean(safeString(process.env.FIRECRAWL_API_KEY)) || Boolean(travelAccommodation);
+  const legacyHotelNarrative =
     safeString(parseResult.logistics.hotel) ||
     safeString(existingAdvanced.logistics?.hotelInfo) ||
     "";
+  const hotelNarrative = firecrawlInPlay ? "" : legacyHotelNarrative;
+  const travelAccommodationFallbackLink =
+    travelAccommodation?.fallbackLink && typeof travelAccommodation.fallbackLink === "object"
+      ? {
+          label: safeString(travelAccommodation.fallbackLink.label) || "Host Hotels",
+          url: normalizeUrl(travelAccommodation.fallbackLink.url),
+        }
+      : null;
+  const travelAccommodationHotels = pickArray(travelAccommodation?.hotels);
+  const travelAccommodationBookingLinks = travelAccommodationHotels
+    .map((hotel) => ({
+      label: safeString(hotel?.name) || "Hotel Booking",
+      url: normalizeUrl(hotel?.bookingUrl),
+    }))
+    .filter((item) => item.url);
   const inferredResultsLink = buildTextDerivedLink(
     "Official Results",
     parseResult.meetDetails.resultsInfo
   );
-  const inferredHotelLink = buildTextDerivedLink("Hotel Booking", hotelNarrative);
+  const hotelHubResource = pickAvailableResourceLink("hotel_booking");
+  const hotelHubLinkFromResources = hotelHubResource
+    ? { label: hotelHubResource.label || "Host Hotels", url: hotelHubResource.url || "" }
+    : null;
+  const inferredHotelLink = firecrawlInPlay
+    ? travelAccommodationFallbackLink || hotelHubLinkFromResources
+    : buildTextDerivedLink("Hotel Booking", hotelNarrative);
   const inferredRotationLink = buildTextDerivedLink(
     "Rotation Sheets",
     parseResult.meetDetails.rotationSheetsInfo
   );
   const compactHotelName =
-    hotelNarrative &&
-    hotelNarrative.length <= 80 &&
-    !/[\n.!?]/.test(hotelNarrative) &&
-    !/\b(book|reserve|deadline|rate|parking|distance|travel)\b/i.test(hotelNarrative)
-      ? hotelNarrative
+    legacyHotelNarrative &&
+    legacyHotelNarrative.length <= 80 &&
+    !/[\n.!?]/.test(legacyHotelNarrative) &&
+    !/\b(book|reserve|deadline|rate|parking|distance|travel)\b/i.test(legacyHotelNarrative)
+      ? legacyHotelNarrative
       : "";
   const layoutFacts = shouldKeepOperationalLayoutEvidence(effectiveExtractionMeta)
     ? uniqueLines(
@@ -13829,9 +13908,31 @@ export async function mapParseResultToGymData(
     logistics: {
       ...(existingAdvanced.logistics || {}),
       enabled: usePublicPageV2 ? true : existingAdvanced.logistics?.enabled ?? false,
-      hotelName: compactHotelName || safeString(existingAdvanced.logistics?.hotelName) || "",
+      hotelName: firecrawlInPlay
+        ? safeString(existingAdvanced.logistics?.hotelName) || ""
+        : compactHotelName || safeString(existingAdvanced.logistics?.hotelName) || "",
       hotelAddress: safeString(existingAdvanced.logistics?.hotelAddress) || "",
-      hotelInfo: usePublicPageV2 ? publicTravel?.body || hotelNarrative : hotelNarrative,
+      hotelInfo: firecrawlInPlay
+        ? safeString(existingAdvanced.logistics?.hotelInfo) || ""
+        : usePublicPageV2
+          ? publicTravel?.body || hotelNarrative
+          : hotelNarrative,
+      ...(travelAccommodationHotels.length > 0
+        ? {
+            hotels: travelAccommodationHotels
+              .map((item, idx) => ({
+                id: safeString(item?.id) || `travel-hotel-${idx + 1}`,
+                name: safeString(item?.name),
+                address: safeString(item?.address),
+                phone: safeString(item?.phone),
+                bookingUrl: normalizeUrl(item?.bookingUrl),
+                reservationDeadline: safeString(item?.reservationDeadline),
+                rateSummary: safeString(item?.rateSummary),
+                notes: safeString(item?.notes),
+              }))
+              .filter((item) => item.name || item.bookingUrl),
+          }
+        : {}),
       mealPlan: parseResult.logistics.meals || "",
       feeAmount: parseResult.logistics.fees || "",
       additionalDocuments,
@@ -14066,6 +14167,7 @@ export async function mapParseResultToGymData(
         ...parseResult.coachInfo.links,
         ...parseResult.logistics.parkingLinks,
         ...parseResult.logistics.parkingPricingLinks,
+        ...travelAccommodationBookingLinks,
         inferredResultsLink,
         inferredHotelLink,
         inferredRotationLink,

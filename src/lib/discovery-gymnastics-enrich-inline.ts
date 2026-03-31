@@ -15,6 +15,7 @@ import {
   resolveDiscoveryBudget,
   stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
+import { enrichTravelAccommodation } from "@/lib/travel-accommodation-enrichment";
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -68,6 +69,19 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
     performance: params.performance,
   });
 
+  const travelAccommodation = await enrichTravelAccommodation({
+    traceId: params.eventId,
+    extractionMeta: extraction.extractionMeta,
+    existing: (discoverySource as any)?.travelAccommodation || null,
+    budgetMs: enrichBudgetMs,
+  });
+  const discoverySourceWithTravel = travelAccommodation
+    ? { ...discoverySource, travelAccommodation }
+    : discoverySource;
+  const baseDataWithTravel = travelAccommodation
+    ? { ...params.mergedCoreEventData, discoverySource: discoverySourceWithTravel }
+    : params.mergedCoreEventData;
+
   const enrichedParseResult = await finalizeMeetParseResult(
     baseParseResult,
     extraction.extractedText || baseExtractedText,
@@ -81,12 +95,12 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
 
   const mapped = await mapParseResultToGymData(
     enrichedParseResult,
-    params.mergedCoreEventData,
+    baseDataWithTravel,
     extraction.extractionMeta,
   );
   const publicArtifacts = buildGymDiscoveryPublicPageArtifacts({
     parseResult: enrichedParseResult,
-    baseData: params.mergedCoreEventData,
+    baseData: baseDataWithTravel,
     extractionMeta: extraction.extractionMeta,
   });
   const nextGymPageTemplateId =
@@ -119,7 +133,7 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
     ...mapped,
     pageTemplateId: nextGymPageTemplateId,
     discoverySource: {
-      ...discoverySource,
+      ...discoverySourceWithTravel,
       status: "parsed",
       workflow: "gymnastics",
       input: params.sourceInput,

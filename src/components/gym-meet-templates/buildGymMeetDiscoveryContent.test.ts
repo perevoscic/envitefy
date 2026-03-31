@@ -224,6 +224,124 @@ test("payment instructions do not leak into the hero header", () => {
   assert.equal(model.detailsText, "");
 });
 
+test("Hotels tab lists per-hotel booking URLs from advancedSections.logistics.hotels", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: { logistics: {} },
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: {
+      logistics: {
+        hotels: [
+          { name: "Hotel Alpha", bookingUrl: "https://book.example.com/alpha" },
+          { name: "Hotel Alpha", bookingUrl: "https://book.example.com/alpha" },
+          { name: "Hotel Beta", bookingUrl: "https://book.example.com/beta" },
+        ],
+      },
+    },
+    date: "2026-03-20",
+  });
+
+  const hotels = findSection(discovery, "hotels");
+  assert.ok(hotels?.hasContent, "expected hotels section when booking URLs are present");
+  const linksBlock = findBlock(hotels, "hotel-links");
+  assert.ok(linksBlock, "expected hotel-links block");
+  assert.ok(
+    linksBlock.links.some(
+      (item: any) =>
+        item.url === "https://book.example.com/alpha" && /alpha/i.test(item.label),
+    ),
+    "expected Hotel Alpha booking link",
+  );
+  assert.ok(
+    linksBlock.links.some(
+      (item: any) =>
+        item.url === "https://book.example.com/beta" && /beta/i.test(item.label),
+    ),
+    "expected Hotel Beta booking link",
+  );
+  assert.equal(
+    linksBlock.links.filter((item: any) => item.url === "https://book.example.com/alpha").length,
+    1,
+    "expected booking links to be deduped by url",
+  );
+  assert.ok(linksBlock.links.length <= 8, "expected booking links to be capped");
+});
+
+test("Hotels tab prefers travelAccommodation hotel cards and keeps the hub link as backup", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        parseResult: { logistics: {} },
+        extractedText: "",
+        travelAccommodation: {
+          hotels: [
+            {
+              name: "Hilton Garden Inn",
+              bookingUrl: "https://book.example.com/hilton",
+              address: "4075 SW 33rd Place, Gainesville, FL 32608",
+              phone: "(352) 555-1111",
+              reservationDeadline: "March 20, 2026",
+              rateSummary: "$189 King",
+              notes: "Shuttle to venue included.",
+            },
+            {
+              name: "Courtyard Gainesville",
+              bookingUrl: "https://book.example.com/courtyard",
+              address: "3700 SW 42nd Street, Gainesville, FL 32608",
+              phone: "(352) 555-2222",
+              reservationDeadline: "March 18, 2026",
+              rateSummary: "$169/night plus tax",
+            },
+          ],
+          fallbackLink: {
+            label: "Host Hotels",
+            url: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
+          },
+          hotelSource: {
+            provider: "firecrawl",
+            sourceUrl: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
+            scrapedAt: "2026-03-31T00:00:00.000Z",
+            lastError: null,
+          },
+        },
+      },
+    },
+    customFields: {},
+    advancedSections: { logistics: {} },
+    date: "2026-03-20",
+  });
+
+  const hotels = findSection(discovery, "hotels");
+  assert.ok(hotels?.hasContent, "expected hotels section when travelAccommodation hotels exist");
+
+  const cardsBlock = findBlock(hotels, "hotel-cards");
+  assert.ok(cardsBlock, "expected hotel cards block");
+  assert.equal(cardsBlock.cards.length, 2);
+  assert.match(cardsBlock.cards[0].body, /Phone: \(352\) 555-1111/);
+  assert.match(cardsBlock.cards[0].body, /Reservation deadline: March 20, 2026/);
+  assert.match(cardsBlock.cards[0].body, /Rate: \$189 King/);
+  assert.equal(cardsBlock.cards[0].action.url, "https://book.example.com/hilton");
+
+  const linksBlock = findBlock(hotels, "hotel-links");
+  assert.ok(linksBlock, "expected backup hotel links block");
+  assert.ok(
+    linksBlock.links.some(
+      (item: any) =>
+        item.url === "https://usacompetitions.com/2026-xcel-bsg-state-championships/" &&
+        item.label === "Host Hotels",
+    ),
+    "expected hub page to remain available as a backup link",
+  );
+  assert.ok(
+    linksBlock.links.some((item: any) => item.url === "https://book.example.com/courtyard"),
+    "expected per-hotel booking links to remain visible alongside the hub backup link",
+  );
+});
+
 test("discovery hero summary excludes arrival guidance cards", () => {
   const model = normalizeGymMeetEventData({
     eventData: {

@@ -29,6 +29,7 @@ import {
   resolveDiscoveryBudget,
   stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
+import { enrichTravelAccommodation } from "@/lib/travel-accommodation-enrichment";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,6 +68,37 @@ function buildPersistedPerformance(
 function resolveDiscoveryEnrichStaleMs(): number {
   const parsed = Number.parseInt(process.env.DISCOVERY_ENRICH_STALE_MS || "", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_DISCOVERY_ENRICH_STALE_MS;
+}
+
+function isFirecrawlAvailable(): boolean {
+  return Boolean(safeString(process.env.FIRECRAWL_API_KEY));
+}
+
+function isFirecrawlProvider(provider: unknown): boolean {
+  const normalized = safeString(provider);
+  return normalized === "firecrawl" || normalized.startsWith("firecrawl:");
+}
+
+function shouldForceEnrichmentForTravelAccommodation(
+  discoverySource: Record<string, any>,
+  staleMs: number,
+): boolean {
+  if (!isFirecrawlAvailable()) return false;
+  const travelAccommodation = discoverySource?.travelAccommodation;
+  if (!travelAccommodation || typeof travelAccommodation !== "object") return true;
+
+  const provider = safeString(travelAccommodation?.hotelSource?.provider);
+  if (!isFirecrawlProvider(provider)) return true;
+
+  const hotels = Array.isArray(travelAccommodation?.hotels) ? travelAccommodation.hotels : [];
+  if (hotels.length > 0) return false;
+
+  const lastAttempt = safeString(travelAccommodation?.hotelSource?.scrapedAt);
+  const lastAttemptMs = lastAttempt ? Date.parse(lastAttempt) : Number.NaN;
+  if (Number.isFinite(lastAttemptMs)) {
+    return Date.now() - lastAttemptMs >= staleMs;
+  }
+  return true;
 }
 
 function isEnrichmentLeaseStale(
@@ -260,11 +292,13 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       return NextResponse.json({ error: "Run core parse before enrichment" }, { status: 409 });
     }
 
+    const staleMs = resolveDiscoveryEnrichStaleMs();
+    const forceLease = force || shouldForceEnrichmentForTravelAccommodation(discoverySource, staleMs);
     const lease = await tryAcquireEnrichmentLease({
       eventId,
       discoverySource,
       performance,
-      force,
+      force: forceLease,
     });
     if (lease.status === "completed" || lease.status === "running") {
       const responseData = (lease.data || currentData) as Record<string, any>;
@@ -336,14 +370,28 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       string,
       any
     >;
+
+    const travelAccommodation = await enrichTravelAccommodation({
+      traceId: eventId,
+      extractionMeta: extraction.extractionMeta,
+      existing: latestDiscoverySource?.travelAccommodation || null,
+      budgetMs: enrichBudgetMs,
+    });
+    const latestDiscoverySourceWithTravel = travelAccommodation
+      ? { ...latestDiscoverySource, travelAccommodation }
+      : latestDiscoverySource;
+    const baseDataWithTravel = travelAccommodation
+      ? { ...latestData, discoverySource: latestDiscoverySourceWithTravel }
+      : latestData;
+
     const mapped = await mapParseResultToGymData(
       enrichedParseResult,
-      latestData,
+      baseDataWithTravel,
       extraction.extractionMeta,
     );
     const publicArtifacts = buildGymDiscoveryPublicPageArtifacts({
       parseResult: enrichedParseResult,
-      baseData: latestData,
+      baseData: baseDataWithTravel,
       extractionMeta: extraction.extractionMeta,
     });
     const nextGymPageTemplateId =
@@ -371,7 +419,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       ...mapped,
       pageTemplateId: nextGymPageTemplateId,
       discoverySource: {
-        ...latestDiscoverySource,
+        ...latestDiscoverySourceWithTravel,
         status: "parsed",
         workflow: "gymnastics",
         input: sourceInput,
