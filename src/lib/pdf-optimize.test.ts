@@ -24,7 +24,7 @@ test("optimizePdfWithQpdf falls back to original bytes when qpdf is unavailable"
     assert.equal(result.warning, "qpdf-unavailable");
     assert.deepEqual(result.buffer, input);
     assert.equal(warnings.length, 0);
-    assert.equal(infos.length, 1);
+    assert.equal(infos.length, 0);
   } finally {
     console.warn = originalWarn;
     console.info = originalInfo;

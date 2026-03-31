@@ -15,6 +15,7 @@ let pdfRenderDepsPromise: Promise<{
   pdfjs: any;
   createCanvas: (width: number, height: number) => any;
 } | null> | null = null;
+const loggedPdfWarnings = new Set<string>();
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -33,9 +34,26 @@ function normalizeHttpUrl(value: unknown): string {
   }
 }
 
+function formatPdfRuntimeError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error || "");
+  const firstLine = message.split(/\r?\n+/).find((line) => line.trim()) || "";
+  return firstLine.replace(/\s+/g, " ").trim() || "unknown-pdf-runtime-error";
+}
+
+function logPdfWarning(scope: string, error: unknown) {
+  const message = formatPdfRuntimeError(error);
+  const key = `${scope}:${message}`;
+  if (loggedPdfWarnings.has(key)) return;
+  loggedPdfWarnings.add(key);
+  console.warn(`[pdf-raster] ${scope}`, { message });
+}
+
 async function getPdfJs() {
   if (!pdfJsPromise) {
-    pdfJsPromise = import("pdfjs-dist/legacy/build/pdf.mjs").catch(() => null);
+    pdfJsPromise = import("pdfjs-dist/legacy/build/pdf.mjs").catch((error) => {
+      logPdfWarning("pdfjs import failed", error);
+      return null;
+    });
   }
   return pdfJsPromise;
 }
@@ -102,7 +120,8 @@ async function renderPdfPageToPngWithPdfJs(
     if (typeof doc.cleanup === "function") doc.cleanup();
     if (typeof doc.destroy === "function") await doc.destroy();
     return Buffer.isBuffer(png) ? png : Buffer.from(png);
-  } catch {
+  } catch (error) {
+    logPdfWarning(`pdfjs raster fallback failed for page ${pageIndex + 1}`, error);
     return null;
   }
 }
@@ -166,7 +185,8 @@ export async function extractPdfAnnotationLinks(
       }
     }
     return links;
-  } catch {
+  } catch (error) {
+    logPdfWarning("pdf annotation extraction failed", error);
     return [];
   } finally {
     if (doc) {
@@ -203,7 +223,8 @@ export async function extractPdfTextWithPdfJs(
       text: pages.map((page) => page.text).join("\n\n"),
       pages,
     };
-  } catch {
+  } catch (error) {
+    logPdfWarning("pdf text extraction failed", error);
     return { text: "", pages: [] };
   } finally {
     if (doc) {

@@ -29,12 +29,18 @@ function isMissingQpdfError(error: unknown): boolean {
   return code === "ENOENT" || /spawn\s+.+\s+ENOENT/i.test(message);
 }
 
+function isPdfOptimizeDebugEnabled(): boolean {
+  return (process.env.PDF_OPTIMIZE_DEBUG || "").trim() === "1";
+}
+
 function logQpdfUnavailableOnce(qpdfBin: string) {
   if (qpdfUnavailableLoggedBin === qpdfBin) return;
   qpdfUnavailableLoggedBin = qpdfBin;
-  console.info("[pdf-optimize] qpdf unavailable, using original PDF bytes", {
-    qpdfBin,
-  });
+  if (isPdfOptimizeDebugEnabled()) {
+    console.info("[pdf-optimize] qpdf unavailable, using original PDF bytes", {
+      qpdfBin,
+    });
+  }
 }
 
 async function isQpdfAvailable(): Promise<boolean> {

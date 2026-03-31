@@ -27,7 +27,6 @@ const nextConfig = (phase: string): NextConfig => ({
     "@google-cloud/storage",
     "@napi-rs/canvas",
     "openai",
-    "pdfjs-dist",
     "googleapis",
     "sharp",
     "@aws-sdk/client-sesv2",
