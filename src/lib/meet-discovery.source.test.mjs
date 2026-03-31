@@ -84,3 +84,14 @@ test("meet discovery advances regex scans even when skipping invalid anchors or 
   assert.doesNotMatch(source, /while \(match\) \{[\s\S]*if \(!content\) continue;[\s\S]*jsonLdRegex\.exec\(html\);/);
   assert.doesNotMatch(source, /while \(match\) \{[\s\S]*if \(!url\) continue;[\s\S]*anchorRegex\.exec\(html\);/);
 });
+
+test("meet discovery decodes zero-padded apostrophe entities and prefers fuller official fallback titles", () => {
+  const source = readSource("src/lib/meet-discovery.ts");
+
+  assert.match(source, /\.replace\(\/&#0\*39;\/gi, "'"\)/);
+  assert.match(source, /if \(\/\\busa gymnastics\\b\/i\.test\(candidate\)\) score \+= 2;/);
+  assert.match(
+    source,
+    /fallbackKey\.includes\(parsedKey\) &&[\s\S]*scoreDiscoveryTitleFragment\(normalizedFallback\) > scoreDiscoveryTitleFragment\(normalizedParsed\)/,
+  );
+});

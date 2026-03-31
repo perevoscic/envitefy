@@ -282,7 +282,6 @@ test("Hotels tab prefers travelAccommodation hotel cards and keeps the hub link 
             {
               name: "Hilton Garden Inn",
               bookingUrl: "https://book.example.com/hilton",
-              imageUrl: "https://images.example.com/hilton.jpg",
               address: "4075 SW 33rd Place, Gainesville, FL 32608",
               phone: "(352) 555-1111",
               reservationDeadline: "March 20, 2026",
@@ -322,7 +321,6 @@ test("Hotels tab prefers travelAccommodation hotel cards and keeps the hub link 
   const cardsBlock = findBlock(hotels, "hotel-cards");
   assert.ok(cardsBlock, "expected hotel cards block");
   assert.equal(cardsBlock.cards.length, 2);
-  assert.equal(cardsBlock.cards[0].imageUrl, "https://images.example.com/hilton.jpg");
   assert.match(cardsBlock.cards[0].body, /Phone: \(352\) 555-1111/);
   assert.match(cardsBlock.cards[0].body, /Reservation deadline: March 20, 2026/);
   assert.match(cardsBlock.cards[0].body, /Rate: \$189 King/);
@@ -2089,6 +2087,124 @@ test("mixed public packet hides weak sections, merges admission variants, and li
     { label: "Host Hotels", url: "https://example.com/hotels" },
     { label: "USACompetitions.com Results", url: "https://example.com/results" },
   ]);
+});
+
+test("admission cards keep single PDF prices when notes only describe payment policy", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        pipelineVersion: "gym-public-v2",
+        parseResult: {
+          admission: [
+            {
+              label: "Adults (13+)",
+              price: "$25",
+              note: "Debit/credit card only; cash not accepted.",
+            },
+            {
+              label: "Children (5-12)",
+              price: "$15",
+              note: "Debit/credit card only; cash not accepted.",
+            },
+          ],
+          meetDetails: {},
+          logistics: {},
+          communications: {},
+          links: [],
+        },
+        publicPageSections: {
+          spectatorInfo: {
+            title: "Spectator Info",
+            body: "Adults (13+): $25. Children (5-12): $15. Debit/credit card only; cash not accepted.",
+            bullets: [],
+            visibility: "visible",
+          },
+        },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+    venue: "State Arena",
+    address: "123 Main St, Chicago, IL 60601",
+  });
+
+  const admission = findSection(discovery, "admission");
+  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map((card: any) => ({
+    label: card.label,
+    value: card.value,
+    body: card.body,
+  }));
+
+  assert.deepEqual(admissionCards, [
+    {
+      label: "Adults (13+)",
+      value: "$25",
+      body: "Debit/credit card only; cash not accepted.",
+    },
+    {
+      label: "Children (5-12)",
+      value: "$15",
+      body: "Debit/credit card only; cash not accepted.",
+    },
+  ]);
+});
+
+test("admission cards ignore relative cash discount notes when no base dollar price exists", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      discoverySource: {
+        pipelineVersion: "gym-public-v2",
+        parseResult: {
+          admission: [
+            {
+              label: "Adults (13+)",
+              price: "creditcard",
+              note: "Cash price is $1 less.",
+            },
+            {
+              label: "Children (5-12)",
+              price: "creditcard",
+              note: "Cash price is $1 less.",
+            },
+            {
+              label: "Under 5",
+              price: "Free",
+              note: "",
+            },
+          ],
+          meetDetails: {},
+          logistics: {},
+          communications: {},
+          links: [],
+        },
+        publicPageSections: {
+          spectatorInfo: {
+            title: "Spectator Info",
+            body: "",
+            bullets: [],
+            visibility: "visible",
+          },
+        },
+        extractionMeta: {},
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+    venue: "State Arena",
+    address: "123 Main St, Chicago, IL 60601",
+  });
+
+  const admission = findSection(discovery, "admission");
+  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map((card: any) => ({
+    label: card.label,
+    value: card.value,
+    body: card.body,
+  }));
+
+  assert.deepEqual(admissionCards, [{ label: "Under 5", value: "Free", body: "" }]);
 });
 
 test("quick access collapses duplicate labels even when discovery finds multiple urls", () => {

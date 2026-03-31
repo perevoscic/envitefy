@@ -96,6 +96,8 @@ const gridClassForColumns = (columns?: number) => {
   }
 };
 
+const hotelCardGridClass = "grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]";
+
 const getCollectionItemKey = (parentId: string | undefined, explicitKey: unknown, index: number) => {
   const normalizedParentId =
     typeof parentId === "string" && parentId.trim() ? parentId.trim() : "item";
@@ -177,7 +179,11 @@ export default function ShowcaseDiscoveryContent({
                 {block.title}
               </h3>
             ) : null}
-            <div className={gridClassForColumns(block.columns)}>
+            <div
+              className={
+                block.id === "hotel-cards" ? hotelCardGridClass : gridClassForColumns(block.columns)
+              }
+            >
               {(block.cards || [])
                 .map((card: any) => ({
                   ...card,
@@ -186,20 +192,19 @@ export default function ShowcaseDiscoveryContent({
                 .filter((card: any) => card.label || card.value || card.body || (Array.isArray(card.items) && card.items.length > 0) || card.meta)
                 .map((card: any, index: number) => {
                   const cardReactKey = getCollectionItemKey(block.id, card?.key, index);
+                  const hotelCardLayoutClass =
+                    block.id === "hotel-cards" ? "flex h-full flex-col" : "";
+                  const cardLabelClass =
+                    block.id === "hotel-cards"
+                      ? "text-sm font-black uppercase tracking-[0.2em] opacity-70 sm:text-base"
+                      : "text-[10px] font-black uppercase tracking-[0.18em] opacity-60";
                   return (
-                    <div key={cardReactKey} className={theme.cardClass}>
-                      {card.imageUrl ? (
-                        <div className="mb-4 overflow-hidden rounded-[24px] border border-white/60 bg-white/40 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-                          <img
-                            src={card.imageUrl}
-                            alt={card.label || "Hotel image"}
-                            className="aspect-[4/3] w-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                      ) : null}
+                    <div
+                      key={cardReactKey}
+                      className={`${theme.cardClass} ${hotelCardLayoutClass}`.trim()}
+                    >
                       {card.label ? (
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                        <p className={cardLabelClass}>
                           {card.label}
                         </p>
                       ) : null}
@@ -233,7 +238,7 @@ export default function ShowcaseDiscoveryContent({
                           href={card.action.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`mt-4 ${theme.ctaSecondaryClass}`}
+                          className={`${block.id === "hotel-cards" ? "mt-auto pt-4" : "mt-4"} ${theme.ctaSecondaryClass}`}
                         >
                           {card.action.label || "Open Link"}
                           <ExternalLink size={14} />

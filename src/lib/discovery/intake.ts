@@ -98,7 +98,7 @@ export async function intakeDiscovery(params: {
     processingStage: "ingested",
   });
   const created = await createDiscoveryShell({
-    userId: null,
+    userId: params.userId,
     workflow,
     title,
     source,

@@ -150,6 +150,16 @@ test("resolveDiscoveryEventTitle rejects packet section headings in favor of fal
   );
 });
 
+test("resolveDiscoveryEventTitle decodes html entities and prefers fuller official fallback titles", () => {
+  assert.equal(
+    resolveDiscoveryEventTitle(
+      "2026 Region 8 Women&#039;s Xcel Championships",
+      "2026 USA Gymnastics Women’s Region 8 Xcel Championships"
+    ),
+    "2026 USA Gymnastics Women’s Region 8 Xcel Championships"
+  );
+});
+
 test("normalizeParseResult ignores legacy schedule color fields while keeping plain schedule data", () => {
   const normalized = normalizeParseResult({
     eventType: "gymnastics_meet",
@@ -1034,6 +1044,25 @@ test("resource helpers classify statuses, kinds, and reject conflicting hub date
   );
   assert.equal(match.hardReject, true);
   assert.match(match.reason, /conflicting dates/i);
+});
+
+test("scoreEventResourceMatch rejects generic token overlap for sibling event pages", () => {
+  const fingerprint = buildEventFingerprint(
+    new URL("https://usacompetitions.com/2026-region-8-womens-xcel-championships/"),
+    "2026 Region 8 Women's Xcel Championships",
+    "May 1-3, 2026 Savannah, GA",
+    "May 1-3, 2026 Savannah Convention Center Savannah, GA"
+  );
+  const match = scoreEventResourceMatch(
+    fingerprint,
+    "",
+    "2026 Xcel Bronze/Silver/Gold State Championships",
+    "https://usacompetitions.com/2026-xcel-bsg-state-championships/"
+  );
+
+  assert.equal(match.passes, false);
+  assert.equal(match.hardReject, false);
+  assert.match(match.reason, /generic_token_overlap_only/i);
 });
 
 test("spectator admission stays public while coach fees route into coachInfo", () => {
@@ -2358,6 +2387,116 @@ test("extractDiscoveryText treats same-host host-hotel annotation pages as trave
       (item: any) =>
         item.kind === "hotel_booking" &&
         item.url === hotelBravoUrl &&
+        item.origin === "hub_descendant"
+    )
+  );
+});
+
+test("extractDiscoveryText does not follow sibling same-host event pages when only generic tokens overlap", async (t) => {
+  const rootUrl = "https://usacompetitions.com/2026-region-8-womens-xcel-championships/";
+  const wrongEventUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/";
+  const hotelHubUrl = "https://usacompetitions.com/2026-xcel-championships-hotels/";
+  const hotelBookingUrl = "https://api.groupbook.io/group/region-8-xcel-2026";
+  let wrongEventFetches = 0;
+
+  t.after(() => resetUrlDiscoveryTestHooks());
+  setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url: string) => {
+      if (url === rootUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Region 8 Women's Xcel Championships</title></head>
+            <body>
+              <nav style="display:none">
+                <a href="${wrongEventUrl}">2026 Xcel Bronze/Silver/Gold State Championships</a>
+              </nav>
+              <p>May 1-3, 2026 Savannah Convention Center Savannah, GA</p>
+              <h1>Hotel Info</h1>
+              <a href="${hotelHubUrl}" aria-label="2026-xcel-regionals-host-hotels-square-1080x1080">
+                <img alt="Host Hotel Info" src="/hotels.png" />
+              </a>
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === wrongEventUrl) {
+        wrongEventFetches += 1;
+        const text = `
+          <html>
+            <head><title>2026 Xcel Bronze/Silver/Gold State Championships</title></head>
+            <body>
+              <h1>Hotel Info</h1>
+              <p>April 10-12, 2026 Gainesville, FL</p>
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === hotelHubUrl) {
+        const text = `
+          <html>
+            <head><title>Host Hotel Info</title></head>
+            <body>
+              <h2>HOST HOTEL INFO</h2>
+              <a href="${hotelBookingUrl}">Reserve Hotel Online</a>
+              <p>May 1-3, 2026 Savannah, GA</p>
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === hotelBookingUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Region 8 Xcel Championships Hotel Booking</title></head>
+            <body>2026 Region 8 Xcel Championships official host hotel booking for Savannah families.</body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+    collectBrowserData: async () => ({
+      candidates: [],
+      pages: [],
+    }),
+    extractTextFromPdf: async () => ({
+      text: "",
+      usedOcr: false,
+      coachPageHints: [],
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+      annotationLinks: [],
+    }),
+    extractTextFromImage: async () => "",
+    extractGymLayoutImageFromPdf: async () => ({
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+    }),
+    openAiExtractGymLayoutZones: async () => [],
+    toOptimizedImageDataUrl: async () => null,
+  });
+
+  const result = await extractDiscoveryText({ type: "url", url: rootUrl });
+  const resourceLinks = result.extractionMeta.resourceLinks || [];
+
+  assert.equal(wrongEventFetches, 0, "expected sibling Gainesville event page not to be followed");
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.url === hotelHubUrl &&
+        item.origin === "root"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.url === hotelBookingUrl &&
         item.origin === "hub_descendant"
     )
   );

@@ -6,7 +6,6 @@ type TravelAccommodationLink = {
 export type TravelAccommodationHotel = {
   name: string;
   bookingUrl?: string;
-  imageUrl?: string;
   address?: string;
   phone?: string;
   reservationDeadline?: string;
@@ -38,6 +37,10 @@ function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function pickArray(value: unknown): any[] {
+  return Array.isArray(value) ? value : [];
+}
+
 function normalizeUrl(value: unknown, baseUrl?: string): string {
   const raw = safeString(value);
   if (!raw) return "";
@@ -50,6 +53,19 @@ function normalizeUrl(value: unknown, baseUrl?: string): string {
 
 function normalizeWhitespace(value: string): string {
   return safeString(value).replace(/\s+/g, " ").trim();
+}
+
+function normalizeCompareText(value: string): string {
+  return normalizeWhitespace(
+    decodeHtmlEntities(safeString(value))
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, " ")
+  );
+}
+
+function normalizeDigits(value: string): string {
+  return safeString(value).replace(/\D+/g, "");
 }
 
 function decodeHtmlEntities(value: string): string {
@@ -81,12 +97,6 @@ function sanitizeRichTextContent(value: string): string {
     .replace(/<\s*br\s*\/?>/gi, "\n")
     .replace(/<\/(?:p|div|section|article|li|ul|ol|h[1-6]|tr|table)>/gi, "\n")
     .replace(/<li[^>]*>/gi, "- ")
-    .replace(/<img\b[^>]*>/gi, (match) => {
-      const src = safeString(match.match(/\bsrc=['"]([^'"]+)['"]/i)?.[1]);
-      if (!src) return " ";
-      const alt = safeString(match.match(/\balt=['"]([^'"]*)['"]/i)?.[1]);
-      return `![${alt}](${src})`;
-    })
     .replace(/<a[^>]+href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi, (_match, href, text) => {
       const label = stripMarkdownDecorators(
         decodeHtmlEntities(
@@ -113,8 +123,9 @@ function sameHost(left: string, right: string): boolean {
 }
 
 function isLikelyHotelHubLabel(value: string): boolean {
+  const normalized = safeString(value).replace(/[-_]+/g, " ");
   return /\b(host hotels?|host hotel information|hotel information|hotel accommodations?|travel accommodations?)\b/i.test(
-    safeString(value)
+    normalized
   );
 }
 
@@ -153,7 +164,7 @@ function looksLikeHotelName(value: string): boolean {
 }
 
 function isGenericBookingLabel(value: string): boolean {
-  return /^(host hotels?|host hotel information|hotel information|book(?: now| here)?|reserve(?: now)?|reservations?|lodging|travel|hotel booking|booking|click here|learn more)$/i.test(
+  return /^(host hotels?|host hotel information|hotel information|hotel online|hotel online booking|book(?: now| here)?|reserve(?: now)?|reserve hotel online|reservations?|lodging|travel|hotel booking|booking|click here|learn more)$/i.test(
     safeString(value)
   );
 }
@@ -214,29 +225,16 @@ function isImageUrl(value: string): boolean {
   return /\.(?:png|jpe?g|gif|webp|svg)(?:\?|#|$)/i.test(safeString(value));
 }
 
-function extractImageUrls(value: string, baseUrl?: string): string[] {
-  const out = new Set<string>();
-  for (const match of safeString(value).matchAll(/!\[[^\]]*]\(([^)\s]+)\)/gi)) {
-    const normalized = normalizeUrl(match[1] || "", baseUrl);
-    if (normalized && isImageUrl(normalized)) out.add(normalized);
-  }
-  for (const match of safeString(value).matchAll(/<img\b[^>]*src=['"]([^'"]+)['"][^>]*>/gi)) {
-    const normalized = normalizeUrl(match[1] || "", baseUrl);
-    if (normalized && isImageUrl(normalized)) out.add(normalized);
-  }
-  return Array.from(out);
-}
-
 function isSectionBoundary(line: string): boolean {
   const cleaned = stripMarkdownDecorators(line);
   if (!cleaned) return false;
   if (isLikelyHotelHubLabel(cleaned)) return false;
   if (/^\s{0,3}#{1,6}\s+/.test(line)) {
-    return /\b(venue|parking|admission|results?|rotation|schedule|documents?|tickets?|spectator|registration|contact|map|directions|photo|video|apparel|faq|awards?|coach|session|travel)\b/i.test(
+    return /\b(venue|parking|admission|results?|rotation|schedule|documents?|tickets?|spectator|registration|contact|map|directions|photo|video|apparel|faq|awards?|coach|session|travel|attractions?|things to do|restaurants?|dining|shopping|visitor information)\b/i.test(
       cleaned
     );
   }
-  return /^(venue|parking|admission|results?|rotation|schedule|documents?|tickets?|spectator information|registration information|contact|map|directions|photo\/video|apparel|faq|awards?|coach information|session information|travel information)$/i.test(
+  return /^(venue|parking|admission|results?|rotation|schedule|documents?|tickets?|spectator information|registration information|contact|map|directions|photo\/video|apparel|faq|awards?|coach information|session information|travel information|local attractions|area attractions|things to do|restaurants|dining|shopping|visitor information)$/i.test(
     cleaned
   );
 }
@@ -270,16 +268,9 @@ function splitHotelCards(lines: string[]): string[][] {
     current = [];
   };
 
-  const hasNonImageContent = (items: string[]) =>
-    items.some((item) => {
-      const cleaned = stripMarkdownDecorators(item);
-      return Boolean(cleaned);
-    });
-
   for (const line of lines) {
     const cleaned = stripMarkdownDecorators(line);
-    const imageUrls = extractImageUrls(line);
-    if (!cleaned && imageUrls.length === 0) {
+    if (!cleaned) {
       flush();
       continue;
     }
@@ -287,9 +278,11 @@ function splitHotelCards(lines: string[]): string[][] {
       flush();
       continue;
     }
-    const headingLike = /^\s{0,3}#{2,6}\s+/.test(line) || /^hotel[:\s]/i.test(cleaned);
-    const hotelNameLike = looksLikeHotelName(cleaned) && !isGenericBookingLabel(cleaned);
-    if (current.length > 0 && (headingLike || hotelNameLike) && hasNonImageContent(current)) {
+    const genericBookingLabel = isGenericBookingLabel(cleaned);
+    const headingLike =
+      !genericBookingLabel && (/^\s{0,3}#{2,6}\s+/.test(line) || /^hotel[:\s]/i.test(cleaned));
+    const hotelNameLike = looksLikeHotelName(cleaned) && !genericBookingLabel;
+    if (current.length > 0 && (headingLike || hotelNameLike)) {
       flush();
     }
     current.push(line);
@@ -315,14 +308,6 @@ function chooseBookingUrl(lines: string[], baseUrl: string): string {
   });
 
   return candidates.sort((left, right) => right.score - left.score)[0]?.url || "";
-}
-
-function chooseImageUrl(lines: string[], baseUrl: string): string {
-  for (const line of lines) {
-    const match = extractImageUrls(line, baseUrl)[0];
-    if (match) return match;
-  }
-  return "";
 }
 
 function chooseHotelName(lines: string[]): string {
@@ -353,7 +338,6 @@ function normalizeNoteLine(value: string): string {
 
 function extractHotelFromCard(lines: string[], baseUrl: string): TravelAccommodationHotel | null {
   const bookingUrl = chooseBookingUrl(lines, baseUrl);
-  const imageUrl = chooseImageUrl(lines, baseUrl);
   const name = chooseHotelName(lines);
 
   let address = "";
@@ -364,7 +348,6 @@ function extractHotelFromCard(lines: string[], baseUrl: string): TravelAccommoda
 
   for (const line of lines) {
     const normalizedLine = stripMarkdownDecorators(line);
-    if (extractImageUrls(line, baseUrl).length > 0) continue;
     const cleaned = normalizeNoteLine(line);
     if (!normalizedLine) continue;
     if (!address && looksLikeAddress(normalizedLine)) {
@@ -399,7 +382,6 @@ function extractHotelFromCard(lines: string[], baseUrl: string): TravelAccommoda
       cleaned === phone ||
       cleaned === reservationDeadline ||
       cleaned === rateSummary ||
-      cleaned.startsWith("![") ||
       isGenericBookingLabel(cleaned) ||
       isLikelyHotelHubLabel(cleaned)
     ) {
@@ -409,11 +391,14 @@ function extractHotelFromCard(lines: string[], baseUrl: string): TravelAccommoda
     noteLines.push(cleaned);
   }
 
+  const fallbackName = cleanHotelName(noteLines[0] || "");
+  if (!name && !fallbackName && bookingUrl && !address && !phone && !reservationDeadline && !rateSummary) {
+    return null;
+  }
   if (!name && !bookingUrl) return null;
   return {
-    name: name || cleanHotelName(noteLines[0] || ""),
+    name: name || fallbackName,
     ...(bookingUrl ? { bookingUrl } : {}),
-    ...(imageUrl ? { imageUrl } : {}),
     ...(address ? { address } : {}),
     ...(phone ? { phone } : {}),
     ...(reservationDeadline ? { reservationDeadline } : {}),
@@ -429,7 +414,6 @@ function uniqueHotels(items: TravelAccommodationHotel[], limit: number): TravelA
     const normalized: TravelAccommodationHotel = {
       name: cleanHotelName(item.name),
       ...(item.bookingUrl ? { bookingUrl: normalizeUrl(item.bookingUrl) } : {}),
-      ...(item.imageUrl ? { imageUrl: normalizeUrl(item.imageUrl) } : {}),
       ...(item.address ? { address: normalizeWhitespace(item.address) } : {}),
       ...(item.phone ? { phone: normalizeWhitespace(item.phone) } : {}),
       ...(item.reservationDeadline
@@ -452,6 +436,143 @@ function uniqueHotels(items: TravelAccommodationHotel[], limit: number): TravelA
     if (out.length >= limit) break;
   }
   return out;
+}
+
+function countHotelFields(item: TravelAccommodationHotel): number {
+  return [
+    safeString(item.name),
+    safeString(item.bookingUrl),
+    safeString(item.address),
+    safeString(item.phone),
+    safeString(item.reservationDeadline),
+    safeString(item.rateSummary),
+    safeString(item.notes),
+  ].filter(Boolean).length;
+}
+
+function isSuspiciousHotelName(value: string): boolean {
+  const cleaned = cleanHotelName(value);
+  return (
+    !cleaned ||
+    isGenericBookingLabel(cleaned) ||
+    /^(hotel online|online booking|booking|reservation|reserve here|book here)$/i.test(cleaned)
+  );
+}
+
+function notesFromGroundedSegments(value: unknown, normalizedText: string): string {
+  const segments = safeString(value)
+    .split(/\s*\|\s*|\n+/)
+    .map((item) => normalizeWhitespace(item))
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const grounded: string[] = [];
+  for (const segment of segments) {
+    const key = normalizeCompareText(segment);
+    if (!key || seen.has(key)) continue;
+    if (!normalizedText.includes(key)) continue;
+    seen.add(key);
+    grounded.push(segment);
+  }
+  return grounded.join(" | ");
+}
+
+function hotelKey(item: TravelAccommodationHotel): string {
+  const bookingUrl = normalizeUrl(item.bookingUrl);
+  if (bookingUrl) return bookingUrl;
+  return normalizeCompareText(item.name);
+}
+
+function hotelsLikelyMatch(left: TravelAccommodationHotel, right: TravelAccommodationHotel): boolean {
+  const leftUrl = normalizeUrl(left.bookingUrl);
+  const rightUrl = normalizeUrl(right.bookingUrl);
+  if (leftUrl && rightUrl) return leftUrl === rightUrl;
+  const leftName = normalizeCompareText(left.name);
+  const rightName = normalizeCompareText(right.name);
+  return Boolean(leftName && rightName && leftName === rightName);
+}
+
+function mergeHotelSets(
+  primary: TravelAccommodationHotel[],
+  secondary: TravelAccommodationHotel[],
+  limit: number
+): TravelAccommodationHotel[] {
+  const used = new Set<number>();
+  const merged = primary.map((item) => {
+    const matchIndex = secondary.findIndex((candidate, index) => {
+      if (used.has(index)) return false;
+      return hotelsLikelyMatch(item, candidate);
+    });
+    if (matchIndex === -1) return item;
+    used.add(matchIndex);
+    const match = secondary[matchIndex];
+    return {
+      name: safeString(item.name) || safeString(match.name),
+      bookingUrl: normalizeUrl(item.bookingUrl) || normalizeUrl(match.bookingUrl) || undefined,
+      address: normalizeWhitespace(item.address || match.address || ""),
+      phone: normalizeWhitespace(item.phone || match.phone || ""),
+      reservationDeadline: normalizeWhitespace(
+        item.reservationDeadline || match.reservationDeadline || ""
+      ),
+      rateSummary: normalizeWhitespace(item.rateSummary || match.rateSummary || ""),
+      notes: normalizeWhitespace(item.notes || match.notes || ""),
+    };
+  });
+  secondary.forEach((item, index) => {
+    if (used.has(index)) return;
+    merged.push(item);
+  });
+  return uniqueHotels(merged, limit);
+}
+
+function scoreHotelSet(hotels: TravelAccommodationHotel[], content: string, baseUrl: string): number {
+  const normalizedText = normalizeCompareText(content);
+  const normalizedDigits = normalizeDigits(content);
+  const contentUrls = new Set(extractHttpUrls(content, baseUrl));
+  let score = 0;
+  for (const hotel of hotels) {
+    const name = cleanHotelName(hotel.name);
+    const bookingUrl = normalizeUrl(hotel.bookingUrl, baseUrl);
+    const fieldCount = countHotelFields(hotel);
+    if (name) score += 4;
+    if (bookingUrl) score += contentUrls.has(bookingUrl) ? 2 : 1;
+    if (safeString(hotel.address)) score += 1;
+    if (safeString(hotel.phone)) score += normalizedDigits.includes(normalizeDigits(hotel.phone)) ? 1 : 0;
+    if (safeString(hotel.reservationDeadline)) score += 1;
+    if (safeString(hotel.rateSummary)) score += 1;
+    if (safeString(hotel.notes)) score += 1;
+    if (isSuspiciousHotelName(name)) score -= 8;
+    if (name && normalizedText.includes(normalizeCompareText(name))) score += 2;
+    if (fieldCount <= 2) score -= 3;
+  }
+  if (hotels.length > 8) score -= (hotels.length - 8) * 2;
+  return score;
+}
+
+function shouldAttemptAiHotelFallback(
+  hotels: TravelAccommodationHotel[],
+  content: string,
+  baseUrl: string
+): { shouldFallback: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+  const suspiciousCount = hotels.filter((item) => isSuspiciousHotelName(item.name)).length;
+  const sparseCount = hotels.filter((item) => countHotelFields(item) <= 2).length;
+  const hotelCandidatesFromLinks = extractHotelCandidatesFromMarkdown(content);
+  const normalizedHotelNames = new Set(
+    hotels.map((item) => normalizeCompareText(item.name)).filter(Boolean)
+  );
+  const candidateGapCount = hotelCandidatesFromLinks.filter(
+    (item) => !normalizedHotelNames.has(normalizeCompareText(item.name))
+  ).length;
+  if (hotels.length === 0) reasons.push("no_rule_hotels");
+  if (hotels.length > 8) reasons.push("hotel_count_above_display_limit");
+  if (suspiciousCount > 0) reasons.push("suspicious_hotel_names");
+  if (sparseCount >= Math.max(2, Math.ceil(hotels.length / 2))) reasons.push("too_many_sparse_hotels");
+  if (candidateGapCount > 0) reasons.push("link_candidate_gap");
+  if (scoreHotelSet(hotels, content, baseUrl) < Math.max(4, hotels.length * 3)) reasons.push("low_rule_score");
+  return {
+    shouldFallback: reasons.length > 0,
+    reasons,
+  };
 }
 
 function normalizeHotelHubLinks(resourceLinks: unknown): NormalizedHotelHubLink[] {
@@ -576,6 +697,291 @@ export function extractHotelCandidatesFromMarkdown(
   return out;
 }
 
+const JSON_STRING = { type: "string" } as const;
+
+function jsonNullable(schema: Record<string, unknown>) {
+  return { anyOf: [schema, { type: "null" }] };
+}
+
+function jsonArray(items: Record<string, unknown>) {
+  return { type: "array", items };
+}
+
+function jsonObject(properties: Record<string, unknown>) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties,
+    required: Object.keys(properties),
+  };
+}
+
+const TRAVEL_ACCOMMODATION_JSON_SCHEMA = {
+  name: "travel_accommodation_extract",
+  strict: true,
+  schema: jsonObject({
+    sectionLabel: jsonNullable(JSON_STRING),
+    hotels: jsonArray(
+      jsonObject({
+        name: JSON_STRING,
+        bookingUrl: jsonNullable(JSON_STRING),
+        address: jsonNullable(JSON_STRING),
+        phone: jsonNullable(JSON_STRING),
+        reservationDeadline: jsonNullable(JSON_STRING),
+        rateSummary: jsonNullable(JSON_STRING),
+        notes: jsonNullable(JSON_STRING),
+      })
+    ),
+    warnings: jsonArray(JSON_STRING),
+  }),
+} as const;
+
+function resolveTravelAccommodationModel(): string {
+  return (
+    safeString(process.env.OPENAI_TRAVEL_ACCOMMODATION_MODEL) ||
+    safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) ||
+    "gpt-5.4-nano"
+  );
+}
+
+function extractJsonObject(text: string): any | null {
+  const parseWithRepairs = (input: string) => {
+    try {
+      return JSON.parse(input);
+    } catch {
+      const repaired = input
+        .replace(/\\(?!["\\/bfnrtu])/g, "\\\\")
+        .replace(/\\u(?![0-9a-fA-F]{4})/g, "\\\\u");
+      try {
+        return JSON.parse(repaired);
+      } catch {
+        return null;
+      }
+    }
+  };
+  try {
+    return JSON.parse(text);
+  } catch {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return parseWithRepairs(text.slice(start, end + 1));
+    }
+    return parseWithRepairs(text);
+  }
+}
+
+function buildAiHotelSourceText(content: string): string {
+  const sanitized = sanitizeRichTextContent(content)
+    .replace(/\u0000/g, " ")
+    .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ");
+  const lines = sanitized
+    .split(/\n+/)
+    .map((line) => safeString(line))
+    .filter(Boolean);
+  if (lines.length === 0) return "";
+
+  const sectionLines = collectSectionLines(content);
+  const windows: Array<{ start: number; end: number }> = [];
+  lines.forEach((line, index) => {
+    if (
+      /\b(host hotels?|hotel information|travel accommodations?|reservation deadline|distance from venue|breakfast|parking|book hotel|reserve hotel|room block|group rate)\b/i.test(
+        line
+      )
+    ) {
+      windows.push({ start: Math.max(0, index - 6), end: Math.min(lines.length, index + 10) });
+    }
+  });
+
+  const selectedLines: string[] = [];
+  const seen = new Set<string>();
+  const pushLine = (line: string) => {
+    const cleaned = safeString(line);
+    if (!cleaned) return;
+    const key = `${selectedLines.length}|${cleaned}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    selectedLines.push(cleaned);
+  };
+
+  sectionLines.forEach((line) => pushLine(line));
+  windows.forEach((window) => {
+    for (let index = window.start; index < window.end; index += 1) {
+      pushLine(lines[index]);
+    }
+  });
+
+  const combined = selectedLines.join("\n");
+  if (combined.length >= 800) return combined.slice(0, 40_000);
+  return sanitized.slice(0, 60_000);
+}
+
+function buildTravelAccommodationPrompt(content: string, existingHotels: TravelAccommodationHotel[]): string {
+  const boundedText = buildAiHotelSourceText(content);
+  const ruleSummary =
+    existingHotels.length > 0
+      ? [
+          "Current rule-based candidates (may contain false positives from CTA labels or layout drift):",
+          ...existingHotels.map((item, index) => {
+            const fields = [
+              `name=${safeString(item.name) || "(missing)"}`,
+              safeString(item.bookingUrl) ? `bookingUrl=${safeString(item.bookingUrl)}` : "",
+              safeString(item.phone) ? `phone=${safeString(item.phone)}` : "",
+              safeString(item.reservationDeadline)
+                ? `reservationDeadline=${safeString(item.reservationDeadline)}`
+                : "",
+              safeString(item.rateSummary) ? `rateSummary=${safeString(item.rateSummary)}` : "",
+            ]
+              .filter(Boolean)
+              .join(", ");
+            return `${index + 1}. ${fields}`;
+          }),
+          "",
+        ].join("\n")
+      : "";
+  return [
+    "Return JSON only. Do not wrap in markdown.",
+    "",
+    "Extract attendee-facing host hotel listings from the source text.",
+    "Rules:",
+    "- Only return actual hotel properties. Ignore generic CTA text like Book Hotel, Reserve Hotel Online, Host Hotels, Click Here, Learn More, Hotel Online.",
+    "- Ignore nearby non-hotel sections such as attractions, parking, tickets, results, maps, dining, shopping, venue, or documents.",
+    "- Keep hotel names and facts grounded in the source text. Do not infer or paraphrase missing data.",
+    "- `notes` should only contain leftover hotel facts such as distance from venue, breakfast, shuttle, parking, or amenity details.",
+    "- If the source only provides a hub link and not per-hotel records, return an empty hotels array.",
+    "",
+    ruleSummary,
+    "Source text:",
+    boundedText,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function normalizeAiTravelAccommodationResult(
+  value: any,
+  options: { sourceText: string; baseUrl: string }
+): TravelAccommodationHotel[] {
+  if (!value || typeof value !== "object") return [];
+  const normalizedText = normalizeCompareText(options.sourceText);
+  const normalizedDigits = normalizeDigits(options.sourceText);
+  const contentUrls = new Set(extractHttpUrls(options.sourceText, options.baseUrl));
+  return uniqueHotels(
+    pickArray(value.hotels)
+      .map((item: any): TravelAccommodationHotel | null => {
+        const name = cleanHotelName(item?.name);
+        if (!name || isSuspiciousHotelName(name)) return null;
+        if (!normalizedText.includes(normalizeCompareText(name))) return null;
+        const bookingUrl = normalizeUrl(item?.bookingUrl, options.baseUrl);
+        const address = normalizeWhitespace(item?.address);
+        const phone = normalizeWhitespace(item?.phone);
+        const reservationDeadline = normalizeWhitespace(item?.reservationDeadline);
+        const rateSummary = normalizeWhitespace(item?.rateSummary);
+        const notes = notesFromGroundedSegments(item?.notes, normalizedText);
+        const groundedBookingUrl = bookingUrl && contentUrls.has(bookingUrl) ? bookingUrl : "";
+        const groundedAddress =
+          address && normalizedText.includes(normalizeCompareText(address)) ? address : "";
+        const groundedPhone =
+          phone && normalizeDigits(phone) && normalizedDigits.includes(normalizeDigits(phone))
+            ? phone
+            : "";
+        const groundedDeadline =
+          reservationDeadline && normalizedText.includes(normalizeCompareText(reservationDeadline))
+            ? reservationDeadline
+            : "";
+        const groundedRate =
+          rateSummary && normalizedText.includes(normalizeCompareText(rateSummary))
+            ? rateSummary
+            : "";
+        if (
+          !groundedBookingUrl &&
+          !groundedAddress &&
+          !groundedPhone &&
+          !groundedDeadline &&
+          !groundedRate &&
+          !notes
+        ) {
+          return null;
+        }
+        return {
+          name,
+          ...(groundedBookingUrl ? { bookingUrl: groundedBookingUrl } : {}),
+          ...(groundedAddress ? { address: groundedAddress } : {}),
+          ...(groundedPhone ? { phone: groundedPhone } : {}),
+          ...(groundedDeadline ? { reservationDeadline: groundedDeadline } : {}),
+          ...(groundedRate ? { rateSummary: groundedRate } : {}),
+          ...(notes ? { notes } : {}),
+        };
+      })
+      .filter((item): item is TravelAccommodationHotel => Boolean(item?.name)),
+    12
+  );
+}
+
+async function callOpenAiTravelAccommodationParse(params: {
+  traceId?: string | null;
+  content: string;
+  baseUrl: string;
+  existingHotels: TravelAccommodationHotel[];
+  timeoutMs: number;
+}): Promise<{ hotels: TravelAccommodationHotel[]; raw: string; warnings: string[] }> {
+  const apiKey = safeString(process.env.OPENAI_API_KEY);
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), params.timeoutMs);
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: resolveTravelAccommodationModel(),
+        temperature: 0,
+        response_format: {
+          type: "json_schema",
+          json_schema: TRAVEL_ACCOMMODATION_JSON_SCHEMA,
+        },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You extract attendee-facing hotel listings from event travel content. Return only strict JSON.",
+          },
+          {
+            role: "user",
+            content: buildTravelAccommodationPrompt(params.content, params.existingHotels),
+          },
+        ],
+      }),
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`OpenAI hotel extraction failed (${response.status}): ${text.slice(0, 300)}`);
+    }
+    const json: any = await response.json();
+    const raw = safeString(json?.choices?.[0]?.message?.content) || "";
+    const parsed = extractJsonObject(raw);
+    return {
+      raw,
+      hotels: normalizeAiTravelAccommodationResult(parsed, {
+        sourceText: params.content,
+        baseUrl: params.baseUrl,
+      }),
+      warnings: pickArray(parsed?.warnings).map((item) => safeString(item)).filter(Boolean),
+    };
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error(`OpenAI hotel extraction timed out after ${params.timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function firecrawlScrapeContent(params: {
   url: string;
   apiKey: string;
@@ -642,9 +1048,11 @@ export async function enrichTravelAccommodation(params: {
   if (!firecrawlKey) return null;
 
   const startedAt = new Date().toISOString();
+  const startedAtMs = Date.now();
   const { sourceLink, fallbackLink } = pickHotelHubLinks(params.extractionMeta?.resourceLinks);
   const sourceUrl = sourceLink?.url || null;
-  const timeoutMs = Math.max(1500, Math.min(Number(params.budgetMs) || 12_000, 25_000));
+  const totalBudgetMs = Math.max(2_500, Math.min(Number(params.budgetMs) || 12_000, 30_000));
+  const timeoutMs = Math.max(1500, Math.min(totalBudgetMs, 25_000));
 
   if (!sourceUrl) {
     return {
@@ -672,12 +1080,64 @@ export async function enrichTravelAccommodation(params: {
       timeoutMs,
     });
     const effectiveSourceUrl = scraped.finalUrl || sourceUrl;
-    const hotels = uniqueHotels(
+    const ruleHotels = uniqueHotels(
       extractHotelCardsFromContent(scraped.content || "", {
         baseUrl: effectiveSourceUrl,
       }),
       12
     );
+    let hotels = ruleHotels;
+    const fallbackDecision = shouldAttemptAiHotelFallback(
+      ruleHotels,
+      scraped.content || "",
+      effectiveSourceUrl
+    );
+    const remainingBudgetMs = Math.max(0, totalBudgetMs - (Date.now() - startedAtMs));
+
+    if (
+      fallbackDecision.shouldFallback &&
+      safeString(process.env.OPENAI_API_KEY) &&
+      remainingBudgetMs >= 1_500
+    ) {
+      const aiTimeoutMs = Math.max(1_500, Math.min(8_000, remainingBudgetMs));
+      console.log("[travel-accommodation] ai hotel fallback started", {
+        traceId: params.traceId || null,
+        url: effectiveSourceUrl,
+        timeoutMs: aiTimeoutMs,
+        reasons: fallbackDecision.reasons,
+        ruleHotelCount: ruleHotels.length,
+      });
+      try {
+        const aiResult = await callOpenAiTravelAccommodationParse({
+          traceId: params.traceId || null,
+          content: scraped.content || "",
+          baseUrl: effectiveSourceUrl,
+          existingHotels: ruleHotels,
+          timeoutMs: aiTimeoutMs,
+        });
+        const aiPreferredHotels = mergeHotelSets(aiResult.hotels, ruleHotels, 12);
+        const rulePreferredHotels = mergeHotelSets(ruleHotels, aiResult.hotels, 12);
+        const aiScore = scoreHotelSet(aiPreferredHotels, scraped.content || "", effectiveSourceUrl);
+        const ruleScore = scoreHotelSet(rulePreferredHotels, scraped.content || "", effectiveSourceUrl);
+        hotels = aiScore > ruleScore ? aiPreferredHotels : rulePreferredHotels;
+        console.log("[travel-accommodation] ai hotel fallback finished", {
+          traceId: params.traceId || null,
+          url: effectiveSourceUrl,
+          aiHotelCount: aiResult.hotels.length,
+          selectedHotelCount: hotels.length,
+          aiScore,
+          ruleScore,
+          warnings: aiResult.warnings,
+        });
+      } catch (error: any) {
+        console.error("[travel-accommodation] ai hotel fallback failed", {
+          traceId: params.traceId || null,
+          url: effectiveSourceUrl,
+          message: error?.message || String(error),
+          reasons: fallbackDecision.reasons,
+        });
+      }
+    }
 
     console.log("[travel-accommodation] firecrawl scrape finished", {
       traceId: params.traceId || null,

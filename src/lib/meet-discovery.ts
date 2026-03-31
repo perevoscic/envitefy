@@ -4807,7 +4807,7 @@ function decodeHtmlEntities(input: string): string {
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
+    .replace(/&#0*39;/gi, "'")
     .replace(/&#(\d+);/g, (_match, code) => {
       const value = Number.parseInt(code, 10);
       return Number.isFinite(value) ? String.fromCodePoint(value) : _match;
@@ -5291,6 +5291,26 @@ const EVENT_TOKEN_STOP_WORDS = new Set([
   "com",
 ]);
 
+const EVENT_MATCH_GENERIC_TOKENS = new Set([
+  "championship",
+  "championships",
+  "competition",
+  "competitions",
+  "event",
+  "events",
+  "gymnastics",
+  "host",
+  "hosted",
+  "meet",
+  "men",
+  "mens",
+  "usa",
+  "usag",
+  "women",
+  "womens",
+  "xcel",
+]);
+
 function normalizeEventTokens(value: string): string[] {
   return uniqueBy(
     safeString(value)
@@ -5304,6 +5324,27 @@ function normalizeEventTokens(value: string): string[] {
   );
 }
 
+function filterSpecificEventTokens(tokens: string[]): string[] {
+  return tokens.filter(
+    (token) => token && !EVENT_MATCH_GENERIC_TOKENS.has(token) && !/^\d{4}$/.test(token)
+  );
+}
+
+function isFingerprintSignalLine(value: string): boolean {
+  const line = safeString(value);
+  if (!line) return false;
+  return (
+    /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec|\d{1,2}\/\d{1,2}\/\d{2,4})\b/i.test(
+      line
+    ) ||
+    /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/.test(line) ||
+    /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s*[A-Z]{2}\b/.test(line) ||
+    /\b(arena|auditorium|center|centre|civic|coliseum|complex|convention|facility|fieldhouse|gym|gymnasium|hall|resort|stadium|venue)\b/i.test(
+      line
+    )
+  );
+}
+
 function buildEventFingerprint(
   rootUrl: URL,
   pageTitle: string | null,
@@ -5314,13 +5355,16 @@ function buildEventFingerprint(
     .replace(/\.[a-z0-9]+$/i, "")
     .replace(/[-_]+/g, " ")
     .trim();
-  const firstMeaningfulLines = safeString(readableText)
+  const readableLines = safeString(readableText)
     .split(/\n+/)
     .map((line) => safeString(line))
-    .filter((line) => line.length >= 8 && line.length <= 120)
-    .slice(0, 6)
-    .join(" ");
-  const titleSource = [safeString(pageTitle), slug, firstMeaningfulLines].filter(Boolean).join(" ");
+    .filter((line) => line.length >= 8 && line.length <= 160);
+  const fingerprintContextLines = (
+    readableLines.filter((line) => isFingerprintSignalLine(line)).slice(0, 6).length > 0
+      ? readableLines.filter((line) => isFingerprintSignalLine(line)).slice(0, 6)
+      : readableLines.slice(0, 6)
+  ).join(" ");
+  const titleSource = [safeString(pageTitle), slug, fingerprintContextLines].filter(Boolean).join(" ");
   const titleTokens = normalizeEventTokens(titleSource);
   const slugTokens = normalizeEventTokens(slug);
   const addressMatch =
@@ -5328,7 +5372,7 @@ function buildEventFingerprint(
       /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/
     ) || null;
   const locationTokens = normalizeEventTokens(
-    [addressMatch?.[0], metadataText, firstMeaningfulLines].filter(Boolean).join(" ")
+    [addressMatch?.[0], metadataText, fingerprintContextLines].filter(Boolean).join(" ")
   );
   const dateRange =
     classifyMeetDateCandidates(`${safeString(pageTitle)}\n${metadataText}\n${readableText}`).primary ||
@@ -5357,7 +5401,15 @@ function scoreEventResourceMatch(
   const candidateTokenSet = new Set(candidateTokens);
   const overlappingTitleTokens = fingerprint.titleTokens.filter((token) => candidateTokenSet.has(token));
   const overlappingSlugTokens = fingerprint.slugTokens.filter((token) => candidateTokenSet.has(token));
-  const overlappingLocationTokens = fingerprint.locationTokens.filter((token) => candidateTokenSet.has(token));
+  const overlappingLocationTokens = filterSpecificEventTokens(
+    fingerprint.locationTokens.filter((token) => candidateTokenSet.has(token))
+  );
+  const overlappingSpecificTitleTokens = filterSpecificEventTokens(overlappingTitleTokens);
+  const overlappingSpecificSlugTokens = filterSpecificEventTokens(overlappingSlugTokens);
+  const specificOverlapCount = new Set([
+    ...overlappingSpecificTitleTokens,
+    ...overlappingSpecificSlugTokens,
+  ]).size;
   const candidateDate =
     classifyMeetDateCandidates(text).primary || deriveDateRangeFromText(text);
 
@@ -5410,6 +5462,15 @@ function scoreEventResourceMatch(
     reasons.push("location_hint");
   }
 
+  if (!candidateDate?.startDate && overlappingLocationTokens.length === 0 && specificOverlapCount === 0) {
+    return {
+      score,
+      passes: false,
+      hardReject: false,
+      reason: `${reasons.join(", ") || "insufficient match signals"}, generic_token_overlap_only`,
+    };
+  }
+
   const passes = score >= 4;
   return {
     score,
@@ -5431,7 +5492,10 @@ function shouldTreatResourceAsTrustedHtmlFetch(resource: DiscoveryResourceLink):
 function isTraversableHotelHubResource(resource: DiscoveryResourceLink): boolean {
   if (resource.kind !== "hotel_booking") return false;
   if (!safeString(resource.url) || isTrustedExternalResourceUrl(resource.url)) return false;
-  const hotelHubLabel = `${safeString(resource.label)} ${safeString(resource.url)}`;
+  const hotelHubLabel = `${safeString(resource.label)} ${safeString(resource.url)}`.replace(
+    /[-_]+/g,
+    " "
+  );
   return /\b(click here for all host hotels|host hotels?|host hotel information|hotel information)\b/i.test(
     hotelHubLabel
   );
@@ -6058,6 +6122,7 @@ function scoreDiscoveryTitleFragment(value: string): number {
   }
   if (/\b20\d{2}\b/.test(candidate)) score += 3;
   if (/\b(?:women'?s|men'?s|boys|girls|jr\.?|sr\.?)\b/i.test(candidate)) score += 1;
+  if (/\busa gymnastics\b/i.test(candidate)) score += 2;
   if (candidate.length >= 12 && candidate.length <= 100) score += 2;
   if (
     /^[A-Z][a-z]+ \d{1,2}(?:-\d{1,2})?, 20\d{2}$/i.test(candidate) ||
@@ -6116,8 +6181,8 @@ function normalizeDiscoveryTitleForCompare(value: string): string {
 }
 
 function resolveDiscoveryEventTitle(parsedTitle: string, fallbackTitle: string): string {
-  const normalizedParsed = safeString(parsedTitle);
-  const normalizedFallback = safeString(fallbackTitle);
+  const normalizedParsed = decodeHtmlEntities(safeString(parsedTitle)).replace(/\s+/g, " ").trim();
+  const normalizedFallback = decodeHtmlEntities(safeString(fallbackTitle)).replace(/\s+/g, " ").trim();
   if (!normalizedParsed) return normalizedFallback;
   if (!normalizedFallback) return normalizedParsed;
   if (looksLikeDiscoveryPlaceholderTitle(normalizedParsed)) return normalizedFallback;
@@ -6127,6 +6192,12 @@ function resolveDiscoveryEventTitle(parsedTitle: string, fallbackTitle: string):
   if (!parsedKey) return normalizedFallback;
   if (!fallbackKey) return normalizedParsed;
   if (parsedKey === fallbackKey) return normalizedFallback;
+  if (
+    fallbackKey.includes(parsedKey) &&
+    scoreDiscoveryTitleFragment(normalizedFallback) > scoreDiscoveryTitleFragment(normalizedParsed)
+  ) {
+    return normalizedFallback;
+  }
   if (parsedKey.includes(fallbackKey) && /\s(?:\||-|—|–)\s/.test(normalizedParsed)) {
     return normalizedFallback;
   }

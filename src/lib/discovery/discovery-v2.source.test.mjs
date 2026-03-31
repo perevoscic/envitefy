@@ -17,6 +17,7 @@ test("discovery v2 adds the new API route surface", () => {
   assert.match(statusSource, /export async function GET/);
   assert.match(runSource, /dispatchDiscoveryPipeline/);
   assert.match(statusSource, /buildDiscoveryStatusResponse/);
+  assert.match(statusSource, /ensureDiscoveryForExistingEvent/);
 });
 
 test("discovery v2 persists event_discoveries and app-facing builder artifacts", () => {
@@ -53,6 +54,7 @@ test("discovery v2 threads travelAccommodation through enrich, compose, and snap
 test("gymnastics discovery clients use the v2 intake run status flow", () => {
   const launcherSource = readSource("src/components/event-create/GymnasticsLauncher.tsx");
   const customizeSource = readSource("src/app/event/gymnastics/customize/page.tsx");
+  const intakeSource = readSource("src/lib/discovery/intake.ts");
 
   assert.match(launcherSource, /\/api\/discovery\/intake/);
   assert.match(launcherSource, /\/api\/discovery\/\$\{eventId\}\/run/);
@@ -60,6 +62,7 @@ test("gymnastics discovery clients use the v2 intake run status flow", () => {
   assert.match(customizeSource, /\/api\/discovery\/intake/);
   assert.match(customizeSource, /\/api\/discovery\/\$\{eventId\}\/run/);
   assert.match(customizeSource, /\/api\/discovery\/\$\{eventId\}\/status/);
+  assert.match(intakeSource, /userId: params\.userId/);
 });
 
 test("football discovery clients no longer use legacy ingest or parse routes", () => {

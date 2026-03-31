@@ -64,24 +64,31 @@ const uniqueBy = <T,>(items: T[], getKey: (item: T) => string): T[] => {
 };
 
 const buildHotelCardBody = (hotel: any) =>
-  [
-    safeString(hotel?.address),
-    safeString(hotel?.phone) ? `Phone: ${safeString(hotel?.phone)}` : "",
-    safeString(hotel?.reservationDeadline)
-      ? `Reservation deadline: ${safeString(hotel?.reservationDeadline)}`
-      : "",
-    safeString(hotel?.rateSummary) ? `Rate: ${safeString(hotel?.rateSummary)}` : "",
-    safeString(hotel?.notes),
-  ]
-    .filter(Boolean)
-    .join("\n");
+  {
+    const hotelNotes = safeString(hotel?.notes)
+      .split(/\s+\|\s+/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join("\n");
+
+    return [
+      safeString(hotel?.address),
+      safeString(hotel?.phone) ? `Phone: ${safeString(hotel?.phone)}` : "",
+      safeString(hotel?.reservationDeadline)
+        ? `Reservation deadline: ${safeString(hotel?.reservationDeadline)}`
+        : "",
+      safeString(hotel?.rateSummary) ? `Rate: ${safeString(hotel?.rateSummary)}` : "",
+      hotelNotes,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
 
 const buildTravelHotelCards = (hotels: any[], limit: number) =>
   ensureUniqueDiscoveryCardKeys(
     (Array.isArray(hotels) ? hotels : []).slice(0, limit).map((hotel: any, index: number) => ({
       key: safeString(hotel?.id) || `travel-hotel-${index + 1}`,
       label: safeString(hotel?.name) || `Hotel ${index + 1}`,
-      imageUrl: safeString(hotel?.imageUrl),
       body: buildHotelCardBody(hotel),
       action: safeString(hotel?.bookingUrl)
         ? { label: "Book Hotel", url: safeString(hotel?.bookingUrl) }
@@ -538,6 +545,34 @@ const parseCurrencyAmount = (value: unknown) => {
   return Number.isFinite(numeric) ? numeric : null;
 };
 
+const CASH_VARIANT_KEYWORD = /\bcash\b/i;
+const CARD_VARIANT_KEYWORD = /\b(card|credit\/debit|debit\/credit|credit card|debit card|credit|debit)\b/i;
+const RELATIVE_VARIANT_PRICE_PATTERN = /\b(?:less|more|additional|extra|discount|surcharge)\b/i;
+const extractCurrencyDisplay = (value: unknown) => {
+  const match = safeString(value).match(/\$\s*\d+(?:\.\d{2})?/);
+  return match?.[0] ? normalizeCurrencyDisplay(match[0]) : "";
+};
+
+const extractExplicitVariantAmount = (text: string, keywordPattern: RegExp) => {
+  for (const clause of safeString(text).split(/[\n;]+/)) {
+    const normalizedClause = clause.trim();
+    if (!normalizedClause) continue;
+    const beforeAmount = normalizedClause.match(
+      new RegExp(`${keywordPattern.source}[^$\\n]{0,32}(\\$\\s*\\d+(?:\\.\\d{2})?)`, "i")
+    );
+    if (beforeAmount?.[1] && !RELATIVE_VARIANT_PRICE_PATTERN.test(normalizedClause)) {
+      return normalizeCurrencyDisplay(beforeAmount[1]);
+    }
+    const afterAmount = normalizedClause.match(
+      new RegExp(`(\\$\\s*\\d+(?:\\.\\d{2})?)[^\\n]{0,32}${keywordPattern.source}`, "i")
+    );
+    if (afterAmount?.[1] && !RELATIVE_VARIANT_PRICE_PATTERN.test(normalizedClause)) {
+      return normalizeCurrencyDisplay(afterAmount[1]);
+    }
+  }
+  return "";
+};
+
 const extractAdmissionVariantAmounts = (item: any) => {
   const label = safeString(item?.label);
   const price = safeString(item?.price);
@@ -545,31 +580,28 @@ const extractAdmissionVariantAmounts = (item: any) => {
   const text = [label, price, note]
     .filter(Boolean)
     .join(" ");
-  const amounts = Array.from(text.matchAll(/\$\s*\d+(?:\.\d{2})?/g)).map((match) =>
+  const inlineVariantText = [label, price]
+    .filter(Boolean)
+    .join(" ");
+  const amounts = Array.from(inlineVariantText.matchAll(/\$\s*\d+(?:\.\d{2})?/g)).map((match) =>
     normalizeCurrencyDisplay(match[0])
   );
-  const priceAmount = normalizeCurrencyDisplay(price);
-  const cashBeforeAmount = normalizeCurrencyDisplay(
-    (text.match(/\bcash\b[^$]*(\$\s*\d+(?:\.\d{2})?)/i) || [])[1]
-  );
-  const cardBeforeAmount = normalizeCurrencyDisplay(
-    (text.match(/\b(card|credit|debit)\b[^$]*(\$\s*\d+(?:\.\d{2})?)/i) || [])[2]
-  );
-  const cashAfterAmount = normalizeCurrencyDisplay(
-    (text.match(/(\$\s*\d+(?:\.\d{2})?)\s*\/?\s*(?:adult|child|children)?.*?\bcash\b/i) || [])[1]
-  );
-  const cardAfterAmount = normalizeCurrencyDisplay(
-    (text.match(/(\$\s*\d+(?:\.\d{2})?)\s*\/?\s*(?:adult|child|children)?.*?\b(card|credit|debit)\b/i) || [])[1]
-  );
+  const priceAmount = extractCurrencyDisplay(price);
+  const cashAmount =
+    extractExplicitVariantAmount(inlineVariantText, CASH_VARIANT_KEYWORD) ||
+    extractExplicitVariantAmount(note, CASH_VARIANT_KEYWORD) ||
+    (CASH_VARIANT_KEYWORD.test(label) ? priceAmount : "");
+  const cardAmount =
+    extractExplicitVariantAmount(inlineVariantText, CARD_VARIANT_KEYWORD) ||
+    extractExplicitVariantAmount(note, CARD_VARIANT_KEYWORD) ||
+    (CARD_VARIANT_KEYWORD.test(label) ? priceAmount : "");
   const relativeCashDiscount = parseCurrencyAmount(
     (text.match(/\bcash(?:\s+price)?(?:\s+is)?\s+\$?\s*(\d+(?:\.\d{2})?)\s+less\b/i) || [])[1]
   );
-  const cashMarker = /\bcash\b/i.test(`${label} ${note}`);
-  const cardMarker = /\b(card|credit|debit)\b/i.test(`${label} ${note}`);
   const isFree = /\bfree\b/i.test(text);
   return {
-    cardAmount: cardBeforeAmount || cardAfterAmount || (cardMarker ? priceAmount : ""),
-    cashAmount: cashBeforeAmount || cashAfterAmount || (cashMarker ? priceAmount : ""),
+    cardAmount,
+    cashAmount,
     defaultAmount: priceAmount || amounts[0] || "",
     relativeCashDiscount,
     isFree,
@@ -1702,7 +1734,6 @@ export function buildGymMeetDiscoveryContent({
                 {
                   id: "hotel-cards",
                   type: "card-grid" as const,
-                  columns: 2 as const,
                   cards: travelHotelCards,
                 },
               ]
@@ -3778,7 +3809,6 @@ export function buildGymMeetDiscoveryContent({
               {
                 id: "hotel-cards",
                 type: "card-grid" as const,
-                columns: 2 as const,
                 cards: hotelCards,
               },
             ]
