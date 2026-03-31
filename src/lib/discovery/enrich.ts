@@ -7,7 +7,10 @@ import {
   isDiscoveryDebugArtifactsEnabled,
   resolveDiscoveryBudget,
 } from "@/lib/meet-discovery";
-import { enrichTravelAccommodation } from "@/lib/travel-accommodation-enrichment";
+import {
+  buildTravelAccommodationState,
+  enrichTravelAccommodation,
+} from "@/lib/travel-accommodation-enrichment";
 
 export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
   if (discovery.workflow === "football") {
@@ -42,11 +45,6 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
   const extractedText =
     safeString((refreshedExtraction.document.extractionMeta as any)?.extractedText) ||
     safeString((existingDocument.extractionMeta as any)?.extractedText);
-  const travelAccommodation = await enrichTravelAccommodation({
-    traceId: discovery.eventId,
-    extractionMeta: refreshedExtraction.document.extractionMeta as any,
-    budgetMs: enrichBudgetMs,
-  });
   const enrichedParseResult = await finalizeMeetParseResult(
     baseParseResult,
     extractedText,
@@ -60,11 +58,17 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
     } as any,
   );
 
+  const travelAccommodation = await enrichTravelAccommodation({
+    sourceType: discovery.source.type,
+    extractedText,
+    extractionMeta: refreshedExtraction.document.extractionMeta as any,
+  });
+
   return {
     document: refreshedExtraction.document,
     enrichment: {
       parseResult: enrichedParseResult,
-      travelAccommodation,
+      travelAccommodation: buildTravelAccommodationState(travelAccommodation),
       finalizedAt: new Date().toISOString(),
       performance,
     },

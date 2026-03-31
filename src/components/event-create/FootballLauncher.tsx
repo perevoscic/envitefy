@@ -286,7 +286,7 @@ export default function FootballLauncher({
     reportProgress(100, "Opening football builder...");
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
-    router.push(`/event/football/customize?edit=${encodeURIComponent(eventId)}`);
+    router.push(`/event/football/customize?edit=${encodeURIComponent(eventId)}&new=1`);
   };
 
   const handleUploadPick = async (pickedFile: File | null) => {

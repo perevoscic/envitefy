@@ -15,7 +15,10 @@ import {
   resolveDiscoveryBudget,
   stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
-import { enrichTravelAccommodation } from "@/lib/travel-accommodation-enrichment";
+import {
+  buildTravelAccommodationState,
+  enrichTravelAccommodation,
+} from "@/lib/travel-accommodation-enrichment";
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -69,19 +72,6 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
     performance: params.performance,
   });
 
-  const travelAccommodation = await enrichTravelAccommodation({
-    traceId: params.eventId,
-    extractionMeta: extraction.extractionMeta,
-    existing: (discoverySource as any)?.travelAccommodation || null,
-    budgetMs: enrichBudgetMs,
-  });
-  const discoverySourceWithTravel = travelAccommodation
-    ? { ...discoverySource, travelAccommodation }
-    : discoverySource;
-  const baseDataWithTravel = travelAccommodation
-    ? { ...params.mergedCoreEventData, discoverySource: discoverySourceWithTravel }
-    : params.mergedCoreEventData;
-
   const enrichedParseResult = await finalizeMeetParseResult(
     baseParseResult,
     extraction.extractedText || baseExtractedText,
@@ -93,14 +83,28 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
     },
   );
 
+  const travelAccommodation = await enrichTravelAccommodation({
+    sourceType: params.sourceInput.type,
+    extractedText: extraction.extractedText || baseExtractedText,
+    extractionMeta: extraction.extractionMeta,
+  });
+  const travelAccommodationState = buildTravelAccommodationState(travelAccommodation);
+  const mergedCoreEventDataWithTravel = {
+    ...params.mergedCoreEventData,
+    discoverySource: {
+      ...discoverySource,
+      travelAccommodation: travelAccommodationState,
+    },
+  };
+
   const mapped = await mapParseResultToGymData(
     enrichedParseResult,
-    baseDataWithTravel,
+    mergedCoreEventDataWithTravel,
     extraction.extractionMeta,
   );
   const publicArtifacts = buildGymDiscoveryPublicPageArtifacts({
     parseResult: enrichedParseResult,
-    baseData: baseDataWithTravel,
+    baseData: mergedCoreEventDataWithTravel,
     extractionMeta: extraction.extractionMeta,
   });
   const nextGymPageTemplateId =
@@ -133,7 +137,7 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
     ...mapped,
     pageTemplateId: nextGymPageTemplateId,
     discoverySource: {
-      ...discoverySourceWithTravel,
+      ...discoverySource,
       status: "parsed",
       workflow: "gymnastics",
       input: params.sourceInput,
@@ -149,8 +153,9 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
             publishAssessment: publicArtifacts.publishAssessment,
           }
         : {}),
+      travelAccommodation: travelAccommodationState,
       parseResult: stripGymScheduleGridsFromParseResult(
-        publicArtifacts?.parseResult || enrichedParseResult
+        publicArtifacts?.parseResult || enrichedParseResult,
       ),
       enrichment: enrichmentState,
       enrichedAt: finishedAt,

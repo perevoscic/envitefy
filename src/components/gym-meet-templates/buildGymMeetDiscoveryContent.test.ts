@@ -224,113 +224,6 @@ test("payment instructions do not leak into the hero header", () => {
   assert.equal(model.detailsText, "");
 });
 
-test("Hotels tab lists per-hotel booking URLs from advancedSections.logistics.hotels", () => {
-  const discovery = buildGymMeetDiscoveryContent({
-    eventData: {
-      discoverySource: {
-        parseResult: { logistics: {} },
-        extractedText: "",
-      },
-    },
-    customFields: {},
-    advancedSections: {
-      logistics: {
-        hotels: [
-          { name: "Hotel Alpha", bookingUrl: "https://book.example.com/alpha" },
-          { name: "Hotel Alpha", bookingUrl: "https://book.example.com/alpha" },
-          { name: "Hotel Beta", bookingUrl: "https://book.example.com/beta" },
-        ],
-      },
-    },
-    date: "2026-03-20",
-  });
-
-  const hotels = findSection(discovery, "hotels");
-  assert.ok(hotels?.hasContent, "expected hotels section when booking URLs are present");
-  const linksBlock = findBlock(hotels, "hotel-links");
-  assert.ok(linksBlock, "expected hotel-links block");
-  assert.ok(
-    linksBlock.links.some(
-      (item: any) =>
-        item.url === "https://book.example.com/alpha" && /alpha/i.test(item.label),
-    ),
-    "expected Hotel Alpha booking link",
-  );
-  assert.ok(
-    linksBlock.links.some(
-      (item: any) =>
-        item.url === "https://book.example.com/beta" && /beta/i.test(item.label),
-    ),
-    "expected Hotel Beta booking link",
-  );
-  assert.equal(
-    linksBlock.links.filter((item: any) => item.url === "https://book.example.com/alpha").length,
-    1,
-    "expected booking links to be deduped by url",
-  );
-  assert.ok(linksBlock.links.length <= 8, "expected booking links to be capped");
-});
-
-test("Hotels tab prefers travelAccommodation hotel cards and keeps the hub link as backup", () => {
-  const discovery = buildGymMeetDiscoveryContent({
-    eventData: {
-      discoverySource: {
-        parseResult: { logistics: {} },
-        extractedText: "",
-        travelAccommodation: {
-          hotels: [
-            {
-              name: "Hilton Garden Inn",
-              bookingUrl: "https://book.example.com/hilton",
-              address: "4075 SW 33rd Place, Gainesville, FL 32608",
-              phone: "(352) 555-1111",
-              reservationDeadline: "March 20, 2026",
-              rateSummary: "$189 King",
-              notes: "Shuttle to venue included.",
-            },
-            {
-              name: "Courtyard Gainesville",
-              bookingUrl: "https://book.example.com/courtyard",
-              address: "3700 SW 42nd Street, Gainesville, FL 32608",
-              phone: "(352) 555-2222",
-              reservationDeadline: "March 18, 2026",
-              rateSummary: "$169/night plus tax",
-            },
-          ],
-          fallbackLink: {
-            label: "Host Hotels",
-            url: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
-          },
-          hotelSource: {
-            provider: "firecrawl",
-            sourceUrl: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
-            scrapedAt: "2026-03-31T00:00:00.000Z",
-            lastError: null,
-          },
-        },
-      },
-    },
-    customFields: {},
-    advancedSections: { logistics: {} },
-    date: "2026-03-20",
-  });
-
-  const hotels = findSection(discovery, "hotels");
-  assert.ok(hotels?.hasContent, "expected hotels section when travelAccommodation hotels exist");
-
-  const cardsBlock = findBlock(hotels, "hotel-cards");
-  assert.ok(cardsBlock, "expected hotel cards block");
-  assert.equal(cardsBlock.cards.length, 2);
-  assert.match(cardsBlock.cards[0].body, /Phone: \(352\) 555-1111/);
-  assert.match(cardsBlock.cards[0].body, /Reservation deadline: March 20, 2026/);
-  assert.match(cardsBlock.cards[0].body, /Rate: \$189 King/);
-  assert.equal(cardsBlock.cards[0].action.url, "https://book.example.com/hilton");
-  assert.equal(cardsBlock.cards[0].action.label, "Book Hotel");
-
-  const linksBlock = findBlock(hotels, "hotel-links");
-  assert.equal(linksBlock, null, "expected structured hotel cards to suppress extra hotel link list");
-});
-
 test("discovery hero summary excludes arrival guidance cards", () => {
   const model = normalizeGymMeetEventData({
     eventData: {
@@ -2020,7 +1913,7 @@ test("mixed public packet hides weak sections, merges admission variants, and li
           visibility: "visible",
         },
         travel: {
-          title: "Hotels",
+          title: "Hotels & Travel",
           body: "Host hotels are available for traveling families.",
           bullets: [],
           visibility: "visible",
@@ -2089,45 +1982,26 @@ test("mixed public packet hides weak sections, merges admission variants, and li
   ]);
 });
 
-test("admission cards keep single PDF prices when notes only describe payment policy", () => {
+test("admission discount notes do not overwrite actual prices or mark child tickets free", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
+      createdVia: "meet-discovery",
       discoverySource: {
         pipelineVersion: "gym-public-v2",
         parseResult: {
           admission: [
-            {
-              label: "Adults (13+)",
-              price: "$25",
-              note: "Debit/credit card only; cash not accepted.",
-            },
-            {
-              label: "Children (5-12)",
-              price: "$15",
-              note: "Debit/credit card only; cash not accepted.",
-            },
+            { label: "Adults (13+)", price: "$26.00", note: "Cash Price is $1.00 less." },
+            { label: "Children (5-12)", price: "$16.00", note: "Cash Price is $1.00 less. Under 5 free." },
+            { label: "Under 5", price: "Free", note: "" },
           ],
           meetDetails: {},
           logistics: {},
           communications: {},
-          links: [],
         },
-        publicPageSections: {
-          spectatorInfo: {
-            title: "Spectator Info",
-            body: "Adults (13+): $25. Children (5-12): $15. Debit/credit card only; cash not accepted.",
-            bullets: [],
-            visibility: "visible",
-          },
-        },
-        extractionMeta: {},
-        extractedText: "",
       },
     },
     customFields: {},
     advancedSections: { meet: {}, logistics: {}, coaches: {} },
-    venue: "State Arena",
-    address: "123 Main St, Chicago, IL 60601",
   });
 
   const admission = findSection(discovery, "admission");
@@ -2138,63 +2012,32 @@ test("admission cards keep single PDF prices when notes only describe payment po
   }));
 
   assert.deepEqual(admissionCards, [
-    {
-      label: "Adults (13+)",
-      value: "$25",
-      body: "Debit/credit card only; cash not accepted.",
-    },
-    {
-      label: "Children (5-12)",
-      value: "$15",
-      body: "Debit/credit card only; cash not accepted.",
-    },
+    { label: "Adults (13+)", value: "Card $26", body: "Cash $25" },
+    { label: "Children (5-12)", value: "Card $16", body: "Cash $15" },
+    { label: "Under 5", value: "Free", body: "" },
   ]);
 });
 
-test("admission cards ignore relative cash discount notes when no base dollar price exists", () => {
+test("legacy discovery admission cards also preserve card prices over cash discounts", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
+      createdVia: "meet-discovery",
       discoverySource: {
-        pipelineVersion: "gym-public-v2",
         parseResult: {
           admission: [
-            {
-              label: "Adults (13+)",
-              price: "creditcard",
-              note: "Cash price is $1 less.",
-            },
-            {
-              label: "Children (5-12)",
-              price: "creditcard",
-              note: "Cash price is $1 less.",
-            },
-            {
-              label: "Under 5",
-              price: "Free",
-              note: "",
-            },
+            { label: "Adults (13+)", price: "$26.00", note: "Cash Price is $1.00 less." },
+            { label: "Children (5-12)", price: "$16.00", note: "Cash Price is $1.00 less." },
+            { label: "Under 5", price: "Free", note: "" },
           ],
           meetDetails: {},
           logistics: {},
           communications: {},
-          links: [],
         },
-        publicPageSections: {
-          spectatorInfo: {
-            title: "Spectator Info",
-            body: "",
-            bullets: [],
-            visibility: "visible",
-          },
-        },
-        extractionMeta: {},
         extractedText: "",
       },
     },
     customFields: {},
     advancedSections: { meet: {}, logistics: {}, coaches: {} },
-    venue: "State Arena",
-    address: "123 Main St, Chicago, IL 60601",
   });
 
   const admission = findSection(discovery, "admission");
@@ -2204,7 +2047,281 @@ test("admission cards ignore relative cash discount notes when no base dollar pr
     body: card.body,
   }));
 
-  assert.deepEqual(admissionCards, [{ label: "Under 5", value: "Free", body: "" }]);
+  assert.deepEqual(admissionCards, [
+    { label: "Adults (13+)", value: "Card $26", body: "Cash $25" },
+    { label: "Children (5-12)", value: "Card $16", body: "Cash $15" },
+    { label: "Under 5", value: "Free", body: "" },
+  ]);
+});
+
+test("legacy discovery recovers credit-card and cash pricing from source lines when parsed admission rows are malformed", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      createdVia: "meet-discovery",
+      discoverySource: {
+        parseResult: {
+          admission: [
+            { label: "Adults (13+)", price: "$25", note: "Credit Card Price" },
+            { label: "Children (5-12)", price: "$15", note: "Credit Card Price (under 5 yrs. free)" },
+            { label: "Adults (13+)", price: "$25", note: "Cash Price" },
+            { label: "Children (5-12)", price: "$15", note: "Cash Price" },
+          ],
+          meetDetails: {},
+          logistics: {},
+          communications: {},
+        },
+        extractedText: [
+          "Spectator Admissions",
+          "Credit Card Price",
+          "$26 / Adult (13 + up)",
+          "$16 / Child (5-12)",
+          "(under 5 yrs. free)",
+          "Cash Price",
+          "$25 / Adult (13 + up)",
+          "$15 / Child (5-12)",
+        ].join("\n"),
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+  });
+
+  const admission = findSection(discovery, "admission");
+  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map((card: any) => ({
+    label: card.label,
+    value: card.value,
+    body: card.body,
+  }));
+
+  assert.deepEqual(admissionCards, [
+    { label: "Adults (13+)", value: "Card $26", body: "Cash $25" },
+    { label: "Children (5-12)", value: "Card $16", body: "Cash $15" },
+    { label: "Under 5", value: "Free", body: "" },
+  ]);
+});
+
+test("session eligibility notes from parsed admission rows move to meet details instead of admission", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      createdVia: "meet-discovery",
+      discoverySource: {
+        parseResult: {
+          admission: [
+            {
+              label: "Adults (13+)",
+              price: "$26.00",
+              note: "If an athlete competes in the wrong session (based on birthday), they are ineligible for awards and scores may not count toward team total.",
+            },
+            { label: "Children (5-12)", price: "$16.00", note: "Cash Price is $1.00 less." },
+          ],
+          meetDetails: {},
+          logistics: {},
+          communications: {},
+        },
+        extractedText: "",
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+  });
+
+  const admission = findSection(discovery, "admission");
+  const meetDetails = findSection(discovery, "meet-details");
+  const blobAdmission = JSON.stringify(admission || {});
+  const blobMeetDetails = JSON.stringify(meetDetails || {});
+
+  assert.doesNotMatch(blobAdmission, /wrong session|team total|ineligible for awards/i);
+  assert.match(blobMeetDetails, /wrong session|team total|ineligible for awards/i);
+});
+
+test("public hotel section drops duplicate travel copy when it only repeats the hotel link label", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      eventTitle: "Florida Crown Championships",
+      title: "Florida Crown Championships",
+      venue: "Coral Springs Gymnasium",
+      address: "123 Main St, Coral Springs, FL",
+      createdVia: "meet-discovery",
+      discoverySource: {
+        pipelineVersion: "gym-public-v2",
+        parseResult: {
+          admission: [],
+          meetDetails: {},
+          logistics: {},
+          communications: {},
+        },
+        extractionMeta: {
+          resourceLinks: [
+            {
+              kind: "hotel_booking",
+              status: "available",
+              audience: "public_attendee",
+              label: "Host Hotels",
+              url: "https://example.com/hotels",
+            },
+          ],
+        },
+        publicPageSections: {
+          meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
+          travel: {
+            title: "Hotels & Travel",
+            body: "Host Hotels",
+            bullets: [],
+            visibility: "visible",
+          },
+          documents: { title: "Documents", links: [], visibility: "hidden" },
+          spectatorInfo: { title: "Spectator Info", body: "", bullets: [], visibility: "hidden" },
+          venue: { title: "Venue Details", body: "", bullets: [], visibility: "hidden" },
+          parking: { title: "Parking", body: "", bullets: [], visibility: "hidden" },
+          traffic: { title: "Traffic", body: "", bullets: [], visibility: "hidden" },
+        },
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+  });
+
+  const hotels = findSection(discovery, "hotels");
+
+  assert.ok(hotels);
+  assert.equal(findBlock(hotels, "hotels-body"), undefined);
+  assert.deepEqual(findBlock(hotels, "hotel-links")?.links, [
+    { label: "Host Hotels", url: "https://example.com/hotels" },
+  ]);
+});
+
+test("public hotel section drops low-signal host hotels copy even when the fallback link label differs", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      eventTitle: "Florida Crown Championships",
+      title: "Florida Crown Championships",
+      venue: "Coral Springs Gymnasium",
+      address: "123 Main St, Coral Springs, FL",
+      createdVia: "meet-discovery",
+      discoverySource: {
+        pipelineVersion: "gym-public-v2",
+        parseResult: {
+          admission: [],
+          meetDetails: {},
+          logistics: {},
+          communications: {},
+        },
+        extractionMeta: {
+          resourceLinks: [
+            {
+              kind: "travel_accommodation",
+              status: "available",
+              audience: "public_attendee",
+              label: "Host Hotels",
+              url: "https://example.com/hotels",
+            },
+          ],
+        },
+        publicPageSections: {
+          meetDetails: {
+            title: "Meet Details",
+            body: "Welcome families.",
+            bullets: [],
+            visibility: "visible",
+          },
+          travel: {
+            title: "Hotels & Travel",
+            body: "Host Hotels",
+            bullets: [],
+            visibility: "visible",
+            fallbackLink: "https://example.com/hotels",
+          },
+          documents: { title: "Documents", links: [], visibility: "hidden" },
+          spectatorInfo: { title: "Spectator Info", body: "", bullets: [], visibility: "hidden" },
+          venue: { title: "Venue Details", body: "", bullets: [], visibility: "hidden" },
+          parking: { title: "Parking", body: "", bullets: [], visibility: "hidden" },
+          traffic: { title: "Traffic", body: "", bullets: [], visibility: "hidden" },
+        },
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+  });
+
+  const hotels = findSection(discovery, "hotels");
+
+  assert.ok(hotels);
+  assert.equal(findBlock(hotels, "hotels-body"), undefined);
+  assert.deepEqual(findBlock(hotels, "hotel-links")?.links, [
+    { label: "Host Hotels", url: "https://example.com/hotels" },
+  ]);
+});
+
+test("structured travel hotels render as hotel cards with fallback link", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      eventTitle: "Florida Crown Championships",
+      title: "Florida Crown Championships",
+      venue: "Coral Springs Gymnasium",
+      address: "123 Main St, Coral Springs, FL",
+      createdVia: "meet-discovery",
+      discoverySource: {
+        pipelineVersion: "gym-public-v2",
+        parseResult: {
+          admission: [],
+          meetDetails: {},
+          logistics: {},
+          communications: {},
+        },
+        extractionMeta: {
+          resourceLinks: [
+            {
+              kind: "travel_accommodation",
+              status: "available",
+              audience: "public_attendee",
+              label: "Host Hotels",
+              url: "https://example.com/hotels",
+            },
+          ],
+        },
+        publicPageSections: {
+          meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
+          travel: {
+            title: "Hotels & Travel",
+            body: "",
+            bullets: [],
+            visibility: "visible",
+            fallbackLink: "https://example.com/hotels",
+            items: [
+              {
+                name: "Fort Lauderdale Marriott Coral Springs",
+                distanceFromVenue: "5 miles",
+                groupRate: "$189.00 + tax",
+                parking: "Complimentary",
+                breakfast: "Available for purchase",
+                reservationDeadline: "2026-02-12",
+                bookingUrl: "https://example.com/book-marriott",
+              },
+            ],
+          },
+          documents: { title: "Documents", links: [], visibility: "hidden" },
+          spectatorInfo: { title: "Spectator Info", body: "", bullets: [], visibility: "hidden" },
+          venue: { title: "Venue Details", body: "", bullets: [], visibility: "hidden" },
+          parking: { title: "Parking", body: "", bullets: [], visibility: "hidden" },
+          traffic: { title: "Traffic", body: "", bullets: [], visibility: "hidden" },
+        },
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+  });
+
+  const hotels = findSection(discovery, "hotels");
+  const cards = findBlock(hotels, "hotel-cards");
+
+  assert.ok(hotels?.hasContent);
+  assert.equal(cards?.type, "card-grid");
+  assert.match(JSON.stringify(cards), /Fort Lauderdale Marriott Coral Springs/);
+  assert.match(JSON.stringify(cards), /\$189\.00 \+ tax/);
+  assert.match(JSON.stringify(cards), /https:\/\/example\.com\/book-marriott/);
+  assert.deepEqual(findBlock(hotels, "hotel-links")?.links, [
+    { label: "Host Hotels", url: "https://example.com/hotels" },
+  ]);
 });
 
 test("quick access collapses duplicate labels even when discovery finds multiple urls", () => {
@@ -2253,7 +2370,7 @@ test("quick access collapses duplicate labels even when discovery finds multiple
       publicPageSections: {
         meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
         travel: {
-          title: "Hotels",
+          title: "Hotels & Travel",
           body: "Use the host hotel booking page.",
           bullets: [],
           visibility: "visible",
@@ -2342,7 +2459,7 @@ test("quick access prioritizes parking, hotels, documents, then results", () => 
         meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
         parking: { title: "Parking", body: "Use the parking garage.", bullets: [], visibility: "visible" },
         traffic: { title: "Traffic", body: "", bullets: [], visibility: "hidden" },
-        travel: { title: "Hotels", body: "Reserve nearby rooms.", bullets: [], visibility: "visible" },
+        travel: { title: "Hotels & Travel", body: "Reserve nearby rooms.", bullets: [], visibility: "visible" },
         documents: { title: "Documents", links: [], visibility: "hidden" },
         spectatorInfo: { title: "Spectator Info", body: "", bullets: [], visibility: "hidden" },
         venue: { title: "Venue Details", body: "", bullets: [], visibility: "hidden" },

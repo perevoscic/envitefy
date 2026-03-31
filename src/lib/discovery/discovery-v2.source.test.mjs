@@ -41,7 +41,7 @@ test("discovery v2 threads travelAccommodation through enrich, compose, and snap
   const runSource = readSource("src/lib/discovery/run.ts");
 
   assert.match(enrichSource, /enrichTravelAccommodation/);
-  assert.match(enrichSource, /travelAccommodation,/);
+  assert.match(enrichSource, /travelAccommodation:\s*buildTravelAccommodationState/);
   assert.match(composeSource, /discoverySourceWithTravel/);
   assert.match(composeSource, /eventDataPatch:/);
   assert.match(eventDataSource, /\.\.\.persistedDiscoverySource/);
@@ -62,7 +62,8 @@ test("gymnastics discovery clients use the v2 intake run status flow", () => {
   assert.match(customizeSource, /\/api\/discovery\/intake/);
   assert.match(customizeSource, /\/api\/discovery\/\$\{eventId\}\/run/);
   assert.match(customizeSource, /\/api\/discovery\/\$\{eventId\}\/status/);
-  assert.match(intakeSource, /userId: params\.userId/);
+  assert.match(intakeSource, /userId: null/);
+  assert.match(intakeSource, /workflow,/);
 });
 
 test("football discovery clients no longer use legacy ingest or parse routes", () => {

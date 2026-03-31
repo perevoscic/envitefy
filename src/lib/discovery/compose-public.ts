@@ -1,34 +1,37 @@
 import { getEventHistoryById } from "@/lib/db";
-import { buildFootballBuilderDraft } from "@/lib/discovery/map";
-import { buildGymBuilderDraft } from "@/lib/discovery/map";
+import { buildFootballBuilderDraft, buildGymBuilderDraft } from "@/lib/discovery/map";
 import {
   buildEmptyDiscoveryPublicArtifacts,
   safeString,
   uniqueStrings,
 } from "@/lib/discovery/shared";
 import type {
-  EventDiscoveryRow,
   DiscoveryPublicArtifacts,
+  EventDiscoveryRow,
   GymPublicArtifacts,
   GymPublicSection,
   PublicSectionProvenance,
 } from "@/lib/discovery/types";
+import { mapParseResultToFootballData } from "@/lib/football-discovery";
 import {
   buildGymDiscoveryPublicPageArtifacts,
   mapParseResultToGymData,
 } from "@/lib/meet-discovery";
-import { mapParseResultToFootballData } from "@/lib/football-discovery";
 
 function mapSectionProvenance(section: Record<string, any>): PublicSectionProvenance {
   const body = safeString(section.body);
   const links = Array.isArray(section.links) ? section.links.length : 0;
+  const items = Array.isArray(section.items) ? section.items.length : 0;
   if (links > 0 && body) return "mixed";
+  if (items > 0 && body) return "mixed";
+  if (items > 0) return "location_enriched";
   if (links > 0) return "location_enriched";
   return body ? "pdf_grounded" : "derived_summary";
 }
 
 function mapSectionConfidence(section: Record<string, any>): number {
   if (safeString(section.visibility) !== "visible") return 0;
+  if (Array.isArray(section.items) && section.items.length > 0) return 0.9;
   if (safeString(section.body) && Array.isArray(section.links) && section.links.length > 0)
     return 0.9;
   if (safeString(section.body)) return 0.8;
@@ -52,6 +55,22 @@ function toPublicSection(section: Record<string, any>, fallbackTitle: string): G
           }))
           .filter((item) => item.url)
       : [],
+    items: Array.isArray(section.items)
+      ? section.items
+          .map((item) => ({
+            name: safeString(item?.name),
+            imageUrl: safeString(item?.imageUrl) || null,
+            distanceFromVenue: safeString(item?.distanceFromVenue) || null,
+            groupRate: safeString(item?.groupRate) || null,
+            parking: safeString(item?.parking) || null,
+            breakfast: safeString(item?.breakfast) || null,
+            reservationDeadline: safeString(item?.reservationDeadline) || null,
+            phone: safeString(item?.phone) || null,
+            bookingUrl: safeString(item?.bookingUrl) || null,
+          }))
+          .filter((item) => item.name)
+      : [],
+    fallbackLink: safeString(section.fallbackLink) || null,
     hideReason: safeString(section.hideReason) || null,
     provenance: mapSectionProvenance(section),
     confidence: mapSectionConfidence(section),
@@ -82,7 +101,8 @@ export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRo
       hero: {
         title: safeString(mappedData.title),
         dateLabel:
-          safeString(mappedData?.customFields?.scheduleDateRangeLabel) || safeString(mappedData.date),
+          safeString(mappedData?.customFields?.scheduleDateRangeLabel) ||
+          safeString(mappedData.date),
         venue: safeString(mappedData.venue || mappedData.address),
         badges: uniqueStrings([mappedData?.customFields?.team], 4),
       },
@@ -97,9 +117,7 @@ export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRo
         : [],
     };
     const reviewFlags = uniqueStrings(
-      [
-        ...(discovery.canonicalParse?.issues || []).map((item) => item.message),
-      ],
+      [...(discovery.canonicalParse?.issues || []).map((item) => item.message)],
       24,
     );
     return {
@@ -110,26 +128,49 @@ export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRo
   }
   const enrichment = (discovery.enrichment || {}) as Record<string, any>;
   const hasTravelAccommodation = Object.hasOwn(enrichment, "travelAccommodation");
-  const discoverySourceWithTravel = hasTravelAccommodation
-    ? {
-        ...((currentData.discoverySource || {}) as Record<string, any>),
-        travelAccommodation: enrichment.travelAccommodation ?? null,
-      }
-    : ((currentData.discoverySource || {}) as Record<string, any>);
-  const baseDataWithTravel = hasTravelAccommodation
-    ? {
-        ...currentData,
-        discoverySource: discoverySourceWithTravel,
-      }
-    : currentData;
+  const discoverySourceWithTravel =
+    hasTravelAccommodation &&
+    currentData?.discoverySource &&
+    typeof currentData.discoverySource === "object"
+      ? {
+          ...((currentData.discoverySource || {}) as Record<string, any>),
+          travelAccommodation: enrichment.travelAccommodation ?? null,
+        }
+      : ((currentData.discoverySource || {}) as Record<string, any>);
+  const travelAccommodationState =
+    (hasTravelAccommodation ? enrichment.travelAccommodation : undefined) ||
+    (currentData?.discoverySource &&
+      typeof (currentData as any).discoverySource === "object" &&
+      (currentData as any).discoverySource.travelAccommodation) ||
+    null;
+  const currentDataWithTravel =
+    travelAccommodationState && typeof travelAccommodationState === "object"
+      ? {
+          ...currentData,
+          discoverySource: {
+            ...((currentData as any).discoverySource || {}),
+            travelAccommodation: travelAccommodationState,
+          },
+        }
+      : currentData;
   const mappedData = await mapParseResultToGymData(
     parseResult,
-    baseDataWithTravel,
+    currentDataWithTravel,
     discovery.document?.extractionMeta as any,
   );
+  const mappedDataWithTravel =
+    travelAccommodationState && typeof travelAccommodationState === "object"
+      ? {
+          ...mappedData,
+          discoverySource: {
+            ...((mappedData as any).discoverySource || {}),
+            travelAccommodation: travelAccommodationState,
+          },
+        }
+      : mappedData;
   const legacyArtifacts = buildGymDiscoveryPublicPageArtifacts({
     parseResult,
-    baseData: baseDataWithTravel,
+    baseData: mappedDataWithTravel,
     extractionMeta: discovery.document?.extractionMeta as any,
   });
   const sectionTitles: Record<string, string> = {
@@ -138,7 +179,7 @@ export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRo
     traffic: "Traffic",
     venue: "Venue Details",
     spectatorInfo: "Spectator Info",
-    travel: "Hotels",
+    travel: "Hotels & Travel",
     documents: "Documents",
   };
   const sections = Object.fromEntries(

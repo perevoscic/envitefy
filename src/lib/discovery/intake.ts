@@ -82,7 +82,10 @@ export async function intakeDiscovery(params: {
     let normalizedUrl = "";
     try {
       normalizedUrl = new URL(rawUrl).toString();
-      title = suffixTitleForWorkflow(new URL(normalizedUrl).hostname.replace(/^www\./i, ""), workflow);
+      title = suffixTitleForWorkflow(
+        new URL(normalizedUrl).hostname.replace(/^www\./i, ""),
+        workflow,
+      );
     } catch {
       return { ok: false as const, status: 400, error: "Invalid URL" };
     }
@@ -98,8 +101,9 @@ export async function intakeDiscovery(params: {
     processingStage: "ingested",
   });
   const created = await createDiscoveryShell({
-    userId: params.userId,
     workflow,
+    // Do not claim discovery drafts into the user's history until an explicit Save/Publish action.
+    userId: null,
     title,
     source,
     pipeline,

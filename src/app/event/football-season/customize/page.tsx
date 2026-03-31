@@ -455,6 +455,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const router = useRouter();
     const editEventId = search?.get("edit") ?? undefined;
     const isEmbed = search?.get("embed") === "1";
+    const isNewDraft = search?.get("new") === "1";
     const defaultDate = search?.get("d") ?? undefined;
     const initialDate = useMemo(() => {
       if (!defaultDate) {
@@ -509,6 +510,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [_rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
+    const [didExplicitSave, setDidExplicitSave] = useState(false);
     const [initializingEdit, setInitializingEdit] = useState(Boolean(editEventId));
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
@@ -1068,9 +1070,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ title: payload.title, data: payload.data }),
+            body: JSON.stringify({
+              title: payload.title,
+              data: payload.data,
+              ...(isNewDraft ? { claim: true } : {}),
+            }),
           });
           if (!res.ok) throw new Error("Failed to update event");
+          setDidExplicitSave(true);
           if (typeof window !== "undefined") {
             window.dispatchEvent(
               new CustomEvent("history:updated", {
@@ -1154,6 +1161,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       isDiscoveryEdit,
       loadedDiscoverySource,
       isEmbed,
+      isNewDraft,
       router,
     ]);
 
@@ -1579,7 +1587,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (Date.now() >= deadlineAt) {
           throw new Error("Football discovery timed out");
         }
-        router.push(`/event/football/customize?edit=${eventId}`);
+        router.push(`/event/football/customize?edit=${eventId}&new=1`);
       } catch (err: any) {
         setDiscoverError(String(err?.message || err || "Failed to parse source"));
       } finally {
@@ -2094,6 +2102,29 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               {editEventId && (
                 <button
                   onClick={() => {
+                    if (!didExplicitSave && isNewDraft && editEventId) {
+                      void (async () => {
+                        try {
+                          await fetch(`/api/history/${editEventId}`, {
+                            method: "DELETE",
+                            credentials: "include",
+                          });
+                        } catch {}
+
+                        if (
+                          isEmbed &&
+                          typeof window !== "undefined" &&
+                          (window as any).parent !== window
+                        ) {
+                          try {
+                            (window as any).parent.location.assign("/event/football");
+                            return;
+                          } catch {}
+                        }
+                        router.push("/event/football");
+                      })();
+                      return;
+                    }
                     if (
                       isEmbed &&
                       typeof window !== "undefined" &&

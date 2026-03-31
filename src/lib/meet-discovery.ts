@@ -35,6 +35,14 @@ import {
   type DiscoveryBudgetSource,
 } from "@/lib/discovery-budget";
 import {
+  buildTravelAccommodationResult,
+  detectTravelAccommodationCandidates,
+  extractHotelObjectsFromPdf,
+  summarizeHotelsForNarrative,
+  type TravelAccommodationCandidate,
+  type TravelAccommodationHotel,
+} from "@/lib/travel-accommodation-discovery";
+import {
   GYM_DISCOVERY_PUBLIC_PAGE_V2,
   GYM_DISCOVERY_SCHEDULE_GRID_ENABLED,
 } from "./meet-discovery/constants";
@@ -315,6 +323,8 @@ type DiscoveredLink = {
   url: string;
   label: string;
   sourceUrl: string;
+  contextText?: string | null;
+  sectionHeading?: string | null;
   depth: 0 | 1;
   kind: DiscoveryLinkKind;
   sameHost: boolean;
@@ -337,6 +347,7 @@ export type DiscoveryResourceKind =
   | "results_hub"
   | "results_live"
   | "results_pdf"
+  | "travel_accommodation"
   | "hotel_booking"
   | "photo_video"
   | "apparel_form"
@@ -376,6 +387,8 @@ export type DiscoveryResourceLink = {
   label: string;
   url: string;
   sourceUrl?: string | null;
+  contextText?: string | null;
+  sectionHeading?: string | null;
   origin: DiscoveryResourceOrigin;
   contentType: string | null;
   followed: boolean;
@@ -471,6 +484,18 @@ export type GymPublicSectionOrigin =
 
 export type GymPublicSectionVisibility = "visible" | "hidden";
 
+export type GymPublicTravelHotelItem = {
+  name: string;
+  imageUrl?: string | null;
+  distanceFromVenue?: string | null;
+  groupRate?: string | null;
+  parking?: string | null;
+  breakfast?: string | null;
+  reservationDeadline?: string | null;
+  phone?: string | null;
+  bookingUrl?: string | null;
+};
+
 export type GymPublicPageSection = {
   title: string;
   body: string;
@@ -478,6 +503,8 @@ export type GymPublicPageSection = {
   origin: GymPublicSectionOrigin;
   confidence: number;
   evidenceRefs: string[];
+  items?: GymPublicTravelHotelItem[];
+  fallbackLink?: string | null;
   visibility?: GymPublicSectionVisibility;
   hideReason?: string | null;
 };
@@ -538,6 +565,13 @@ type ExtractionResult = {
     gymLayoutPage?: number | null;
     gymLayoutSelection?: GymLayoutSelectionDiagnostics;
     coachPageHints?: CoachPageHint[];
+    travelAccommodationCandidates?: TravelAccommodationCandidate[];
+    travelAccommodationSignals?: string[];
+    travelAccommodationSummary?: {
+      pdfHotels?: TravelAccommodationHotel[];
+      fallbackLink?: string | null;
+      confidence?: number | null;
+    };
     textQuality?: TextQuality | null;
     qualitySignals?: TextQualitySignals | null;
     schedulePageImages?: Array<{ pageNumber: number; dataUrl: string | null }>;
@@ -4807,7 +4841,7 @@ function decodeHtmlEntities(input: string): string {
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
-    .replace(/&#0*39;/gi, "'")
+    .replace(/&#39;/gi, "'")
     .replace(/&#(\d+);/g, (_match, code) => {
       const value = Number.parseInt(code, 10);
       return Number.isFinite(value) ? String.fromCodePoint(value) : _match;
@@ -4871,6 +4905,7 @@ function normalizeResourceLinkLabel(label: string, url: string, contextText = ""
     null
   );
   switch (kind) {
+    case "travel_accommodation":
     case "hotel_booking":
       if (/\bhost hotels?\b/i.test(normalizedContext) && !/\breserv|book/i.test(normalizedContext)) {
         return "Host Hotels";
@@ -5096,7 +5131,7 @@ function classifyResourceLink(
     /\bgroupbook\b/i.test(haystack) ||
     /\b(hotels?|lodging|travel|stay|booking|room block)\b/i.test(haystack)
   ) {
-    return "hotel_booking";
+    return "travel_accommodation";
   }
   if (
     /\b(apparel|uniform|sizing|size)\b/i.test(haystack) &&
@@ -5204,7 +5239,7 @@ function classifyGymResourceRenderTarget(link: DiscoveryResourceLink): GymResour
   ) {
     return "hidden";
   }
-  if (link.kind === "hotel_booking") return "hotels";
+  if (link.kind === "hotel_booking" || link.kind === "travel_accommodation") return "hotels";
   if (link.kind === "results_hub" || link.kind === "results_live" || link.kind === "results_pdf") {
     return "results";
   }
@@ -5291,26 +5326,6 @@ const EVENT_TOKEN_STOP_WORDS = new Set([
   "com",
 ]);
 
-const EVENT_MATCH_GENERIC_TOKENS = new Set([
-  "championship",
-  "championships",
-  "competition",
-  "competitions",
-  "event",
-  "events",
-  "gymnastics",
-  "host",
-  "hosted",
-  "meet",
-  "men",
-  "mens",
-  "usa",
-  "usag",
-  "women",
-  "womens",
-  "xcel",
-]);
-
 function normalizeEventTokens(value: string): string[] {
   return uniqueBy(
     safeString(value)
@@ -5324,27 +5339,6 @@ function normalizeEventTokens(value: string): string[] {
   );
 }
 
-function filterSpecificEventTokens(tokens: string[]): string[] {
-  return tokens.filter(
-    (token) => token && !EVENT_MATCH_GENERIC_TOKENS.has(token) && !/^\d{4}$/.test(token)
-  );
-}
-
-function isFingerprintSignalLine(value: string): boolean {
-  const line = safeString(value);
-  if (!line) return false;
-  return (
-    /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec|\d{1,2}\/\d{1,2}\/\d{2,4})\b/i.test(
-      line
-    ) ||
-    /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/.test(line) ||
-    /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s*[A-Z]{2}\b/.test(line) ||
-    /\b(arena|auditorium|center|centre|civic|coliseum|complex|convention|facility|fieldhouse|gym|gymnasium|hall|resort|stadium|venue)\b/i.test(
-      line
-    )
-  );
-}
-
 function buildEventFingerprint(
   rootUrl: URL,
   pageTitle: string | null,
@@ -5355,16 +5349,13 @@ function buildEventFingerprint(
     .replace(/\.[a-z0-9]+$/i, "")
     .replace(/[-_]+/g, " ")
     .trim();
-  const readableLines = safeString(readableText)
+  const firstMeaningfulLines = safeString(readableText)
     .split(/\n+/)
     .map((line) => safeString(line))
-    .filter((line) => line.length >= 8 && line.length <= 160);
-  const fingerprintContextLines = (
-    readableLines.filter((line) => isFingerprintSignalLine(line)).slice(0, 6).length > 0
-      ? readableLines.filter((line) => isFingerprintSignalLine(line)).slice(0, 6)
-      : readableLines.slice(0, 6)
-  ).join(" ");
-  const titleSource = [safeString(pageTitle), slug, fingerprintContextLines].filter(Boolean).join(" ");
+    .filter((line) => line.length >= 8 && line.length <= 120)
+    .slice(0, 6)
+    .join(" ");
+  const titleSource = [safeString(pageTitle), slug, firstMeaningfulLines].filter(Boolean).join(" ");
   const titleTokens = normalizeEventTokens(titleSource);
   const slugTokens = normalizeEventTokens(slug);
   const addressMatch =
@@ -5372,7 +5363,7 @@ function buildEventFingerprint(
       /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/
     ) || null;
   const locationTokens = normalizeEventTokens(
-    [addressMatch?.[0], metadataText, fingerprintContextLines].filter(Boolean).join(" ")
+    [addressMatch?.[0], metadataText, firstMeaningfulLines].filter(Boolean).join(" ")
   );
   const dateRange =
     classifyMeetDateCandidates(`${safeString(pageTitle)}\n${metadataText}\n${readableText}`).primary ||
@@ -5401,15 +5392,7 @@ function scoreEventResourceMatch(
   const candidateTokenSet = new Set(candidateTokens);
   const overlappingTitleTokens = fingerprint.titleTokens.filter((token) => candidateTokenSet.has(token));
   const overlappingSlugTokens = fingerprint.slugTokens.filter((token) => candidateTokenSet.has(token));
-  const overlappingLocationTokens = filterSpecificEventTokens(
-    fingerprint.locationTokens.filter((token) => candidateTokenSet.has(token))
-  );
-  const overlappingSpecificTitleTokens = filterSpecificEventTokens(overlappingTitleTokens);
-  const overlappingSpecificSlugTokens = filterSpecificEventTokens(overlappingSlugTokens);
-  const specificOverlapCount = new Set([
-    ...overlappingSpecificTitleTokens,
-    ...overlappingSpecificSlugTokens,
-  ]).size;
+  const overlappingLocationTokens = fingerprint.locationTokens.filter((token) => candidateTokenSet.has(token));
   const candidateDate =
     classifyMeetDateCandidates(text).primary || deriveDateRangeFromText(text);
 
@@ -5462,15 +5445,6 @@ function scoreEventResourceMatch(
     reasons.push("location_hint");
   }
 
-  if (!candidateDate?.startDate && overlappingLocationTokens.length === 0 && specificOverlapCount === 0) {
-    return {
-      score,
-      passes: false,
-      hardReject: false,
-      reason: `${reasons.join(", ") || "insufficient match signals"}, generic_token_overlap_only`,
-    };
-  }
-
   const passes = score >= 4;
   return {
     score,
@@ -5482,22 +5456,11 @@ function scoreEventResourceMatch(
 
 function shouldTreatResourceAsTrustedHtmlFetch(resource: DiscoveryResourceLink): boolean {
   return (
-    (["hotel_booking", "photo_video", "results_live"].includes(resource.kind) &&
+    (["travel_accommodation", "hotel_booking", "photo_video", "results_live"].includes(
+      resource.kind
+    ) &&
       isTrustedExternalResourceUrl(resource.url)) ||
-    ["roster", "team_divisions", "rotation_hub", "results_hub"].includes(resource.kind) ||
-    isTraversableHotelHubResource(resource)
-  );
-}
-
-function isTraversableHotelHubResource(resource: DiscoveryResourceLink): boolean {
-  if (resource.kind !== "hotel_booking") return false;
-  if (!safeString(resource.url) || isTrustedExternalResourceUrl(resource.url)) return false;
-  const hotelHubLabel = `${safeString(resource.label)} ${safeString(resource.url)}`.replace(
-    /[-_]+/g,
-    " "
-  );
-  return /\b(click here for all host hotels|host hotels?|host hotel information|hotel information)\b/i.test(
-    hotelHubLabel
+    ["roster", "team_divisions", "rotation_hub", "results_hub"].includes(resource.kind)
   );
 }
 
@@ -5677,6 +5640,7 @@ function scoreResourceFollowUpPriority(
     results_hub: 11,
     admission: 5,
     parking: 4,
+    travel_accommodation: 2,
     hotel_booking: 2,
     photo_video: 1,
     apparel_form: 1,
@@ -5739,10 +5703,19 @@ function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): C
     if (url.href === baseUrl.href) continue;
     const kind = classifyDiscoveryLink(url, baseUrl);
     const sameHost = url.host === baseUrl.host;
+    const anchorIndex = match.index || 0;
+    const rawAnchorText = safeString(stripHtml(match[4] || ""));
+    const looksTravelish =
+      /\b(hotel|lodging|travel|host\s+hotel|reservations?|book(?:\s+here)?|rooms?)\b/i.test(
+        `${rawAnchorText} ${url.toString()}`
+      ) || /\b(hotel|lodging|travel|reservations?|book)\b/i.test(rawAttrs);
+    const context = looksTravelish ? extractDiscoveryAnchorContext(html, anchorIndex) : null;
     const candidateBase = {
       url: url.toString(),
-      label: deriveDiscoveryAnchorLabel(match[4] || "", rawAttrs, url, html, match.index || 0),
+      label: deriveDiscoveryAnchorLabel(match[4] || "", rawAttrs, url, html, anchorIndex),
       sourceUrl: baseUrl.toString(),
+      contextText: context?.contextText || null,
+      sectionHeading: context?.heading || null,
       depth,
       kind,
       sameHost,
@@ -5786,6 +5759,8 @@ function toCrawlCandidateFromBrowserDiscovery(
       `${safeString(candidate.contextText)} ${safeString(candidate.label)}`
     ),
     sourceUrl: normalizeUrl(candidate.sourceUrl) || rootUrl.toString(),
+    contextText: safeString(candidate.contextText) || null,
+    sectionHeading: null,
     depth: candidate.depth,
     kind,
     sameHost: candidate.sameHost,
@@ -5811,6 +5786,7 @@ function titleCaseWords(value: string): string {
 function fallbackLabelFromPdfAnnotation(url: URL): string {
   const inferredKind = classifyResourceLink("", url.toString(), null);
   switch (inferredKind) {
+    case "travel_accommodation":
     case "hotel_booking":
       return "Hotel Booking";
     case "photo_video":
@@ -5898,6 +5874,7 @@ function inferKindBasedPdfLabel(
         return "Parking Map";
       }
       return "Parking";
+    case "travel_accommodation":
     case "hotel_booking":
       if (/click here for all host hotels|host hotels?/i.test(normalizedPageText)) {
         return "Host Hotels";
@@ -6122,7 +6099,6 @@ function scoreDiscoveryTitleFragment(value: string): number {
   }
   if (/\b20\d{2}\b/.test(candidate)) score += 3;
   if (/\b(?:women'?s|men'?s|boys|girls|jr\.?|sr\.?)\b/i.test(candidate)) score += 1;
-  if (/\busa gymnastics\b/i.test(candidate)) score += 2;
   if (candidate.length >= 12 && candidate.length <= 100) score += 2;
   if (
     /^[A-Z][a-z]+ \d{1,2}(?:-\d{1,2})?, 20\d{2}$/i.test(candidate) ||
@@ -6181,8 +6157,8 @@ function normalizeDiscoveryTitleForCompare(value: string): string {
 }
 
 function resolveDiscoveryEventTitle(parsedTitle: string, fallbackTitle: string): string {
-  const normalizedParsed = decodeHtmlEntities(safeString(parsedTitle)).replace(/\s+/g, " ").trim();
-  const normalizedFallback = decodeHtmlEntities(safeString(fallbackTitle)).replace(/\s+/g, " ").trim();
+  const normalizedParsed = safeString(parsedTitle);
+  const normalizedFallback = safeString(fallbackTitle);
   if (!normalizedParsed) return normalizedFallback;
   if (!normalizedFallback) return normalizedParsed;
   if (looksLikeDiscoveryPlaceholderTitle(normalizedParsed)) return normalizedFallback;
@@ -6192,12 +6168,6 @@ function resolveDiscoveryEventTitle(parsedTitle: string, fallbackTitle: string):
   if (!parsedKey) return normalizedFallback;
   if (!fallbackKey) return normalizedParsed;
   if (parsedKey === fallbackKey) return normalizedFallback;
-  if (
-    fallbackKey.includes(parsedKey) &&
-    scoreDiscoveryTitleFragment(normalizedFallback) > scoreDiscoveryTitleFragment(normalizedParsed)
-  ) {
-    return normalizedFallback;
-  }
   if (parsedKey.includes(fallbackKey) && /\s(?:\||-|—|–)\s/.test(normalizedParsed)) {
     return normalizedFallback;
   }
@@ -6509,6 +6479,8 @@ function buildResourceLinkFromCandidate(
     label: cleanedLabel || candidate.label || "Resource link",
     url: normalizedUrl,
     sourceUrl: normalizeUrl(candidate.sourceUrl) || candidate.sourceUrl,
+    contextText: safeString((candidate as any).contextText) || null,
+    sectionHeading: safeString((candidate as any).sectionHeading) || null,
     origin,
     contentType: safeString(contentType) || null,
     followed: Boolean(candidate.followed),
@@ -6658,9 +6630,6 @@ async function resolveHubResourceLinks(
       hubResource.kind === "rotation_hub" &&
       !["rotation_sheet", "rotation_hub"].includes(baseResource.kind)
     ) {
-      continue;
-    }
-    if (hubResource.kind === "hotel_booking" && baseResource.kind !== "hotel_booking") {
       continue;
     }
     const sameHostAsHub = (() => {
@@ -6956,6 +6925,27 @@ export async function extractDiscoveryText(
           return a.url.localeCompare(b.url);
         })
         .slice(0, MAX_DISCOVERED_LINKS);
+      const travelAccommodationCandidates = detectTravelAccommodationCandidates({
+        source: "pdf",
+        extractedText: text,
+        pages: pages.map((page) => ({
+          pageNumber: Number(page?.num) || null,
+          text: safeString(page?.text),
+        })),
+        links: resourceLinks.map((item) => ({
+          label: item.label,
+          url: item.url,
+          sourceUrl: item.sourceUrl,
+          contextText: item.contextText || null,
+          sectionHeading: item.sectionHeading || null,
+        })),
+      });
+      const pdfTravelHotels = extractHotelObjectsFromPdf(null, travelAccommodationCandidates);
+      const travelAccommodationResult = buildTravelAccommodationResult({
+        candidates: travelAccommodationCandidates,
+        pdfHotels: pdfTravelHotels,
+        webHotels: [],
+      });
       return {
         extractedText: text,
         extractionMeta: {
@@ -6971,6 +6961,16 @@ export async function extractDiscoveryText(
           gymLayoutPage: gymLayout.page,
           gymLayoutSelection: gymLayout.selection,
           coachPageHints,
+          travelAccommodationCandidates,
+          travelAccommodationSignals: uniqueBy(
+            travelAccommodationCandidates.flatMap((item) => item.signals || []),
+            (item) => item
+          ),
+          travelAccommodationSummary: {
+            pdfHotels: pdfTravelHotels,
+            fallbackLink: travelAccommodationResult.fallbackLink,
+            confidence: travelAccommodationResult.confidence,
+          },
           textQuality,
           qualitySignals,
           schedulePageImages,
@@ -7454,10 +7454,7 @@ export async function extractDiscoveryText(
   schedulePageTexts = accumulators.schedulePageTexts;
 
   const hubResources = [...resourceLinkMap.values()].filter(
-    (item) =>
-      item.kind === "results_hub" ||
-      item.kind === "rotation_hub" ||
-      isTraversableHotelHubResource(item)
+    (item) => item.kind === "results_hub" || item.kind === "rotation_hub"
   );
   for (const hubResource of hubResources.sort((a, b) =>
     compareResourceLinksForFollowUp(a, b, url.host)
@@ -7491,12 +7488,27 @@ export async function extractDiscoveryText(
       return a.url.localeCompare(b.url);
     })
     .slice(0, MAX_DISCOVERED_LINKS);
-
   const fullText = [...htmlChunks, ...linkedChunks]
     .filter(Boolean)
     .join("\n\n---\n\n")
     .trim();
   const quality = analyzeTextQuality(fullText);
+  const travelAccommodationCandidates = detectTravelAccommodationCandidates({
+    source: "url",
+    extractedText: quality.cleanedText,
+    links: resourceLinks.map((item) => ({
+      label: item.label,
+      url: item.url,
+      sourceUrl: item.sourceUrl,
+      contextText: item.contextText || null,
+      sectionHeading: item.sectionHeading || null,
+    })),
+  });
+  const travelAccommodationResult = buildTravelAccommodationResult({
+    candidates: travelAccommodationCandidates,
+    pdfHotels: [],
+    webHotels: [],
+  });
   const mergedLayoutFacts = sanitizeVenueFactLines(
     [...gymLayoutFacts, ...extractHallFactsFromText(fullText)],
     {
@@ -7526,6 +7538,16 @@ export async function extractDiscoveryText(
       gymLayoutPage,
       gymLayoutSelection,
       coachPageHints,
+      travelAccommodationCandidates,
+      travelAccommodationSignals: uniqueBy(
+        travelAccommodationCandidates.flatMap((item) => item.signals || []),
+        (item) => item
+      ),
+      travelAccommodationSummary: {
+        pdfHotels: [],
+        fallbackLink: travelAccommodationResult.fallbackLink,
+        confidence: travelAccommodationResult.confidence,
+      },
       textQuality: quality.quality,
       qualitySignals: quality.signals,
       schedulePageImages,
@@ -7603,15 +7625,6 @@ const GYMNASTICS_SCHEDULE_SCHEMA = jsonObject({
       ),
     })
   ),
-});
-
-const GYMNASTICS_DISABLED_SCHEDULE_SCHEMA = jsonObject({
-  venueLabel: { type: "null" },
-  supportEmail: { type: "null" },
-  notes: { type: "array", items: JSON_STRING, maxItems: 0 },
-  annotations: { type: "array", items: jsonObject({}), maxItems: 0 },
-  assignments: { type: "array", items: jsonObject({}), maxItems: 0 },
-  days: { type: "array", items: jsonObject({}), maxItems: 0 },
 });
 
 const GYMNASTICS_PARSE_JSON_SCHEMA = {
@@ -7799,7 +7812,7 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
       ),
       passcode: jsonNullable(JSON_STRING),
     }),
-    schedule: GYMNASTICS_DISABLED_SCHEDULE_SCHEMA,
+    schedule: GYMNASTICS_SCHEDULE_SCHEMA,
     links: jsonArray(
       jsonObject({
         label: JSON_STRING,
@@ -7915,18 +7928,48 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
     "passcode": string|null
   },
   "schedule": {
-    "venueLabel": null,
-    "supportEmail": null,
-    "notes": [],
-    "annotations": [],
-    "assignments": [],
-    "days": []
+    "venueLabel": string|null,
+    "supportEmail": string|null,
+    "notes": [string],
+    "annotations": [{
+      "kind": string|null,
+      "level": string|null,
+      "sessionCode": string|null,
+      "date": string|null,
+      "time": string|null,
+      "text": string
+    }],
+    "assignments": [{
+      "level": string|null,
+      "groupLabel": string|null,
+      "sessionCode": string|null,
+      "birthDateRange": string|null,
+      "divisionLabel": string|null,
+      "note": string|null
+    }],
+    "days": [{
+      "date": string|null,
+      "shortDate": string|null,
+      "sessions": [{
+        "code": string|null,
+        "group": string|null,
+        "startTime": string|null,
+        "warmupTime": string|null,
+        "note": string|null,
+        "clubs": [{
+          "name": string|null,
+          "teamAwardEligible": boolean|null,
+          "athleteCount": number|null,
+          "divisionLabel": string|null
+        }]
+      }]
+    }]
   },
   "links": [{ "label": string, "url": string }],
   "unmappedFacts": [{ "category": string, "detail": string, "confidence": "high"|"medium"|"low" }]
 }
 
-Schedule parsing is disabled. Always return the empty schedule object shown above. Capture session timing in meetDetails.sessionWindows; put short procedural lines in meetDetails.operationalNotes and meetDetails fields (warmup, marchIn, doorsOpen, arrivalGuidance, registrationInfo). Spectator pricing belongs in admission[].`;
+Session grids, division-to-session tables, and club roster rows: leave schedule.days, schedule.assignments, and schedule.annotations empty. Capture session timing in meetDetails.sessionWindows; put short procedural lines in meetDetails.operationalNotes and meetDetails fields (warmup, marchIn, doorsOpen, arrivalGuidance, registrationInfo). Spectator pricing belongs in admission[].`;
 
 function buildParsePromptEvidence(
   evidence: DiscoveryEvidence,
@@ -8037,6 +8080,7 @@ function inferHeuristicParseClassification(
     ...evidence.sections.registration,
     ...evidence.candidates.sessionHints,
     ...evidence.candidates.coachHints,
+    ...pickArray(extractionMeta?.schedulePageTexts).map((item) => safeString(item?.text)),
     ...pickArray(extractionMeta?.coachPageHints).map((item) => safeString(item?.excerpt)),
   ]
     .filter(Boolean)
@@ -8069,9 +8113,13 @@ function inferHeuristicParseClassification(
   const scheduleAthleteHintCount = evidence.candidates.athleteHints.filter((line) =>
     scheduleHintPattern.test(line)
   ).length;
+  const schedulePageWeight = hasScheduleGridSignal || hasAssignmentSignal
+    ? pickArray(extractionMeta?.schedulePageTexts).length * 2
+    : 0;
   const sessionSignals =
     scheduleSessionHintCount +
     scheduleAthleteHintCount +
+    schedulePageWeight +
     (hasAssignmentSignal ? 3 : 0) +
     (hasScheduleGridSignal ? 2 : 0);
   const registrationSignals =
@@ -8089,7 +8137,9 @@ function inferHeuristicParseClassification(
     sessionSignals >= 8 ||
     hasAssignmentSignal ||
     (hasScheduleGridSignal &&
-      (scheduleSessionHintCount >= 2 || scheduleAthleteHintCount >= 2));
+      (pickArray(extractionMeta?.schedulePageTexts).length > 0 ||
+        scheduleSessionHintCount >= 2 ||
+        scheduleAthleteHintCount >= 2));
   const registrationHeavy = registrationSignals >= 6 || hasRegistrationHeadingSignal;
   const parentPacketHeavy =
     parentSignals >= 5 ||
@@ -8279,9 +8329,15 @@ function selectEvidenceForParseProfile(
         )
       : profile === "parent_public"
       ? resourceLinks.filter((item) =>
-          ["admission", "parking", "hotel_booking", "packet", "photo_video", "apparel_form"].includes(
-            item.kind
-          )
+          [
+            "admission",
+            "parking",
+            "travel_accommodation",
+            "hotel_booking",
+            "packet",
+            "photo_video",
+            "apparel_form",
+          ].includes(item.kind)
         )
       : profile === "athlete_session"
       ? resourceLinks.filter((item) =>
@@ -8347,6 +8403,13 @@ function selectEvidenceForParseProfile(
       sessionHints: evidence.candidates.sessionHints.slice(0, 10),
       firstLines: evidence.snippets.firstLines.slice(0, 8),
       resources: resourceLinksForProfile.slice(0, 8),
+      schedulePages: pickArray(extractionMeta?.schedulePageTexts)
+        .slice(0, 4)
+        .map((item) => ({
+          pageNumber: Number(item?.pageNumber) || 0,
+          excerpt: cleanExtractedText(safeString(item?.text)).slice(0, 3500),
+        }))
+        .filter((item) => item.pageNumber > 0 && item.excerpt),
     },
   };
 
@@ -12237,9 +12300,11 @@ export async function finalizeMeetParseResult(
   const sanitized = sanitizeDiscoveryParseResult(value);
   const reconciled = reconcileParsedDates(sanitized, extractedText);
   const emptySchedule = buildEmptyParseResult().schedule;
-  extractionMeta.schedulePageImages = [];
-  extractionMeta.schedulePageTexts = [];
   delete extractionMeta.scheduleDiagnostics;
+  console.log("[meet-discovery] schedule derivation skipped", {
+    traceId,
+    reason: "public-page-v2",
+  });
   const finalized = {
     ...reconciled,
     schedule: emptySchedule,
@@ -12935,12 +13000,20 @@ function createGymPublicPageSection(params: {
   bullets?: unknown[];
   origin: GymPublicSectionOrigin;
   evidenceRefs?: string[];
+  items?: GymPublicTravelHotelItem[];
+  fallbackLink?: string | null;
   visibility?: GymPublicSectionVisibility;
   hideReason?: string | null;
 }): GymPublicPageSection {
   const body = safeString(params.body).replace(/\s+/g, " ").trim();
   const bullets = normalizeSectionBullets(params.bullets || []);
-  const visibility = buildGymSectionVisibility(body, bullets, params.visibility);
+  const items = normalizeTravelAccommodationHotels(params.items || []);
+  const visibility =
+    params.visibility === "visible" || params.visibility === "hidden"
+      ? params.visibility
+      : body || bullets.length > 0 || items.length > 0
+      ? "visible"
+      : "hidden";
   const confidenceByOrigin: Record<GymPublicSectionOrigin, number> = {
     pdf_grounded: 0.9,
     mixed: 0.8,
@@ -12954,6 +13027,8 @@ function createGymPublicPageSection(params: {
     origin: params.origin,
     confidence: confidenceByOrigin[params.origin],
     evidenceRefs: normalizeSectionBullets(params.evidenceRefs || [], 8),
+    items,
+    fallbackLink: normalizeUrl(params.fallbackLink) || null,
     visibility,
     hideReason:
       visibility === "hidden"
@@ -13019,13 +13094,54 @@ function buildDerivedPublicMeetOverview(params: {
   return "";
 }
 
+function normalizeTravelAccommodationHotels(value: unknown): GymPublicTravelHotelItem[] {
+  return uniqueBy(
+    pickArray(value)
+      .map((item) => ({
+        name: safeString(item?.name),
+        imageUrl: normalizeUrl(item?.imageUrl) || null,
+        distanceFromVenue: safeString(item?.distanceFromVenue) || null,
+        groupRate: safeString(item?.groupRate) || null,
+        parking: safeString(item?.parking) || null,
+        breakfast: safeString(item?.breakfast) || null,
+        reservationDeadline: safeString(item?.reservationDeadline) || null,
+        phone: safeString(item?.phone) || null,
+        bookingUrl: normalizeUrl(item?.bookingUrl) || null,
+      }))
+      .filter((item) => item.name),
+    (item) => `${item.name.toLowerCase()}|${item.bookingUrl || ""}`
+  );
+}
+
+function buildTravelAccommodationNarrativeFromHotels(hotels: GymPublicTravelHotelItem[]): string {
+  return summarizeHotelsForNarrative(
+    hotels.map((hotel) => ({
+      name: hotel.name,
+      imageUrl: hotel.imageUrl || null,
+      distanceFromVenue: hotel.distanceFromVenue || null,
+      groupRate: hotel.groupRate || null,
+      parking: hotel.parking || null,
+      breakfast: hotel.breakfast || null,
+      reservationDeadline: hotel.reservationDeadline || null,
+      phone: hotel.phone || null,
+      bookingUrl: hotel.bookingUrl || null,
+      notes: [],
+      sourceType: "mixed",
+      contentOrigin: "public_travel_section",
+      confidence: 0.9,
+    })),
+    null
+  );
+}
+
 function buildGymPublicPageSections(params: {
   parseResult: ParseResult;
   evidence: DiscoveryEvidence | null;
   resourceLinks: DiscoveryResourceLink[];
   baseData?: any;
+  extractionMeta?: ExtractionResult["extractionMeta"];
 }): GymPublicPageSections {
-  const { parseResult, evidence, resourceLinks, baseData } = params;
+  const { parseResult, evidence, resourceLinks, baseData, extractionMeta } = params;
   const title = safeString(parseResult.title) || safeString(baseData?.title);
   const dates = safeString(parseResult.dates) || safeString(baseData?.customFields?.meetDateRangeLabel);
   const venue = safeString(parseResult.venue) || safeString(baseData?.venue);
@@ -13049,6 +13165,20 @@ function buildGymPublicPageSections(params: {
   const hotelLinks = publicResourceLinks
     .filter((item) => item.renderTarget === "hotels")
     .map((item) => ({ label: item.label, url: item.url }));
+  const travelAccommodationState =
+    baseData?.discoverySource?.travelAccommodation &&
+    typeof baseData.discoverySource.travelAccommodation === "object"
+      ? baseData.discoverySource.travelAccommodation
+      : null;
+  const travelHotels = normalizeTravelAccommodationHotels(
+    travelAccommodationState?.hotels || extractionMeta?.travelAccommodationSummary?.pdfHotels
+  );
+  const travelFallbackLink =
+    normalizeUrl(
+      travelAccommodationState?.fallbackLink ||
+        extractionMeta?.travelAccommodationSummary?.fallbackLink ||
+        hotelLinks[0]?.url
+    ) || null;
   const documentLinks = publicResourceLinks
     .filter((item) => item.renderTarget === "documents")
     .map((item) => ({ label: item.label, url: item.url }));
@@ -13202,54 +13332,22 @@ function buildGymPublicPageSections(params: {
     hideReason: "No attendee-safe admission or spectator policies survived filtering.",
   });
 
-  const travelAccommodation = (baseData?.discoverySource?.travelAccommodation || null) as any;
-  const travelAccommodationHotels = Array.isArray(travelAccommodation?.hotels)
-    ? travelAccommodation.hotels
-    : [];
-  const travelAccommodationFallbackLink =
-    travelAccommodation?.fallbackLink && typeof travelAccommodation.fallbackLink === "object"
-      ? {
-          label: safeString(travelAccommodation.fallbackLink.label),
-          url: safeString(travelAccommodation.fallbackLink.url),
-        }
-      : null;
-  const firecrawlInPlay = Boolean(travelAccommodation);
-  const legacyTravelBody = joinSectionSentences(
-    ...filterPublicAudienceTexts([parseResult.logistics.hotel], "parse_field", 2)
+  const travelBody = joinSectionSentences(
+    ...filterPublicAudienceTexts(
+      [parseResult.logistics.hotel, buildTravelAccommodationNarrativeFromHotels(travelHotels)],
+      "parse_field",
+      2
+    )
   );
-  const travelHubLink =
-    travelAccommodationFallbackLink ||
-    (firecrawlInPlay && hotelLinks[0] ? { label: hotelLinks[0].label, url: hotelLinks[0].url } : null);
-  const travelBody = firecrawlInPlay
-    ? travelHubLink?.url || travelAccommodationHotels.length > 0
-      ? "Hotel booking links are listed below."
-      : ""
-    : legacyTravelBody;
   const travel = createGymPublicPageSection({
-    title: "Travel",
+    title: "Hotels & Travel",
     body: travelBody,
-    bullets: firecrawlInPlay
-      ? travelHubLink?.label
-        ? [travelHubLink.label]
-        : []
-      : hotelLinks.map((item) => item.label),
-    origin: firecrawlInPlay
-      ? travelBody || travelHubLink?.url || travelAccommodationHotels.length > 0
-        ? "mixed"
-        : "derived_summary"
-      : legacyTravelBody
-      ? "pdf_grounded"
-      : hotelLinks.length > 0
-      ? "mixed"
-      : "derived_summary",
+    bullets: hotelLinks.map((item) => item.label),
+    origin: travelBody ? "pdf_grounded" : hotelLinks.length > 0 ? "mixed" : "derived_summary",
     evidenceRefs: ["travel", ...(evidence?.resources.hotelHints.slice(0, 3) || [])],
-    visibility: firecrawlInPlay
-      ? travelBody || travelHubLink?.url || travelAccommodationHotels.length > 0
-        ? "visible"
-        : "hidden"
-      : legacyTravelBody || hotelLinks.length > 0
-      ? "visible"
-      : "hidden",
+    items: travelHotels,
+    fallbackLink: travelFallbackLink,
+    visibility: travelBody || hotelLinks.length > 0 || travelHotels.length > 0 ? "visible" : "hidden",
     hideReason: "No attendee-safe hotel or travel guidance survived filtering.",
   });
 
@@ -13388,6 +13486,7 @@ export function buildGymDiscoveryPublicPageArtifacts(params: {
     evidence: params.evidence || null,
     resourceLinks,
     baseData: params.baseData,
+    extractionMeta: params.extractionMeta,
   });
   const publishAssessment = computeGymDiscoveryPublishAssessment(
     nextParseResult,
@@ -13491,7 +13590,8 @@ export async function mapParseResultToGymData(
     roster: ["roster"],
     photo_video: ["photo_video"],
     apparel_form: ["apparel_form"],
-    hotel_booking: ["hotel_booking"],
+    travel_accommodation: ["travel_accommodation", "hotel_booking"],
+    hotel_booking: ["travel_accommodation", "hotel_booking"],
     admission: ["admission"],
     parking: ["parking"],
   };
@@ -13524,48 +13624,61 @@ export async function mapParseResultToGymData(
       }),
     (item) => `${item.kind}|${item.label}|${item.availabilityDate}`
   );
-  const travelAccommodation = (baseData?.discoverySource?.travelAccommodation || null) as any;
-  const firecrawlInPlay = Boolean(travelAccommodation);
-  const legacyHotelNarrative =
+  const travelAccommodationState =
+    baseData?.discoverySource?.travelAccommodation &&
+    typeof baseData.discoverySource.travelAccommodation === "object"
+      ? baseData.discoverySource.travelAccommodation
+      : null;
+  const travelAccommodationHotels = normalizeTravelAccommodationHotels(
+    travelAccommodationState?.hotels || effectiveExtractionMeta?.travelAccommodationSummary?.pdfHotels
+  );
+  const travelAccommodationFallbackLink =
+    normalizeUrl(
+      travelAccommodationState?.fallbackLink ||
+        effectiveExtractionMeta?.travelAccommodationSummary?.fallbackLink
+    ) || null;
+  const derivedTravelNarrative = summarizeHotelsForNarrative(
+    travelAccommodationHotels.map((hotel) => ({
+      name: hotel.name,
+      imageUrl: hotel.imageUrl || null,
+      distanceFromVenue: hotel.distanceFromVenue || null,
+      groupRate: hotel.groupRate || null,
+      parking: hotel.parking || null,
+      breakfast: hotel.breakfast || null,
+      reservationDeadline: hotel.reservationDeadline || null,
+      phone: hotel.phone || null,
+      bookingUrl: hotel.bookingUrl || null,
+      notes: [],
+      sourceType: "mixed",
+      contentOrigin: "map_parse_result",
+      confidence: 0.9,
+    })),
+    travelAccommodationFallbackLink
+  );
+  const hotelNarrative =
     safeString(parseResult.logistics.hotel) ||
+    safeString(travelAccommodationState?.narrative) ||
+    derivedTravelNarrative ||
     safeString(existingAdvanced.logistics?.hotelInfo) ||
     "";
-  const hotelNarrative = firecrawlInPlay ? "" : legacyHotelNarrative;
-  const travelAccommodationFallbackLink =
-    travelAccommodation?.fallbackLink && typeof travelAccommodation.fallbackLink === "object"
-      ? {
-          label: safeString(travelAccommodation.fallbackLink.label) || "Host Hotels",
-          url: normalizeUrl(travelAccommodation.fallbackLink.url),
-        }
-      : null;
-  const travelAccommodationHotels = pickArray(travelAccommodation?.hotels);
-  const travelAccommodationBookingLinks = travelAccommodationHotels
-    .map((hotel) => ({
-      label: safeString(hotel?.name) || "Hotel Booking",
-      url: normalizeUrl(hotel?.bookingUrl),
-    }))
-    .filter((item) => item.url);
   const inferredResultsLink = buildTextDerivedLink(
     "Official Results",
     parseResult.meetDetails.resultsInfo
   );
-  const hotelHubResource = pickAvailableResourceLink("hotel_booking");
-  const hotelHubLinkFromResources = hotelHubResource
-    ? { label: hotelHubResource.label || "Host Hotels", url: hotelHubResource.url || "" }
-    : null;
-  const inferredHotelLink = firecrawlInPlay
-    ? travelAccommodationFallbackLink || hotelHubLinkFromResources
-    : buildTextDerivedLink("Hotel Booking", hotelNarrative);
+  const inferredHotelLink =
+    (travelAccommodationFallbackLink
+      ? { label: "Hotels & Travel", url: travelAccommodationFallbackLink }
+      : null) || buildTextDerivedLink("Hotels & Travel", hotelNarrative);
   const inferredRotationLink = buildTextDerivedLink(
     "Rotation Sheets",
     parseResult.meetDetails.rotationSheetsInfo
   );
   const compactHotelName =
-    legacyHotelNarrative &&
-    legacyHotelNarrative.length <= 80 &&
-    !/[\n.!?]/.test(legacyHotelNarrative) &&
-    !/\b(book|reserve|deadline|rate|parking|distance|travel)\b/i.test(legacyHotelNarrative)
-      ? legacyHotelNarrative
+    hotelNarrative &&
+    hotelNarrative.length <= 80 &&
+    !/[\n.!?]/.test(hotelNarrative) &&
+    !/\b(book|reserve|deadline|rate|parking|distance|travel)\b/i.test(hotelNarrative)
+      ? hotelNarrative
       : "";
   const layoutFacts = shouldKeepOperationalLayoutEvidence(effectiveExtractionMeta)
     ? uniqueLines(
@@ -13940,31 +14053,34 @@ export async function mapParseResultToGymData(
     logistics: {
       ...(existingAdvanced.logistics || {}),
       enabled: usePublicPageV2 ? true : existingAdvanced.logistics?.enabled ?? false,
-      hotelName: firecrawlInPlay
-        ? safeString(existingAdvanced.logistics?.hotelName) || ""
-        : compactHotelName || safeString(existingAdvanced.logistics?.hotelName) || "",
+      hotelName:
+        (travelAccommodationHotels.length === 1 ? travelAccommodationHotels[0]?.name : "") ||
+        compactHotelName ||
+        safeString(existingAdvanced.logistics?.hotelName) ||
+        "",
       hotelAddress: safeString(existingAdvanced.logistics?.hotelAddress) || "",
-      hotelInfo: firecrawlInPlay
-        ? safeString(existingAdvanced.logistics?.hotelInfo) || ""
-        : usePublicPageV2
-          ? publicTravel?.body || hotelNarrative
-          : hotelNarrative,
-      ...(travelAccommodationHotels.length > 0
-        ? {
-            hotels: travelAccommodationHotels
-              .map((item, idx) => ({
-                id: safeString(item?.id) || `travel-hotel-${idx + 1}`,
+      hotelInfo: usePublicPageV2 ? publicTravel?.body || hotelNarrative : hotelNarrative,
+      hotels:
+        travelAccommodationHotels.length > 0
+          ? travelAccommodationHotels
+          : pickArray(existingAdvanced.logistics?.hotels)
+              .map((item) => ({
                 name: safeString(item?.name),
-                address: safeString(item?.address),
-                phone: safeString(item?.phone),
-                bookingUrl: normalizeUrl(item?.bookingUrl),
-                reservationDeadline: safeString(item?.reservationDeadline),
-                rateSummary: safeString(item?.rateSummary),
-                notes: safeString(item?.notes),
+                imageUrl: normalizeUrl(item?.imageUrl) || null,
+                distanceFromVenue: safeString(item?.distanceFromVenue) || null,
+                groupRate: safeString(item?.groupRate) || null,
+                parking: safeString(item?.parking) || null,
+                breakfast: safeString(item?.breakfast) || null,
+                reservationDeadline: safeString(item?.reservationDeadline) || null,
+                phone: safeString(item?.phone) || null,
+                bookingUrl: normalizeUrl(item?.bookingUrl) || null,
               }))
-              .filter((item) => item.name || item.bookingUrl),
-          }
-        : {}),
+              .filter((item) => item.name),
+      fallbackTravelLink:
+        safeString(publicTravel?.fallbackLink) ||
+        travelAccommodationFallbackLink ||
+        safeString(existingAdvanced.logistics?.fallbackTravelLink) ||
+        "",
       mealPlan: parseResult.logistics.meals || "",
       feeAmount: parseResult.logistics.fees || "",
       additionalDocuments,
@@ -14199,7 +14315,6 @@ export async function mapParseResultToGymData(
         ...parseResult.coachInfo.links,
         ...parseResult.logistics.parkingLinks,
         ...parseResult.logistics.parkingPricingLinks,
-        ...travelAccommodationBookingLinks,
         inferredResultsLink,
         inferredHotelLink,
         inferredRotationLink,

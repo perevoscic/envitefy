@@ -762,14 +762,18 @@ test("fixture PDFs expose packet-aware resource links and schedule pages from fi
     assert.equal((xcel.extractionMeta.schedulePageTexts || []).length, 0);
   }
   assert.ok(
-    xcel.extractionMeta.resourceLinks?.some((item: any) => item.kind === "hotel_booking")
+    xcel.extractionMeta.resourceLinks?.some((item: any) =>
+      ["travel_accommodation", "hotel_booking"].includes(item.kind)
+    )
   );
 
   assert.ok(
     state710.extractionMeta.resourceLinks?.some((item: any) => item.kind === "rotation_hub")
   );
   assert.ok(
-    state710.extractionMeta.resourceLinks?.some((item: any) => item.kind === "hotel_booking")
+    state710.extractionMeta.resourceLinks?.some((item: any) =>
+      ["travel_accommodation", "hotel_booking"].includes(item.kind)
+    )
   );
 
   if (GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
@@ -781,7 +785,9 @@ test("fixture PDFs expose packet-aware resource links and schedule pages from fi
     crown.extractionMeta.resourceLinks?.some((item: any) => item.kind === "admission")
   );
   assert.ok(
-    crown.extractionMeta.resourceLinks?.some((item: any) => item.kind === "hotel_booking")
+    crown.extractionMeta.resourceLinks?.some((item: any) =>
+      ["travel_accommodation", "hotel_booking"].includes(item.kind)
+    )
   );
   assert.ok(
     crown.extractionMeta.resourceLinks?.some((item: any) => item.kind === "rotation_hub")
@@ -799,7 +805,7 @@ test("xcel mixed fixture classifies attendee-safe resource routing and hides ops
   assert.ok(
     resourceLinks.some(
       (item: any) =>
-        item.kind === "hotel_booking" &&
+        ["travel_accommodation", "hotel_booking"].includes(item.kind) &&
         item.audience === "public_attendee" &&
         item.renderTarget === "hotels"
     )
@@ -1559,7 +1565,10 @@ test("extractDiscoveryText persists canonical resource links, fetches trusted ex
     resourceLinks.some((item: any) => item.kind === "team_divisions" && item.url === divisionsUrl)
   );
   assert.ok(
-    resourceLinks.some((item: any) => item.kind === "hotel_booking" && item.url === hotelUrl)
+    resourceLinks.some(
+      (item: any) =>
+        ["travel_accommodation", "hotel_booking"].includes(item.kind) && item.url === hotelUrl
+    )
   );
   assert.ok(resourceLinks.some((item: any) => item.kind === "photo_video" && item.url === photoUrl));
   assert.ok(resourceLinks.some((item: any) => item.kind === "results_hub" && item.url === resultsHubUrl));
@@ -1672,11 +1681,20 @@ test("extractDiscoveryText contextualizes generic click-here resource links and 
   assert.ok(
     resourceLinks.some(
       (item: any) =>
-        item.kind === "hotel_booking" &&
+        ["travel_accommodation", "hotel_booking"].includes(item.kind) &&
         item.url === hotelUrl &&
         item.label === "Hotel Reservations"
     )
   );
+  assert.ok(
+    result.extractionMeta.travelAccommodationCandidates?.some(
+      (item: any) =>
+        item.subtype === "hotel_section_link" &&
+        item.url === hotelUrl &&
+        /hotel/i.test(item.contextLabel || item.label || "")
+    )
+  );
+  assert.equal(result.extractionMeta.travelAccommodationSummary?.fallbackLink, hotelUrl);
   assert.ok(
     resourceLinks.some(
       (item: any) =>
@@ -2266,7 +2284,7 @@ test("extractDiscoveryText merges PDF annotation links into resources and follow
   assert.ok(
     resourceLinks.some(
       (item: any) =>
-        item.kind === "hotel_booking" &&
+        ["travel_accommodation", "hotel_booking"].includes(item.kind) &&
         item.url === hotelUrl &&
         item.origin === "linked_asset"
     )
