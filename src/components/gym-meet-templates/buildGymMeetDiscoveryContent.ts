@@ -81,9 +81,10 @@ const buildTravelHotelCards = (hotels: any[], limit: number) =>
     (Array.isArray(hotels) ? hotels : []).slice(0, limit).map((hotel: any, index: number) => ({
       key: safeString(hotel?.id) || `travel-hotel-${index + 1}`,
       label: safeString(hotel?.name) || `Hotel ${index + 1}`,
+      imageUrl: safeString(hotel?.imageUrl),
       body: buildHotelCardBody(hotel),
       action: safeString(hotel?.bookingUrl)
-        ? { label: "Book", url: safeString(hotel?.bookingUrl) }
+        ? { label: "Book Hotel", url: safeString(hotel?.bookingUrl) }
         : undefined,
     })),
     "travel-hotel"
@@ -1595,6 +1596,7 @@ export function buildGymMeetDiscoveryContent({
     const travelHotelCards = travelAccommodationInPlay
       ? buildTravelHotelCards(effectiveHotelCardSource, 8)
       : [];
+    const hotelCardsOnlyMode = travelAccommodationInPlay && travelHotelCards.length > 0;
 
     const sections: GymMeetDiscoverySection[] = [
       {
@@ -1688,23 +1690,24 @@ export function buildGymMeetDiscoveryContent({
         kind: "hotels",
         priority: 50,
         hasContent:
-          (safeString(effectivePublicSections?.travel?.visibility) === "visible" &&
+          (!hotelCardsOnlyMode &&
+            safeString(effectivePublicSections?.travel?.visibility) === "visible" &&
             Boolean(safeString(effectivePublicSections?.travel?.body))) ||
           travelHotelCards.length > 0 ||
-          hotelLinks.length > 0,
+          (!hotelCardsOnlyMode && hotelLinks.length > 0),
         blocks: [
-          ...buildPublicSectionBlocks(effectivePublicSections?.travel),
+          ...(hotelCardsOnlyMode ? [] : buildPublicSectionBlocks(effectivePublicSections?.travel)),
           ...(travelHotelCards.length > 0
             ? [
                 {
                   id: "hotel-cards",
                   type: "card-grid" as const,
-                  columns: 1 as const,
+                  columns: 2 as const,
                   cards: travelHotelCards,
                 },
               ]
             : []),
-          ...(hotelLinks.length > 0
+          ...(!hotelCardsOnlyMode && hotelLinks.length > 0
             ? [
                 {
                   id: "hotel-links",
@@ -3775,12 +3778,12 @@ export function buildGymMeetDiscoveryContent({
               {
                 id: "hotel-cards",
                 type: "card-grid" as const,
-                columns: 1 as const,
+                columns: 2 as const,
                 cards: hotelCards,
               },
             ]
           : []),
-        ...(hotelLinks.length > 0
+        ...(!(travelAccommodationInPlay && hotelCards.length > 0) && hotelLinks.length > 0
           ? [
               {
                 id: "hotel-links",

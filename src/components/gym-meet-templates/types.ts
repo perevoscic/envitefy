@@ -240,6 +240,7 @@ export type GymMeetDiscoveryCard = {
   body?: string;
   meta?: string;
   items?: string[];
+  imageUrl?: string;
   action?: GymMeetLinkAction;
 };
 

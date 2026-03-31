@@ -11,6 +11,7 @@ test("extractHotelCardsFromContent parses HOST HOTEL INFORMATION cards with gene
   const content = `
 ## HOST HOTEL INFORMATION
 
+![Hilton exterior](https://images.example.com/hilton.jpg)
 ### Hilton University of Florida Conference Center
 1714 SW 34th St, Gainesville, FL 32607
 Phone: (352) 371-3600
@@ -37,6 +38,7 @@ Lot A opens at 6:30 AM.
     {
       name: "Hilton University of Florida Conference Center",
       bookingUrl: "https://book.example.com/hilton-uf",
+      imageUrl: "https://images.example.com/hilton.jpg",
       address: "1714 SW 34th St, Gainesville, FL 32607",
       phone: "(352) 371-3600",
       reservationDeadline: "March 20, 2026",
@@ -143,4 +145,39 @@ test("enrichTravelAccommodation prefers the same-host hotel hub when both hub an
       address: "4075 SW 33rd Place, Gainesville, FL 32608",
     },
   ]);
+});
+
+test("enrichTravelAccommodation records a clear timeout error when Firecrawl exceeds the budget", async (t) => {
+  const previousKey = process.env.FIRECRAWL_API_KEY;
+  const originalFetch = global.fetch;
+  process.env.FIRECRAWL_API_KEY = "test-key";
+
+  t.after(() => {
+    global.fetch = originalFetch;
+    if (previousKey === undefined) delete process.env.FIRECRAWL_API_KEY;
+    else process.env.FIRECRAWL_API_KEY = previousKey;
+  });
+
+  global.fetch = (async () => {
+    const error = new Error("The operation was aborted");
+    (error as any).name = "AbortError";
+    throw error;
+  }) as typeof fetch;
+
+  const travel = await enrichTravelAccommodation({
+    traceId: "travel-timeout-test",
+    extractionMeta: {
+      resourceLinks: [
+        {
+          kind: "hotel_booking",
+          label: "Host Hotel Information",
+          url: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
+          sourceUrl: "https://usacompetitions.com/wp-content/uploads/2026/03/state-info.pdf",
+        },
+      ],
+    },
+    budgetMs: 25_000,
+  });
+
+  assert.equal(travel?.hotelSource.lastError, "Firecrawl scrape timed out after 25000ms");
 });

@@ -6,6 +6,7 @@ type TravelAccommodationLink = {
 export type TravelAccommodationHotel = {
   name: string;
   bookingUrl?: string;
+  imageUrl?: string;
   address?: string;
   phone?: string;
   reservationDeadline?: string;
@@ -67,8 +68,8 @@ function stripMarkdownDecorators(value: string): string {
       .replace(/^\s{0,3}#{1,6}\s*/g, "")
       .replace(/^\s*[-*+]\s+/g, "")
       .replace(/^\s*\d+\.\s+/g, "")
-      .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi, "$1")
       .replace(/!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/gi, " ")
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi, "$1")
       .replace(/https?:\/\/[^\s)|]+/gi, " ")
       .replace(/[|*_`>]+/g, " ")
       .trim()
@@ -80,6 +81,12 @@ function sanitizeRichTextContent(value: string): string {
     .replace(/<\s*br\s*\/?>/gi, "\n")
     .replace(/<\/(?:p|div|section|article|li|ul|ol|h[1-6]|tr|table)>/gi, "\n")
     .replace(/<li[^>]*>/gi, "- ")
+    .replace(/<img\b[^>]*>/gi, (match) => {
+      const src = safeString(match.match(/\bsrc=['"]([^'"]+)['"]/i)?.[1]);
+      if (!src) return " ";
+      const alt = safeString(match.match(/\balt=['"]([^'"]*)['"]/i)?.[1]);
+      return `![${alt}](${src})`;
+    })
     .replace(/<a[^>]+href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi, (_match, href, text) => {
       const label = stripMarkdownDecorators(
         decodeHtmlEntities(
@@ -90,7 +97,6 @@ function sanitizeRichTextContent(value: string): string {
       );
       return label ? `[${label}](${href})` : href;
     })
-    .replace(/<img[^>]*alt=['"]([^'"]*)['"][^>]*>/gi, "$1")
     .replace(/<[^>]+>/g, " ")
     .replace(/\r/g, "");
 }
@@ -208,6 +214,19 @@ function isImageUrl(value: string): boolean {
   return /\.(?:png|jpe?g|gif|webp|svg)(?:\?|#|$)/i.test(safeString(value));
 }
 
+function extractImageUrls(value: string, baseUrl?: string): string[] {
+  const out = new Set<string>();
+  for (const match of safeString(value).matchAll(/!\[[^\]]*]\(([^)\s]+)\)/gi)) {
+    const normalized = normalizeUrl(match[1] || "", baseUrl);
+    if (normalized && isImageUrl(normalized)) out.add(normalized);
+  }
+  for (const match of safeString(value).matchAll(/<img\b[^>]*src=['"]([^'"]+)['"][^>]*>/gi)) {
+    const normalized = normalizeUrl(match[1] || "", baseUrl);
+    if (normalized && isImageUrl(normalized)) out.add(normalized);
+  }
+  return Array.from(out);
+}
+
 function isSectionBoundary(line: string): boolean {
   const cleaned = stripMarkdownDecorators(line);
   if (!cleaned) return false;
@@ -251,9 +270,16 @@ function splitHotelCards(lines: string[]): string[][] {
     current = [];
   };
 
+  const hasNonImageContent = (items: string[]) =>
+    items.some((item) => {
+      const cleaned = stripMarkdownDecorators(item);
+      return Boolean(cleaned);
+    });
+
   for (const line of lines) {
     const cleaned = stripMarkdownDecorators(line);
-    if (!cleaned) {
+    const imageUrls = extractImageUrls(line);
+    if (!cleaned && imageUrls.length === 0) {
       flush();
       continue;
     }
@@ -263,7 +289,7 @@ function splitHotelCards(lines: string[]): string[][] {
     }
     const headingLike = /^\s{0,3}#{2,6}\s+/.test(line) || /^hotel[:\s]/i.test(cleaned);
     const hotelNameLike = looksLikeHotelName(cleaned) && !isGenericBookingLabel(cleaned);
-    if (current.length > 0 && (headingLike || hotelNameLike)) {
+    if (current.length > 0 && (headingLike || hotelNameLike) && hasNonImageContent(current)) {
       flush();
     }
     current.push(line);
@@ -289,6 +315,14 @@ function chooseBookingUrl(lines: string[], baseUrl: string): string {
   });
 
   return candidates.sort((left, right) => right.score - left.score)[0]?.url || "";
+}
+
+function chooseImageUrl(lines: string[], baseUrl: string): string {
+  for (const line of lines) {
+    const match = extractImageUrls(line, baseUrl)[0];
+    if (match) return match;
+  }
+  return "";
 }
 
 function chooseHotelName(lines: string[]): string {
@@ -319,6 +353,7 @@ function normalizeNoteLine(value: string): string {
 
 function extractHotelFromCard(lines: string[], baseUrl: string): TravelAccommodationHotel | null {
   const bookingUrl = chooseBookingUrl(lines, baseUrl);
+  const imageUrl = chooseImageUrl(lines, baseUrl);
   const name = chooseHotelName(lines);
 
   let address = "";
@@ -329,6 +364,7 @@ function extractHotelFromCard(lines: string[], baseUrl: string): TravelAccommoda
 
   for (const line of lines) {
     const normalizedLine = stripMarkdownDecorators(line);
+    if (extractImageUrls(line, baseUrl).length > 0) continue;
     const cleaned = normalizeNoteLine(line);
     if (!normalizedLine) continue;
     if (!address && looksLikeAddress(normalizedLine)) {
@@ -363,6 +399,7 @@ function extractHotelFromCard(lines: string[], baseUrl: string): TravelAccommoda
       cleaned === phone ||
       cleaned === reservationDeadline ||
       cleaned === rateSummary ||
+      cleaned.startsWith("![") ||
       isGenericBookingLabel(cleaned) ||
       isLikelyHotelHubLabel(cleaned)
     ) {
@@ -376,6 +413,7 @@ function extractHotelFromCard(lines: string[], baseUrl: string): TravelAccommoda
   return {
     name: name || cleanHotelName(noteLines[0] || ""),
     ...(bookingUrl ? { bookingUrl } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
     ...(address ? { address } : {}),
     ...(phone ? { phone } : {}),
     ...(reservationDeadline ? { reservationDeadline } : {}),
@@ -391,6 +429,7 @@ function uniqueHotels(items: TravelAccommodationHotel[], limit: number): TravelA
     const normalized: TravelAccommodationHotel = {
       name: cleanHotelName(item.name),
       ...(item.bookingUrl ? { bookingUrl: normalizeUrl(item.bookingUrl) } : {}),
+      ...(item.imageUrl ? { imageUrl: normalizeUrl(item.imageUrl) } : {}),
       ...(item.address ? { address: normalizeWhitespace(item.address) } : {}),
       ...(item.phone ? { phone: normalizeWhitespace(item.phone) } : {}),
       ...(item.reservationDeadline
@@ -547,7 +586,7 @@ async function firecrawlScrapeContent(params: {
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const payload = {
     url,
-    formats: ["markdown"],
+    formats: ["markdown", "html"],
   };
   const tryOnce = async (endpoint: string) => {
     const res = await fetch(endpoint, {
@@ -583,7 +622,10 @@ async function firecrawlScrapeContent(params: {
   };
   try {
     return await tryOnce("https://api.firecrawl.dev/v1/scrape");
-  } catch {
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error(`Firecrawl scrape timed out after ${timeoutMs}ms`);
+    }
     return await tryOnce("https://api.firecrawl.dev/v0/scrape");
   } finally {
     clearTimeout(timeout);

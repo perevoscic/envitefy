@@ -282,6 +282,7 @@ test("Hotels tab prefers travelAccommodation hotel cards and keeps the hub link 
             {
               name: "Hilton Garden Inn",
               bookingUrl: "https://book.example.com/hilton",
+              imageUrl: "https://images.example.com/hilton.jpg",
               address: "4075 SW 33rd Place, Gainesville, FL 32608",
               phone: "(352) 555-1111",
               reservationDeadline: "March 20, 2026",
@@ -321,25 +322,15 @@ test("Hotels tab prefers travelAccommodation hotel cards and keeps the hub link 
   const cardsBlock = findBlock(hotels, "hotel-cards");
   assert.ok(cardsBlock, "expected hotel cards block");
   assert.equal(cardsBlock.cards.length, 2);
+  assert.equal(cardsBlock.cards[0].imageUrl, "https://images.example.com/hilton.jpg");
   assert.match(cardsBlock.cards[0].body, /Phone: \(352\) 555-1111/);
   assert.match(cardsBlock.cards[0].body, /Reservation deadline: March 20, 2026/);
   assert.match(cardsBlock.cards[0].body, /Rate: \$189 King/);
   assert.equal(cardsBlock.cards[0].action.url, "https://book.example.com/hilton");
+  assert.equal(cardsBlock.cards[0].action.label, "Book Hotel");
 
   const linksBlock = findBlock(hotels, "hotel-links");
-  assert.ok(linksBlock, "expected backup hotel links block");
-  assert.ok(
-    linksBlock.links.some(
-      (item: any) =>
-        item.url === "https://usacompetitions.com/2026-xcel-bsg-state-championships/" &&
-        item.label === "Host Hotels",
-    ),
-    "expected hub page to remain available as a backup link",
-  );
-  assert.ok(
-    linksBlock.links.some((item: any) => item.url === "https://book.example.com/courtyard"),
-    "expected per-hotel booking links to remain visible alongside the hub backup link",
-  );
+  assert.equal(linksBlock, null, "expected structured hotel cards to suppress extra hotel link list");
 });
 
 test("discovery hero summary excludes arrival guidance cards", () => {

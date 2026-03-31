@@ -188,6 +188,16 @@ export default function ShowcaseDiscoveryContent({
                   const cardReactKey = getCollectionItemKey(block.id, card?.key, index);
                   return (
                     <div key={cardReactKey} className={theme.cardClass}>
+                      {card.imageUrl ? (
+                        <div className="mb-4 overflow-hidden rounded-[24px] border border-white/60 bg-white/40 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+                          <img
+                            src={card.imageUrl}
+                            alt={card.label || "Hotel image"}
+                            className="aspect-[4/3] w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : null}
                       {card.label ? (
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
                           {card.label}
@@ -197,7 +207,9 @@ export default function ShowcaseDiscoveryContent({
                         <p className="mt-2 text-3xl font-black leading-none">{card.value}</p>
                       ) : null}
                       {card.body ? (
-                        <p className={`${card.value || card.label ? "mt-2" : ""} text-sm leading-relaxed opacity-88`}>
+                        <p
+                          className={`${card.value || card.label ? "mt-2" : ""} whitespace-pre-line text-sm leading-relaxed opacity-88`}
+                        >
                           {card.body}
                         </p>
                       ) : null}
