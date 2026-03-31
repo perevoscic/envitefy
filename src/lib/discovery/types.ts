@@ -198,3 +198,17 @@ export type EventDiscoveryRow = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type DiscoveryStatusResponse = {
+  eventId: string;
+  discoveryId: string;
+  processingStage: DiscoveryStage | DiscoveryFailureStage;
+  lastSuccessfulStage: DiscoveryStage | null;
+  needsHumanReview: boolean;
+  builderReady: boolean;
+  errorCode: string | null;
+  errorStage: string | null;
+  errorMessage: string | null;
+  errorDetails: Record<string, unknown> | null;
+  reviewFlags: string[];
+};

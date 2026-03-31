@@ -1,3 +1,4 @@
+import { attachDiscoveryFailureMetadata } from "@/lib/discovery/failure-summary";
 import { safeString } from "@/lib/discovery/shared";
 import type {
   DiscoveryDocument,
@@ -43,9 +44,6 @@ export async function runDiscoveryExtractStageWithMode(
     debugArtifacts: isDiscoveryDebugArtifactsEnabled(),
     performance,
   });
-  if (!safeString(extraction.extractedText) || safeString(extraction.extractedText).length < 20) {
-    throw new Error("Not enough text extracted to parse");
-  }
 
   const rawPages = Array.isArray((extraction.extractionMeta as any)?.pages)
     ? ((extraction.extractionMeta as any).pages as Array<Record<string, any>>)
@@ -56,6 +54,25 @@ export async function runDiscoveryExtractStageWithMode(
   const discoveredLinks = Array.isArray((extraction.extractionMeta as any)?.discoveredLinks)
     ? ((extraction.extractionMeta as any).discoveredLinks as Array<Record<string, any>>)
     : [];
+
+  if (!safeString(extraction.extractedText) || safeString(extraction.extractedText).length < 20) {
+    throw attachDiscoveryFailureMetadata(new Error("Not enough text extracted to parse"), {
+      code: "not_enough_text",
+      extractionSnapshot: {
+        extractedChars: safeString(extraction.extractedText).length,
+        pageCount: rawPages.length || null,
+        usedOcr:
+          typeof (extraction.extractionMeta as any)?.usedOcr === "boolean"
+            ? Boolean((extraction.extractionMeta as any).usedOcr)
+            : null,
+        textQuality: safeString((extraction.extractionMeta as any)?.textQuality) || null,
+      },
+      runtimeHints: {
+        ocrAttempted: (performance.ocrPageCount || 0) > 0,
+      },
+    });
+  }
+
   const resources: DiscoveryResource[] = resourceLinks
     .map((item) => ({
       kind: safeString(item.kind) || "other",

@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { safeString } from "@/lib/discovery/strings";
+import { safeString } from "./strings.ts";
 import type {
   DiscoveryFailureStage,
   DiscoveryPipelineState,
   DiscoveryStage,
   GymBuilderDraft,
   GymPublicArtifacts,
-} from "@/lib/discovery/types";
+} from "./types.ts";
 
 export const DISCOVERY_REVIEW_READY_STAGES = new Set<DiscoveryStage>(["review_ready", "published"]);
 
-export { safeString } from "@/lib/discovery/strings";
+export { safeString } from "./strings.ts";
 
 export function getDiscoveryLeaseMs(): number {
   const parsed = Number.parseInt(process.env.DISCOVERY_V2_LEASE_MS || "", 10);

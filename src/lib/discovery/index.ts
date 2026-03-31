@@ -1,4 +1,5 @@
 export * from "@/lib/discovery/event-data";
+export * from "@/lib/discovery/failure-summary";
 export * from "@/lib/discovery/intake";
 export * from "@/lib/discovery/lease";
 export * from "@/lib/discovery/persist";

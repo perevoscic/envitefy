@@ -4,9 +4,15 @@ import { ArrowRight, CheckCircle2, Globe, Sparkles, Upload } from "lucide-react"
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
+import CopyButton from "@/components/CopyButton";
 import DiscoveryProgressPanel, {
   type DiscoveryProgressTheme,
 } from "@/components/event-create/DiscoveryProgressPanel";
+import {
+  createDiscoveryStatusClientError,
+  toDiscoveryUiError,
+  type DiscoveryUiError,
+} from "@/components/event-create/discovery-client-error";
 import { GYM_DISCOVERY_STATUS_PHRASES } from "@/components/event-create/gym-discovery-status-phrases";
 import {
   GYMNASTICS_URL_PARSE_START_PROGRESS,
@@ -50,7 +56,7 @@ export default function GymnasticsLauncher({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedPath, setSelectedPath] = useState<"upload" | "url" | "scratch">("upload");
   const [uploadBusy, setUploadBusy] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const [uploadError, setUploadError] = useState<DiscoveryUiError | null>(null);
   const [uploadFileName, setUploadFileName] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -58,7 +64,7 @@ export default function GymnasticsLauncher({
   const [urlProgress, setUrlProgress] = useState(0);
   const [urlStatus, setUrlStatus] = useState("");
   const [urlIndeterminate, setUrlIndeterminate] = useState(false);
-  const [urlError, setUrlError] = useState("");
+  const [urlError, setUrlError] = useState<DiscoveryUiError | null>(null);
   const [meetUrl, setMeetUrl] = useState("");
   const discoveryBusy = uploadBusy || urlBusy;
   const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
@@ -81,6 +87,33 @@ export default function GymnasticsLauncher({
     if (err instanceof Error && err.message) return err.message;
     if (typeof err === "string" && err.trim()) return err;
     return fallback;
+  };
+
+  const renderDiscoveryError = (error: DiscoveryUiError | null) => {
+    if (!error) return null;
+    return (
+      <div className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+        <p>{error.message}</p>
+        {status === "authenticated" && error.technicalDetails ? (
+          <details className="mt-2 rounded border border-red-100 bg-white/70 p-2">
+            <summary className="cursor-pointer font-semibold text-red-800">
+              Technical details
+            </summary>
+            <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-950/90 p-2 text-[11px] text-slate-100">
+              {error.technicalDetails}
+            </pre>
+            <div className="mt-2 flex justify-end">
+              <CopyButton
+                text={error.technicalDetails}
+                className="rounded border border-red-200 bg-white px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50"
+              >
+                Copy technical details
+              </CopyButton>
+            </div>
+          </details>
+        ) : null}
+      </div>
+    );
   };
 
   const isAbortError = (err: unknown) => {
@@ -137,8 +170,8 @@ export default function GymnasticsLauncher({
     setUrlProgress(0);
     setUrlStatus("");
     setUrlIndeterminate(false);
-    setUploadError("");
-    setUrlError("");
+    setUploadError(null);
+    setUrlError(null);
   };
 
   useEffect(() => {
@@ -336,7 +369,7 @@ export default function GymnasticsLauncher({
           throw new Error(statusJson?.error || "Failed to poll discovery status");
         }
         if (statusJson?.errorCode) {
-          throw new Error(statusJson.errorCode);
+          throw createDiscoveryStatusClientError(statusJson, "Meet discovery failed.");
         }
         log("status poll", {
           processingStage: statusJson?.processingStage ?? null,
@@ -385,7 +418,7 @@ export default function GymnasticsLauncher({
     if (discoveryBusy) return;
     if (!pickedFile) return;
     setSelectedPath("upload");
-    setUploadError("");
+    setUploadError(null);
     setUploadBusy(true);
     setUploadFileName(pickedFile.name);
     setUploadProgress(0);
@@ -411,7 +444,7 @@ export default function GymnasticsLauncher({
         return;
       }
       console.error(`${GYM_DISCOVERY_LOG_PREFIX} discovery failed`, err);
-      setUploadError(toErrorMessage(err, "Failed to parse file"));
+      setUploadError(toDiscoveryUiError(err, "Failed to parse file"));
       setUploadStatus("");
     } finally {
       setUploadBusy(false);
@@ -421,17 +454,17 @@ export default function GymnasticsLauncher({
   const handleUrlSync = async () => {
     if (discoveryBusy) return;
     setSelectedPath("url");
-    setUrlError("");
+    setUrlError(null);
     const trimmed = meetUrl.trim();
     if (!trimmed) {
-      setUrlError("Paste a meet URL to continue.");
+      setUrlError({ message: "Paste a meet URL to continue.", technicalDetails: null });
       return;
     }
     try {
       // Validate before sending to API for a tighter UX loop.
       new URL(trimmed);
     } catch {
-      setUrlError("Enter a valid URL.");
+      setUrlError({ message: "Enter a valid URL.", technicalDetails: null });
       return;
     }
 
@@ -460,7 +493,7 @@ export default function GymnasticsLauncher({
         setUrlIndeterminate(false);
         return;
       }
-      setUrlError(toErrorMessage(err, "Failed to sync URL"));
+      setUrlError(toDiscoveryUiError(err, "Failed to sync URL"));
       setUrlStatus("");
       setUrlIndeterminate(false);
     } finally {
@@ -565,11 +598,7 @@ export default function GymnasticsLauncher({
               {uploadFileName ? (
                 <p className="mt-2 truncate text-xs text-[#6a6782]">Selected: {uploadFileName}</p>
               ) : null}
-              {uploadError ? (
-                <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                  {uploadError}
-                </p>
-              ) : null}
+              {renderDiscoveryError(uploadError)}
             </div>
           </section>
 
@@ -630,11 +659,7 @@ export default function GymnasticsLauncher({
                   Sync URL
                 </button>
               )}
-              {urlError ? (
-                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                  {urlError}
-                </p>
-              ) : null}
+              {renderDiscoveryError(urlError)}
             </div>
           </section>
 

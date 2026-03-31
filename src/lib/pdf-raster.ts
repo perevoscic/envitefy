@@ -7,6 +7,9 @@ export type PdfAnnotationLink = {
   source: "pdf_annotation";
 };
 
+export const PDF_TEXT_ENGINE_LABEL = "pdfjs-dist";
+export const PDF_WORKER_DISABLED = true;
+
 let pdfJsPromise: Promise<any | null> | null = null;
 let pdfRenderDepsPromise: Promise<{
   pdfjs: any;
@@ -35,6 +38,16 @@ async function getPdfJs() {
     pdfJsPromise = import("pdfjs-dist/legacy/build/pdf.mjs").catch(() => null);
   }
   return pdfJsPromise;
+}
+
+function getServerPdfDocument(pdfjs: any, pdfBuffer: Buffer) {
+  return pdfjs.getDocument({
+    data: new Uint8Array(pdfBuffer),
+    useSystemFonts: true,
+    isEvalSupported: false,
+    disableFontFace: true,
+    disableWorker: PDF_WORKER_DISABLED,
+  });
 }
 
 function normalizePdfJsPageText(items: unknown): string {
@@ -75,12 +88,7 @@ async function renderPdfPageToPngWithPdfJs(
   const deps = await getPdfRenderDeps();
   if (!deps) return null;
   try {
-    const loadingTask = deps.pdfjs.getDocument({
-      data: new Uint8Array(pdfBuffer),
-      useSystemFonts: true,
-      isEvalSupported: false,
-      disableFontFace: true,
-    });
+    const loadingTask = getServerPdfDocument(deps.pdfjs, pdfBuffer);
     const doc = await loadingTask.promise;
     const page = await doc.getPage(pageIndex + 1);
     const viewport = page.getViewport({ scale });
@@ -121,12 +129,7 @@ export async function extractPdfAnnotationLinks(
 
   let doc: any = null;
   try {
-    const loadingTask = pdfjs.getDocument({
-      data: new Uint8Array(pdfBuffer),
-      useSystemFonts: true,
-      isEvalSupported: false,
-      disableFontFace: true,
-    });
+    const loadingTask = getServerPdfDocument(pdfjs, pdfBuffer);
     doc = await loadingTask.promise;
     const links: PdfAnnotationLink[] = [];
     const seen = new Set<string>();
@@ -181,12 +184,7 @@ export async function extractPdfTextWithPdfJs(
 
   let doc: any = null;
   try {
-    const loadingTask = pdfjs.getDocument({
-      data: new Uint8Array(pdfBuffer),
-      useSystemFonts: true,
-      isEvalSupported: false,
-      disableFontFace: true,
-    });
+    const loadingTask = getServerPdfDocument(pdfjs, pdfBuffer);
     doc = await loadingTask.promise;
     const pages: Array<{ num: number; text: string }> = [];
     const pageCount = Number(doc.numPages) || 0;

@@ -2,6 +2,7 @@ import { getEventDiscoveryByEventId, updateEventDiscovery } from "@/lib/db";
 import { runDiscoveryComposePublicStage } from "@/lib/discovery/compose-public";
 import { runDiscoveryEnrichStage } from "@/lib/discovery/enrich";
 import { runDiscoveryExtractStage } from "@/lib/discovery/extract";
+import { buildDiscoveryFailureSummary } from "@/lib/discovery/failure-summary";
 import { acquireDiscoveryLease } from "@/lib/discovery/lease";
 import { runDiscoveryMapStage } from "@/lib/discovery/map";
 import { runDiscoveryParseStage } from "@/lib/discovery/parse";
@@ -218,15 +219,27 @@ export async function runDiscoveryPipeline(eventId: string) {
     });
     return buildDiscoveryStatusResponse(current);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const failedStage = resolveFailureStage(String(current.pipeline.processingStage || ""));
-    const failedPipeline = failDiscoveryStage(current.pipeline, failedStage, failedStage, message);
+    const stageAtFailure = safeString(current.pipeline.processingStage) || "extract";
+    const failedStage = resolveFailureStage(stageAtFailure);
+    const failureSummary = buildDiscoveryFailureSummary({
+      discovery: current,
+      error,
+      failedStage: stageAtFailure,
+      fallbackCode: failedStage,
+    });
+    const failedPipeline = failDiscoveryStage(
+      current.pipeline,
+      failedStage,
+      failedStage,
+      failureSummary.errorMessage,
+    );
     await persistDiscoveryRow({
       discovery: current,
       patch: {
         debug: {
           ...((current.debug || {}) as Record<string, unknown>),
-          lastError: message,
+          lastError: failureSummary.errorMessage,
+          failureSummary,
         },
         pipeline: failedPipeline,
       },
