@@ -99,8 +99,9 @@ async function handleDiscoveryIngest(
     };
     title = fileValue.name?.replace(/\.[^.]+$/, "") || title;
 
+    // Discovery ingest should not claim into user history until explicit Save/Publish.
     const row = await insertEventHistory({
-      userId: userId || null,
+      userId: null,
       title,
       data: {
         ...baseData,
@@ -180,8 +181,9 @@ async function handleDiscoveryIngest(
     });
   }
 
+  // Discovery ingest should not claim into user history until explicit Save/Publish.
   const row = await insertEventHistory({
-    userId: userId || null,
+    userId: null,
     title,
     data: {
       ...baseData,

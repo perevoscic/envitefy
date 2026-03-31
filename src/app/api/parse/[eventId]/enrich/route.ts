@@ -16,6 +16,10 @@ import {
 import { hydrateDiscoveryFileInput } from "@/lib/discovery-file-hydration";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import {
+  buildTravelAccommodationState,
+  enrichTravelAccommodation,
+} from "@/lib/travel-accommodation-enrichment";
+import {
   buildGymDiscoveryPublicPageArtifacts,
   computeGymBuilderStatuses,
   createDiscoveryPerformance,
@@ -336,14 +340,26 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       string,
       any
     >;
+    const travelAccommodation = await enrichTravelAccommodation({
+      sourceType: sourceInput.type,
+      extractedText: extraction.extractedText || baseExtractedText,
+      extractionMeta: extraction.extractionMeta,
+    });
+    const latestDataWithTravel = {
+      ...latestData,
+      discoverySource: {
+        ...latestDiscoverySource,
+        travelAccommodation: buildTravelAccommodationState(travelAccommodation),
+      },
+    };
     const mapped = await mapParseResultToGymData(
       enrichedParseResult,
-      latestData,
+      latestDataWithTravel,
       extraction.extractionMeta,
     );
     const publicArtifacts = buildGymDiscoveryPublicPageArtifacts({
       parseResult: enrichedParseResult,
-      baseData: latestData,
+      baseData: latestDataWithTravel,
       extractionMeta: extraction.extractionMeta,
     });
     const nextGymPageTemplateId =
@@ -387,6 +403,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
               publishAssessment: publicArtifacts.publishAssessment,
             }
           : {}),
+        travelAccommodation: buildTravelAccommodationState(travelAccommodation),
         parseResult: stripGymScheduleGridsFromParseResult(
           publicArtifacts?.parseResult || enrichedParseResult
         ),

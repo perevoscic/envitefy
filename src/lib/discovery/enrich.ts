@@ -2,6 +2,10 @@ import { runDiscoveryExtractStageWithMode } from "@/lib/discovery/extract";
 import { safeString } from "@/lib/discovery/shared";
 import type { EventDiscoveryRow } from "@/lib/discovery/types";
 import {
+  buildTravelAccommodationState,
+  enrichTravelAccommodation,
+} from "@/lib/travel-accommodation-enrichment";
+import {
   createDiscoveryPerformance,
   finalizeMeetParseResult,
   isDiscoveryDebugArtifactsEnabled,
@@ -39,10 +43,17 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
     } as any,
   );
 
+  const travelAccommodation = await enrichTravelAccommodation({
+    sourceType: discovery.source.type,
+    extractedText,
+    extractionMeta: refreshedExtraction.document.extractionMeta as any,
+  });
+
   return {
     document: refreshedExtraction.document,
     enrichment: {
       parseResult: enrichedParseResult,
+      travelAccommodation: buildTravelAccommodationState(travelAccommodation),
       finalizedAt: new Date().toISOString(),
       performance,
     },

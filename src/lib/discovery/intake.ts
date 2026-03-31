@@ -70,7 +70,8 @@ export async function intakeGymnasticsDiscovery(params: {
     processingStage: "ingested",
   });
   const created = await createDiscoveryShell({
-    userId: params.userId,
+    // Do not claim discovery drafts into the user's history until an explicit Save/Publish action.
+    userId: null,
     title,
     source,
     pipeline,

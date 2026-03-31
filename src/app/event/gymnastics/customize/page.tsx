@@ -766,6 +766,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const editEventId = search?.get("edit") ?? undefined;
     const demoMode = search?.get("demo") === "1";
     const isEmbed = search?.get("embed") === "1";
+    const isNewDraft = search?.get("new") === "1";
     const defaultDate = search?.get("d") ?? undefined;
     const [demoAuthOpen, setDemoAuthOpen] = useState(false);
     const [demoAuthMode, setDemoAuthMode] = useState<"login" | "signup">("signup");
@@ -834,6 +835,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       Record<string, boolean>
     >({});
     const [submitting, setSubmitting] = useState(false);
+    const [didExplicitSave, setDidExplicitSave] = useState(false);
     const [discoverFile, setDiscoverFile] = useState<File | null>(null);
     const [discoverBusy, setDiscoverBusy] = useState(false);
     const [discoverError, setDiscoverError] = useState("");
@@ -1999,6 +2001,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           const updatePayload = {
             title: payload.title,
             data: payload.data,
+            ...(isNewDraft ? { claim: true } : {}),
           };
 
           console.log("[Publish] Sending update payload:", {
@@ -2018,6 +2021,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             console.error("[Publish] Update failed:", res.status, errorText);
             throw new Error("Failed to update event");
           }
+
+          setDidExplicitSave(true);
 
           if (typeof window !== "undefined") {
             window.dispatchEvent(
@@ -2117,6 +2122,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       currentTheme,
       selectedSize,
       editEventId,
+      isNewDraft,
       isDiscoveryEdit,
       loadedDiscoveryPipelineSummary,
       loadedDiscoveryPublicArtifacts,
@@ -2808,7 +2814,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           builderReady = statusJson?.builderReady === true;
         }
         log("routing to builder", { eventId });
-        router.push(`/event/gymnastics/customize?edit=${eventId}`);
+        router.push(`/event/gymnastics/customize?edit=${eventId}&new=1`);
       } catch (err: any) {
         console.error(`[gymnastics-customize] discovery failed`, err);
         setDiscoverError(String(err?.message || err || "Failed to parse source"));
@@ -3283,6 +3289,26 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             {editEventId && (
               <button
                 onClick={() => {
+                  if (!didExplicitSave && isNewDraft && editEventId) {
+                    void (async () => {
+                      try {
+                        await fetch(`/api/history/${editEventId}`, {
+                          method: "DELETE",
+                          credentials: "include",
+                        });
+                      } catch {}
+
+                      if (isEmbed && typeof window !== "undefined") {
+                        try {
+                          (window as any).parent?.location?.assign("/event/gymnastics");
+                          return;
+                        } catch {}
+                      }
+
+                      router.push("/event/gymnastics");
+                    })();
+                    return;
+                  }
                   if (isEmbed && typeof window !== "undefined") {
                     try {
                       window.parent?.postMessage(
@@ -3302,7 +3328,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                       router.push(`/event/${editEventId}`);
                     }
                   } else {
-                    router.push(`/event/${editEventId}`);
+                    router.push("/event/gymnastics");
                   }
                 }}
                 className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"

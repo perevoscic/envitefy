@@ -1,4 +1,4 @@
-import { getEventDiscoveryByEventId, updateEventDiscovery } from "@/lib/db";
+import { getEventDiscoveryByEventId, updateEventDiscovery, updateEventHistoryDataMerge } from "@/lib/db";
 import { runDiscoveryComposePublicStage } from "@/lib/discovery/compose-public";
 import { runDiscoveryEnrichStage } from "@/lib/discovery/enrich";
 import { runDiscoveryExtractStage } from "@/lib/discovery/extract";
@@ -168,6 +168,19 @@ export async function runDiscoveryPipeline(eventId: string) {
         pipeline: completeDiscoveryStage(current.pipeline, "enrich", Date.now() - startedAt),
       },
     });
+
+    const travelAccommodationState =
+      enriched.enrichment && typeof enriched.enrichment === "object"
+        ? (enriched.enrichment as any).travelAccommodation
+        : null;
+    if (travelAccommodationState && typeof travelAccommodationState === "object") {
+      await updateEventHistoryDataMerge(current.eventId, {
+        discoverySource: {
+          travelAccommodation: travelAccommodationState,
+          updatedAt: new Date().toISOString(),
+        },
+      }).catch(() => {});
+    }
 
     startedAt = Date.now();
     current = await enterStage(current, "compose_public");

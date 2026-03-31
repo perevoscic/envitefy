@@ -172,6 +172,18 @@ export type GymPublicSection = {
   body?: string;
   bullets?: string[];
   links?: PublicLink[];
+  items?: Array<{
+    name: string;
+    imageUrl?: string | null;
+    distanceFromVenue?: string | null;
+    groupRate?: string | null;
+    parking?: string | null;
+    breakfast?: string | null;
+    reservationDeadline?: string | null;
+    phone?: string | null;
+    bookingUrl?: string | null;
+  }>;
+  fallbackLink?: string | null;
   hideReason?: string | null;
   provenance: PublicSectionProvenance;
   confidence: number;
