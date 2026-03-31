@@ -2,12 +2,6 @@ import OpenAI from "openai";
 import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { inflateRawSync, inflateSync } from "node:zlib";
-import { execFile } from "node:child_process";
-import { createRequire } from "node:module";
-import { promisify } from "node:util";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 import {
   createDiscoveryRequestCache,
   getOrCreatePdfPageImage,
@@ -771,7 +765,6 @@ const MAX_FOLLOWED_CHILD_PAGES = 3;
 const MAX_DISCOVERED_LINKS = 24;
 const MAX_FETCH_BYTES = 7 * 1024 * 1024;
 const LOW_TEXT_THRESHOLD = 200;
-const execFileAsync = promisify(execFile);
 let urlDiscoveryTestHooks: UrlDiscoveryTestHooks | null = null;
 
 export function createDiscoveryPerformance(
@@ -3812,111 +3805,17 @@ function analyzeTextQuality(text: string): {
 }
 
 async function extractPdfTextWithNodeWorker(buffer: Buffer): Promise<PdfTextExtraction> {
-  let tempDir = "";
-  try {
-    tempDir = await mkdtemp(join(tmpdir(), "envitefy-pdf-"));
-    const filePath = join(tempDir, "input.pdf");
-    await writeFile(filePath, buffer);
-    const requireFromApp = createRequire(join(process.cwd(), "package.json"));
-    const pdfParseModuleId = (() => {
-      try {
-        return requireFromApp.resolve("pdf-parse");
-      } catch {
-        return "pdf-parse";
-      }
-    })();
-    const workerScript = `
-const { readFileSync } = require("fs");
-const { PDFParse } = require(${JSON.stringify(pdfParseModuleId)});
-(async () => {
-  const data = readFileSync(process.argv[1]);
-  const parser = new PDFParse({ data });
-  const result = await parser.getText();
-  if (typeof parser.destroy === "function") await parser.destroy();
-  process.stdout.write(JSON.stringify({
-    text: result?.text || "",
-    pages: Array.isArray(result?.pages)
-      ? result.pages.map((page) => ({
-          num: Number(page?.num) || 0,
-          text: page?.text || "",
-        }))
-      : [],
-  }));
-})().catch((error) => {
-  process.stderr.write(String(error?.message || error));
-  process.exit(1);
-});
-`;
-    const { stdout } = await execFileAsync(process.execPath, ["-e", workerScript, filePath], {
-      maxBuffer: 10 * 1024 * 1024,
-    });
-    const payload = JSON.parse(stdout || "{}");
-    return {
-      text: cleanExtractedText(String(payload?.text || "")),
-      pages: pickArray(payload?.pages)
-        .map((page) => ({
-          num: Number(page?.num) || 0,
-          text: cleanPdfPageTextPreservingGrid(String(page?.text || "")),
-        }))
-        .filter((page) => page.text),
-      annotationLinks: [],
-    };
-  } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : typeof err === "string" ? err : String(err || "");
-    console.warn("[meet-discovery] pdf-parse worker failed", {
-      message,
-    });
-    const pdfJsExtraction = await extractPdfTextWithPdfJs(buffer);
-    if (pdfJsExtraction.text || pdfJsExtraction.pages.length > 0) {
-      return {
-        text: cleanExtractedText(String(pdfJsExtraction.text || "")),
-        pages: pdfJsExtraction.pages
-          .map((page) => ({
-            num: Number(page?.num) || 0,
-            text: cleanPdfPageTextPreservingGrid(String(page?.text || "")),
-          }))
-          .filter((page) => page.text),
-        annotationLinks: [],
-      };
-    }
-    try {
-      const mod = await import("pdf-parse");
-      const PDFParseCtor =
-        typeof mod?.PDFParse === "function" ? mod.PDFParse : null;
-      if (PDFParseCtor) {
-        const parser = new PDFParseCtor({ data: buffer });
-        const result = await parser.getText();
-        if (typeof parser.destroy === "function") await parser.destroy();
-        return {
-          text: cleanExtractedText(String(result?.text || "")),
-          pages: Array.isArray(result?.pages)
-            ? result.pages
-                .map((page: any) => ({
-                  num: Number(page?.num) || 0,
-                  text: cleanPdfPageTextPreservingGrid(String(page?.text || "")),
-                }))
-                .filter((page: any) => page.text)
-            : [],
-        };
-      }
-    } catch (fallbackErr: unknown) {
-      const fallbackMessage =
-        fallbackErr instanceof Error
-          ? fallbackErr.message
-          : typeof fallbackErr === "string"
-          ? fallbackErr
-          : String(fallbackErr || "");
-      console.warn("[meet-discovery] pdf-parse fallback failed", {
-        message: fallbackMessage,
-      });
-    }
-    return { text: "", pages: [], annotationLinks: [] };
-  } finally {
-    if (tempDir) {
-      await rm(tempDir, { recursive: true, force: true });
-    }
-  }
+  const pdfJsExtraction = await extractPdfTextWithPdfJs(buffer);
+  return {
+    text: cleanExtractedText(String(pdfJsExtraction.text || "")),
+    pages: pdfJsExtraction.pages
+      .map((page) => ({
+        num: Number(page?.num) || 0,
+        text: cleanPdfPageTextPreservingGrid(String(page?.text || "")),
+      }))
+      .filter((page) => page.text),
+    annotationLinks: [],
+  };
 }
 
 async function ocrBuffer(buffer: Buffer): Promise<string> {
