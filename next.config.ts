@@ -25,7 +25,6 @@ const nextConfig = (phase: string): NextConfig => ({
     "@google-cloud/aiplatform",
     "@google-cloud/vertexai",
     "@google-cloud/storage",
-    "@napi-rs/canvas",
     "openai",
     "googleapis",
     "sharp",

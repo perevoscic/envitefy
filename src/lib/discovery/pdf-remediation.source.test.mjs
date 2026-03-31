@@ -22,4 +22,5 @@ test("server PDF discovery path uses pdfjs in server mode without pdf-parse", ()
   assert.doesNotMatch(meetSource, /pdf-parse/);
   assert.doesNotMatch(packageSource, /"pdf-parse"/);
   assert.doesNotMatch(nextConfigSource, /"pdfjs-dist"/);
+  assert.doesNotMatch(nextConfigSource, /"@napi-rs\/canvas"/);
 });
