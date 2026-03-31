@@ -6,6 +6,11 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const QPDF_TIMEOUT_MS = 20_000;
+const QPDF_PREFLIGHT_TIMEOUT_MS = 4_000;
+
+let qpdfAvailabilityPromise: Promise<boolean> | null = null;
+let qpdfAvailabilityBin: string | null = null;
+let qpdfUnavailableLoggedBin: string | null = null;
 
 export type PdfOptimizeResult = {
   buffer: Buffer;
@@ -15,6 +20,50 @@ export type PdfOptimizeResult = {
 
 function getQpdfBinaryPath(): string {
   return process.env.QPDF_BIN?.trim() || "qpdf";
+}
+
+function isMissingQpdfError(error: unknown): boolean {
+  const code =
+    error && typeof error === "object" && "code" in error ? String((error as any).code || "") : "";
+  const message = error instanceof Error ? error.message : String(error || "");
+  return code === "ENOENT" || /spawn\s+.+\s+ENOENT/i.test(message);
+}
+
+function logQpdfUnavailableOnce(qpdfBin: string) {
+  if (qpdfUnavailableLoggedBin === qpdfBin) return;
+  qpdfUnavailableLoggedBin = qpdfBin;
+  console.info("[pdf-optimize] qpdf unavailable, using original PDF bytes", {
+    qpdfBin,
+  });
+}
+
+async function isQpdfAvailable(): Promise<boolean> {
+  const qpdfBin = getQpdfBinaryPath();
+  if (qpdfAvailabilityPromise && qpdfAvailabilityBin === qpdfBin) {
+    return qpdfAvailabilityPromise;
+  }
+
+  qpdfAvailabilityBin = qpdfBin;
+  qpdfAvailabilityPromise = execFileAsync(qpdfBin, ["--version"], {
+    timeout: QPDF_PREFLIGHT_TIMEOUT_MS,
+    windowsHide: true,
+    maxBuffer: 64 * 1024,
+  })
+    .then(() => true)
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      if (isMissingQpdfError(error)) {
+        logQpdfUnavailableOnce(qpdfBin);
+        return false;
+      }
+      console.warn("[pdf-optimize] qpdf-preflight-failed", {
+        qpdfBin,
+        message,
+      });
+      return false;
+    });
+
+  return qpdfAvailabilityPromise;
 }
 
 function buildTempPdfPath(prefix: string): string {
@@ -31,6 +80,15 @@ async function safeUnlink(filePath: string): Promise<void> {
 }
 
 export async function optimizePdfWithQpdf(inputBuffer: Buffer): Promise<PdfOptimizeResult> {
+  const qpdfBin = getQpdfBinaryPath();
+  if (!(await isQpdfAvailable())) {
+    return {
+      buffer: inputBuffer,
+      optimizedByQpdf: false,
+      warning: "qpdf-unavailable",
+    };
+  }
+
   const inputPath = buildTempPdfPath("qpdf-in");
   const outputPath = buildTempPdfPath("qpdf-out");
 
@@ -38,7 +96,7 @@ export async function optimizePdfWithQpdf(inputBuffer: Buffer): Promise<PdfOptim
     await fs.writeFile(inputPath, inputBuffer);
 
     await execFileAsync(
-      getQpdfBinaryPath(),
+      qpdfBin,
       [
         "--stream-data=compress",
         "--object-streams=generate",
@@ -74,8 +132,18 @@ export async function optimizePdfWithQpdf(inputBuffer: Buffer): Promise<PdfOptim
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    if (isMissingQpdfError(error)) {
+      logQpdfUnavailableOnce(qpdfBin);
+      qpdfAvailabilityPromise = Promise.resolve(false);
+      qpdfAvailabilityBin = qpdfBin;
+      return {
+        buffer: inputBuffer,
+        optimizedByQpdf: false,
+        warning: "qpdf-unavailable",
+      };
+    }
     console.warn("[pdf-optimize] qpdf-fallback", {
-      qpdfBin: getQpdfBinaryPath(),
+      qpdfBin,
       message,
     });
     return {
