@@ -3988,17 +3988,42 @@ async function extractTextFromPdf(
 
   const nativeParseStartedAt = Date.now();
   const workerExtraction = await extractPdfTextWithNodeWorker(buffer);
-  const annotationLinks = await extractPdfAnnotationLinks(buffer);
-  const workerCoachPageHints = extractCoachPageHintsFromPages(workerExtraction.pages);
+  let selectedPages = workerExtraction.pages;
   const workerCandidate = toCandidate(workerExtraction.text, false);
+  let pdfJsCandidate: ReturnType<typeof toCandidate> | null = null;
+  if (!isStrongNativeCandidate(workerCandidate) || selectedPages.length === 0) {
+    const pdfJsExtraction = await extractPdfTextWithPdfJs(buffer);
+    const pdfJsPages = pickArray(pdfJsExtraction.pages)
+      .map((page) => ({
+        num: Number(page?.num) || 0,
+        text: cleanPdfPageTextPreservingGrid(String(page?.text || "")),
+      }))
+      .filter((page) => page.text);
+    if (pdfJsPages.length > selectedPages.length) {
+      selectedPages = pdfJsPages;
+    }
+    if (pdfJsExtraction.text) {
+      pdfJsCandidate = toCandidate(pdfJsExtraction.text, false);
+    }
+  }
+  const annotationLinks = await extractPdfAnnotationLinks(buffer);
+  const selectedCoachPageHints = extractCoachPageHintsFromPages(selectedPages);
   if (options?.performance) {
     options.performance.pdfParseMs += Date.now() - nativeParseStartedAt;
   }
   if (isStrongNativeCandidate(workerCandidate)) {
     return {
       ...workerCandidate,
-      coachPageHints: workerCoachPageHints,
-      pages: workerExtraction.pages,
+      coachPageHints: selectedCoachPageHints,
+      pages: selectedPages,
+      annotationLinks,
+    };
+  }
+  if (pdfJsCandidate && isStrongNativeCandidate(pdfJsCandidate)) {
+    return {
+      ...pdfJsCandidate,
+      coachPageHints: selectedCoachPageHints,
+      pages: selectedPages,
       annotationLinks,
     };
   }
@@ -4007,8 +4032,8 @@ async function extractTextFromPdf(
   if (isStrongNativeCandidate(heuristicCandidate)) {
     return {
       ...heuristicCandidate,
-      coachPageHints: workerCoachPageHints,
-      pages: workerExtraction.pages,
+      coachPageHints: selectedCoachPageHints,
+      pages: selectedPages,
       annotationLinks,
     };
   }
@@ -4020,8 +4045,8 @@ async function extractTextFromPdf(
         : heuristicCandidate;
     return {
       ...bestNative,
-      coachPageHints: workerCoachPageHints,
-      pages: workerExtraction.pages,
+      coachPageHints: selectedCoachPageHints,
+      pages: selectedPages,
       annotationLinks,
     };
   }
@@ -4057,8 +4082,8 @@ async function extractTextFromPdf(
       if (ocrCandidate.textQuality === "good" && ocrCandidate.text.length > 0) {
         return {
           ...ocrCandidate,
-          coachPageHints: workerCoachPageHints,
-          pages: workerExtraction.pages,
+          coachPageHints: selectedCoachPageHints,
+          pages: selectedPages,
           annotationLinks,
         };
       }
@@ -4091,8 +4116,8 @@ async function extractTextFromPdf(
         if (ocrCandidate.textQuality === "good" && ocrCandidate.text.length > 0) {
           return {
             ...ocrCandidate,
-            coachPageHints: workerCoachPageHints,
-            pages: workerExtraction.pages,
+            coachPageHints: selectedCoachPageHints,
+            pages: selectedPages,
             annotationLinks,
           };
         }
@@ -4102,7 +4127,7 @@ async function extractTextFromPdf(
     }
   }
 
-  const candidates = [workerCandidate, heuristicCandidate, ocrCandidate]
+  const candidates = [workerCandidate, pdfJsCandidate, heuristicCandidate, ocrCandidate]
     .filter((item): item is ReturnType<typeof toCandidate> => Boolean(item))
     .filter((item) => item.text.length > 0)
     .sort((a, b) => {
@@ -4115,8 +4140,8 @@ async function extractTextFromPdf(
   if (best && best.textQuality !== "poor") {
     return {
       ...best,
-      coachPageHints: workerCoachPageHints,
-      pages: workerExtraction.pages,
+      coachPageHints: selectedCoachPageHints,
+      pages: selectedPages,
       annotationLinks,
     };
   }
@@ -4125,10 +4150,10 @@ async function extractTextFromPdf(
   return {
     text: "",
     usedOcr: false,
-    coachPageHints: workerCoachPageHints,
+    coachPageHints: selectedCoachPageHints,
     textQuality: "poor",
     qualitySignals: emptyQuality.signals,
-    pages: workerExtraction.pages,
+    pages: selectedPages,
     annotationLinks,
   };
 }

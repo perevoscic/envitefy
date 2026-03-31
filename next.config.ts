@@ -18,6 +18,15 @@ const nextConfig = (phase: string): NextConfig => ({
   // Only enable standalone output for production builds.
   // `next dev` is more stable when it runs without standalone packaging artifacts.
   ...(phase === PHASE_DEVELOPMENT_SERVER ? {} : { output: "standalone" }),
+  outputFileTracingRoot: process.cwd(),
+  outputFileTracingIncludes: {
+    "/*": [
+      "./node_modules/@napi-rs/canvas/**/*",
+      "./node_modules/@napi-rs/canvas-*/**/*",
+      "./node_modules/pdfjs-dist/**/*",
+      "./node_modules/pdf-parse/**/*",
+    ],
+  },
 
   // Keep heavy server deps out of the serverless bundle (stays under Vercel 300MB limit)
   serverExternalPackages: [
@@ -27,17 +36,11 @@ const nextConfig = (phase: string): NextConfig => ({
     "@google-cloud/storage",
     "@napi-rs/canvas",
     "openai",
+    "pdfjs-dist",
     "googleapis",
     "sharp",
     "@aws-sdk/client-sesv2",
   ],
-
-  outputFileTracingIncludes: {
-    "/*": [
-      "./node_modules/@napi-rs/canvas/**/*",
-      "./node_modules/@napi-rs/canvas-*/**/*",
-    ],
-  },
 
   images: {
     remotePatterns: [
