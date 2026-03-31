@@ -545,7 +545,7 @@ test("selectEvidenceForParseProfile narrows evidence and excerpts per targeted e
     evidence,
     extractionMeta
   );
-  assert.ok(athlete.evidenceLabels.includes("schedulePages"));
+  assert.ok(!athlete.evidenceLabels.includes("schedulePages"));
   assert.ok(athlete.excerpts.some((item) => /Session A|Stretch 7:30 AM|March In/i.test(item.text)));
 });
 
@@ -2874,6 +2874,70 @@ test("mapParseResultToGymData with Firecrawl travelAccommodation does not surfac
       /LEGACY HOTEL BLOCK/i,
       "public travel body must not include legacy hotel narrative in Firecrawl mode"
     );
+  } finally {
+    if (previousKey === undefined) delete process.env.FIRECRAWL_API_KEY;
+    else process.env.FIRECRAWL_API_KEY = previousKey;
+  }
+});
+
+test("Firecrawl env var alone does not switch discovery travel copy into structured-hotel mode", async () => {
+  const previousKey = process.env.FIRECRAWL_API_KEY;
+  process.env.FIRECRAWL_API_KEY = "test";
+  try {
+    const legacyHotelText =
+      "Legacy hotel block with booking details at https://legacy.example.com/hotels.";
+    const baseData = {
+      title: "State Meet",
+      advancedSections: { logistics: { hotelInfo: "" } },
+      discoverySource: {},
+    };
+
+    const parseResult = normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "athlete_session",
+      title: "State Meet",
+      dates: "March 20-22, 2026",
+      startAt: null,
+      endAt: null,
+      timezone: "America/Chicago",
+      venue: "State Arena",
+      address: "123 Main St, Chicago, IL 60601",
+      hostGym: "State Gym",
+      admission: [],
+      athlete: {},
+      meetDetails: {},
+      logistics: { hotel: legacyHotelText },
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      links: [],
+      unmappedFacts: [],
+      schedule: { days: [] },
+    })!;
+
+    const extractionMeta = { resourceLinks: [] } as any;
+    const mapped = await mapParseResultToGymData(parseResult, baseData, extractionMeta);
+
+    assert.equal(mapped.advancedSections.logistics.hotelInfo, legacyHotelText);
+    assert.ok(
+      mapped.links.some((item: any) => item.url === "https://legacy.example.com/hotels"),
+      "legacy inline hotel URL should still be inferred when travelAccommodation is absent",
+    );
+
+    const publicArtifacts = buildGymDiscoveryPublicPageArtifacts({
+      parseResult,
+      baseData,
+      extractionMeta,
+    });
+    assert.doesNotMatch(
+      publicArtifacts.publicPageSections.travel.body,
+      /Hotel booking links are listed below\./i,
+    );
+    assert.match(publicArtifacts.publicPageSections.travel.body, /Legacy hotel block/i);
   } finally {
     if (previousKey === undefined) delete process.env.FIRECRAWL_API_KEY;
     else process.env.FIRECRAWL_API_KEY = previousKey;

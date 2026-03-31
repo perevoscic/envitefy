@@ -1637,7 +1637,7 @@ export type EventHistoryInputBlobRow = {
 type EventDiscoveryQueryRow = {
   id: string;
   eventId: string;
-  workflow: "gymnastics";
+  workflow: "gymnastics" | "football";
   source: DiscoverySourceRecord;
   document: DiscoveryDocument | null;
   canonicalParse: CanonicalDiscoveryParse | null;
@@ -3620,7 +3620,7 @@ function mapEventDiscoveryRow(row: EventDiscoveryQueryRow | null | undefined): E
 export async function insertEventDiscovery(params: {
   id?: string;
   eventId: string;
-  workflow: "gymnastics";
+  workflow: "gymnastics" | "football";
   source: DiscoverySourceRecord;
   document?: DiscoveryDocument | null;
   canonicalParse?: CanonicalDiscoveryParse | null;

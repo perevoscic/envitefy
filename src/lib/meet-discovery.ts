@@ -7534,6 +7534,15 @@ const GYMNASTICS_SCHEDULE_SCHEMA = jsonObject({
   ),
 });
 
+const GYMNASTICS_DISABLED_SCHEDULE_SCHEMA = jsonObject({
+  venueLabel: { type: "null" },
+  supportEmail: { type: "null" },
+  notes: { type: "array", items: JSON_STRING, maxItems: 0 },
+  annotations: { type: "array", items: jsonObject({}), maxItems: 0 },
+  assignments: { type: "array", items: jsonObject({}), maxItems: 0 },
+  days: { type: "array", items: jsonObject({}), maxItems: 0 },
+});
+
 const GYMNASTICS_PARSE_JSON_SCHEMA = {
   name: "gymnastics_meet_parse",
   strict: true,
@@ -7719,7 +7728,7 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
       ),
       passcode: jsonNullable(JSON_STRING),
     }),
-    schedule: GYMNASTICS_SCHEDULE_SCHEMA,
+    schedule: GYMNASTICS_DISABLED_SCHEDULE_SCHEMA,
     links: jsonArray(
       jsonObject({
         label: JSON_STRING,
@@ -7835,48 +7844,18 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
     "passcode": string|null
   },
   "schedule": {
-    "venueLabel": string|null,
-    "supportEmail": string|null,
-    "notes": [string],
-    "annotations": [{
-      "kind": string|null,
-      "level": string|null,
-      "sessionCode": string|null,
-      "date": string|null,
-      "time": string|null,
-      "text": string
-    }],
-    "assignments": [{
-      "level": string|null,
-      "groupLabel": string|null,
-      "sessionCode": string|null,
-      "birthDateRange": string|null,
-      "divisionLabel": string|null,
-      "note": string|null
-    }],
-    "days": [{
-      "date": string|null,
-      "shortDate": string|null,
-      "sessions": [{
-        "code": string|null,
-        "group": string|null,
-        "startTime": string|null,
-        "warmupTime": string|null,
-        "note": string|null,
-        "clubs": [{
-          "name": string|null,
-          "teamAwardEligible": boolean|null,
-          "athleteCount": number|null,
-          "divisionLabel": string|null
-        }]
-      }]
-    }]
+    "venueLabel": null,
+    "supportEmail": null,
+    "notes": [],
+    "annotations": [],
+    "assignments": [],
+    "days": []
   },
   "links": [{ "label": string, "url": string }],
   "unmappedFacts": [{ "category": string, "detail": string, "confidence": "high"|"medium"|"low" }]
 }
 
-Session grids, division-to-session tables, and club roster rows: leave schedule.days, schedule.assignments, and schedule.annotations empty. Capture session timing in meetDetails.sessionWindows; put short procedural lines in meetDetails.operationalNotes and meetDetails fields (warmup, marchIn, doorsOpen, arrivalGuidance, registrationInfo). Spectator pricing belongs in admission[].`;
+Schedule parsing is disabled. Always return the empty schedule object shown above. Capture session timing in meetDetails.sessionWindows; put short procedural lines in meetDetails.operationalNotes and meetDetails fields (warmup, marchIn, doorsOpen, arrivalGuidance, registrationInfo). Spectator pricing belongs in admission[].`;
 
 function buildParsePromptEvidence(
   evidence: DiscoveryEvidence,
@@ -7987,7 +7966,6 @@ function inferHeuristicParseClassification(
     ...evidence.sections.registration,
     ...evidence.candidates.sessionHints,
     ...evidence.candidates.coachHints,
-    ...pickArray(extractionMeta?.schedulePageTexts).map((item) => safeString(item?.text)),
     ...pickArray(extractionMeta?.coachPageHints).map((item) => safeString(item?.excerpt)),
   ]
     .filter(Boolean)
@@ -8020,13 +7998,9 @@ function inferHeuristicParseClassification(
   const scheduleAthleteHintCount = evidence.candidates.athleteHints.filter((line) =>
     scheduleHintPattern.test(line)
   ).length;
-  const schedulePageWeight = hasScheduleGridSignal || hasAssignmentSignal
-    ? pickArray(extractionMeta?.schedulePageTexts).length * 2
-    : 0;
   const sessionSignals =
     scheduleSessionHintCount +
     scheduleAthleteHintCount +
-    schedulePageWeight +
     (hasAssignmentSignal ? 3 : 0) +
     (hasScheduleGridSignal ? 2 : 0);
   const registrationSignals =
@@ -8044,9 +8018,7 @@ function inferHeuristicParseClassification(
     sessionSignals >= 8 ||
     hasAssignmentSignal ||
     (hasScheduleGridSignal &&
-      (pickArray(extractionMeta?.schedulePageTexts).length > 0 ||
-        scheduleSessionHintCount >= 2 ||
-        scheduleAthleteHintCount >= 2));
+      (scheduleSessionHintCount >= 2 || scheduleAthleteHintCount >= 2));
   const registrationHeavy = registrationSignals >= 6 || hasRegistrationHeadingSignal;
   const parentPacketHeavy =
     parentSignals >= 5 ||
@@ -8304,13 +8276,6 @@ function selectEvidenceForParseProfile(
       sessionHints: evidence.candidates.sessionHints.slice(0, 10),
       firstLines: evidence.snippets.firstLines.slice(0, 8),
       resources: resourceLinksForProfile.slice(0, 8),
-      schedulePages: pickArray(extractionMeta?.schedulePageTexts)
-        .slice(0, 4)
-        .map((item) => ({
-          pageNumber: Number(item?.pageNumber) || 0,
-          excerpt: cleanExtractedText(safeString(item?.text)).slice(0, 3500),
-        }))
-        .filter((item) => item.pageNumber > 0 && item.excerpt),
     },
   };
 
@@ -12201,11 +12166,9 @@ export async function finalizeMeetParseResult(
   const sanitized = sanitizeDiscoveryParseResult(value);
   const reconciled = reconcileParsedDates(sanitized, extractedText);
   const emptySchedule = buildEmptyParseResult().schedule;
+  extractionMeta.schedulePageImages = [];
+  extractionMeta.schedulePageTexts = [];
   delete extractionMeta.scheduleDiagnostics;
-  console.log("[meet-discovery] schedule derivation skipped", {
-    traceId,
-    reason: "public-page-v2",
-  });
   const finalized = {
     ...reconciled,
     schedule: emptySchedule,
@@ -13179,8 +13142,7 @@ function buildGymPublicPageSections(params: {
           url: safeString(travelAccommodation.fallbackLink.url),
         }
       : null;
-  const firecrawlInPlay =
-    Boolean(safeString(process.env.FIRECRAWL_API_KEY)) || Boolean(travelAccommodation);
+  const firecrawlInPlay = Boolean(travelAccommodation);
   const legacyTravelBody = joinSectionSentences(
     ...filterPublicAudienceTexts([parseResult.logistics.hotel], "parse_field", 2)
   );
@@ -13492,8 +13454,7 @@ export async function mapParseResultToGymData(
     (item) => `${item.kind}|${item.label}|${item.availabilityDate}`
   );
   const travelAccommodation = (baseData?.discoverySource?.travelAccommodation || null) as any;
-  const firecrawlInPlay =
-    Boolean(safeString(process.env.FIRECRAWL_API_KEY)) || Boolean(travelAccommodation);
+  const firecrawlInPlay = Boolean(travelAccommodation);
   const legacyHotelNarrative =
     safeString(parseResult.logistics.hotel) ||
     safeString(existingAdvanced.logistics?.hotelInfo) ||

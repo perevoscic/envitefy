@@ -400,7 +400,7 @@ export default function GymnasticsLauncher({
     }
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
-    const baseUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}`;
+    const baseUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}&new=1`;
     if (status === "authenticated") {
       router.push(baseUrl);
       return;

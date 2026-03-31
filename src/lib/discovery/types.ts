@@ -1,4 +1,4 @@
-export type DiscoveryWorkflow = "gymnastics";
+export type DiscoveryWorkflow = "gymnastics" | "football";
 
 export type DiscoveryStage =
   | "ingested"
@@ -122,7 +122,7 @@ export type CanonicalIssue = {
 };
 
 export type CanonicalDiscoveryParse = {
-  workflow: "gymnastics";
+  workflow: DiscoveryWorkflow;
   eventCore: Record<string, unknown>;
   venue: Record<string, unknown>;
   spectatorInfo: Record<string, unknown>;
@@ -134,7 +134,7 @@ export type CanonicalDiscoveryParse = {
   issues: CanonicalIssue[];
 };
 
-export type GymBuilderDraft = {
+export type DiscoveryBuilderDraft = {
   event: Record<string, unknown>;
   venue: Record<string, unknown>;
   advancedSections: Record<string, unknown>;
@@ -166,7 +166,7 @@ export type PublicSectionProvenance =
   | "mixed"
   | "manual_edit";
 
-export type GymPublicSection = {
+export type DiscoveryPublicSection = {
   title: string;
   visibility: string;
   body?: string;
@@ -177,18 +177,22 @@ export type GymPublicSection = {
   confidence: number;
 };
 
-export type GymPublicArtifacts = {
-  pipelineVersion: "gym-public-v3";
+export type DiscoveryPublicArtifacts = {
+  pipelineVersion: string;
   publishAssessment: PublishAssessment;
   hero: PublicHero;
-  sections: Record<string, GymPublicSection>;
+  sections: Record<string, DiscoveryPublicSection>;
   quickAccess: PublicLink[];
 };
+
+export type GymBuilderDraft = DiscoveryBuilderDraft;
+export type GymPublicSection = DiscoveryPublicSection;
+export type GymPublicArtifacts = DiscoveryPublicArtifacts;
 
 export type EventDiscoveryRow = {
   id: string;
   eventId: string;
-  workflow: "gymnastics";
+  workflow: DiscoveryWorkflow;
   source: DiscoverySourceRecord;
   document: DiscoveryDocument | null;
   canonicalParse: CanonicalDiscoveryParse | null;

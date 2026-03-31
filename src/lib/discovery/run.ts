@@ -8,6 +8,7 @@ import { runDiscoveryMapStage } from "@/lib/discovery/map";
 import { runDiscoveryParseStage } from "@/lib/discovery/parse";
 import { persistDiscoveryEventSnapshot } from "@/lib/discovery/persist";
 import {
+  buildEmptyDiscoveryPublicArtifacts,
   buildEmptyGymPublicArtifacts,
   completeDiscoveryStage,
   createDiscoveryPipelineState,
@@ -139,13 +140,17 @@ export async function runDiscoveryPipeline(eventId: string) {
       },
     });
     await persistDiscoveryEventSnapshot({
+      workflow: current.workflow,
       eventId: current.eventId,
       title: safeString(mapped.mappedData.title),
       timezone: safeString(mapped.mappedData.timezone) || null,
       startISO: safeString(mapped.mappedData.startISO) || null,
       endISO: safeString(mapped.mappedData.endISO) || null,
       builderDraft: mapped.builderDraft,
-      publicArtifacts: buildEmptyGymPublicArtifacts(safeString(mapped.mappedData.title)),
+      publicArtifacts:
+        current.workflow === "football"
+          ? buildEmptyDiscoveryPublicArtifacts(safeString(mapped.mappedData.title))
+          : buildEmptyGymPublicArtifacts(safeString(mapped.mappedData.title)),
       pipeline: mappedPipeline,
       discoveryId: current.id,
       templateId: safeString(mapped.mappedData.templateId),
@@ -201,6 +206,7 @@ export async function runDiscoveryPipeline(eventId: string) {
       },
     });
     await persistDiscoveryEventSnapshot({
+      workflow: current.workflow,
       eventId: current.eventId,
       title: safeString(composed.mappedData.title),
       timezone: safeString(composed.mappedData.timezone) || null,
@@ -216,6 +222,7 @@ export async function runDiscoveryPipeline(eventId: string) {
       templateId: safeString(composed.mappedData.templateId),
       pageTemplateId: safeString(composed.mappedData.pageTemplateId),
       status: "review_ready",
+      eventDataPatch: composed.eventDataPatch,
     });
     return buildDiscoveryStatusResponse(current);
   } catch (error) {

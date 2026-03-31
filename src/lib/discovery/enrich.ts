@@ -7,8 +7,23 @@ import {
   isDiscoveryDebugArtifactsEnabled,
   resolveDiscoveryBudget,
 } from "@/lib/meet-discovery";
+import { enrichTravelAccommodation } from "@/lib/travel-accommodation-enrichment";
 
 export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
+  if (discovery.workflow === "football") {
+    return {
+      document: discovery.document,
+      enrichment: {
+        parseResult: discovery.debug?.coreParseResult || null,
+        travelAccommodation: null,
+        finalizedAt: new Date().toISOString(),
+        performance: createDiscoveryPerformance(),
+      },
+      debug: {
+        ...((discovery.debug || {}) as Record<string, unknown>),
+      },
+    };
+  }
   const existingDocument = discovery.document;
   const baseParseResult = discovery.debug && (discovery.debug as any).coreParseResult;
   if (!existingDocument || !baseParseResult) {
@@ -16,6 +31,7 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
   }
 
   const performance = createDiscoveryPerformance();
+  const enrichBudgetMs = resolveDiscoveryBudget("enrich", discovery.source.type);
   const refreshedExtraction = await runDiscoveryExtractStageWithMode(
     {
       ...discovery,
@@ -26,6 +42,11 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
   const extractedText =
     safeString((refreshedExtraction.document.extractionMeta as any)?.extractedText) ||
     safeString((existingDocument.extractionMeta as any)?.extractedText);
+  const travelAccommodation = await enrichTravelAccommodation({
+    traceId: discovery.eventId,
+    extractionMeta: refreshedExtraction.document.extractionMeta as any,
+    budgetMs: enrichBudgetMs,
+  });
   const enrichedParseResult = await finalizeMeetParseResult(
     baseParseResult,
     extractedText,
@@ -35,7 +56,7 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
       mode: "enrich",
       performance,
       debugArtifacts: isDiscoveryDebugArtifactsEnabled(),
-      budgetMs: resolveDiscoveryBudget("enrich", discovery.source.type),
+      budgetMs: enrichBudgetMs,
     } as any,
   );
 
@@ -43,6 +64,7 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
     document: refreshedExtraction.document,
     enrichment: {
       parseResult: enrichedParseResult,
+      travelAccommodation,
       finalizedAt: new Date().toISOString(),
       performance,
     },

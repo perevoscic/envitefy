@@ -2,14 +2,17 @@ import { safeString, uniqueStrings } from "@/lib/discovery/shared";
 import type {
   CanonicalDiscoveryParse,
   DiscoveryDocument,
+  DiscoveryWorkflow,
   EventDiscoveryRow,
 } from "@/lib/discovery/types";
+import { parseFootballFromExtractedText } from "@/lib/football-discovery";
 import {
   parseMeetFromExtractedText,
   stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
 
 function buildCanonicalDiscoveryParse(params: {
+  workflow: DiscoveryWorkflow;
   document: DiscoveryDocument;
   parseResult: Record<string, any>;
   evidence: Record<string, any> | null;
@@ -34,13 +37,13 @@ function buildCanonicalDiscoveryParse(params: {
     severity: "warning" as const,
   }));
   return {
-    workflow: "gymnastics",
+    workflow: params.workflow,
     eventCore: {
       title: parseResult.title || "",
       startAt: parseResult.startAt || null,
       endAt: parseResult.endAt || null,
       timezone: parseResult.timezone || null,
-      category: "gymnastics",
+      category: params.workflow === "football" ? "football" : "gymnastics",
     },
     venue: {
       venue: parseResult.venue || "",
@@ -74,13 +77,20 @@ export async function runDiscoveryParseStage(discovery: EventDiscoveryRow) {
   const document = discovery.document;
   if (!document) throw new Error("Document extraction must complete before parse.");
   const extractedText = safeString((document.extractionMeta as any)?.extractedText);
-  const parsed = await parseMeetFromExtractedText(extractedText, document.extractionMeta as any, {
-    traceId: discovery.eventId,
-    mode: "core",
-  });
-  const parseResult = stripGymScheduleGridsFromParseResult(parsed.parseResult as any);
+  const parsed =
+    discovery.workflow === "football"
+      ? await parseFootballFromExtractedText(extractedText, document.extractionMeta as any)
+      : await parseMeetFromExtractedText(extractedText, document.extractionMeta as any, {
+          traceId: discovery.eventId,
+          mode: "core",
+        });
+  const parseResult =
+    discovery.workflow === "football"
+      ? (parsed.parseResult as any)
+      : stripGymScheduleGridsFromParseResult(parsed.parseResult as any);
   return {
     canonicalParse: buildCanonicalDiscoveryParse({
+      workflow: discovery.workflow,
       document,
       parseResult,
       evidence: (parsed as any)?.evidence || null,

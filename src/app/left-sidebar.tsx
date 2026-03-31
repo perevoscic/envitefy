@@ -1259,25 +1259,6 @@ export default function LeftSidebar() {
     } catch {}
   }, [lastCreateSelection]);
   const history = historySidebarItems as HistoryRow[];
-  const createdEventsCount = useMemo(() => {
-    return history.reduce((acc, row) => {
-      if (!row || typeof row !== "object") return acc;
-      const data: any = row?.data;
-      if (!data || typeof data !== "object") return acc;
-      if (isInvitedHistoryEvent(data)) return acc;
-      return acc + 1;
-    }, 0);
-  }, [history]);
-  const invitedEventsCount = useMemo(() => {
-    return history.reduce((acc, row) => {
-      if (!row || typeof row !== "object") return acc;
-      const data: any = row?.data;
-      if (!data || typeof data !== "object") return acc;
-      if (!isInvitedHistoryEvent(data)) return acc;
-      return acc + 1;
-    }, 0);
-  }, [history]);
-  const _calendarEventsCount = createdEventsCount + invitedEventsCount;
   const openCompactEventsPage = useCallback(
     (page: "myEvents" | "invitedEvents") => {
       clearEventContext();
@@ -1318,58 +1299,6 @@ export default function LeftSidebar() {
       }
     },
     [pathname, sidebarPage, eventContextSourcePage]
-  );
-  const compactNavItems = useMemo(
-    () => [
-      {
-        id: "home" as const,
-        icon: Home,
-        label: "Home",
-        href: "/",
-        onClick: goHomeFromSidebar,
-      },
-      {
-        id: "snap" as const,
-        icon: Camera,
-        label: "Snap event",
-        href: "/event",
-        onClick: () => {
-          clearEventContext();
-          setSidebarPage("root");
-          collapseSidebarOnTouch();
-        },
-      },
-      {
-        id: "create" as const,
-        icon: Plus,
-        label: "Create event",
-        onClick: openCreateEventPage,
-      },
-      {
-        id: "myEvents" as const,
-        icon: SidebarMyEventsMenuIcon,
-        label: "My events",
-        onClick: () => openCompactEventsPage("myEvents"),
-        badge: createdEventsCount,
-      },
-      {
-        id: "invitedEvents" as const,
-        icon: Users,
-        label: "Invited events",
-        onClick: () => openCompactEventsPage("invitedEvents"),
-        badge: invitedEventsCount,
-      },
-    ],
-    [
-      clearEventContext,
-      collapseSidebarOnTouch,
-      createdEventsCount,
-      invitedEventsCount,
-      goHomeFromSidebar,
-      openCompactEventsPage,
-      openCreateEventPage,
-      setSidebarPage,
-    ]
   );
   const defaultCategoryColor = (c: string): string => {
     const trimmed = String(c || "").trim();
@@ -1873,6 +1802,71 @@ export default function LeftSidebar() {
   }, [history]);
   const myEventsGrouped = groupedEventLists.myEvents;
   const invitedEventsGrouped = groupedEventLists.invitedEvents;
+  const countGroupedEventItems = useCallback(
+    (sections: GroupedEventSection[]) =>
+      sections.reduce((acc, section) => acc + section.items.length, 0),
+    []
+  );
+  const createdEventsCount = useMemo(
+    () => countGroupedEventItems(myEventsGrouped.upcoming),
+    [countGroupedEventItems, myEventsGrouped.upcoming]
+  );
+  const invitedEventsCount = useMemo(
+    () => countGroupedEventItems(invitedEventsGrouped.upcoming),
+    [countGroupedEventItems, invitedEventsGrouped.upcoming]
+  );
+  const compactNavItems = useMemo(
+    () => [
+      {
+        id: "home" as const,
+        icon: Home,
+        label: "Home",
+        href: "/",
+        onClick: goHomeFromSidebar,
+      },
+      {
+        id: "snap" as const,
+        icon: Camera,
+        label: "Snap event",
+        href: "/event",
+        onClick: () => {
+          clearEventContext();
+          setSidebarPage("root");
+          collapseSidebarOnTouch();
+        },
+      },
+      {
+        id: "create" as const,
+        icon: Plus,
+        label: "Create event",
+        onClick: openCreateEventPage,
+      },
+      {
+        id: "myEvents" as const,
+        icon: SidebarMyEventsMenuIcon,
+        label: "My events",
+        onClick: () => openCompactEventsPage("myEvents"),
+        badge: createdEventsCount,
+      },
+      {
+        id: "invitedEvents" as const,
+        icon: Users,
+        label: "Invited events",
+        onClick: () => openCompactEventsPage("invitedEvents"),
+        badge: invitedEventsCount,
+      },
+    ],
+    [
+      clearEventContext,
+      collapseSidebarOnTouch,
+      createdEventsCount,
+      invitedEventsCount,
+      goHomeFromSidebar,
+      openCompactEventsPage,
+      openCreateEventPage,
+      setSidebarPage,
+    ]
+  );
   useEffect(() => {
     try {
       localStorage.setItem(

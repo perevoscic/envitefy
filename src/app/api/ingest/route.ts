@@ -370,11 +370,12 @@ export async function POST(request: Request) {
     const url = new URL(request.url);
     const mode = (url.searchParams.get("mode") || "").toLowerCase();
     console.log(`${DISCOVERY_INGEST_LOG_PREFIX} dispatch`, { mode });
-    if (mode === "meet_discovery") {
-      return await handleMeetDiscoveryIngest(request);
-    }
-    if (mode === "football_discovery") {
-      return await handleFootballDiscoveryIngest(request);
+    if (mode === "meet_discovery" || mode === "football_discovery") {
+      return corsJson(
+        request,
+        { error: "Legacy discovery ingest route removed. Use /api/discovery/intake instead." },
+        { status: 410 },
+      );
     }
     return await handleLegacyIngest(request);
   } catch (err: unknown) {

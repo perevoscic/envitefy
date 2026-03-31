@@ -1,7 +1,7 @@
 import { upsertEventHistoryInputBlob } from "@/lib/db";
 import { createDiscoveryShell } from "@/lib/discovery/persist";
 import { createDiscoveryPipelineState } from "@/lib/discovery/shared";
-import type { DiscoverySourceRecord } from "@/lib/discovery/types";
+import type { DiscoverySourceRecord, DiscoveryWorkflow } from "@/lib/discovery/types";
 import { uploadDiscoveryInputToBlob } from "@/lib/discovery-input-storage";
 import { prepareDiscoverySourceFile } from "@/lib/media-upload";
 
@@ -17,14 +17,40 @@ export async function intakeGymnasticsDiscovery(params: {
   request: Request;
   userId: string | null;
 }) {
+  return intakeDiscovery({
+    ...params,
+    workflow: "gymnastics",
+  });
+}
+
+function defaultTitleForWorkflow(workflow: DiscoveryWorkflow) {
+  return workflow === "football" ? "Football Event" : "Gymnastics Meet";
+}
+
+function suffixTitleForWorkflow(hostname: string, workflow: DiscoveryWorkflow) {
+  return `${hostname}${workflow === "football" ? " Football" : " Meet"}`;
+}
+
+function normalizeWorkflow(value: unknown): DiscoveryWorkflow {
+  return safeString(value).toLowerCase() === "football" ? "football" : "gymnastics";
+}
+
+export async function intakeDiscovery(params: {
+  request: Request;
+  userId: string | null;
+  workflow?: DiscoveryWorkflow;
+}) {
   const contentType = safeString(params.request.headers.get("content-type")).toLowerCase();
   const now = new Date().toISOString();
-  let title = "Gymnastics Meet";
+  let workflow = params.workflow || "gymnastics";
+  let title = defaultTitleForWorkflow(workflow);
   let source: DiscoverySourceRecord | null = null;
   let fileBuffer: Buffer | null = null;
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await params.request.formData();
+    workflow = normalizeWorkflow(formData.get("workflow") || workflow);
+    title = defaultTitleForWorkflow(workflow);
     const file = formData.get("file");
     if (!(file instanceof File)) {
       return { ok: false as const, status: 400, error: "Upload a file to continue." };
@@ -47,6 +73,8 @@ export async function intakeGymnasticsDiscovery(params: {
     fileBuffer = prepared.buffer;
   } else {
     const body = await parseJsonRequestBody(params.request);
+    workflow = normalizeWorkflow(body?.workflow || workflow);
+    title = defaultTitleForWorkflow(workflow);
     const rawUrl = safeString(body?.url);
     if (!rawUrl) {
       return { ok: false as const, status: 400, error: "Provide a URL for discovery intake." };
@@ -54,7 +82,7 @@ export async function intakeGymnasticsDiscovery(params: {
     let normalizedUrl = "";
     try {
       normalizedUrl = new URL(rawUrl).toString();
-      title = `${new URL(normalizedUrl).hostname.replace(/^www\./i, "")} Meet`;
+      title = suffixTitleForWorkflow(new URL(normalizedUrl).hostname.replace(/^www\./i, ""), workflow);
     } catch {
       return { ok: false as const, status: 400, error: "Invalid URL" };
     }
@@ -70,7 +98,8 @@ export async function intakeGymnasticsDiscovery(params: {
     processingStage: "ingested",
   });
   const created = await createDiscoveryShell({
-    userId: params.userId,
+    userId: null,
+    workflow,
     title,
     source,
     pipeline,
@@ -98,7 +127,7 @@ export async function intakeGymnasticsDiscovery(params: {
     ok: true as const,
     eventId: created.eventId,
     discoveryId: created.discoveryId,
-    workflow: "gymnastics" as const,
+    workflow,
     processingStage: "ingested" as const,
   };
 }

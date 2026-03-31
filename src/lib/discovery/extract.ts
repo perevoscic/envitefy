@@ -29,7 +29,7 @@ export async function runDiscoveryExtractStageWithMode(
 ) {
   let sourceInput = discovery.source as DiscoverySourceInput;
   if (sourceInput.type === "file" && !safeString(sourceInput.dataUrl)) {
-    const hydrated = await hydrateDiscoveryFileInput(discovery.eventId, sourceInput);
+    const hydrated = await hydrateDiscoveryFileInput(discovery.eventId, sourceInput, null);
     if (!hydrated.ok) {
       throw new Error(hydrated.error);
     }
@@ -38,7 +38,7 @@ export async function runDiscoveryExtractStageWithMode(
 
   const performance = createDiscoveryPerformance();
   const extraction = await extractDiscoveryText(sourceInput, {
-    workflow: "gymnastics",
+    workflow: discovery.workflow,
     mode,
     budgetMs: resolveDiscoveryBudget(mode, sourceInput.type),
     debugArtifacts: isDiscoveryDebugArtifactsEnabled(),

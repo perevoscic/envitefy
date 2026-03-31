@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { getEventDiscoveryByEventId, getEventHistoryById } from "@/lib/db";
-import { dispatchDiscoveryPipeline } from "@/lib/discovery";
+import { dispatchDiscoveryPipeline, ensureDiscoveryForExistingEvent } from "@/lib/discovery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,10 +14,12 @@ function hasActiveLease(discovery: Awaited<ReturnType<typeof getEventDiscoveryBy
   return Number.isFinite(leaseMs) && leaseMs > Date.now();
 }
 
-export async function POST(_request: Request, context: { params: Promise<{ eventId: string }> }) {
+export async function POST(request: Request, context: { params: Promise<{ eventId: string }> }) {
   const session: any = await getServerSession(authOptions as any);
   const userId = await resolveSessionUserId(session);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const url = new URL(request.url);
+  const force = url.searchParams.get("force") === "1";
 
   const { eventId } = await context.params;
   const historyRow = await getEventHistoryById(eventId);
@@ -26,12 +28,16 @@ export async function POST(_request: Request, context: { params: Promise<{ event
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const discovery = await getEventDiscoveryByEventId(eventId);
+  const discovery =
+    (await getEventDiscoveryByEventId(eventId)) || (await ensureDiscoveryForExistingEvent(eventId));
   if (!discovery) {
     return NextResponse.json({ error: "Discovery not found" }, { status: 404 });
   }
 
-  if (hasActiveLease(discovery) || discovery.pipeline.processingStage === "review_ready") {
+  if (
+    !force &&
+    (hasActiveLease(discovery) || discovery.pipeline.processingStage === "review_ready")
+  ) {
     return NextResponse.json(
       {
         eventId: discovery.eventId,
