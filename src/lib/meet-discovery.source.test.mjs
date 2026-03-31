@@ -56,7 +56,18 @@ test("meet discovery always routes staged parsing through attendee profiles and 
   assert.doesNotMatch(source, /return \["athlete_session"/);
   assert.doesNotMatch(source, /return \["registration_coach"/);
   assert.doesNotMatch(source, /const withCoachRouting = routeCoachDeadlines\(mergeCoachFeesFromAdmission\(sanitized\)\);/);
-  assert.match(source, /reason: "public-page-v2"/);
+  assert.match(source, /extractionMeta\.schedulePageImages = \[\];/);
+  assert.match(source, /extractionMeta\.schedulePageTexts = \[\];/);
+});
+
+test("meet discovery only enters structured hotel mode when travelAccommodation exists", () => {
+  const source = readSource("src/lib/meet-discovery.ts");
+
+  assert.match(source, /const firecrawlInPlay = Boolean\(travelAccommodation\);/);
+  assert.doesNotMatch(
+    source,
+    /Boolean\(safeString\(process\.env\.FIRECRAWL_API_KEY\)\) \|\| Boolean\(travelAccommodation\)/,
+  );
 });
 
 test("meet discovery advances regex scans even when skipping invalid anchors or empty json-ld blocks", () => {
@@ -72,4 +83,15 @@ test("meet discovery advances regex scans even when skipping invalid anchors or 
   );
   assert.doesNotMatch(source, /while \(match\) \{[\s\S]*if \(!content\) continue;[\s\S]*jsonLdRegex\.exec\(html\);/);
   assert.doesNotMatch(source, /while \(match\) \{[\s\S]*if \(!url\) continue;[\s\S]*anchorRegex\.exec\(html\);/);
+});
+
+test("meet discovery decodes zero-padded apostrophe entities and prefers fuller official fallback titles", () => {
+  const source = readSource("src/lib/meet-discovery.ts");
+
+  assert.match(source, /\.replace\(\/&#0\*39;\/gi, "'"\)/);
+  assert.match(source, /if \(\/\\busa gymnastics\\b\/i\.test\(candidate\)\) score \+= 2;/);
+  assert.match(
+    source,
+    /fallbackKey\.includes\(parsedKey\) &&[\s\S]*scoreDiscoveryTitleFragment\(normalizedFallback\) > scoreDiscoveryTitleFragment\(normalizedParsed\)/,
+  );
 });

@@ -88,11 +88,12 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
     extractedText: extraction.extractedText || baseExtractedText,
     extractionMeta: extraction.extractionMeta,
   });
+  const travelAccommodationState = buildTravelAccommodationState(travelAccommodation);
   const mergedCoreEventDataWithTravel = {
     ...params.mergedCoreEventData,
     discoverySource: {
       ...discoverySource,
-      travelAccommodation: buildTravelAccommodationState(travelAccommodation),
+      travelAccommodation: travelAccommodationState,
     },
   };
 
@@ -152,9 +153,9 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
             publishAssessment: publicArtifacts.publishAssessment,
           }
         : {}),
-      travelAccommodation: buildTravelAccommodationState(travelAccommodation),
+      travelAccommodation: travelAccommodationState,
       parseResult: stripGymScheduleGridsFromParseResult(
-        publicArtifacts?.parseResult || enrichedParseResult
+        publicArtifacts?.parseResult || enrichedParseResult,
       ),
       enrichment: enrichmentState,
       enrichedAt: finishedAt,

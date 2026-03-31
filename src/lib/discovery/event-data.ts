@@ -38,14 +38,17 @@ export function getGymDiscoveryV2PipelineSummary(data: any) {
 export function buildLegacyDiscoverySourceFromV2(data: any) {
   const publicArtifacts = getGymDiscoveryV2PublicArtifacts(data);
   if (!publicArtifacts) return null;
+  const persistedDiscoverySource =
+    data?.discoverySource && typeof data.discoverySource === "object" ? data.discoverySource : {};
   return {
+    ...persistedDiscoverySource,
     workflow: "gymnastics",
     pipelineVersion: publicArtifacts.pipelineVersion,
     publicPageSections: publicArtifacts.sections || {},
     publishAssessment: publicArtifacts.publishAssessment || null,
-    parseResult: null,
-    extractionMeta: null,
-    input: null,
+    parseResult: persistedDiscoverySource.parseResult || null,
+    extractionMeta: persistedDiscoverySource.extractionMeta || null,
+    input: persistedDiscoverySource.input || null,
   };
 }
 

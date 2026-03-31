@@ -2,17 +2,31 @@ import { runDiscoveryExtractStageWithMode } from "@/lib/discovery/extract";
 import { safeString } from "@/lib/discovery/shared";
 import type { EventDiscoveryRow } from "@/lib/discovery/types";
 import {
-  buildTravelAccommodationState,
-  enrichTravelAccommodation,
-} from "@/lib/travel-accommodation-enrichment";
-import {
   createDiscoveryPerformance,
   finalizeMeetParseResult,
   isDiscoveryDebugArtifactsEnabled,
   resolveDiscoveryBudget,
 } from "@/lib/meet-discovery";
+import {
+  buildTravelAccommodationState,
+  enrichTravelAccommodation,
+} from "@/lib/travel-accommodation-enrichment";
 
 export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
+  if (discovery.workflow === "football") {
+    return {
+      document: discovery.document,
+      enrichment: {
+        parseResult: discovery.debug?.coreParseResult || null,
+        travelAccommodation: null,
+        finalizedAt: new Date().toISOString(),
+        performance: createDiscoveryPerformance(),
+      },
+      debug: {
+        ...((discovery.debug || {}) as Record<string, unknown>),
+      },
+    };
+  }
   const existingDocument = discovery.document;
   const baseParseResult = discovery.debug && (discovery.debug as any).coreParseResult;
   if (!existingDocument || !baseParseResult) {
@@ -20,6 +34,7 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
   }
 
   const performance = createDiscoveryPerformance();
+  const enrichBudgetMs = resolveDiscoveryBudget("enrich", discovery.source.type);
   const refreshedExtraction = await runDiscoveryExtractStageWithMode(
     {
       ...discovery,
@@ -39,7 +54,7 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
       mode: "enrich",
       performance,
       debugArtifacts: isDiscoveryDebugArtifactsEnabled(),
-      budgetMs: resolveDiscoveryBudget("enrich", discovery.source.type),
+      budgetMs: enrichBudgetMs,
     } as any,
   );
 

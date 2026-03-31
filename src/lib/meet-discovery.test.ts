@@ -150,6 +150,16 @@ test("resolveDiscoveryEventTitle rejects packet section headings in favor of fal
   );
 });
 
+test("resolveDiscoveryEventTitle decodes html entities and prefers fuller official fallback titles", () => {
+  assert.equal(
+    resolveDiscoveryEventTitle(
+      "2026 Region 8 Women&#039;s Xcel Championships",
+      "2026 USA Gymnastics Women’s Region 8 Xcel Championships"
+    ),
+    "2026 USA Gymnastics Women’s Region 8 Xcel Championships"
+  );
+});
+
 test("normalizeParseResult ignores legacy schedule color fields while keeping plain schedule data", () => {
   const normalized = normalizeParseResult({
     eventType: "gymnastics_meet",
@@ -545,7 +555,7 @@ test("selectEvidenceForParseProfile narrows evidence and excerpts per targeted e
     evidence,
     extractionMeta
   );
-  assert.ok(athlete.evidenceLabels.includes("schedulePages"));
+  assert.ok(!athlete.evidenceLabels.includes("schedulePages"));
   assert.ok(athlete.excerpts.some((item) => /Session A|Stretch 7:30 AM|March In/i.test(item.text)));
 });
 
@@ -1040,6 +1050,25 @@ test("resource helpers classify statuses, kinds, and reject conflicting hub date
   );
   assert.equal(match.hardReject, true);
   assert.match(match.reason, /conflicting dates/i);
+});
+
+test("scoreEventResourceMatch rejects generic token overlap for sibling event pages", () => {
+  const fingerprint = buildEventFingerprint(
+    new URL("https://usacompetitions.com/2026-region-8-womens-xcel-championships/"),
+    "2026 Region 8 Women's Xcel Championships",
+    "May 1-3, 2026 Savannah, GA",
+    "May 1-3, 2026 Savannah Convention Center Savannah, GA"
+  );
+  const match = scoreEventResourceMatch(
+    fingerprint,
+    "",
+    "2026 Xcel Bronze/Silver/Gold State Championships",
+    "https://usacompetitions.com/2026-xcel-bsg-state-championships/"
+  );
+
+  assert.equal(match.passes, false);
+  assert.equal(match.hardReject, false);
+  assert.match(match.reason, /generic_token_overlap_only/i);
 });
 
 test("spectator admission stays public while coach fees route into coachInfo", () => {
@@ -2263,6 +2292,234 @@ test("extractDiscoveryText merges PDF annotation links into resources and follow
   assert.equal(hotelFetchCount, 1, "expected trusted external PDF annotation URL to be fetched once");
 });
 
+test("extractDiscoveryText treats same-host host-hotel annotation pages as traversable hotel hubs", async (t) => {
+  const rootUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/";
+  const packetUrl = "https://usacompetitions.com/wp-content/uploads/2026/03/state-info.pdf";
+  const hotelHubUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/hotels/";
+  const hotelAlphaUrl = "https://api.groupbook.io/group/state-hilton";
+  const hotelBravoUrl = "https://api.groupbook.io/group/state-courtyard";
+
+  t.after(() => resetUrlDiscoveryTestHooks());
+  setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url: string) => {
+      if (url === rootUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Xcel State Championships</title></head>
+            <body>
+              <a href="/wp-content/uploads/2026/03/state-info.pdf">Schedule &amp; Info</a>
+              April 10-12, 2026 Gainesville, FL
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === packetUrl) {
+        return {
+          contentType: "application/pdf",
+          buffer: Buffer.from("packet with hotel hub annotation"),
+          text: "",
+        };
+      }
+      if (url === hotelHubUrl) {
+        const text = `
+          <html>
+            <head><title>Host Hotel Information</title></head>
+            <body>
+              <h2>HOST HOTEL INFORMATION</h2>
+              <section>
+                <h3>Hilton Garden Inn</h3>
+                <p>4075 SW 33rd Place, Gainesville, FL 32608</p>
+                <p><a href="${hotelAlphaUrl}">Book Now</a></p>
+              </section>
+              <section>
+                <h3>Courtyard Gainesville</h3>
+                <p>3700 SW 42nd Street, Gainesville, FL 32608</p>
+                <p><a href="${hotelBravoUrl}">Reserve</a></p>
+              </section>
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === hotelAlphaUrl || url === hotelBravoUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Xcel State Championships Hotel Booking</title></head>
+            <body>2026 Xcel State Championships official host hotel booking.</body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+    extractTextFromPdf: async (buffer: Buffer) => ({
+      text: `PDF:${buffer.toString("utf8")}`,
+      usedOcr: false,
+      coachPageHints: [],
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+      annotationLinks: [
+        {
+          url: hotelHubUrl,
+          label: "CLICK HERE FOR ALL HOST HOTELS",
+          pageNumber: 1,
+          source: "pdf_annotation",
+        },
+      ],
+    }),
+    extractTextFromImage: async () => "",
+    extractGymLayoutImageFromPdf: async () => ({
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+    }),
+    openAiExtractGymLayoutZones: async () => [],
+    toOptimizedImageDataUrl: async () => null,
+  });
+
+  const result = await extractDiscoveryText({ type: "url", url: rootUrl });
+  const resourceLinks = result.extractionMeta.resourceLinks || [];
+
+  assert.match(result.extractedText, /HOST HOTEL INFORMATION/i);
+  assert.match(result.extractedText, /Hilton Garden Inn/i);
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.url === hotelHubUrl &&
+        item.origin === "linked_asset"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.url === hotelAlphaUrl &&
+        item.origin === "hub_descendant"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.url === hotelBravoUrl &&
+        item.origin === "hub_descendant"
+    )
+  );
+});
+
+test("extractDiscoveryText does not follow sibling same-host event pages when only generic tokens overlap", async (t) => {
+  const rootUrl = "https://usacompetitions.com/2026-region-8-womens-xcel-championships/";
+  const wrongEventUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/";
+  const hotelHubUrl = "https://usacompetitions.com/2026-xcel-championships-hotels/";
+  const hotelBookingUrl = "https://api.groupbook.io/group/region-8-xcel-2026";
+  let wrongEventFetches = 0;
+
+  t.after(() => resetUrlDiscoveryTestHooks());
+  setUrlDiscoveryTestHooks({
+    fetchWithLimit: async (url: string) => {
+      if (url === rootUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Region 8 Women's Xcel Championships</title></head>
+            <body>
+              <nav style="display:none">
+                <a href="${wrongEventUrl}">2026 Xcel Bronze/Silver/Gold State Championships</a>
+              </nav>
+              <p>May 1-3, 2026 Savannah Convention Center Savannah, GA</p>
+              <h1>Hotel Info</h1>
+              <a href="${hotelHubUrl}" aria-label="2026-xcel-regionals-host-hotels-square-1080x1080">
+                <img alt="Host Hotel Info" src="/hotels.png" />
+              </a>
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === wrongEventUrl) {
+        wrongEventFetches += 1;
+        const text = `
+          <html>
+            <head><title>2026 Xcel Bronze/Silver/Gold State Championships</title></head>
+            <body>
+              <h1>Hotel Info</h1>
+              <p>April 10-12, 2026 Gainesville, FL</p>
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === hotelHubUrl) {
+        const text = `
+          <html>
+            <head><title>Host Hotel Info</title></head>
+            <body>
+              <h2>HOST HOTEL INFO</h2>
+              <a href="${hotelBookingUrl}">Reserve Hotel Online</a>
+              <p>May 1-3, 2026 Savannah, GA</p>
+            </body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      if (url === hotelBookingUrl) {
+        const text = `
+          <html>
+            <head><title>2026 Region 8 Xcel Championships Hotel Booking</title></head>
+            <body>2026 Region 8 Xcel Championships official host hotel booking for Savannah families.</body>
+          </html>
+        `;
+        return { contentType: "text/html", buffer: Buffer.from(text), text };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+    collectBrowserData: async () => ({
+      candidates: [],
+      pages: [],
+    }),
+    extractTextFromPdf: async () => ({
+      text: "",
+      usedOcr: false,
+      coachPageHints: [],
+      textQuality: "good",
+      qualitySignals: emptyQualitySignals,
+      annotationLinks: [],
+    }),
+    extractTextFromImage: async () => "",
+    extractGymLayoutImageFromPdf: async () => ({
+      dataUrl: null,
+      facts: [],
+      zones: [],
+      page: null,
+    }),
+    openAiExtractGymLayoutZones: async () => [],
+    toOptimizedImageDataUrl: async () => null,
+  });
+
+  const result = await extractDiscoveryText({ type: "url", url: rootUrl });
+  const resourceLinks = result.extractionMeta.resourceLinks || [];
+
+  assert.equal(wrongEventFetches, 0, "expected sibling Gainesville event page not to be followed");
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.url === hotelHubUrl &&
+        item.origin === "root"
+    )
+  );
+  assert.ok(
+    resourceLinks.some(
+      (item: any) =>
+        item.kind === "hotel_booking" &&
+        item.url === hotelBookingUrl &&
+        item.origin === "hub_descendant"
+    )
+  );
+});
+
 test("parseMeetFromExtractedText keeps a deterministic title when quality gate skips model parsing", async () => {
   const parsed = await parseMeetFromExtractedText(
     [
@@ -2695,6 +2952,153 @@ test("mapParseResultToGymData deterministically promotes canonical resource link
   assert.ok(
     mapped.links.some((item: any) => item.url === "https://api.groupbook.io/booking/state-host-hotel")
   );
+});
+
+test("mapParseResultToGymData with Firecrawl travelAccommodation does not surface legacy hotel prose", async () => {
+  const previousKey = process.env.FIRECRAWL_API_KEY;
+  process.env.FIRECRAWL_API_KEY = "test";
+  try {
+    const legacyHotelText =
+      "LEGACY HOTEL BLOCK: https://legacy.example.com/hotels (do not display when Firecrawl is available).";
+    const baseData = {
+      title: "State Meet",
+      advancedSections: { logistics: { hotelInfo: "" } },
+      discoverySource: {
+        travelAccommodation: {
+          hotels: [{ name: "Hotel One", bookingUrl: "https://book.example.com/hotel-one" }],
+          fallbackLink: { label: "Host Hotels", url: "https://hub.example.com/hotels" },
+          hotelSource: {
+            provider: "firecrawl",
+            sourceUrl: "https://hub.example.com/hotels",
+            scrapedAt: "2026-03-31T00:00:00.000Z",
+            lastError: null,
+          },
+        },
+      },
+    };
+
+    const parseResult = normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "athlete_session",
+      title: "State Meet",
+      dates: "March 20-22, 2026",
+      startAt: null,
+      endAt: null,
+      timezone: "America/Chicago",
+      venue: "State Arena",
+      address: "123 Main St, Chicago, IL 60601",
+      hostGym: "State Gym",
+      admission: [],
+      athlete: {},
+      meetDetails: {},
+      logistics: { hotel: legacyHotelText },
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      links: [],
+      unmappedFacts: [],
+      schedule: { days: [] },
+    })!;
+
+    const extractionMeta = { resourceLinks: [] } as any;
+    const mapped = await mapParseResultToGymData(parseResult, baseData, extractionMeta);
+
+    assert.equal(mapped.advancedSections.logistics.hotelInfo, "");
+    assert.ok(
+      mapped.links.some((item: any) => item.url === "https://hub.example.com/hotels"),
+      "hub link should come from discoverySource.travelAccommodation.fallbackLink"
+    );
+    assert.ok(
+      mapped.links.some((item: any) => item.url === "https://book.example.com/hotel-one"),
+      "booking links from Firecrawl hotels should be surfaced"
+    );
+    assert.ok(
+      mapped.links.every((item: any) => item.url !== "https://legacy.example.com/hotels"),
+      "legacy inline hotel URL must not be inferred in Firecrawl mode"
+    );
+
+    const publicArtifacts = buildGymDiscoveryPublicPageArtifacts({
+      parseResult,
+      baseData,
+      extractionMeta,
+    });
+    assert.doesNotMatch(
+      publicArtifacts.publicPageSections.travel.body,
+      /LEGACY HOTEL BLOCK/i,
+      "public travel body must not include legacy hotel narrative in Firecrawl mode"
+    );
+  } finally {
+    if (previousKey === undefined) delete process.env.FIRECRAWL_API_KEY;
+    else process.env.FIRECRAWL_API_KEY = previousKey;
+  }
+});
+
+test("Firecrawl env var alone does not switch discovery travel copy into structured-hotel mode", async () => {
+  const previousKey = process.env.FIRECRAWL_API_KEY;
+  process.env.FIRECRAWL_API_KEY = "test";
+  try {
+    const legacyHotelText =
+      "Legacy hotel block with booking details at https://legacy.example.com/hotels.";
+    const baseData = {
+      title: "State Meet",
+      advancedSections: { logistics: { hotelInfo: "" } },
+      discoverySource: {},
+    };
+
+    const parseResult = normalizeParseResult({
+      eventType: "gymnastics_meet",
+      documentProfile: "athlete_session",
+      title: "State Meet",
+      dates: "March 20-22, 2026",
+      startAt: null,
+      endAt: null,
+      timezone: "America/Chicago",
+      venue: "State Arena",
+      address: "123 Main St, Chicago, IL 60601",
+      hostGym: "State Gym",
+      admission: [],
+      athlete: {},
+      meetDetails: {},
+      logistics: { hotel: legacyHotelText },
+      policies: {},
+      coachInfo: {},
+      contacts: [],
+      deadlines: [],
+      gear: {},
+      volunteers: {},
+      communications: {},
+      links: [],
+      unmappedFacts: [],
+      schedule: { days: [] },
+    })!;
+
+    const extractionMeta = { resourceLinks: [] } as any;
+    const mapped = await mapParseResultToGymData(parseResult, baseData, extractionMeta);
+
+    assert.equal(mapped.advancedSections.logistics.hotelInfo, legacyHotelText);
+    assert.ok(
+      mapped.links.some((item: any) => item.url === "https://legacy.example.com/hotels"),
+      "legacy inline hotel URL should still be inferred when travelAccommodation is absent",
+    );
+
+    const publicArtifacts = buildGymDiscoveryPublicPageArtifacts({
+      parseResult,
+      baseData,
+      extractionMeta,
+    });
+    assert.doesNotMatch(
+      publicArtifacts.publicPageSections.travel.body,
+      /Hotel booking links are listed below\./i,
+    );
+    assert.match(publicArtifacts.publicPageSections.travel.body, /Legacy hotel block/i);
+  } finally {
+    if (previousKey === undefined) delete process.env.FIRECRAWL_API_KEY;
+    else process.env.FIRECRAWL_API_KEY = previousKey;
+  }
 });
 
 test("mapParseResultToGymData preserves existing manual schedule content", async () => {

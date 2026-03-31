@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import { intakeGymnasticsDiscovery } from "@/lib/discovery";
+import { intakeDiscovery } from "@/lib/discovery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const result = await intakeGymnasticsDiscovery({ request, userId });
+    const result = await intakeDiscovery({ request, userId });
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

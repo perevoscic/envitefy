@@ -564,6 +564,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           setLoadedDiscoverySource(existingDiscoverySource);
           setIsDiscoveryEdit(
             existingCreatedVia === "football-discovery" ||
+              existingCreatedVia === "football-discovery-v2" ||
               safeString(existingDiscoverySource?.workflow) === "football",
           );
 
@@ -1006,7 +1007,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           data: {
             category: config.category,
             displayName: config.displayName,
-            createdVia: isDiscoveryUpdate ? "football-discovery" : "template",
+            createdVia: isDiscoveryUpdate ? "football-discovery-v2" : "template",
             createdManually: !isDiscoveryUpdate,
             startISO,
             endISO,
@@ -1544,8 +1545,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       try {
         const formData = new FormData();
         formData.append("file", discoverFile);
+        formData.append("workflow", "football");
 
-        const ingestRes = await fetch("/api/ingest?mode=football_discovery", {
+        const ingestRes = await fetch("/api/discovery/intake", {
           method: "POST",
           body: formData,
           credentials: "include",
@@ -1556,16 +1558,34 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         }
 
         const eventId = String(ingestJson.eventId);
-        const parseBody = new FormData();
-        parseBody.append("file", discoverFile);
-        const parseRes = await fetch(`/api/parse/${eventId}`, {
+        const runRes = await fetch(`/api/discovery/${eventId}/run`, {
           method: "POST",
-          body: parseBody,
           credentials: "include",
         });
-        const parseJson = await parseRes.json().catch(() => ({}));
-        if (!parseRes.ok) {
-          throw new Error(parseJson?.error || "Failed to parse source");
+        const runJson = await runRes.json().catch(() => ({}));
+        if (!runRes.ok) {
+          throw new Error(runJson?.error || "Failed to start discovery pipeline");
+        }
+        const deadlineAt = Date.now() + 60_000;
+        while (Date.now() < deadlineAt) {
+          const statusRes = await fetch(`/api/discovery/${eventId}/status`, {
+            credentials: "include",
+            cache: "no-store",
+          });
+          const statusJson = await statusRes.json().catch(() => ({}));
+          if (!statusRes.ok) {
+            throw new Error(statusJson?.error || "Failed to poll discovery status");
+          }
+          if (statusJson?.errorCode) {
+            throw new Error(statusJson?.errorMessage || "Football discovery failed");
+          }
+          if (statusJson?.builderReady === true) {
+            break;
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        }
+        if (Date.now() >= deadlineAt) {
+          throw new Error("Football discovery timed out");
         }
         router.push(`/event/football/customize?edit=${eventId}&new=1`);
       } catch (err: any) {

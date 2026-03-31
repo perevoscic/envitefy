@@ -1,12 +1,18 @@
 import { getEventHistoryById } from "@/lib/db";
-import { buildGymBuilderDraft } from "@/lib/discovery/map";
-import { safeString, uniqueStrings } from "@/lib/discovery/shared";
+import { buildFootballBuilderDraft, buildGymBuilderDraft } from "@/lib/discovery/map";
+import {
+  buildEmptyDiscoveryPublicArtifacts,
+  safeString,
+  uniqueStrings,
+} from "@/lib/discovery/shared";
 import type {
+  DiscoveryPublicArtifacts,
   EventDiscoveryRow,
   GymPublicArtifacts,
   GymPublicSection,
   PublicSectionProvenance,
 } from "@/lib/discovery/types";
+import { mapParseResultToFootballData } from "@/lib/football-discovery";
 import {
   buildGymDiscoveryPublicPageArtifacts,
   mapParseResultToGymData,
@@ -88,8 +94,51 @@ export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRo
   if (!parseResult) {
     throw new Error("No parse result available for public composition.");
   }
+  if (discovery.workflow === "football") {
+    const mappedData = await mapParseResultToFootballData(parseResult as any, currentData);
+    const publicArtifacts: DiscoveryPublicArtifacts = {
+      ...buildEmptyDiscoveryPublicArtifacts(safeString(mappedData.title)),
+      hero: {
+        title: safeString(mappedData.title),
+        dateLabel:
+          safeString(mappedData?.customFields?.scheduleDateRangeLabel) ||
+          safeString(mappedData.date),
+        venue: safeString(mappedData.venue || mappedData.address),
+        badges: uniqueStrings([mappedData?.customFields?.team], 4),
+      },
+      quickAccess: Array.isArray(mappedData.links)
+        ? mappedData.links
+            .map((item: any) => ({
+              label: safeString(item?.label || item?.title || "Link"),
+              url: safeString(item?.url),
+            }))
+            .filter((item: { label: string; url: string }) => item.url)
+            .slice(0, 12)
+        : [],
+    };
+    const reviewFlags = uniqueStrings(
+      [...(discovery.canonicalParse?.issues || []).map((item) => item.message)],
+      24,
+    );
+    return {
+      mappedData,
+      builderDraft: buildFootballBuilderDraft({ mappedData, reviewFlags }),
+      publicArtifacts,
+    };
+  }
+  const enrichment = (discovery.enrichment || {}) as Record<string, any>;
+  const hasTravelAccommodation = Object.hasOwn(enrichment, "travelAccommodation");
+  const discoverySourceWithTravel =
+    hasTravelAccommodation &&
+    currentData?.discoverySource &&
+    typeof currentData.discoverySource === "object"
+      ? {
+          ...((currentData.discoverySource || {}) as Record<string, any>),
+          travelAccommodation: enrichment.travelAccommodation ?? null,
+        }
+      : ((currentData.discoverySource || {}) as Record<string, any>);
   const travelAccommodationState =
-    (discovery.enrichment && (discovery.enrichment as any).travelAccommodation) ||
+    (hasTravelAccommodation ? enrichment.travelAccommodation : undefined) ||
     (currentData?.discoverySource &&
       typeof (currentData as any).discoverySource === "object" &&
       (currentData as any).discoverySource.travelAccommodation) ||
@@ -196,5 +245,10 @@ export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRo
     mappedData,
     builderDraft: buildGymBuilderDraft({ mappedData, reviewFlags }),
     publicArtifacts,
+    eventDataPatch: hasTravelAccommodation
+      ? {
+          discoverySource: discoverySourceWithTravel,
+        }
+      : undefined,
   };
 }

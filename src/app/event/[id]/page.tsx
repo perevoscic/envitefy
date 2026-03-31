@@ -677,6 +677,7 @@ export default async function EventPage({
       discoveryTemplateId === "gymnastics");
   const isFootballDiscoveryTemplate =
     (discoveryCreatedVia === "football-discovery" ||
+      discoveryCreatedVia === "football-discovery-v2" ||
       discoveryWorkflow === "football" ||
       hasDiscoveryInput) &&
     (discoveryCategory === "sport_football_season" ||
@@ -699,7 +700,8 @@ export default async function EventPage({
     hasDiscoveryInput ||
     discoveryCreatedVia === "meet-discovery" ||
     discoveryCreatedVia === "meet-discovery-v2" ||
-    discoveryCreatedVia === "football-discovery";
+    discoveryCreatedVia === "football-discovery" ||
+    discoveryCreatedVia === "football-discovery-v2";
   const showHostDashboard = canManageCreatedEvent && !hideHostDashboard;
   const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" | "football" } | null =
     editParam && canManageCreatedEvent

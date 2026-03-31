@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { safeString } from "./strings.ts";
 import type {
+  DiscoveryBuilderDraft,
+  DiscoveryPublicArtifacts,
   DiscoveryFailureStage,
   DiscoveryPipelineState,
   DiscoveryStage,
-  GymBuilderDraft,
-  GymPublicArtifacts,
 } from "./types.ts";
 
 export const DISCOVERY_REVIEW_READY_STAGES = new Set<DiscoveryStage>(["review_ready", "published"]);
@@ -104,7 +104,7 @@ export function uniqueStrings(values: unknown[], limit = 24): string[] {
   return out;
 }
 
-export function buildEmptyGymBuilderDraft(): GymBuilderDraft {
+export function buildEmptyDiscoveryBuilderDraft(): DiscoveryBuilderDraft {
   return {
     event: {},
     venue: {},
@@ -114,9 +114,9 @@ export function buildEmptyGymBuilderDraft(): GymBuilderDraft {
   };
 }
 
-export function buildEmptyGymPublicArtifacts(title = ""): GymPublicArtifacts {
+export function buildEmptyDiscoveryPublicArtifacts(title = ""): DiscoveryPublicArtifacts {
   return {
-    pipelineVersion: "gym-public-v3",
+    pipelineVersion: "discovery-v2",
     publishAssessment: {
       state: "needs_review",
       reasons: ["Discovery is still processing."],
@@ -130,4 +130,15 @@ export function buildEmptyGymPublicArtifacts(title = ""): GymPublicArtifacts {
     sections: {},
     quickAccess: [],
   };
+}
+
+export function buildEmptyGymBuilderDraft() {
+  return buildEmptyDiscoveryBuilderDraft();
+}
+
+export function buildEmptyGymPublicArtifacts(title = "") {
+  return {
+    ...buildEmptyDiscoveryPublicArtifacts(title),
+    pipelineVersion: "gym-public-v3",
+  } as const;
 }

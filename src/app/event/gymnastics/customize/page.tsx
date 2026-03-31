@@ -886,45 +886,53 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (!editEventId) return { ok: false, status: 0 };
         setDiscoveryEnrichmentBusy(true);
         try {
-          const enrichRes = await fetch(
-            `/api/parse/${editEventId}/enrich${force ? "?force=1" : ""}`,
+          const runRes = await fetch(
+            `/api/discovery/${editEventId}/run${force ? "?force=1" : ""}`,
             {
               method: "POST",
               credentials: "include",
             },
           );
-          const enrichJson = await enrichRes.json().catch(() => ({}));
-          const nextEnrichmentState =
-            enrichJson?.enrichmentState && typeof enrichJson.enrichmentState === "object"
-              ? enrichJson.enrichmentState
-              : null;
-
-          if (enrichRes.status === 202) {
-            setDiscoveryEnrichmentState(
-              nextEnrichmentState || {
-                state: "running",
-                pending: true,
-                startedAt: new Date().toISOString(),
-                finishedAt: null,
-                lastError: "",
-              },
-            );
-            return { ok: true, status: 202 };
+          const runJson = await runRes.json().catch(() => ({}));
+          if (!runRes.ok) {
+            throw new Error(runJson?.error || "Failed discovery rerun");
           }
-
-          if (!enrichRes.ok) {
-            throw new Error(enrichJson?.error || "Failed discovery enrichment");
-          }
-
           setDiscoveryEnrichmentState(
-            nextEnrichmentState || {
-              state: "completed",
-              pending: false,
+            {
+              state: "running",
+              pending: true,
+              startedAt: new Date().toISOString(),
+              finishedAt: null,
               lastError: "",
             },
           );
-          setLoadVersion((prev) => prev + 1);
-          return { ok: true, status: enrichRes.status };
+          const deadlineAt = Date.now() + 90_000;
+          while (Date.now() < deadlineAt) {
+            const statusRes = await fetch(`/api/discovery/${editEventId}/status`, {
+              credentials: "include",
+              cache: "no-store",
+            });
+            const statusJson = await statusRes.json().catch(() => ({}));
+            if (!statusRes.ok) {
+              throw new Error(statusJson?.error || "Failed to poll discovery status");
+            }
+            if (statusJson?.errorCode) {
+              throw new Error(statusJson?.errorMessage || "Discovery rerun failed");
+            }
+            if (statusJson?.builderReady === true) {
+              setDiscoveryEnrichmentState({
+                state: "completed",
+                pending: false,
+                startedAt: null,
+                finishedAt: new Date().toISOString(),
+                lastError: "",
+              });
+              setLoadVersion((prev) => prev + 1);
+              return { ok: true, status: statusRes.status };
+            }
+            await new Promise((resolve) => window.setTimeout(resolve, 1000));
+          }
+          throw new Error("Discovery rerun timed out");
         } catch (err) {
           console.error("[Edit] Discovery enrichment failed", err);
           setDiscoveryEnrichmentState((prev) => ({
@@ -1640,18 +1648,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       let repairActive = true;
       (async () => {
         try {
-          const repairRes = await fetch(`/api/parse/${editEventId}?repair=1`, {
-            method: "POST",
-            credentials: "include",
-            signal: repairController.signal,
-          });
+          const result = await runDiscoveryEnrichment({ force: true });
           if (!repairActive || repairController.signal.aborted) return;
-          if (!repairRes.ok) {
-            const repairJson = await repairRes.json().catch(() => ({}));
-            throw new Error(repairJson?.error || "Failed discovery repair parse");
-          }
-          if (repairActive) {
-            setLoadVersion((prev) => prev + 1);
+          if (!result.ok) {
+            throw new Error("Failed discovery repair parse");
           }
         } catch (err: unknown) {
           if (
@@ -1682,6 +1682,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       loadedDiscoverySource,
       loadingExisting,
       demoMode,
+      runDiscoveryEnrichment,
     ]);
 
     useEffect(() => {
@@ -3325,7 +3326,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     try {
                       (window as any).parent.location.href = href;
                     } catch {
-                      router.push(`/event/${editEventId}`);
+                      router.push("/event/gymnastics");
                     }
                   } else {
                     router.push("/event/gymnastics");

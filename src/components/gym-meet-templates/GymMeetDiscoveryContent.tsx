@@ -69,6 +69,8 @@ const gridClassForColumns = (columns?: number) => {
   }
 };
 
+const hotelCardGridClass = "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]";
+
 const getCollectionItemKey = (parentId: string | undefined, explicitKey: unknown, index: number) => {
   const normalizedParentId =
     typeof parentId === "string" && parentId.trim() ? parentId.trim() : "item";
@@ -284,19 +286,31 @@ export default function GymMeetDiscoveryContent({
                 {block.title}
               </h4>
             ) : null}
-            <div className={gridClassForColumns(block.columns)}>
+            <div
+              className={
+                block.id === "hotel-cards" ? hotelCardGridClass : gridClassForColumns(block.columns)
+              }
+            >
               {(block.cards || []).map((card: any, index: number) => {
                 const cardReactKey = getCollectionItemKey(block.id, card?.key, index);
+                const hotelCardLayoutClass =
+                  block.id === "hotel-cards" ? "flex h-full flex-col" : "";
+                const cardLabelClass =
+                  block.id === "hotel-cards"
+                    ? "text-sm font-black uppercase tracking-[0.2em] opacity-70 sm:text-base"
+                    : "text-[10px] font-black uppercase tracking-[0.18em] opacity-60";
                 return (
-                  <div key={cardReactKey} className={cardClass}>
+                  <div key={cardReactKey} className={`${cardClass} ${hotelCardLayoutClass}`.trim()}>
                     {card.label ? (
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                      <p className={cardLabelClass}>
                         {card.label}
                       </p>
                     ) : null}
                     {card.value ? <p className="mt-2 text-2xl font-black leading-none">{card.value}</p> : null}
                     {card.body ? (
-                      <p className={`${card.value || card.label ? "mt-2" : ""} text-sm leading-relaxed opacity-85`}>
+                      <p
+                        className={`${card.value || card.label ? "mt-2" : ""} whitespace-pre-line text-sm leading-relaxed opacity-85`}
+                      >
                         {card.body}
                       </p>
                     ) : null}
@@ -317,7 +331,7 @@ export default function GymMeetDiscoveryContent({
                         href={card.action.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`mt-4 ${secondaryButtonClass} ${focusRing}`}
+                        className={`${block.id === "hotel-cards" ? "mt-auto pt-4" : "mt-4"} ${secondaryButtonClass} ${focusRing}`}
                       >
                         {card.action.label || "Open Link"}
                         <ExternalLink size={12} />

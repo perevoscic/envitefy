@@ -421,13 +421,13 @@ function InvitationEventCard({
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-8 md:p-12">
+          <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 sm:p-8 md:p-12">
             <div className="flex flex-col gap-8 md:flex-row md:justify-between">
               <div className="space-y-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                   Countdown
                 </p>
-                <div className="flex items-center gap-3 overflow-x-auto pb-1">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:gap-3">
                   {[
                     { label: "Days", value: countdown.days },
                     { label: "Hours", value: countdown.hours },
@@ -435,14 +435,14 @@ function InvitationEventCard({
                   ].map((countdownItem, index) => (
                     <div
                       key={`${item.id}-${countdownItem.label}`}
-                      className="flex items-start gap-2.5 md:gap-4"
+                      className="flex items-start gap-2 sm:gap-2.5 md:gap-4"
                     >
                       <CountdownSplitFlapUnit
                         value={countdownItem.value}
                         label={countdownItem.label}
                       />
                       {index < 2 ? (
-                        <div className="flex translate-y-2.5 flex-col gap-2">
+                        <div className="flex translate-y-2.5 flex-col gap-2 max-[390px]:hidden">
                           <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
                           <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
                         </div>
@@ -917,12 +917,12 @@ export default function HomeOverviewDashboard({
                   </p>
                 </div>
               </div>
-              <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-8 md:p-12">
+              <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 sm:p-8 md:p-12">
                 <div className="space-y-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     Countdown
                   </p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     {[
                       { label: "Days", value: "00" },
                       { label: "Hours", value: "00" },
@@ -930,14 +930,14 @@ export default function HomeOverviewDashboard({
                     ].map((countdownItem, index) => (
                       <div
                         key={countdownItem.label}
-                        className="flex items-start gap-2.5 md:gap-4"
+                        className="flex items-start gap-2 sm:gap-2.5 md:gap-4"
                       >
                         <CountdownSplitFlapUnit
                           value={countdownItem.value}
                           label={countdownItem.label}
                         />
                         {index < 2 ? (
-                          <div className="hidden translate-y-2.5 flex-col gap-2 md:flex">
+                          <div className="flex translate-y-2.5 flex-col gap-2 max-[390px]:hidden">
                             <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
                             <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
                           </div>

@@ -141,6 +141,7 @@ export default function FootballLauncher({
     const formData = new FormData();
     if (file) formData.append("file", file);
     if (url) formData.append("url", url);
+    formData.append("workflow", "football");
 
     let ingestJson: { eventId?: string; error?: string } = {};
     cancelRequestedRef.current = false;
@@ -150,7 +151,7 @@ export default function FootballLauncher({
       ingestJson = await new Promise<{ eventId?: string; error?: string }>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         uploadXhrRef.current = xhr;
-        xhr.open("POST", "/api/ingest?mode=football_discovery", true);
+        xhr.open("POST", "/api/discovery/intake", true);
         xhr.withCredentials = true;
         xhr.upload.onprogress = (event) => {
           if (!event.lengthComputable) return;
@@ -192,9 +193,10 @@ export default function FootballLauncher({
       }, INGEST_REQUEST_TIMEOUT_MS);
       let ingestRes: Response;
       try {
-        ingestRes = await fetch("/api/ingest?mode=football_discovery", {
+        ingestRes = await fetch("/api/discovery/intake", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, workflow: "football" }),
           credentials: "include",
           signal: ingestAbortRef.current.signal,
         });
@@ -213,6 +215,7 @@ export default function FootballLauncher({
     }
 
     const eventId = String(ingestJson.eventId);
+    const parseStartedAt = Date.now();
     reportProgress(72, "Processing football file...");
     let parseProgress = 72;
     parseProgressTimerRef.current = setInterval(() => {
@@ -232,29 +235,45 @@ export default function FootballLauncher({
         });
         parseAbortRef.current?.abort();
       }, parseTimeoutMs);
-      const parseInit: RequestInit = {
+      const runInit: RequestInit = {
         method: "POST",
         credentials: "include",
         signal: parseAbortRef.current.signal,
       };
-      if (file) {
-        const parseBody = new FormData();
-        parseBody.append("file", file);
-        parseInit.body = parseBody;
-      }
-      let parseRes: Response;
       try {
-        parseRes = await fetch(`/api/parse/${eventId}`, parseInit);
+        const runRes = await fetch(`/api/discovery/${eventId}/run`, runInit);
+        const runJson = await runRes.json().catch(() => ({}));
+        if (!runRes.ok) {
+          throw new Error(runJson?.error || "Failed to start discovery pipeline");
+        }
+        while (Date.now() - parseStartedAt < parseTimeoutMs) {
+          throwIfCancelled();
+          const statusRes = await fetch(`/api/discovery/${eventId}/status`, {
+            credentials: "include",
+            signal: parseAbortRef.current.signal,
+            cache: "no-store",
+          });
+          const statusJson = await statusRes.json().catch(() => ({}));
+          if (!statusRes.ok) {
+            throw new Error(statusJson?.error || "Failed to poll discovery status");
+          }
+          if (statusJson?.errorCode) {
+            throw new Error(statusJson?.errorMessage || "Football discovery failed");
+          }
+          if (statusJson?.builderReady === true) {
+            break;
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        }
+        if (Date.now() - parseStartedAt >= parseTimeoutMs) {
+          throw buildTimeoutError("parse");
+        }
       } catch (err) {
         if (parseTimedOut) throw buildTimeoutError("parse");
         throw err;
       } finally {
         window.clearTimeout(parseTimeoutId);
         parseAbortRef.current = null;
-      }
-      const parseJson = await parseRes.json().catch(() => ({}));
-      if (!parseRes.ok) {
-        throw new Error(parseJson?.error || "Failed to parse source");
       }
       throwIfCancelled();
     } finally {
