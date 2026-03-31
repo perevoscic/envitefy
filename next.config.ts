@@ -25,11 +25,19 @@ const nextConfig = (phase: string): NextConfig => ({
     "@google-cloud/aiplatform",
     "@google-cloud/vertexai",
     "@google-cloud/storage",
+    "@napi-rs/canvas",
     "openai",
     "googleapis",
     "sharp",
     "@aws-sdk/client-sesv2",
   ],
+
+  outputFileTracingIncludes: {
+    "/*": [
+      "./node_modules/@napi-rs/canvas/**/*",
+      "./node_modules/@napi-rs/canvas-*/**/*",
+    ],
+  },
 
   images: {
     remotePatterns: [
