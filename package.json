@@ -53,6 +53,7 @@
     "next": "15.5.9",
     "next-auth": "^4.24.7",
     "next-connect": "^1.0.0",
+    "node-qpdf": "^1.0.3",
     "nodemailer": "^6.10.1",
     "openai": "^4.76.3",
     "pdfjs-dist": "^5.5.207",
