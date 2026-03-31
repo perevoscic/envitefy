@@ -3,6 +3,7 @@ import * as chrono from "chrono-node";
 import sharp from "sharp";
 import { inflateRawSync, inflateSync } from "node:zlib";
 import { execFile } from "node:child_process";
+import { createRequire } from "node:module";
 import { promisify } from "node:util";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -27,6 +28,7 @@ import { computeGymBuilderStatuses } from "@/lib/meet-discovery/status";
 import { parseDataUrlBase64 } from "@/utils/data-url";
 import {
   extractPdfAnnotationLinks,
+  extractPdfTextWithPdfJs,
   rasterizePdfPageToPng,
   type PdfAnnotationLink,
 } from "@/lib/pdf-raster";
@@ -3815,9 +3817,17 @@ async function extractPdfTextWithNodeWorker(buffer: Buffer): Promise<PdfTextExtr
     tempDir = await mkdtemp(join(tmpdir(), "envitefy-pdf-"));
     const filePath = join(tempDir, "input.pdf");
     await writeFile(filePath, buffer);
+    const requireFromApp = createRequire(join(process.cwd(), "package.json"));
+    const pdfParseModuleId = (() => {
+      try {
+        return requireFromApp.resolve("pdf-parse");
+      } catch {
+        return "pdf-parse";
+      }
+    })();
     const workerScript = `
 const { readFileSync } = require("fs");
-const { PDFParse } = require("pdf-parse");
+const { PDFParse } = require(${JSON.stringify(pdfParseModuleId)});
 (async () => {
   const data = readFileSync(process.argv[1]);
   const parser = new PDFParse({ data });
@@ -3857,6 +3867,19 @@ const { PDFParse } = require("pdf-parse");
     console.warn("[meet-discovery] pdf-parse worker failed", {
       message,
     });
+    const pdfJsExtraction = await extractPdfTextWithPdfJs(buffer);
+    if (pdfJsExtraction.text || pdfJsExtraction.pages.length > 0) {
+      return {
+        text: cleanExtractedText(String(pdfJsExtraction.text || "")),
+        pages: pdfJsExtraction.pages
+          .map((page) => ({
+            num: Number(page?.num) || 0,
+            text: cleanPdfPageTextPreservingGrid(String(page?.text || "")),
+          }))
+          .filter((page) => page.text),
+        annotationLinks: [],
+      };
+    }
     try {
       const mod = await import("pdf-parse");
       const PDFParseCtor =

@@ -37,6 +37,20 @@ async function getPdfJs() {
   return pdfJsPromise;
 }
 
+function normalizePdfJsPageText(items: unknown): string {
+  const chunks: string[] = [];
+  for (const item of Array.isArray(items) ? items : []) {
+    const text = safeString((item as any)?.str);
+    if (text) chunks.push(text);
+    chunks.push((item as any)?.hasEOL ? "\n" : " ");
+  }
+  return chunks
+    .join("")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
 async function getPdfRenderDeps() {
   if (!pdfRenderDepsPromise) {
     pdfRenderDepsPromise = Promise.all([getPdfJs(), import("@napi-rs/canvas")])
@@ -151,6 +165,48 @@ export async function extractPdfAnnotationLinks(
     return links;
   } catch {
     return [];
+  } finally {
+    if (doc) {
+      if (typeof doc.cleanup === "function") doc.cleanup();
+      if (typeof doc.destroy === "function") await doc.destroy();
+    }
+  }
+}
+
+export async function extractPdfTextWithPdfJs(
+  pdfBuffer: Buffer,
+): Promise<{ text: string; pages: Array<{ num: number; text: string }> }> {
+  const pdfjs = await getPdfJs();
+  if (!pdfjs) return { text: "", pages: [] };
+
+  let doc: any = null;
+  try {
+    const loadingTask = pdfjs.getDocument({
+      data: new Uint8Array(pdfBuffer),
+      useSystemFonts: true,
+      isEvalSupported: false,
+      disableFontFace: true,
+    });
+    doc = await loadingTask.promise;
+    const pages: Array<{ num: number; text: string }> = [];
+    const pageCount = Number(doc.numPages) || 0;
+    for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
+      const page = await doc.getPage(pageNumber);
+      try {
+        const textContent = await page.getTextContent();
+        const text = normalizePdfJsPageText(textContent?.items);
+        if (!text) continue;
+        pages.push({ num: pageNumber, text });
+      } finally {
+        if (typeof page.cleanup === "function") page.cleanup();
+      }
+    }
+    return {
+      text: pages.map((page) => page.text).join("\n\n"),
+      pages,
+    };
+  } catch {
+    return { text: "", pages: [] };
   } finally {
     if (doc) {
       if (typeof doc.cleanup === "function") doc.cleanup();
