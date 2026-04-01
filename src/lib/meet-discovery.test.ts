@@ -1071,6 +1071,42 @@ test("scoreEventResourceMatch rejects generic token overlap for sibling event pa
   assert.match(match.reason, /generic_token_overlap_only/i);
 });
 
+test("collectDiscoveryCandidates ignores hidden nav and footer links but keeps in-body hotel banner links", () => {
+  const rootUrl = new URL("https://usacompetitions.com/2026-region-8-womens-xcel-championships/");
+  const wrongEventUrl = "https://usacompetitions.com/2026-xcel-bsg-state-championships/";
+  const hotelHubUrl = "https://usacompetitions.com/2026-xcel-championships-hotels/";
+  const footerUrl = "https://usacompetitions.com/contact/";
+
+  const html = `
+    <html>
+      <body>
+        <nav style="display:none">
+          <ul class="sub-menu">
+            <li class="menu-item">
+              <a href="${wrongEventUrl}">2026 Xcel Bronze/Silver/Gold State Championships</a>
+            </li>
+          </ul>
+        </nav>
+        <main>
+          <h1>Hotel Info</h1>
+          <a href="${hotelHubUrl}" aria-label="2026-xcel-regionals-host-hotels-square-1080x1080">
+            <img alt="Host Hotel Info" src="/hotels.png" />
+          </a>
+        </main>
+        <footer class="fusion-footer">
+          <a href="${footerUrl}">Contact</a>
+        </footer>
+      </body>
+    </html>
+  `;
+
+  const candidates = collectDiscoveryCandidates(html, rootUrl, 0);
+
+  assert.ok(candidates.some((item) => item.url === hotelHubUrl));
+  assert.ok(!candidates.some((item) => item.url === wrongEventUrl));
+  assert.ok(!candidates.some((item) => item.url === footerUrl));
+});
+
 test("spectator admission stays public while coach fees route into coachInfo", () => {
   const normalized = normalizeParseResult({
     eventType: "gymnastics_meet",

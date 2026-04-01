@@ -4955,6 +4955,38 @@ function extractContainingHtmlBlock(
   return html.slice(start, end + closeTag.length);
 }
 
+function isDiscoveryChromeHtml(value: string): boolean {
+  const normalized = safeString(value).replace(/\s+/g, " ").trim();
+  if (!normalized) return false;
+  return (
+    /<(?:nav|header|footer|aside)\b/i.test(normalized) ||
+    /\b(?:menu|navbar|breadcrumb|fusion-menu|fusion-mobile-menu|fusion-main-menu|fusion-header|fusion-footer|sub-menu)\b/i.test(
+      normalized
+    ) ||
+    /\bdisplay\s*:\s*none\b/i.test(normalized) ||
+    /\baria-hidden\s*=\s*["']?true["']?/i.test(normalized)
+  );
+}
+
+function shouldIgnoreDiscoveryAnchor(
+  html: string,
+  anchorIndex: number,
+  rawAttrs: string
+): boolean {
+  const directAttrs = safeString(rawAttrs);
+  if (isDiscoveryChromeHtml(directAttrs)) return true;
+  const surroundingBlocks = [
+    extractContainingHtmlBlock(html, anchorIndex, "<nav", "</nav>"),
+    extractContainingHtmlBlock(html, anchorIndex, "<header", "</header>"),
+    extractContainingHtmlBlock(html, anchorIndex, "<footer", "</footer>"),
+    extractContainingHtmlBlock(html, anchorIndex, "<aside", "</aside>"),
+    extractContainingHtmlBlock(html, anchorIndex, "<ul", "</ul>"),
+    extractContainingHtmlBlock(html, anchorIndex, "<li", "</li>"),
+    extractContainingHtmlBlock(html, anchorIndex, "<div", "</div>"),
+  ];
+  return surroundingBlocks.some((block) => isDiscoveryChromeHtml(block));
+}
+
 function extractDiscoveryAnchorContext(
   html: string,
   anchorIndex: number
@@ -5698,6 +5730,7 @@ function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): C
   const anchorRegex = /<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi;
   for (let match = anchorRegex.exec(html); match; match = anchorRegex.exec(html)) {
     const rawAttrs = `${match[1] || ""} ${match[3] || ""}`;
+    if (shouldIgnoreDiscoveryAnchor(html, match.index || 0, rawAttrs)) continue;
     const url = linkUrlFromHref(baseUrl, match[2] || "");
     if (!url) continue;
     if (url.href === baseUrl.href) continue;
