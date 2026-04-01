@@ -8,19 +8,27 @@ const repoRoot = process.cwd();
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
 test("meet discovery no longer exposes schedule or session fields in the active parse contract", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const facade = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
 
-  assert.doesNotMatch(source, /schedulePageImages\?:/);
-  assert.doesNotMatch(source, /schedulePageTexts\?:/);
-  assert.doesNotMatch(source, /scheduleDiagnostics\?:/);
+  assert.match(facade, /from "@\/lib\/meet-discovery\/extract"/);
+  assert.match(facade, /from "@\/lib\/meet-discovery\/parse"/);
+  assert.match(facade, /from "@\/lib\/meet-discovery\/map"/);
+  assert.doesNotMatch(facade, /schedulePageImages/);
+  assert.doesNotMatch(facade, /schedulePageTexts/);
+  assert.doesNotMatch(source, /schedulePageImages/);
+  assert.doesNotMatch(source, /schedulePageTexts/);
+  assert.doesNotMatch(source, /scheduleDiagnostics/);
   assert.doesNotMatch(source, /session:\s*string \| null;/);
   assert.doesNotMatch(source, /session:\s*jsonNullable\(JSON_STRING\)/);
   assert.doesNotMatch(source, /schedule:\s*GYMNASTICS_SCHEDULE_SCHEMA/);
 });
 
 test("meet discovery removes schedule-session prompt profiles and schedule-grid compatibility branches", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const facade = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
 
+  assert.match(facade, /from "@\/lib\/meet-discovery\/parse"/);
   assert.match(
     source,
     /type ParsePromptProfile =\s*\|\s*"overview_core"\s*\|\s*"parent_public";/,
@@ -30,13 +38,13 @@ test("meet discovery removes schedule-session prompt profiles and schedule-grid 
 });
 
 test("meet discovery removes schedule-grid compatibility surfaces from the active source file", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.doesNotMatch(source, /export const GYM_DISCOVERY_SCHEDULE_GRID_ENABLED/);
 });
 
 test("meet discovery classifier and schema only model the surviving attendee-first flow", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.match(source, /contentMix:\s*jsonObject\(\{\s*registrationHeavy: JSON_BOOLEAN,/);
   assert.match(
@@ -50,7 +58,7 @@ test("meet discovery classifier and schema only model the surviving attendee-fir
 });
 
 test("meet discovery defaults staged structured parsing to gpt-5.4-nano", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.match(
     source,

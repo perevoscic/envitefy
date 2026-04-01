@@ -9,7 +9,7 @@ const readSource = (relativePath: string) =>
   fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
 test("meet discovery classifier contract no longer includes session-heavy routing", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.match(
     source,
@@ -26,7 +26,7 @@ test("meet discovery classifier contract no longer includes session-heavy routin
 });
 
 test("meet discovery targeted parse routing only uses overview and parent-public prompts", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.match(
     source,
@@ -41,7 +41,7 @@ test("meet discovery targeted parse routing only uses overview and parent-public
 });
 
 test("meet discovery public artifact filtering no longer treats session_ops as a special audience", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
   const publicContentSource = readSource(
     "src/components/gym-meet-templates/buildGymMeetDiscoveryContent.ts",
   );
@@ -53,7 +53,7 @@ test("meet discovery public artifact filtering no longer treats session_ops as a
 });
 
 test("mapParseResultToGymData stops emitting schedule and session-derived fields", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.doesNotMatch(source, /sessionNumber:\s*usePublicPageV2/);
   assert.doesNotMatch(source, /sessionWindows:\s*usePublicPageV2/);
@@ -62,11 +62,22 @@ test("mapParseResultToGymData stops emitting schedule and session-derived fields
 });
 
 test("__testUtils no longer exports schedule-session helpers", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
+  const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.match(source, /export const __testUtils = \{/);
   assert.doesNotMatch(source, /export const __testUtils = \{[\s\S]*deriveScheduleFromExtractedText/);
   assert.doesNotMatch(source, /export const __testUtils = \{[\s\S]*mergeScheduleWithFallback/);
   assert.doesNotMatch(source, /export const __testUtils = \{[\s\S]*classifySchedulePageText/);
   assert.doesNotMatch(source, /export const __testUtils = \{[\s\S]*isStaleDerivedSchedule/);
+});
+
+test("meet discovery targeted parse calls run concurrently with deterministic merge order", () => {
+  const source = readSource("src/lib/meet-discovery/core.ts");
+
+  assert.match(source, /const targetedParseResults = await Promise\.all\(/);
+  assert.match(source, /const selectedEvidenceCache = buildSelectedParseEvidenceCache\(/);
+  assert.match(
+    source,
+    /const extractedResults = targetedParseResults[\s\S]*mergeParseResultsByProfile\(extractedResults\)/,
+  );
 });

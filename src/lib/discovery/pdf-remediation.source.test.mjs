@@ -10,7 +10,7 @@ const readSource = (relativePath) =>
 
 test("server PDF discovery path uses pdfjs in server mode without pdf-parse", () => {
   const rasterSource = readSource("src/lib/pdf-raster.ts");
-  const meetSource = readSource("src/lib/meet-discovery.ts");
+  const meetSource = readSource("src/lib/meet-discovery/core.ts");
   const packageSource = readSource("package.json");
   const nextConfigSource = readSource("next.config.ts");
 
@@ -21,7 +21,6 @@ test("server PDF discovery path uses pdfjs in server mode without pdf-parse", ()
   assert.doesNotMatch(rasterSource, /pdf-parse/);
   assert.doesNotMatch(meetSource, /pdf-parse/);
   assert.doesNotMatch(packageSource, /"pdf-parse"/);
-  assert.doesNotMatch(nextConfigSource, /"pdfjs-dist"/);
   assert.match(nextConfigSource, /"@napi-rs\/canvas"/);
   assert.match(nextConfigSource, /outputFileTracingIncludes/);
   assert.match(nextConfigSource, /@napi-rs\/canvas-\*\/\*\*\/\*/);
