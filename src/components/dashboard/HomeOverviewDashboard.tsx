@@ -307,6 +307,15 @@ function CountdownSplitFlapUnit({ value, label }: CountdownSplitFlapUnitProps) {
   );
 }
 
+function CountdownSeparator() {
+  return (
+    <div className="flex translate-y-2.5 flex-col gap-1.5 sm:gap-2">
+      <div className="h-1 w-1 rounded-full bg-zinc-300 sm:h-1.5 sm:w-1.5" />
+      <div className="h-1 w-1 rounded-full bg-zinc-300 sm:h-1.5 sm:w-1.5" />
+    </div>
+  );
+}
+
 function InvitationEventCard({
   item,
   now,
@@ -422,37 +431,36 @@ function InvitationEventCard({
           </div>
 
           <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 sm:p-8 md:p-12">
-            <div className="flex flex-col gap-8 md:flex-row md:justify-between">
-              <div className="space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                  Countdown
-                </p>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:gap-3">
-                  {[
-                    { label: "Days", value: countdown.days },
-                    { label: "Hours", value: countdown.hours },
-                    { label: "Mins", value: countdown.minutes },
-                  ].map((countdownItem, index) => (
-                    <div
-                      key={`${item.id}-${countdownItem.label}`}
-                      className="flex items-start gap-2 sm:gap-2.5 md:gap-4"
-                    >
-                      <CountdownSplitFlapUnit
-                        value={countdownItem.value}
-                        label={countdownItem.label}
-                      />
-                      {index < 2 ? (
-                        <div className="flex translate-y-2.5 flex-col gap-2 max-[390px]:hidden">
-                          <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
-                          <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
+            <div
+              className={`flex flex-col gap-8 ${primary ? "md:flex-row md:justify-between" : ""}`}
+            >
+              {primary ? (
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Countdown
+                  </p>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:gap-3">
+                    {[
+                      { label: "Days", value: countdown.days },
+                      { label: "Hours", value: countdown.hours },
+                      { label: "Mins", value: countdown.minutes },
+                    ].map((countdownItem, index) => (
+                      <div
+                        key={`${item.id}-${countdownItem.label}`}
+                        className="flex items-start gap-2 sm:gap-2.5 md:gap-4"
+                      >
+                        <CountdownSplitFlapUnit
+                          value={countdownItem.value}
+                          label={countdownItem.label}
+                        />
+                        {index < 2 ? <CountdownSeparator /> : null}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
-              <div className="space-y-2 text-left md:text-right">
+              <div className={`space-y-2 ${primary ? "text-left md:text-right" : "text-left"}`}>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                   Current Status
                 </p>
@@ -936,12 +944,7 @@ export default function HomeOverviewDashboard({
                           value={countdownItem.value}
                           label={countdownItem.label}
                         />
-                        {index < 2 ? (
-                          <div className="flex translate-y-2.5 flex-col gap-2 max-[390px]:hidden">
-                            <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
-                            <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
-                          </div>
-                        ) : null}
+                        {index < 2 ? <CountdownSeparator /> : null}
                       </div>
                     ))}
                   </div>

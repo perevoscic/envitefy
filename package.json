@@ -72,7 +72,7 @@
     "@types/pg": "^8.15.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "playwright": "^1.58.2",
+    "playwright": "^1.59.0",
     "png-to-ico": "^3.0.1",
     "prisma": "^6.15.0",
     "tailwindcss": "^4",
