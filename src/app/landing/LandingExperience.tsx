@@ -41,10 +41,10 @@ const IMAGES = {
 };
 
 const navLinks = [
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "What You Can Snap", href: "#what-you-can-snap" },
-  { label: "Use Cases", href: "#use-cases" },
-  { label: "RSVP + Calendar", href: "#rsvp-calendar" },
+  { label: "Gymnastics", href: "/gymnastics" },
+  { label: "Snap", href: "/snap" },
+  { label: "Features", href: "#what-you-can-snap" },
+  { label: "FAQ", href: "/faq" },
 ] as const;
 
 const useCases = [
@@ -177,42 +177,37 @@ export default function LandingExperience() {
       >
         <nav
           className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-            isScrolled
-              ? `${styles.glassNav} py-4 shadow-sm`
-              : "bg-transparent py-6"
+            isScrolled ? `${styles.glassNav} py-4` : `${styles.glassNav} py-6`
           }`}
         >
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 md:px-12">
+          <div
+            className={`${styles.glassPill} mx-auto flex max-w-[1120px] items-center justify-between rounded-full px-5 py-3 sm:px-7 md:px-8`}
+          >
             <Link
-              href="/"
-              className="flex items-center gap-2 text-xl font-bold tracking-tighter text-[#1f1635]"
+              href="/landing"
+              className="flex items-center gap-3 text-xl font-bold tracking-tighter text-[#1f1635]"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7C3AED] text-sm text-white">
-                E
-              </div>
+              <Sparkles className="h-5 w-5 text-[#7C3AED]" fill="currentColor" />
               <span className={styles.headline}>Envitefy</span>
-              <span className="ml-1 rounded bg-[#7C3AED]/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-normal text-[#7C3AED]">
-                Pro
-              </span>
             </Link>
 
-            <div className="hidden items-center space-x-10 text-sm font-medium text-[#1f1635]/70 lg:flex">
+            <div className="hidden items-center space-x-10 text-sm font-semibold text-[#58506d] lg:flex">
               {navLinks.map((item) => (
-                <a
+                <Link
                   key={item.label}
                   href={item.href}
-                  className="transition-colors hover:text-[#7C3AED]"
+                  className="transition-colors hover:text-[#1f1635]"
                 >
                   {item.label}
-                </a>
+                </Link>
               ))}
             </div>
 
-            <div className="flex items-center gap-4 sm:gap-6">
+            <div className="flex items-center gap-3 sm:gap-4">
               {status === "authenticated" ? (
                 <Link
                   href="/"
-                  className="hidden text-sm font-medium text-[#1f1635]/70 transition-colors hover:text-[#1f1635] sm:block"
+                  className="hidden px-3 text-sm font-semibold text-[#1f1635] transition-colors hover:text-[#7C3AED] sm:block"
                 >
                   Dashboard
                 </Link>
@@ -220,16 +215,16 @@ export default function LandingExperience() {
                 <button
                   type="button"
                   onClick={() => setAuthModalOpen(true)}
-                  className="hidden text-sm font-medium text-[#1f1635]/70 transition-colors hover:text-[#1f1635] sm:block"
+                  className="hidden px-3 text-sm font-semibold text-[#1f1635] transition-colors hover:text-[#7C3AED] sm:block"
                 >
-                  Sign in
+                  Login
                 </button>
               )}
               <Link
                 href="/snap"
-                className="rounded-full bg-[#7C3AED] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#7C3AED]/20 transition-all hover:bg-[#630ed4] active:scale-95"
+                className="rounded-full bg-[#7C3AED] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(124,58,237,0.32)] transition-all hover:bg-[#630ed4] active:scale-95 sm:px-8"
               >
-                Try Snap Upload
+                Get Started
               </Link>
               <button
                 type="button"
@@ -248,20 +243,20 @@ export default function LandingExperience() {
 
           <div
             id="landing-mobile-nav"
-            className={`overflow-hidden border-t border-[#1f1635]/5 bg-white/95 transition-[max-height,opacity] duration-300 lg:hidden ${
+            className={`mx-auto mt-3 max-w-[1120px] overflow-hidden rounded-[2rem] border border-white/80 bg-white/95 px-2 shadow-[0_18px_60px_rgba(67,43,153,0.1)] backdrop-blur-2xl transition-[max-height,opacity] duration-300 lg:hidden ${
               mobileMenuOpen ? "max-h-[24rem] opacity-100" : "max-h-0 opacity-0"
             }`}
           >
-            <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 md:px-12">
+            <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4">
               {navLinks.map((item) => (
-                <a
+                <Link
                   key={item.label}
                   href={item.href}
                   className="rounded-2xl px-4 py-3 text-sm font-semibold text-[#1f1635] transition hover:bg-[#f9f9f9]"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.label}
-                </a>
+                </Link>
               ))}
               {status === "authenticated" ? (
                 <Link
@@ -280,7 +275,7 @@ export default function LandingExperience() {
                   }}
                   className="rounded-2xl px-4 py-3 text-left text-sm font-semibold text-[#1f1635]"
                 >
-                  Sign in
+                  Login
                 </button>
               )}
             </div>
