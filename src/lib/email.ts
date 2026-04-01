@@ -417,7 +417,7 @@ export async function sendShareEventEmail(params: {
     process.env.NEXTAUTH_URL ||
     process.env.PUBLIC_BASE_URL ||
     "https://envitefy.com";
-  const signupUrl = `${baseUrl}/?auth=signup`;
+  const signupUrl = `${baseUrl}/snap`;
   const text = [
     `${senderName || params.ownerEmail} shared an event with you on Envitefy.`,
     ``,
@@ -427,7 +427,7 @@ export async function sendShareEventEmail(params: {
     ``,
     `Open the link to view the details or add it to your calendar. You can also accept directly: ${acceptUrl}`,
     ``,
-    `Don't have an account? Sign up: ${signupUrl}`,
+    `Need an account? Start with Snap: ${signupUrl}`,
   ].join("\n");
   const greetName = `${params.recipientFirstName || ""} ${params.recipientLastName || ""}`.trim();
   const greeting = greetName ? `Hi ${escapeHtml(greetName)}` : "Hello";
@@ -447,9 +447,9 @@ export async function sendShareEventEmail(params: {
   `;
   
   const footerText = `
-    Don't have a Envitefy account yet? 
-    <a href="${escapeHtml(signupUrl)}" target="_blank" style="color:#2DD4BF; text-decoration: none;">Sign up now</a> 
-    to manage all your events in one place.
+    Need an Envitefy account? 
+    <a href="${escapeHtml(signupUrl)}" target="_blank" style="color:#2DD4BF; text-decoration: none;">Start with Snap</a> 
+    to manage and save shared events.
   `;
   
   const html = createEmailTemplate({

@@ -1,263 +1,180 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Gift, CheckSquare } from "lucide-react";
-import { useState } from "react";
-import AuthModal from "@/components/auth/AuthModal";
-import BirthdayPhones from "@/components/landing/BirthdayPhones";
-import BabyShowerPhones from "@/components/landing/BabyShowerPhones";
-import SignupFormsPhones from "@/components/landing/SignupFormsPhones";
+import { ArrowRight, Camera } from "lucide-react";
 import GymnasticsMeetPreview from "@/components/landing/GymnasticsMeetPreview";
 
+const blocks = [
+  {
+    id: "snap",
+    title: "Snap",
+    subtitle: (
+      <>
+        Capture the flyer,
+        <br />
+        save the event,
+        <br />
+        <span className="italic text-blue-500">skip the typing.</span>
+      </>
+    ),
+    description:
+      "Snap turns flyers, screenshots, and invites into clean event details you can review, share, and save in seconds.",
+    buttonText: "Create a Snap account",
+    href: "/snap",
+    badgeClass: "bg-blue-100 text-blue-700",
+    orientation: "right",
+  },
+  {
+    id: "gymnastics",
+    title: "Gymnastics",
+    subtitle: (
+      <>
+        One meet page,
+        <br />
+        one clean link,
+        <br />
+        <span className="italic text-violet-500">fully organized.</span>
+      </>
+    ),
+    description:
+      "Gymnastics accounts include meet pages, session details, venue info, and updates that parents and coaches can rely on.",
+    buttonText: "Create a Gymnastics account",
+    href: "/gymnastics",
+    badgeClass: "bg-violet-100 text-violet-700",
+    orientation: "left",
+  },
+] as const;
+
 export default function Verticals() {
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
-
-  const openSignup = () => {
-    setAuthMode("signup");
-    setAuthModalOpen(true);
-  };
-
-  const blocks = [
-    {
-      id: "gymnastics",
-      title: "Gymnastics Meets",
-      subtitle: (
-        <>
-          One meet page, <br />
-          <span className="italic text-violet-500">beautifully</span>
-          <br />
-          organized.
-        </>
-      ),
-      description:
-        "Share sessions, venue details, hotel blocks, and updates from one polished link that parents and coaches can rely on.",
-      color: "from-indigo-200 to-violet-100",
-      icon: <GymnasticsIcon className="w-6 h-6 text-indigo-600" />,
-      orientation: "left",
-      buttonText: "Start a Meet",
-    },
-    {
-      id: "birthdays",
-      title: "Birthdays & Parties",
-      subtitle: (
-        <>
-          Invites that
-          <br />
-          <span className="italic text-blue-500">actually</span>
-          <br />
-          get replies.
-        </>
-      ),
-      subtitleClass: "text-[#3b2d25]",
-      description:
-        "From 1st birthdays to 50th bashes. Snap a photo of the paper invite to digitize it, or pick a theme. Guests RSVP by text, and you get a headcount instantly.",
-      color: "from-blue-200 to-cyan-100",
-      icon: <Gift className="w-6 h-6 text-blue-600" />,
-      image: "/images/birthday-mockup.png", // Placeholder
-      orientation: "right",
-      buttonText: "Plan a Birthday",
-    },
-    {
-      id: "baby-showers",
-      title: "Baby Showers",
-      subtitle: (
-        <>
-          Sprinkle joy, <br />
-          <span className="italic text-violet-500">not stress.</span>{" "}
-        </>
-      ),
-      description:
-        "Coordinate the perfect shower. Link your registry, track gifts, and share games or diaper raffle info. It’s the easiest way to gather loved ones.",
-      color: "from-purple-200 to-violet-100",
-      icon: <SparklesIcon className="w-6 h-6 text-purple-600" />,
-      image: "/images/shower-mockup.png", // Placeholder
-      orientation: "left",
-      buttonText: "Host a Shower",
-    },
-    {
-      id: "signup-forms",
-      title: "Smart Sign-up Forms",
-      subtitle: (
-        <>
-          Volunteers,
-          <br />
-          Potlucks,
-          <br />
-          <span className="italic text-teal-500">and Carpools.</span>{" "}
-        </>
-      ),
-      description:
-        "Ditch the reply-all chaos. Create a sign-up list for anything—classroom snacks, team volunteers, or potluck dishes. Slots update in real-time so no one brings double chips.",
-      color: "from-emerald-200 to-teal-100",
-      icon: <CheckSquare className="w-6 h-6 text-emerald-600" />,
-      image: "/images/signup-mockup.png", // Placeholder
-      orientation: "right",
-      buttonText: "Create Sign-up Sheet",
-    },
-  ];
-
   return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-6 space-y-32">
+    <section className="bg-white py-24">
+      <div className="mx-auto max-w-7xl space-y-32 px-6">
         {blocks.map((block) => (
           <div
             key={block.id}
-            id={block.id === "gymnastics" ? "gymnastics-hero" : undefined}
-            className={`scroll-mt-28 flex flex-col items-center gap-16 lg:flex-row lg:scroll-mt-32 ${
+            className={`flex scroll-mt-28 flex-col items-center gap-16 lg:flex-row lg:scroll-mt-32 ${
               block.orientation === "right" ? "lg:flex-row-reverse" : ""
             }`}
+            id={block.id === "gymnastics" ? "gymnastics-hero" : undefined}
           >
-            {/* Text Side */}
             <div className="flex-1 space-y-6">
               <div
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-900 text-xs font-semibold tracking-wide uppercase`}
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${block.badgeClass}`}
               >
-                {block.icon}
+                {block.id === "snap" ? (
+                  <Camera className="h-4 w-4" />
+                ) : (
+                  <GymnasticsIcon className="h-5 w-5" />
+                )}
                 <span>{block.title}</span>
               </div>
 
-              <h2
-                className={`text-4xl md:text-5xl font-bold tracking-tight ${
-                  block.subtitleClass ?? "text-gray-900"
-                }`}
-              >
+              <h2 className="text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
                 {block.subtitle}
               </h2>
 
-              <p className="text-lg text-gray-600 leading-relaxed max-w-lg">
+              <p className="max-w-lg text-lg leading-relaxed text-gray-600">
                 {block.description}
               </p>
 
-              {block.id === "baby-showers" ? (
-                <Link
-                  href="/event/baby-showers/customize"
-                  className="group inline-flex items-center gap-2 text-lg font-semibold text-black hover:gap-3 transition-all"
-                >
-                  {block.buttonText} <ArrowRight className="w-5 h-5" />
-                </Link>
-              ) : block.id === "gymnastics" ? (
-                <Link
-                  href="/gymnastics"
-                  className="group inline-flex items-center gap-2 text-lg font-semibold text-black hover:gap-3 transition-all"
-                >
-                  {block.buttonText} <ArrowRight className="w-5 h-5" />
-                </Link>
-              ) : (
-                <button
-                  onClick={openSignup}
-                  className="group inline-flex items-center gap-2 text-lg font-semibold text-black hover:gap-3 transition-all"
-                >
-                  {block.buttonText} <ArrowRight className="w-5 h-5" />
-                </button>
-              )}
+              <Link
+                href={block.href}
+                className="group inline-flex items-center gap-2 text-lg font-semibold text-black transition-all hover:gap-3"
+              >
+                {block.buttonText} <ArrowRight className="h-5 w-5" />
+              </Link>
             </div>
 
-            {/* Visual Side */}
-            <div className="flex-1 w-full">
+            <div className="w-full flex-1">
               {block.id === "gymnastics" ? (
                 <GymnasticsMeetPreview />
-              ) : block.id === "birthdays" ? (
-                <BirthdayPhones />
-              ) : block.id === "baby-showers" ? (
-                <BabyShowerPhones />
-              ) : block.id === "signup-forms" ? (
-                <SignupFormsPhones />
               ) : (
-                <div
-                  className={`relative aspect-[4/3] rounded-[2.5rem] bg-gradient-to-br ${block.color} p-8 sm:p-12 overflow-hidden shadow-sm group hover:shadow-md transition-shadow`}
-                >
-                  {/* Abstract Shapes/Pattern Background */}
-                  <div className="absolute inset-0 opacity-40">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl mix-blend-overlay transform translate-x-1/4 -translate-y-1/4" />
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl mix-blend-overlay transform -translate-x-1/4 translate-y-1/4" />
-                  </div>
-
-                  {/* Mockup Card representing the feature */}
-                  <div className="relative h-full w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col transform group-hover:-translate-y-2 transition-transform duration-500">
-                    {/* Fake Header */}
-                    <div className="h-14 border-b border-gray-100 flex items-center px-6 justify-between bg-white/50 backdrop-blur-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-400" />
-                        <div className="w-3 h-3 rounded-full bg-amber-400" />
-                        <div className="w-3 h-3 rounded-full bg-green-400" />
-                      </div>
-                      <div className="h-2 w-20 bg-gray-100 rounded-full" />
-                    </div>
-
-                    {/* Fake Content Body */}
-                    <div className="flex-1 p-6 space-y-4 bg-gray-50/50">
-                      <div className="h-8 w-3/4 bg-gray-200 rounded-lg animate-pulse" />
-                      <div className="h-4 w-1/2 bg-gray-100 rounded-lg" />
-
-                      <div className="grid grid-cols-3 gap-3 mt-4">
-                        <div className="h-24 bg-white rounded-xl border border-gray-100 shadow-sm" />
-                        <div className="h-24 bg-white rounded-xl border border-gray-100 shadow-sm" />
-                        <div className="h-24 bg-white rounded-xl border border-gray-100 shadow-sm" />
-                      </div>
-
-                      {/* Specific UI hint based on type */}
-                      {block.id === "signup-forms" && (
-                        <div className="space-y-2 mt-4">
-                          {[1, 2, 3].map((i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100"
-                            >
-                              <div className="w-5 h-5 rounded border border-gray-300" />
-                              <div className="h-2 w-24 bg-gray-100 rounded" />
-                              <div className="ml-auto h-6 w-6 rounded-full bg-gray-100" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Button Mock */}
-                    <div className="p-4 border-t border-gray-100 bg-white">
-                      <div className="w-full h-10 bg-black rounded-lg opacity-10" />
-                    </div>
-                  </div>
-                </div>
+                <SnapPreviewCard />
               )}
             </div>
           </div>
         ))}
       </div>
-
-      <AuthModal
-        open={authModalOpen}
-        mode={authMode}
-        onClose={() => setAuthModalOpen(false)}
-        onModeChange={setAuthMode}
-      />
     </section>
   );
 }
 
-// Helper for the Sparkles icon which isn't standard in all Lucide versions or might conflict
-function SparklesIcon({ className }: { className?: string }) {
+function SnapPreviewCard() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-      <path d="M5 3v4" />
-      <path d="M9 5H5" />
-      <path d="M19 18v4" />
-      <path d="M15 20h4" />
-    </svg>
+    <div className="relative aspect-[4/3] overflow-hidden rounded-[2.5rem] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-8 shadow-sm">
+      <div className="absolute inset-0 opacity-60">
+        <div className="absolute right-0 top-0 h-64 w-64 translate-x-1/4 -translate-y-1/4 rounded-full bg-blue-100 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-64 w-64 -translate-x-1/4 translate-y-1/4 rounded-full bg-cyan-100 blur-3xl" />
+      </div>
+
+      <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-100 bg-white/80 px-6 py-4 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-rose-300" />
+            <div className="h-3 w-3 rounded-full bg-amber-300" />
+            <div className="h-3 w-3 rounded-full bg-emerald-300" />
+          </div>
+          <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            Snap preview
+          </div>
+        </div>
+
+        <div className="grid flex-1 gap-6 p-6 md:grid-cols-[1.1fr,0.9fr]">
+          <div className="rounded-[1.5rem] border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+              Captured flyer
+            </p>
+            <div className="mt-5 rounded-[1.25rem] border border-dashed border-blue-200 bg-white p-5 text-slate-800">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Spring Invite
+              </p>
+              <h3 className="mt-3 text-3xl font-black leading-tight text-slate-900">
+                Community
+                <br />
+                Open House
+              </h3>
+              <div className="my-4 h-px w-full bg-slate-200" />
+              <p className="text-sm font-medium text-slate-700">April 18 · 6:30 PM</p>
+              <p className="mt-2 text-sm text-slate-500">Town Center Hall</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 rounded-[1.5rem] border border-slate-100 bg-slate-50 p-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Saved details
+              </p>
+              <h3 className="mt-2 text-xl font-bold text-slate-900">
+                Ready to review
+              </h3>
+            </div>
+
+            {[
+              ["What", "Community Open House"],
+              ["When", "Apr 18 · 6:30 PM"],
+              ["Where", "Town Center Hall"],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="flex items-center justify-between rounded-2xl border border-white bg-white px-4 py-3 shadow-sm"
+              >
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                  {label}
+                </span>
+                <span className="text-sm font-semibold text-slate-800">{value}</span>
+              </div>
+            ))}
+
+            <div className="rounded-2xl bg-slate-900 px-4 py-3 text-center text-sm font-semibold text-white">
+              Share or save instantly
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
-// Gymnastics icon component
 function GymnasticsIcon({ className }: { className?: string }) {
   return (
     <svg

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BackgroundSlider from "@/components/BackgroundSlider";
 import AuthModal from "@/components/auth/AuthModal";
@@ -26,52 +27,52 @@ export default function LoginHero() {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-1.jpg",
       v: "/sliders/vertical/vertical-slide-1.jpg",
-      title: "No more manual entry.",
-      subtitle: "Envitefy keeps your family calendar up to date for you.",
+      title: "Snap the flyer.",
+      subtitle: "Capture event details without typing them from scratch.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-2.jpg",
       v: "/sliders/vertical/vertical-slide-2.jpg",
       title: "Just Snap It",
-      subtitle: "Add events to your calendar in seconds.",
+      subtitle: "Review clean event details in seconds.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-3.jpg",
       v: "/sliders/vertical/vertical-slide-3.jpg",
-      title: "Get Notified",
-      subtitle: "Receive RSVPs by text or email.",
+      title: "Share one clean page",
+      subtitle: "Keep everyone aligned with one updated event link.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-4.jpg",
       v: "/sliders/vertical/vertical-slide-4.jpg",
-      title: "Any Event Invites",
-      subtitle: "Share one cute link with RSVP-by-text for the whole crew.",
+      title: "Snap for every profile",
+      subtitle: "Every account keeps access to Snap.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-5.jpg",
       v: "/sliders/vertical/vertical-slide-5.jpg",
-      title: "Wedding Invites",
+      title: "Gymnastics accounts",
       subtitle:
-        "Envitefy keeps RSVPs, registries, and directions together for you.",
+        "Gymnastics signups unlock both gymnastics and snap.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-6.jpg",
       v: "/sliders/vertical/vertical-slide-6.jpg",
-      title: "Doctor Appointments",
-      subtitle: "Never miss another one again with automatic reminders.",
+      title: "Meet logistics",
+      subtitle: "Keep schedules, venues, and updates in one place.",
     },
     {
       type: "image" as const,
       h: "/sliders/horizontal/horizontal-slide-7.jpg",
       v: "/sliders/vertical/vertical-slide-7.jpg",
-      title: "Sigun-Up Forms with you in mind",
+      title: "Existing users keep login",
       subtitle:
-        "Smart sign-up forms for school events, volunteer slots, snack duty, field trips and more.",
+        "Login stays available while new account creation starts from Snap or Gymnastics.",
     },
   ];
   const desktopSlides = slidesMeta.map((m) => ({
@@ -271,7 +272,7 @@ export default function LoginHero() {
               textShadow: "0 0 8px rgba(179, 175, 175, 0.35)",
             }}
           >
-            You&apos;re invited to
+            Snap and Gymnastics
           </p>
           <p
             className="text-4xl md:text-7xl tracking-tight text-white pb-1 text-center overflow-visible"
@@ -282,7 +283,7 @@ export default function LoginHero() {
               <EnvitefyWordmark className="text-[3.6rem] md:text-[5.6rem] leading-none drop-shadow-[0_12px_36px_rgba(0,0,0,0.35)]" />
             </span>
           </p>
-          <div className="flex flex-row items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               className="btn btn-outline btn-outline-light btn-lg"
               onClick={() => {
@@ -292,15 +293,18 @@ export default function LoginHero() {
             >
               Log in
             </button>
-            <button
+            <Link
+              href="/snap"
               className="btn btn-primary btn-lg shadow-[0_18px_45px_rgba(0,0,0,0.35)]"
-              onClick={() => {
-                setMode("signup");
-                setModalOpen(true);
-              }}
             >
-              Sign up
-            </button>
+              Snap account
+            </Link>
+            <Link
+              href="/gymnastics"
+              className="btn btn-outline btn-outline-light btn-lg"
+            >
+              Gymnastics account
+            </Link>
           </div>
         </div>
       </div>
@@ -311,6 +315,7 @@ export default function LoginHero() {
         mode={mode}
         onClose={() => setModalOpen(false)}
         onModeChange={setMode}
+        allowSignupSwitch={false}
       />
     </section>
   );

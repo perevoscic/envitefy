@@ -1,35 +1,35 @@
 const features = [
   {
-    title: "Create & share in seconds",
-    desc: "Start from a flyer, screenshot, or blank canvas and publish instantly.",
+    title: "Snap capture",
+    desc: "Start from a flyer or screenshot and clean up event details fast.",
   },
   {
     title: "Shareable event pages",
     desc: "Send one beautiful link guests can open anywhere.",
   },
   {
-    title: "Smart sign-up forms",
-    desc: "Track volunteers, snack duty, or carpool slots with live updates.",
+    title: "Gymnastics meet pages",
+    desc: "Keep sessions, venues, and updates in one page for families and coaches.",
   },
   {
-    title: "Text & email RSVPs",
-    desc: "Replies land in your inbox so you can plan headcounts fast.",
+    title: "Event updates",
+    desc: "Edit details later and the shared page stays current.",
   },
   {
     title: "Instant calendar sync",
     desc: "Connect Apple, Google or Outlook and we add events with reminders.",
   },
   {
-    title: "Weekly practice builder",
-    desc: "Spin up recurring practices with ready-made reminders.",
+    title: "Meet logistics",
+    desc: "Keep addresses, directions, and timing details easy to scan on mobile.",
   },
   {
     title: "Universal ICS downloads",
-    desc: "Share printable ICS files for classrooms and grandparents.",
+    desc: "Share calendar-ready files for anyone who needs a portable save option.",
   },
   {
-    title: "Registry & wishlist links",
-    desc: "Show Amazon, Target, Walmart, or custom wishlists right on the event page.",
+    title: "Scope-based access",
+    desc: "Snap is available to every profile while Gymnastics unlocks both products.",
   },
 ];
 
@@ -41,10 +41,10 @@ export default function FeatureGrid() {
           id="features"
           className="text-2xl sm:text-3xl font-bold text-center"
         >
-          From papers to reminders—without typing
+          Snap and share—without extra product sprawl
         </h2>
         <p className="mt-2 text-center text-foreground/70 max-w-2xl mx-auto">
-          Powerful where it matters, simple everywhere else.
+          Focused on the two live public surfaces: Snap and Gymnastics.
         </p>
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {features.map((f) => (

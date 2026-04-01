@@ -5,93 +5,57 @@ import test from "node:test";
 
 const repoRoot = process.cwd();
 
-const readSource = (relativePath) =>
-  fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("meet discovery extracts schedule page images during gymnastics core parse for structural repair", () => {
+test("meet discovery no longer exposes schedule or session fields in the active parse contract", () => {
+  const source = readSource("src/lib/meet-discovery.ts");
+
+  assert.doesNotMatch(source, /schedulePageImages\?:/);
+  assert.doesNotMatch(source, /schedulePageTexts\?:/);
+  assert.doesNotMatch(source, /scheduleDiagnostics\?:/);
+  assert.doesNotMatch(source, /session:\s*string \| null;/);
+  assert.doesNotMatch(source, /session:\s*jsonNullable\(JSON_STRING\)/);
+  assert.doesNotMatch(source, /schedule:\s*GYMNASTICS_SCHEDULE_SCHEMA/);
+});
+
+test("meet discovery removes schedule-session prompt profiles and schedule-grid compatibility branches", () => {
   const source = readSource("src/lib/meet-discovery.ts");
 
   assert.match(
     source,
-    /const shouldExtractSchedulePageImages =\s*resolvedOptions\.workflow === "gymnastics" && GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;/
+    /type ParsePromptProfile =\s*\|\s*"overview_core"\s*\|\s*"parent_public";/,
   );
-  assert.doesNotMatch(
-    source,
-    /const shouldExtractSchedulePageImages =[\s\S]*resolvedOptions\.mode === "enrich";/
-  );
+  assert.doesNotMatch(source, /GYM_DISCOVERY_SCHEDULE_GRID_ENABLED/);
+  assert.doesNotMatch(source, /stripGymScheduleGridsFromParseResult/);
 });
 
-test("meet discovery no longer gates visual schedule repair behind enrich mode", () => {
+test("meet discovery removes schedule-grid compatibility surfaces from the active source file", () => {
   const source = readSource("src/lib/meet-discovery.ts");
 
-  assert.match(source, /scheduleImagesForSelectedPages\.length === 0/);
-  assert.doesNotMatch(source, /mode !== "enrich"/);
+  assert.doesNotMatch(source, /export const GYM_DISCOVERY_SCHEDULE_GRID_ENABLED/);
 });
 
-test("meet discovery uses json schema output for schedule text parsing", () => {
+test("meet discovery classifier and schema only model the surviving attendee-first flow", () => {
   const source = readSource("src/lib/meet-discovery.ts");
 
-  assert.match(source, /json_schema:\s*GYMNASTICS_SCHEDULE_JSON_SCHEMA/);
-  assert.doesNotMatch(
+  assert.match(source, /contentMix:\s*jsonObject\(\{\s*registrationHeavy: JSON_BOOLEAN,/);
+  assert.match(
     source,
-    /callOpenAiScheduleParse[\s\S]*response_format:\s*\{\s*type:\s*"json_object"/
+    /enum: \["parent_packet", "registration_packet", "meet_overview", "unknown"\]/,
+  );
+  assert.match(
+    source,
+    /return uniqueBy\(\["overview_core", "parent_public"\], \(item\) => item\)\.slice\(0, 2\);/,
   );
 });
 
 test("meet discovery defaults staged structured parsing to gpt-5.4-nano", () => {
   const source = readSource("src/lib/meet-discovery.ts");
 
-  assert.match(source, /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-5\.4-nano";/);
+  assert.match(
+    source,
+    /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-5\.4-nano";/,
+  );
   assert.match(source, /callOpenAiClassification/);
   assert.match(source, /callOpenAiTargetedParse/);
-});
-
-test("meet discovery always routes staged parsing through attendee profiles and bypasses schedule derivation", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
-
-  assert.match(
-    source,
-    /return uniqueBy\(\["overview_core", "parent_public"\], \(item\) => item\)\.slice\(0, 2\);/
-  );
-  assert.doesNotMatch(source, /return \["athlete_session"/);
-  assert.doesNotMatch(source, /return \["registration_coach"/);
-  assert.doesNotMatch(source, /const withCoachRouting = routeCoachDeadlines\(mergeCoachFeesFromAdmission\(sanitized\)\);/);
-  assert.match(source, /extractionMeta\.schedulePageImages = \[\];/);
-  assert.match(source, /extractionMeta\.schedulePageTexts = \[\];/);
-});
-
-test("meet discovery only enters structured hotel mode when travelAccommodation exists", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
-
-  assert.match(source, /const firecrawlInPlay = Boolean\(travelAccommodation\);/);
-  assert.doesNotMatch(
-    source,
-    /Boolean\(safeString\(process\.env\.FIRECRAWL_API_KEY\)\) \|\| Boolean\(travelAccommodation\)/,
-  );
-});
-
-test("meet discovery advances regex scans even when skipping invalid anchors or empty json-ld blocks", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
-
-  assert.match(
-    source,
-    /for \(let match = jsonLdRegex\.exec\(html\); match; match = jsonLdRegex\.exec\(html\)\) \{/
-  );
-  assert.match(
-    source,
-    /for \(let match = anchorRegex\.exec\(html\); match; match = anchorRegex\.exec\(html\)\) \{/
-  );
-  assert.doesNotMatch(source, /while \(match\) \{[\s\S]*if \(!content\) continue;[\s\S]*jsonLdRegex\.exec\(html\);/);
-  assert.doesNotMatch(source, /while \(match\) \{[\s\S]*if \(!url\) continue;[\s\S]*anchorRegex\.exec\(html\);/);
-});
-
-test("meet discovery decodes zero-padded apostrophe entities and prefers fuller official fallback titles", () => {
-  const source = readSource("src/lib/meet-discovery.ts");
-
-  assert.match(source, /\.replace\(\/&#0\*39;\/gi, "'"\)/);
-  assert.match(source, /if \(\/\\busa gymnastics\\b\/i\.test\(candidate\)\) score \+= 2;/);
-  assert.match(
-    source,
-    /fallbackKey\.includes\(parsedKey\) &&[\s\S]*scoreDiscoveryTitleFragment\(normalizedFallback\) > scoreDiscoveryTitleFragment\(normalizedParsed\)/,
-  );
 });

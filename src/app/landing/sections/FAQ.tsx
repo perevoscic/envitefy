@@ -1,47 +1,47 @@
 "use client";
 import { useState } from "react";
-import { Plus, Minus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 
 const qs = [
   {
     q: "Do guests need to download the app?",
-    a: "No! That's the best part. You send a simple link (via text or email), and guests can view details, RSVP, and add to their calendar instantly—no app required.",
+    a: "No. Shared event pages open in the browser, so guests can view details and save the event without installing anything.",
+  },
+  {
+    q: "What is the difference between Snap and Gymnastics?",
+    a: "Snap is available to every account for fast flyer and invite capture. Gymnastics accounts also unlock gymnastics meet pages and meet-specific planning tools.",
+  },
+  {
+    q: "Can I still use Snap if I sign up from the Gymnastics page?",
+    a: "Yes. Gymnastics signups receive both gymnastics and snap access.",
+  },
+  {
+    q: "Can I upgrade from Snap to Gymnastics later?",
+    a: "Existing accounts can continue signing in. If you need gymnastics access added to an existing account, contact support so the right scope can be enabled safely.",
   },
   {
     q: "Does it work with my calendar?",
-    a: "Yes. We sync seamlessly with Google Calendar, Outlook, and Apple Calendar. You can also download a universal .ics file for any other platform.",
+    a: "Yes. Envitefy works with Google Calendar, Outlook, Apple Calendar, and downloadable .ics files.",
   },
   {
     q: "How accurate is the scanning?",
-    a: "Extremely accurate. We use advanced AI vision to read dates, times, addresses, and even handwritten notes from your flyers and screenshots. You can always edit the details before saving.",
+    a: "Snap is designed to pull the key event details quickly, and you can review the result before you save or share it.",
   },
-  {
-    q: "Is it free?",
-    a: "Yes, Envitefy has a generous free plan that lets you snap flyers, create events, and manage RSVPs without paying a dime. We don't require a credit card to sign up.",
-  },
-  {
-    q: "Can I track RSVPs?",
-    a: "Absolutely. You'll see who's coming, who's not, and who's unsure—all in one dashboard. We can even collect meal preferences or other custom questions.",
-  },
-  {
-    q: "What about weekly practice schedules?",
-    a: "We handle those too! Upload a season schedule or practice PDF, and we'll extract all the recurring events at once so you can add the whole season to your calendar in one click.",
-  },
-];
+] as const;
 
 export default function FAQ({ showHeader = true }: { showHeader?: boolean }) {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-24 bg-transparent">
-      <div className="max-w-4xl mx-auto px-6">
+    <section id="faq" className="bg-transparent py-24">
+      <div className="mx-auto max-w-4xl px-6">
         {showHeader && (
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-[#2f2850] mb-4">
+          <div className="mb-16 text-center">
+            <h2 className="mb-4 text-3xl font-bold text-[#2f2850] md:text-4xl">
               Frequently Asked Questions
             </h2>
             <p className="text-[#5a5377]">
-              Have something else in mind? Reach out to us directly.
+              Questions about Snap, Gymnastics, or existing accounts.
             </p>
           </div>
         )}
@@ -50,28 +50,26 @@ export default function FAQ({ showHeader = true }: { showHeader?: boolean }) {
           {qs.map((item, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-2xl border border-[#e5dcff] overflow-hidden transition-all duration-200 hover:border-[#cfc2ff] hover:shadow-sm"
+              className="overflow-hidden rounded-2xl border border-[#e5dcff] bg-white transition-all duration-200 hover:border-[#cfc2ff] hover:shadow-sm"
             >
               <button
-                className="w-full text-left px-6 py-5 flex items-center justify-between gap-4"
+                className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
                 onClick={() => setOpen(open === idx ? null : idx)}
                 aria-expanded={open === idx}
               >
-                <span className="font-semibold text-[#232a39] text-lg">
+                <span className="text-lg font-semibold text-[#232a39]">
                   {item.q}
                 </span>
-                <span className="text-[#9aa1af] flex-shrink-0">
+                <span className="flex-shrink-0 text-[#9aa1af]">
                   {open === idx ? <Minus size={20} /> : <Plus size={20} />}
                 </span>
               </button>
               <div
-                className={`px-6 overflow-hidden transition-all duration-300 ease-in-out ${
-                  open === idx
-                    ? "max-h-48 pb-6 opacity-100"
-                    : "max-h-0 opacity-0"
+                className={`overflow-hidden px-6 transition-all duration-300 ease-in-out ${
+                  open === idx ? "max-h-48 pb-6 opacity-100" : "max-h-0 opacity-0"
                 }`}
               >
-                <p className="text-[#4f5969] leading-relaxed">{item.a}</p>
+                <p className="leading-relaxed text-[#4f5969]">{item.a}</p>
               </div>
             </div>
           ))}

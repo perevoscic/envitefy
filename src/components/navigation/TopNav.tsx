@@ -163,11 +163,13 @@ export function MyEventsDropdown({
 export function CreateEventMenu({
   onSelect,
   visibleTemplateKeys,
+  productScopes,
 }: {
   onSelect?: () => void;
   visibleTemplateKeys?: Parameters<typeof getCreateEventSections>[0];
+  productScopes?: string[];
 }) {
-  const sections = getCreateEventSections(visibleTemplateKeys);
+  const sections = getCreateEventSections(visibleTemplateKeys, productScopes);
   return (
     <div className="flex min-w-[1260px] max-w-[1400px] flex-row flex-nowrap gap-10 overflow-x-auto px-2">
       {sections.map((section) => (
@@ -435,6 +437,7 @@ export default function TopNav() {
     handleCalendarConnect,
     isAdmin,
     initials,
+    productScopes,
     visibleTemplateKeys,
   } = useMenu();
 
@@ -698,6 +701,7 @@ export default function TopNav() {
                         {isHydrated && (
                           <CreateEventMenu
                             visibleTemplateKeys={visibleTemplateKeys}
+                            productScopes={productScopes}
                           />
                         )}
                       </div>

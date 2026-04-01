@@ -1009,6 +1009,7 @@ export default function GymnasticsLanding() {
         mode={authMode}
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
+        signupSource="gymnastics"
         successRedirectUrl="/event/gymnastics"
       />
     </main>

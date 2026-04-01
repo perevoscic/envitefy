@@ -1,39 +1,32 @@
-import OpenAI from "openai";
-import * as chrono from "chrono-node";
-import sharp from "sharp";
 import { inflateRawSync, inflateSync } from "node:zlib";
-import {
-  createDiscoveryRequestCache,
-  getOrCreatePdfPageImage,
-  getOrCreateWeakCacheValue,
-  type DiscoveryRequestCache,
-} from "@/lib/meet-discovery/cache";
-import { getVisionClient } from "@/lib/gcp";
-import { normalizeAccessControlPayload } from "@/lib/event-access";
-import {
-  normalizeVenueFactForCompare,
-  sanitizeVenueFactLines,
-} from "@/lib/venue-facts";
+import * as chrono from "chrono-node";
+import OpenAI from "openai";
+import sharp from "sharp";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
+import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
+import { type BrowserDiscoveryResult, collectDiscoveryBrowserData } from "@/lib/discovery-browser";
+import {
+  type DiscoveryBudgetSource,
+  resolveDiscoveryBudget as resolveSharedDiscoveryBudget,
+} from "@/lib/discovery-budget";
+import { normalizeAccessControlPayload } from "@/lib/event-access";
+import { getVisionClient } from "@/lib/gcp";
+import {
+  createDiscoveryRequestCache,
+  type DiscoveryRequestCache,
+  getOrCreatePdfPageImage,
+  getOrCreateWeakCacheValue,
+} from "@/lib/meet-discovery/cache";
 import { computeGymBuilderStatuses } from "@/lib/meet-discovery/status";
-import { parseDataUrlBase64 } from "@/utils/data-url";
 import {
   extractPdfAnnotationLinks,
   extractPdfTextWithPdfJs,
-  rasterizePdfPageToPng,
   type PdfAnnotationLink,
+  rasterizePdfPageToPng,
 } from "@/lib/pdf-raster";
-import {
-  collectDiscoveryBrowserData,
-  type BrowserDiscoveryResult,
-} from "@/lib/discovery-browser";
-import {
-  resolveDiscoveryBudget as resolveSharedDiscoveryBudget,
-  type DiscoveryBudgetSource,
-} from "@/lib/discovery-budget";
 import {
   buildTravelAccommodationResult,
   detectTravelAccommodationCandidates,
@@ -42,14 +35,14 @@ import {
   type TravelAccommodationCandidate,
   type TravelAccommodationHotel,
 } from "@/lib/travel-accommodation-discovery";
-import {
-  GYM_DISCOVERY_PUBLIC_PAGE_V2,
-  GYM_DISCOVERY_SCHEDULE_GRID_ENABLED,
-} from "./meet-discovery/constants";
+import { normalizeVenueFactForCompare, sanitizeVenueFactLines } from "@/lib/venue-facts";
+import { parseDataUrlBase64 } from "@/utils/data-url";
+import { GYM_DISCOVERY_PUBLIC_PAGE_V2 } from "./meet-discovery/constants";
 
-export { computeGymBuilderStatuses };
-export { GYM_DISCOVERY_SCHEDULE_GRID_ENABLED };
-export { GYM_DISCOVERY_PUBLIC_PAGE_V2 };
+export {
+  computeGymBuilderStatuses,
+  GYM_DISCOVERY_PUBLIC_PAGE_V2,
+};
 
 export type DiscoverySourceInput =
   | {
@@ -67,32 +60,9 @@ export type DiscoverySourceInput =
       url: string;
     };
 
-type ScheduleColorTarget = "session" | "club";
-
-type ScheduleColorRef = {
-  legendId: string | null;
-  textColorHex: string | null;
-  confidence: number | null;
-};
-
-type ScheduleColorLegendEntry = {
-  id: string | null;
-  target: ScheduleColorTarget | null;
-  colorHex: string | null;
-  colorLabel: string | null;
-  meaning: string | null;
-  sourceText: string | null;
-  teamAwardEligible: boolean | null;
-};
-
 export type ParseResult = {
   eventType: "gymnastics_meet" | "unknown";
-  documentProfile:
-    | "athlete_session"
-    | "parent_packet"
-    | "registration_packet"
-    | "meet_overview"
-    | "unknown";
+  documentProfile: "parent_packet" | "registration_packet" | "meet_overview" | "unknown";
   title: string;
   dates: string;
   startAt: string | null;
@@ -106,7 +76,6 @@ export type ParseResult = {
     name: string | null;
     level: string | null;
     team: string | null;
-    session: string | null;
     competitionDate: string | null;
     stretchTime: string | null;
     marchIn: string | null;
@@ -126,12 +95,6 @@ export type ParseResult = {
     resultsInfo: string | null;
     rotationSheetsInfo: string | null;
     awardsInfo: string | null;
-    sessionWindows: Array<{
-      date: string | null;
-      start: string | null;
-      end: string | null;
-      note: string | null;
-    }>;
     operationalNotes: string[];
   };
   logistics: {
@@ -212,53 +175,6 @@ export type ParseResult = {
   communications: {
     announcements: Array<{ title: string; body: string }>;
     passcode: string | null;
-  };
-  schedule: {
-    venueLabel: string | null;
-    supportEmail: string | null;
-    notes: string[];
-    colorLegend?: ScheduleColorLegendEntry[];
-    awardLegend?: Array<{
-      colorHex?: string | null;
-      colorLabel: string | null;
-      meaning: string | null;
-      teamAwardEligible: boolean | null;
-    }>;
-    annotations?: Array<{
-      kind: string | null;
-      level: string | null;
-      sessionCode: string | null;
-      date: string | null;
-      time: string | null;
-      text: string;
-    }>;
-    assignments?: Array<{
-      level: string | null;
-      groupLabel: string | null;
-      sessionCode: string | null;
-      birthDateRange: string | null;
-      divisionLabel: string | null;
-      note: string | null;
-    }>;
-    days: Array<{
-      date: string | null;
-      shortDate: string | null;
-      sessions: Array<{
-        code: string | null;
-        group: string | null;
-        startTime: string | null;
-        warmupTime: string | null;
-        note: string | null;
-        color?: ScheduleColorRef | null;
-        clubs: Array<{
-          name: string | null;
-          teamAwardEligible: boolean | null;
-          athleteCount: number | null;
-          divisionLabel: string | null;
-          color?: ScheduleColorRef | null;
-        }>;
-      }>;
-    }>;
   };
   links: Array<{ label: string; url: string }>;
   unmappedFacts: Array<{
@@ -360,7 +276,6 @@ export type DiscoveryResourceStatus = "available" | "not_posted" | "unknown";
 export type GymContentAudience =
   | "public_attendee"
   | "coach_ops"
-  | "session_ops"
   | "mixed"
   | "unknown";
 
@@ -374,12 +289,7 @@ export type GymResourceRenderTarget =
   | "documents"
   | "hidden";
 
-type DiscoveryResourceOrigin =
-  | "root"
-  | "child_page"
-  | "linked_asset"
-  | "hub"
-  | "hub_descendant";
+type DiscoveryResourceOrigin = "root" | "child_page" | "linked_asset" | "hub" | "hub_descendant";
 
 export type DiscoveryResourceLink = {
   kind: DiscoveryResourceKind;
@@ -421,11 +331,7 @@ type EventResourceMatch = {
 export type DiscoveryWorkflow = "gymnastics" | "football";
 export type DiscoveryMode = "core" | "enrich";
 
-type DiscoveryUsageStage =
-  | "parse"
-  | "scheduleText"
-  | "scheduleVisual"
-  | "gymLayoutVision";
+type DiscoveryUsageStage = "parse" | "gymLayoutVision";
 
 type DiscoveryTokenUsage = Partial<
   Record<
@@ -445,8 +351,6 @@ export type DiscoveryPerformance = {
   ocrPageCount: number;
   gymLayoutScanMs: number;
   gymLayoutAiCalls: number;
-  scheduleTextParseMs: number;
-  scheduleVisionCalls: number;
   modelParseMs: number;
   persistMs: number;
   tokenUsage?: DiscoveryTokenUsage | null;
@@ -458,6 +362,11 @@ export type DiscoveryExtractionOptions = {
   budgetMs?: number;
   debugArtifacts?: boolean;
   performance?: DiscoveryPerformance;
+  signal?: AbortSignal;
+};
+
+type NormalizedDiscoveryExtractionOptions = Omit<Required<DiscoveryExtractionOptions>, "signal"> & {
+  signal?: AbortSignal;
 };
 
 export type DiscoveryEnrichmentState =
@@ -574,33 +483,6 @@ type ExtractionResult = {
     };
     textQuality?: TextQuality | null;
     qualitySignals?: TextQualitySignals | null;
-    schedulePageImages?: Array<{ pageNumber: number; dataUrl: string | null }>;
-    schedulePageTexts?: Array<{ pageNumber: number; text: string }>;
-    scheduleDiagnostics?: {
-      selectedSchedulePages: number[];
-      selectedScheduleSegments?: Array<{
-        pageNumber: number;
-        kind: "grid" | "narrative" | "assignment";
-        reason: string;
-      }>;
-      rejectedScheduleSegments?: Array<{
-        pageNumber: number;
-        reason: string;
-      }>;
-      ambiguityNotes?: string[];
-      extractedDateLines: string[];
-      parsedFromTextDayCount: number;
-      parsedFromImageDayCount: number;
-      finalDayCount: number;
-      usedImageTableExtraction: boolean;
-      usedTextFallback: boolean;
-      usedImageAwardExtraction: boolean;
-      staleStoredScheduleDetected: boolean;
-      tableBlocksDetected?: number;
-      tableCropCount?: number;
-      tableRepairApplied?: boolean;
-      fallbackMetadataApplied?: boolean;
-    };
     parseDiagnostics?: {
       staged?: {
         classifier: {
@@ -608,7 +490,6 @@ type ExtractionResult = {
           documentProfile: ParseResult["documentProfile"];
           confidence: number;
           contentMix: {
-            scheduleHeavy: boolean;
             registrationHeavy: boolean;
             parentPacketHeavy: boolean;
             mixed: boolean;
@@ -662,7 +543,6 @@ export type DiscoveryEvidence = {
     hostGymHints: string[];
     admissionHints: string[];
     athleteHints: string[];
-    sessionHints: string[];
     logisticsHints: string[];
     policyHints: string[];
     coachHints: string[];
@@ -707,12 +587,9 @@ export type DiscoveryEvidence = {
 
 type ParsePromptProfile =
   | "overview_core"
-  | "parent_public"
-  | "registration_coach"
-  | "athlete_session";
+  | "parent_public";
 
 type ParseContentMix = {
-  scheduleHeavy: boolean;
   registrationHeavy: boolean;
   parentPacketHeavy: boolean;
   mixed: boolean;
@@ -735,7 +612,7 @@ type SelectedParseEvidence = {
 };
 
 type ParseCompletenessSnapshot = Record<
-  "core" | "athlete" | "meetDetails" | "logistics" | "coachInfo" | "schedule",
+  "core" | "athlete" | "meetDetails" | "logistics" | "coachInfo",
   { filled: number; total: number; score: number }
 >;
 
@@ -746,11 +623,11 @@ type CrawlCandidate = DiscoveredLink & {
 type UrlDiscoveryTestHooks = {
   fetchWithLimit?: (
     url: string,
-    options?: { timeoutMs?: number }
+    options?: { timeoutMs?: number; signal?: AbortSignal },
   ) => Promise<{ contentType: string; buffer: Buffer; text: string }>;
   collectBrowserData?: (
     url: string,
-    options?: { timeoutMs?: number; maxChildPages?: number; maxActionablesPerPage?: number }
+    options?: { timeoutMs?: number; maxChildPages?: number; maxActionablesPerPage?: number },
   ) => Promise<BrowserDiscoveryResult>;
   extractTextFromPdf?: (
     buffer: Buffer,
@@ -759,7 +636,8 @@ type UrlDiscoveryTestHooks = {
       performance?: DiscoveryPerformance;
       cache?: DiscoveryRequestCache;
       mode?: DiscoveryMode;
-    }
+      signal?: AbortSignal;
+    },
   ) => Promise<{
     text: string;
     usedOcr: boolean;
@@ -769,10 +647,7 @@ type UrlDiscoveryTestHooks = {
     pages?: Array<{ num: number; text: string }>;
     annotationLinks?: PdfAnnotationLink[];
   }>;
-  extractTextFromImage?: (
-    buffer: Buffer,
-    cache?: DiscoveryRequestCache
-  ) => Promise<string>;
+  extractTextFromImage?: (buffer: Buffer, cache?: DiscoveryRequestCache) => Promise<string>;
   extractGymLayoutImageFromPdf?: (
     buffer: Buffer,
     options?: {
@@ -781,16 +656,16 @@ type UrlDiscoveryTestHooks = {
       performance?: DiscoveryPerformance;
       budgetMs?: number;
       cache?: DiscoveryRequestCache;
-    }
+    },
   ) => Promise<GymLayoutExtraction>;
   openAiExtractGymLayoutZones?: (
     buffer: Buffer,
     mimeType?: string,
-    performance?: DiscoveryPerformance
+    performance?: DiscoveryPerformance,
   ) => Promise<GymLayoutZone[]>;
   toOptimizedImageDataUrl?: (
     buffer: Buffer,
-    cache?: DiscoveryRequestCache
+    cache?: DiscoveryRequestCache,
   ) => Promise<string | null>;
 };
 
@@ -802,7 +677,7 @@ const LOW_TEXT_THRESHOLD = 200;
 let urlDiscoveryTestHooks: UrlDiscoveryTestHooks | null = null;
 
 export function createDiscoveryPerformance(
-  seed: Partial<DiscoveryPerformance> = {}
+  seed: Partial<DiscoveryPerformance> = {},
 ): DiscoveryPerformance {
   return {
     pdfParseMs: 0,
@@ -810,8 +685,6 @@ export function createDiscoveryPerformance(
     ocrPageCount: 0,
     gymLayoutScanMs: 0,
     gymLayoutAiCalls: 0,
-    scheduleTextParseMs: 0,
-    scheduleVisionCalls: 0,
     modelParseMs: 0,
     persistMs: 0,
     tokenUsage: null,
@@ -819,11 +692,14 @@ export function createDiscoveryPerformance(
   };
 }
 
-export { type DiscoveryParseLogSummary, summarizeDiscoveryPerformanceForLog } from "./discovery-performance-log";
+export {
+  type DiscoveryParseLogSummary,
+  summarizeDiscoveryPerformanceForLog,
+} from "./discovery-performance-log";
 
 export function resolveDiscoveryBudget(
   mode: DiscoveryMode,
-  sourceType: DiscoveryBudgetSource = "file"
+  sourceType: DiscoveryBudgetSource = "file",
 ): number {
   return resolveSharedDiscoveryBudget(mode, sourceType);
 }
@@ -834,13 +710,15 @@ export function isDiscoveryDebugArtifactsEnabled(): boolean {
 
 function normalizeDiscoveryExtractionOptions(
   options?: DiscoveryExtractionOptions,
-  sourceType: DiscoveryBudgetSource = "file"
-): Required<DiscoveryExtractionOptions> {
+  sourceType: DiscoveryBudgetSource = "file",
+): NormalizedDiscoveryExtractionOptions {
   return {
     workflow: options?.workflow || "gymnastics",
     mode: options?.mode || "core",
     budgetMs:
-      typeof options?.budgetMs === "number" && Number.isFinite(options.budgetMs) && options.budgetMs > 0
+      typeof options?.budgetMs === "number" &&
+      Number.isFinite(options.budgetMs) &&
+      options.budgetMs > 0
         ? options.budgetMs
         : resolveDiscoveryBudget(options?.mode || "core", sourceType),
     debugArtifacts:
@@ -848,7 +726,12 @@ function normalizeDiscoveryExtractionOptions(
         ? options.debugArtifacts
         : isDiscoveryDebugArtifactsEnabled(),
     performance: options?.performance || createDiscoveryPerformance(),
+    signal: options?.signal,
   };
+}
+
+function throwIfExtractionAborted(signal?: AbortSignal) {
+  throwIfDiscoveryCancelled(signal);
 }
 
 function deadlineAt(budgetMs?: number): number {
@@ -868,17 +751,12 @@ function isBudgetExhausted(nextDeadlineAt: number): boolean {
 
 function normalizeTokenUsage(usage: any) {
   if (!usage || typeof usage !== "object") return null;
-  const promptTokens =
-    Number(usage.prompt_tokens ?? usage.input_tokens ?? 0) || 0;
-  const completionTokens =
-    Number(usage.completion_tokens ?? usage.output_tokens ?? 0) || 0;
-  const totalTokens =
-    Number(usage.total_tokens ?? promptTokens + completionTokens) || 0;
+  const promptTokens = Number(usage.prompt_tokens ?? usage.input_tokens ?? 0) || 0;
+  const completionTokens = Number(usage.completion_tokens ?? usage.output_tokens ?? 0) || 0;
+  const totalTokens = Number(usage.total_tokens ?? promptTokens + completionTokens) || 0;
   const cachedTokens =
     Number(
-      usage.prompt_tokens_details?.cached_tokens ??
-        usage.input_tokens_details?.cached_tokens ??
-        0
+      usage.prompt_tokens_details?.cached_tokens ?? usage.input_tokens_details?.cached_tokens ?? 0,
     ) || 0;
   if (!promptTokens && !completionTokens && !totalTokens && !cachedTokens) {
     return null;
@@ -889,7 +767,7 @@ function normalizeTokenUsage(usage: any) {
 function recordDiscoveryUsage(
   performance: DiscoveryPerformance | undefined,
   stage: DiscoveryUsageStage,
-  usage: any
+  usage: any,
 ) {
   if (!performance) return;
   const normalized = normalizeTokenUsage(usage);
@@ -898,8 +776,7 @@ function recordDiscoveryUsage(
   performance.tokenUsage = performance.tokenUsage || {};
   performance.tokenUsage[stage] = {
     promptTokens: (existing?.promptTokens || 0) + normalized.promptTokens,
-    completionTokens:
-      (existing?.completionTokens || 0) + normalized.completionTokens,
+    completionTokens: (existing?.completionTokens || 0) + normalized.completionTokens,
     totalTokens: (existing?.totalTokens || 0) + normalized.totalTokens,
     cachedTokens: (existing?.cachedTokens || 0) + normalized.cachedTokens,
   };
@@ -1019,7 +896,10 @@ function sanitizeHostGymValue(value: unknown): string | null {
     text = proudHostMatch[1].replace(/\s+/g, " ").trim();
   }
 
-  text = text.replace(/^host(?:ed)?\s+by[:\s-]*/i, "").replace(/[,:;.-]+$/g, "").trim();
+  text = text
+    .replace(/^host(?:ed)?\s+by[:\s-]*/i, "")
+    .replace(/[,:;.-]+$/g, "")
+    .trim();
   if (!text) return null;
   if (HOST_GYM_PAYMENT_LINE_PATTERN.test(text)) return null;
   if (HOST_GYM_PACKET_TEXT_PATTERN.test(text)) return null;
@@ -1045,7 +925,11 @@ function isProbableHostGymHint(value: unknown): boolean {
 function toIsoOrNull(value: unknown): string | null {
   const asText = safeString(value);
   if (!asText) return null;
-  if (!/^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?)?$/i.test(asText)) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?)?$/i.test(
+      asText,
+    )
+  ) {
     return null;
   }
   if (/^\d{4}-\d{2}-\d{2}$/i.test(asText)) {
@@ -1054,8 +938,8 @@ function toIsoOrNull(value: unknown): string | null {
   const normalized = asText.includes("T")
     ? asText
     : asText.includes(" ")
-    ? asText.replace(" ", "T")
-    : `${asText}T00:00:00`;
+      ? asText.replace(" ", "T")
+      : `${asText}T00:00:00`;
   const d = new Date(normalized);
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
@@ -1073,10 +957,9 @@ function pickArray(value: unknown): any[] {
 function normalizeUrl(value: unknown): string {
   const raw = safeString(value).replace(/[)\],.;!?]+$/, "");
   if (!raw) return "";
-  const withProtocol =
-    /^www\./i.test(raw)
-      ? `https://${raw}`
-      : /^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(raw) && !/@/.test(raw)
+  const withProtocol = /^www\./i.test(raw)
+    ? `https://${raw}`
+    : /^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(raw) && !/@/.test(raw)
       ? `https://${raw}`
       : raw;
   if (!/^https?:\/\//i.test(withProtocol)) return "";
@@ -1093,7 +976,7 @@ function extractCanonicalUrlFromText(value: unknown): string {
   const text = safeString(value);
   if (!text) return "";
   const match = text.match(
-    /(?:https?:\/\/[^\s)]+|www\.[^\s)]+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s),;!?]*)?)/i
+    /(?:https?:\/\/[^\s)]+|www\.[^\s)]+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s),;!?]*)?)/i,
   );
   if (!match) return "";
   const candidate = safeString(match[0]).replace(/[)\],.;!?]+$/, "");
@@ -1135,7 +1018,7 @@ function _normalizeScheduleColorRef(value: unknown): ScheduleColorRef | null {
 }
 
 function sanitizeScheduleColorLegendEntries(
-  entries: Array<ScheduleColorLegendEntry | Record<string, any>>
+  entries: Array<ScheduleColorLegendEntry | Record<string, any>>,
 ): ScheduleColorLegendEntry[] {
   return uniqueBy(
     entries
@@ -1158,7 +1041,7 @@ function sanitizeScheduleColorLegendEntries(
       .filter((entry) => {
         if (
           /(recognized at|competition floor|awards ceremony following|please review|host the|following items enclosed|team awards at approx)/i.test(
-            safeString(entry.meaning)
+            safeString(entry.meaning),
           )
         ) {
           return false;
@@ -1169,7 +1052,7 @@ function sanitizeScheduleColorLegendEntries(
             entry.colorHex ||
             entry.colorLabel ||
             entry.sourceText ||
-            typeof entry.teamAwardEligible === "boolean"
+            typeof entry.teamAwardEligible === "boolean",
         );
       })
       .map((entry, index) => ({
@@ -1178,11 +1061,11 @@ function sanitizeScheduleColorLegendEntries(
           entry.id ||
           `schedule-color-${entry.target || "unknown"}-${slugifyScheduleToken(
             entry.meaning || entry.colorHex || entry.colorLabel || `entry-${index + 1}`,
-            `entry-${index + 1}`
+            `entry-${index + 1}`,
           )}`,
       })),
     (entry) =>
-      `${entry.id || ""}|${entry.target || ""}|${entry.colorHex || ""}|${entry.colorLabel || ""}|${entry.meaning || ""}|${entry.sourceText || ""}|${entry.teamAwardEligible ?? ""}`
+      `${entry.id || ""}|${entry.target || ""}|${entry.colorHex || ""}|${entry.colorLabel || ""}|${entry.meaning || ""}|${entry.sourceText || ""}|${entry.teamAwardEligible ?? ""}`,
   );
 }
 
@@ -1333,7 +1216,7 @@ function normalizeScheduleDayLabelWithContext(value: string, fallbackYear: strin
 
 function normalizeStoredSchedule(
   value: unknown,
-  fallback: Partial<StoredGymMeetSchedule> = {}
+  fallback: Partial<StoredGymMeetSchedule> = {},
 ): StoredGymMeetSchedule {
   const raw = (value && typeof value === "object" ? value : {}) as Record<string, any>;
   const days = pickArray(raw.days)
@@ -1348,7 +1231,9 @@ function normalizeStoredSchedule(
         .map((session, sessionIndex) => {
           const code = safeString(session?.code);
           const group = safeString(session?.group);
-          const label = safeString(session?.label) || (code ? `Session ${code}` : `Session ${sessionIndex + 1}`);
+          const label =
+            safeString(session?.label) ||
+            (code ? `Session ${code}` : `Session ${sessionIndex + 1}`);
           const clubs = uniqueBy(
             pickArray(session?.clubs)
               .map((club, clubIndex) => ({
@@ -1357,9 +1242,7 @@ function normalizeStoredSchedule(
                   `${dayId}-${slugifyScheduleToken(code || label, `session-${sessionIndex + 1}`)}-club-${clubIndex + 1}`,
                 name: safeString(club?.name),
                 teamAwardEligible:
-                  typeof club?.teamAwardEligible === "boolean"
-                    ? club.teamAwardEligible
-                    : null,
+                  typeof club?.teamAwardEligible === "boolean" ? club.teamAwardEligible : null,
                 athleteCount:
                   typeof club?.athleteCount === "number" && Number.isFinite(club.athleteCount)
                     ? club.athleteCount
@@ -1367,10 +1250,13 @@ function normalizeStoredSchedule(
                 divisionLabel: safeString(club?.divisionLabel),
               }))
               .filter((club) => club.name),
-            (club) => [club.name, club.divisionLabel, `${club.athleteCount ?? ""}`].join("|")
+            (club) => [club.name, club.divisionLabel, `${club.athleteCount ?? ""}`].join("|"),
           );
           if (!code && !group && !safeString(session?.startTime) && clubs.length === 0) return null;
-          const sessionSlug = slugifyScheduleToken(code || label || group, `session-${sessionIndex + 1}`);
+          const sessionSlug = slugifyScheduleToken(
+            code || label || group,
+            `session-${sessionIndex + 1}`,
+          );
           return {
             id: safeString(session?.id) || `${dayId}-${sessionSlug}`,
             code,
@@ -1401,18 +1287,19 @@ function normalizeStoredSchedule(
     supportEmail: safeString(raw.supportEmail || fallback.supportEmail),
     notes: uniqueBy(
       [
-        ...pickArray(raw.notes).map((item) => safeString(item)).filter(Boolean),
-        ...pickArray(fallback.notes).map((item) => safeString(item)).filter(Boolean),
+        ...pickArray(raw.notes)
+          .map((item) => safeString(item))
+          .filter(Boolean),
+        ...pickArray(fallback.notes)
+          .map((item) => safeString(item))
+          .filter(Boolean),
       ],
-      (item) => item
+      (item) => item,
     ),
     colorLegend: [],
     awardLegend: [],
     annotations: uniqueBy(
-      [
-        ...pickArray(raw.annotations),
-        ...pickArray(fallback.annotations),
-      ]
+      [...pickArray(raw.annotations), ...pickArray(fallback.annotations)]
         .map((item, index) => ({
           id: safeString(item?.id) || `schedule-annotation-${index + 1}`,
           kind: safeString(item?.kind),
@@ -1424,13 +1311,10 @@ function normalizeStoredSchedule(
         }))
         .filter((item) => item.text),
       (item) =>
-        [item.kind, item.level, item.sessionCode, item.date, item.time, item.text].join("|")
+        [item.kind, item.level, item.sessionCode, item.date, item.time, item.text].join("|"),
     ),
     assignments: uniqueBy(
-      [
-        ...pickArray(raw.assignments),
-        ...pickArray(fallback.assignments),
-      ]
+      [...pickArray(raw.assignments), ...pickArray(fallback.assignments)]
         .map((item, index) => ({
           id: safeString(item?.id) || `schedule-assignment-${index + 1}`,
           level: safeString(item?.level),
@@ -1442,7 +1326,11 @@ function normalizeStoredSchedule(
         }))
         .filter(
           (item) =>
-            item.sessionCode || item.groupLabel || item.birthDateRange || item.divisionLabel || item.note
+            item.sessionCode ||
+            item.groupLabel ||
+            item.birthDateRange ||
+            item.divisionLabel ||
+            item.note,
         ),
       (item) =>
         [
@@ -1452,7 +1340,7 @@ function normalizeStoredSchedule(
           item.birthDateRange,
           item.divisionLabel,
           item.note,
-        ].join("|")
+        ].join("|"),
     ),
     days,
   };
@@ -1460,11 +1348,10 @@ function normalizeStoredSchedule(
 
 function hasStoredScheduleContent(value: unknown): boolean {
   const schedule = normalizeStoredSchedule(value);
-  return schedule.days.some(
-    (day) =>
-      day.sessions.some(
-        (session) => session.clubs.length > 0 || session.group || session.startTime || session.code
-      )
+  return schedule.days.some((day) =>
+    day.sessions.some(
+      (session) => session.clubs.length > 0 || session.group || session.startTime || session.code,
+    ),
   );
 }
 
@@ -1474,7 +1361,7 @@ function extractScheduleDateLines(text: string): string[] {
       .split(/\n+/)
       .map((line) => safeString(line))
       .filter((line) => SCHEDULE_DATE_LINE_PATTERN.test(line)),
-    (line) => line
+    (line) => line,
   );
 }
 
@@ -1496,14 +1383,19 @@ function looksLikeSchedulePageText(text: string): boolean {
 }
 
 function isCodeOnlyScheduleSession(
-  session: Pick<StoredGymMeetScheduleSession, "code" | "group" | "startTime" | "warmupTime" | "note" | "clubs">
+  session: Pick<
+    StoredGymMeetScheduleSession,
+    "code" | "group" | "startTime" | "warmupTime" | "note" | "clubs"
+  >,
 ): boolean {
-  return Boolean(session.code) &&
+  return (
+    Boolean(session.code) &&
     !session.group &&
     !session.startTime &&
     !session.warmupTime &&
     !session.note &&
-    session.clubs.length === 0;
+    session.clubs.length === 0
+  );
 }
 
 function isStaleDerivedSchedule(value: unknown, extractedText = ""): boolean {
@@ -1512,7 +1404,9 @@ function isStaleDerivedSchedule(value: unknown, extractedText = ""): boolean {
   const sessions = schedule.days.flatMap((day) => day.sessions);
   if (!sessions.length) return false;
   const extractedDayCount = extractScheduleDateLines(extractedText).length;
-  const sessionsWithTimes = sessions.filter((session) => session.startTime || session.warmupTime).length;
+  const sessionsWithTimes = sessions.filter(
+    (session) => session.startTime || session.warmupTime,
+  ).length;
   const sessionsWithGroups = sessions.filter((session) => session.group).length;
   const sessionsWithClubs = sessions.filter((session) => session.clubs.length > 0).length;
   const codeOnlySessions = sessions.filter((session) => isCodeOnlyScheduleSession(session)).length;
@@ -1550,24 +1444,24 @@ function getStoredScheduleDayKey(day: {
   date?: string | null;
   shortDate?: string | null;
 }): string {
-  return [day.isoDate, day.date, day.shortDate]
-    .map((item) => safeString(item).toLowerCase())
-    .find(Boolean) || "";
+  return (
+    [day.isoDate, day.date, day.shortDate]
+      .map((item) => safeString(item).toLowerCase())
+      .find(Boolean) || ""
+  );
 }
 
 function getStoredScheduleDaySessionCodes(day: {
   sessions: Array<{ code?: string | null }>;
 }): Set<string> {
   return new Set(
-    day.sessions
-      .map((session) => safeString(session.code).toLowerCase())
-      .filter(Boolean)
+    day.sessions.map((session) => safeString(session.code).toLowerCase()).filter(Boolean),
   );
 }
 
 function findStoredScheduleDayMatchIndex(
   days: StoredGymMeetScheduleDay[],
-  targetDay: StoredGymMeetScheduleDay
+  targetDay: StoredGymMeetScheduleDay,
 ): number {
   const targetKey = getStoredScheduleDayKey(targetDay);
   const targetCodes = getStoredScheduleDaySessionCodes(targetDay);
@@ -1611,7 +1505,10 @@ function splitExtractedSchedulePages(text: string) {
   return matches.map((match, index) => {
     const pageNumber = Number.parseInt(match[1] || `${index + 1}`, 10) || index + 1;
     const start = (match.index || 0) + match[0].length;
-    const end = index + 1 < matches.length ? matches[index + 1].index || normalized.length : normalized.length;
+    const end =
+      index + 1 < matches.length
+        ? matches[index + 1].index || normalized.length
+        : normalized.length;
     return {
       pageNumber,
       text: normalized.slice(start, end).trim(),
@@ -1667,14 +1564,12 @@ type ScheduleAssignment = NonNullable<ParseResult["schedule"]["assignments"]>[nu
 
 function splitScheduleCellCandidates(
   line: string,
-  options?: { preserveEmpty?: boolean }
+  options?: { preserveEmpty?: boolean },
 ): string[] {
   const normalized = safeString(line);
   if (!normalized) return [];
   const preserveEmpty = options?.preserveEmpty ?? false;
-  const cells = /\t/.test(normalized)
-    ? normalized.split(/\t/)
-    : normalized.split(/\s{2,}/);
+  const cells = /\t/.test(normalized) ? normalized.split(/\t/) : normalized.split(/\s{2,}/);
   return preserveEmpty
     ? cells.map((cell) => safeString(cell))
     : cells.map((cell) => safeString(cell)).filter(Boolean);
@@ -1693,13 +1588,11 @@ function normalizeScheduleSessionCode(value: unknown): string {
 
 function extractSessionCodeFromCell(
   value: string,
-  options?: { allowBareCode?: boolean; allowNumericOnly?: boolean }
+  options?: { allowBareCode?: boolean; allowNumericOnly?: boolean },
 ): string {
   const normalized = safeString(value).replace(/\s+/g, " ");
   if (!normalized) return "";
-  const prefixedMatch = normalized.match(
-    /\bsession\s+([a-z]{1,3}\d{1,2}|\d{1,2})\b/i
-  );
+  const prefixedMatch = normalized.match(/\bsession\s+([a-z]{1,3}\d{1,2}|\d{1,2})\b/i);
   if (prefixedMatch) {
     return normalizeScheduleSessionCode(prefixedMatch[1]);
   }
@@ -1721,7 +1614,7 @@ function extractScheduleSessionCodesInText(text: string): string[] {
   const normalized = safeString(text);
   if (!normalized) return [];
   const prefixed = [...normalized.matchAll(/\bsession\s+([a-z]{1,3}\d{1,2}|\d{1,2})\b/gi)].map(
-    (match) => normalizeScheduleSessionCode(match[1])
+    (match) => normalizeScheduleSessionCode(match[1]),
   );
   const bare =
     prefixed.length === 0 &&
@@ -1732,7 +1625,7 @@ function extractScheduleSessionCodesInText(text: string): string[] {
             extractSessionCodeFromCell(cell, {
               allowBareCode: true,
               allowNumericOnly: false,
-            })
+            }),
           )
           .filter(Boolean)
       : [];
@@ -1750,7 +1643,10 @@ function countScheduleTimeValues(text: string): number {
 function hasMultiColumnScheduleStructure(text: string): boolean {
   return safeString(text)
     .split(/\n+/)
-    .some((line) => splitScheduleCellCandidates(line).length >= 2 && (/\t/.test(line) || /\s{2,}/.test(line)));
+    .some(
+      (line) =>
+        splitScheduleCellCandidates(line).length >= 2 && (/\t/.test(line) || /\s{2,}/.test(line)),
+    );
 }
 
 function countScheduleDateHeadings(text: string): number {
@@ -1772,7 +1668,9 @@ function countScheduleAssignmentRows(text: string): number {
       const normalized = safeString(line);
       if (!normalized) return false;
       if (!/\b(group\s+\d+|younger|middle|older)\b/i.test(normalized)) return false;
-      if (!/\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4}/i.test(normalized)) {
+      if (
+        !/\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4}/i.test(normalized)
+      ) {
         return false;
       }
       return (
@@ -1784,23 +1682,29 @@ function countScheduleAssignmentRows(text: string): number {
 
 function getScheduleTabularSignals(text: string) {
   const normalized = safeString(text);
-  const lines = normalized.split(/\n+/).map((line) => safeString(line)).filter(Boolean);
+  const lines = normalized
+    .split(/\n+/)
+    .map((line) => safeString(line))
+    .filter(Boolean);
   const dayHeadingCount = countScheduleDateHeadings(normalized);
   const sessionHeaderLineCount = countScheduleHeaderLines(normalized);
   const repeatedTimeValueCount = countScheduleTimeValues(normalized);
   const multiColumnLineCount = lines.filter(
-    (line) => splitScheduleCellCandidates(line).length >= 2 && (/\t/.test(line) || /\s{2,}/.test(line))
+    (line) =>
+      splitScheduleCellCandidates(line).length >= 2 && (/\t/.test(line) || /\s{2,}/.test(line)),
   ).length;
-  const divisionHeaderLineCount = lines.filter((line) => looksLikeScheduleDivisionLine(splitScheduleCellCandidates(line))).length;
+  const divisionHeaderLineCount = lines.filter((line) =>
+    looksLikeScheduleDivisionLine(splitScheduleCellCandidates(line)),
+  ).length;
   const gymColumnHeaderCount = lines.filter(
     (line) =>
       splitScheduleCellCandidates(line).length >= 2 &&
-      splitScheduleCellCandidates(line).every((cell) => /^gym(?:\s+[a-z0-9]+)?$/i.test(cell))
+      splitScheduleCellCandidates(line).every((cell) => /^gym(?:\s+[a-z0-9]+)?$/i.test(cell)),
   ).length;
   const assignmentHeaderCount = lines.filter((line) =>
     /(age groups?\s+and\s+session assignments|age group\s+birth date(?:\s*range)?\s+divisions?\s+session|birth date(?:\s*range)?\s+divisions?\s+session)/i.test(
-      line
-    )
+      line,
+    ),
   ).length;
   const assignmentRowCount = countScheduleAssignmentRows(normalized);
   const score =
@@ -1830,7 +1734,7 @@ function looksLikeScheduleNarrativeText(text: string): boolean {
   if (sessionLines === 0) return false;
   return (
     /\b(?:stretch|warm-?up|competition to follow|age groups?:|born\s+\d{1,2}\/\d{1,2}\/\d{2,4})/i.test(
-      normalized
+      normalized,
     ) && !/\t/.test(normalized)
   );
 }
@@ -1855,10 +1759,7 @@ function classifySchedulePageText(text: string): {
   const normalized = safeString(text);
   if (!normalized) return { kind: "other", reason: "empty" };
   const tabularSignals = getScheduleTabularSignals(normalized);
-  if (
-    looksLikeScheduleAssignmentText(normalized) &&
-    tabularSignals.repeatedTimeValueCount < 3
-  ) {
+  if (looksLikeScheduleAssignmentText(normalized) && tabularSignals.repeatedTimeValueCount < 3) {
     return { kind: "assignment", reason: "assignment_table_signals" };
   }
   if (
@@ -1891,7 +1792,7 @@ function classifySchedulePageText(text: string): {
 }
 
 function selectScheduleSegments(
-  pages: Array<{ pageNumber: number; text: string }>
+  pages: Array<{ pageNumber: number; text: string }>,
 ): SchedulePageSegment[] {
   return pages
     .map((page) => {
@@ -1947,13 +1848,13 @@ function shouldSuppressUnmappedFact(item: any): boolean {
 
 function isAdmissionAnnouncementText(value: string): boolean {
   return /(spectator|admission|ticket|pre[-\s]?sale|credit\/debit|credit card|debit card|cashless|cash is not accepted|cash not accepted|no cash)/i.test(
-    safeString(value)
+    safeString(value),
   );
 }
 
 function isStructuredAnnouncementText(value: string): boolean {
   return /(doors open|arrival guidance|registration\b|results|live scoring|rotation sheets?|awards|venue contact|facility contact|meet director|director of operations|event coordinator|floor manager)/i.test(
-    safeString(value)
+    safeString(value),
   );
 }
 
@@ -1965,7 +1866,7 @@ function shouldPersistParsedAnnouncement(item: any): boolean {
   if (isAdmissionAnnouncementText(combined) || isStructuredAnnouncementText(combined)) return false;
   if (
     /(marketing|sponsor|visit lauderdale|hairstyle to impress|final posting|club[_\s-]?participation|venue[_\s-]?contact|document[_\s-]?version)/i.test(
-      combined
+      combined,
     )
   ) {
     return false;
@@ -1985,8 +1886,13 @@ function isClubParticipationLikeText(value: unknown): boolean {
   const text = safeString(value);
   if (!text) return false;
   if (CLUB_PARTICIPATION_TEXT_PATTERN.test(text)) return true;
-  return (text.match(/\b(?:gymnastics|gym|academy|twisters|ymca|starz|miami|wellington|boca|canada)\b/gi) || [])
-    .length >= 3;
+  return (
+    (
+      text.match(
+        /\b(?:gymnastics|gym|academy|twisters|ymca|starz|miami|wellington|boca|canada)\b/gi,
+      ) || []
+    ).length >= 3
+  );
 }
 
 function isTrueGearLikeText(value: unknown): boolean {
@@ -2000,7 +1906,7 @@ function appendUnmappedFact(
   items: Array<{ category: string; detail: string; confidence: "high" | "medium" | "low" }>,
   category: string,
   detail: string,
-  confidence: "high" | "medium" | "low" = "high"
+  confidence: "high" | "medium" | "low" = "high",
 ) {
   const cleanDetail = safeString(detail);
   if (!cleanDetail) return items;
@@ -2012,7 +1918,7 @@ function appendUnmappedFact(
         `${safeString(item?.category)}|${safeString(item?.detail)}`
           .toLowerCase()
           .replace(/\s+/g, " ")
-          .trim() === key
+          .trim() === key,
     )
   ) {
     return items;
@@ -2040,7 +1946,7 @@ function isLikelySectionHeading(line: string): boolean {
   if (text.length > 72) return false;
   if (/^[A-Z0-9][A-Z0-9/&(),.' -]{2,}$/.test(text)) return true;
   return /^(entry fees|how to enter|awards|coaches information|parking|doors open|additional info|spectator admission|traffic|payment|refund|qualification|regional meet coaches information)\b/i.test(
-    text
+    text,
   );
 }
 
@@ -2049,11 +1955,11 @@ function normalizeDiscoveryDateArtifacts(value: string): string {
     .replace(/\u2013|\u2014/g, "-")
     .replace(
       /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*-\s*(\d{1,2})(\s*,\s*\d{4})/gi,
-      "$1 $2-$3$4"
+      "$1 $2-$3$4",
     )
     .replace(
       /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*-\s*(\d{1,2})\b/gi,
-      "$1 $2-$3"
+      "$1 $2-$3",
     )
     .replace(/\$\s+(\d)/g, "$$$1")
     .replace(/(\d)\s*-\s+(\d{1,2},\s*\d{4})/g, "$1-$2")
@@ -2087,11 +1993,13 @@ function stitchDiscoveryLines(lines: string[]): string[] {
     const joinsCurrency = /(?:\$|usd)\s*$/i.test(prevText) && /^[\d.]/.test(nextText);
     const joinsDateRange =
       /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+\d{1,2}\s*-\s*$/i.test(
-        prevText
+        prevText,
       ) && /^\d{1,2}(?:,\s*\d{4})?\b/.test(nextText);
 
     if (!prevIsHeading && !nextIsHeading && (joinsBrokenWord || joinsCurrency || joinsDateRange)) {
-      out[out.length - 1] = `${prevText.replace(/-\s*$/, "")}${nextText}`.replace(/\s+/g, " ").trim();
+      out[out.length - 1] = `${prevText.replace(/-\s*$/, "")}${nextText}`
+        .replace(/\s+/g, " ")
+        .trim();
       continue;
     }
     if (!prevIsHeading && !nextIsHeading && !prevEndsSentence && startsContinuation) {
@@ -2105,13 +2013,13 @@ function stitchDiscoveryLines(lines: string[]): string[] {
 
 function isCoachHeadingLine(line: string): boolean {
   return /^(attention coaches!?|coaches information(?:[—-].*)?|regional meet coaches information|coaches attire|coaches sign in|attending coaches.*|coach(?:es)?\b.*important|entry fees|how to enter|payment|refund policy|qualification|coaches? meeting|scratches?|rotation sheets?)/i.test(
-    safeString(line)
+    safeString(line),
   );
 }
 
 function looksLikeCoachLine(line: string): boolean {
   return /(coach(?:es)?|entry fees?|team fees?|team entry|athlete fees?|late fees?|payment|refund|qualification|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|floor manager|meet director|director of operations|assistant event coordinator|dress code|attire|floor music|meet maker|reservation)/i.test(
-    safeString(line)
+    safeString(line),
   );
 }
 
@@ -2155,7 +2063,7 @@ function scoreMeetDateLine(line: string, index: number): ScoredDateCandidate | n
   }
   if (
     /\b(updated|posted|deadline|late fee|refund|entry fee|entry deadline|how to enter|must enter|by noon|page\s+\d+\s+of\s+\d+)\b/i.test(
-      lowered
+      lowered,
     )
   ) {
     score -= 10;
@@ -2188,13 +2096,13 @@ function classifyMeetDateCandidates(text: string): {
     cleanExtractedText(text)
       .split(/\n+/)
       .map((line) => safeString(line))
-      .filter(Boolean)
+      .filter(Boolean),
   );
   const lines = baseLines.flatMap((line) =>
     line
       .split(/(?=\b(?:when|meet dates?|competition dates?|event dates?)\b[:]?)/i)
       .map((item) => safeString(item))
-      .filter(Boolean)
+      .filter(Boolean),
   );
   const candidates = lines
     .map((line, index) => scoreMeetDateLine(line, index))
@@ -2216,7 +2124,7 @@ function classifyMeetDateCandidates(text: string): {
 function isSpectatorAdmissionLabel(value: string): boolean {
   const text = safeString(value);
   return /(spectator|admission|ticket|adult|child|children|seniors?|military|cash|door|weekend pass|per day|parking)/i.test(
-    text
+    text,
   );
 }
 
@@ -2225,17 +2133,14 @@ function inferCoachFeeBucket(item: {
   amount?: string;
   price?: string;
   note: string | null;
-}):
-  | "entry"
-  | "team"
-  | "late"
-  | null {
+}): "entry" | "team" | "late" | null {
   const haystack = `${safeString(item.label)} ${safeString(item.note)} ${safeString(
-    item.amount || item.price
+    item.amount || item.price,
   )}`.toLowerCase();
   if (/(late fee|late entry|after .*deadline)/i.test(haystack)) return "late";
   if (/\b(team fee|team entry|team)\b/i.test(haystack)) return "team";
-  if (/\b(entry fee|athlete fee|registration fee|per gymnast|entry)\b/i.test(haystack)) return "entry";
+  if (/\b(entry fee|athlete fee|registration fee|per gymnast|entry)\b/i.test(haystack))
+    return "entry";
   return null;
 }
 
@@ -2262,12 +2167,12 @@ function hasCoachInfoContent(value: any): boolean {
       pickArray(coachInfo.deadlines).length ||
       pickArray(coachInfo.contacts).length ||
       pickArray(coachInfo.links).length ||
-      pickArray(coachInfo.notes).length
+      pickArray(coachInfo.notes).length,
   );
 }
 
 function extractCoachPageHintsFromPages(
-  pages: Array<{ num: number; text: string }>
+  pages: Array<{ num: number; text: string }>,
 ): CoachPageHint[] {
   const hints: CoachPageHint[] = [];
   for (const page of pages) {
@@ -2277,14 +2182,14 @@ function extractCoachPageHintsFromPages(
       pageText
         .split(/\n+/)
         .map((line) => safeString(line))
-        .filter(Boolean)
+        .filter(Boolean),
     );
     const heading =
       lines.find((line) => isCoachHeadingLine(line)) ||
       lines.find((line) =>
         /(coach(?:es)?|entry fees?|how to enter|payment|refund|qualification|regional commitment)/i.test(
-          line
-        )
+          line,
+        ),
       ) ||
       null;
     const coachLines = lines.filter((line) => looksLikeCoachLine(line));
@@ -2304,7 +2209,7 @@ function extractCoachPageHintsFromPages(
     ].reduce((count, pattern) => count + countPatternMatches(pageText, pattern), 0);
     if (!heading && strongSignalCount < 3) continue;
     const excerpt = sanitizeCoachExcerpt(
-      coachLines.length > 0 ? coachLines.slice(0, 6) : lines.slice(0, 6)
+      coachLines.length > 0 ? coachLines.slice(0, 6) : lines.slice(0, 6),
     );
     if (!excerpt) continue;
     hints.push({
@@ -2373,7 +2278,7 @@ function deriveDateRangeFromText(value: string): DateRangeInfo {
 
   const monthRange =
     text.match(
-      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*[–-]\s*(\d{1,2}),?\s*(\d{4})\b/i
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})\s*[–-]\s*(\d{1,2}),?\s*(\d{4})\b/i,
     ) || null;
   if (monthRange) {
     const monthIdx = monthNameToIndex(monthRange[1]);
@@ -2391,7 +2296,7 @@ function deriveDateRangeFromText(value: string): DateRangeInfo {
 
   const monthSingle =
     text.match(
-      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2}),?\s*(\d{4})\b/i
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2}),?\s*(\d{4})\b/i,
     ) || null;
   if (monthSingle) {
     const monthIdx = monthNameToIndex(monthSingle[1]);
@@ -2406,9 +2311,8 @@ function deriveDateRangeFromText(value: string): DateRangeInfo {
   }
 
   const slashRange =
-    text.match(
-      /\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*[–-]\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/
-    ) || null;
+    text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*[–-]\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/) ||
+    null;
   if (slashRange) {
     const m1 = Number.parseInt(slashRange[1], 10) - 1;
     const d1 = Number.parseInt(slashRange[2], 10);
@@ -2487,7 +2391,7 @@ function getInclusiveIsoDateRange(startDate: string, endDate: string): string[] 
 }
 
 function deriveDateRangeFromScheduleDays(
-  schedule: ParseResult["schedule"] | null | undefined
+  schedule: ParseResult["schedule"] | null | undefined,
 ): DateRangeInfo {
   const days = normalizeStoredSchedule(schedule || {}).days;
   const isoDates = days
@@ -2508,7 +2412,7 @@ function deriveDateRangeFromScheduleDays(
 
 function alignScheduleDatesToEventRange(
   schedule: ParseResult["schedule"] | null | undefined,
-  dateRange: DateRangeInfo
+  dateRange: DateRangeInfo,
 ): ParseResult["schedule"] {
   const normalized = normalizeStoredSchedule(schedule || {});
   if (!normalized.days.length || !dateRange.startDate || !dateRange.endDate) {
@@ -2519,7 +2423,7 @@ function alignScheduleDatesToEventRange(
     return toParseScheduleShape(normalized);
   }
   const actualDates = normalized.days.map(
-    (day) => safeString(day.isoDate) || formatScheduleIsoDate(day.date)
+    (day) => safeString(day.isoDate) || formatScheduleIsoDate(day.date),
   );
   if (actualDates.some((item) => !item)) {
     return toParseScheduleShape(normalized);
@@ -2535,9 +2439,7 @@ function alignScheduleDatesToEventRange(
   }
   const shift = shifts[0] || 0;
   const shouldRealign =
-    shift !== 0 &&
-    Math.abs(shift) <= 2 &&
-    shifts.every((value) => value === shift);
+    shift !== 0 && Math.abs(shift) <= 2 && shifts.every((value) => value === shift);
   if (!shouldRealign) {
     return toParseScheduleShape(normalized);
   }
@@ -2574,14 +2476,14 @@ function extractHallFactsFromText(text: string): string[] {
 
 export function buildDiscoveryEvidence(
   extractedText: string,
-  extractionMeta: ExtractionResult["extractionMeta"]
+  extractionMeta: ExtractionResult["extractionMeta"],
 ): DiscoveryEvidence {
   const text = cleanExtractedText(extractedText);
   const lines = stitchDiscoveryLines(
     text
       .split(/\n+/)
       .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
-      .filter(Boolean)
+      .filter(Boolean),
   );
   const firstLines = uniqueLines(lines.slice(0, 24), 12);
   const additionalInfoStartIdx = lines.findIndex((line) => /additional\s*info/i.test(line));
@@ -2591,11 +2493,14 @@ export function buildDiscoveryEvidence(
       : [];
 
   const matchLines = (pattern: RegExp, limit = 12) =>
-    uniqueLines(lines.filter((line) => pattern.test(line)), limit);
+    uniqueLines(
+      lines.filter((line) => pattern.test(line)),
+      limit,
+    );
   const sectionMatchLines = (patterns: RegExp[], limit = 12) =>
     uniqueLines(
       lines.filter((line) => patterns.some((pattern) => pattern.test(line))),
-      limit
+      limit,
     );
   const dateAnalysis = classifyMeetDateCandidates(text);
 
@@ -2603,112 +2508,119 @@ export function buildDiscoveryEvidence(
     [
       ...(dateAnalysis.primary ? [dateAnalysis.primary.label] : []),
       ...(text.match(
-        /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:\s*[–-]\s*\d{1,2})?(?:,\s*\d{4})?/gi
+        /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:\s*[–-]\s*\d{1,2})?(?:,\s*\d{4})?/gi,
       ) || []),
       ...(text.match(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g) || []),
     ],
-    10
+    10,
   );
   const timeHints = uniqueLines(
     text.match(/\b\d{1,2}(?::\d{2})?\s*[AP]M(?:\s*-\s*\d{1,2}(?::\d{2})?\s*[AP]M)?\b/gi) || [],
-    14
+    14,
   );
   const timezoneHints = uniqueLines(
     text.match(
-      /\b(?:America\/[A-Za-z_]+|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Eastern|Central|Mountain|Pacific)\b/gi
+      /\b(?:America\/[A-Za-z_]+|EST|EDT|CST|CDT|MST|MDT|PST|PDT|Eastern|Central|Mountain|Pacific)\b/gi,
     ) || [],
-    8
+    8,
   );
   const addressHints = matchLines(
     /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/,
-    8
+    8,
   );
   const venueHints = matchLines(
     /(convention center|arena|center|hall|gymnasium|gym|sports complex|fieldhouse|venue)/i,
-    12
+    12,
   );
   const hostGymHints = uniqueLines(
     lines
       .filter(
         (line) =>
           /(host(ed)? by|gymnastics|gym club|academy|host gym|host|team\b|usa competitions)/i.test(
-            line
-          ) && isProbableHostGymHint(line)
+            line,
+          ) && isProbableHostGymHint(line),
       )
       .map((line) => sanitizeHostGymValue(line))
       .filter((line): line is string => Boolean(line)),
-    12
+    12,
   );
-  const admissionHints = matchLines(/(admission|ticket|adult|children|cash|weekend pass|door)/i, 12);
-  const athleteHints = matchLines(/(athlete|gymnast|level|team|march in|stretch|assigned gym|awards)/i, 14);
-  const sessionHints = matchLines(/(session|stretch|march in|warm ?up|rotation|awards)/i, 14);
+  const admissionHints = matchLines(
+    /(admission|ticket|adult|children|cash|weekend pass|door)/i,
+    12,
+  );
+  const athleteHints = matchLines(
+    /(athlete|gymnast|level|team|march in|stretch|assigned gym|awards)/i,
+    14,
+  );
   const logisticsHints = matchLines(
     /(parking|traffic|hotel|meal|food|waiver|rideshare|uber|lyft|map|directions|drop[- ]?off|visitor guide|host hotels?|reservation deadline|pay by mobile)/i,
-    14
+    14,
   );
   const policyHints = matchLines(
     /(hydration|service animal|service dog|safety|food|beverage|outside food|throwing object|flash)/i,
-    12
+    12,
   );
   const coachHints = uniqueLines(
     [
       ...matchLines(
         /(coach(?:es)?|entry fees?|team fees?|late fees?|payment|refund|qualification|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|meet director|floor manager|attire|dress code)/i,
-        16
+        16,
       ),
       ...pickArray(extractionMeta.coachPageHints)
         .flatMap((item) => [safeString(item?.heading), safeString(item?.excerpt)])
         .filter(Boolean),
     ],
-    16
+    16,
   );
   const trafficLines = matchLines(/(traffic|disney on ice|benchmark|parking rate|30-45)/i, 8);
   const hallLayoutLines = matchLines(
     /(east hall|west hall|central hall|registration|guest services|competition area|coffee bar|awards)/i,
-    10
+    10,
   );
   const coachLines = matchLines(
     /(coach(?:es)?|entry fees?|team fees?|late fees?|payment|refund|qualification|hospitality|sign[- ]?in|scratches|rotation sheets?|regional commitment|meet director|floor manager|attire|dress code)/i,
-    10
+    10,
   );
   const spectatorSection = sectionMatchLines(
     [
       /(spectator admission|spectator admissions|admission|ticket|door fees?|weekend passes?|adult|child|cash only|parents?\/spectators?|additional info)/i,
     ],
-    12
+    12,
   );
   const venueSection = sectionMatchLines(
     [
       /(east hall|west hall|central hall|guest services|registration desk|competition area|venue|facility layout|awards area|entrance|meet site|assigned halls?|lobby)/i,
     ],
-    12
+    12,
   );
   const trafficSection = sectionMatchLines(
     [/(parking|traffic|ride ?share|uber|lyft|drop-?off|garage|parkmobile|complimentary parking)/i],
-    12
+    12,
   );
   const policySection = sectionMatchLines(
-    [/(food|water|hydration|service animals?|service dogs?|safety|outside food|throwing objects?)/i],
-    12
+    [
+      /(food|water|hydration|service animals?|service dogs?|safety|outside food|throwing objects?)/i,
+    ],
+    12,
   );
   const coachOpsSection = sectionMatchLines(
     [
       /(coach(?:es)?|sign[- ]?in|floor access|attire|hospitality|scratches|rotation sheets?|floor music|regional commitment|qualification|coaches information|athlete\s*&\s*coach registration|regional meet coaches information)/i,
     ],
-    12
+    12,
   );
   const registrationSection = sectionMatchLines(
     [
       /(entry fees?|team fees?|late fees?|how to enter|payment|refund|deadline|meet maker|reservation|meet entry summary|athlete\s*&\s*coach registration|regional meet coaches information)/i,
     ],
-    12
+    12,
   );
   const titleHints = uniqueLines(
     [
       safeString(extractionMeta.pageTitle || ""),
       ...firstLines.filter((line) => line.length >= 6 && line.length <= 90),
     ],
-    8
+    8,
   );
   const resourceLinks = pickArray(extractionMeta.resourceLinks)
     .map((item) => ({
@@ -2722,8 +2634,7 @@ export function buildDiscoveryEvidence(
       followed: Boolean(item?.followed),
       availabilityText: safeString(item?.availabilityText) || null,
       availabilityDate: safeString(item?.availabilityDate) || null,
-      discoveryMethod:
-        safeString(item?.discoveryMethod) === "playwright" ? "playwright" : "http",
+      discoveryMethod: safeString(item?.discoveryMethod) === "playwright" ? "playwright" : "http",
       matchScore:
         typeof item?.matchScore === "number" && Number.isFinite(item.matchScore)
           ? item.matchScore
@@ -2745,25 +2656,24 @@ export function buildDiscoveryEvidence(
         .filter((item) => item.url),
       ...uniqueLines(
         (text.match(/https?:\/\/[^\s)]+/gi) || []).map((url) => url.replace(/[.,;!?]+$/, "")),
-        14
+        14,
       ).map((url) => ({ label: "Source link", url })),
     ],
-    (item) => item.url
+    (item) => item.url,
   ).slice(0, 14);
   const hotelHints = uniqueLines(
-    lines.filter((line) => /\b(groupbook|hotel|lodging|room block|reservation deadline|group rate)\b/i.test(line)),
-    8
+    lines.filter((line) =>
+      /\b(groupbook|hotel|lodging|room block|reservation deadline|group rate)\b/i.test(line),
+    ),
+    8,
   );
   const statusHints = uniqueLines(
     resourceLinks
       .filter((item) => item.status !== "available" || item.matchReason)
       .map(
-        (item) =>
-          `${item.kind}: ${item.status}${
-            item.matchReason ? ` (${item.matchReason})` : ""
-          }`
+        (item) => `${item.kind}: ${item.status}${item.matchReason ? ` (${item.matchReason})` : ""}`,
       ),
-    10
+    10,
   );
 
   return {
@@ -2788,7 +2698,6 @@ export function buildDiscoveryEvidence(
       hostGymHints,
       admissionHints,
       athleteHints,
-      sessionHints,
       logisticsHints,
       policyHints,
       coachHints,
@@ -2837,9 +2746,7 @@ export function buildDiscoveryEvidence(
 function extractPdfTextHeuristic(buffer: Buffer): string {
   const decodePdfFragment = (value: string) =>
     value
-      .replace(/\\([0-7]{1,3})/g, (_m, oct) =>
-        String.fromCharCode(parseInt(oct, 8))
-      )
+      .replace(/\\([0-7]{1,3})/g, (_m, oct) => String.fromCharCode(parseInt(oct, 8)))
       .replace(/\\n/g, "\n")
       .replace(/\\r/g, "\n")
       .replace(/\\t/g, " ")
@@ -2893,13 +2800,13 @@ function cleanExtractedText(text: string): string {
     (text || "")
       .replace(/\r\n?/g, "\n")
       .replace(/\u0000/g, " ")
-      .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ")
+      .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " "),
   );
   const stitched = stitchDiscoveryLines(
     normalized
       .split(/\n+/)
       .map((line) => line.replace(/[ \t]{2,}/g, " ").trim())
-      .filter(Boolean)
+      .filter(Boolean),
   );
   return stitched
     .join("\n")
@@ -2918,7 +2825,7 @@ function cleanPdfPageTextPreservingGrid(text: string): string {
       .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ")
       .replace(/[ \f\v]+/g, " ")
       .replace(/\t{2,}/g, "\t")
-      .replace(/\n{3,}/g, "\n\n")
+      .replace(/\n{3,}/g, "\n\n"),
   ).trim();
 }
 
@@ -2954,64 +2861,10 @@ function getOpenAiClient(): OpenAI {
 async function getPdfPageImage(
   pdfBuffer: Buffer,
   pageIndex: number,
-  cache?: DiscoveryRequestCache
+  cache?: DiscoveryRequestCache,
 ): Promise<Buffer | null> {
   const render = async () => rasterizePdfPageToPng(pdfBuffer, pageIndex);
-  return cache
-    ? getOrCreatePdfPageImage(cache, pdfBuffer, pageIndex, render)
-    : render();
-}
-
-function selectSchedulePageNumbersFromPdfPages(pages: Array<{ num: number; text: string }>): number[] {
-  return uniqueBy(
-    pages
-      .filter((page) => {
-        const classification = classifySchedulePageText(page.text);
-        return (
-          classification.kind === "grid" ||
-          classification.kind === "assignment" ||
-          (classification.kind === "narrative" &&
-            classification.reason === "narrative_session_signals")
-        );
-      })
-      .map((page) => Number(page.num) || 0)
-      .filter((pageNumber) => pageNumber > 0),
-    (pageNumber) => String(pageNumber)
-  );
-}
-
-function extractSchedulePageTextsFromPdfPages(
-  pages: Array<{ num: number; text: string }>
-): Array<{ pageNumber: number; text: string }> {
-  const selected = new Set(selectSchedulePageNumbersFromPdfPages(pages));
-  return pages
-    .filter((page) => selected.has(Number(page.num) || 0))
-    .map((page) => ({
-      pageNumber: Number(page.num) || 0,
-      text: safeString(page.text),
-    }))
-    .filter((page) => page.pageNumber > 0 && page.text);
-}
-
-const SCHEDULE_PAGE_IMAGE_EXTRACT_CONCURRENCY = 3;
-
-async function extractSchedulePageImagesFromPdf(
-  buffer: Buffer,
-  pages: Array<{ num: number; text: string }>,
-  cache?: DiscoveryRequestCache
-): Promise<Array<{ pageNumber: number; dataUrl: string | null }>> {
-  const pageNumbers = selectSchedulePageNumbersFromPdfPages(pages).slice(0, 6);
-  return mapWithConcurrency(pageNumbers, SCHEDULE_PAGE_IMAGE_EXTRACT_CONCURRENCY, async (pageNumber) => {
-    try {
-      const pageImage = await getPdfPageImage(buffer, pageNumber - 1, cache);
-      return {
-        pageNumber,
-        dataUrl: pageImage ? await toOptimizedImageDataUrl(pageImage, cache) : null,
-      };
-    } catch {
-      return { pageNumber, dataUrl: null };
-    }
-  });
+  return cache ? getOrCreatePdfPageImage(cache, pdfBuffer, pageIndex, render) : render();
 }
 
 const SCHEDULE_SESSION_HEADER_PATTERN = /session\s+([a-z]{1,3}\d{1,2}|\d{1,2})/i;
@@ -3041,10 +2894,10 @@ function extractSessionCodesFromHeader(line: string): string[] {
         extractSessionCodeFromCell(cell, {
           allowBareCode: true,
           allowNumericOnly: true,
-        })
+        }),
       )
       .filter(Boolean),
-    (item) => item
+    (item) => item,
   );
   if (fromCells.length >= 2) return fromCells;
   return extractScheduleSessionCodesInText(line);
@@ -3053,7 +2906,7 @@ function extractSessionCodesFromHeader(line: string): string[] {
 function normalizeScheduleTimeCell(value: string): string {
   const normalized = safeString(value).replace(
     /^(?:stretch\/warmup:|stretch:|warm-?up:|open stretch:|march in:)\s*/i,
-    ""
+    "",
   );
   const firstTime = normalized.match(/\b\d{1,2}:\d{2}\s*(?:am|pm)?\b/i);
   return firstTime ? safeString(firstTime[0]) : normalized;
@@ -3065,7 +2918,9 @@ function looksLikeScheduleTimeLine(line: string): boolean {
   if (/^(?:stretch\/warmup:|stretch:|warm-?up:|open stretch:|march in:)/i.test(normalized)) {
     return true;
   }
-  return countScheduleTimeValues(normalized) >= 2 && (/\t/.test(normalized) || /\s{2,}/.test(normalized));
+  return (
+    countScheduleTimeValues(normalized) >= 2 && (/\t/.test(normalized) || /\s{2,}/.test(normalized))
+  );
 }
 
 function looksLikeScheduleBoilerplate(line: string): boolean {
@@ -3100,9 +2955,7 @@ function normalizeScheduleDivisionLabel(value: string): string {
 }
 
 function extractScheduleDivisionTokens(group: string): string[] {
-  const normalized = safeString(group)
-    .replace(/\s+/g, " ")
-    .trim();
+  const normalized = safeString(group).replace(/\s+/g, " ").trim();
   if (!normalized) return [];
   const hasLevelPrefix = /^levels?\b/i.test(normalized);
   return normalized
@@ -3123,9 +2976,7 @@ type ScheduleBlockColumnAssignment = {
   divisionLabel: string;
 };
 
-function buildScheduleDirectColumns(
-  sessionCount: number
-): ScheduleBlockColumnAssignment[] {
+function buildScheduleDirectColumns(sessionCount: number): ScheduleBlockColumnAssignment[] {
   return Array.from({ length: sessionCount }, (_, sessionIndex) => ({
     sessionIndex,
     divisionLabel: "",
@@ -3134,19 +2985,25 @@ function buildScheduleDirectColumns(
 
 function matchDivisionHeaderToRemainingColumns(
   labels: string[],
-  sessions: Array<{ expectedDivisions: string[]; seenDivisions: Set<string> }>
+  sessions: Array<{ expectedDivisions: string[]; seenDivisions: Set<string> }>,
 ): ScheduleBlockColumnAssignment[] {
-  const normalizedLabels = labels.map((label) => normalizeScheduleDivisionLabel(label)).filter(Boolean);
+  const normalizedLabels = labels
+    .map((label) => normalizeScheduleDivisionLabel(label))
+    .filter(Boolean);
   if (!normalizedLabels.length) return [];
   const assignments: ScheduleBlockColumnAssignment[] = [];
   let minimumSessionIndex = 0;
 
   for (const label of normalizedLabels) {
     let matchedSessionIndex = -1;
-    for (let sessionIndex = minimumSessionIndex; sessionIndex < sessions.length; sessionIndex += 1) {
+    for (
+      let sessionIndex = minimumSessionIndex;
+      sessionIndex < sessions.length;
+      sessionIndex += 1
+    ) {
       const session = sessions[sessionIndex];
       const expectedMatch = session.expectedDivisions.find(
-        (divisionLabel) => normalizeScheduleDivisionLabel(divisionLabel) === label
+        (divisionLabel) => normalizeScheduleDivisionLabel(divisionLabel) === label,
       );
       if (!expectedMatch || session.seenDivisions.has(label)) continue;
       matchedSessionIndex = sessionIndex;
@@ -3177,11 +3034,10 @@ function parseScheduleClubCell(value: string) {
 
 function appendScheduleSessionNote(
   currentNote: string | null | undefined,
-  nextNote: string | null | undefined
+  nextNote: string | null | undefined,
 ): string | null {
-  const parts = uniqueBy(
-    [safeString(currentNote), safeString(nextNote)].filter(Boolean),
-    (item) => item.toLowerCase()
+  const parts = uniqueBy([safeString(currentNote), safeString(nextNote)].filter(Boolean), (item) =>
+    item.toLowerCase(),
   );
   return parts.length > 0 ? parts.join(" • ") : null;
 }
@@ -3193,9 +3049,7 @@ function looksLikeScheduleSessionDetailCell(value: string): boolean {
   if (
     /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/.test(normalized) &&
     (/\b(?:younger|older)\b/i.test(normalized) ||
-      /\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4}/i.test(
-        normalized
-      ))
+      /\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4}/i.test(normalized))
   ) {
     return true;
   }
@@ -3206,7 +3060,7 @@ function looksLikeScheduleSessionDetailCell(value: string): boolean {
 
 function assignScheduleClubRowToColumns(
   rawCells: string[],
-  activeColumns: ScheduleBlockColumnAssignment[]
+  activeColumns: ScheduleBlockColumnAssignment[],
 ): Array<{ value: string; column: ScheduleBlockColumnAssignment }> {
   const nonEmptyCells = rawCells
     .map((value, index) => ({ value: safeString(value), index }))
@@ -3233,10 +3087,7 @@ function assignScheduleClubRowToColumns(
     return [{ value: nonEmptyCells[0].value, column: activeColumns[activeColumns.length - 1] }];
   }
 
-  if (
-    activeColumns.length === 1 &&
-    nonEmptyCells.length === 1
-  ) {
+  if (activeColumns.length === 1 && nonEmptyCells.length === 1) {
     return [{ value: nonEmptyCells[0].value, column: activeColumns[0] }];
   }
 
@@ -3247,7 +3098,7 @@ function buildScheduleSessionsFromBlock(
   headerLine: string,
   groupLine: string,
   timeLine: string,
-  bodyLines: string[]
+  bodyLines: string[],
 ): ParseResult["schedule"]["days"][number]["sessions"] {
   const codes = extractSessionCodesFromHeader(headerLine);
   if (!codes.length) return [];
@@ -3256,8 +3107,8 @@ function buildScheduleSessionsFromBlock(
   const timeNote = /stretch|warm-?up/i.test(timeLine)
     ? "Stretch/warmup"
     : /\bmarch\b/i.test(timeLine)
-    ? "March-in"
-    : null;
+      ? "March-in"
+      : null;
   const sessions = codes.map((code, index) => ({
     code,
     group: groupCells[index] || null,
@@ -3281,7 +3132,7 @@ function buildScheduleSessionsFromBlock(
     if (looksLikeScheduleDivisionLine(rawCells)) {
       const matchedDivisionColumns = matchDivisionHeaderToRemainingColumns(
         nonEmptyCells,
-        sessionDivisionState
+        sessionDivisionState,
       );
       if (matchedDivisionColumns.length > 0) {
         activeColumns = matchedDivisionColumns;
@@ -3395,7 +3246,7 @@ function sanitizeScheduleLegendEntries(
     colorLabel: string | null;
     meaning: string | null;
     teamAwardEligible: boolean | null;
-  }>
+  }>,
 ): Array<{
   colorHex: string | null;
   colorLabel: string | null;
@@ -3413,10 +3264,11 @@ function sanitizeScheduleLegendEntries(
       }))
       .filter((entry) => {
         const meaning = safeString(entry.meaning);
-        if (!meaning) return typeof entry.teamAwardEligible === "boolean" || Boolean(entry.colorHex);
+        if (!meaning)
+          return typeof entry.teamAwardEligible === "boolean" || Boolean(entry.colorHex);
         if (
           /(recognized at|competition floor|awards ceremony following|please review|host the|following items enclosed|team awards at approx)/i.test(
-            meaning
+            meaning,
           )
         ) {
           return false;
@@ -3424,7 +3276,7 @@ function sanitizeScheduleLegendEntries(
         return true;
       }),
     (entry) =>
-      `${entry.meaning || ""}|${entry.colorHex || ""}|${entry.colorLabel || ""}|${entry.teamAwardEligible ?? ""}`
+      `${entry.meaning || ""}|${entry.colorHex || ""}|${entry.colorLabel || ""}|${entry.teamAwardEligible ?? ""}`,
   );
 }
 
@@ -3441,7 +3293,7 @@ function sanitizeScheduleAnnotations(entries: ScheduleAnnotation[]): ScheduleAnn
       }))
       .filter((entry) => entry.text),
     (entry) =>
-      `${entry.kind || ""}|${entry.level || ""}|${entry.sessionCode || ""}|${entry.date || ""}|${entry.time || ""}|${entry.text}`
+      `${entry.kind || ""}|${entry.level || ""}|${entry.sessionCode || ""}|${entry.date || ""}|${entry.time || ""}|${entry.text}`,
   );
 }
 
@@ -3462,10 +3314,10 @@ function sanitizeScheduleAssignments(entries: ScheduleAssignment[]): ScheduleAss
           entry.groupLabel ||
           entry.birthDateRange ||
           entry.divisionLabel ||
-          entry.note
+          entry.note,
       ),
     (entry) =>
-      `${entry.level || ""}|${entry.groupLabel || ""}|${entry.sessionCode || ""}|${entry.birthDateRange || ""}|${entry.divisionLabel || ""}|${entry.note || ""}`
+      `${entry.level || ""}|${entry.groupLabel || ""}|${entry.sessionCode || ""}|${entry.birthDateRange || ""}|${entry.divisionLabel || ""}|${entry.note || ""}`,
   );
 }
 
@@ -3475,7 +3327,7 @@ function toStoredScheduleLegendEntries(
     colorLabel: string | null;
     meaning: string | null;
     teamAwardEligible: boolean | null;
-  }>
+  }>,
 ): StoredGymMeetSchedule["awardLegend"] {
   return sanitizeScheduleLegendEntries(entries).map((entry) => ({
     colorHex: normalizeColorHex(entry.colorHex),
@@ -3486,7 +3338,9 @@ function toStoredScheduleLegendEntries(
   }));
 }
 
-function toStoredScheduleAnnotations(entries: ScheduleAnnotation[]): StoredGymMeetSchedule["annotations"] {
+function toStoredScheduleAnnotations(
+  entries: ScheduleAnnotation[],
+): StoredGymMeetSchedule["annotations"] {
   return sanitizeScheduleAnnotations(entries).map((entry, index) => ({
     id: `schedule-annotation-${index + 1}`,
     kind: safeString(entry.kind),
@@ -3498,7 +3352,9 @@ function toStoredScheduleAnnotations(entries: ScheduleAnnotation[]): StoredGymMe
   }));
 }
 
-function toStoredScheduleAssignments(entries: ScheduleAssignment[]): StoredGymMeetSchedule["assignments"] {
+function toStoredScheduleAssignments(
+  entries: ScheduleAssignment[],
+): StoredGymMeetSchedule["assignments"] {
   return sanitizeScheduleAssignments(entries).map((entry, index) => ({
     id: `schedule-assignment-${index + 1}`,
     level: safeString(entry.level),
@@ -3511,7 +3367,7 @@ function toStoredScheduleAssignments(entries: ScheduleAssignment[]): StoredGymMe
 }
 
 function sanitizeNarrativeScheduleSessions(
-  sessions: ParseResult["schedule"]["days"][number]["sessions"]
+  sessions: ParseResult["schedule"]["days"][number]["sessions"],
 ): ParseResult["schedule"]["days"][number]["sessions"] {
   return sessions
     .map((session) => ({
@@ -3523,7 +3379,7 @@ function sanitizeNarrativeScheduleSessions(
       note:
         safeString(session.note) &&
         !/please review|following items enclosed|visit us on the web|many thanks to our sponsors/i.test(
-          safeString(session.note)
+          safeString(session.note),
         )
           ? session.note
           : null,
@@ -3534,7 +3390,7 @@ function sanitizeNarrativeScheduleSessions(
 
 function parseNarrativeScheduleSessionsFromPage(
   page: { pageNumber: number; text: string },
-  fallbackYear: string
+  fallbackYear: string,
 ): ParseResult["schedule"] {
   const lines = page.text
     .split(/\n+/)
@@ -3558,7 +3414,7 @@ function parseNarrativeScheduleSessionsFromPage(
     }
 
     const sessionMatch = line.match(
-      /^session\s+([a-z]{1,3}\d{1,2}|\d{1,2})\s+(.+?)\s+(\d{1,2}:\d{2}\s*(?:am|pm))\s+stretch\b/i
+      /^session\s+([a-z]{1,3}\d{1,2}|\d{1,2})\s+(.+?)\s+(\d{1,2}:\d{2}\s*(?:am|pm))\s+stretch\b/i,
     );
     if (!sessionMatch || !currentDay) continue;
 
@@ -3609,7 +3465,7 @@ function parseNarrativeScheduleSessionsFromPage(
 
 function parseScheduleAnnotationsFromPages(
   pages: Array<{ pageNumber: number; text: string }>,
-  fallbackYear: string
+  fallbackYear: string,
 ): ScheduleAnnotation[] {
   const annotations: ScheduleAnnotation[] = [];
   for (const page of pages) {
@@ -3624,9 +3480,7 @@ function parseScheduleAnnotationsFromPages(
         continue;
       }
 
-      const seniorMatch = line.match(
-        /^level\s+([0-9a-z/ ]+):\s*(recognized.+)$/i
-      );
+      const seniorMatch = line.match(/^level\s+([0-9a-z/ ]+):\s*(recognized.+)$/i);
       if (seniorMatch) {
         annotations.push({
           kind: "senior_recognition",
@@ -3640,7 +3494,7 @@ function parseScheduleAnnotationsFromPages(
       }
 
       const teamAwardMatch = line.match(
-        /^level\s+([0-9a-z/ ]+)\s+team awards?\s+at\s+approx\.?\s*([0-9:apm ]+),?\s*following session\s+([a-z]{2,3}\d{1,2})/i
+        /^level\s+([0-9a-z/ ]+)\s+team awards?\s+at\s+approx\.?\s*([0-9:apm ]+),?\s*following session\s+([a-z]{2,3}\d{1,2})/i,
       );
       if (teamAwardMatch) {
         annotations.push({
@@ -3656,7 +3510,7 @@ function parseScheduleAnnotationsFromPages(
 
       if (
         /\b(final level \d+\s+schedule will be released|waiting to see if we get any scratches|all level \d+['’]?s will compete)/i.test(
-          line
+          line,
         )
       ) {
         const levelMatch = line.match(/\blevel\s+([0-9a-z/]+)(?=\s+schedule|\b)/i);
@@ -3675,7 +3529,7 @@ function parseScheduleAnnotationsFromPages(
 }
 
 function parseScheduleAssignmentsFromPages(
-  pages: Array<{ pageNumber: number; text: string }>
+  pages: Array<{ pageNumber: number; text: string }>,
 ): ScheduleAssignment[] {
   const assignments: ScheduleAssignment[] = [];
   let currentLevel = "";
@@ -3698,7 +3552,9 @@ function parseScheduleAssignmentsFromPages(
         continue;
       }
       if (
-        /^(age group|draw\b|please verify|for event info|many thanks|to be determined\b)/i.test(line)
+        /^(age group|draw\b|please verify|for event info|many thanks|to be determined\b)/i.test(
+          line,
+        )
       ) {
         continue;
       }
@@ -3718,13 +3574,13 @@ function parseScheduleAssignmentsFromPages(
       }
       if (!sessionCode) {
         const rowMatch = line.match(
-          /^(group\s+\d+|younger|middle|older)\s+(.+?)\s+((?:session\s+)?(?:[a-z]{1,3}\d{1,2}|\d{1,2}))$/i
+          /^(group\s+\d+|younger|middle|older)\s+(.+?)\s+((?:session\s+)?(?:[a-z]{1,3}\d{1,2}|\d{1,2}))$/i,
         );
         if (!rowMatch) continue;
         groupLabel = safeString(rowMatch[1]);
         sessionCode = normalizeScheduleSessionCode(rowMatch[3]);
         const rangeMatch = safeString(rowMatch[2]).match(
-          /(\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4})(.*)$/i
+          /(\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4})(.*)$/i,
         );
         birthDateRange = safeString(rangeMatch?.[1] || rowMatch[2]);
         divisionLabel = safeString(rangeMatch?.[2]);
@@ -3732,7 +3588,7 @@ function parseScheduleAssignmentsFromPages(
       if (
         !/\b(group\s+\d+|younger|middle|older)\b/i.test(groupLabel) ||
         !/\d{1,2}\/\d{1,2}\/\d{2,4}\s*(?:-|–|—|to)\s*\d{1,2}\/\d{1,2}\/\d{2,4}/i.test(
-          birthDateRange
+          birthDateRange,
         ) ||
         !sessionCode
       ) {
@@ -3758,7 +3614,7 @@ function looksLikePdfInternals(text: string): boolean {
   if (/%PDF-\d\.\d/i.test(sample)) return true;
   const pdfKeywords =
     sample.match(
-      /\b(?:obj|endobj|stream|endstream|xref|trailer|startxref|catalog|mediabox|fontdescriptor|flatedecode)\b/gi
+      /\b(?:obj|endobj|stream|endstream|xref|trailer|startxref|catalog|mediabox|fontdescriptor|flatedecode)\b/gi,
     ) || [];
   const slashDirectives = sample.match(/\/[A-Za-z][A-Za-z0-9]+/g) || [];
   return pdfKeywords.length >= 8 || (pdfKeywords.length >= 3 && slashDirectives.length >= 120);
@@ -3790,7 +3646,9 @@ function analyzeTextQuality(text: string): {
   const sample = cleanedText.slice(0, 5000);
   const tokens = cleanedText.split(/\s+/).filter(Boolean);
   const controlChars = (sample.match(/[\u0000-\u001F\u007F-\u009F]/g) || []).length;
-  const englishLikeTokens = tokens.filter((token) => /^[A-Za-z][A-Za-z'’-]{1,24}$/.test(token)).length;
+  const englishLikeTokens = tokens.filter((token) =>
+    /^[A-Za-z][A-Za-z'’-]{1,24}$/.test(token),
+  ).length;
   const longTokens = tokens.filter((token) => token.length > 35).length;
   const nonTextChars = (sample.match(/[^A-Za-z0-9\s.,:;!?()'"&@#%/-]/g) || []).length;
   const readableLines = cleanedText
@@ -3858,17 +3716,10 @@ async function ocrBuffer(buffer: Buffer): Promise<string> {
     image: { content: buffer },
     imageContext: { languageHints: ["en"] },
   });
-  return (
-    result.fullTextAnnotation?.text ||
-    result.textAnnotations?.[0]?.description ||
-    ""
-  ).trim();
+  return (result.fullTextAnnotation?.text || result.textAnnotations?.[0]?.description || "").trim();
 }
 
-async function openAiOcrTextFromImage(
-  buffer: Buffer,
-  mimeType = "image/png"
-): Promise<string> {
+async function openAiOcrTextFromImage(buffer: Buffer, mimeType = "image/png"): Promise<string> {
   const apiKey = safeString(process.env.OPENAI_API_KEY || "");
   if (!apiKey) return "";
   const model = resolveOpenAiMiniModel();
@@ -3887,13 +3738,16 @@ async function openAiOcrTextFromImage(
           {
             role: "system",
             content:
-              "You are an OCR engine. Return strict JSON {\"text\": string}. Extract only visible text and labels from the image.",
+              'You are an OCR engine. Return strict JSON {"text": string}. Extract only visible text and labels from the image.',
           },
           {
             role: "user",
             content: [
               { type: "text", text: "Extract all visible text." },
-              { type: "image_url", image_url: { url: `data:${mimeType};base64,${buffer.toString("base64")}` } },
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${buffer.toString("base64")}` },
+              },
             ],
           },
         ],
@@ -3912,7 +3766,7 @@ async function openAiOcrTextFromImage(
 async function openAiAnalyzeGymLayoutPage(
   buffer: Buffer,
   mimeType = "image/png",
-  performance?: DiscoveryPerformance
+  performance?: DiscoveryPerformance,
 ): Promise<{ isLayout: boolean; confidence: number; facts: string[]; text: string } | null> {
   const apiKey = safeString(process.env.OPENAI_API_KEY || "");
   if (!apiKey) return null;
@@ -3939,10 +3793,12 @@ async function openAiAnalyzeGymLayoutPage(
             content: [
               {
                 type: "text",
-                text:
-                  'Return JSON with keys: isLayout (boolean), confidence (number 0-1), text (string), facts (string[]). Facts must be verbatim visible map labels/text only (no paraphrase, no inference, no reconstruction). Each fact must be a complete, readable sentence or complete standalone label. Never return broken fragments or mid-sentence splits. If uncertain, return an empty facts array.',
+                text: "Return JSON with keys: isLayout (boolean), confidence (number 0-1), text (string), facts (string[]). Facts must be verbatim visible map labels/text only (no paraphrase, no inference, no reconstruction). Each fact must be a complete, readable sentence or complete standalone label. Never return broken fragments or mid-sentence splits. If uncertain, return an empty facts array.",
               },
-              { type: "image_url", image_url: { url: `data:${mimeType};base64,${buffer.toString("base64")}` } },
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${buffer.toString("base64")}` },
+              },
             ],
           },
         ],
@@ -3955,9 +3811,7 @@ async function openAiAnalyzeGymLayoutPage(
     const parsed = extractJsonObject(raw);
     if (!parsed || typeof parsed !== "object") return null;
     const confidenceRaw = Number(parsed?.confidence);
-    const confidence = Number.isFinite(confidenceRaw)
-      ? Math.max(0, Math.min(1, confidenceRaw))
-      : 0;
+    const confidence = Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(1, confidenceRaw)) : 0;
     return {
       isLayout: Boolean(parsed?.isLayout),
       confidence,
@@ -3974,7 +3828,7 @@ async function openAiAnalyzeGymLayoutPage(
             /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
             /official results|live scoring|daylight savings/i,
           ],
-        }
+        },
       ),
     };
   } catch {
@@ -3989,7 +3843,8 @@ async function extractTextFromPdf(
     performance?: DiscoveryPerformance;
     cache?: DiscoveryRequestCache;
     mode?: DiscoveryMode;
-  }
+    signal?: AbortSignal;
+  },
 ): Promise<{
   text: string;
   usedOcr: boolean;
@@ -4000,6 +3855,7 @@ async function extractTextFromPdf(
   annotationLinks: PdfAnnotationLink[];
 }> {
   const rank: Record<TextQuality, number> = { good: 2, suspect: 1, poor: 0 };
+  throwIfExtractionAborted(options?.signal);
   const deadline =
     typeof options?.budgetMs === "number" && options.budgetMs > 0
       ? Date.now() + options.budgetMs
@@ -4022,11 +3878,13 @@ async function extractTextFromPdf(
 
   const nativeParseStartedAt = Date.now();
   const workerExtraction = await extractPdfTextWithNodeWorker(buffer);
+  throwIfExtractionAborted(options?.signal);
   let selectedPages = workerExtraction.pages;
   const workerCandidate = toCandidate(workerExtraction.text, false);
   let pdfJsCandidate: ReturnType<typeof toCandidate> | null = null;
   if (!isStrongNativeCandidate(workerCandidate) || selectedPages.length === 0) {
     const pdfJsExtraction = await extractPdfTextWithPdfJs(buffer);
+    throwIfExtractionAborted(options?.signal);
     const pdfJsPages = pickArray(pdfJsExtraction.pages)
       .map((page) => ({
         num: Number(page?.num) || 0,
@@ -4041,6 +3899,7 @@ async function extractTextFromPdf(
     }
   }
   const annotationLinks = await extractPdfAnnotationLinks(buffer);
+  throwIfExtractionAborted(options?.signal);
   const selectedCoachPageHints = extractCoachPageHintsFromPages(selectedPages);
   if (options?.performance) {
     options.performance.pdfParseMs += Date.now() - nativeParseStartedAt;
@@ -4091,15 +3950,14 @@ async function extractTextFromPdf(
     const ocrPages: string[] = [];
     const maxOcrPages = options?.mode === "core" ? 3 : 5;
     for (let page = 0; page < maxOcrPages; page += 1) {
+      throwIfExtractionAborted(options?.signal);
       if (Date.now() >= deadline) break;
       const pageImage = await getPdfPageImage(buffer, page, options?.cache);
       if (!pageImage) break;
       if (options?.performance) {
         options.performance.ocrPageCount += 1;
       }
-      const text = cleanExtractedText(
-        await extractTextFromImage(pageImage, options?.cache)
-      );
+      const text = cleanExtractedText(await extractTextFromImage(pageImage, options?.cache));
       if (text) {
         ocrPages.push(text);
         const aggregate = analyzeTextQuality(ocrPages.join("\n\n"));
@@ -4107,6 +3965,7 @@ async function extractTextFromPdf(
           break;
         }
       }
+      throwIfExtractionAborted(options?.signal);
     }
     if (options?.performance) {
       options.performance.ocrMs += Date.now() - ocrStartedAt;
@@ -4131,16 +3990,16 @@ async function extractTextFromPdf(
       const fallbackPages: string[] = [];
       const maxFallbackPages = options?.mode === "core" ? 2 : 4;
       for (let page = 0; page < maxFallbackPages; page += 1) {
+        throwIfExtractionAborted(options?.signal);
         if (Date.now() >= deadline) break;
         const pageImage = await getPdfPageImage(buffer, page, options?.cache);
         if (!pageImage) break;
         if (options?.performance) {
           options.performance.ocrPageCount += 1;
         }
-        const text = cleanExtractedText(
-          await extractTextFromImage(pageImage, options?.cache)
-        );
+        const text = cleanExtractedText(await extractTextFromImage(pageImage, options?.cache));
         if (text) fallbackPages.push(text);
+        throwIfExtractionAborted(options?.signal);
       }
       if (options?.performance) {
         options.performance.ocrMs += Date.now() - ocrStartedAt;
@@ -4194,14 +4053,10 @@ async function extractTextFromPdf(
 
 async function extractTextFromImage(
   buffer: Buffer,
-  cache?: DiscoveryRequestCache
+  cache?: DiscoveryRequestCache,
 ): Promise<string> {
   const run = async () => {
-    const prepared = await sharp(buffer)
-      .resize(2200)
-      .grayscale()
-      .normalize()
-      .toBuffer();
+    const prepared = await sharp(buffer).resize(2200).grayscale().normalize().toBuffer();
     try {
       const text = await ocrBuffer(prepared);
       if (safeString(text)) return cleanExtractedText(text);
@@ -4236,13 +4091,14 @@ function summarizeGymLayoutText(text: string): {
     };
   }
 
-  const mapHeading = /(gym\s*layout|facility\s*map|floor\s*plan|venue\s*map|convention\s*center\s*map)/i.test(
-    normalized
-  );
+  const mapHeading =
+    /(gym\s*layout|facility\s*map|floor\s*plan|venue\s*map|convention\s*center\s*map)/i.test(
+      normalized,
+    );
   const gymLabelCount = countPatternMatches(normalized, /\bgym\s*[a-f]\b/gi);
   const hallLabelCount = countPatternMatches(
     normalized,
-    /\b(?:east|west|central|north|south)\s*hall\b/gi
+    /\b(?:east|west|central|north|south)\s*hall\b/gi,
   );
   const textScore = scoreGymLayoutSignals(normalized);
   const lines = normalized
@@ -4255,13 +4111,10 @@ function summarizeGymLayoutText(text: string): {
     hallLabelCount +
     countPatternMatches(
       normalized,
-      /\b(registration|awards area|competition area|guest services|entrance|coffee bar)\b/gi
+      /\b(registration|awards area|competition area|guest services|entrance|coffee bar)\b/gi,
     );
   const paragraphPenalty =
-    normalized.length >= 800 &&
-    longLineCount >= 4 &&
-    textScore <= 2 &&
-    weakAnchorCount <= 2;
+    normalized.length >= 800 && longLineCount >= 4 && textScore <= 2 && weakAnchorCount <= 2;
 
   return {
     mapHeading,
@@ -4277,8 +4130,7 @@ function looksLikeGymLayoutText(text: string): boolean {
   const hasAnchor = summary.gymLabelCount >= 1 || summary.hallLabelCount >= 1;
   if (summary.mapHeading && hasAnchor) return true;
   return (
-    summary.strongSignalCount >= 3 &&
-    (summary.gymLabelCount >= 1 || summary.hallLabelCount >= 2)
+    summary.strongSignalCount >= 3 && (summary.gymLabelCount >= 1 || summary.hallLabelCount >= 2)
   );
 }
 
@@ -4349,15 +4201,15 @@ function normalizeGymLayoutZones(raw: unknown): GymLayoutZone[] {
       .filter((item): item is GymLayoutZone => Boolean(item)),
     (item) =>
       `${item.label.toLowerCase()}|${item.x.toFixed(3)}|${item.y.toFixed(3)}|${item.w.toFixed(
-        3
-      )}|${item.h.toFixed(3)}`
+        3,
+      )}|${item.h.toFixed(3)}`,
   ).slice(0, 24);
 }
 
 async function openAiExtractGymLayoutZones(
   buffer: Buffer,
   mimeType = "image/png",
-  performance?: DiscoveryPerformance
+  performance?: DiscoveryPerformance,
 ): Promise<GymLayoutZone[]> {
   const apiKey = safeString(process.env.OPENAI_API_KEY || "");
   if (!apiKey) return [];
@@ -4384,8 +4236,7 @@ async function openAiExtractGymLayoutZones(
             content: [
               {
                 type: "text",
-                text:
-                  'Return JSON with key "zones" where zones is an array of objects: {label:string, x:number, y:number, w:number, h:number, confidence:number}. Coordinates must be normalized 0..1 relative to the full image. Include only visible map regions such as gym labels, hall names, registration, guest services, entrances, competition area, and awards area. If unsure, return an empty array.',
+                text: 'Return JSON with key "zones" where zones is an array of objects: {label:string, x:number, y:number, w:number, h:number, confidence:number}. Coordinates must be normalized 0..1 relative to the full image. Include only visible map regions such as gym labels, hall names, registration, guest services, entrances, competition area, and awards area. If unsure, return an empty array.',
               },
               {
                 type: "image_url",
@@ -4411,7 +4262,7 @@ async function openAiExtractGymLayoutZones(
 async function cropGymLayoutImageToAssignedGym(
   imageDataUrl: string,
   zones: GymLayoutZone[],
-  assignedGym: string
+  assignedGym: string,
 ): Promise<string | null> {
   const parsed = parseDataUrl(imageDataUrl);
   if (!parsed || !zones.length) return null;
@@ -4441,13 +4292,10 @@ async function cropGymLayoutImageToAssignedGym(
     const padY = Math.max(12, Math.round(height * 0.035));
     const left = Math.max(0, Math.floor(chosen.x * width) - padX);
     const top = Math.max(0, Math.floor(chosen.y * height) - padY);
-    const cropWidth = Math.min(
-      width - left,
-      Math.max(32, Math.ceil(chosen.w * width) + padX * 2)
-    );
+    const cropWidth = Math.min(width - left, Math.max(32, Math.ceil(chosen.w * width) + padX * 2));
     const cropHeight = Math.min(
       height - top,
-      Math.max(32, Math.ceil(chosen.h * height) + padY * 2)
+      Math.max(32, Math.ceil(chosen.h * height) + padY * 2),
     );
     if (cropWidth < 24 || cropHeight < 24) return null;
     const cropped = await sharp(parsed.buffer)
@@ -4461,7 +4309,7 @@ async function cropGymLayoutImageToAssignedGym(
 
 async function toOptimizedImageDataUrl(
   buffer: Buffer,
-  cache?: DiscoveryRequestCache
+  cache?: DiscoveryRequestCache,
 ): Promise<string | null> {
   const run = async () => {
     try {
@@ -4493,9 +4341,7 @@ async function toOptimizedImageDataUrl(
       return null;
     }
   };
-  return cache
-    ? getOrCreateWeakCacheValue(cache.optimizedDataUrl, buffer, run)
-    : run();
+  return cache ? getOrCreateWeakCacheValue(cache.optimizedDataUrl, buffer, run) : run();
 }
 
 async function scoreGymLayoutVisualSignal(buffer: Buffer): Promise<number> {
@@ -4504,11 +4350,9 @@ async function scoreGymLayoutVisualSignal(buffer: Buffer): Promise<number> {
     const channels = pickArray(stats?.channels);
     if (!channels.length) return 0;
     const mean =
-      channels.reduce((sum, channel) => sum + Number(channel?.mean || 0), 0) /
-      channels.length;
+      channels.reduce((sum, channel) => sum + Number(channel?.mean || 0), 0) / channels.length;
     const stdev =
-      channels.reduce((sum, channel) => sum + Number(channel?.stdev || 0), 0) /
-      channels.length;
+      channels.reduce((sum, channel) => sum + Number(channel?.stdev || 0), 0) / channels.length;
     const darknessScore = Math.max(0, (245 - mean) / 120);
     const textureScore = Math.max(0, stdev / 70);
     return Math.max(0, Math.min(1.5, darknessScore * 0.8 + textureScore * 0.7));
@@ -4525,7 +4369,7 @@ async function extractGymLayoutImageFromPdf(
     performance?: DiscoveryPerformance;
     budgetMs?: number;
     cache?: DiscoveryRequestCache;
-  }
+  },
 ): Promise<GymLayoutExtraction> {
   const startedAt = Date.now();
   const finalize = (value: GymLayoutExtraction): GymLayoutExtraction => {
@@ -4539,9 +4383,7 @@ async function extractGymLayoutImageFromPdf(
       ? startedAt + options.budgetMs
       : Number.POSITIVE_INFINITY;
   const maxPages =
-    typeof options?.maxPages === "number" && options.maxPages > 0
-      ? options.maxPages
-      : 20;
+    typeof options?.maxPages === "number" && options.maxPages > 0 ? options.maxPages : 20;
   const maxAiCandidates =
     typeof options?.maxAiCandidates === "number" && options.maxAiCandidates > 0
       ? options.maxAiCandidates
@@ -4600,8 +4442,7 @@ async function extractGymLayoutImageFromPdf(
         acceptReason: null,
         finalScore: preScore,
       });
-    } catch {
-    }
+    } catch {}
   }
 
   if (!candidatePages.length) {
@@ -4630,11 +4471,7 @@ async function extractGymLayoutImageFromPdf(
     if (options?.performance) {
       options.performance.gymLayoutAiCalls += 1;
     }
-    const ai = await openAiAnalyzeGymLayoutPage(
-      candidate.image,
-      "image/png",
-      options?.performance
-    );
+    const ai = await openAiAnalyzeGymLayoutPage(candidate.image, "image/png", options?.performance);
     if (!ai) continue;
     candidate.aiIsLayout = ai.isLayout;
     candidate.aiConfidence = ai.confidence;
@@ -4652,8 +4489,7 @@ async function extractGymLayoutImageFromPdf(
       candidate.aiIsLayout === true &&
       (candidate.aiConfidence || 0) >= 0.62 &&
       (candidate.gymLabelCount >= 1 || candidate.hallLabelCount >= 2);
-    const deterministicAccepted =
-      candidate.gymLabelCount >= 2 && candidate.hallLabelCount >= 1;
+    const deterministicAccepted = candidate.gymLabelCount >= 2 && candidate.hallLabelCount >= 1;
     candidate.accepted = aiAccepted || deterministicAccepted;
     candidate.acceptReason = aiAccepted ? "ai" : deterministicAccepted ? "deterministic" : null;
   }
@@ -4724,7 +4560,7 @@ async function extractGymLayoutImageFromPdf(
   const zones = await openAiExtractGymLayoutZones(
     selected.image,
     "image/png",
-    options?.performance
+    options?.performance,
   );
   const facts = sanitizeVenueFactLines(
     [...selected.aiFacts, ...extractHallFactsFromText(selected.text)],
@@ -4736,7 +4572,7 @@ async function extractGymLayoutImageFromPdf(
         /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
         /official results|live scoring|daylight savings/i,
       ],
-    }
+    },
   );
   const result = {
     dataUrl,
@@ -4746,9 +4582,7 @@ async function extractGymLayoutImageFromPdf(
     selection: {
       selectedPage: selected.page,
       reason:
-        selected.acceptReason === "ai"
-          ? "accepted_ai_layout"
-          : "accepted_deterministic_strong_map",
+        selected.acceptReason === "ai" ? "accepted_ai_layout" : "accepted_deterministic_strong_map",
       confidence: selected.aiConfidence,
       candidates: diagnosticsCandidates,
     },
@@ -4765,18 +4599,14 @@ function stripHtml(input: string): string {
     .replace(/<br\s*\/?>/gi, "\n");
   return decodeHtmlEntities(
     withBreaks
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .replace(/[ \t]{2,}/g, " ")
-    .trim()
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[ \t]{2,}/g, " ")
+      .trim(),
   );
 }
 
-function collectJsonLdMetadataStrings(
-  value: unknown,
-  snippets: string[],
-  depth = 0
-): void {
+function collectJsonLdMetadataStrings(value: unknown, snippets: string[], depth = 0): void {
   if (depth > 6 || value == null) return;
   if (typeof value === "string") return;
   if (Array.isArray(value)) {
@@ -4787,12 +4617,7 @@ function collectJsonLdMetadataStrings(
   const record = value as Record<string, unknown>;
   for (const key of ["name", "headline", "description", "alternateName"]) {
     const next = safeString(record[key]);
-    if (
-      next &&
-      next.length >= 6 &&
-      next.length <= 220 &&
-      !/^https?:\/\//i.test(next)
-    ) {
+    if (next && next.length >= 6 && next.length <= 220 && !/^https?:\/\//i.test(next)) {
       snippets.push(decodeHtmlEntities(next));
     }
   }
@@ -4897,17 +4722,24 @@ function normalizeLinkLabel(innerHtml: string, rawAttrs: string, url: URL): stri
 }
 
 function normalizeResourceLinkLabel(label: string, url: string, contextText = ""): string {
-  const cleanedLabel = safeString(label).replace(/\s{2,}/g, " ").trim();
-  const normalizedContext = safeString(contextText).replace(/\s{2,}/g, " ").trim();
+  const cleanedLabel = safeString(label)
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  const normalizedContext = safeString(contextText)
+    .replace(/\s{2,}/g, " ")
+    .trim();
   const kind = classifyResourceLink(
     [cleanedLabel, normalizedContext].filter(Boolean).join(" "),
     url,
-    null
+    null,
   );
   switch (kind) {
     case "travel_accommodation":
     case "hotel_booking":
-      if (/\bhost hotels?\b/i.test(normalizedContext) && !/\breserv|book/i.test(normalizedContext)) {
+      if (
+        /\bhost hotels?\b/i.test(normalizedContext) &&
+        !/\breserv|book/i.test(normalizedContext)
+      ) {
         return "Host Hotels";
       }
       if (/\breserv|book/i.test(normalizedContext)) return "Hotel Reservations";
@@ -4947,7 +4779,7 @@ function extractContainingHtmlBlock(
   html: string,
   anchorIndex: number,
   openTag: string,
-  closeTag: string
+  closeTag: string,
 ): string {
   const start = html.lastIndexOf(openTag, anchorIndex);
   const end = html.indexOf(closeTag, anchorIndex);
@@ -4961,18 +4793,14 @@ function isDiscoveryChromeHtml(value: string): boolean {
   return (
     /<(?:nav|header|footer|aside)\b/i.test(normalized) ||
     /\b(?:menu|navbar|breadcrumb|fusion-menu|fusion-mobile-menu|fusion-main-menu|fusion-header|fusion-footer|sub-menu)\b/i.test(
-      normalized
+      normalized,
     ) ||
     /\bdisplay\s*:\s*none\b/i.test(normalized) ||
     /\baria-hidden\s*=\s*["']?true["']?/i.test(normalized)
   );
 }
 
-function shouldIgnoreDiscoveryAnchor(
-  html: string,
-  anchorIndex: number,
-  rawAttrs: string
-): boolean {
+function shouldIgnoreDiscoveryAnchor(html: string, anchorIndex: number, rawAttrs: string): boolean {
   const directAttrs = safeString(rawAttrs);
   if (isDiscoveryChromeHtml(directAttrs)) return true;
   const surroundingBlocks = [
@@ -4989,7 +4817,7 @@ function shouldIgnoreDiscoveryAnchor(
 
 function extractDiscoveryAnchorContext(
   html: string,
-  anchorIndex: number
+  anchorIndex: number,
 ): { heading: string; blockText: string; contextText: string } {
   const windowStart = Math.max(0, anchorIndex - 1800);
   const windowEnd = Math.min(html.length, anchorIndex + 1200);
@@ -4997,7 +4825,7 @@ function extractDiscoveryAnchorContext(
   const heading =
     extractLastHtmlMatch(
       before,
-      /<(?:h[1-6]|div)[^>]*class=["'][^"']*(?:sectionheader|section-header|sectiontitle|section-title|widgettitle|pageSectionHeader)[^"']*["'][^>]*>([\s\S]*?)<\/(?:h[1-6]|div)>/gi
+      /<(?:h[1-6]|div)[^>]*class=["'][^"']*(?:sectionheader|section-header|sectiontitle|section-title|widgettitle|pageSectionHeader)[^"']*["'][^>]*>([\s\S]*?)<\/(?:h[1-6]|div)>/gi,
     ) ||
     extractLastHtmlMatch(before, /<(?:h[1-6]|strong|b)[^>]*>([\s\S]*?)<\/(?:h[1-6]|strong|b)>/gi);
   const blockHtml =
@@ -5018,7 +4846,7 @@ function deriveDiscoveryAnchorLabel(
   rawAttrs: string,
   url: URL,
   fullHtml: string,
-  anchorIndex: number
+  anchorIndex: number,
 ): string {
   const baseLabel = normalizeLinkLabel(innerHtml, rawAttrs, url);
   if (!looksLikeGenericResourceLabel(baseLabel)) return baseLabel;
@@ -5037,7 +4865,10 @@ function normalizeCanonicalUrl(input: string): string {
   try {
     const url = new URL(input);
     url.hash = "";
-    if ((url.protocol === "https:" && url.port === "443") || (url.protocol === "http:" && url.port === "80")) {
+    if (
+      (url.protocol === "https:" && url.port === "443") ||
+      (url.protocol === "http:" && url.port === "80")
+    ) {
       url.port = "";
     }
     return url.toString();
@@ -5061,25 +4892,22 @@ function extractAvailabilityText(label: string): string | null {
     .map((match) => safeString(match[1]))
     .filter(Boolean);
   const parenthetical =
-    parenMatches.find((item) =>
-      /(not yet posted|will be posted|posted|updated)/i.test(item)
-    ) || "";
+    parenMatches.find((item) => /(not yet posted|will be posted|posted|updated)/i.test(item)) || "";
   if (parenthetical) return parenthetical;
   const inlineMatch = raw.match(
-    /\b(not yet posted|will be posted(?:\s+by)?[^,.;]*|posted[^,.;]*|updated[^,.;]*)\b/i
+    /\b(not yet posted|will be posted(?:\s+by)?[^,.;]*|posted[^,.;]*|updated[^,.;]*)\b/i,
   );
   return safeString(inlineMatch?.[1] || inlineMatch?.[0] || "") || null;
 }
 
 function parseAvailabilityDateFromText(
   availabilityText: string | null,
-  referenceYear?: string | null
+  referenceYear?: string | null,
 ): string | null {
   const raw = safeString(availabilityText);
   if (!raw) return null;
   const year =
-    safeString(referenceYear).match(/\b(20\d{2})\b/)?.[1] ||
-    String(new Date().getFullYear());
+    safeString(referenceYear).match(/\b(20\d{2})\b/)?.[1] || String(new Date().getFullYear());
   const referenceDate = new Date(`${year}-01-15T12:00:00.000Z`);
   const parsed = chrono.parseDate(raw, referenceDate, {
     forwardDate: false,
@@ -5087,9 +4915,12 @@ function parseAvailabilityDateFromText(
   return toIsoDateOnly(parsed || null);
 }
 
-function parseResourceStatusFromLabel(label: string, options?: {
-  referenceYear?: string | null;
-}): {
+function parseResourceStatusFromLabel(
+  label: string,
+  options?: {
+    referenceYear?: string | null;
+  },
+): {
   status: DiscoveryResourceStatus;
   cleanedLabel: string;
   availabilityText: string | null;
@@ -5101,17 +4932,17 @@ function parseResourceStatusFromLabel(label: string, options?: {
   const status: DiscoveryResourceStatus = /(not yet posted|will be posted)/i.test(lowered)
     ? "not_posted"
     : /(posted|updated|available|live|book now|reserve now|buy now)/i.test(lowered)
-    ? "available"
-    : "unknown";
-  const cleanedLabel = raw.replace(RESOURCE_STATUS_LABEL_PATTERN, "").replace(/\s{2,}/g, " ").trim();
+      ? "available"
+      : "unknown";
+  const cleanedLabel = raw
+    .replace(RESOURCE_STATUS_LABEL_PATTERN, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
   return {
     status,
     cleanedLabel: cleanedLabel || raw,
     availabilityText,
-    availabilityDate: parseAvailabilityDateFromText(
-      availabilityText,
-      options?.referenceYear
-    ),
+    availabilityDate: parseAvailabilityDateFromText(availabilityText, options?.referenceYear),
   };
 }
 
@@ -5137,7 +4968,7 @@ function isTrustedExternalResourceUrl(input: string): boolean {
 function classifyResourceLink(
   label: string,
   url: string,
-  contentType?: string | null
+  contentType?: string | null,
 ): DiscoveryResourceKind {
   const safeUrl = safeString(url);
   const safeLabel = safeString(label);
@@ -5150,8 +4981,7 @@ function classifyResourceLink(
     }
   })();
   const assetLike = /\.pdf(\?|#|$)/i.test(safeUrl) || /pdf/i.test(safeString(contentType));
-  const liveResultsDomain =
-    /meetscoresonline\.com|results\.scorecatonline\.com/i.test(safeUrl);
+  const liveResultsDomain = /meetscoresonline\.com|results\.scorecatonline\.com/i.test(safeUrl);
   const rotationHubLike =
     /rotation-sheets\/?$/i.test(pathname) ||
     (/\brotation sheets?\b/i.test(haystack) && !assetLike && !liveResultsDomain);
@@ -5175,7 +5005,7 @@ function classifyResourceLink(
     /\bjotform\b/i.test(haystack) ||
     (/\b(photo|video|picture|pictures|order photos?|photo\/video)\b/i.test(haystack) &&
       !/\b(media resources?|media release|pressbox|press box|press|media credential)\b/i.test(
-        haystack
+        haystack,
       ))
   ) {
     return "photo_video";
@@ -5197,7 +5027,7 @@ function classifyResourceLink(
   }
   if (
     /\b(packet|program|meet packet|info packet|schedule(?:\s*&|\s+and)?\s*info|schedule packet|meet info|information packet)\b/i.test(
-      haystack
+      haystack,
     )
   ) {
     return "packet";
@@ -5213,7 +5043,7 @@ function classifyResourceLink(
   }
   if (
     /\b(parking|garage|garages|parkmobile|arcgis|dashboard|lots and garages|rates info|parking map)\b/i.test(
-      haystack
+      haystack,
     )
   ) {
     return "parking";
@@ -5229,8 +5059,6 @@ const GYM_PUBLIC_OVERVIEW_TEXT_PATTERN =
   /\b(championships?|classic|invitational|state meet|regional meet|national meet|takes place|host(?:ed)? by|awards ceremon|team awards?|all around awards?)\b/i;
 const GYM_COACH_OPS_TEXT_PATTERN =
   /\b(coach(?:es)?(?:\s+only)?|meet reservations?|membership verification|pro member|sign[-\s]?in|attire|competition floor access|scratches?|master rotation sheet|floor music|regional(?:s)?|qualification|entry fees?|late fee|meetmaker|payment instructions?|check payable|coach hospitality)\b/i;
-const GYM_SESSION_OPS_TEXT_PATTERN =
-  /\b(session assignments?|verify athlete session assignment|club rosters?|roster corrections?|athlete birth[-\s]?date|birth[-\s]?date correction|age[-\s]?group|group\/session|session code|division table|team divisions?|session eligibility|rotation ops?)\b/i;
 const GYM_PUBLIC_DOCUMENT_PATTERN =
   /\b(faq|program|spectator guide|visitor guide|event guide|public document|order form|sizing form|apparel form|photo\s*\/?\s*video)\b/i;
 const GYM_MIXED_DOCUMENT_PATTERN =
@@ -5241,16 +5069,14 @@ function classifyGymPublicAudience(text: string): GymContentAudience {
   if (!normalized) return "unknown";
   const lowered = normalized.toLowerCase();
   const hasCoachOps = GYM_COACH_OPS_TEXT_PATTERN.test(lowered);
-  const hasSessionOps = GYM_SESSION_OPS_TEXT_PATTERN.test(lowered);
   const hasPublicAttendee =
     GYM_PUBLIC_ATTENDEE_TEXT_PATTERN.test(lowered) ||
     GYM_PUBLIC_OVERVIEW_TEXT_PATTERN.test(lowered) ||
     /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|\d{1,2}\/\d{1,2}\/\d{2,4})\b/i.test(
-      lowered
+      lowered,
     ) ||
     /\b\d{3,5}\s+[a-z0-9].*,\s*[a-z]{2}\s+\d{5}\b/i.test(lowered);
-  if ((hasCoachOps || hasSessionOps) && hasPublicAttendee) return "mixed";
-  if (hasSessionOps) return "session_ops";
+  if (hasCoachOps && hasPublicAttendee) return "mixed";
   if (hasCoachOps) return "coach_ops";
   if (hasPublicAttendee) return "public_attendee";
   if (GYM_MIXED_DOCUMENT_PATTERN.test(lowered)) return "mixed";
@@ -5260,7 +5086,7 @@ function classifyGymPublicAudience(text: string): GymContentAudience {
 function classifyGymResourceRenderTarget(link: DiscoveryResourceLink): GymResourceRenderTarget {
   const audience = link.audience || classifyGymPublicAudience(`${link.label} ${link.url}`);
   const haystack = `${safeString(link.label)} ${safeString(link.url)}`.toLowerCase();
-  if (audience === "coach_ops" || audience === "session_ops") {
+  if (audience === "coach_ops") {
     return "hidden";
   }
   if (
@@ -5291,7 +5117,7 @@ function classifyGymResourceRenderTarget(link: DiscoveryResourceLink): GymResour
 
 function classifyGymAudienceText(
   text: unknown,
-  source: GymAudienceClassifiedText["source"]
+  source: GymAudienceClassifiedText["source"],
 ): GymAudienceClassifiedText | null {
   const normalized = safeString(text).replace(/\s+/g, " ").trim();
   if (!normalized) return null;
@@ -5304,7 +5130,7 @@ function classifyGymAudienceText(
 
 function isPublicAudienceText(
   text: unknown,
-  source: GymAudienceClassifiedText["source"] = "raw_detail"
+  source: GymAudienceClassifiedText["source"] = "raw_detail",
 ): boolean {
   return classifyGymAudienceText(text, source)?.audience === "public_attendee";
 }
@@ -5312,7 +5138,7 @@ function isPublicAudienceText(
 function filterPublicAudienceTexts(
   items: Array<unknown>,
   source: GymAudienceClassifiedText["source"],
-  limit = 8
+  limit = 8,
 ): string[] {
   return uniqueBy(
     items
@@ -5320,7 +5146,7 @@ function filterPublicAudienceTexts(
       .filter((item): item is GymAudienceClassifiedText => Boolean(item))
       .filter((item) => item.audience === "public_attendee")
       .map((item) => item.text),
-    (item) => item.toLowerCase()
+    (item) => item.toLowerCase(),
   ).slice(0, limit);
 }
 
@@ -5331,7 +5157,7 @@ function isTransientPublicAnnouncement(text: string): boolean {
   if (audience !== "public_attendee") return false;
   if (
     /\b(schedule|coaches?|results?|admission|venue|host hotels?|packet|document|live scoring)\b/i.test(
-      normalized
+      normalized,
     )
   ) {
     return false;
@@ -5358,6 +5184,40 @@ const EVENT_TOKEN_STOP_WORDS = new Set([
   "com",
 ]);
 
+const EVENT_MATCH_GENERIC_TOKENS = new Set([
+  "event",
+  "events",
+  "championship",
+  "championships",
+  "classic",
+  "competition",
+  "competitions",
+  "cup",
+  "gymnastics",
+  "invitational",
+  "level",
+  "levels",
+  "meet",
+  "meets",
+  "men",
+  "mens",
+  "open",
+  "regional",
+  "regionals",
+  "region",
+  "session",
+  "sessions",
+  "state",
+  "states",
+  "team",
+  "teams",
+  "usa",
+  "usag",
+  "women",
+  "womens",
+  "xcel",
+]);
+
 function normalizeEventTokens(value: string): string[] {
   return uniqueBy(
     safeString(value)
@@ -5365,26 +5225,70 @@ function normalizeEventTokens(value: string): string[] {
       .replace(/[^a-z0-9]+/g, " ")
       .split(/\s+/)
       .map((token) => token.trim())
-      .filter((token) => token.length >= 2)
+      .filter((token) => token.length >= 2 || /^\d$/.test(token))
       .filter((token) => !EVENT_TOKEN_STOP_WORDS.has(token)),
-    (item) => item
+    (item) => item,
   );
+}
+
+function filterSpecificEventTokens(tokens: string[]): string[] {
+  return uniqueBy(
+    tokens
+      .map((token) => safeString(token).toLowerCase())
+      .filter(Boolean)
+      .filter((token) => !EVENT_MATCH_GENERIC_TOKENS.has(token))
+      .filter((token) => !/^20\d{2}$/.test(token))
+      .filter((token) => !/^\d+$/.test(token)),
+    (item) => item,
+  );
+}
+
+function isFingerprintSignalLine(line: string): boolean {
+  const normalized = safeString(line).replace(/\s+/g, " ").trim();
+  if (!normalized) return false;
+  if (/https?:\/\/|www\./i.test(normalized)) return false;
+  if (
+    /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:\s*[-–]\s*\d{1,2})?(?:,\s*\d{4})?\b/i.test(
+      normalized,
+    )
+  ) {
+    return true;
+  }
+  if (/\b[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/.test(normalized)) return true;
+  if (
+    /\b(?:convention center|arena|center|centre|complex|gym|gymnasium|fieldhouse|venue|coliseum|civic center|sportsplex|resort|hotel)\b/i.test(
+      normalized,
+    )
+  ) {
+    return true;
+  }
+  if (/\b[A-Za-z.' -]+,\s*[A-Z]{2}\b/.test(normalized)) return true;
+  if (
+    /\b(?:street|st|road|rd|drive|dr|avenue|ave|boulevard|blvd|lane|ln|court|ct|way)\b/i.test(
+      normalized,
+    )
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function buildEventFingerprint(
   rootUrl: URL,
   pageTitle: string | null,
   metadataText: string,
-  readableText: string
+  readableText: string,
 ): EventFingerprint {
   const slug = decodeURIComponent(rootUrl.pathname)
     .replace(/\.[a-z0-9]+$/i, "")
     .replace(/[-_]+/g, " ")
     .trim();
-  const firstMeaningfulLines = safeString(readableText)
+  const readableLines = safeString(readableText)
     .split(/\n+/)
     .map((line) => safeString(line))
-    .filter((line) => line.length >= 8 && line.length <= 120)
+    .filter((line) => line.length >= 8 && line.length <= 140);
+  const signalLines = readableLines.filter((line) => isFingerprintSignalLine(line));
+  const firstMeaningfulLines = (signalLines.length > 0 ? signalLines : readableLines)
     .slice(0, 6)
     .join(" ");
   const titleSource = [safeString(pageTitle), slug, firstMeaningfulLines].filter(Boolean).join(" ");
@@ -5392,14 +5296,14 @@ function buildEventFingerprint(
   const slugTokens = normalizeEventTokens(slug);
   const addressMatch =
     readableText.match(
-      /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/
+      /\b\d{2,6}\s+[A-Za-z0-9.\-'\s]+,\s*[A-Za-z.\-'\s]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/,
     ) || null;
   const locationTokens = normalizeEventTokens(
-    [addressMatch?.[0], metadataText, firstMeaningfulLines].filter(Boolean).join(" ")
+    [addressMatch?.[0], metadataText, firstMeaningfulLines].filter(Boolean).join(" "),
   );
   const dateRange =
-    classifyMeetDateCandidates(`${safeString(pageTitle)}\n${metadataText}\n${readableText}`).primary ||
-    deriveDateRangeFromText(`${safeString(pageTitle)} ${readableText}`);
+    classifyMeetDateCandidates(`${safeString(pageTitle)}\n${metadataText}\n${readableText}`)
+      .primary || deriveDateRangeFromText(`${safeString(pageTitle)} ${readableText}`);
   const startDate = dateRange?.startDate || null;
   const endDate = dateRange?.endDate || dateRange?.startDate || null;
   return {
@@ -5417,16 +5321,25 @@ function scoreEventResourceMatch(
   fingerprint: EventFingerprint,
   candidateText: string,
   candidateLabel: string,
-  candidateUrl: string
+  candidateUrl: string,
 ): EventResourceMatch {
   const text = [candidateLabel, candidateUrl, candidateText].filter(Boolean).join("\n");
   const candidateTokens = normalizeEventTokens(text);
   const candidateTokenSet = new Set(candidateTokens);
-  const overlappingTitleTokens = fingerprint.titleTokens.filter((token) => candidateTokenSet.has(token));
-  const overlappingSlugTokens = fingerprint.slugTokens.filter((token) => candidateTokenSet.has(token));
-  const overlappingLocationTokens = fingerprint.locationTokens.filter((token) => candidateTokenSet.has(token));
-  const candidateDate =
-    classifyMeetDateCandidates(text).primary || deriveDateRangeFromText(text);
+  const overlappingTitleTokens = fingerprint.titleTokens.filter((token) =>
+    candidateTokenSet.has(token),
+  );
+  const overlappingSlugTokens = fingerprint.slugTokens.filter((token) =>
+    candidateTokenSet.has(token),
+  );
+  const overlappingLocationTokens = filterSpecificEventTokens(
+    fingerprint.locationTokens.filter((token) => candidateTokenSet.has(token)),
+  );
+  const specificOverlapTokens = filterSpecificEventTokens([
+    ...overlappingTitleTokens,
+    ...overlappingSlugTokens,
+  ]);
+  const candidateDate = classifyMeetDateCandidates(text).primary || deriveDateRangeFromText(text);
 
   if (
     fingerprint.startDate &&
@@ -5451,10 +5364,7 @@ function scoreEventResourceMatch(
   if (candidateDate?.startDate && fingerprint.startDate) {
     score += 5;
     reasons.push("date_overlap");
-  } else if (
-    fingerprint.year &&
-    new RegExp(`\\b${fingerprint.year}\\b`).test(text)
-  ) {
+  } else if (fingerprint.year && new RegExp(`\\b${fingerprint.year}\\b`).test(text)) {
     score += 2;
     reasons.push("year_match");
   }
@@ -5477,7 +5387,16 @@ function scoreEventResourceMatch(
     reasons.push("location_hint");
   }
 
-  const passes = score >= 4;
+  let passes = score >= 4;
+  if (
+    passes &&
+    specificOverlapTokens.length === 0 &&
+    overlappingLocationTokens.length === 0 &&
+    !candidateDate?.startDate
+  ) {
+    passes = false;
+    reasons.push("generic_token_overlap_only");
+  }
   return {
     score,
     passes,
@@ -5489,7 +5408,7 @@ function scoreEventResourceMatch(
 function shouldTreatResourceAsTrustedHtmlFetch(resource: DiscoveryResourceLink): boolean {
   return (
     (["travel_accommodation", "hotel_booking", "photo_video", "results_live"].includes(
-      resource.kind
+      resource.kind,
     ) &&
       isTrustedExternalResourceUrl(resource.url)) ||
     ["roster", "team_divisions", "rotation_hub", "results_hub"].includes(resource.kind)
@@ -5498,7 +5417,7 @@ function shouldTreatResourceAsTrustedHtmlFetch(resource: DiscoveryResourceLink):
 
 function shouldFollowDiscoveryChildPage(
   candidate: CrawlCandidate,
-  fingerprint: EventFingerprint
+  fingerprint: EventFingerprint,
 ): boolean {
   if (candidate.kind !== "html" || !candidate.sameHost) return false;
   const candidateUrl = safeString(candidate.url);
@@ -5514,7 +5433,7 @@ function shouldFollowDiscoveryChildPage(
 
   if (
     /^\/?(?:|news|history|contact|about|blog|photos?|videos?|gallery|media|results?)\/?$/i.test(
-      pathname
+      pathname,
     ) ||
     /\b(home|news|history|contact|about|blog|gallery|media)\b/i.test(candidateLabel)
   ) {
@@ -5523,7 +5442,7 @@ function shouldFollowDiscoveryChildPage(
 
   if (
     /\b(info|details|schedule|venue|parking|hotel|travel|faq|packet|document|program|admission|ticket|rotation|result|roster|division|session assignment)\b/i.test(
-      haystack
+      haystack,
     )
   ) {
     return true;
@@ -5535,7 +5454,7 @@ function shouldFollowDiscoveryChildPage(
 
 function upsertResourceLink(
   map: Map<string, DiscoveryResourceLink>,
-  resource: DiscoveryResourceLink
+  resource: DiscoveryResourceLink,
 ) {
   const key = `${resource.kind}|${normalizeCanonicalUrl(resource.url)}`;
   const existing = map.get(key);
@@ -5549,10 +5468,8 @@ function upsertResourceLink(
       : { ...resource, ...existing };
   merged.followed = existing.followed || resource.followed;
   merged.contentType = resource.contentType || existing.contentType || null;
-  merged.availabilityText =
-    resource.availabilityText || existing.availabilityText || null;
-  merged.availabilityDate =
-    resource.availabilityDate || existing.availabilityDate || null;
+  merged.availabilityText = resource.availabilityText || existing.availabilityText || null;
+  merged.availabilityDate = resource.availabilityDate || existing.availabilityDate || null;
   merged.discoveryMethod =
     resource.discoveryMethod === "playwright" || existing.discoveryMethod === "playwright"
       ? "playwright"
@@ -5561,8 +5478,8 @@ function upsertResourceLink(
     resource.matchScore == null
       ? existing.matchScore
       : existing.matchScore == null
-      ? resource.matchScore
-      : Math.max(existing.matchScore, resource.matchScore);
+        ? resource.matchScore
+        : Math.max(existing.matchScore, resource.matchScore);
   merged.matchReason = resource.matchReason || existing.matchReason || null;
   merged.audience =
     merged.audience ||
@@ -5629,7 +5546,10 @@ function scoreDiscoveryCandidate(candidate: Omit<CrawlCandidate, "score" | "foll
   }
   if (candidate.sameHost && candidate.depth === 0) score += 1;
   if (candidate.label.length <= 2) score -= 2;
-  if (candidate.kind === "html" && /\/(?:about-us|contact|gymnastics-blog)\/?$/i.test(candidate.url)) {
+  if (
+    candidate.kind === "html" &&
+    /\/(?:about-us|contact|gymnastics-blog)\/?$/i.test(candidate.url)
+  ) {
     score -= 5;
   }
 
@@ -5647,10 +5567,7 @@ function compareDiscoveryCandidates(a: CrawlCandidate, b: CrawlCandidate): numbe
   return a.url.localeCompare(b.url);
 }
 
-function scoreResourceFollowUpPriority(
-  resource: DiscoveryResourceLink,
-  rootHost: string
-): number {
+function scoreResourceFollowUpPriority(resource: DiscoveryResourceLink, rootHost: string): number {
   let score = 0;
   const sameHost = (() => {
     try {
@@ -5690,7 +5607,7 @@ function scoreResourceFollowUpPriority(
 function compareResourceLinksForFollowUp(
   a: DiscoveryResourceLink,
   b: DiscoveryResourceLink,
-  rootHost: string
+  rootHost: string,
 ): number {
   const scoreDelta =
     scoreResourceFollowUpPriority(b, rootHost) - scoreResourceFollowUpPriority(a, rootHost);
@@ -5740,7 +5657,7 @@ function collectDiscoveryCandidates(html: string, baseUrl: URL, depth: 0 | 1): C
     const rawAnchorText = safeString(stripHtml(match[4] || ""));
     const looksTravelish =
       /\b(hotel|lodging|travel|host\s+hotel|reservations?|book(?:\s+here)?|rooms?)\b/i.test(
-        `${rawAnchorText} ${url.toString()}`
+        `${rawAnchorText} ${url.toString()}`,
       ) || /\b(hotel|lodging|travel|reservations?|book)\b/i.test(rawAttrs);
     const context = looksTravelish ? extractDiscoveryAnchorContext(html, anchorIndex) : null;
     const candidateBase = {
@@ -5773,14 +5690,13 @@ function toCrawlCandidateFromBrowserDiscovery(
     contentType?: string | null;
     contextText?: string | null;
   },
-  rootUrl: URL
+  rootUrl: URL,
 ): CrawlCandidate | null {
   const normalizedUrl = normalizeUrl(candidate.url);
   if (!normalizedUrl) return null;
   const resolvedUrl = new URL(normalizedUrl);
   const kind = candidate.sameHost
-    ? isAssetUrl(resolvedUrl) ||
-      /pdf|image\//i.test(safeString(candidate.contentType))
+    ? isAssetUrl(resolvedUrl) || /pdf|image\//i.test(safeString(candidate.contentType))
       ? "asset"
       : "html"
     : "external";
@@ -5789,7 +5705,7 @@ function toCrawlCandidateFromBrowserDiscovery(
     label: normalizeResourceLinkLabel(
       safeString(candidate.label) || fallbackLinkLabel(resolvedUrl),
       normalizedUrl,
-      `${safeString(candidate.contextText)} ${safeString(candidate.label)}`
+      `${safeString(candidate.contextText)} ${safeString(candidate.label)}`,
     ),
     sourceUrl: normalizeUrl(candidate.sourceUrl) || rootUrl.toString(),
     contextText: safeString(candidate.contextText) || null,
@@ -5809,9 +5725,7 @@ function toCrawlCandidateFromBrowserDiscovery(
 function titleCaseWords(value: string): string {
   return safeString(value)
     .split(/\s+/)
-    .map((part) =>
-      part ? `${part.slice(0, 1).toUpperCase()}${part.slice(1).toLowerCase()}` : ""
-    )
+    .map((part) => (part ? `${part.slice(0, 1).toUpperCase()}${part.slice(1).toLowerCase()}` : ""))
     .join(" ")
     .trim();
 }
@@ -5850,7 +5764,7 @@ function fallbackLabelFromPdfAnnotation(url: URL): string {
   const pathLabel = titleCaseWords(
     decodeURIComponent(url.pathname.split("/").filter(Boolean).pop() || "")
       .replace(/\.[a-z0-9]+$/i, "")
-      .replace(/[-_]+/g, " ")
+      .replace(/[-_]+/g, " "),
   );
   return pathLabel || fallbackLinkLabel(url);
 }
@@ -5858,9 +5772,7 @@ function fallbackLabelFromPdfAnnotation(url: URL): string {
 function looksLikeGenericResourceLabel(label: string): boolean {
   const normalized = safeString(label).replace(/\s+/g, " ").trim();
   if (!normalized) return true;
-  return /^(?:click here(?: for .+)?|here|resource link|open link|link|website)$/i.test(
-    normalized
-  );
+  return /^(?:click here(?: for .+)?|here|resource link|open link|link|website)$/i.test(normalized);
 }
 
 function splitPdfPageLinesForLabeling(pageText: string): string[] {
@@ -5884,7 +5796,7 @@ function normalizeUrlForLooseSearch(url: string): string[] {
         pathname.toLowerCase(),
         `${parsed.hostname}${pathname}`.replace(/^www\./, "").toLowerCase(),
       ].filter(Boolean),
-      (item) => item
+      (item) => item,
     );
   } catch {
     return [normalized.toLowerCase()];
@@ -5894,7 +5806,7 @@ function normalizeUrlForLooseSearch(url: string): string[] {
 function inferKindBasedPdfLabel(
   kind: DiscoveryResourceKind,
   pageText: string,
-  url: string
+  url: string,
 ): string {
   const normalizedPageText = safeString(pageText).replace(/\s+/g, " ").trim();
   switch (kind) {
@@ -5969,13 +5881,12 @@ function inferKindBasedPdfLabel(
 
 function derivePdfAnnotationLabel(
   link: PdfAnnotationLink,
-  pages: Array<{ num: number; text: string }> = []
+  pages: Array<{ num: number; text: string }> = [],
 ): string {
   const explicitLabel = safeString(link.label);
   const pageText =
-    safeString(
-      pages.find((page) => Number(page?.num) === Number(link.pageNumber))?.text || ""
-    ) || "";
+    safeString(pages.find((page) => Number(page?.num) === Number(link.pageNumber))?.text || "") ||
+    "";
   if (explicitLabel && !looksLikeGenericResourceLabel(explicitLabel)) {
     return explicitLabel;
   }
@@ -6002,7 +5913,7 @@ function derivePdfAnnotationLabel(
         .replace(/www\.[^\s)]+/gi, "")
         .replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s),;!?]*)?\b/gi, "")
         .replace(/\s+/g, " ")
-        .replace(/[:\-–—]\s*$/g, "")
+        .replace(/[:\-–—]\s*$/g, ""),
     );
     if (prefixLabel && !looksLikeGenericResourceLabel(prefixLabel)) {
       return prefixLabel;
@@ -6024,10 +5935,14 @@ function derivePdfAnnotationLabel(
   if (/pre[-\s]?sale|spectator admissions?|tickets?/i.test(pageText)) {
     return inferKindBasedPdfLabel("admission", pageText, link.url);
   }
-  if (/for event info and results|live scoring|official results|complete meet results/i.test(pageText)) {
+  if (
+    /for event info and results|live scoring|official results|complete meet results/i.test(pageText)
+  ) {
     return inferKindBasedPdfLabel("results_hub", pageText, link.url);
   }
-  if (/location of lots and garages|pay by (?:mobile|phone)|parking rates|parking map/i.test(pageText)) {
+  if (
+    /location of lots and garages|pay by (?:mobile|phone)|parking rates|parking map/i.test(pageText)
+  ) {
     return inferKindBasedPdfLabel("parking", pageText, link.url);
   }
   if (/apparel sizing form|sizing e-form|complete the sizing/i.test(pageText)) {
@@ -6048,7 +5963,7 @@ function toCrawlCandidateFromPdfAnnotation(
   link: PdfAnnotationLink,
   assetUrl: URL,
   rootUrl: URL,
-  pages: Array<{ num: number; text: string }>
+  pages: Array<{ num: number; text: string }>,
 ): CrawlCandidate | null {
   const normalizedUrl = normalizeUrl(link.url);
   if (!normalizedUrl || normalizedUrl === assetUrl.toString()) return null;
@@ -6056,8 +5971,7 @@ function toCrawlCandidateFromPdfAnnotation(
   const kind = classifyDiscoveryLink(resolvedUrl, rootUrl);
   const baseCandidate = {
     url: normalizedUrl,
-    label:
-      derivePdfAnnotationLabel(link, pages) || fallbackLabelFromPdfAnnotation(resolvedUrl),
+    label: derivePdfAnnotationLabel(link, pages) || fallbackLabelFromPdfAnnotation(resolvedUrl),
     sourceUrl: assetUrl.toString(),
     depth: 1 as const,
     kind,
@@ -6071,11 +5985,7 @@ function toCrawlCandidateFromPdfAnnotation(
   };
 }
 
-function buildHtmlTextChunk(
-  pageUrl: string,
-  metadataText: string,
-  readableText: string
-): string {
+function buildHtmlTextChunk(pageUrl: string, metadataText: string, readableText: string): string {
   const pieces = [
     `Source URL: ${pageUrl}`,
     safeString(metadataText),
@@ -6100,14 +6010,14 @@ function looksLikeDiscoverySectionTitle(title: string): boolean {
   if (!normalized) return false;
   if (
     /^(?:club and general information|general information|club information|coach information|parent information|meet information|session information|registration information|spectator information|travel information|parking information)$/i.test(
-      normalized
+      normalized,
     )
   ) {
     return true;
   }
   if (
     /^(?:club|general|coach|parent|meet|session|registration|spectator|travel|parking|venue|facility|schedule|admission|awards?|results?|logistics|policies?)\s+(?:information|details?)$/i.test(
-      normalized
+      normalized,
     )
   ) {
     return true;
@@ -6121,13 +6031,17 @@ function scoreDiscoveryTitleFragment(value: string): number {
   if (looksLikeDiscoverySectionTitle(candidate)) return -8;
   if (
     /^(skip to content|search for:?|menu|home|about us|events?|registration|results?|contact|blog|resources?)$/i.test(
-      candidate
+      candidate,
     )
   ) {
     return -10;
   }
   let score = 0;
-  if (/\b(?:championship|championships|classic|invite|invitational|regional|state|national|gymnastics|xcel|level|cup|open|festival|meet)\b/i.test(candidate)) {
+  if (
+    /\b(?:championship|championships|classic|invite|invitational|regional|state|national|gymnastics|xcel|level|cup|open|festival|meet)\b/i.test(
+      candidate,
+    )
+  ) {
     score += 6;
   }
   if (/\b20\d{2}\b/.test(candidate)) score += 3;
@@ -6136,10 +6050,10 @@ function scoreDiscoveryTitleFragment(value: string): number {
   if (
     /^[A-Z][a-z]+ \d{1,2}(?:-\d{1,2})?, 20\d{2}$/i.test(candidate) ||
     /\b\d{2,6}\s+[A-Za-z0-9.'-]+\s+(?:street|st\.?|avenue|ave\.?|road|rd\.?|drive|dr\.?|boulevard|blvd\.?|lane|ln\.?|way|court|ct\.?)\b/i.test(
-      candidate
+      candidate,
     ) ||
     /\b(?:arena|gymnasium|convention center|fieldhouse|drive|street|avenue|boulevard|road)\b/i.test(
-      candidate
+      candidate,
     )
   ) {
     score -= 4;
@@ -6155,7 +6069,7 @@ function scoreDiscoveryTitleFragment(value: string): number {
 
 function deriveDiscoveryFallbackTitle(
   extractedText: string,
-  extractionMeta?: ExtractionResult["extractionMeta"] | null
+  extractionMeta?: ExtractionResult["extractionMeta"] | null,
 ): string {
   const candidates = [
     safeString(extractionMeta?.pageTitle),
@@ -6167,9 +6081,9 @@ function deriveDiscoveryFallbackTitle(
   ];
   const fragments = uniqueBy(
     candidates.flatMap((candidate) =>
-      candidate.split(/\s(?:\||-|—|–|:)\s/g).map((part) => part.trim())
+      candidate.split(/\s(?:\||-|—|–|:)\s/g).map((part) => part.trim()),
     ),
-    (item) => item.toLowerCase()
+    (item) => item.toLowerCase(),
   );
   const best = fragments
     .map((value) => ({ value, score: scoreDiscoveryTitleFragment(value) }))
@@ -6178,7 +6092,10 @@ function deriveDiscoveryFallbackTitle(
 
   const fallback = candidates
     .map((value) => value.replace(/\s+/g, " ").trim())
-    .find((value) => !looksLikeDiscoveryPlaceholderTitle(value) && scoreDiscoveryTitleFragment(value) >= 1);
+    .find(
+      (value) =>
+        !looksLikeDiscoveryPlaceholderTitle(value) && scoreDiscoveryTitleFragment(value) >= 1,
+    );
   return fallback || "";
 }
 
@@ -6209,35 +6126,50 @@ function resolveDiscoveryEventTitle(parsedTitle: string, fallbackTitle: string):
 
 async function fetchWithLimit(
   url: string,
-  options?: { timeoutMs?: number }
+  options?: { timeoutMs?: number; signal?: AbortSignal },
 ): Promise<{ contentType: string; buffer: Buffer; text: string }> {
   const controller = new AbortController();
+  const abortFromSignal = () => controller.abort(options?.signal?.reason);
   const timeoutMs =
-    typeof options?.timeoutMs === "number" && Number.isFinite(options.timeoutMs) && options.timeoutMs > 0
+    typeof options?.timeoutMs === "number" &&
+    Number.isFinite(options.timeoutMs) &&
+    options.timeoutMs > 0
       ? Math.max(250, Math.min(12_000, Math.floor(options.timeoutMs)))
       : 12_000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  const response = await fetch(url, {
-    redirect: "follow",
-    signal: controller.signal,
-    headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; EnvitefyBot/1.0; +https://envitefy.com)",
-    },
-    cache: "no-store",
-  });
-  clearTimeout(timeout);
-  if (!response.ok) {
-    throw new Error(`Fetch failed (${response.status})`);
+  if (options?.signal) {
+    if (options.signal.aborted) {
+      clearTimeout(timeout);
+      throwIfExtractionAborted(options.signal);
+    }
+    options.signal.addEventListener("abort", abortFromSignal, { once: true });
   }
-  const contentType = response.headers.get("content-type") || "";
-  const arr = new Uint8Array(await response.arrayBuffer());
-  const sliced = arr.slice(0, Math.min(arr.length, MAX_FETCH_BYTES));
-  const buffer = Buffer.from(sliced);
-  let text = "";
-  if (/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(contentType)) {
-    text = buffer.toString("utf8");
+  try {
+    const response = await fetch(url, {
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; EnvitefyBot/1.0; +https://envitefy.com)",
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      throw new Error(`Fetch failed (${response.status})`);
+    }
+    const contentType = response.headers.get("content-type") || "";
+    const arr = new Uint8Array(await response.arrayBuffer());
+    const sliced = arr.slice(0, Math.min(arr.length, MAX_FETCH_BYTES));
+    const buffer = Buffer.from(sliced);
+    let text = "";
+    if (/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(contentType)) {
+      text = buffer.toString("utf8");
+    }
+    throwIfExtractionAborted(options?.signal);
+    return { contentType, buffer, text };
+  } finally {
+    clearTimeout(timeout);
+    options?.signal?.removeEventListener("abort", abortFromSignal);
   }
-  return { contentType, buffer, text };
 }
 
 function getUrlDiscoveryHooks(): Required<UrlDiscoveryTestHooks> {
@@ -6257,9 +6189,9 @@ function getUrlDiscoveryHooks(): Required<UrlDiscoveryTestHooks> {
 function isMissingPlaywrightBrowserError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error || "");
   return (
-    /chromium/i.test(message) &&
-    /executable|install/i.test(message)
-  ) || /playwright install/i.test(message);
+    (/chromium/i.test(message) && /executable|install/i.test(message)) ||
+    /playwright install/i.test(message)
+  );
 }
 
 async function appendFetchedAssetText(
@@ -6284,7 +6216,7 @@ async function appendFetchedAssetText(
     schedulePageTexts: Array<{ pageNumber: number; text: string }>;
   },
   hooks: Required<UrlDiscoveryTestHooks>,
-  options: Required<DiscoveryExtractionOptions>,
+  options: NormalizedDiscoveryExtractionOptions,
   context: {
     discoveryMethod: "http" | "playwright";
   },
@@ -6292,8 +6224,9 @@ async function appendFetchedAssetText(
     deadlineAt: number;
     onBudgetExhausted: (stage: string) => void;
   },
-  requestCache?: DiscoveryRequestCache
+  requestCache?: DiscoveryRequestCache,
 ) {
+  throwIfExtractionAborted(options.signal);
   const assetUrlString = assetUrl.toString();
   const resolveRemainingAssetBudget = (stage: string): number | null => {
     const remainingMs = remainingBudgetMs(crawlBudget.deadlineAt);
@@ -6317,7 +6250,9 @@ async function appendFetchedAssetText(
       performance: options.performance,
       cache: requestCache,
       mode: options.mode,
+      signal: options.signal,
     });
+    throwIfExtractionAborted(options.signal);
     console.log("[meet-discovery] asset parse finished", {
       url: assetUrlString,
       contentType: fetched.contentType || "application/pdf",
@@ -6333,7 +6268,7 @@ async function appendFetchedAssetText(
     accumulators.usedOcr = accumulators.usedOcr || parsed.usedOcr;
     accumulators.coachPageHints = uniqueBy(
       [...accumulators.coachPageHints, ...parsed.coachPageHints],
-      (item) => `${item.page}|${item.heading}|${item.excerpt}`
+      (item) => `${item.page}|${item.heading}|${item.excerpt}`,
     );
     for (const annotationLink of pickArray(parsed.annotationLinks)) {
       const discovered = toCrawlCandidateFromPdfAnnotation(
@@ -6345,19 +6280,14 @@ async function appendFetchedAssetText(
             num: Number(page?.num) || 0,
             text: safeString(page?.text || ""),
           }))
-          .filter((page) => page.num > 0 && page.text)
+          .filter((page) => page.num > 0 && page.text),
       );
       if (!discovered) continue;
       upsertDiscoveredLink(accumulators.discoveredLinkMap, discovered);
-      const resource = buildResourceLinkFromCandidate(
-        discovered,
-        "linked_asset",
-        null,
-        {
-          referenceYear: accumulators.referenceYear,
-          discoveryMethod: context.discoveryMethod,
-        }
-      );
+      const resource = buildResourceLinkFromCandidate(discovered, "linked_asset", null, {
+        referenceYear: accumulators.referenceYear,
+        discoveryMethod: context.discoveryMethod,
+      });
       if (resource) {
         upsertResourceLink(accumulators.resourceLinkMap, resource);
       }
@@ -6376,47 +6306,17 @@ async function appendFetchedAssetText(
         budgetMs: layoutBudgetMs,
         cache: requestCache,
       });
+      throwIfExtractionAborted(options.signal);
       accumulators.gymLayoutImageDataUrl = layout.dataUrl;
       accumulators.gymLayoutPage = layout.page;
       accumulators.gymLayoutFacts = uniqueLines(
         [...accumulators.gymLayoutFacts, ...layout.facts],
-        14
+        14,
       );
       accumulators.gymLayoutZones = normalizeGymLayoutZones(layout.zones);
       if (layout.selection) {
         accumulators.gymLayoutSelection = layout.selection;
       }
-    }
-    if (
-      GYM_DISCOVERY_SCHEDULE_GRID_ENABLED &&
-      options.workflow === "gymnastics" &&
-      options.mode === "enrich" &&
-      !accumulators.schedulePageImages.length
-    ) {
-      accumulators.schedulePageImages = await extractSchedulePageImagesFromPdf(
-        fetched.buffer,
-        pickArray(parsed.pages)
-          .map((page) => ({
-            num: Number(page?.num) || 0,
-            text: safeString(page?.text || ""),
-          }))
-          .filter((page) => page.num > 0 && page.text),
-        requestCache
-      );
-    }
-    if (
-      GYM_DISCOVERY_SCHEDULE_GRID_ENABLED &&
-      options.workflow === "gymnastics" &&
-      !accumulators.schedulePageTexts.length
-    ) {
-      accumulators.schedulePageTexts = extractSchedulePageTextsFromPdfPages(
-        pickArray(parsed.pages)
-          .map((page) => ({
-            num: Number(page?.num) || 0,
-            text: safeString(page?.text || ""),
-          }))
-          .filter((page) => page.num > 0 && page.text)
-      );
     }
     return;
   }
@@ -6435,6 +6335,7 @@ async function appendFetchedAssetText(
       budgetMs: imageBudgetMs,
     });
     const imageText = await hooks.extractTextFromImage(fetched.buffer, requestCache);
+    throwIfExtractionAborted(options.signal);
     console.log("[meet-discovery] asset parse finished", {
       url: assetUrlString,
       contentType: fetched.contentType || "image/png",
@@ -6454,19 +6355,20 @@ async function appendFetchedAssetText(
       if (resolveRemainingAssetBudget(`asset_layout:${assetUrlString}`) == null) return;
       accumulators.gymLayoutImageDataUrl = await hooks.toOptimizedImageDataUrl(
         fetched.buffer,
-        requestCache
+        requestCache,
       );
       if (resolveRemainingAssetBudget(`asset_layout_zones:${assetUrlString}`) == null) return;
       accumulators.gymLayoutZones = await hooks.openAiExtractGymLayoutZones(
         fetched.buffer,
         fetched.contentType || "image/png",
-        options.performance
+        options.performance,
       );
+      throwIfExtractionAborted(options.signal);
     }
     if (options.workflow === "gymnastics") {
       accumulators.gymLayoutFacts = uniqueLines(
         [...accumulators.gymLayoutFacts, ...extractHallFactsFromText(imageText)],
-        14
+        14,
       );
     }
   }
@@ -6474,7 +6376,7 @@ async function appendFetchedAssetText(
 
 function buildFetchedHtmlTextChunk(
   pageUrl: string,
-  fetched: { contentType: string; text: string; buffer: Buffer }
+  fetched: { contentType: string; text: string; buffer: Buffer },
 ): {
   text: string;
   pageTitle: string | null;
@@ -6496,14 +6398,16 @@ function buildResourceLinkFromCandidate(
   candidate: Pick<CrawlCandidate, "label" | "url" | "sourceUrl" | "followed">,
   origin: DiscoveryResourceOrigin,
   contentType?: string | null,
-  options?: { referenceYear?: string | null; discoveryMethod?: "http" | "playwright" }
+  options?: { referenceYear?: string | null; discoveryMethod?: "http" | "playwright" },
 ): DiscoveryResourceLink | null {
   const normalizedUrl = normalizeUrl(candidate.url);
   if (!normalizedUrl) return null;
-  const { status, cleanedLabel, availabilityText, availabilityDate } =
-    parseResourceStatusFromLabel(candidate.label, {
+  const { status, cleanedLabel, availabilityText, availabilityDate } = parseResourceStatusFromLabel(
+    candidate.label,
+    {
       referenceYear: options?.referenceYear,
-    });
+    },
+  );
   const kind = classifyResourceLink(cleanedLabel || candidate.label, normalizedUrl, contentType);
   if (kind === "other") return null;
   const baseResource: DiscoveryResourceLink = {
@@ -6524,7 +6428,7 @@ function buildResourceLinkFromCandidate(
     discoveryMethod: options?.discoveryMethod || "http",
   };
   baseResource.audience = classifyGymPublicAudience(
-    `${baseResource.label} ${baseResource.url} ${baseResource.sourceUrl || ""}`
+    `${baseResource.label} ${baseResource.url} ${baseResource.sourceUrl || ""}`,
   );
   baseResource.renderTarget = classifyGymResourceRenderTarget(baseResource);
   return baseResource;
@@ -6533,12 +6437,12 @@ function buildResourceLinkFromCandidate(
 async function fetchResourceCandidateText(
   resource: DiscoveryResourceLink,
   hooks: Required<UrlDiscoveryTestHooks>,
-  options: Required<DiscoveryExtractionOptions>,
+  options: NormalizedDiscoveryExtractionOptions,
   crawlBudget: {
     deadlineAt: number;
     onBudgetExhausted: (stage: string) => void;
   },
-  requestCache?: DiscoveryRequestCache
+  requestCache?: DiscoveryRequestCache,
 ): Promise<{ contentType: string; text: string } | null> {
   const remainingFetchBudgetMs = remainingBudgetMs(crawlBudget.deadlineAt);
   if (remainingFetchBudgetMs <= 0) {
@@ -6548,8 +6452,12 @@ async function fetchResourceCandidateText(
   try {
     const fetched = await hooks.fetchWithLimit(resource.url, {
       timeoutMs: remainingFetchBudgetMs,
+      signal: options.signal,
     });
-    if (/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)) {
+    throwIfExtractionAborted(options.signal);
+    if (
+      /text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)
+    ) {
       const htmlChunk = buildFetchedHtmlTextChunk(resource.url, fetched);
       return {
         contentType: fetched.contentType || "text/html",
@@ -6569,7 +6477,9 @@ async function fetchResourceCandidateText(
         performance: options.performance,
         cache: requestCache,
         mode: options.mode,
+        signal: options.signal,
       });
+      throwIfExtractionAborted(options.signal);
       return {
         contentType: fetched.contentType || "application/pdf",
         text: parsed.text,
@@ -6594,13 +6504,14 @@ async function resolveHubResourceLinks(
   hubResource: DiscoveryResourceLink,
   fingerprint: EventFingerprint,
   hooks: Required<UrlDiscoveryTestHooks>,
-  options: Required<DiscoveryExtractionOptions>,
+  options: NormalizedDiscoveryExtractionOptions,
   crawlBudget: {
     deadlineAt: number;
     onBudgetExhausted: (stage: string) => void;
   },
-  requestCache?: DiscoveryRequestCache
+  requestCache?: DiscoveryRequestCache,
 ): Promise<DiscoveryResourceLink[]> {
+  throwIfExtractionAborted(options.signal);
   const hubResolveStartedAt = Date.now();
   const finalizeHubResolve = (resolved: DiscoveryResourceLink[]) => {
     console.log("[meet-discovery] hub resolve finished", {
@@ -6624,11 +6535,16 @@ async function resolveHubResourceLinks(
   try {
     hubFetched = await hooks.fetchWithLimit(hubResource.url, {
       timeoutMs: remainingHubBudgetMs,
+      signal: options.signal,
     });
   } catch {
     return finalizeHubResolve([]);
   }
-  if (!hubFetched || !/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(hubFetched.contentType)) {
+  throwIfExtractionAborted(options.signal);
+  if (
+    !hubFetched ||
+    !/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(hubFetched.contentType)
+  ) {
     return finalizeHubResolve([]);
   }
   const hubUrl = new URL(hubResource.url);
@@ -6639,6 +6555,7 @@ async function resolveHubResourceLinks(
   const resolved: DiscoveryResourceLink[] = [];
 
   for (const candidate of hubCandidates) {
+    throwIfExtractionAborted(options.signal);
     if (isBudgetExhausted(crawlBudget.deadlineAt)) {
       crawlBudget.onBudgetExhausted(`hub_resolve:${hubResource.url}`);
       break;
@@ -6650,7 +6567,7 @@ async function resolveHubResourceLinks(
       {
         referenceYear: fingerprint.year,
         discoveryMethod: "http",
-      }
+      },
     );
     if (!baseResource) continue;
     if (
@@ -6662,6 +6579,12 @@ async function resolveHubResourceLinks(
     if (
       hubResource.kind === "rotation_hub" &&
       !["rotation_sheet", "rotation_hub"].includes(baseResource.kind)
+    ) {
+      continue;
+    }
+    if (
+      (hubResource.kind === "travel_accommodation" || hubResource.kind === "hotel_booking") &&
+      !["travel_accommodation", "hotel_booking"].includes(baseResource.kind)
     ) {
       continue;
     }
@@ -6680,15 +6603,20 @@ async function resolveHubResourceLinks(
       hooks,
       options,
       crawlBudget,
-      requestCache
+      requestCache,
     );
+    throwIfExtractionAborted(options.signal);
     const match = scoreEventResourceMatch(
       fingerprint,
       fetchedText?.text || `${candidate.label}\n${candidate.url}`,
       candidate.label,
-      candidate.url
+      candidate.url,
     );
-    if (!match.passes || match.hardReject) continue;
+    if (match.hardReject) continue;
+    const shouldAcceptTravelHubDescendant =
+      (hubResource.kind === "travel_accommodation" || hubResource.kind === "hotel_booking") &&
+      ["travel_accommodation", "hotel_booking"].includes(baseResource.kind);
+    if (!shouldAcceptTravelHubDescendant && !match.passes) continue;
     resolved.push({
       ...baseResource,
       contentType: fetchedText?.contentType || baseResource.contentType || null,
@@ -6699,9 +6627,7 @@ async function resolveHubResourceLinks(
     });
   }
 
-  return finalizeHubResolve(
-    resolved.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-  );
+  return finalizeHubResolve(resolved.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0)));
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } | null {
@@ -6857,9 +6783,10 @@ export function buildDefaultGymMeetData() {
 
 export async function extractDiscoveryText(
   input: DiscoverySourceInput,
-  options?: DiscoveryExtractionOptions
+  options?: DiscoveryExtractionOptions,
 ): Promise<ExtractionResult> {
   const resolvedOptions = normalizeDiscoveryExtractionOptions(options, input.type);
+  throwIfExtractionAborted(resolvedOptions.signal);
   const performance = resolvedOptions.performance;
   const requestCache = createDiscoveryRequestCache();
   if (input.type === "file") {
@@ -6873,12 +6800,11 @@ export async function extractDiscoveryText(
           performance,
           cache: requestCache,
           mode: resolvedOptions.mode,
+          signal: resolvedOptions.signal,
         });
+      throwIfExtractionAborted(resolvedOptions.signal);
       const shouldRunGymnasticsEnrichment =
-        resolvedOptions.workflow === "gymnastics" &&
-        resolvedOptions.mode === "enrich";
-      const shouldExtractSchedulePageImages =
-        resolvedOptions.workflow === "gymnastics" && GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
+        resolvedOptions.workflow === "gymnastics" && resolvedOptions.mode === "enrich";
       const gymLayout = shouldRunGymnasticsEnrichment
         ? await extractGymLayoutImageFromPdf(parsed.buffer, {
             maxPages: 4,
@@ -6894,13 +6820,9 @@ export async function extractDiscoveryText(
             page: null,
             selection: undefined,
           };
-      const schedulePageImages = shouldExtractSchedulePageImages
-        ? await extractSchedulePageImagesFromPdf(parsed.buffer, pages, requestCache)
-        : [];
-      const schedulePageTexts =
-        resolvedOptions.workflow === "gymnastics" && GYM_DISCOVERY_SCHEDULE_GRID_ENABLED
-          ? extractSchedulePageTextsFromPdfPages(pages)
-          : [];
+      throwIfExtractionAborted(resolvedOptions.signal);
+      const schedulePageImages: Array<{ pageNumber: number; dataUrl: string | null }> = [];
+      const schedulePageTexts: Array<{ pageNumber: number; text: string }> = [];
       const combinedLayoutFacts = sanitizeVenueFactLines(
         [...gymLayout.facts, ...extractHallFactsFromText(text)],
         {
@@ -6911,7 +6833,7 @@ export async function extractDiscoveryText(
             /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
             /official results|live scoring|daylight savings/i,
           ],
-        }
+        },
       );
       const referenceYear =
         classifyMeetDateCandidates(text).primary?.startDate?.slice(0, 4) ||
@@ -6921,26 +6843,22 @@ export async function extractDiscoveryText(
       const discoveredLinkMap = new Map<string, CrawlCandidate>();
       const resourceLinkMap = new Map<string, DiscoveryResourceLink>();
       for (const annotationLink of pickArray(annotationLinks)) {
+        throwIfExtractionAborted(resolvedOptions.signal);
         const pageAssetUrl = new URL(
-          `https://envitefy.local/discovery/file-page-${Number(annotationLink?.pageNumber) || 1}.pdf`
+          `https://envitefy.local/discovery/file-page-${Number(annotationLink?.pageNumber) || 1}.pdf`,
         );
         const discovered = toCrawlCandidateFromPdfAnnotation(
           annotationLink as PdfAnnotationLink,
           pageAssetUrl,
           fileRootUrl,
-          pages
+          pages,
         );
         if (!discovered) continue;
         upsertDiscoveredLink(discoveredLinkMap, discovered);
-        const resource = buildResourceLinkFromCandidate(
-          discovered,
-          "linked_asset",
-          null,
-          {
-            referenceYear,
-            discoveryMethod: "http",
-          }
-        );
+        const resource = buildResourceLinkFromCandidate(discovered, "linked_asset", null, {
+          referenceYear,
+          discoveryMethod: "http",
+        });
         if (resource) {
           upsertResourceLink(resourceLinkMap, resource);
         }
@@ -6997,7 +6915,7 @@ export async function extractDiscoveryText(
           travelAccommodationCandidates,
           travelAccommodationSignals: uniqueBy(
             travelAccommodationCandidates.flatMap((item) => item.signals || []),
-            (item) => item
+            (item) => item,
           ),
           travelAccommodationSummary: {
             pdfHotels: pdfTravelHotels,
@@ -7006,14 +6924,13 @@ export async function extractDiscoveryText(
           },
           textQuality,
           qualitySignals,
-          schedulePageImages,
-          schedulePageTexts,
         },
         performance,
       };
     }
     if (/image\/(png|jpe?g|webp)/.test(mime)) {
       const text = await extractTextFromImage(parsed.buffer, requestCache);
+      throwIfExtractionAborted(resolvedOptions.signal);
       const quality = analyzeTextQuality(text);
       const shouldRunGymnasticsEnrichment =
         resolvedOptions.workflow === "gymnastics" &&
@@ -7026,13 +6943,12 @@ export async function extractDiscoveryText(
         ? await openAiExtractGymLayoutZones(
             parsed.buffer,
             parsed.mimeType || "image/png",
-            performance
+            performance,
           )
         : [];
+      throwIfExtractionAborted(resolvedOptions.signal);
       const gymLayoutFacts =
-        resolvedOptions.workflow === "gymnastics"
-          ? extractHallFactsFromText(text)
-          : [];
+        resolvedOptions.workflow === "gymnastics" ? extractHallFactsFromText(text) : [];
       return {
         extractedText: quality.cleanedText,
         extractionMeta: {
@@ -7048,8 +6964,6 @@ export async function extractDiscoveryText(
           gymLayoutPage: null,
           textQuality: quality.quality,
           qualitySignals: quality.signals,
-          schedulePageImages: [],
-          schedulePageTexts: [],
         },
         performance,
       };
@@ -7065,7 +6979,8 @@ export async function extractDiscoveryText(
     workflow: resolvedOptions.workflow,
     mode: resolvedOptions.mode,
   });
-  const page = await hooks.fetchWithLimit(url.toString());
+  const page = await hooks.fetchWithLimit(url.toString(), { signal: resolvedOptions.signal });
+  throwIfExtractionAborted(resolvedOptions.signal);
   console.log("[meet-discovery] url root fetch finished", {
     url: url.toString(),
     contentType: page.contentType || null,
@@ -7092,12 +7007,13 @@ export async function extractDiscoveryText(
   let gymLayoutPage: number | null = null;
   let gymLayoutFacts: string[] = [];
   let gymLayoutZones: GymLayoutZone[] = [];
-  let gymLayoutSelection: GymLayoutSelectionDiagnostics | undefined ;
+  let gymLayoutSelection: GymLayoutSelectionDiagnostics | undefined;
   let coachPageHints: CoachPageHint[] = [];
   let schedulePageImages: Array<{ pageNumber: number; dataUrl: string | null }> = [];
   let schedulePageTexts: Array<{ pageNumber: number; text: string }> = [];
 
   for (const candidate of rootCandidates) {
+    throwIfExtractionAborted(resolvedOptions.signal);
     upsertDiscoveredLink(discoveredLinkMap, candidate);
     const resource = buildResourceLinkFromCandidate(candidate, "root", null, {
       referenceYear: fingerprint.year,
@@ -7159,16 +7075,15 @@ export async function extractDiscoveryText(
   };
   const resolveDiscoveryMethodForUrl = (targetUrl: string): "http" | "playwright" =>
     [...resourceLinkMap.values()].find(
-      (item) => normalizeCanonicalUrl(item.url) === normalizeCanonicalUrl(targetUrl)
+      (item) => normalizeCanonicalUrl(item.url) === normalizeCanonicalUrl(targetUrl),
     )?.discoveryMethod || "http";
 
-  const browserCollector =
-    urlDiscoveryTestHooks?.collectBrowserData || collectDiscoveryBrowserData;
+  const browserCollector = urlDiscoveryTestHooks?.collectBrowserData || collectDiscoveryBrowserData;
   const shouldRunBrowserDiscovery =
     !urlDiscoveryTestHooks?.fetchWithLimit || Boolean(urlDiscoveryTestHooks?.collectBrowserData);
   const browserDiscoveryBudgetMs = Math.min(
     getRemainingFollowUpBudgetMs("browser_discovery"),
-    2_000
+    2_000,
   );
   if (shouldRunBrowserDiscovery && browserDiscoveryBudgetMs >= 750) {
     const browserDiscoveryStartedAt = Date.now();
@@ -7182,11 +7097,10 @@ export async function extractDiscoveryText(
         maxChildPages: 3,
         timeoutMs: browserDiscoveryBudgetMs,
       });
+      throwIfExtractionAborted(resolvedOptions.signal);
       for (const browserCandidate of browserDiscovery.candidates) {
-        const normalizedCandidate = toCrawlCandidateFromBrowserDiscovery(
-          browserCandidate,
-          url
-        );
+        throwIfExtractionAborted(resolvedOptions.signal);
+        const normalizedCandidate = toCrawlCandidateFromBrowserDiscovery(browserCandidate, url);
         if (!normalizedCandidate) continue;
         upsertDiscoveredLink(discoveredLinkMap, normalizedCandidate);
         const resource = buildResourceLinkFromCandidate(
@@ -7196,13 +7110,14 @@ export async function extractDiscoveryText(
           {
             referenceYear: fingerprint.year,
             discoveryMethod: "playwright",
-          }
+          },
         );
         if (resource) {
           upsertResourceLink(resourceLinkMap, resource);
         }
       }
       for (const browserPage of browserDiscovery.pages) {
+        throwIfExtractionAborted(resolvedOptions.signal);
         if (!browserPage.text) continue;
         const pageKey = `${browserPage.url}|${browserPage.depth}`;
         if (!crawledPageKeys.has(pageKey)) {
@@ -7215,11 +7130,7 @@ export async function extractDiscoveryText(
         }
         if (browserPage.depth > 0) {
           htmlChunks.push(
-            buildHtmlTextChunk(
-              browserPage.url,
-              browserPage.title || "",
-              browserPage.text
-            )
+            buildHtmlTextChunk(browserPage.url, browserPage.title || "", browserPage.text),
           );
         }
       }
@@ -7252,6 +7163,7 @@ export async function extractDiscoveryText(
   }
 
   const fetchAssetCandidate = async (candidate: CrawlCandidate) => {
+    throwIfExtractionAborted(resolvedOptions.signal);
     if (fetchedAssetUrls.has(candidate.url)) return;
     if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) return;
     const fetchBudgetMs = getRemainingFollowUpBudgetMs(`asset_fetch:${candidate.url}`);
@@ -7265,7 +7177,9 @@ export async function extractDiscoveryText(
     try {
       const fetched = await hooks.fetchWithLimit(candidate.url, {
         timeoutMs: fetchBudgetMs,
+        signal: resolvedOptions.signal,
       });
+      throwIfExtractionAborted(resolvedOptions.signal);
       console.log("[meet-discovery] asset fetch finished", {
         url: candidate.url,
         contentType: fetched.contentType || null,
@@ -7288,7 +7202,7 @@ export async function extractDiscoveryText(
           discoveryMethod: resolveDiscoveryMethodForUrl(candidate.url),
         },
         crawlBudget,
-        requestCache
+        requestCache,
       );
     } catch {
       // Best-effort linked assets.
@@ -7296,6 +7210,7 @@ export async function extractDiscoveryText(
   };
 
   const appendCanonicalResourceToText = async (resource: DiscoveryResourceLink) => {
+    throwIfExtractionAborted(resolvedOptions.signal);
     const canonicalUrl = normalizeCanonicalUrl(resource.url);
     if (fetchedCanonicalUrls.has(canonicalUrl)) return;
     const sameHost = (() => {
@@ -7321,7 +7236,9 @@ export async function extractDiscoveryText(
     try {
       const fetched = await hooks.fetchWithLimit(resource.url, {
         timeoutMs: fetchBudgetMs,
+        signal: resolvedOptions.signal,
       });
+      throwIfExtractionAborted(resolvedOptions.signal);
       if (assetLike || /pdf|image\//i.test(fetched.contentType)) {
         console.log("[meet-discovery] asset fetch finished", {
           url: resource.url,
@@ -7336,16 +7253,15 @@ export async function extractDiscoveryText(
         followed: true,
         contentType: fetched.contentType || resource.contentType || null,
       });
-      if (/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)) {
+      if (
+        /text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)
+      ) {
         const htmlChunk = buildFetchedHtmlTextChunk(resource.url, fetched);
         linkedMeta.push({ url: resource.url, contentType: fetched.contentType || "text/html" });
         linkedChunks.push(htmlChunk.text);
         return;
       }
-      if (
-        /pdf|image\//i.test(fetched.contentType) ||
-        isAssetUrl(resource.url)
-      ) {
+      if (/pdf|image\//i.test(fetched.contentType) || isAssetUrl(resource.url)) {
         fetchedAssetUrls.add(resource.url);
         await appendFetchedAssetText(
           new URL(resource.url),
@@ -7357,7 +7273,7 @@ export async function extractDiscoveryText(
             discoveryMethod: resource.discoveryMethod,
           },
           crawlBudget,
-          requestCache
+          requestCache,
         );
       }
     } catch {
@@ -7368,40 +7284,33 @@ export async function extractDiscoveryText(
   const shouldContinueFetchingAssets = () => {
     if (linkedMeta.length >= MAX_FETCHED_LINKED_ASSETS) return false;
     if (!accumulators.highConfidencePdfFound) return true;
-    if (
-      resolvedOptions.workflow === "gymnastics" &&
-      resolvedOptions.mode === "enrich"
-    ) {
-      if (!GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
-        return !accumulators.gymLayoutImageDataUrl;
-      }
-      return (
-        !accumulators.gymLayoutImageDataUrl ||
-        accumulators.schedulePageImages.length === 0
-      );
+    if (resolvedOptions.workflow === "gymnastics" && resolvedOptions.mode === "enrich") {
+      return !accumulators.gymLayoutImageDataUrl;
     }
     return false;
   };
 
   const fetchAssetCandidates = async (candidates: CrawlCandidate[]) => {
     for (let index = 0; index < candidates.length; index += 2) {
+      throwIfExtractionAborted(resolvedOptions.signal);
       if (!hasFollowUpBudget("asset_fetch_batch")) break;
       if (!shouldContinueFetchingAssets()) break;
       await Promise.all(
-        candidates.slice(index, index + 2).map((candidate) => fetchAssetCandidate(candidate))
+        candidates.slice(index, index + 2).map((candidate) => fetchAssetCandidate(candidate)),
       );
     }
   };
 
   await fetchAssetCandidates(
-    [...discoveredLinkMap.values()].filter(
-      (candidate) => candidate.kind === "asset" && candidate.depth === 0
-    ).sort(compareDiscoveryCandidates)
+    [...discoveredLinkMap.values()]
+      .filter((candidate) => candidate.kind === "asset" && candidate.depth === 0)
+      .sort(compareDiscoveryCandidates),
   );
 
   for (const resource of [...resourceLinkMap.values()].sort((a, b) =>
-    compareResourceLinksForFollowUp(a, b, url.host)
+    compareResourceLinksForFollowUp(a, b, url.host),
   )) {
+    throwIfExtractionAborted(resolvedOptions.signal);
     if (!hasFollowUpBudget("resource_follow_up")) break;
     if (shouldTreatResourceAsTrustedHtmlFetch(resource)) {
       await appendCanonicalResourceToText(resource);
@@ -7411,6 +7320,7 @@ export async function extractDiscoveryText(
   for (const childPage of [...discoveredLinkMap.values()]
     .filter((candidate) => shouldFollowDiscoveryChildPage(candidate, fingerprint))
     .sort(compareDiscoveryCandidates)) {
+    throwIfExtractionAborted(resolvedOptions.signal);
     if (!hasFollowUpBudget("child_page_fetch")) break;
     if (crawledPages.length - 1 >= MAX_FOLLOWED_CHILD_PAGES) break;
     const childPageKey = `${childPage.url}|1`;
@@ -7420,13 +7330,17 @@ export async function extractDiscoveryText(
     try {
       const fetched = await hooks.fetchWithLimit(childPage.url, {
         timeoutMs: childPageBudgetMs,
+        signal: resolvedOptions.signal,
       });
+      throwIfExtractionAborted(resolvedOptions.signal);
       upsertDiscoveredLink(discoveredLinkMap, {
         ...childPage,
         followed: true,
         contentType: fetched.contentType || null,
       });
-      if (!/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)) {
+      if (
+        !/text\/html|text\/plain|application\/json|application\/ld\+json/i.test(fetched.contentType)
+      ) {
         if (isAssetUrl(childPage.url) || /pdf|image\//i.test(fetched.contentType)) {
           await appendFetchedAssetText(
             new URL(childPage.url),
@@ -7438,7 +7352,7 @@ export async function extractDiscoveryText(
               discoveryMethod: resolveDiscoveryMethodForUrl(childPage.url),
             },
             crawlBudget,
-            requestCache
+            requestCache,
           );
           fetchedAssetUrls.add(childPage.url);
         }
@@ -7458,12 +7372,13 @@ export async function extractDiscoveryText(
 
       const childCandidates = collectDiscoveryCandidates(childHtml, childUrl, 1);
       for (const candidate of childCandidates) {
+        throwIfExtractionAborted(resolvedOptions.signal);
         upsertDiscoveredLink(discoveredLinkMap, candidate);
       }
       await fetchAssetCandidates(
         childCandidates
           .filter((candidate) => candidate.kind === "asset")
-          .sort(compareDiscoveryCandidates)
+          .sort(compareDiscoveryCandidates),
       );
     } catch {
       // Best-effort child pages.
@@ -7473,7 +7388,7 @@ export async function extractDiscoveryText(
   await fetchAssetCandidates(
     [...discoveredLinkMap.values()]
       .filter((candidate) => candidate.kind === "asset")
-      .sort(compareDiscoveryCandidates)
+      .sort(compareDiscoveryCandidates),
   );
 
   usedOcr = accumulators.usedOcr;
@@ -7486,12 +7401,19 @@ export async function extractDiscoveryText(
   schedulePageImages = accumulators.schedulePageImages;
   schedulePageTexts = accumulators.schedulePageTexts;
 
-  const hubResources = [...resourceLinkMap.values()].filter(
-    (item) => item.kind === "results_hub" || item.kind === "rotation_hub"
-  );
+  const hubResources = [...resourceLinkMap.values()].filter((item) => {
+    if (item.kind === "results_hub" || item.kind === "rotation_hub") return true;
+    if (item.kind !== "travel_accommodation" && item.kind !== "hotel_booking") return false;
+    try {
+      return new URL(item.url).host === url.host;
+    } catch {
+      return false;
+    }
+  });
   for (const hubResource of hubResources.sort((a, b) =>
-    compareResourceLinksForFollowUp(a, b, url.host)
+    compareResourceLinksForFollowUp(a, b, url.host),
   )) {
+    throwIfExtractionAborted(resolvedOptions.signal);
     if (!hasFollowUpBudget("hub_resolve")) break;
     const promotedResources = await resolveHubResourceLinks(
       hubResource,
@@ -7499,9 +7421,10 @@ export async function extractDiscoveryText(
       hooks,
       resolvedOptions,
       crawlBudget,
-      requestCache
+      requestCache,
     );
     for (const promoted of promotedResources) {
+      throwIfExtractionAborted(resolvedOptions.signal);
       if (!hasFollowUpBudget("hub_promoted_resource")) break;
       upsertResourceLink(resourceLinkMap, promoted);
       await appendCanonicalResourceToText(promoted);
@@ -7521,10 +7444,7 @@ export async function extractDiscoveryText(
       return a.url.localeCompare(b.url);
     })
     .slice(0, MAX_DISCOVERED_LINKS);
-  const fullText = [...htmlChunks, ...linkedChunks]
-    .filter(Boolean)
-    .join("\n\n---\n\n")
-    .trim();
+  const fullText = [...htmlChunks, ...linkedChunks].filter(Boolean).join("\n\n---\n\n").trim();
   const quality = analyzeTextQuality(fullText);
   const travelAccommodationCandidates = detectTravelAccommodationCandidates({
     source: "url",
@@ -7552,7 +7472,7 @@ export async function extractDiscoveryText(
         /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
         /official results|live scoring|daylight savings/i,
       ],
-    }
+    },
   );
 
   return {
@@ -7574,7 +7494,7 @@ export async function extractDiscoveryText(
       travelAccommodationCandidates,
       travelAccommodationSignals: uniqueBy(
         travelAccommodationCandidates.flatMap((item) => item.signals || []),
-        (item) => item
+        (item) => item,
       ),
       travelAccommodationSummary: {
         pdfHotels: [],
@@ -7583,8 +7503,6 @@ export async function extractDiscoveryText(
       },
       textQuality: quality.quality,
       qualitySignals: quality.signals,
-      schedulePageImages,
-      schedulePageTexts,
     },
     performance,
   };
@@ -7611,55 +7529,6 @@ function jsonObject(properties: Record<string, unknown>) {
   };
 }
 
-const GYMNASTICS_SCHEDULE_SCHEMA = jsonObject({
-  venueLabel: jsonNullable(JSON_STRING),
-  supportEmail: jsonNullable(JSON_STRING),
-  notes: jsonArray(JSON_STRING),
-  annotations: jsonArray(
-    jsonObject({
-      kind: jsonNullable(JSON_STRING),
-      level: jsonNullable(JSON_STRING),
-      sessionCode: jsonNullable(JSON_STRING),
-      date: jsonNullable(JSON_STRING),
-      time: jsonNullable(JSON_STRING),
-      text: JSON_STRING,
-    })
-  ),
-  assignments: jsonArray(
-    jsonObject({
-      level: jsonNullable(JSON_STRING),
-      groupLabel: jsonNullable(JSON_STRING),
-      sessionCode: jsonNullable(JSON_STRING),
-      birthDateRange: jsonNullable(JSON_STRING),
-      divisionLabel: jsonNullable(JSON_STRING),
-      note: jsonNullable(JSON_STRING),
-    })
-  ),
-  days: jsonArray(
-    jsonObject({
-      date: jsonNullable(JSON_STRING),
-      shortDate: jsonNullable(JSON_STRING),
-      sessions: jsonArray(
-        jsonObject({
-          code: jsonNullable(JSON_STRING),
-          group: jsonNullable(JSON_STRING),
-          startTime: jsonNullable(JSON_STRING),
-          warmupTime: jsonNullable(JSON_STRING),
-          note: jsonNullable(JSON_STRING),
-          clubs: jsonArray(
-            jsonObject({
-              name: jsonNullable(JSON_STRING),
-              teamAwardEligible: jsonNullable(JSON_BOOLEAN),
-              athleteCount: jsonNullable(JSON_NUMBER),
-              divisionLabel: jsonNullable(JSON_STRING),
-            })
-          ),
-        })
-      ),
-    })
-  ),
-});
-
 const GYMNASTICS_PARSE_JSON_SCHEMA = {
   name: "gymnastics_meet_parse",
   strict: true,
@@ -7667,13 +7536,7 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
     eventType: { type: "string", enum: ["gymnastics_meet", "unknown"] },
     documentProfile: {
       type: "string",
-      enum: [
-        "athlete_session",
-        "parent_packet",
-        "registration_packet",
-        "meet_overview",
-        "unknown",
-      ],
+      enum: ["parent_packet", "registration_packet", "meet_overview", "unknown"],
     },
     title: JSON_STRING,
     dates: JSON_STRING,
@@ -7688,13 +7551,12 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
         label: JSON_STRING,
         price: JSON_STRING,
         note: jsonNullable(JSON_STRING),
-      })
+      }),
     ),
     athlete: jsonObject({
       name: jsonNullable(JSON_STRING),
       level: jsonNullable(JSON_STRING),
       team: jsonNullable(JSON_STRING),
-      session: jsonNullable(JSON_STRING),
       competitionDate: jsonNullable(JSON_STRING),
       stretchTime: jsonNullable(JSON_STRING),
       marchIn: jsonNullable(JSON_STRING),
@@ -7714,14 +7576,6 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
       resultsInfo: jsonNullable(JSON_STRING),
       rotationSheetsInfo: jsonNullable(JSON_STRING),
       awardsInfo: jsonNullable(JSON_STRING),
-      sessionWindows: jsonArray(
-        jsonObject({
-          date: jsonNullable(JSON_STRING),
-          start: jsonNullable(JSON_STRING),
-          end: jsonNullable(JSON_STRING),
-          note: jsonNullable(JSON_STRING),
-        })
-      ),
       operationalNotes: jsonArray(JSON_STRING),
     }),
     logistics: jsonObject({
@@ -7737,13 +7591,13 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
         jsonObject({
           label: JSON_STRING,
           url: JSON_STRING,
-        })
+        }),
       ),
       parkingPricingLinks: jsonArray(
         jsonObject({
           label: JSON_STRING,
           url: JSON_STRING,
-        })
+        }),
       ),
     }),
     policies: jsonObject({
@@ -7773,14 +7627,14 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
           label: JSON_STRING,
           amount: JSON_STRING,
           note: jsonNullable(JSON_STRING),
-        })
+        }),
       ),
       teamFees: jsonArray(
         jsonObject({
           label: JSON_STRING,
           amount: JSON_STRING,
           note: jsonNullable(JSON_STRING),
-        })
+        }),
       ),
       lateFees: jsonArray(
         jsonObject({
@@ -7788,7 +7642,7 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
           amount: JSON_STRING,
           trigger: jsonNullable(JSON_STRING),
           note: jsonNullable(JSON_STRING),
-        })
+        }),
       ),
       contacts: jsonArray(
         jsonObject({
@@ -7796,20 +7650,20 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
           name: jsonNullable(JSON_STRING),
           email: jsonNullable(JSON_STRING),
           phone: jsonNullable(JSON_STRING),
-        })
+        }),
       ),
       deadlines: jsonArray(
         jsonObject({
           label: JSON_STRING,
           date: jsonNullable(JSON_STRING),
           note: jsonNullable(JSON_STRING),
-        })
+        }),
       ),
       links: jsonArray(
         jsonObject({
           label: JSON_STRING,
           url: JSON_STRING,
-        })
+        }),
       ),
       notes: jsonArray(JSON_STRING),
     }),
@@ -7819,14 +7673,14 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
         name: jsonNullable(JSON_STRING),
         email: jsonNullable(JSON_STRING),
         phone: jsonNullable(JSON_STRING),
-      })
+      }),
     ),
     deadlines: jsonArray(
       jsonObject({
         label: JSON_STRING,
         date: jsonNullable(JSON_STRING),
         note: jsonNullable(JSON_STRING),
-      })
+      }),
     ),
     gear: jsonObject({
       uniform: jsonNullable(JSON_STRING),
@@ -7841,31 +7695,24 @@ const GYMNASTICS_PARSE_JSON_SCHEMA = {
         jsonObject({
           title: JSON_STRING,
           body: JSON_STRING,
-        })
+        }),
       ),
       passcode: jsonNullable(JSON_STRING),
     }),
-    schedule: GYMNASTICS_SCHEDULE_SCHEMA,
     links: jsonArray(
       jsonObject({
         label: JSON_STRING,
         url: JSON_STRING,
-      })
+      }),
     ),
     unmappedFacts: jsonArray(
       jsonObject({
         category: JSON_STRING,
         detail: JSON_STRING,
         confidence: { type: "string", enum: ["high", "medium", "low"] },
-      })
+      }),
     ),
   }),
-} as const;
-
-const GYMNASTICS_SCHEDULE_JSON_SCHEMA = {
-  name: "gymnastics_schedule_parse",
-  strict: true,
-  schema: GYMNASTICS_SCHEDULE_SCHEMA,
 } as const;
 
 const GYMNASTICS_CLASSIFIER_JSON_SCHEMA = {
@@ -7875,17 +7722,10 @@ const GYMNASTICS_CLASSIFIER_JSON_SCHEMA = {
     eventType: { type: "string", enum: ["gymnastics_meet", "unknown"] },
     documentProfile: {
       type: "string",
-      enum: [
-        "athlete_session",
-        "parent_packet",
-        "registration_packet",
-        "meet_overview",
-        "unknown",
-      ],
+      enum: ["parent_packet", "registration_packet", "meet_overview", "unknown"],
     },
     confidence: JSON_NUMBER,
     contentMix: jsonObject({
-      scheduleHeavy: JSON_BOOLEAN,
       registrationHeavy: JSON_BOOLEAN,
       parentPacketHeavy: JSON_BOOLEAN,
       mixed: JSON_BOOLEAN,
@@ -7896,7 +7736,7 @@ const GYMNASTICS_CLASSIFIER_JSON_SCHEMA = {
 const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. Follow this exact shape and key names:
 {
   "eventType": "gymnastics_meet" | "unknown",
-  "documentProfile": "athlete_session" | "parent_packet" | "registration_packet" | "meet_overview" | "unknown",
+  "documentProfile": "parent_packet" | "registration_packet" | "meet_overview" | "unknown",
   "title": string,
   "dates": string,
   "startAt": string|null,
@@ -7907,7 +7747,7 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
   "hostGym": string|null,
   "admission": [{ "label": string, "price": string, "note": string|null }],
   "athlete": {
-    "name": string|null, "level": string|null, "team": string|null, "session": string|null,
+    "name": string|null, "level": string|null, "team": string|null,
     "competitionDate": string|null, "stretchTime": string|null, "marchIn": string|null,
     "assignedGym": string|null, "awards": string|null
   },
@@ -7916,7 +7756,6 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
     "doorsOpen": string|null, "arrivalGuidance": string|null, "registrationInfo": string|null,
     "facilityLayout": string|null, "scoringInfo": string|null,
     "resultsInfo": string|null, "rotationSheetsInfo": string|null, "awardsInfo": string|null,
-    "sessionWindows": [{ "date": string|null, "start": string|null, "end": string|null, "note": string|null }],
     "operationalNotes": [string]
   },
   "logistics": {
@@ -7960,56 +7799,16 @@ const OPENAI_SCHEMA_INSTRUCTIONS = `Return JSON only. Do not wrap in markdown. F
     "announcements": [{ "title": string, "body": string }],
     "passcode": string|null
   },
-  "schedule": {
-    "venueLabel": string|null,
-    "supportEmail": string|null,
-    "notes": [string],
-    "annotations": [{
-      "kind": string|null,
-      "level": string|null,
-      "sessionCode": string|null,
-      "date": string|null,
-      "time": string|null,
-      "text": string
-    }],
-    "assignments": [{
-      "level": string|null,
-      "groupLabel": string|null,
-      "sessionCode": string|null,
-      "birthDateRange": string|null,
-      "divisionLabel": string|null,
-      "note": string|null
-    }],
-    "days": [{
-      "date": string|null,
-      "shortDate": string|null,
-      "sessions": [{
-        "code": string|null,
-        "group": string|null,
-        "startTime": string|null,
-        "warmupTime": string|null,
-        "note": string|null,
-        "clubs": [{
-          "name": string|null,
-          "teamAwardEligible": boolean|null,
-          "athleteCount": number|null,
-          "divisionLabel": string|null
-        }]
-      }]
-    }]
-  },
   "links": [{ "label": string, "url": string }],
   "unmappedFacts": [{ "category": string, "detail": string, "confidence": "high"|"medium"|"low" }]
-}
-
-Session grids, division-to-session tables, and club roster rows: leave schedule.days, schedule.assignments, and schedule.annotations empty. Capture session timing in meetDetails.sessionWindows; put short procedural lines in meetDetails.operationalNotes and meetDetails fields (warmup, marchIn, doorsOpen, arrivalGuidance, registrationInfo). Spectator pricing belongs in admission[].`;
+}`;
 
 function buildParsePromptEvidence(
   evidence: DiscoveryEvidence,
   options?: {
     compact?: boolean;
     pretty?: boolean;
-  }
+  },
 ): string {
   if (!options?.compact) {
     return JSON.stringify(evidence, null, options?.pretty === false ? 0 : 2);
@@ -8032,7 +7831,6 @@ function buildParsePromptEvidence(
       hostGymHints: evidence.candidates.hostGymHints.slice(0, 6),
       admissionHints: evidence.candidates.admissionHints.slice(0, 8),
       athleteHints: evidence.candidates.athleteHints.slice(0, 8),
-      sessionHints: evidence.candidates.sessionHints.slice(0, 8),
       logisticsHints: evidence.candidates.logisticsHints.slice(0, 8),
       policyHints: evidence.candidates.policyHints.slice(0, 6),
       coachHints: evidence.candidates.coachHints.slice(0, 10),
@@ -8067,10 +7865,7 @@ function buildParsePromptEvidence(
 }
 
 function clampParseConfidence(value: unknown, fallback = 0.5): number {
-  const num =
-    typeof value === "number"
-      ? value
-      : Number.parseFloat(safeString(value));
+  const num = typeof value === "number" ? value : Number.parseFloat(safeString(value));
   if (!Number.isFinite(num)) return fallback;
   return Math.max(0, Math.min(1, num));
 }
@@ -8079,7 +7874,6 @@ function normalizeParseClassification(value: any): ParseClassification | null {
   if (!value || typeof value !== "object") return null;
   const eventType = value.eventType === "gymnastics_meet" ? "gymnastics_meet" : "unknown";
   const documentProfile =
-    value.documentProfile === "athlete_session" ||
     value.documentProfile === "parent_packet" ||
     value.documentProfile === "registration_packet" ||
     value.documentProfile === "meet_overview"
@@ -8090,7 +7884,6 @@ function normalizeParseClassification(value: any): ParseClassification | null {
     documentProfile,
     confidence: clampParseConfidence(value.confidence, 0.5),
     contentMix: {
-      scheduleHeavy: Boolean(value?.contentMix?.scheduleHeavy),
       registrationHeavy: Boolean(value?.contentMix?.registrationHeavy),
       parentPacketHeavy: Boolean(value?.contentMix?.parentPacketHeavy),
       mixed: Boolean(value?.contentMix?.mixed),
@@ -8100,7 +7893,7 @@ function normalizeParseClassification(value: any): ParseClassification | null {
 
 function inferHeuristicParseClassification(
   evidence: DiscoveryEvidence,
-  extractionMeta?: ExtractionResult["extractionMeta"]
+  extractionMeta?: ExtractionResult["extractionMeta"],
 ): ParseClassification {
   const combinedEvidenceText = [
     ...evidence.snippets.firstLines,
@@ -8111,50 +7904,21 @@ function inferHeuristicParseClassification(
     ...evidence.sections.policy,
     ...evidence.sections.coachOps,
     ...evidence.sections.registration,
-    ...evidence.candidates.sessionHints,
     ...evidence.candidates.coachHints,
-    ...pickArray(extractionMeta?.schedulePageTexts).map((item) => safeString(item?.text)),
     ...pickArray(extractionMeta?.coachPageHints).map((item) => safeString(item?.excerpt)),
   ]
     .filter(Boolean)
     .join("\n");
   const hasPacketCoverSignal =
     /please review the following items enclosed in this packet|the following items are included/i.test(
-      combinedEvidenceText
+      combinedEvidenceText,
     );
   const hasRegistrationHeadingSignal =
     /athlete\s*&\s*coach registration|meet entry summary|regional meet coaches information|coaches information(?:—|-)important/i.test(
-      combinedEvidenceText
+      combinedEvidenceText,
     );
   const hasParentHeadingSignal =
-    /parents?\/spectators?|additional info|spectator admissions?/i.test(
-      combinedEvidenceText
-    );
-  const hasAssignmentSignal =
-    /age groups?\s+and\s+session assignments|birth date(?:\s*range)?\s+divisions?\s+session/i.test(
-      combinedEvidenceText
-    );
-  const hasScheduleGridSignal =
-    /session\s+[a-z]{1,3}\d{1,2}|\bstretch\/warmup:|warm-?up\. competition to follow|team entries/i.test(
-      combinedEvidenceText
-    );
-  const scheduleHintPattern =
-    /session\s+[a-z0-9]+|session assignments?|stretch|warm-?up|competition to follow|march in|age groups?|birth date|team entries|awards (?:ceremony|cadence|by session)/i;
-  const scheduleSessionHintCount = evidence.candidates.sessionHints.filter((line) =>
-    scheduleHintPattern.test(line)
-  ).length;
-  const scheduleAthleteHintCount = evidence.candidates.athleteHints.filter((line) =>
-    scheduleHintPattern.test(line)
-  ).length;
-  const schedulePageWeight = hasScheduleGridSignal || hasAssignmentSignal
-    ? pickArray(extractionMeta?.schedulePageTexts).length * 2
-    : 0;
-  const sessionSignals =
-    scheduleSessionHintCount +
-    scheduleAthleteHintCount +
-    schedulePageWeight +
-    (hasAssignmentSignal ? 3 : 0) +
-    (hasScheduleGridSignal ? 2 : 0);
+    /parents?\/spectators?|additional info|spectator admissions?/i.test(combinedEvidenceText);
   const registrationSignals =
     evidence.sections.registration.length +
     evidence.sections.coachOps.length +
@@ -8166,44 +7930,34 @@ function inferHeuristicParseClassification(
     evidence.sections.policy.length +
     evidence.sections.venue.length +
     (hasParentHeadingSignal ? 2 : 0);
-  const scheduleHeavy =
-    sessionSignals >= 8 ||
-    hasAssignmentSignal ||
-    (hasScheduleGridSignal &&
-      (pickArray(extractionMeta?.schedulePageTexts).length > 0 ||
-        scheduleSessionHintCount >= 2 ||
-        scheduleAthleteHintCount >= 2));
   const registrationHeavy = registrationSignals >= 6 || hasRegistrationHeadingSignal;
   const parentPacketHeavy =
     parentSignals >= 5 ||
     (evidence.sections.spectator.length > 0 && evidence.sections.traffic.length > 0) ||
     hasParentHeadingSignal;
-  const signalBuckets = [scheduleHeavy, registrationHeavy, parentPacketHeavy].filter(Boolean).length;
+  const signalBuckets = [registrationHeavy, parentPacketHeavy].filter(Boolean).length;
   const mixed = signalBuckets >= 2;
   let documentProfile: ParseResult["documentProfile"] = "meet_overview";
-  const strongestSignal = Math.max(sessionSignals, registrationSignals, parentSignals);
+  const strongestSignal = Math.max(registrationSignals, parentSignals);
   if (hasPacketCoverSignal && !mixed) {
     documentProfile = "meet_overview";
   } else if (mixed && registrationHeavy) {
     documentProfile = "registration_packet";
   } else if (mixed && parentPacketHeavy) {
     documentProfile = "parent_packet";
-  } else if (strongestSignal === sessionSignals && sessionSignals >= 5) {
-    documentProfile = "athlete_session";
   } else if (strongestSignal === registrationSignals && registrationSignals >= 5) {
     documentProfile = "registration_packet";
   } else if (strongestSignal === parentSignals && parentSignals >= 5) {
     documentProfile = "parent_packet";
   }
   const eventType =
-    /gymnastics|usag|xcel|state championships?|session\s+[a-z0-9]|entry fee|spectator admission|march in|warm ?up/i.test(
+    /gymnastics|usag|xcel|state championships?|entry fee|spectator admission|march in|warm ?up/i.test(
       [
         ...evidence.candidates.titleHints,
-        ...evidence.candidates.sessionHints,
         ...evidence.candidates.coachHints,
         ...evidence.sections.spectator,
         ...evidence.sections.registration,
-      ].join("\n")
+      ].join("\n"),
     )
       ? "gymnastics_meet"
       : "unknown";
@@ -8212,10 +7966,9 @@ function inferHeuristicParseClassification(
     documentProfile,
     confidence: clampParseConfidence(
       0.45 + Math.min(0.45, strongestSignal / 24) - (mixed ? 0.05 : 0),
-      0.55
+      0.55,
     ),
     contentMix: {
-      scheduleHeavy,
       registrationHeavy,
       parentPacketHeavy,
       mixed,
@@ -8234,17 +7987,13 @@ function selectParsePromptProfiles(classification: ParseClassification): ParsePr
   return uniqueBy(["overview_core", "parent_public"], (item) => item).slice(0, 2);
 }
 
-function buildClassifierPrompt(
-  evidence: DiscoveryEvidence,
-  extractedText: string
-): string {
+function buildClassifierPrompt(evidence: DiscoveryEvidence, extractedText: string): string {
   const boundedText = cleanExtractedText(extractedText).slice(0, 12000);
   const classifierEvidence = {
     source: evidence.source,
     candidates: {
       titleHints: evidence.candidates.titleHints.slice(0, 4),
       dateHints: evidence.candidates.dateHints.slice(0, 4),
-      sessionHints: evidence.candidates.sessionHints.slice(0, 6),
       coachHints: evidence.candidates.coachHints.slice(0, 6),
       logisticsHints: evidence.candidates.logisticsHints.slice(0, 6),
       policyHints: evidence.candidates.policyHints.slice(0, 6),
@@ -8269,12 +8018,10 @@ function buildClassifierPrompt(
     "",
     "Rules:",
     "- `documentProfile` is the primary dominant packet type.",
-    "- Set `scheduleHeavy` when session grids, warmups, march-in, awards, or assignment tables dominate.",
     "- Set `registrationHeavy` when entry fees, deadlines, refunds, qualification, payment, or coach operations dominate.",
     "- Set `parentPacketHeavy` when parking, admissions, doors, traffic, venue layout, or public policies dominate.",
     "- Packet covers often include phrases like `Please review the following items enclosed in this packet` or `The following items are included`.",
     "- Coach/registration packets often include headings like `Athlete & Coach Registration`, `Meet Entry Summary`, or `REGIONAL MEET COACHES INFORMATION`.",
-    "- Session packets often include headings like `Age Groups and Session Assignments` or `Birth Date Divisions Session` plus repeated session/stretch/warm-up lines.",
     "- Treat `Updated`, `Posted`, and `Final Posting` lines as document metadata, not meet-date evidence.",
     "- Set `mixed` when two or more of those buckets are materially present.",
     "- Use `meet_overview` for general meet summaries that are not clearly dominated by one packet type.",
@@ -8291,14 +8038,14 @@ function buildClassifierPrompt(
 function selectExcerptWindows(
   sourceText: string,
   patterns: RegExp[],
-  options?: { limit?: number; radius?: number; fallbackLines?: number }
+  options?: { limit?: number; radius?: number; fallbackLines?: number },
 ): Array<{ label: string; text: string }> {
   const cleaned = cleanExtractedText(sourceText);
   const lines = stitchDiscoveryLines(
     cleaned
       .split(/\n+/)
       .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
-      .filter(Boolean)
+      .filter(Boolean),
   );
   const radius = options?.radius ?? 1;
   const selectedIndexes = new Set<number>();
@@ -8350,17 +8097,11 @@ function selectEvidenceForParseProfile(
   profile: ParsePromptProfile,
   extractedText: string,
   evidence: DiscoveryEvidence,
-  extractionMeta?: ExtractionResult["extractionMeta"]
+  extractionMeta?: ExtractionResult["extractionMeta"],
 ): SelectedParseEvidence {
   const resourceLinks = pickArray(evidence.resources.links);
   const resourceLinksForProfile =
-    profile === "registration_coach"
-      ? resourceLinks.filter((item) =>
-          ["packet", "rotation_hub", "rotation_sheet", "results_hub", "results_live", "results_pdf"].includes(
-            item.kind
-          )
-        )
-      : profile === "parent_public"
+    profile === "parent_public"
       ? resourceLinks.filter((item) =>
           [
             "admission",
@@ -8370,13 +8111,7 @@ function selectEvidenceForParseProfile(
             "packet",
             "photo_video",
             "apparel_form",
-          ].includes(item.kind)
-        )
-      : profile === "athlete_session"
-      ? resourceLinks.filter((item) =>
-          ["rotation_hub", "rotation_sheet", "results_hub", "results_live", "results_pdf"].includes(
-            item.kind
-          )
+          ].includes(item.kind),
         )
       : resourceLinks.slice(0, 8);
 
@@ -8408,42 +8143,6 @@ function selectEvidenceForParseProfile(
       linkHints: evidence.candidates.linkHints.slice(0, 8),
       resources: resourceLinksForProfile.slice(0, 10),
     },
-    registration_coach: {
-      source: evidence.source,
-      titleHints: evidence.candidates.titleHints.slice(0, 4),
-      coachHints: evidence.candidates.coachHints.slice(0, 12),
-      coachOps: evidence.sections.coachOps.slice(0, 10),
-      registration: evidence.sections.registration.slice(0, 10),
-      coachLines: evidence.snippets.coachLines.slice(0, 8),
-      dateHints: evidence.candidates.dateHints.slice(0, 6),
-      linkHints: evidence.candidates.linkHints.slice(0, 8),
-      resources: resourceLinksForProfile.slice(0, 10),
-      coachPageHints: pickArray(extractionMeta?.coachPageHints)
-        .map((item) => ({
-          page: Number(item?.page) || 0,
-          heading: safeString(item?.heading) || null,
-          excerpt: safeString(item?.excerpt),
-        }))
-        .filter((item) => item.excerpt)
-        .slice(0, 8),
-    },
-    athlete_session: {
-      source: evidence.source,
-      titleHints: evidence.candidates.titleHints.slice(0, 4),
-      dateHints: evidence.candidates.dateHints.slice(0, 6),
-      timeHints: evidence.candidates.timeHints.slice(0, 10),
-      athleteHints: evidence.candidates.athleteHints.slice(0, 10),
-      sessionHints: evidence.candidates.sessionHints.slice(0, 10),
-      firstLines: evidence.snippets.firstLines.slice(0, 8),
-      resources: resourceLinksForProfile.slice(0, 8),
-      schedulePages: pickArray(extractionMeta?.schedulePageTexts)
-        .slice(0, 4)
-        .map((item) => ({
-          pageNumber: Number(item?.pageNumber) || 0,
-          excerpt: cleanExtractedText(safeString(item?.text)).slice(0, 3500),
-        }))
-        .filter((item) => item.pageNumber > 0 && item.excerpt),
-    },
   };
 
   const excerptPatternsByType: Record<ParsePromptProfile, RegExp[]> = {
@@ -8454,17 +8153,12 @@ function selectEvidenceForParseProfile(
     parent_public: [
       /\b(?:admission|ticket|cash|parking|traffic|doors|arrival|entrance|facility|layout|guest services|outside food|service animal|parents?\/spectators?|additional info|spectator admissions?)\b/i,
     ],
-    registration_coach: [
-      /\b(?:coach|entry fee|team fee|late fee|deadline|refund|payment|qualification|regional commitment|meet maker|reservation|rotation sheet|floor music|scratches|athlete\s*&\s*coach registration|meet entry summary|regional meet coaches information)\b/i,
-    ],
-    athlete_session: [
-      /\b(?:session|stretch|warm ?up|march in|awards|assigned gym|rotation|apparatus|flight|division|age groups?\s+and\s+session assignments|birth date divisions? session)\b/i,
-    ],
+    
   };
 
   const excerpts = selectExcerptWindows(extractedText, excerptPatternsByType[profile], {
-    limit: profile === "athlete_session" ? 10 : 8,
-    radius: profile === "athlete_session" ? 2 : 1,
+    limit: 8,
+    radius: 1,
     fallbackLines: 10,
   });
   const boundedExcerpts = excerpts
@@ -8472,7 +8166,7 @@ function selectEvidenceForParseProfile(
       ...item,
       text: item.text.slice(0, 2600),
     }))
-    .slice(0, profile === "athlete_session" ? 10 : 8);
+    .slice(0, 8);
   const evidenceJson = JSON.stringify(profileEvidenceByType[profile]);
   return {
     evidence: profileEvidenceByType[profile],
@@ -8487,7 +8181,7 @@ function selectEvidenceForParseProfile(
 function buildTargetedParsePrompt(
   profile: ParsePromptProfile,
   classification: ParseClassification,
-  selected: SelectedParseEvidence
+  selected: SelectedParseEvidence,
 ): string {
   const focusByProfile: Record<ParsePromptProfile, string[]> = {
     overview_core: [
@@ -8498,15 +8192,7 @@ function buildTargetedParsePrompt(
       "Focus on doors, arrival, parking, traffic, admissions, venue logistics, public policies, and public announcements.",
       "Populate public-facing meet details and logistics before using generic leftovers.",
     ],
-    registration_coach: [
-      "Focus on fees, deadlines, qualification, payment, refund, coach operations, and coach contacts.",
-      "Coach/admin items belong in `coachInfo` before generic `contacts`, `deadlines`, or `unmappedFacts`.",
-    ],
-    athlete_session: [
-      "Focus on athlete session facts, stretch/warmup, march-in, assigned gym, awards, and meetDetails.sessionWindows.",
-      "Only populate rotation order when an explicit apparatus sequence is shown.",
-      "Do not build schedule.days or schedule.assignments; keep grids out of schedule fields.",
-    ],
+    
   };
   return [
     OPENAI_SCHEMA_INSTRUCTIONS,
@@ -8529,12 +8215,9 @@ function buildTargetedParsePrompt(
     "- Ignore `Hosted by:` when no host value is provided.",
     "- Sponsor thanks, hashtag campaigns, and vendor promotions are not meet announcements.",
     "- Prefer structured resource fields/links for results, rotation sheets, rosters, tickets, hotels, and travel hubs.",
-    "- Age-group, birth-date, or division-to-session tables belong in meetDetails.sessionWindows and meetDetails.operationalNotes, not in schedule.assignments or schedule.days.",
     "- Use only absolute URLs from evidence/resources when URLs are available there.",
     "- Public admission pricing belongs only in `admission`.",
-    "- Coach entry/team/late fees belong only in `coachInfo`.",
     "- Keep parking maps/rates in parking link fields, not generic notes.",
-    "- Leave schedule.days, schedule.assignments, and schedule.annotations empty; summarize timing in meetDetails instead.",
     "- Use `unmappedFacts` only for grounded leftovers that clearly do not fit elsewhere.",
     "- Leave unrelated fields empty instead of stretching evidence.",
     "",
@@ -8551,7 +8234,7 @@ function buildTargetedParsePrompt(
 function mergeUniqueStrings(existing: string[], incoming: string[]): string[] {
   return uniqueBy(
     [...existing, ...incoming].map((item) => safeString(item)).filter(Boolean),
-    (item) => item
+    (item) => item,
   );
 }
 
@@ -8560,29 +8243,29 @@ function fillScalar<T>(current: T, candidate: T, emptyCheck?: (value: T) => bool
   return isEmpty(current) && !isEmpty(candidate) ? candidate : current;
 }
 
-function mergeObjectArray<T>(
-  existing: T[],
-  incoming: T[],
-  keyFn: (value: T) => string
-): T[] {
+function mergeObjectArray<T>(existing: T[], incoming: T[], keyFn: (value: T) => string): T[] {
   return uniqueBy([...existing, ...incoming].filter(Boolean), keyFn);
 }
 
 function mergeParseResultsByProfile(
-  results: Array<{ profile: ParsePromptProfile; result: ParseResult }>
+  results: Array<{ profile: ParsePromptProfile; result: ParseResult }>,
 ): ParseResult {
   const merged = buildEmptyParseResult();
   const ordered = [...results].sort(
     (a, b) =>
-      ["overview_core", "parent_public", "registration_coach", "athlete_session"].indexOf(a.profile) -
-      ["overview_core", "parent_public", "registration_coach", "athlete_session"].indexOf(b.profile)
+      ["overview_core", "parent_public"].indexOf(a.profile) -
+      ["overview_core", "parent_public"].indexOf(b.profile),
   );
   for (const { result } of ordered) {
-    merged.eventType = fillScalar(merged.eventType, result.eventType, (value) => value === "unknown");
+    merged.eventType = fillScalar(
+      merged.eventType,
+      result.eventType,
+      (value) => value === "unknown",
+    );
     merged.documentProfile = fillScalar(
       merged.documentProfile,
       result.documentProfile,
-      (value) => value === "unknown"
+      (value) => value === "unknown",
     );
     merged.title = fillScalar(merged.title, result.title);
     merged.dates = fillScalar(merged.dates, result.dates);
@@ -8592,40 +8275,27 @@ function mergeParseResultsByProfile(
     merged.venue = fillScalar(merged.venue, result.venue);
     merged.address = fillScalar(merged.address, result.address);
     merged.hostGym = fillScalar(merged.hostGym, result.hostGym);
-    merged.admission = mergeObjectArray(
-      merged.admission,
-      result.admission,
-      (item) => [item.label, item.price, item.note || ""].join("|")
+    merged.admission = mergeObjectArray(merged.admission, result.admission, (item) =>
+      [item.label, item.price, item.note || ""].join("|"),
     );
-    merged.contacts = mergeObjectArray(
-      merged.contacts,
-      result.contacts,
-      (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+    merged.contacts = mergeObjectArray(merged.contacts, result.contacts, (item) =>
+      [item.role, item.name || "", item.email || "", item.phone || ""].join("|"),
     );
-    merged.deadlines = mergeObjectArray(
-      merged.deadlines,
-      result.deadlines,
-      (item) => [item.label, item.date || "", item.note || ""].join("|")
+    merged.deadlines = mergeObjectArray(merged.deadlines, result.deadlines, (item) =>
+      [item.label, item.date || "", item.note || ""].join("|"),
     );
-    merged.links = mergeObjectArray(
-      merged.links,
-      result.links,
-      (item) => [item.label, item.url].join("|")
+    merged.links = mergeObjectArray(merged.links, result.links, (item) =>
+      [item.label, item.url].join("|"),
     );
-    merged.unmappedFacts = mergeObjectArray(
-      merged.unmappedFacts,
-      result.unmappedFacts,
-      (item) => [item.category, item.detail, item.confidence].join("|")
+    merged.unmappedFacts = mergeObjectArray(merged.unmappedFacts, result.unmappedFacts, (item) =>
+      [item.category, item.detail, item.confidence].join("|"),
     );
   }
 
   const overview = results.find((item) => item.profile === "overview_core")?.result;
   const parent = results.find((item) => item.profile === "parent_public")?.result;
-  const registration = results.find((item) => item.profile === "registration_coach")?.result;
-  const athlete = results.find((item) => item.profile === "athlete_session")?.result;
-
-  const corePriority = [overview, parent, registration, athlete].filter(
-    (item): item is ParseResult => Boolean(item)
+  const corePriority = [overview, parent].filter(
+    (item): item is ParseResult => Boolean(item),
   );
   for (const candidate of corePriority) {
     merged.title = fillScalar(merged.title, candidate.title);
@@ -8639,47 +8309,59 @@ function mergeParseResultsByProfile(
   }
 
   if (parent) {
-    merged.meetDetails.doorsOpen = fillScalar(merged.meetDetails.doorsOpen, parent.meetDetails.doorsOpen);
+    merged.meetDetails.doorsOpen = fillScalar(
+      merged.meetDetails.doorsOpen,
+      parent.meetDetails.doorsOpen,
+    );
     merged.meetDetails.arrivalGuidance = fillScalar(
       merged.meetDetails.arrivalGuidance,
-      parent.meetDetails.arrivalGuidance
+      parent.meetDetails.arrivalGuidance,
     );
     merged.meetDetails.facilityLayout = fillScalar(
       merged.meetDetails.facilityLayout,
-      parent.meetDetails.facilityLayout
+      parent.meetDetails.facilityLayout,
     );
-    merged.meetDetails.scoringInfo = fillScalar(merged.meetDetails.scoringInfo, parent.meetDetails.scoringInfo);
-    merged.meetDetails.resultsInfo = fillScalar(merged.meetDetails.resultsInfo, parent.meetDetails.resultsInfo);
+    merged.meetDetails.scoringInfo = fillScalar(
+      merged.meetDetails.scoringInfo,
+      parent.meetDetails.scoringInfo,
+    );
+    merged.meetDetails.resultsInfo = fillScalar(
+      merged.meetDetails.resultsInfo,
+      parent.meetDetails.resultsInfo,
+    );
     merged.meetDetails.rotationSheetsInfo = fillScalar(
       merged.meetDetails.rotationSheetsInfo,
-      parent.meetDetails.rotationSheetsInfo
+      parent.meetDetails.rotationSheetsInfo,
     );
-    merged.meetDetails.awardsInfo = fillScalar(merged.meetDetails.awardsInfo, parent.meetDetails.awardsInfo);
+    merged.meetDetails.awardsInfo = fillScalar(
+      merged.meetDetails.awardsInfo,
+      parent.meetDetails.awardsInfo,
+    );
     merged.meetDetails.operationalNotes = mergeUniqueStrings(
       merged.meetDetails.operationalNotes,
-      parent.meetDetails.operationalNotes
+      parent.meetDetails.operationalNotes,
     );
     merged.logistics.parking = fillScalar(merged.logistics.parking, parent.logistics.parking);
     merged.logistics.trafficAlerts = fillScalar(
       merged.logistics.trafficAlerts,
-      parent.logistics.trafficAlerts
+      parent.logistics.trafficAlerts,
     );
     merged.logistics.hotel = fillScalar(merged.logistics.hotel, parent.logistics.hotel);
     merged.logistics.meals = fillScalar(merged.logistics.meals, parent.logistics.meals);
     merged.logistics.rideShare = fillScalar(merged.logistics.rideShare, parent.logistics.rideShare);
     merged.logistics.accessibility = fillScalar(
       merged.logistics.accessibility,
-      parent.logistics.accessibility
+      parent.logistics.accessibility,
     );
     merged.logistics.parkingLinks = mergeObjectArray(
       merged.logistics.parkingLinks,
       parent.logistics.parkingLinks,
-      (item) => [item.label, item.url].join("|")
+      (item) => [item.label, item.url].join("|"),
     );
     merged.logistics.parkingPricingLinks = mergeObjectArray(
       merged.logistics.parkingPricingLinks,
       parent.logistics.parkingPricingLinks,
-      (item) => [item.label, item.url].join("|")
+      (item) => [item.label, item.url].join("|"),
     );
     merged.policies.food = fillScalar(merged.policies.food, parent.policies.food);
     merged.policies.hydration = fillScalar(merged.policies.hydration, parent.policies.hydration);
@@ -8689,133 +8371,11 @@ function mergeParseResultsByProfile(
     merged.communications.announcements = mergeObjectArray(
       merged.communications.announcements,
       parent.communications.announcements,
-      (item) => [item.title, item.body].join("|")
+      (item) => [item.title, item.body].join("|"),
     );
     merged.communications.passcode = fillScalar(
       merged.communications.passcode,
-      parent.communications.passcode
-    );
-  }
-
-  if (registration) {
-    merged.meetDetails.registrationInfo = fillScalar(
-      merged.meetDetails.registrationInfo,
-      registration.meetDetails.registrationInfo
-    );
-    merged.coachInfo = {
-      ...merged.coachInfo,
-      signIn: fillScalar(merged.coachInfo.signIn, registration.coachInfo.signIn),
-      attire: fillScalar(merged.coachInfo.attire, registration.coachInfo.attire),
-      hospitality: fillScalar(merged.coachInfo.hospitality, registration.coachInfo.hospitality),
-      floorAccess: fillScalar(merged.coachInfo.floorAccess, registration.coachInfo.floorAccess),
-      scratches: fillScalar(merged.coachInfo.scratches, registration.coachInfo.scratches),
-      floorMusic: fillScalar(merged.coachInfo.floorMusic, registration.coachInfo.floorMusic),
-      rotationSheets: fillScalar(merged.coachInfo.rotationSheets, registration.coachInfo.rotationSheets),
-      awards: fillScalar(merged.coachInfo.awards, registration.coachInfo.awards),
-      regionalCommitment: fillScalar(
-        merged.coachInfo.regionalCommitment,
-        registration.coachInfo.regionalCommitment
-      ),
-      qualification: fillScalar(merged.coachInfo.qualification, registration.coachInfo.qualification),
-      meetFormat: fillScalar(merged.coachInfo.meetFormat, registration.coachInfo.meetFormat),
-      equipment: fillScalar(merged.coachInfo.equipment, registration.coachInfo.equipment),
-      refundPolicy: fillScalar(merged.coachInfo.refundPolicy, registration.coachInfo.refundPolicy),
-      paymentInstructions: fillScalar(
-        merged.coachInfo.paymentInstructions,
-        registration.coachInfo.paymentInstructions
-      ),
-      entryFees: mergeObjectArray(
-        merged.coachInfo.entryFees,
-        registration.coachInfo.entryFees,
-        (item) => [item.label, item.amount, item.note || ""].join("|")
-      ),
-      teamFees: mergeObjectArray(
-        merged.coachInfo.teamFees,
-        registration.coachInfo.teamFees,
-        (item) => [item.label, item.amount, item.note || ""].join("|")
-      ),
-      lateFees: mergeObjectArray(
-        merged.coachInfo.lateFees,
-        registration.coachInfo.lateFees,
-        (item) => [item.label, item.amount, item.trigger || "", item.note || ""].join("|")
-      ),
-      contacts: mergeObjectArray(
-        merged.coachInfo.contacts,
-        registration.coachInfo.contacts,
-        (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
-      ),
-      deadlines: mergeObjectArray(
-        merged.coachInfo.deadlines,
-        registration.coachInfo.deadlines,
-        (item) => [item.label, item.date || "", item.note || ""].join("|")
-      ),
-      links: mergeObjectArray(
-        merged.coachInfo.links,
-        registration.coachInfo.links,
-        (item) => [item.label, item.url].join("|")
-      ),
-      notes: mergeUniqueStrings(merged.coachInfo.notes, registration.coachInfo.notes),
-    };
-  }
-
-  if (athlete) {
-    merged.athlete = {
-      ...merged.athlete,
-      name: fillScalar(merged.athlete.name, athlete.athlete.name),
-      level: fillScalar(merged.athlete.level, athlete.athlete.level),
-      team: fillScalar(merged.athlete.team, athlete.athlete.team),
-      session: fillScalar(merged.athlete.session, athlete.athlete.session),
-      competitionDate: fillScalar(
-        merged.athlete.competitionDate,
-        athlete.athlete.competitionDate
-      ),
-      stretchTime: fillScalar(merged.athlete.stretchTime, athlete.athlete.stretchTime),
-      marchIn: fillScalar(merged.athlete.marchIn, athlete.athlete.marchIn),
-      assignedGym: fillScalar(merged.athlete.assignedGym, athlete.athlete.assignedGym),
-      awards: fillScalar(merged.athlete.awards, athlete.athlete.awards),
-    };
-    merged.meetDetails.warmup = fillScalar(merged.meetDetails.warmup, athlete.meetDetails.warmup);
-    merged.meetDetails.marchIn = fillScalar(merged.meetDetails.marchIn, athlete.meetDetails.marchIn);
-    merged.meetDetails.rotationOrder = fillScalar(
-      merged.meetDetails.rotationOrder,
-      athlete.meetDetails.rotationOrder
-    );
-    merged.meetDetails.judgingNotes = fillScalar(
-      merged.meetDetails.judgingNotes,
-      athlete.meetDetails.judgingNotes
-    );
-    merged.meetDetails.awardsInfo = fillScalar(
-      merged.meetDetails.awardsInfo,
-      athlete.meetDetails.awardsInfo
-    );
-    merged.meetDetails.sessionWindows = mergeObjectArray(
-      merged.meetDetails.sessionWindows,
-      athlete.meetDetails.sessionWindows,
-      (item) => [item.date || "", item.start || "", item.end || "", item.note || ""].join("|")
-    );
-    merged.gear.uniform = fillScalar(merged.gear.uniform, athlete.gear.uniform);
-    merged.gear.checklist = mergeUniqueStrings(merged.gear.checklist, athlete.gear.checklist);
-    merged.schedule.notes = mergeUniqueStrings(merged.schedule.notes, athlete.schedule.notes);
-    merged.schedule.annotations = mergeObjectArray(
-      merged.schedule.annotations || [],
-      athlete.schedule.annotations || [],
-      (item) =>
-        [item.kind || "", item.level || "", item.sessionCode || "", item.date || "", item.time || "", item.text].join(
-          "|"
-        )
-    );
-    merged.schedule.assignments = mergeObjectArray(
-      merged.schedule.assignments || [],
-      athlete.schedule.assignments || [],
-      (item) =>
-        [
-          item.level || "",
-          item.groupLabel || "",
-          item.sessionCode || "",
-          item.birthDateRange || "",
-          item.divisionLabel || "",
-          item.note || "",
-        ].join("|")
+      parent.communications.passcode,
     );
   }
 
@@ -8830,7 +8390,7 @@ function buildProfessionalParsePrompt(
     includeSchema?: boolean;
     compactEvidence?: boolean;
     prettyEvidence?: boolean;
-  }
+  },
 ): string {
   const boundedText = cleanExtractedText(sourceText).slice(0, 120000);
   const evidenceJson = buildParsePromptEvidence(evidence, {
@@ -8860,7 +8420,6 @@ function buildProfessionalParsePrompt(
     "## Document-Type Extraction Focus",
     "- `parent_packet`: doors/arrival, facility layout, parking/traffic, visitor policies.",
     "- `registration_packet`: entry fees, qualification criteria, deadlines, refund/late-fee rules, organizer contacts.",
-    "- `athlete_session`: warmup schedule, march-in, session windows, rotation order/apparatus, awards, assigned gym.",
     "- Documents may be mixed packets. Use `documentProfile` only as the coarse primary label; still extract both public and coach-only sections when present.",
     "- `coachInfo`: sign-in, attire, hospitality, scratches, floor-access rules, rotation-sheet instructions, regional commitment steps, payment/refund/qualification rules, and coach/admin contacts.",
     "",
@@ -8897,7 +8456,6 @@ function buildProfessionalParsePrompt(
     "- `coachInfo.attire` should be one concise string. Use `coachInfo.notes` for extra bullet-like coach notes.",
     "- `gear.uniform` and `gear.checklist` are ONLY for true athlete gear, uniform, hair, or equipment-prep items.",
     "- Never place venue temperature notes, admission reminders, ticket policy, athlete cards, score-recording notes, results websites, sponsor copy, or general operational reminders in `gear`.",
-    "- Pages dominated by session labels, stretch/warmup times, and repeated club names are schedule grids, not public prose.",
     "- Do not convert session grids, club participation tables, or repeated club-name lists into `meetDetails.operationalNotes`, `gear`, `communications.announcements`, or `unmappedFacts`.",
     "- Venue comfort notes (for example temperature/chilly reminders) belong with venue details, not `gear`.",
     "- Athlete card or scorecard-memento notes belong in `meetDetails.operationalNotes`, not `gear`.",
@@ -8930,7 +8488,6 @@ function normalizeParseResult(value: any): ParseResult | null {
   if (!value || typeof value !== "object") return null;
   const eventType = value.eventType === "gymnastics_meet" ? "gymnastics_meet" : "unknown";
   const documentProfile =
-    value.documentProfile === "athlete_session" ||
     value.documentProfile === "parent_packet" ||
     value.documentProfile === "registration_packet" ||
     value.documentProfile === "meet_overview"
@@ -8958,7 +8515,6 @@ function normalizeParseResult(value: any): ParseResult | null {
       name: safeString(value.athlete?.name) || null,
       level: safeString(value.athlete?.level) || null,
       team: safeString(value.athlete?.team) || null,
-      session: safeString(value.athlete?.session) || null,
       competitionDate: safeString(value.athlete?.competitionDate) || null,
       stretchTime: safeString(value.athlete?.stretchTime) || null,
       marchIn: safeString(value.athlete?.marchIn) || null,
@@ -8978,14 +8534,6 @@ function normalizeParseResult(value: any): ParseResult | null {
       resultsInfo: safeString(value.meetDetails?.resultsInfo) || null,
       rotationSheetsInfo: safeString(value.meetDetails?.rotationSheetsInfo) || null,
       awardsInfo: safeString(value.meetDetails?.awardsInfo) || null,
-      sessionWindows: pickArray(value.meetDetails?.sessionWindows)
-        .map((item) => ({
-          date: safeString(item?.date) || null,
-          start: safeString(item?.start) || null,
-          end: safeString(item?.end) || null,
-          note: safeString(item?.note) || null,
-        }))
-        .filter((item) => item.date || item.start || item.end || item.note),
       operationalNotes: pickArray(value.meetDetails?.operationalNotes)
         .map((item) => safeString(item))
         .filter(Boolean),
@@ -9006,7 +8554,7 @@ function normalizeParseResult(value: any): ParseResult | null {
             url: normalizeUrl(item?.url),
           }))
           .filter((item) => item.url),
-        (item) => item.url
+        (item) => item.url,
       ),
       parkingPricingLinks: uniqueBy(
         pickArray(value.logistics?.parkingPricingLinks)
@@ -9015,7 +8563,7 @@ function normalizeParseResult(value: any): ParseResult | null {
             url: normalizeUrl(item?.url),
           }))
           .filter((item) => item.url),
-        (item) => item.url
+        (item) => item.url,
       ),
     },
     policies: {
@@ -9023,15 +8571,19 @@ function normalizeParseResult(value: any): ParseResult | null {
       hydration: safeString(value.policies?.hydration) || null,
       safety: safeString(value.policies?.safety) || null,
       animals: safeString(value.policies?.animals) || null,
-      misc: pickArray(value.policies?.misc).map((item) => safeString(item)).filter(Boolean),
+      misc: pickArray(value.policies?.misc)
+        .map((item) => safeString(item))
+        .filter(Boolean),
     },
     coachInfo: {
       signIn: safeString(value.coachInfo?.signIn) || null,
       attire:
         safeString(value.coachInfo?.attire) ||
         uniqueBy(
-          pickArray(value.coachInfo?.attire).map((item) => safeString(item)).filter(Boolean),
-          (item) => item
+          pickArray(value.coachInfo?.attire)
+            .map((item) => safeString(item))
+            .filter(Boolean),
+          (item) => item,
         ).join("\n") ||
         null,
       hospitality: safeString(value.coachInfo?.hospitality) || null,
@@ -9054,7 +8606,7 @@ function normalizeParseResult(value: any): ParseResult | null {
             note: safeString(item?.note) || null,
           }))
           .filter((item) => item.label || item.amount || item.note),
-        (item) => [item.label, item.amount, item.note || ""].join("|")
+        (item) => [item.label, item.amount, item.note || ""].join("|"),
       ),
       teamFees: uniqueBy(
         pickArray(value.coachInfo?.teamFees)
@@ -9064,7 +8616,7 @@ function normalizeParseResult(value: any): ParseResult | null {
             note: safeString(item?.note) || null,
           }))
           .filter((item) => item.label || item.amount || item.note),
-        (item) => [item.label, item.amount, item.note || ""].join("|")
+        (item) => [item.label, item.amount, item.note || ""].join("|"),
       ),
       lateFees: uniqueBy(
         pickArray(value.coachInfo?.lateFees)
@@ -9075,7 +8627,7 @@ function normalizeParseResult(value: any): ParseResult | null {
             note: safeString(item?.note) || null,
           }))
           .filter((item) => item.label || item.amount || item.trigger || item.note),
-        (item) => [item.label, item.amount, item.trigger || "", item.note || ""].join("|")
+        (item) => [item.label, item.amount, item.trigger || "", item.note || ""].join("|"),
       ),
       contacts: uniqueBy(
         pickArray(value.coachInfo?.contacts)
@@ -9086,7 +8638,7 @@ function normalizeParseResult(value: any): ParseResult | null {
             phone: safeString(item?.phone) || null,
           }))
           .filter((item) => item.name || item.email || item.phone),
-        (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+        (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|"),
       ),
       deadlines: uniqueBy(
         pickArray(value.coachInfo?.deadlines)
@@ -9096,7 +8648,7 @@ function normalizeParseResult(value: any): ParseResult | null {
             note: safeString(item?.note) || null,
           }))
           .filter((item) => item.date || item.note || item.label !== "Coach deadline"),
-        (item) => [item.label, item.date || "", item.note || ""].join("|")
+        (item) => [item.label, item.date || "", item.note || ""].join("|"),
       ),
       links: uniqueBy(
         pickArray(value.coachInfo?.links)
@@ -9105,11 +8657,13 @@ function normalizeParseResult(value: any): ParseResult | null {
             url: normalizeUrl(item?.url),
           }))
           .filter((item) => item.url),
-        (item) => item.url
+        (item) => item.url,
       ),
       notes: uniqueBy(
-        pickArray(value.coachInfo?.notes).map((item) => safeString(item)).filter(Boolean),
-        (item) => item
+        pickArray(value.coachInfo?.notes)
+          .map((item) => safeString(item))
+          .filter(Boolean),
+        (item) => item,
       ),
     },
     contacts: uniqueBy(
@@ -9121,7 +8675,7 @@ function normalizeParseResult(value: any): ParseResult | null {
           phone: safeString(item?.phone) || null,
         }))
         .filter((item) => item.name || item.email || item.phone),
-      (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+      (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|"),
     ),
     deadlines: uniqueBy(
       pickArray(value.deadlines)
@@ -9131,7 +8685,7 @@ function normalizeParseResult(value: any): ParseResult | null {
           note: safeString(item?.note) || null,
         }))
         .filter((item) => item.label || item.date || item.note),
-      (item) => [item.label, item.date || "", item.note || ""].join("|")
+      (item) => [item.label, item.date || "", item.note || ""].join("|"),
     ),
     unmappedFacts: pickArray(value.unmappedFacts)
       .map((item) => ({
@@ -9150,13 +8704,15 @@ function normalizeParseResult(value: any): ParseResult | null {
           url: normalizeUrl(item?.url),
         }))
         .filter((item) => item.url),
-      (item) => item.url
+      (item) => item.url,
     ),
     gear: {
       uniform: safeString(value.gear?.uniform) || null,
       checklist: uniqueBy(
-        pickArray(value.gear?.checklist).map((item) => safeString(item)).filter(Boolean),
-        (item) => item
+        pickArray(value.gear?.checklist)
+          .map((item) => safeString(item))
+          .filter(Boolean),
+        (item) => item,
       ),
     },
     volunteers: {
@@ -9168,81 +8724,6 @@ function normalizeParseResult(value: any): ParseResult | null {
         .map((item) => ({ title: safeString(item?.title), body: safeString(item?.body) }))
         .filter((item) => item.title || item.body),
       passcode: safeString(value.communications?.passcode) || null,
-    },
-    schedule: {
-      venueLabel: safeString(value.schedule?.venueLabel) || null,
-      supportEmail: safeString(value.schedule?.supportEmail) || null,
-      notes: uniqueBy(
-        pickArray(value.schedule?.notes).map((item) => safeString(item)).filter(Boolean),
-        (item) => item
-      ),
-      annotations: uniqueBy(
-        pickArray(value.schedule?.annotations)
-          .map((item) => ({
-            kind: safeString(item?.kind) || null,
-            level: safeString(item?.level) || null,
-            sessionCode: safeString(item?.sessionCode).toUpperCase() || null,
-            date: safeString(item?.date) || null,
-            time: safeString(item?.time) || null,
-            text: safeString(item?.text),
-          }))
-          .filter((item) => item.text),
-        (item) =>
-          `${item.kind || ""}|${item.level || ""}|${item.sessionCode || ""}|${item.date || ""}|${item.time || ""}|${item.text}`
-      ),
-      assignments: uniqueBy(
-        pickArray(value.schedule?.assignments)
-          .map((item) => ({
-            level: safeString(item?.level) || null,
-            groupLabel: safeString(item?.groupLabel) || null,
-            sessionCode: safeString(item?.sessionCode).toUpperCase() || null,
-            birthDateRange: safeString(item?.birthDateRange) || null,
-            divisionLabel: safeString(item?.divisionLabel) || null,
-            note: safeString(item?.note) || null,
-          }))
-          .filter(
-            (item) =>
-              item.sessionCode ||
-              item.groupLabel ||
-              item.birthDateRange ||
-              item.divisionLabel ||
-              item.note
-          ),
-        (item) =>
-          `${item.level || ""}|${item.groupLabel || ""}|${item.sessionCode || ""}|${item.birthDateRange || ""}|${item.divisionLabel || ""}|${item.note || ""}`
-      ),
-      days: pickArray(value.schedule?.days)
-        .map((day) => ({
-          date: safeString(day?.date) || null,
-          shortDate: safeString(day?.shortDate) || null,
-          sessions: pickArray(day?.sessions)
-            .map((session) => ({
-              code: safeString(session?.code) || null,
-              group: safeString(session?.group) || null,
-              startTime: safeString(session?.startTime) || null,
-              warmupTime: safeString(session?.warmupTime) || null,
-              note: safeString(session?.note) || null,
-              clubs: uniqueBy(
-                pickArray(session?.clubs)
-                  .map((club) => ({
-                    name: safeString(club?.name) || null,
-                    teamAwardEligible:
-                      typeof club?.teamAwardEligible === "boolean"
-                        ? club.teamAwardEligible
-                        : null,
-                    athleteCount:
-                      typeof club?.athleteCount === "number" && Number.isFinite(club.athleteCount)
-                      ? club.athleteCount
-                      : null,
-                    divisionLabel: safeString(club?.divisionLabel) || null,
-                  }))
-                  .filter((club) => club.name),
-                (club) => [club.name || "", club.divisionLabel || "", `${club.athleteCount ?? ""}`].join("|")
-              ),
-            }))
-            .filter((session) => session.code || session.group || session.startTime || session.clubs.length > 0),
-        }))
-        .filter((day) => day.date || day.shortDate || day.sessions.length > 0),
     },
   };
 }
@@ -9271,7 +8752,11 @@ function sanitizeDiscoveryParseResult(value: ParseResult): ParseResult {
   const routeRejectedFact = (line: string) => {
     const text = safeString(line);
     if (!text) return;
-    if (isMarketingLikeText(text) || isScheduleGridLikeText(text) || isClubParticipationLikeText(text)) {
+    if (
+      isMarketingLikeText(text) ||
+      isScheduleGridLikeText(text) ||
+      isClubParticipationLikeText(text)
+    ) {
       return;
     }
     if (VENUE_DETAIL_TEXT_PATTERN.test(text)) {
@@ -9306,7 +8791,7 @@ function sanitizeDiscoveryParseResult(value: ParseResult): ParseResult {
         }
         return true;
       }),
-    (item) => item
+    (item) => item,
   );
 
   const gearUniform = safeString(next.gear.uniform);
@@ -9324,7 +8809,7 @@ function sanitizeDiscoveryParseResult(value: ParseResult): ParseResult {
         routeRejectedFact(item);
         return false;
       }),
-    (item) => item
+    (item) => item,
   );
 
   next.unmappedFacts = uniqueBy(
@@ -9337,13 +8822,8 @@ function sanitizeDiscoveryParseResult(value: ParseResult): ParseResult {
       if (isScheduleGridLikeText(detail) || isClubParticipationLikeText(detail)) return false;
       return true;
     }),
-    (item) => `${safeString(item?.category)}|${safeString(item?.detail)}`
+    (item) => `${safeString(item?.category)}|${safeString(item?.detail)}`,
   );
-  next.schedule = finalizeParsedSchedule({
-    ...next.schedule,
-    annotations: sanitizeScheduleAnnotations(pickArray(next.schedule?.annotations) as any),
-    assignments: sanitizeScheduleAssignments(pickArray(next.schedule?.assignments) as any),
-  });
 
   return next;
 }
@@ -9385,14 +8865,16 @@ function mergeCoachFeesFromAdmission(parseResult: ParseResult): ParseResult {
   return {
     ...parseResult,
     admission: uniqueBy(spectatorAdmission, (item) =>
-      [item.label, item.price, item.note || ""].join("|")
+      [item.label, item.price, item.note || ""].join("|"),
     ),
     coachInfo: {
       ...parseResult.coachInfo,
-      entryFees: uniqueBy(entryFees, (item) => [item.label, item.amount, item.note || ""].join("|")),
+      entryFees: uniqueBy(entryFees, (item) =>
+        [item.label, item.amount, item.note || ""].join("|"),
+      ),
       teamFees: uniqueBy(teamFees, (item) => [item.label, item.amount, item.note || ""].join("|")),
       lateFees: uniqueBy(lateFees, (item) =>
-        [item.label, item.amount, item.trigger || "", item.note || ""].join("|")
+        [item.label, item.amount, item.trigger || "", item.note || ""].join("|"),
       ),
     },
   };
@@ -9403,7 +8885,11 @@ function routeCoachDeadlines(parseResult: ParseResult): ParseResult {
   const coachDeadlines = [...parseResult.coachInfo.deadlines];
   for (const item of parseResult.deadlines) {
     const haystack = `${item.label} ${item.note || ""}`;
-    if (/(entry|registration|deadline|late fee|refund|regional|qualification|payment|meet maker|reservation)/i.test(haystack)) {
+    if (
+      /(entry|registration|deadline|late fee|refund|regional|qualification|payment|meet maker|reservation)/i.test(
+        haystack,
+      )
+    ) {
       coachDeadlines.push(item);
       continue;
     }
@@ -9411,10 +8897,14 @@ function routeCoachDeadlines(parseResult: ParseResult): ParseResult {
   }
   return {
     ...parseResult,
-    deadlines: uniqueBy(publicDeadlines, (item) => [item.label, item.date || "", item.note || ""].join("|")),
+    deadlines: uniqueBy(publicDeadlines, (item) =>
+      [item.label, item.date || "", item.note || ""].join("|"),
+    ),
     coachInfo: {
       ...parseResult.coachInfo,
-      deadlines: uniqueBy(coachDeadlines, (item) => [item.label, item.date || "", item.note || ""].join("|")),
+      deadlines: uniqueBy(coachDeadlines, (item) =>
+        [item.label, item.date || "", item.note || ""].join("|"),
+      ),
     },
   };
 }
@@ -9642,7 +9132,7 @@ function normalizeScheduleAwardFlagDays(value: unknown): ScheduleAwardFlagDay[] 
                   typeof club?.teamAwardEligible === "boolean" ? club.teamAwardEligible : null,
               }))
               .filter((club) => club.name),
-            (club) => normalizeScheduleClubLookup(club.name)
+            (club) => normalizeScheduleClubLookup(club.name),
           ),
         }))
         .filter((session) => session.code || session.clubs.length > 0),
@@ -9652,7 +9142,7 @@ function normalizeScheduleAwardFlagDays(value: unknown): ScheduleAwardFlagDay[] 
 
 function detectScheduleTableBlocksFromPageText(
   pageNumber: number,
-  text: string
+  text: string,
 ): Array<{
   pageNumber: number;
   order: number;
@@ -9708,7 +9198,7 @@ function detectScheduleTableBlocksFromPageText(
 
 async function cropScheduleImageTableBlock(
   dataUrl: string,
-  box: { x: number; y: number; w: number; h: number }
+  box: { x: number; y: number; w: number; h: number },
 ): Promise<string | null> {
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) return null;
@@ -9751,13 +9241,16 @@ function clampNormalizedScheduleColorBox(value: unknown): NormalizedScheduleColo
 }
 
 function normalizeScheduleColorOcrText(value: unknown): string {
-  return safeString(value).replace(/[^a-z0-9]+/gi, " ").trim().toLowerCase();
+  return safeString(value)
+    .replace(/[^a-z0-9]+/gi, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function toNormalizedScheduleColorBoxFromVertices(
   vertices: unknown,
   width: number,
-  height: number
+  height: number,
 ): NormalizedScheduleColorBox | null {
   const points = pickArray(vertices)
     .map((vertex) => ({
@@ -9780,7 +9273,7 @@ function toNormalizedScheduleColorBoxFromVertices(
 }
 
 async function extractScheduleOcrTextBoxesFromDataUrl(
-  dataUrl: string
+  dataUrl: string,
 ): Promise<ScheduleColorOcrTextBox[]> {
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) return [];
@@ -9803,14 +9296,14 @@ async function extractScheduleOcrTextBoxesFromDataUrl(
             .map((word: any) =>
               pickArray(word?.symbols)
                 .map((symbol: any) => safeString(symbol?.text))
-                .join("")
+                .join(""),
             )
             .filter(Boolean);
           const text = words.join(" ").replace(/\s+/g, " ").trim();
           const box = toNormalizedScheduleColorBoxFromVertices(
             paragraph?.boundingBox?.vertices,
             width,
-            height
+            height,
           );
           return {
             text,
@@ -9821,8 +9314,7 @@ async function extractScheduleOcrTextBoxesFromDataUrl(
           };
         })
         .filter(
-          (item): item is ScheduleColorOcrTextBox =>
-            Boolean(item.text) && Boolean(item.box)
+          (item): item is ScheduleColorOcrTextBox => Boolean(item.text) && Boolean(item.box),
         ) || [];
     if (paragraphs.length > 0) {
       return uniqueBy(paragraphs, (item) => `${item.normalizedText}|${JSON.stringify(item.box)}`);
@@ -9834,7 +9326,7 @@ async function extractScheduleOcrTextBoxesFromDataUrl(
         const box = toNormalizedScheduleColorBoxFromVertices(
           item?.boundingPoly?.vertices,
           width,
-          height
+          height,
         );
         return {
           text,
@@ -9844,11 +9336,11 @@ async function extractScheduleOcrTextBoxesFromDataUrl(
           area: box ? box.w * box.h : Number.POSITIVE_INFINITY,
         };
       })
-      .filter(
-        (item): item is ScheduleColorOcrTextBox =>
-          Boolean(item.text) && Boolean(item.box)
-      );
-    return uniqueBy(textAnnotations, (item) => `${item.normalizedText}|${JSON.stringify(item.box)}`);
+      .filter((item): item is ScheduleColorOcrTextBox => Boolean(item.text) && Boolean(item.box));
+    return uniqueBy(
+      textAnnotations,
+      (item) => `${item.normalizedText}|${JSON.stringify(item.box)}`,
+    );
   } catch {
     return [];
   }
@@ -9856,7 +9348,7 @@ async function extractScheduleOcrTextBoxesFromDataUrl(
 
 function findBestScheduleSessionColorBox(
   textBoxes: ScheduleColorOcrTextBox[],
-  sessionCode: string
+  sessionCode: string,
 ): ScheduleColorOcrTextBox | null {
   const code = safeString(sessionCode).toUpperCase();
   if (!code) return null;
@@ -9877,7 +9369,7 @@ function findBestScheduleSessionColorBox(
 
 function findBestScheduleClubColorBox(
   textBoxes: ScheduleColorOcrTextBox[],
-  clubName: string
+  clubName: string,
 ): ScheduleColorOcrTextBox | null {
   const lookup = normalizeScheduleClubLookup(clubName);
   if (!lookup) return null;
@@ -9897,11 +9389,10 @@ function findBestScheduleClubColorBox(
 
 function deriveScheduleLegendEntriesFromOcrTextBoxes(
   textBoxes: ScheduleColorOcrTextBox[],
-  clubColors: Array<{ colorHex: string | null; teamAwardEligible: boolean | null }>
+  clubColors: Array<{ colorHex: string | null; teamAwardEligible: boolean | null }>,
 ): ScheduleColorLegendEntry[] {
-  const lines = uniqueBy(
-    textBoxes.map((item) => safeString(item.text)).filter(Boolean),
-    (item) => normalizeScheduleColorOcrText(item)
+  const lines = uniqueBy(textBoxes.map((item) => safeString(item.text)).filter(Boolean), (item) =>
+    normalizeScheduleColorOcrText(item),
   );
   const trueColors = clubColors
     .filter((item) => item.teamAwardEligible === true)
@@ -9949,18 +9440,20 @@ function hexToRgb(value: string): { r: number; g: number; b: number } | null {
 
 function rgbToHex(r: number, g: number, b: number): string {
   return `#${[r, g, b]
-    .map((item) => Math.max(0, Math.min(255, Math.round(item))).toString(16).padStart(2, "0"))
+    .map((item) =>
+      Math.max(0, Math.min(255, Math.round(item)))
+        .toString(16)
+        .padStart(2, "0"),
+    )
     .join("")}`;
 }
 
 function rgbDistance(
   left: { r: number; g: number; b: number } | null,
-  right: { r: number; g: number; b: number } | null
+  right: { r: number; g: number; b: number } | null,
 ): number {
   if (!left || !right) return Number.POSITIVE_INFINITY;
-  return Math.sqrt(
-    (left.r - right.r) ** 2 + (left.g - right.g) ** 2 + (left.b - right.b) ** 2
-  );
+  return Math.sqrt((left.r - right.r) ** 2 + (left.g - right.g) ** 2 + (left.b - right.b) ** 2);
 }
 
 function describeRgbColor(rgb: { r: number; g: number; b: number }): {
@@ -9979,7 +9472,7 @@ function describeRgbColor(rgb: { r: number; g: number; b: number }): {
 
 async function sampleScheduleTextColorFromDataUrl(
   dataUrl: string,
-  box: NormalizedScheduleColorBox | null
+  box: NormalizedScheduleColorBox | null,
 ): Promise<ScheduleColorRef | null> {
   const parsed = parseDataUrl(dataUrl);
   if (!parsed || !box) return null;
@@ -10034,7 +9527,7 @@ async function sampleScheduleTextColorFromDataUrl(
         g: acc.g + sample.g,
         b: acc.b + sample.b,
       }),
-      { r: 0, g: 0, b: 0 }
+      { r: 0, g: 0, b: 0 },
     );
     const rgb = {
       r: avg.r / dominant.samples.length,
@@ -10055,7 +9548,7 @@ async function sampleScheduleTextColorFromDataUrl(
 
 async function openAiExtractScheduleColorBindingsFromImage(
   dataUrl: string,
-  pageText: string
+  pageText: string,
 ): Promise<ScheduleColorPageAnalysis | null> {
   const parsed = parseDataUrl(dataUrl);
   const apiKey = safeString(process.env.OPENAI_API_KEY || "");
@@ -10155,13 +9648,13 @@ async function openAiExtractScheduleColorBindingsFromImage(
               pickArray(entry?.sessionCodes)
                 .map((item) => safeString(item).toUpperCase())
                 .filter(Boolean),
-              (item) => item
+              (item) => item,
             ),
             clubNames: uniqueBy(
               pickArray(entry?.clubNames)
                 .map((item) => safeString(item))
                 .filter(Boolean),
-              (item) => item
+              (item) => item,
             ),
           }))
           .filter(
@@ -10170,10 +9663,10 @@ async function openAiExtractScheduleColorBindingsFromImage(
               entry.colorLabel ||
               entry.sourceText ||
               entry.sessionCodes.length > 0 ||
-              entry.clubNames.length > 0
+              entry.clubNames.length > 0,
           ),
         (entry) =>
-          `${entry.target || ""}|${entry.meaning || ""}|${entry.colorLabel || ""}|${entry.sourceText || ""}|${entry.sessionCodes.join(",")}|${entry.clubNames.join(",")}|${entry.teamAwardEligible ?? ""}`
+          `${entry.target || ""}|${entry.meaning || ""}|${entry.colorLabel || ""}|${entry.sourceText || ""}|${entry.sessionCodes.join(",")}|${entry.clubNames.join(",")}|${entry.teamAwardEligible ?? ""}`,
       ),
       sessions: uniqueBy(
         pickArray((json as any)?.sessions)
@@ -10187,7 +9680,7 @@ async function openAiExtractScheduleColorBindingsFromImage(
             box: clampNormalizedScheduleColorBox(entry?.box),
           }))
           .filter((entry) => entry.sessionCode && entry.box),
-        (entry) => `${entry.sessionCode}|${JSON.stringify(entry.box)}`
+        (entry) => `${entry.sessionCode}|${JSON.stringify(entry.box)}`,
       ),
       clubs: uniqueBy(
         pickArray((json as any)?.clubs)
@@ -10204,7 +9697,7 @@ async function openAiExtractScheduleColorBindingsFromImage(
           }))
           .filter((entry) => entry.clubName && entry.box),
         (entry) =>
-          `${entry.sessionCode || ""}|${normalizeScheduleClubLookup(entry.clubName)}|${JSON.stringify(entry.box)}`
+          `${entry.sessionCode || ""}|${normalizeScheduleClubLookup(entry.clubName)}|${JSON.stringify(entry.box)}`,
       ),
     };
   } catch {
@@ -10237,12 +9730,12 @@ function pickDominantLegendColorHex(samples: string[]): string | null {
   return rgbToHex(
     rgbs.reduce((sum, item) => sum + item.r, 0) / rgbs.length,
     rgbs.reduce((sum, item) => sum + item.g, 0) / rgbs.length,
-    rgbs.reduce((sum, item) => sum + item.b, 0) / rgbs.length
+    rgbs.reduce((sum, item) => sum + item.b, 0) / rgbs.length,
   );
 }
 
 function deriveClubLegendFromColoredClubs(
-  days: StoredGymMeetScheduleDay[]
+  days: StoredGymMeetScheduleDay[],
 ): ScheduleColorLegendEntry[] {
   const grouped = new Map<
     string,
@@ -10281,7 +9774,7 @@ async function _applyScheduleColorsFromImages(
   schedule: ParseResult["schedule"],
   images: Array<{ pageNumber: number; dataUrl: string | null }>,
   pageTexts: Array<{ pageNumber: number; text: string }>,
-  performance?: DiscoveryPerformance
+  performance?: DiscoveryPerformance,
 ): Promise<ParseResult["schedule"]> {
   const normalized = normalizeStoredSchedule(schedule || {});
   const validImages = pickArray(images)
@@ -10296,17 +9789,19 @@ async function _applyScheduleColorsFromImages(
   const textByPage = new Map(
     pickArray(pageTexts)
       .map((item) => [Number(item?.pageNumber) || 0, safeString(item?.text || "")] as const)
-      .filter(([pageNumber, text]) => pageNumber > 0 && text)
+      .filter(([pageNumber, text]) => pageNumber > 0 && text),
   );
   const uniqueSessionCodes = uniqueBy(
-    normalized.days.flatMap((day) => day.sessions.map((session) => safeString(session.code).toUpperCase())),
-    (item) => item
+    normalized.days.flatMap((day) =>
+      day.sessions.map((session) => safeString(session.code).toUpperCase()),
+    ),
+    (item) => item,
   ).filter(Boolean);
   const uniqueClubNames = uniqueBy(
     normalized.days.flatMap((day) =>
-      day.sessions.flatMap((session) => session.clubs.map((club) => safeString(club.name)))
+      day.sessions.flatMap((session) => session.clubs.map((club) => safeString(club.name))),
     ),
-    (item) => normalizeScheduleClubLookup(item)
+    (item) => normalizeScheduleClubLookup(item),
   ).filter(Boolean);
   const sessionSamples = new Map<string, ScheduleColorRef>();
   const clubSamples = new Map<string, ScheduleColorRef>();
@@ -10319,7 +9814,10 @@ async function _applyScheduleColorsFromImages(
     let ocrSampleCount = 0;
 
     for (const sessionCode of uniqueSessionCodes) {
-      if (pageLookup && !new RegExp(`\\b${normalizeScheduleColorOcrText(sessionCode)}\\b`, "i").test(pageLookup)) {
+      if (
+        pageLookup &&
+        !new RegExp(`\\b${normalizeScheduleColorOcrText(sessionCode)}\\b`, "i").test(pageLookup)
+      ) {
         continue;
       }
       const matchedBox = findBestScheduleSessionColorBox(ocrTextBoxes, sessionCode);
@@ -10363,8 +9861,8 @@ async function _applyScheduleColorsFromImages(
           [...clubSamples.entries()].map(([key, value]) => ({
             colorHex: value.textColorHex,
             teamAwardEligible: clubEligibility.get(key) ?? null,
-          }))
-        )
+          })),
+        ),
       );
     }
 
@@ -10403,7 +9901,7 @@ async function _applyScheduleColorsFromImages(
               .flatMap((clubName) =>
                 [...clubSamples.entries()]
                   .filter(([key]) => key.endsWith(`|${normalizeScheduleClubLookup(clubName)}`))
-                  .map(([, value]) => value.textColorHex || "")
+                  .map(([, value]) => value.textColorHex || ""),
               )
               .filter(Boolean);
       explicitLegendEntries.push({
@@ -10428,7 +9926,7 @@ async function _applyScheduleColorsFromImages(
         const teamAwardEligible =
           typeof club.teamAwardEligible === "boolean"
             ? club.teamAwardEligible
-            : clubEligibility.get(clubKey) ?? null;
+            : (clubEligibility.get(clubKey) ?? null);
         return {
           ...club,
           teamAwardEligible,
@@ -10459,7 +9957,7 @@ async function _applyScheduleColorsFromImages(
     if (items.length < 2) return;
     const groupLabel = uniqueBy(
       items.map((item) => safeString(item.group)).filter(Boolean),
-      (item) => item
+      (item) => item,
     );
     syntheticLegendEntries.push({
       id: null,
@@ -10469,7 +9967,10 @@ async function _applyScheduleColorsFromImages(
       meaning:
         groupLabel.length === 1
           ? groupLabel[0]
-          : `Sessions ${items.map((item) => item.code).filter(Boolean).join(", ")}`,
+          : `Sessions ${items
+              .map((item) => item.code)
+              .filter(Boolean)
+              .join(", ")}`,
       sourceText: null,
       teamAwardEligible: null,
     });
@@ -10494,10 +9995,11 @@ async function _applyScheduleColorsFromImages(
     ...day,
     sessions: day.sessions.map((session) => {
       const sessionColorHex = normalizeColorHex(session.color?.textColorHex);
-      const sessionLegendId =
-        sessionColorHex
-          ? legendIdByTargetAndColor.get(`session|${sessionColorHex}|`) || session.color?.legendId || null
-          : session.color?.legendId || null;
+      const sessionLegendId = sessionColorHex
+        ? legendIdByTargetAndColor.get(`session|${sessionColorHex}|`) ||
+          session.color?.legendId ||
+          null
+        : session.color?.legendId || null;
       return {
         ...session,
         color: session.color
@@ -10509,15 +10011,14 @@ async function _applyScheduleColorsFromImages(
           : null,
         clubs: session.clubs.map((club) => {
           const clubColorHex = normalizeColorHex(club.color?.textColorHex);
-          const clubLegendId =
-            clubColorHex
-              ? legendIdByTargetAndColor.get(
-                  `club|${clubColorHex}|${club.teamAwardEligible ?? ""}`
-                ) ||
-                legendIdByTargetAndColor.get(`club|${clubColorHex}|`) ||
-                club.color?.legendId ||
-                null
-              : club.color?.legendId || null;
+          const clubLegendId = clubColorHex
+            ? legendIdByTargetAndColor.get(
+                `club|${clubColorHex}|${club.teamAwardEligible ?? ""}`,
+              ) ||
+              legendIdByTargetAndColor.get(`club|${clubColorHex}|`) ||
+              club.color?.legendId ||
+              null
+            : club.color?.legendId || null;
           return {
             ...club,
             color: club.color
@@ -10551,7 +10052,7 @@ async function openAiExtractVisualSchedulePage(
   pageNumber: number,
   pageText = "",
   tableContext?: { order: number; total: number },
-  performance?: DiscoveryPerformance
+  performance?: DiscoveryPerformance,
 ): Promise<ParseResult["schedule"] | null> {
   const parsed = parseDataUrl(dataUrl);
   const apiKey = safeString(process.env.OPENAI_API_KEY || "");
@@ -10611,7 +10112,9 @@ async function openAiExtractVisualSchedulePage(
               },
               {
                 type: "image_url",
-                image_url: { url: `data:${parsed.mimeType};base64,${parsed.buffer.toString("base64")}` },
+                image_url: {
+                  url: `data:${parsed.mimeType};base64,${parsed.buffer.toString("base64")}`,
+                },
               },
             ],
           },
@@ -10636,7 +10139,7 @@ async function openAiExtractVisualSchedulePage(
 async function mapWithConcurrency<T, U>(
   items: T[],
   concurrency: number,
-  worker: (item: T) => Promise<U>
+  worker: (item: T) => Promise<U>,
 ): Promise<U[]> {
   if (!items.length) return [];
   const results: U[] = new Array(items.length);
@@ -10660,7 +10163,7 @@ async function deriveScheduleFromImages(
     maxTableCropsPerPage?: number;
     concurrency?: number;
     performance?: DiscoveryPerformance;
-  }
+  },
 ): Promise<ScheduleImageDerivationResult> {
   const validImages = pickArray(images)
     .map((image) => ({
@@ -10687,7 +10190,7 @@ async function deriveScheduleFromImages(
   const textByPage = new Map(
     pickArray(pageTexts)
       .map((page) => [Number(page?.pageNumber) || 0, safeString(page?.text || "")] as const)
-      .filter(([pageNumber, text]) => pageNumber > 0 && text)
+      .filter(([pageNumber, text]) => pageNumber > 0 && text),
   );
 
   let merged: ParseResult["schedule"] = {
@@ -10705,10 +10208,10 @@ async function deriveScheduleFromImages(
 
   for (const image of validImages) {
     const pageText = textByPage.get(image.pageNumber) || "";
-    const tableBlocks = detectScheduleTableBlocksFromPageText(
-      image.pageNumber,
-      pageText
-    ).slice(0, cropLimit);
+    const tableBlocks = detectScheduleTableBlocksFromPageText(image.pageNumber, pageText).slice(
+      0,
+      cropLimit,
+    );
     tableBlocksDetected += tableBlocks.length;
 
     let parsedBlockCount = 0;
@@ -10718,17 +10221,17 @@ async function deriveScheduleFromImages(
           tableBlock,
           croppedDataUrl: await cropScheduleImageTableBlock(
             image.dataUrl,
-            tableBlock.normalizedBox
+            tableBlock.normalizedBox,
           ),
-        }))
+        })),
       )
     ).filter(
       (
-        item
+        item,
       ): item is {
         tableBlock: (typeof tableBlocks)[number];
         croppedDataUrl: string;
-      } => Boolean(item.croppedDataUrl)
+      } => Boolean(item.croppedDataUrl),
     );
     tableCropCount += croppedBlocks.length;
     const parsedBlocks = await mapWithConcurrency(
@@ -10743,10 +10246,10 @@ async function deriveScheduleFromImages(
           image.pageNumber,
           tableBlock.text,
           { order: tableBlock.order, total: tableBlocks.length },
-          options?.performance
+          options?.performance,
         );
         return { parsed, tableBlock };
-      }
+      },
     );
     for (const { parsed } of parsedBlocks) {
       if (!parsed || countScheduleDaysWithSessions(parsed) === 0) continue;
@@ -10763,7 +10266,7 @@ async function deriveScheduleFromImages(
       image.pageNumber,
       pageText,
       undefined,
-      options?.performance
+      options?.performance,
     );
     if (!parsed || countScheduleDaysWithSessions(parsed) === 0) continue;
     merged = mergeScheduleWithFallback(merged, parsed);
@@ -10777,7 +10280,7 @@ async function deriveScheduleFromImages(
 }
 
 async function openAiExtractScheduleAwardFlagsFromImage(
-  dataUrl: string
+  dataUrl: string,
 ): Promise<{ legendNotes: string[]; days: ScheduleAwardFlagDay[] } | null> {
   const parsed = parseDataUrl(dataUrl);
   const apiKey = safeString(process.env.OPENAI_API_KEY || "");
@@ -10820,7 +10323,9 @@ async function openAiExtractScheduleAwardFlagsFromImage(
               },
               {
                 type: "image_url",
-                image_url: { url: `data:${parsed.mimeType};base64,${parsed.buffer.toString("base64")}` },
+                image_url: {
+                  url: `data:${parsed.mimeType};base64,${parsed.buffer.toString("base64")}`,
+                },
               },
             ],
           },
@@ -10834,8 +10339,10 @@ async function openAiExtractScheduleAwardFlagsFromImage(
     if (!json || typeof json !== "object") return null;
     return {
       legendNotes: uniqueBy(
-        pickArray((json as any)?.legendNotes).map((item) => safeString(item)).filter(Boolean),
-        (item) => item
+        pickArray((json as any)?.legendNotes)
+          .map((item) => safeString(item))
+          .filter(Boolean),
+        (item) => item,
       ),
       days: normalizeScheduleAwardFlagDays((json as any)?.days),
     };
@@ -10845,11 +10352,11 @@ async function openAiExtractScheduleAwardFlagsFromImage(
 }
 
 async function _deriveScheduleAwardFlagsFromImages(
-  images: Array<{ pageNumber: number; dataUrl: string | null }> | undefined
+  images: Array<{ pageNumber: number; dataUrl: string | null }> | undefined,
 ): Promise<{ notes: string[]; days: ScheduleAwardFlagDay[]; usedImageAwardExtraction: boolean }> {
   const validImages = pickArray(images).filter(
     (item): item is { pageNumber: number; dataUrl: string | null } =>
-      Boolean(item && typeof item === "object" && Number(item.pageNumber) > 0)
+      Boolean(item && typeof item === "object" && Number(item.pageNumber) > 0),
   );
   if (!validImages.length) {
     return { notes: [], days: [], usedImageAwardExtraction: false };
@@ -10874,7 +10381,7 @@ async function _deriveScheduleAwardFlagsFromImages(
 
 function mergeScheduleAwardFlags(
   schedule: ParseResult["schedule"],
-  awardFlags: ScheduleAwardFlagDay[]
+  awardFlags: ScheduleAwardFlagDay[],
 ): ParseResult["schedule"] {
   const normalizedSchedule = normalizeStoredSchedule(schedule || {});
   const flagDays = normalizeScheduleAwardFlagDays(awardFlags);
@@ -10892,23 +10399,24 @@ function mergeScheduleAwardFlags(
         candidate.sessions.some((candidateSession) =>
           day.sessions.some(
             (session) =>
-              safeString(candidateSession.code).toLowerCase() === safeString(session.code).toLowerCase()
-          )
-        )
+              safeString(candidateSession.code).toLowerCase() ===
+              safeString(session.code).toLowerCase(),
+          ),
+        ),
       );
     if (!matchingFlagDay) return day;
 
     const nextSessions = day.sessions.map((session) => {
       const matchingFlagSession = matchingFlagDay.sessions.find(
         (candidate) =>
-          safeString(candidate.code).toLowerCase() === safeString(session.code).toLowerCase()
+          safeString(candidate.code).toLowerCase() === safeString(session.code).toLowerCase(),
       );
       if (!matchingFlagSession) return session;
       const nextClubs = session.clubs.map((club) => {
         if (typeof club.teamAwardEligible === "boolean") return club;
         const matchingFlagClub = matchingFlagSession.clubs.find(
           (candidate) =>
-            normalizeScheduleClubLookup(candidate.name) === normalizeScheduleClubLookup(club.name)
+            normalizeScheduleClubLookup(candidate.name) === normalizeScheduleClubLookup(club.name),
         );
         if (!matchingFlagClub || typeof matchingFlagClub.teamAwardEligible !== "boolean") {
           return club;
@@ -10938,10 +10446,12 @@ function mergeScheduleAwardFlags(
 async function callOpenAiScheduleParse(
   text: string,
   traceId?: string,
-  performance?: DiscoveryPerformance
+  performance?: DiscoveryPerformance,
 ): Promise<ParseResult["schedule"] | null> {
   if (!safeString(process.env.OPENAI_API_KEY || "")) return null;
-  const sanitizedText = text.replace(/\u0000/g, " ").replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ");
+  const sanitizedText = text
+    .replace(/\u0000/g, " ")
+    .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ");
   const prompt = [
     SCHEDULE_SCHEMA_INSTRUCTIONS,
     "",
@@ -11009,7 +10519,7 @@ async function callOpenAiScheduleParse(
 }
 
 function deriveScheduleFromTextFallback(
-  source: string | Array<{ pageNumber: number; text: string }>
+  source: string | Array<{ pageNumber: number; text: string }>,
 ): ParseResult["schedule"] {
   const pages = Array.isArray(source) ? source : selectSchedulePages(source);
   if (pages.length === 0) {
@@ -11031,8 +10541,7 @@ function deriveScheduleFromTextFallback(
     (acc, page) =>
       mergeScheduleWithFallback(acc, {
         venueLabel: null,
-        supportEmail:
-          safeString(page.text).match(SCHEDULE_EMAIL_PATTERN)?.[0] || null,
+        supportEmail: safeString(page.text).match(SCHEDULE_EMAIL_PATTERN)?.[0] || null,
         notes: [],
         annotations: [],
         assignments: [],
@@ -11045,7 +10554,7 @@ function deriveScheduleFromTextFallback(
       annotations: [],
       assignments: [],
       days: [],
-    }
+    },
   );
 }
 
@@ -11056,19 +10565,15 @@ function countScheduleDaysWithSessions(value: unknown): number {
 function countDistinctScheduleSessionCodes(value: unknown): number {
   return new Set(
     normalizeStoredSchedule(value).days.flatMap((day) =>
-      day.sessions
-        .map((session) => safeString(session.code).toUpperCase())
-        .filter(Boolean)
-    )
+      day.sessions.map((session) => safeString(session.code).toUpperCase()).filter(Boolean),
+    ),
   ).size;
 }
 
 function countDistinctDetectedScheduleCodes(
-  pages: Array<{ pageNumber: number; text: string }>
+  pages: Array<{ pageNumber: number; text: string }>,
 ): number {
-  return new Set(
-    pages.flatMap((page) => extractScheduleSessionCodesInText(page.text))
-  ).size;
+  return new Set(pages.flatMap((page) => extractScheduleSessionCodesInText(page.text))).size;
 }
 
 function _countScheduleSessionsWithAwardFlags(value: unknown): number {
@@ -11079,16 +10584,16 @@ function _countScheduleSessionsWithAwardFlags(value: unknown): number {
         (sessionCount, session) =>
           sessionCount +
           session.clubs.filter((club) => typeof club.teamAwardEligible === "boolean").length,
-        0
+        0,
       ),
-    0
+    0,
   );
 }
 
 function shouldSkipOpenAiScheduleParse(
   fallbackSchedule: ParseResult["schedule"],
   selectedPages: Array<{ pageNumber: number; text: string }>,
-  ambiguityNotes: string[]
+  ambiguityNotes: string[],
 ): boolean {
   if (!selectedPages.length || ambiguityNotes.length > 0) return false;
   const normalizedFallback = normalizeStoredSchedule(fallbackSchedule);
@@ -11103,7 +10608,7 @@ function shouldSkipOpenAiScheduleParse(
 function shouldUseVisualScheduleRepair(
   textSchedule: ParseResult["schedule"],
   fallbackSchedule: ParseResult["schedule"],
-  selectedPages: Array<{ pageNumber: number; text: string }>
+  selectedPages: Array<{ pageNumber: number; text: string }>,
 ): boolean {
   if (!selectedPages.length) return false;
   const normalizedTextSchedule = normalizeStoredSchedule(textSchedule);
@@ -11114,9 +10619,7 @@ function shouldUseVisualScheduleRepair(
   if (textDayCount === 0) return true;
   const fallbackDayCount = countScheduleDaysWithSessions(fallbackSchedule);
   if (fallbackDayCount > textDayCount) return true;
-  const hasEmptySessions = normalizedTextSchedule.days.some(
-    (day) => day.sessions.length === 0
-  );
+  const hasEmptySessions = normalizedTextSchedule.days.some((day) => day.sessions.length === 0);
   if (hasEmptySessions) return true;
   const hasAmbiguousTables = selectedPages.some((page) => {
     const blocks = detectScheduleTableBlocksFromPageText(page.pageNumber, page.text);
@@ -11179,7 +10682,7 @@ function toParseScheduleShape(schedule: StoredGymMeetSchedule): ParseResult["sch
 }
 
 function getStoredScheduleClubMergeKey(
-  club: Pick<StoredGymMeetScheduleClub, "name" | "divisionLabel" | "athleteCount">
+  club: Pick<StoredGymMeetScheduleClub, "name" | "divisionLabel" | "athleteCount">,
 ): string {
   return [
     normalizeScheduleClubLookup(club.name),
@@ -11191,7 +10694,7 @@ function getStoredScheduleClubMergeKey(
 }
 
 function getStoredScheduleClubSoftMergeKey(
-  club: Pick<StoredGymMeetScheduleClub, "name" | "divisionLabel">
+  club: Pick<StoredGymMeetScheduleClub, "name" | "divisionLabel">,
 ): string {
   return [
     normalizeScheduleClubLookup(club.name),
@@ -11199,15 +10702,13 @@ function getStoredScheduleClubSoftMergeKey(
   ].join("|");
 }
 
-function getStoredScheduleClubNameOnlyKey(
-  club: Pick<StoredGymMeetScheduleClub, "name">
-): string {
+function getStoredScheduleClubNameOnlyKey(club: Pick<StoredGymMeetScheduleClub, "name">): string {
   return normalizeScheduleClubLookup(club.name);
 }
 
 function mergeStoredScheduleClubs(
   primaryClubs: StoredGymMeetScheduleClub[],
-  fallbackClubs: StoredGymMeetScheduleClub[]
+  fallbackClubs: StoredGymMeetScheduleClub[],
 ): StoredGymMeetScheduleClub[] {
   const merged = [...primaryClubs];
   const indexByKey = new Map<string, number>();
@@ -11228,8 +10729,7 @@ function mergeStoredScheduleClubs(
     const nameOnlyKey = getStoredScheduleClubNameOnlyKey(club);
     if (!exactKey && !softKey && !nameOnlyKey) return;
     const exactOrDivisionIndex =
-      indexByKey.get(exactKey) ??
-      (softKey ? softIndexByKey.get(softKey) : undefined);
+      indexByKey.get(exactKey) ?? (softKey ? softIndexByKey.get(softKey) : undefined);
     const existingIndex =
       exactOrDivisionIndex ??
       (nameOnlyKey != null
@@ -11239,7 +10739,8 @@ function mergeStoredScheduleClubs(
             const candidate = merged[candidateIndex];
             const candidateHasSpecificPlacement =
               Boolean(candidate.divisionLabel) ||
-              (typeof candidate.athleteCount === "number" && Number.isFinite(candidate.athleteCount));
+              (typeof candidate.athleteCount === "number" &&
+                Number.isFinite(candidate.athleteCount));
             return candidateHasSpecificPlacement ? undefined : candidateIndex;
           })()
         : undefined);
@@ -11258,19 +10759,16 @@ function mergeStoredScheduleClubs(
         typeof existingClub.teamAwardEligible === "boolean"
           ? existingClub.teamAwardEligible
           : typeof club.teamAwardEligible === "boolean"
-          ? club.teamAwardEligible
-          : null,
+            ? club.teamAwardEligible
+            : null,
       athleteCount:
         typeof existingClub.athleteCount === "number" && Number.isFinite(existingClub.athleteCount)
           ? existingClub.athleteCount
           : typeof club.athleteCount === "number" && Number.isFinite(club.athleteCount)
-          ? club.athleteCount
-          : null,
+            ? club.athleteCount
+            : null,
       divisionLabel: existingClub.divisionLabel || club.divisionLabel || "",
-      color:
-        existingClub.color ||
-        club.color ||
-        null,
+      color: existingClub.color || club.color || null,
     };
     merged[existingIndex] = nextClub;
     const nextExactKey = getStoredScheduleClubMergeKey(nextClub);
@@ -11286,7 +10784,7 @@ function mergeStoredScheduleClubs(
 
 function mergeScheduleWithFallback(
   primary: ParseResult["schedule"] | null | undefined,
-  fallback: ParseResult["schedule"] | null | undefined
+  fallback: ParseResult["schedule"] | null | undefined,
 ): ParseResult["schedule"] {
   const primarySchedule = normalizeStoredSchedule(primary || {});
   const fallbackSchedule = normalizeStoredSchedule(fallback || {});
@@ -11333,8 +10831,10 @@ function mergeScheduleWithFallback(
 
     const sessionKeys = new Map(
       existingDay.sessions
-        .map((session, sessionIndex) => [getStoredScheduleSessionKey(session), sessionIndex] as const)
-        .filter(([key]) => Boolean(key))
+        .map(
+          (session, sessionIndex) => [getStoredScheduleSessionKey(session), sessionIndex] as const,
+        )
+        .filter(([key]) => Boolean(key)),
     );
     const mergedSessions = [...existingDay.sessions];
     const missingSessions = fallbackDay.sessions.filter((session) => {
@@ -11429,40 +10929,42 @@ function mergeScheduleWithFallback(
 function scheduleGroupLooksLeaky(
   primaryGroup: string,
   fallbackGroup: string,
-  neighboringFallbackGroups: string[]
+  neighboringFallbackGroups: string[],
 ): boolean {
   const primaryTokens = extractScheduleDivisionTokens(primaryGroup);
   const fallbackTokens = extractScheduleDivisionTokens(fallbackGroup);
   if (!primaryTokens.length || !fallbackTokens.length) return false;
   const fallbackSet = new Set(fallbackTokens.map((item) => normalizeScheduleDivisionLabel(item)));
   const foreignTokens = primaryTokens.filter(
-    (item) => !fallbackSet.has(normalizeScheduleDivisionLabel(item))
+    (item) => !fallbackSet.has(normalizeScheduleDivisionLabel(item)),
   );
   if (foreignTokens.length < 2) return false;
   const neighboringTokenSet = new Set(
     neighboringFallbackGroups.flatMap((group) =>
-      extractScheduleDivisionTokens(group).map((item) => normalizeScheduleDivisionLabel(item))
-    )
+      extractScheduleDivisionTokens(group).map((item) => normalizeScheduleDivisionLabel(item)),
+    ),
   );
-  return foreignTokens.some((item) => neighboringTokenSet.has(normalizeScheduleDivisionLabel(item)));
+  return foreignTokens.some((item) =>
+    neighboringTokenSet.has(normalizeScheduleDivisionLabel(item)),
+  );
 }
 
 function getStoredScheduleClubNameSet(
-  clubs: Array<Pick<StoredGymMeetScheduleClub, "name">>
+  clubs: Array<Pick<StoredGymMeetScheduleClub, "name">>,
 ): Set<string> {
-  return new Set(
-    clubs
-      .map((club) => normalizeScheduleClubLookup(club.name))
-      .filter(Boolean)
-  );
+  return new Set(clubs.map((club) => normalizeScheduleClubLookup(club.name)).filter(Boolean));
 }
 
 function shouldReplaceLeakyScheduleSessionClubs(
   existingClubs: StoredGymMeetScheduleClub[],
   fallbackClubs: StoredGymMeetScheduleClub[],
-  neighboringFallbackClubs: StoredGymMeetScheduleClub[]
+  neighboringFallbackClubs: StoredGymMeetScheduleClub[],
 ): boolean {
-  if (!existingClubs.length || !fallbackClubs.length || existingClubs.length <= fallbackClubs.length) {
+  if (
+    !existingClubs.length ||
+    !fallbackClubs.length ||
+    existingClubs.length <= fallbackClubs.length
+  ) {
     return false;
   }
   const existingNames = getStoredScheduleClubNameSet(existingClubs);
@@ -11487,7 +10989,7 @@ function hasHighConfidenceScheduleTime(value: string): boolean {
 }
 
 function finalizeParsedSchedule(
-  schedule: ParseResult["schedule"] | null | undefined
+  schedule: ParseResult["schedule"] | null | undefined,
 ): ParseResult["schedule"] {
   const normalized = normalizeStoredSchedule(schedule || {});
   return toParseScheduleShape({
@@ -11500,7 +11002,7 @@ function finalizeParsedSchedule(
         date: item.date || null,
         time: item.time || null,
         text: item.text,
-      }))
+      })),
     ),
     assignments: toStoredScheduleAssignments(
       normalized.assignments.map((item) => ({
@@ -11510,7 +11012,7 @@ function finalizeParsedSchedule(
         birthDateRange: item.birthDateRange || null,
         divisionLabel: item.divisionLabel || null,
         note: item.note || null,
-      }))
+      })),
     ),
     days: normalized.days.map((day) => ({
       ...day,
@@ -11522,7 +11024,7 @@ function finalizeParsedSchedule(
             session.startTime ||
             session.warmupTime ||
             session.note ||
-            session.clubs.length > 0
+            session.clubs.length > 0,
         )
         .sort((a, b) => compareScheduleSessionCodes(a.code, b.code)),
     })),
@@ -11531,7 +11033,7 @@ function finalizeParsedSchedule(
 
 function supplementScheduleWithFallback(
   primary: ParseResult["schedule"] | null | undefined,
-  fallback: ParseResult["schedule"] | null | undefined
+  fallback: ParseResult["schedule"] | null | undefined,
 ): ScheduleRepairResult {
   const primarySchedule = normalizeStoredSchedule(primary || {});
   const fallbackSchedule = normalizeStoredSchedule(fallback || {});
@@ -11588,24 +11090,22 @@ function supplementScheduleWithFallback(
     }
 
     const existingCodes = new Set(
-      existingDay.sessions
-        .map((session) => safeString(session.code).toLowerCase())
-        .filter(Boolean)
+      existingDay.sessions.map((session) => safeString(session.code).toLowerCase()).filter(Boolean),
     );
     const nextSessions = [...existingDay.sessions];
     fallbackDay.sessions.forEach((fallbackSession) => {
       const fallbackCode = safeString(fallbackSession.code).toLowerCase();
       if (!fallbackCode) return;
       const existingSessionIndex = nextSessions.findIndex(
-        (session) => safeString(session.code).toLowerCase() === fallbackCode
+        (session) => safeString(session.code).toLowerCase() === fallbackCode,
       );
       if (existingSessionIndex < 0) return;
       const existingSession = nextSessions[existingSessionIndex];
       const safeFallbackClubs = fallbackSession.clubs.filter(
-        (club) => !looksLikeMergedScheduleClubName(club.name)
+        (club) => !looksLikeMergedScheduleClubName(club.name),
       );
       const neighboringFallbackSessions = fallbackDay.sessions.filter(
-        (candidate) => safeString(candidate.code) !== safeString(fallbackSession.code)
+        (candidate) => safeString(candidate.code) !== safeString(fallbackSession.code),
       );
       const neighboringFallbackGroups = fallbackDay.sessions
         .filter((candidate) => safeString(candidate.code) !== safeString(fallbackSession.code))
@@ -11616,24 +11116,25 @@ function supplementScheduleWithFallback(
           scheduleGroupLooksLeaky(
             existingSession.group,
             fallbackSession.group,
-            neighboringFallbackGroups
+            neighboringFallbackGroups,
           ));
       const shouldUseFallbackStartTime =
-        Boolean(fallbackSession.startTime) && !hasHighConfidenceScheduleTime(existingSession.startTime);
+        Boolean(fallbackSession.startTime) &&
+        !hasHighConfidenceScheduleTime(existingSession.startTime);
       const shouldReplaceClubs = shouldReplaceLeakyScheduleSessionClubs(
         existingSession.clubs,
         safeFallbackClubs,
         neighboringFallbackSessions.flatMap((session) =>
-          session.clubs.filter((club) => !looksLikeMergedScheduleClubName(club.name))
-        )
+          session.clubs.filter((club) => !looksLikeMergedScheduleClubName(club.name)),
+        ),
       );
       const mergedClubs = shouldReplaceClubs
         ? safeFallbackClubs
         : existingSession.clubs.length > 0 && safeFallbackClubs.length > 0
           ? mergeStoredScheduleClubs(existingSession.clubs, safeFallbackClubs)
           : existingSession.clubs.length > 0
-          ? existingSession.clubs
-          : safeFallbackClubs;
+            ? existingSession.clubs
+            : safeFallbackClubs;
       if (shouldUseFallbackGroup || shouldUseFallbackStartTime || shouldReplaceClubs) {
         fallbackMetadataApplied = true;
       }
@@ -11642,7 +11143,11 @@ function supplementScheduleWithFallback(
       }
       if (
         shouldReplaceClubs ||
-        scheduleGroupLooksLeaky(existingSession.group, fallbackSession.group, neighboringFallbackGroups) ||
+        scheduleGroupLooksLeaky(
+          existingSession.group,
+          fallbackSession.group,
+          neighboringFallbackGroups,
+        ) ||
         (existingSession.clubs.length === 0 && safeFallbackClubs.length > 0)
       ) {
         tableRepairApplied = true;
@@ -11650,7 +11155,9 @@ function supplementScheduleWithFallback(
       nextSessions[existingSessionIndex] = {
         ...existingSession,
         group: shouldUseFallbackGroup ? fallbackSession.group : existingSession.group,
-        startTime: shouldUseFallbackStartTime ? fallbackSession.startTime : existingSession.startTime,
+        startTime: shouldUseFallbackStartTime
+          ? fallbackSession.startTime
+          : existingSession.startTime,
         warmupTime: existingSession.warmupTime || fallbackSession.warmupTime,
         note: existingSession.note || fallbackSession.note,
         clubs: mergedClubs,
@@ -11668,7 +11175,7 @@ function supplementScheduleWithFallback(
         shortDate: existingDay.shortDate || fallbackDay.shortDate,
         isoDate: existingDay.isoDate || fallbackDay.isoDate,
         sessions: [...nextSessions, ...additionalSessions].sort((a, b) =>
-          compareScheduleSessionCodes(a.code, b.code)
+          compareScheduleSessionCodes(a.code, b.code),
         ),
       };
       const mergedDayKey = getStoredScheduleDayKey(mergedDays[existingIndex]);
@@ -11743,7 +11250,7 @@ async function deriveScheduleFromExtractedText(
     mode?: DiscoveryMode;
     performance?: DiscoveryPerformance;
     classification?: ParseClassification;
-  }
+  },
 ): Promise<{
   schedule: ParseResult["schedule"];
   diagnostics: NonNullable<ExtractionResult["extractionMeta"]["scheduleDiagnostics"]>;
@@ -11773,7 +11280,7 @@ async function deriveScheduleFromExtractedText(
       ...extractScheduleDateLines(extractedText),
       ...selectedPages.flatMap((page) => extractScheduleDateLines(page.text)),
     ],
-    (line) => line
+    (line) => line,
   );
   if (selectedSegments.length === 0) {
     return {
@@ -11814,13 +11321,24 @@ async function deriveScheduleFromExtractedText(
   const ambiguityNotes = uniqueBy(
     [
       ...selectedSegments
-        .filter((segment) => segment.kind === "narrative" && segment.reason === "generic_schedule_signals")
-        .map((segment) => `Page ${segment.pageNumber} classified as narrative from generic schedule signals.`),
+        .filter(
+          (segment) =>
+            segment.kind === "narrative" && segment.reason === "generic_schedule_signals",
+        )
+        .map(
+          (segment) =>
+            `Page ${segment.pageNumber} classified as narrative from generic schedule signals.`,
+        ),
       ...selectedSegments
-        .filter((segment) => segment.kind === "assignment" && countScheduleSessionCodes(segment.text) < 2)
-        .map((segment) => `Page ${segment.pageNumber} contains assignment rows with sparse session coverage.`),
+        .filter(
+          (segment) => segment.kind === "assignment" && countScheduleSessionCodes(segment.text) < 2,
+        )
+        .map(
+          (segment) =>
+            `Page ${segment.pageNumber} contains assignment rows with sparse session coverage.`,
+        ),
     ],
-    (item) => item
+    (item) => item,
   );
   const scheduleText = gridPages
     .map((page) => `-- ${page.pageNumber} --\n${page.text}`)
@@ -11839,7 +11357,7 @@ async function deriveScheduleFromExtractedText(
   const shouldSkipScheduleTextLlm = shouldSkipOpenAiScheduleParse(
     gridFallback,
     gridPages,
-    ambiguityNotes
+    ambiguityNotes,
   );
   if (shouldSkipScheduleTextLlm) {
     console.log("[meet-discovery] schedule text parse skipped", {
@@ -11860,13 +11378,14 @@ async function deriveScheduleFromExtractedText(
     countScheduleDaysWithSessions(gridFallback) > 0
       ? mergeScheduleWithFallback(
           gridFallback,
-          parsed && countScheduleDaysWithSessions(parsed) > 0 ? parsed : null
+          parsed && countScheduleDaysWithSessions(parsed) > 0 ? parsed : null,
         )
       : parsed && countScheduleDaysWithSessions(parsed) > 0
-      ? parsed
-      : gridFallback;
+        ? parsed
+        : gridFallback;
   const narrativeSchedule = narrativePages.reduce<ParseResult["schedule"]>(
-    (acc, page) => mergeScheduleWithFallback(acc, parseNarrativeScheduleSessionsFromPage(page, fallbackYear)),
+    (acc, page) =>
+      mergeScheduleWithFallback(acc, parseNarrativeScheduleSessionsFromPage(page, fallbackYear)),
     {
       venueLabel: null,
       supportEmail: null,
@@ -11874,13 +11393,13 @@ async function deriveScheduleFromExtractedText(
       annotations: [],
       assignments: [],
       days: [],
-    }
+    },
   );
   const annotations = parseScheduleAnnotationsFromPages(
     selectedSegments
       .filter((segment) => segment.kind !== "assignment")
       .map((segment) => ({ pageNumber: segment.pageNumber, text: segment.text })),
-    fallbackYear
+    fallbackYear,
   );
   const assignments = parseScheduleAssignmentsFromPages(assignmentPages);
   const textSchedule = mergeScheduleWithFallback(gridTextSchedule, narrativeSchedule);
@@ -11890,11 +11409,11 @@ async function deriveScheduleFromExtractedText(
     assignments,
   };
   const gridPageNumbers = new Set(gridPages.map((page) => page.pageNumber));
-  const scheduleImagesForSelectedPages = pickArray(extractionMeta?.schedulePageImages).filter((item) =>
-    gridPageNumbers.has(Number(item?.pageNumber) || 0)
+  const scheduleImagesForSelectedPages = pickArray(extractionMeta?.schedulePageImages).filter(
+    (item) => gridPageNumbers.has(Number(item?.pageNumber) || 0),
   );
-  const scheduleTextsForSelectedPages = pickArray(extractionMeta?.schedulePageTexts).filter((item) =>
-    gridPageNumbers.has(Number(item?.pageNumber) || 0)
+  const scheduleTextsForSelectedPages = pickArray(extractionMeta?.schedulePageTexts).filter(
+    (item) => gridPageNumbers.has(Number(item?.pageNumber) || 0),
   );
   if (
     !shouldEngageAdvancedScheduleParsing ||
@@ -11908,7 +11427,7 @@ async function deriveScheduleFromExtractedText(
         pickArray(textScheduleWithSegments.notes)
           .map((item) => safeString(item))
           .filter(Boolean),
-        (item) => item
+        (item) => item,
       ),
     });
     const finalSchedule = baseSchedule;
@@ -11930,7 +11449,8 @@ async function deriveScheduleFromExtractedText(
         usedImageTableExtraction: false,
         usedTextFallback:
           countScheduleDaysWithSessions(gridFallback) > 0 &&
-          countScheduleDaysWithSessions(gridTextSchedule) <= countScheduleDaysWithSessions(gridFallback),
+          countScheduleDaysWithSessions(gridTextSchedule) <=
+            countScheduleDaysWithSessions(gridFallback),
         usedImageAwardExtraction: false,
         staleStoredScheduleDetected: false,
       },
@@ -11944,7 +11464,7 @@ async function deriveScheduleFromExtractedText(
       maxTableCropsPerPage: 3,
       concurrency: 2,
       performance: options?.performance,
-    }
+    },
   );
   const repairedSchedule =
     countScheduleDaysWithSessions(visualScheduleResult.schedule) > 0
@@ -11958,9 +11478,11 @@ async function deriveScheduleFromExtractedText(
     assignments,
     notes: uniqueBy(
       [
-        ...pickArray(mergedSchedule.notes).map((item) => safeString(item)).filter(Boolean),
+        ...pickArray(mergedSchedule.notes)
+          .map((item) => safeString(item))
+          .filter(Boolean),
       ],
-      (item) => item
+      (item) => item,
     ),
   });
   const finalSchedule = baseFinalSchedule;
@@ -11985,7 +11507,8 @@ async function deriveScheduleFromExtractedText(
       usedTextFallback:
         countScheduleDaysWithSessions(gridFallback) > 0 &&
         (!usedImageTableExtraction ||
-          countScheduleDaysWithSessions(visualScheduleResult.schedule) < countScheduleDaysWithSessions(gridFallback) ||
+          countScheduleDaysWithSessions(visualScheduleResult.schedule) <
+            countScheduleDaysWithSessions(gridFallback) ||
           countScheduleDaysWithSessions(textScheduleWithSegments) >
             countScheduleDaysWithSessions(visualScheduleResult.schedule)),
       usedImageAwardExtraction,
@@ -12015,7 +11538,6 @@ function buildEmptyParseResult(): ParseResult {
       name: null,
       level: null,
       team: null,
-      session: null,
       competitionDate: null,
       stretchTime: null,
       marchIn: null,
@@ -12035,7 +11557,6 @@ function buildEmptyParseResult(): ParseResult {
       resultsInfo: null,
       rotationSheetsInfo: null,
       awardsInfo: null,
-      sessionWindows: [],
       operationalNotes: [],
     },
     logistics: {
@@ -12094,31 +11615,8 @@ function buildEmptyParseResult(): ParseResult {
       announcements: [],
       passcode: null,
     },
-    schedule: {
-      venueLabel: null,
-      supportEmail: null,
-      notes: [],
-      annotations: [],
-      assignments: [],
-      days: [],
-    },
     links: [],
     unmappedFacts: [],
-  };
-}
-
-export function stripGymScheduleGridsFromParseResult(parseResult: ParseResult): ParseResult {
-  const empty = buildEmptyParseResult().schedule;
-  return {
-    ...parseResult,
-    schedule: {
-      venueLabel: empty.venueLabel,
-      supportEmail: empty.supportEmail,
-      notes: [],
-      annotations: [],
-      assignments: [],
-      days: [],
-    },
   };
 }
 
@@ -12126,10 +11624,12 @@ async function _callOpenAiParse(
   text: string,
   evidence: DiscoveryEvidence,
   traceId?: string,
-  performance?: DiscoveryPerformance
+  performance?: DiscoveryPerformance,
 ): Promise<{ result: ParseResult | null; raw: string; usage: any }> {
   const client = getOpenAiClient();
-  const sanitizedText = text.replace(/\u0000/g, " ").replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ");
+  const sanitizedText = text
+    .replace(/\u0000/g, " ")
+    .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ");
   const prompt = buildProfessionalParsePrompt(evidence, sanitizedText, undefined, {
     includeSchema: false,
     compactEvidence: true,
@@ -12175,7 +11675,7 @@ async function callOpenAiClassification(
   extractedText: string,
   evidence: DiscoveryEvidence,
   traceId?: string,
-  performance?: DiscoveryPerformance
+  performance?: DiscoveryPerformance,
 ): Promise<{ result: ParseClassification | null; raw: string; usage: any }> {
   const client = getOpenAiClient();
   const prompt = buildClassifierPrompt(evidence, extractedText);
@@ -12195,7 +11695,8 @@ async function callOpenAiClassification(
     messages: [
       {
         role: "system",
-        content: "You classify gymnastics meet documents for staged extraction. Return only strict JSON.",
+        content:
+          "You classify gymnastics meet documents for staged extraction. Return only strict JSON.",
       },
       {
         role: "user",
@@ -12222,7 +11723,7 @@ async function callOpenAiTargetedParse(
   classification: ParseClassification,
   selected: SelectedParseEvidence,
   traceId?: string,
-  performance?: DiscoveryPerformance
+  performance?: DiscoveryPerformance,
 ): Promise<{ result: ParseResult | null; raw: string; usage: any }> {
   const client = getOpenAiClient();
   const prompt = buildTargetedParsePrompt(profile, classification, selected);
@@ -12272,12 +11773,12 @@ async function callOpenAiTargetedParse(
 async function callGeminiParse(
   text: string,
   evidence: DiscoveryEvidence,
-  traceId?: string
+  traceId?: string,
 ): Promise<{ result: ParseResult | null; raw: string }> {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
   if (!apiKey) throw new Error("Gemini API key is not configured");
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    process.env.GEMINI_MODEL || "gemini-1.5-flash"
+    process.env.GEMINI_MODEL || "gemini-1.5-flash",
   )}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const startedAt = Date.now();
   console.log("[meet-discovery] gemini parse request started", {
@@ -12322,7 +11823,7 @@ export async function finalizeMeetParseResult(
     mode?: DiscoveryMode;
     performance?: DiscoveryPerformance;
     classification?: ParseClassification;
-  }
+  },
 ): Promise<ParseResult> {
   const traceId = options?.traceId || null;
   const finalizeStartedAt = Date.now();
@@ -12331,17 +11832,7 @@ export async function finalizeMeetParseResult(
     mode: options?.mode || "core",
   });
   const sanitized = sanitizeDiscoveryParseResult(value);
-  const reconciled = reconcileParsedDates(sanitized, extractedText);
-  const emptySchedule = buildEmptyParseResult().schedule;
-  delete extractionMeta.scheduleDiagnostics;
-  console.log("[meet-discovery] schedule derivation skipped", {
-    traceId,
-    reason: "public-page-v2",
-  });
-  const finalized = {
-    ...reconciled,
-    schedule: emptySchedule,
-  };
+  const finalized = reconcileParsedDates(sanitized, extractedText);
   console.log("[meet-discovery] finalize parse result finished", {
     traceId,
     durationMs: Date.now() - finalizeStartedAt,
@@ -12356,7 +11847,7 @@ export async function parseMeetFromExtractedText(
     traceId?: string;
     mode?: DiscoveryMode;
     performance?: DiscoveryPerformance;
-  }
+  },
 ): Promise<{
   parseResult: ParseResult;
   modelUsed: "openai" | "gemini" | "quality-gate";
@@ -12404,7 +11895,7 @@ export async function parseMeetFromExtractedText(
       extractedText,
       evidence,
       options?.traceId,
-      options?.performance
+      options?.performance,
     );
     stagedRaw.classifier = classifier.raw;
     const classification =
@@ -12428,7 +11919,7 @@ export async function parseMeetFromExtractedText(
         profile,
         extractedText,
         evidence,
-        extractionMeta
+        extractionMeta,
       );
       extractorCalls.push({
         profile,
@@ -12443,7 +11934,7 @@ export async function parseMeetFromExtractedText(
           classification,
           selected,
           options?.traceId,
-          options?.performance
+          options?.performance,
         );
         stagedRaw.extractions.push({
           profile,
@@ -12491,17 +11982,12 @@ export async function parseMeetFromExtractedText(
       if (!stagedMerged) {
         throw new Error("Staged parse merge returned invalid structured output.");
       }
-      const finalized = await finalizeMeetParseResult(
-        stagedMerged,
-        extractedText,
-        extractionMeta,
-        {
-          traceId: options?.traceId,
-          mode: options?.mode,
-          performance: options?.performance,
-          classification,
-        }
-      );
+      const finalized = await finalizeMeetParseResult(stagedMerged, extractedText, extractionMeta, {
+        traceId: options?.traceId,
+        mode: options?.mode,
+        performance: options?.performance,
+        classification,
+      });
       return {
         parseResult: {
           ...finalized,
@@ -12521,12 +12007,12 @@ export async function parseMeetFromExtractedText(
     openAiErrorMessage = String(err?.message || "OpenAI parse failed.");
   }
   const hasGeminiKey = Boolean(
-    safeString(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY)
+    safeString(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY),
   );
   if (!hasGeminiKey) {
     throw new Error(
       openAiErrorMessage ||
-        "OpenAI parsing failed and Gemini fallback is not configured. Set GEMINI_API_KEY to enable fallback."
+        "OpenAI parsing failed and Gemini fallback is not configured. Set GEMINI_API_KEY to enable fallback.",
     );
   }
   console.log("[meet-discovery] falling back to gemini", {
@@ -12549,7 +12035,7 @@ export async function parseMeetFromExtractedText(
       traceId: options?.traceId,
       mode: options?.mode,
       performance: options?.performance,
-    }
+    },
   );
   return {
     parseResult: {
@@ -12572,11 +12058,7 @@ function splitDateTime(iso: string | null): { date: string; time: string } {
   };
 }
 
-function isDateWithinRange(
-  value: string,
-  start: string | null,
-  end: string | null
-): boolean {
+function isDateWithinRange(value: string, start: string | null, end: string | null): boolean {
   const target = safeString(value);
   const lower = safeString(start);
   const upper = safeString(end || start);
@@ -12589,11 +12071,7 @@ function hasExplicitIsoTimeComponent(value: unknown): boolean {
   if (!text) return false;
   const match = text.match(/T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?Z$/i);
   if (!match) return false;
-  return !(
-    match[1] === "00" &&
-    match[2] === "00" &&
-    safeString(match[3] || "00") === "00"
-  );
+  return !(match[1] === "00" && match[2] === "00" && safeString(match[3] || "00") === "00");
 }
 
 function hasAnyDiscoveryTimeSignal(parseResult: ParseResult): boolean {
@@ -12617,7 +12095,7 @@ function hasExplicitDiscoveryStartTime(parseResult: ParseResult): boolean {
 
 function buildTextDerivedLink(
   label: string,
-  value: unknown
+  value: unknown,
 ): { label: string; url: string } | null {
   const url = extractCanonicalUrlFromText(value);
   return url ? { label, url } : null;
@@ -12636,22 +12114,26 @@ function isScheduleTableNoiseLine(value: unknown): boolean {
 
 function isPacketCoverCopyText(value: unknown): boolean {
   return /(is proud to host|please review the following items enclosed in this packet|welcome to the .* championships?|thank you for attending|hosted by)/i.test(
-    safeString(value)
+    safeString(value),
   );
 }
 
 function shouldKeepOperationalLayoutEvidence(
-  extractionMeta?: ExtractionResult["extractionMeta"]
+  extractionMeta?: ExtractionResult["extractionMeta"],
 ): boolean {
   return Boolean(
-    Number(extractionMeta?.gymLayoutPage) || safeString(extractionMeta?.gymLayoutImageDataUrl)
+    Number(extractionMeta?.gymLayoutPage) || safeString(extractionMeta?.gymLayoutImageDataUrl),
   );
 }
 
 function isLowSignalOperationalNote(value: unknown): boolean {
   const text = safeString(value);
   if (!text) return true;
-  if (isMarketingLikeText(text) || isScheduleGridLikeText(text) || isClubParticipationLikeText(text)) {
+  if (
+    isMarketingLikeText(text) ||
+    isScheduleGridLikeText(text) ||
+    isClubParticipationLikeText(text)
+  ) {
     return true;
   }
   if (isScheduleTableNoiseLine(text) || isPacketCoverCopyText(text)) return true;
@@ -12668,22 +12150,22 @@ function hasMeaningfulArrayContent(value: unknown): boolean {
 }
 
 function computeParseCompletenessSnapshot(parseResult: ParseResult): ParseCompletenessSnapshot {
-  const coreFilled = [
-    parseResult.title,
-    parseResult.dates,
-    parseResult.startAt,
-    parseResult.endAt,
-    parseResult.timezone,
-    parseResult.venue,
-    parseResult.address,
-    parseResult.hostGym,
-  ].filter(Boolean).length + (parseResult.links.length > 0 ? 1 : 0);
+  const coreFilled =
+    [
+      parseResult.title,
+      parseResult.dates,
+      parseResult.startAt,
+      parseResult.endAt,
+      parseResult.timezone,
+      parseResult.venue,
+      parseResult.address,
+      parseResult.hostGym,
+    ].filter(Boolean).length + (parseResult.links.length > 0 ? 1 : 0);
 
   const athleteFilled = [
     parseResult.athlete.name,
     parseResult.athlete.level,
     parseResult.athlete.team,
-    parseResult.athlete.session,
     parseResult.athlete.competitionDate,
     parseResult.athlete.stretchTime,
     parseResult.athlete.marchIn,
@@ -12691,52 +12173,54 @@ function computeParseCompletenessSnapshot(parseResult: ParseResult): ParseComple
     parseResult.athlete.awards,
   ].filter(Boolean).length;
 
-  const meetDetailsFilled = [
-    parseResult.meetDetails.warmup,
-    parseResult.meetDetails.marchIn,
-    parseResult.meetDetails.rotationOrder,
-    parseResult.meetDetails.judgingNotes,
-    parseResult.meetDetails.doorsOpen,
-    parseResult.meetDetails.arrivalGuidance,
-    parseResult.meetDetails.registrationInfo,
-    parseResult.meetDetails.facilityLayout,
-    parseResult.meetDetails.scoringInfo,
-    parseResult.meetDetails.resultsInfo,
-    parseResult.meetDetails.rotationSheetsInfo,
-    parseResult.meetDetails.awardsInfo,
-  ].filter(Boolean).length +
-    (parseResult.meetDetails.sessionWindows.length > 0 ? 1 : 0) +
+  const meetDetailsFilled =
+    [
+      parseResult.meetDetails.warmup,
+      parseResult.meetDetails.marchIn,
+      parseResult.meetDetails.rotationOrder,
+      parseResult.meetDetails.judgingNotes,
+      parseResult.meetDetails.doorsOpen,
+      parseResult.meetDetails.arrivalGuidance,
+      parseResult.meetDetails.registrationInfo,
+      parseResult.meetDetails.facilityLayout,
+      parseResult.meetDetails.scoringInfo,
+      parseResult.meetDetails.resultsInfo,
+      parseResult.meetDetails.rotationSheetsInfo,
+      parseResult.meetDetails.awardsInfo,
+    ].filter(Boolean).length +
     (parseResult.meetDetails.operationalNotes.length > 0 ? 1 : 0);
 
-  const logisticsFilled = [
-    parseResult.logistics.parking,
-    parseResult.logistics.trafficAlerts,
-    parseResult.logistics.hotel,
-    parseResult.logistics.meals,
-    parseResult.logistics.fees,
-    parseResult.logistics.waivers,
-    parseResult.logistics.rideShare,
-    parseResult.logistics.accessibility,
-  ].filter(Boolean).length +
+  const logisticsFilled =
+    [
+      parseResult.logistics.parking,
+      parseResult.logistics.trafficAlerts,
+      parseResult.logistics.hotel,
+      parseResult.logistics.meals,
+      parseResult.logistics.fees,
+      parseResult.logistics.waivers,
+      parseResult.logistics.rideShare,
+      parseResult.logistics.accessibility,
+    ].filter(Boolean).length +
     (parseResult.logistics.parkingLinks.length > 0 ? 1 : 0) +
     (parseResult.logistics.parkingPricingLinks.length > 0 ? 1 : 0);
 
-  const coachInfoFilled = [
-    parseResult.coachInfo.signIn,
-    parseResult.coachInfo.attire,
-    parseResult.coachInfo.hospitality,
-    parseResult.coachInfo.floorAccess,
-    parseResult.coachInfo.scratches,
-    parseResult.coachInfo.floorMusic,
-    parseResult.coachInfo.rotationSheets,
-    parseResult.coachInfo.awards,
-    parseResult.coachInfo.regionalCommitment,
-    parseResult.coachInfo.qualification,
-    parseResult.coachInfo.meetFormat,
-    parseResult.coachInfo.equipment,
-    parseResult.coachInfo.refundPolicy,
-    parseResult.coachInfo.paymentInstructions,
-  ].filter(Boolean).length +
+  const coachInfoFilled =
+    [
+      parseResult.coachInfo.signIn,
+      parseResult.coachInfo.attire,
+      parseResult.coachInfo.hospitality,
+      parseResult.coachInfo.floorAccess,
+      parseResult.coachInfo.scratches,
+      parseResult.coachInfo.floorMusic,
+      parseResult.coachInfo.rotationSheets,
+      parseResult.coachInfo.awards,
+      parseResult.coachInfo.regionalCommitment,
+      parseResult.coachInfo.qualification,
+      parseResult.coachInfo.meetFormat,
+      parseResult.coachInfo.equipment,
+      parseResult.coachInfo.refundPolicy,
+      parseResult.coachInfo.paymentInstructions,
+    ].filter(Boolean).length +
     (parseResult.coachInfo.entryFees.length > 0 ? 1 : 0) +
     (parseResult.coachInfo.teamFees.length > 0 ? 1 : 0) +
     (parseResult.coachInfo.lateFees.length > 0 ? 1 : 0) +
@@ -12744,15 +12228,6 @@ function computeParseCompletenessSnapshot(parseResult: ParseResult): ParseComple
     (parseResult.coachInfo.deadlines.length > 0 ? 1 : 0) +
     (parseResult.coachInfo.links.length > 0 ? 1 : 0) +
     (parseResult.coachInfo.notes.length > 0 ? 1 : 0);
-
-  const scheduleFilled = [
-    parseResult.schedule.venueLabel,
-    parseResult.schedule.supportEmail,
-  ].filter(Boolean).length +
-    (parseResult.schedule.notes.length > 0 ? 1 : 0) +
-    (hasMeaningfulArrayContent(parseResult.schedule.annotations) ? 1 : 0) +
-    (hasMeaningfulArrayContent(parseResult.schedule.assignments) ? 1 : 0) +
-    (parseResult.schedule.days.length > 0 ? 1 : 0);
 
   return {
     core: {
@@ -12762,13 +12237,13 @@ function computeParseCompletenessSnapshot(parseResult: ParseResult): ParseComple
     },
     athlete: {
       filled: athleteFilled,
-      total: 9,
-      score: scoreCompletenessSection(athleteFilled, 9),
+      total: 8,
+      score: scoreCompletenessSection(athleteFilled, 8),
     },
     meetDetails: {
       filled: meetDetailsFilled,
-      total: 14,
-      score: scoreCompletenessSection(meetDetailsFilled, 14),
+      total: 13,
+      score: scoreCompletenessSection(meetDetailsFilled, 13),
     },
     logistics: {
       filled: logisticsFilled,
@@ -12780,17 +12255,12 @@ function computeParseCompletenessSnapshot(parseResult: ParseResult): ParseComple
       total: 21,
       score: scoreCompletenessSection(coachInfoFilled, 21),
     },
-    schedule: {
-      filled: scheduleFilled,
-      total: 6,
-      score: scoreCompletenessSection(scheduleFilled, 6),
-    },
   };
 }
 
 function computeEvidenceSignalCounts(
   evidence: DiscoveryEvidence,
-  extractionMeta?: ExtractionResult["extractionMeta"]
+  _extractionMeta?: ExtractionResult["extractionMeta"],
 ): Record<keyof ParseCompletenessSnapshot, number> {
   return {
     core:
@@ -12799,8 +12269,7 @@ function computeEvidenceSignalCounts(
       evidence.candidates.venueHints.length +
       evidence.candidates.addressHints.length +
       evidence.candidates.hostGymHints.length,
-    athlete:
-      evidence.candidates.athleteHints.length + evidence.candidates.sessionHints.length,
+    athlete: evidence.candidates.athleteHints.length,
     meetDetails:
       evidence.sections.venue.length +
       evidence.sections.spectator.length +
@@ -12813,16 +12282,13 @@ function computeEvidenceSignalCounts(
       evidence.candidates.coachHints.length +
       evidence.sections.coachOps.length +
       evidence.sections.registration.length,
-    schedule:
-      evidence.candidates.sessionHints.length +
-      pickArray(extractionMeta?.schedulePageTexts).length * 2,
   };
 }
 
 function backfillDeterministicParseFields(
   parseResult: ParseResult,
   evidence: DiscoveryEvidence | null,
-  fallbackTitle: string
+  fallbackTitle: string,
 ): ParseResult {
   if (!evidence) {
     return {
@@ -12842,16 +12308,17 @@ function backfillDeterministicParseFields(
     evidence.resources.links
       .filter((item) => item.status === "not_posted")
       .map((item) => normalizeUrl(item.url))
-      .filter(Boolean)
+      .filter(Boolean),
   );
   next.links = mergeObjectArray(
     next.links,
-    evidence.candidates.linkHints.map((item) => ({
-      label: safeString(item?.label) || "Source link",
-      url: safeString(item?.url),
-    }))
+    evidence.candidates.linkHints
+      .map((item) => ({
+        label: safeString(item?.label) || "Source link",
+        url: safeString(item?.url),
+      }))
       .filter((item) => item.url && !notPostedUrls.has(normalizeUrl(item.url))),
-    (item) => `${item.label}|${item.url}`
+    (item) => `${item.label}|${item.url}`,
   );
   const parkingLinks = evidence.resources.links
     .filter((item) => item.kind === "parking" && item.status !== "not_posted")
@@ -12862,21 +12329,20 @@ function backfillDeterministicParseFields(
   next.logistics.parkingLinks = mergeObjectArray(
     next.logistics.parkingLinks,
     parkingLinks,
-    (item) => `${item.label}|${item.url}`
+    (item) => `${item.label}|${item.url}`,
   );
   if (!next.meetDetails.resultsInfo) {
     const resultsLink = evidence.resources.links.find(
       (item) =>
         item.status !== "not_posted" &&
-        ["results_live", "results_hub", "results_pdf"].includes(item.kind)
+        ["results_live", "results_hub", "results_pdf"].includes(item.kind),
     );
     next.meetDetails.resultsInfo = resultsLink?.label || null;
   }
   if (!next.meetDetails.rotationSheetsInfo) {
     const rotationLink = evidence.resources.links.find(
       (item) =>
-        item.status !== "not_posted" &&
-        ["rotation_sheet", "rotation_hub"].includes(item.kind)
+        item.status !== "not_posted" && ["rotation_sheet", "rotation_hub"].includes(item.kind),
     );
     next.meetDetails.rotationSheetsInfo = rotationLink?.label || null;
   }
@@ -12885,17 +12351,17 @@ function backfillDeterministicParseFields(
 
 function computeMappedCompletenessSnapshot(mapped: any): ParseCompletenessSnapshot {
   const advanced = (mapped?.advancedSections as Record<string, any>) || {};
-  const coreFilled = [
-    safeString(mapped?.title),
-    safeString(mapped?.date),
-    safeString(mapped?.time),
-    safeString(mapped?.startISO),
-    safeString(mapped?.endISO),
-    safeString(mapped?.location),
-    safeString(mapped?.address),
-    safeString(mapped?.website),
-  ].filter(Boolean).length +
-    (pickArray(mapped?.links).length > 0 ? 1 : 0);
+  const coreFilled =
+    [
+      safeString(mapped?.title),
+      safeString(mapped?.date),
+      safeString(mapped?.time),
+      safeString(mapped?.startISO),
+      safeString(mapped?.endISO),
+      safeString(mapped?.location),
+      safeString(mapped?.address),
+      safeString(mapped?.website),
+    ].filter(Boolean).length + (pickArray(mapped?.links).length > 0 ? 1 : 0);
   const athleteFilled = [
     safeString(advanced?.roster?.athletes?.[0]?.name),
     safeString(advanced?.roster?.athletes?.[0]?.level),
@@ -12906,49 +12372,51 @@ function computeMappedCompletenessSnapshot(mapped: any): ParseCompletenessSnapsh
     safeString(advanced?.meet?.assignedGym),
     safeString(advanced?.meet?.awardsInfo),
   ].filter(Boolean).length;
-  const meetDetailsFilled = [
-    safeString(advanced?.meet?.warmUpTime),
-    safeString(advanced?.meet?.marchInTime),
-    safeString(advanced?.meet?.judgingNotes),
-    safeString(advanced?.meet?.doorsOpen),
-    safeString(advanced?.meet?.arrivalGuidance),
-    safeString(advanced?.meet?.registrationInfo),
-    safeString(advanced?.meet?.facilityLayout),
-    safeString(advanced?.meet?.scoringInfo),
-    safeString(advanced?.meet?.resultsInfo),
-    safeString(advanced?.meet?.rotationSheetsInfo),
-    safeString(advanced?.meet?.awardsInfo),
-  ].filter(Boolean).length +
-    (pickArray(advanced?.meet?.sessionWindows).length > 0 ? 1 : 0) +
+  const meetDetailsFilled =
+    [
+      safeString(advanced?.meet?.warmUpTime),
+      safeString(advanced?.meet?.marchInTime),
+      safeString(advanced?.meet?.judgingNotes),
+      safeString(advanced?.meet?.doorsOpen),
+      safeString(advanced?.meet?.arrivalGuidance),
+      safeString(advanced?.meet?.registrationInfo),
+      safeString(advanced?.meet?.facilityLayout),
+      safeString(advanced?.meet?.scoringInfo),
+      safeString(advanced?.meet?.resultsInfo),
+      safeString(advanced?.meet?.rotationSheetsInfo),
+      safeString(advanced?.meet?.awardsInfo),
+    ].filter(Boolean).length +
     (pickArray(advanced?.meet?.operationalNotes).length > 0 ? 1 : 0);
-  const logisticsFilled = [
-    safeString(advanced?.logistics?.hotelName),
-    safeString(advanced?.logistics?.hotelInfo),
-    safeString(advanced?.logistics?.mealPlan),
-    safeString(advanced?.logistics?.feeAmount),
-    safeString(advanced?.logistics?.parking),
-    safeString(advanced?.logistics?.trafficAlerts),
-    safeString(advanced?.logistics?.rideShare),
-    safeString(advanced?.logistics?.accessibility),
-  ].filter(Boolean).length +
+  const logisticsFilled =
+    [
+      safeString(advanced?.logistics?.hotelName),
+      safeString(advanced?.logistics?.hotelInfo),
+      safeString(advanced?.logistics?.mealPlan),
+      safeString(advanced?.logistics?.feeAmount),
+      safeString(advanced?.logistics?.parking),
+      safeString(advanced?.logistics?.trafficAlerts),
+      safeString(advanced?.logistics?.rideShare),
+      safeString(advanced?.logistics?.accessibility),
+    ].filter(Boolean).length +
     (pickArray(advanced?.logistics?.parkingLinks).length > 0 ? 1 : 0) +
     (pickArray(advanced?.logistics?.parkingPricingLinks).length > 0 ? 1 : 0);
-  const coachFilled = [
-    safeString(advanced?.coaches?.signIn),
-    safeString(advanced?.coaches?.attire),
-    safeString(advanced?.coaches?.hospitality),
-    safeString(advanced?.coaches?.floorAccess),
-    safeString(advanced?.coaches?.scratches),
-    safeString(advanced?.coaches?.floorMusic),
-    safeString(advanced?.coaches?.rotationSheets),
-    safeString(advanced?.coaches?.awards),
-    safeString(advanced?.coaches?.regionalCommitment),
-    safeString(advanced?.coaches?.qualification),
-    safeString(advanced?.coaches?.meetFormat),
-    safeString(advanced?.coaches?.equipment),
-    safeString(advanced?.coaches?.refundPolicy),
-    safeString(advanced?.coaches?.paymentInstructions),
-  ].filter(Boolean).length +
+  const coachFilled =
+    [
+      safeString(advanced?.coaches?.signIn),
+      safeString(advanced?.coaches?.attire),
+      safeString(advanced?.coaches?.hospitality),
+      safeString(advanced?.coaches?.floorAccess),
+      safeString(advanced?.coaches?.scratches),
+      safeString(advanced?.coaches?.floorMusic),
+      safeString(advanced?.coaches?.rotationSheets),
+      safeString(advanced?.coaches?.awards),
+      safeString(advanced?.coaches?.regionalCommitment),
+      safeString(advanced?.coaches?.qualification),
+      safeString(advanced?.coaches?.meetFormat),
+      safeString(advanced?.coaches?.equipment),
+      safeString(advanced?.coaches?.refundPolicy),
+      safeString(advanced?.coaches?.paymentInstructions),
+    ].filter(Boolean).length +
     (pickArray(advanced?.coaches?.entryFees).length > 0 ? 1 : 0) +
     (pickArray(advanced?.coaches?.teamFees).length > 0 ? 1 : 0) +
     (pickArray(advanced?.coaches?.lateFees).length > 0 ? 1 : 0) +
@@ -12956,21 +12424,13 @@ function computeMappedCompletenessSnapshot(mapped: any): ParseCompletenessSnapsh
     (pickArray(advanced?.coaches?.deadlines).length > 0 ? 1 : 0) +
     (pickArray(advanced?.coaches?.links).length > 0 ? 1 : 0) +
     (pickArray(advanced?.coaches?.notes).length > 0 ? 1 : 0);
-  const scheduleFilled = [
-    safeString(advanced?.schedule?.venueLabel),
-    safeString(advanced?.schedule?.supportEmail),
-  ].filter(Boolean).length +
-    (pickArray(advanced?.schedule?.notes).length > 0 ? 1 : 0) +
-    (pickArray(advanced?.schedule?.annotations).length > 0 ? 1 : 0) +
-    (pickArray(advanced?.schedule?.assignments).length > 0 ? 1 : 0) +
-    (pickArray(advanced?.schedule?.days).length > 0 ? 1 : 0);
   return {
     core: { filled: coreFilled, total: 9, score: scoreCompletenessSection(coreFilled, 9) },
-    athlete: { filled: athleteFilled, total: 9, score: scoreCompletenessSection(athleteFilled, 9) },
+    athlete: { filled: athleteFilled, total: 8, score: scoreCompletenessSection(athleteFilled, 8) },
     meetDetails: {
       filled: meetDetailsFilled,
-      total: 14,
-      score: scoreCompletenessSection(meetDetailsFilled, 14),
+      total: 13,
+      score: scoreCompletenessSection(meetDetailsFilled, 13),
     },
     logistics: {
       filled: logisticsFilled,
@@ -12978,7 +12438,6 @@ function computeMappedCompletenessSnapshot(mapped: any): ParseCompletenessSnapsh
       score: scoreCompletenessSection(logisticsFilled, 10),
     },
     coachInfo: { filled: coachFilled, total: 21, score: scoreCompletenessSection(coachFilled, 21) },
-    schedule: { filled: scheduleFilled, total: 6, score: scoreCompletenessSection(scheduleFilled, 6) },
   };
 }
 
@@ -12986,7 +12445,7 @@ function determineCompletenessSparsity(
   evidenceSignals: number,
   rawScore: number,
   sanitizedScore: number,
-  mappedScore: number
+  mappedScore: number,
 ): "none" | "extraction" | "sanitization" | "mapping" {
   if (mappedScore + 0.15 < sanitizedScore) return "mapping";
   if (sanitizedScore + 0.15 < rawScore) return "sanitization";
@@ -12999,7 +12458,7 @@ function normalizeSectionBullets(items: unknown[], limit = 6): string[] {
     pickArray(items)
       .map((item) => safeString(item))
       .filter(Boolean),
-    limit
+    limit,
   );
 }
 
@@ -13019,7 +12478,7 @@ function joinSectionSentences(...values: unknown[]): string {
 function buildGymSectionVisibility(
   body: string,
   bullets: string[],
-  requestedVisibility?: GymPublicSectionVisibility
+  requestedVisibility?: GymPublicSectionVisibility,
 ): GymPublicSectionVisibility {
   if (requestedVisibility === "visible" || requestedVisibility === "hidden") {
     return requestedVisibility;
@@ -13045,8 +12504,8 @@ function createGymPublicPageSection(params: {
     params.visibility === "visible" || params.visibility === "hidden"
       ? params.visibility
       : body || bullets.length > 0 || items.length > 0
-      ? "visible"
-      : "hidden";
+        ? "visible"
+        : "hidden";
   const confidenceByOrigin: Record<GymPublicSectionOrigin, number> = {
     pdf_grounded: 0.9,
     mixed: 0.8,
@@ -13076,7 +12535,7 @@ function createGymDocumentsSection(
   options?: {
     visibility?: GymPublicSectionVisibility;
     hideReason?: string | null;
-  }
+  },
 ): GymPublicPageSections["documents"] {
   const normalizedLinks = uniqueBy(
     links
@@ -13085,12 +12544,12 @@ function createGymDocumentsSection(
         url: normalizeUrl(item?.url),
       }))
       .filter((item) => item.url),
-    (item) => item.url!
+    (item) => item.url!,
   ).slice(0, 12) as Array<{ label: string; url: string }>;
   const visibility = buildGymSectionVisibility(
     "",
     normalizedLinks.map((item) => item.label),
-    options?.visibility
+    options?.visibility,
   );
   return {
     title: "Documents",
@@ -13116,12 +12575,12 @@ function buildDerivedPublicMeetOverview(params: {
   const { title, dates, venue, hostGym, hasCoreLocation } = params;
   if (title && dates && venue) {
     return normalizeSentence(
-      `${title} takes place ${dates} at ${venue}${hostGym ? ` and is hosted by ${hostGym}` : ""}`
+      `${title} takes place ${dates} at ${venue}${hostGym ? ` and is hosted by ${hostGym}` : ""}`,
     );
   }
   if (title && hasCoreLocation) {
     return normalizeSentence(
-      `${title} is your central hub for venue guidance, admissions, hotels, and event-day updates.`
+      `${title} is your central hub for venue guidance, admissions, hotels, and event-day updates.`,
     );
   }
   return "";
@@ -13142,7 +12601,7 @@ function normalizeTravelAccommodationHotels(value: unknown): GymPublicTravelHote
         bookingUrl: normalizeUrl(item?.bookingUrl) || null,
       }))
       .filter((item) => item.name),
-    (item) => `${item.name.toLowerCase()}|${item.bookingUrl || ""}`
+    (item) => `${item.name.toLowerCase()}|${item.bookingUrl || ""}`,
   );
 }
 
@@ -13163,7 +12622,7 @@ function buildTravelAccommodationNarrativeFromHotels(hotels: GymPublicTravelHote
       contentOrigin: "public_travel_section",
       confidence: 0.9,
     })),
-    null
+    null,
   );
 }
 
@@ -13176,20 +12635,20 @@ function buildGymPublicPageSections(params: {
 }): GymPublicPageSections {
   const { parseResult, evidence, resourceLinks, baseData, extractionMeta } = params;
   const title = safeString(parseResult.title) || safeString(baseData?.title);
-  const dates = safeString(parseResult.dates) || safeString(baseData?.customFields?.meetDateRangeLabel);
+  const dates =
+    safeString(parseResult.dates) || safeString(baseData?.customFields?.meetDateRangeLabel);
   const venue = safeString(parseResult.venue) || safeString(baseData?.venue);
   const address = safeString(parseResult.address) || safeString(baseData?.address);
   const hostGym =
-    sanitizeHostGymValue(parseResult.hostGym) ||
-    sanitizeHostGymValue(baseData?.hostGym) ||
-    "";
+    sanitizeHostGymValue(parseResult.hostGym) || sanitizeHostGymValue(baseData?.hostGym) || "";
   const venueLabel = [venue, address].filter(Boolean).join(", ");
   const hasCoreLocation = Boolean(venue || address);
   const publicResourceLinks = resourceLinks
     .map((item) => ({
       ...item,
       audience:
-        item.audience || classifyGymPublicAudience(`${item.label} ${item.url} ${item.sourceUrl || ""}`),
+        item.audience ||
+        classifyGymPublicAudience(`${item.label} ${item.url} ${item.sourceUrl || ""}`),
     }))
     .map((item) => ({
       ...item,
@@ -13204,13 +12663,13 @@ function buildGymPublicPageSections(params: {
       ? baseData.discoverySource.travelAccommodation
       : null;
   const travelHotels = normalizeTravelAccommodationHotels(
-    travelAccommodationState?.hotels || extractionMeta?.travelAccommodationSummary?.pdfHotels
+    travelAccommodationState?.hotels || extractionMeta?.travelAccommodationSummary?.pdfHotels,
   );
   const travelFallbackLink =
     normalizeUrl(
       travelAccommodationState?.fallbackLink ||
         extractionMeta?.travelAccommodationSummary?.fallbackLink ||
-        hotelLinks[0]?.url
+        hotelLinks[0]?.url,
     ) || null;
   const documentLinks = publicResourceLinks
     .filter((item) => item.renderTarget === "documents")
@@ -13234,21 +12693,23 @@ function buildGymPublicPageSections(params: {
         ...parseResult.meetDetails.operationalNotes,
       ],
       "parse_field",
-      4
-    )
+      4,
+    ),
   );
   const meetDetails = createGymPublicPageSection({
     title: "Meet Details",
     body: meetDetailBody,
     bullets: [],
     origin:
-      meetDetailBody && meetDetailBody !== buildDerivedPublicMeetOverview({
-        title,
-        dates,
-        venue,
-        hostGym,
-        hasCoreLocation,
-      })
+      meetDetailBody &&
+      meetDetailBody !==
+        buildDerivedPublicMeetOverview({
+          title,
+          dates,
+          venue,
+          hostGym,
+          hasCoreLocation,
+        })
         ? "mixed"
         : "derived_summary",
     evidenceRefs: [
@@ -13269,14 +12730,14 @@ function buildGymPublicPageSections(params: {
         parseResult.logistics.accessibility,
       ],
       "parse_field",
-      4
-    )
+      4,
+    ),
   );
   const parkingBody =
     publicParkingBody ||
     (hasCoreLocation
       ? normalizeSentence(
-          `Parking details were not listed in the packet. Plan to arrive early at ${venue || address} and follow on-site signage for spectator parking and drop-off.`
+          `Parking details were not listed in the packet. Plan to arrive early at ${venue || address} and follow on-site signage for spectator parking and drop-off.`,
         )
       : "");
   const parking = createGymPublicPageSection({
@@ -13294,13 +12755,13 @@ function buildGymPublicPageSections(params: {
   });
 
   const publicTrafficBody = joinSectionSentences(
-    ...filterPublicAudienceTexts([parseResult.logistics.trafficAlerts], "parse_field", 2)
+    ...filterPublicAudienceTexts([parseResult.logistics.trafficAlerts], "parse_field", 2),
   );
   const trafficBody =
     publicTrafficBody ||
     (hasCoreLocation
       ? normalizeSentence(
-          `Allow extra arrival time near the venue, especially before the event begins, and use posted venue traffic direction on arrival.`
+          `Allow extra arrival time near the venue, especially before the event begins, and use posted venue traffic direction on arrival.`,
         )
       : "");
   const traffic = createGymPublicPageSection({
@@ -13316,7 +12777,7 @@ function buildGymPublicPageSections(params: {
   const publicFacilityLayout = filterPublicAudienceTexts(
     [parseResult.meetDetails.facilityLayout],
     "parse_field",
-    2
+    2,
   );
   const venueSection = createGymPublicPageSection({
     title: "Venue Details",
@@ -13336,12 +12797,16 @@ function buildGymPublicPageSections(params: {
     .map((item) =>
       [safeString(item.label), safeString(item.price), safeString(item.note)]
         .filter(Boolean)
-        .join(": ")
+        .join(": "),
     )
     .filter((item) => isPublicAudienceText(item, "parse_field"))
     .filter(Boolean)
     .join(" ");
-  const publicSpectatorBullets = filterPublicAudienceTexts(parseResult.policies.misc, "parse_field", 6);
+  const publicSpectatorBullets = filterPublicAudienceTexts(
+    parseResult.policies.misc,
+    "parse_field",
+    6,
+  );
   const spectatorInfo = createGymPublicPageSection({
     title: "Spectator Info",
     body: joinSectionSentences(
@@ -13354,14 +12819,14 @@ function buildGymPublicPageSections(params: {
           parseResult.policies.animals,
         ],
         "parse_field",
-        4
-      )
+        4,
+      ),
     ),
     bullets: publicSpectatorBullets,
-    origin: admissionSummary || publicSpectatorBullets.length > 0 ? "pdf_grounded" : "derived_summary",
+    origin:
+      admissionSummary || publicSpectatorBullets.length > 0 ? "pdf_grounded" : "derived_summary",
     evidenceRefs: ["spectator", ...(evidence?.sections.spectator.slice(0, 3) || [])],
-    visibility:
-      admissionSummary || publicSpectatorBullets.length > 0 ? "visible" : "hidden",
+    visibility: admissionSummary || publicSpectatorBullets.length > 0 ? "visible" : "hidden",
     hideReason: "No attendee-safe admission or spectator policies survived filtering.",
   });
 
@@ -13369,8 +12834,8 @@ function buildGymPublicPageSections(params: {
     ...filterPublicAudienceTexts(
       [parseResult.logistics.hotel, buildTravelAccommodationNarrativeFromHotels(travelHotels)],
       "parse_field",
-      2
-    )
+      2,
+    ),
   );
   const travel = createGymPublicPageSection({
     title: "Hotels & Travel",
@@ -13380,7 +12845,8 @@ function buildGymPublicPageSections(params: {
     evidenceRefs: ["travel", ...(evidence?.resources.hotelHints.slice(0, 3) || [])],
     items: travelHotels,
     fallbackLink: travelFallbackLink,
-    visibility: travelBody || hotelLinks.length > 0 || travelHotels.length > 0 ? "visible" : "hidden",
+    visibility:
+      travelBody || hotelLinks.length > 0 || travelHotels.length > 0 ? "visible" : "hidden",
     hideReason: "No attendee-safe hotel or travel guidance survived filtering.",
   });
 
@@ -13390,7 +12856,7 @@ function buildGymPublicPageSections(params: {
     {
       visibility: documentLinks.length > 0 ? "visible" : "hidden",
       hideReason: "No public-safe documents survived filtering.",
-    }
+    },
   );
 
   return {
@@ -13406,14 +12872,14 @@ function buildGymPublicPageSections(params: {
 
 function computeGymDiscoveryPublishAssessment(
   parseResult: ParseResult,
-  sections: GymPublicPageSections
+  sections: GymPublicPageSections,
 ): GymDiscoveryPublishAssessment {
   const isVisible = (section: { visibility?: GymPublicSectionVisibility } | null | undefined) =>
     Boolean(section && section.visibility === "visible");
   const hasCore = Boolean(
     safeString(parseResult.title) &&
       safeString(parseResult.dates) &&
-      (safeString(parseResult.venue) || safeString(parseResult.address))
+      (safeString(parseResult.venue) || safeString(parseResult.address)),
   );
   const sectionScores = {
     core: hasCore ? 1 : 0,
@@ -13421,9 +12887,7 @@ function computeGymDiscoveryPublishAssessment(
     parking: isVisible(sections.parking) ? sections.parking?.confidence || 0 : 0,
     traffic: isVisible(sections.traffic) ? sections.traffic?.confidence || 0 : 0,
     venue: isVisible(sections.venue) ? sections.venue?.confidence || 0 : 0,
-    spectatorInfo: isVisible(sections.spectatorInfo)
-      ? sections.spectatorInfo?.confidence || 0
-      : 0,
+    spectatorInfo: isVisible(sections.spectatorInfo) ? sections.spectatorInfo?.confidence || 0 : 0,
     documents: isVisible(sections.documents) ? sections.documents?.confidence || 0 : 0,
   };
   const hasUtility = Boolean(
@@ -13434,23 +12898,25 @@ function computeGymDiscoveryPublishAssessment(
       parseResult.links.some(
         (item) =>
           classifyGymPublicAudience(`${safeString(item?.label)} ${safeString(item?.url)}`) ===
-          "public_attendee"
-      )
+          "public_attendee",
+      ),
   );
   const reasons: string[] = [];
   if (!hasCore) reasons.push("Missing title, dates, or venue/address.");
-  if (!isVisible(sections.meetDetails)) reasons.push("Meet Details section could not be generated.");
+  if (!isVisible(sections.meetDetails))
+    reasons.push("Meet Details section could not be generated.");
   if (!isVisible(sections.parking)) reasons.push("Parking guidance is missing.");
   if (!isVisible(sections.traffic)) reasons.push("Traffic guidance is missing.");
   if (!hasUtility) reasons.push("No spectator, document, or utility links were found.");
-  const state: GymDiscoveryPublishAssessment["state"] =
-    !hasCore
-      ? "draft"
-      : !isVisible(sections.meetDetails) || !isVisible(sections.parking) || !isVisible(sections.traffic)
+  const state: GymDiscoveryPublishAssessment["state"] = !hasCore
+    ? "draft"
+    : !isVisible(sections.meetDetails) ||
+        !isVisible(sections.parking) ||
+        !isVisible(sections.traffic)
       ? "review"
       : hasUtility
-      ? "auto_publish"
-      : "review";
+        ? "auto_publish"
+        : "review";
   return {
     state,
     reasons,
@@ -13459,22 +12925,22 @@ function computeGymDiscoveryPublishAssessment(
 }
 
 function stripGymPublicPageV2ParseResult(parseResult: ParseResult): ParseResult {
-  return normalizeParseResult({
-    ...parseResult,
-    athlete: buildEmptyParseResult().athlete,
-    coachInfo: buildEmptyParseResult().coachInfo,
-    gear: buildEmptyParseResult().gear,
-    volunteers: buildEmptyParseResult().volunteers,
-    schedule: buildEmptyParseResult().schedule,
-    meetDetails: {
-      ...parseResult.meetDetails,
-      warmup: null,
-      marchIn: null,
-      rotationOrder: null,
-      judgingNotes: null,
-      sessionWindows: [],
-    },
-  }) || buildEmptyParseResult();
+  return (
+    normalizeParseResult({
+      ...parseResult,
+      athlete: buildEmptyParseResult().athlete,
+      coachInfo: buildEmptyParseResult().coachInfo,
+      gear: buildEmptyParseResult().gear,
+      volunteers: buildEmptyParseResult().volunteers,
+      meetDetails: {
+        ...parseResult.meetDetails,
+        warmup: null,
+        marchIn: null,
+        rotationOrder: null,
+        judgingNotes: null,
+      },
+    }) || buildEmptyParseResult()
+  );
 }
 
 export function buildGymDiscoveryPublicPageArtifacts(params: {
@@ -13500,20 +12966,19 @@ export function buildGymDiscoveryPublicPageArtifacts(params: {
         audience:
           (safeString(item?.audience) as GymContentAudience) ||
           classifyGymPublicAudience(
-            `${safeString(item?.label)} ${safeString(item?.url)} ${safeString(item?.sourceUrl)}`
+            `${safeString(item?.label)} ${safeString(item?.url)} ${safeString(item?.sourceUrl)}`,
           ),
         renderTarget: (safeString(item?.renderTarget) as GymResourceRenderTarget) || "hidden",
       }))
       .filter((item) => item.url),
-    (item) => `${item.kind}|${item.url}`
-  )
-    .map((item) => ({
-      ...item,
-      renderTarget:
-        item.renderTarget === "hidden" && item.audience !== "coach_ops" && item.audience !== "session_ops"
-          ? classifyGymResourceRenderTarget(item as DiscoveryResourceLink)
-          : item.renderTarget,
-    })) as DiscoveryResourceLink[];
+    (item) => `${item.kind}|${item.url}`,
+  ).map((item) => ({
+    ...item,
+    renderTarget:
+      item.renderTarget === "hidden" && item.audience !== "coach_ops"
+        ? classifyGymResourceRenderTarget(item as DiscoveryResourceLink)
+        : item.renderTarget,
+  })) as DiscoveryResourceLink[];
   const publicPageSections = buildGymPublicPageSections({
     parseResult: nextParseResult,
     evidence: params.evidence || null,
@@ -13523,7 +12988,7 @@ export function buildGymDiscoveryPublicPageArtifacts(params: {
   });
   const publishAssessment = computeGymDiscoveryPublishAssessment(
     nextParseResult,
-    publicPageSections
+    publicPageSections,
   );
   return {
     parseResult: nextParseResult,
@@ -13536,7 +13001,7 @@ export function buildGymDiscoveryPublicPageArtifacts(params: {
 export async function mapParseResultToGymData(
   parseResult: ParseResult,
   baseData: any = {},
-  extractionMeta?: ExtractionResult["extractionMeta"]
+  extractionMeta?: ExtractionResult["extractionMeta"],
 ) {
   const usePublicPageV2 = true;
   const rawSnapshot = computeParseCompletenessSnapshot(parseResult);
@@ -13544,13 +13009,13 @@ export async function mapParseResultToGymData(
   const effectiveExtractionMeta = extractionMeta || baseData?.discoverySource?.extractionMeta;
   const fallbackTitle = deriveDiscoveryFallbackTitle(
     safeString(baseData?.discoverySource?.extractedText || ""),
-    effectiveExtractionMeta
+    effectiveExtractionMeta,
   );
   const auditEvidence =
     effectiveExtractionMeta && safeString(baseData?.discoverySource?.extractedText)
       ? buildDiscoveryEvidence(
           safeString(baseData?.discoverySource?.extractedText || ""),
-          effectiveExtractionMeta
+          effectiveExtractionMeta,
         )
       : null;
   const sanitizedSnapshot = computeParseCompletenessSnapshot(parseResult);
@@ -13572,8 +13037,7 @@ export async function mapParseResultToGymData(
     resolveDiscoveryEventTitle(parseResult.title, fallbackTitle) ||
     fallbackTitle ||
     (looksLikeDiscoveryPlaceholderTitle(baseTitle) ? "" : baseTitle);
-  const resolvedPageTemplateId =
-    resolveGymMeetTemplateId(baseData) || DEFAULT_GYM_MEET_TEMPLATE_ID;
+  const resolvedPageTemplateId = resolveGymMeetTemplateId(baseData) || DEFAULT_GYM_MEET_TEMPLATE_ID;
   const hasExplicitStartTime = hasExplicitDiscoveryStartTime(parseResult);
   const { date, time } = splitDateTime(parseResult.startAt);
   const derivedRange = deriveDateRangeFromText(parseResult.dates);
@@ -13581,9 +13045,7 @@ export async function mapParseResultToGymData(
     Boolean(date) &&
     Boolean(derivedRange.startDate) &&
     !isDateWithinRange(date, derivedRange.startDate, derivedRange.endDate);
-  const authoritativeDate = hasDateConflictWithRange
-    ? derivedRange.startDate || ""
-    : date;
+  const authoritativeDate = hasDateConflictWithRange ? derivedRange.startDate || "" : date;
   const existingAdvanced = (baseData?.advancedSections as Record<string, any>) || {};
   const resourceLinks = uniqueBy(
     pickArray(effectiveExtractionMeta?.resourceLinks)
@@ -13595,15 +13057,12 @@ export async function mapParseResultToGymData(
         sourceUrl: normalizeUrl(item?.sourceUrl),
         availabilityText: safeString(item?.availabilityText) || null,
         availabilityDate: safeString(item?.availabilityDate) || null,
-        discoveryMethod:
-          safeString(item?.discoveryMethod) === "playwright" ? "playwright" : "http",
+        discoveryMethod: safeString(item?.discoveryMethod) === "playwright" ? "playwright" : "http",
       }))
       .filter((item) => item.url),
-    (item) => `${item.kind}|${item.url}`
+    (item) => `${item.kind}|${item.url}`,
   );
-  const availableResourceLinks = resourceLinks.filter(
-    (item) => item.status !== "not_posted"
-  );
+  const availableResourceLinks = resourceLinks.filter((item) => item.status !== "not_posted");
   const pickAvailableResourceLink = (...kinds: DiscoveryResourceKind[]) =>
     availableResourceLinks.find((item) => kinds.includes(item.kind));
   const pickAvailableResourceLinks = (...kinds: DiscoveryResourceKind[]) =>
@@ -13613,29 +13072,28 @@ export async function mapParseResultToGymData(
     pickAvailableResourceLink("results_hub")?.url ||
     extractCanonicalUrlFromText(parseResult.meetDetails.resultsInfo) ||
     "";
-  const pendingResourceKindGroups: Partial<Record<DiscoveryResourceKind, DiscoveryResourceKind[]>> = {
-    rotation_hub: ["rotation_sheet", "rotation_hub"],
-    rotation_sheet: ["rotation_sheet", "rotation_hub"],
-    results_hub: ["results_live", "results_pdf", "results_hub"],
-    results_pdf: ["results_live", "results_pdf", "results_hub"],
-    team_divisions: ["team_divisions"],
-    packet: ["packet"],
-    roster: ["roster"],
-    photo_video: ["photo_video"],
-    apparel_form: ["apparel_form"],
-    travel_accommodation: ["travel_accommodation", "hotel_booking"],
-    hotel_booking: ["travel_accommodation", "hotel_booking"],
-    admission: ["admission"],
-    parking: ["parking"],
-  };
+  const pendingResourceKindGroups: Partial<Record<DiscoveryResourceKind, DiscoveryResourceKind[]>> =
+    {
+      rotation_hub: ["rotation_sheet", "rotation_hub"],
+      rotation_sheet: ["rotation_sheet", "rotation_hub"],
+      results_hub: ["results_live", "results_pdf", "results_hub"],
+      results_pdf: ["results_live", "results_pdf", "results_hub"],
+      team_divisions: ["team_divisions"],
+      packet: ["packet"],
+      roster: ["roster"],
+      photo_video: ["photo_video"],
+      apparel_form: ["apparel_form"],
+      travel_accommodation: ["travel_accommodation", "hotel_booking"],
+      hotel_booking: ["travel_accommodation", "hotel_booking"],
+      admission: ["admission"],
+      parking: ["parking"],
+    };
   const pendingResources = uniqueBy(
     resourceLinks
       .filter((item) => item.status === "not_posted")
       .filter((item) => {
         const relatedKinds = pendingResourceKindGroups[item.kind] || [item.kind];
-        return !availableResourceLinks.some((candidate) =>
-          relatedKinds.includes(candidate.kind)
-        );
+        return !availableResourceLinks.some((candidate) => relatedKinds.includes(candidate.kind));
       })
       .map((item, idx) => ({
         id: `pending-resource-${idx + 1}`,
@@ -13655,7 +13113,7 @@ export async function mapParseResultToGymData(
         if (b.availabilityDate) return 1;
         return a.label.localeCompare(b.label);
       }),
-    (item) => `${item.kind}|${item.label}|${item.availabilityDate}`
+    (item) => `${item.kind}|${item.label}|${item.availabilityDate}`,
   );
   const travelAccommodationState =
     baseData?.discoverySource?.travelAccommodation &&
@@ -13663,12 +13121,13 @@ export async function mapParseResultToGymData(
       ? baseData.discoverySource.travelAccommodation
       : null;
   const travelAccommodationHotels = normalizeTravelAccommodationHotels(
-    travelAccommodationState?.hotels || effectiveExtractionMeta?.travelAccommodationSummary?.pdfHotels
+    travelAccommodationState?.hotels ||
+      effectiveExtractionMeta?.travelAccommodationSummary?.pdfHotels,
   );
   const travelAccommodationFallbackLink =
     normalizeUrl(
       travelAccommodationState?.fallbackLink ||
-        effectiveExtractionMeta?.travelAccommodationSummary?.fallbackLink
+        effectiveExtractionMeta?.travelAccommodationSummary?.fallbackLink,
     ) || null;
   const derivedTravelNarrative = summarizeHotelsForNarrative(
     travelAccommodationHotels.map((hotel) => ({
@@ -13686,7 +13145,7 @@ export async function mapParseResultToGymData(
       contentOrigin: "map_parse_result",
       confidence: 0.9,
     })),
-    travelAccommodationFallbackLink
+    travelAccommodationFallbackLink,
   );
   const hotelNarrative =
     safeString(parseResult.logistics.hotel) ||
@@ -13696,7 +13155,7 @@ export async function mapParseResultToGymData(
     "";
   const inferredResultsLink = buildTextDerivedLink(
     "Official Results",
-    parseResult.meetDetails.resultsInfo
+    parseResult.meetDetails.resultsInfo,
   );
   const inferredHotelLink =
     (travelAccommodationFallbackLink
@@ -13704,7 +13163,7 @@ export async function mapParseResultToGymData(
       : null) || buildTextDerivedLink("Hotels & Travel", hotelNarrative);
   const inferredRotationLink = buildTextDerivedLink(
     "Rotation Sheets",
-    parseResult.meetDetails.rotationSheetsInfo
+    parseResult.meetDetails.rotationSheetsInfo,
   );
   const compactHotelName =
     hotelNarrative &&
@@ -13727,13 +13186,13 @@ export async function mapParseResultToGymData(
               /traffic|disney on ice|benchmark(?:\s+international)?\s+arena/i,
               /official results|live scoring|daylight savings/i,
             ],
-          }
+          },
         ),
-        14
+        14,
       )
     : [];
   const assignedGym = safeString(
-    parseResult.athlete.assignedGym || existingAdvanced.meet?.assignedGym || ""
+    parseResult.athlete.assignedGym || existingAdvanced.meet?.assignedGym || "",
   );
   const extractionLayoutImage = safeString(effectiveExtractionMeta?.gymLayoutImageDataUrl);
   const extractionLayoutZones = normalizeGymLayoutZones(effectiveExtractionMeta?.gymLayoutZones);
@@ -13742,7 +13201,7 @@ export async function mapParseResultToGymData(
       ? await cropGymLayoutImageToAssignedGym(
           extractionLayoutImage,
           extractionLayoutZones,
-          assignedGym
+          assignedGym,
         )
       : null;
   const resolvedGymLayoutImage =
@@ -13750,12 +13209,10 @@ export async function mapParseResultToGymData(
     extractionLayoutImage ||
     safeString(existingAdvanced.logistics?.gymLayoutImage) ||
     "";
-  const resolvedGymLayoutLabel = assignedGym
-    ? `Assigned gym location: ${assignedGym}`
-    : "";
+  const resolvedGymLayoutLabel = assignedGym ? `Assigned gym location: ${assignedGym}` : "";
   const rotationSource = safeString(parseResult.meetDetails.rotationOrder);
   const hasRotationNarrative = /(rotation sheets?|hard cop(y|ies)|download|website|refresh)/i.test(
-    rotationSource
+    rotationSource,
   );
   const hasApparatusSignal =
     /(vault|bars|beam|floor|pommel|rings|parallel|high bar|p[-\s]?bars|fx)/i.test(rotationSource);
@@ -13779,17 +13236,13 @@ export async function mapParseResultToGymData(
     safeString(parseResult.coachInfo.signIn),
   ].filter(Boolean);
   const dedicatedFieldKeys = new Set(
-    dedicatedFieldValues
-      .map((item) => normalizeVenueFactForCompare(item))
-      .filter(Boolean)
+    dedicatedFieldValues.map((item) => normalizeVenueFactForCompare(item)).filter(Boolean),
   );
   const operationalNotesRaw = uniqueBy(
-    [
-      ...parseResult.meetDetails.operationalNotes,
-      rotationNarrative,
-      ...layoutFacts,
-    ].filter(Boolean),
-    (item) => normalizeVenueFactForCompare(item)
+    [...parseResult.meetDetails.operationalNotes, rotationNarrative, ...layoutFacts].filter(
+      Boolean,
+    ),
+    (item) => normalizeVenueFactForCompare(item),
   );
   const operationalNotes = operationalNotesRaw
     .filter((item) => {
@@ -13801,9 +13254,7 @@ export async function mapParseResultToGymData(
     })
     .slice(0, 16);
   const admissionText = parseResult.admission
-    .map((item) =>
-      [item.label, item.price, item.note].filter(Boolean).join(": ").trim()
-    )
+    .map((item) => [item.label, item.price, item.note].filter(Boolean).join(": ").trim())
     .filter(Boolean)
     .join("\n");
   const publicMeetDetails = publicArtifacts?.publicPageSections.meetDetails || null;
@@ -13824,7 +13275,7 @@ export async function mapParseResultToGymData(
     "team_divisions",
     "rotation_sheet",
     "photo_video",
-    "apparel_form"
+    "apparel_form",
   ).map((item, idx) => ({
     id: `resource-doc-${idx + 1}`,
     name: item.label || `Document ${idx + 1}`,
@@ -13845,15 +13296,15 @@ export async function mapParseResultToGymData(
       url: item.url,
     })),
     ...canonicalResourceDocuments,
-  ]
-    .filter((item): item is { id: string; name: string; url: string } => Boolean(item?.url));
-  const additionalDocuments = uniqueBy([...incomingDocuments, ...existingDocuments], (item) => item.url).map(
-    (item, idx) => ({
-      id: item.id || `doc-${idx + 1}`,
-      name: item.name || `Document ${idx + 1}`,
-      url: item.url,
-    })
-  );
+  ].filter((item): item is { id: string; name: string; url: string } => Boolean(item?.url));
+  const additionalDocuments = uniqueBy(
+    [...incomingDocuments, ...existingDocuments],
+    (item) => item.url,
+  ).map((item, idx) => ({
+    id: item.id || `doc-${idx + 1}`,
+    name: item.name || `Document ${idx + 1}`,
+    url: item.url,
+  }));
   const assistantCoachRolePattern = /\bassistant coach\b/i;
   const publicMeetContacts = uniqueBy(
     [
@@ -13863,11 +13314,15 @@ export async function mapParseResultToGymData(
       .map((item) => sanitizeDiscoveryContact(item, "Meet staff"))
       .filter(
         (
-          item
-        ): item is { role: string; name: string | null; email: string | null; phone: string | null } =>
-          Boolean(item)
+          item,
+        ): item is {
+          role: string;
+          name: string | null;
+          email: string | null;
+          phone: string | null;
+        } => Boolean(item),
       ),
-    (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+    (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|"),
   );
   const venueContacts = uniqueBy(
     [
@@ -13877,11 +13332,15 @@ export async function mapParseResultToGymData(
       .map((item) => sanitizeDiscoveryContact(item, "Venue contact"))
       .filter(
         (
-          item
-        ): item is { role: string; name: string | null; email: string | null; phone: string | null } =>
-          Boolean(item)
+          item,
+        ): item is {
+          role: string;
+          name: string | null;
+          email: string | null;
+          phone: string | null;
+        } => Boolean(item),
       ),
-    (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+    (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|"),
   );
   const venueContactNotes = uniqueLines(
     [
@@ -13891,7 +13350,7 @@ export async function mapParseResultToGymData(
         .filter((fact) => /\bvenue_contact\b/i.test(safeString(fact.category)))
         .map((fact) => safeString(fact.detail)),
     ],
-    6
+    6,
   );
   const coachContacts = uniqueBy(
     [
@@ -13901,15 +13360,21 @@ export async function mapParseResultToGymData(
       .map((item) => sanitizeDiscoveryContact(item, "Coach contact"))
       .filter(
         (
-          item
-        ): item is { role: string; name: string | null; email: string | null; phone: string | null } =>
-          Boolean(item)
+          item,
+        ): item is {
+          role: string;
+          name: string | null;
+          email: string | null;
+          phone: string | null;
+        } => Boolean(item),
       ),
-    (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|")
+    (item) => [item.role, item.name || "", item.email || "", item.phone || ""].join("|"),
   );
   const primaryCoachContact =
     coachContacts.find((item) => /\bhead coach\b/i.test(item.role)) ||
-    coachContacts.find((item) => /\bcoach\b/i.test(item.role) && !assistantCoachRolePattern.test(item.role)) ||
+    coachContacts.find(
+      (item) => /\bcoach\b/i.test(item.role) && !assistantCoachRolePattern.test(item.role),
+    ) ||
     coachContacts[0] ||
     null;
   const assistantCoachContact =
@@ -13917,50 +13382,6 @@ export async function mapParseResultToGymData(
   const derivedCoachName = safeString(primaryCoachContact?.name);
   const derivedAssistantCoachName = safeString(assistantCoachContact?.name);
   const derivedCoachPhone = safeString(primaryCoachContact?.phone);
-  const derivedScheduleSupportEmail =
-    safeString(existingAdvanced.schedule?.supportEmail) ||
-    safeString(parseResult.schedule?.supportEmail) ||
-    safeString(
-      publicMeetContacts.find((item) => item.email)?.email ||
-        coachContacts.find((item) => item.email)?.email ||
-        venueContacts.find((item) => item.email)?.email ||
-        ""
-    );
-  const derivedScheduleVenueLabel =
-    safeString(existingAdvanced.schedule?.venueLabel) ||
-    safeString(parseResult.schedule?.venueLabel) ||
-    safeString(parseResult.venue) ||
-    safeString(baseData?.venue) ||
-    safeString(baseData?.address);
-  const parsedSchedule = normalizeStoredSchedule(parseResult.schedule || {}, {
-    venueLabel: derivedScheduleVenueLabel,
-    supportEmail: derivedScheduleSupportEmail,
-  });
-  const existingSchedule = normalizeStoredSchedule(existingAdvanced.schedule || {}, {
-    venueLabel: derivedScheduleVenueLabel,
-    supportEmail: derivedScheduleSupportEmail,
-  });
-  const staleStoredSchedule = isStaleDerivedSchedule(
-    existingAdvanced.schedule || {},
-    safeString(baseData?.discoverySource?.extractedText || "")
-  );
-  if (effectiveExtractionMeta?.scheduleDiagnostics) {
-    effectiveExtractionMeta.scheduleDiagnostics.staleStoredScheduleDetected = staleStoredSchedule;
-  }
-  const resolvedSchedule =
-    hasStoredScheduleContent(existingSchedule) && !staleStoredSchedule
-      ? existingSchedule
-      : parsedSchedule;
-  const {
-    colorLegend: _legacyScheduleColorLegend,
-    awardLegend: _legacyScheduleAwardLegend,
-    ...existingScheduleWithoutColors
-  } = (existingAdvanced.schedule || {}) as Record<string, any>;
-  const {
-    colorLegend: _resolvedScheduleColorLegend,
-    awardLegend: _resolvedScheduleAwardLegend,
-    ...resolvedScheduleWithoutColors
-  } = resolvedSchedule as Record<string, any>;
   const coachSectionEnabled = hasCoachInfoContent(parseResult.coachInfo);
   const coachLinks = uniqueBy(
     [
@@ -13978,14 +13399,14 @@ export async function mapParseResultToGymData(
         (item) =>
           item.url &&
           /(coach|entry|payment|refund|qualification|regional|rotation|meet maker|reservation|score|result)/i.test(
-            `${item.label} ${item.url}`
-          )
+            `${item.label} ${item.url}`,
+          ),
       ),
-    (item) => item.url
+    (item) => item.url,
   );
   const coachNotes = uniqueBy(
     parseResult.coachInfo.notes.map((item) => safeString(item)).filter(Boolean),
-    (item) => item
+    (item) => item,
   );
   const coachDeadlines = uniqueBy(
     parseResult.coachInfo.deadlines.map((item) => ({
@@ -13993,11 +13414,11 @@ export async function mapParseResultToGymData(
       date: safeString(item.date) || "",
       note: safeString(item.note) || "",
     })),
-    (item) => `${item.label}|${item.date}|${item.note}`
+    (item) => `${item.label}|${item.date}|${item.note}`,
   );
 
   const existingAnnouncementEntries: Array<{ title: string; body: string }> = pickArray(
-    existingAdvanced.announcements?.announcements
+    existingAdvanced.announcements?.announcements,
   )
     .map((item) => ({
       title: "",
@@ -14012,13 +13433,10 @@ export async function mapParseResultToGymData(
     }))
     .filter((item) => item.body);
   const mergedAnnouncements = uniqueBy(
-    [
-      ...parsedAnnouncementEntries,
-      ...existingAnnouncementEntries,
-    ].filter(
-      (item) => safeString(item.title) || safeString(item.body)
+    [...parsedAnnouncementEntries, ...existingAnnouncementEntries].filter(
+      (item) => safeString(item.title) || safeString(item.body),
     ),
-    (item) => `${safeString(item.title)}|${safeString(item.body)}`
+    (item) => `${safeString(item.title)}|${safeString(item.body)}`,
   );
 
   const nextAdvanced = {
@@ -14030,27 +13448,27 @@ export async function mapParseResultToGymData(
       athletes: usePublicPageV2
         ? []
         : athlete.name
-        ? [
-            {
-              id: "athlete-1",
-              name: athlete.name,
-              level: athlete.level || "",
-              primaryEvents: [],
-              parentName: "",
-              parentPhone: "",
-              parentEmail: "",
-              medicalNotes: "",
-              status: "pending",
-              team: athlete.team || "",
-              session: athlete.session || "",
-            },
-          ]
-        : existingAdvanced.roster?.athletes || [],
+          ? [
+              {
+                id: "athlete-1",
+                name: athlete.name,
+                level: athlete.level || "",
+                primaryEvents: [],
+                parentName: "",
+                parentPhone: "",
+                parentEmail: "",
+                medicalNotes: "",
+                status: "pending",
+                team: athlete.team || "",
+              },
+            ]
+          : existingAdvanced.roster?.athletes || [],
     },
     meet: {
       ...(existingAdvanced.meet || {}),
-      sessionNumber: usePublicPageV2 ? "" : athlete.session || "",
-      warmUpTime: usePublicPageV2 ? "" : parseResult.meetDetails.warmup || athlete.stretchTime || "",
+      warmUpTime: usePublicPageV2
+        ? ""
+        : parseResult.meetDetails.warmup || athlete.stretchTime || "",
       marchInTime: usePublicPageV2 ? "" : parseResult.meetDetails.marchIn || athlete.marchIn || "",
       assignedGym: assignedGym || safeString(existingAdvanced.meet?.assignedGym) || "",
       rotationOrder: usePublicPageV2 ? [] : rotationOrder,
@@ -14058,10 +13476,7 @@ export async function mapParseResultToGymData(
         ? ""
         : [parseResult.meetDetails.judgingNotes, rotationNarrative].filter(Boolean).join("\n\n"),
       startApparatus: usePublicPageV2 ? "" : rotationOrder[0] || "",
-      scoresLink:
-        canonicalScoresLink ||
-        safeString(existingAdvanced.meet?.scoresLink) ||
-        "",
+      scoresLink: canonicalScoresLink || safeString(existingAdvanced.meet?.scoresLink) || "",
       doorsOpen: parseResult.meetDetails.doorsOpen || "",
       arrivalGuidance: parseResult.meetDetails.arrivalGuidance || "",
       registrationInfo: parseResult.meetDetails.registrationInfo || "",
@@ -14070,10 +13485,7 @@ export async function mapParseResultToGymData(
       resultsInfo: parseResult.meetDetails.resultsInfo || "",
       rotationSheetsInfo: parseResult.meetDetails.rotationSheetsInfo || "",
       awardsInfo: parseResult.meetDetails.awardsInfo || "",
-      sessionWindows: usePublicPageV2 ? [] : parseResult.meetDetails.sessionWindows || [],
-      operationalNotes: usePublicPageV2
-        ? publicMeetDetails?.bullets || []
-        : operationalNotes,
+      operationalNotes: usePublicPageV2 ? publicMeetDetails?.bullets || [] : operationalNotes,
       pendingResources,
       staffContacts: publicMeetContacts.map((item, idx) => ({
         id: `meet-staff-${idx + 1}`,
@@ -14085,7 +13497,7 @@ export async function mapParseResultToGymData(
     },
     logistics: {
       ...(existingAdvanced.logistics || {}),
-      enabled: usePublicPageV2 ? true : existingAdvanced.logistics?.enabled ?? false,
+      enabled: usePublicPageV2 ? true : (existingAdvanced.logistics?.enabled ?? false),
       hotelName:
         (travelAccommodationHotels.length === 1 ? travelAccommodationHotels[0]?.name : "") ||
         compactHotelName ||
@@ -14157,97 +13569,73 @@ export async function mapParseResultToGymData(
       equipment: usePublicPageV2 ? "" : parseResult.coachInfo.equipment || "",
       refundPolicy: usePublicPageV2 ? "" : parseResult.coachInfo.refundPolicy || "",
       paymentInstructions: usePublicPageV2 ? "" : parseResult.coachInfo.paymentInstructions || "",
-      entryFees: usePublicPageV2 ? [] : parseResult.coachInfo.entryFees.map((item, idx) => ({
-        id: `entry-fee-${idx + 1}`,
-        label: item.label,
-        amount: item.amount,
-        note: item.note || "",
-      })),
-      teamFees: usePublicPageV2 ? [] : parseResult.coachInfo.teamFees.map((item, idx) => ({
-        id: `team-fee-${idx + 1}`,
-        label: item.label,
-        amount: item.amount,
-        note: item.note || "",
-      })),
-      lateFees: usePublicPageV2 ? [] : parseResult.coachInfo.lateFees.map((item, idx) => ({
-        id: `late-fee-${idx + 1}`,
-        label: item.label,
-        amount: item.amount,
-        trigger: item.trigger || "",
-        note: item.note || "",
-      })),
-      deadlines: usePublicPageV2 ? [] : coachDeadlines.map((item, idx) => ({
-        id: `coach-deadline-${idx + 1}`,
-        label: item.label,
-        date: item.date,
-        note: item.note,
-      })),
-      contacts: usePublicPageV2 ? [] : coachContacts.map((item, idx) => ({
-        id: `coach-contact-${idx + 1}`,
-        role: item.role,
-        name: item.name || "",
-        email: item.email || "",
-        phone: item.phone || "",
-      })),
-      links: usePublicPageV2 ? [] : coachLinks.map((item, idx) => ({
-        id: `coach-link-${idx + 1}`,
-        label: item.label,
-        url: item.url,
-      })),
+      entryFees: usePublicPageV2
+        ? []
+        : parseResult.coachInfo.entryFees.map((item, idx) => ({
+            id: `entry-fee-${idx + 1}`,
+            label: item.label,
+            amount: item.amount,
+            note: item.note || "",
+          })),
+      teamFees: usePublicPageV2
+        ? []
+        : parseResult.coachInfo.teamFees.map((item, idx) => ({
+            id: `team-fee-${idx + 1}`,
+            label: item.label,
+            amount: item.amount,
+            note: item.note || "",
+          })),
+      lateFees: usePublicPageV2
+        ? []
+        : parseResult.coachInfo.lateFees.map((item, idx) => ({
+            id: `late-fee-${idx + 1}`,
+            label: item.label,
+            amount: item.amount,
+            trigger: item.trigger || "",
+            note: item.note || "",
+          })),
+      deadlines: usePublicPageV2
+        ? []
+        : coachDeadlines.map((item, idx) => ({
+            id: `coach-deadline-${idx + 1}`,
+            label: item.label,
+            date: item.date,
+            note: item.note,
+          })),
+      contacts: usePublicPageV2
+        ? []
+        : coachContacts.map((item, idx) => ({
+            id: `coach-contact-${idx + 1}`,
+            role: item.role,
+            name: item.name || "",
+            email: item.email || "",
+            phone: item.phone || "",
+          })),
+      links: usePublicPageV2
+        ? []
+        : coachLinks.map((item, idx) => ({
+            id: `coach-link-${idx + 1}`,
+            label: item.label,
+            url: item.url,
+          })),
       notes: usePublicPageV2 ? [] : coachNotes,
     },
-    schedule: (() => {
-      if (usePublicPageV2) {
-        return {
-          ...existingScheduleWithoutColors,
-          enabled: false,
-          days: [],
-          assignments: [],
-          annotations: [],
-          notes: [],
-          venueLabel: derivedScheduleVenueLabel || existingScheduleWithoutColors.venueLabel || null,
-          supportEmail: derivedScheduleSupportEmail || existingScheduleWithoutColors.supportEmail || null,
-        };
-      }
-      if (GYM_DISCOVERY_SCHEDULE_GRID_ENABLED) {
-        return {
-          ...existingScheduleWithoutColors,
-          ...resolvedScheduleWithoutColors,
-        };
-      }
-      const keepManual =
-        hasStoredScheduleContent(existingSchedule) && !staleStoredSchedule;
-      if (keepManual) {
-        return {
-          ...existingScheduleWithoutColors,
-          ...resolvedScheduleWithoutColors,
-        };
-      }
-      return {
-        ...existingScheduleWithoutColors,
-        enabled: false,
-        days: [],
-        assignments: [],
-        annotations: [],
-        notes: [],
-        venueLabel: derivedScheduleVenueLabel || existingScheduleWithoutColors.venueLabel || null,
-        supportEmail: derivedScheduleSupportEmail || existingScheduleWithoutColors.supportEmail || null,
-      };
-    })(),
     gear: {
       ...(existingAdvanced.gear || {}),
-      enabled: usePublicPageV2 ? false : existingAdvanced.gear?.enabled ?? false,
+      enabled: usePublicPageV2 ? false : (existingAdvanced.gear?.enabled ?? false),
       leotardOfDay: usePublicPageV2 ? "" : parseResult.gear.uniform || "",
-      items: usePublicPageV2 ? [] : (parseResult.gear.checklist || []).map((item, idx) => ({
-        id: `gear-${idx + 1}`,
-        name: item,
-        required: true,
-        acknowledged: false,
-      })),
+      items: usePublicPageV2
+        ? []
+        : (parseResult.gear.checklist || []).map((item, idx) => ({
+            id: `gear-${idx + 1}`,
+            name: item,
+            required: true,
+            acknowledged: false,
+          })),
     },
     volunteers: {
       ...(existingAdvanced.volunteers || {}),
-      enabled: usePublicPageV2 ? false : existingAdvanced.volunteers?.enabled ?? false,
+      enabled: usePublicPageV2 ? false : (existingAdvanced.volunteers?.enabled ?? false),
       signupLink: usePublicPageV2 ? "" : parseResult.volunteers.signupLink || "",
       notes: usePublicPageV2 ? "" : parseResult.volunteers.notes || "",
     },
@@ -14274,10 +13662,7 @@ export async function mapParseResultToGymData(
       });
 
   const mappedDate =
-    authoritativeDate ||
-    derivedRange.startDate ||
-    toIsoDateOnlyOrNull(baseData?.date) ||
-    "";
+    authoritativeDate || derivedRange.startDate || toIsoDateOnlyOrNull(baseData?.date) || "";
   const mappedTime = (() => {
     if (!hasExplicitStartTime) return "";
     if (authoritativeDate) return time || safeString(baseData?.time) || "";
@@ -14325,14 +13710,10 @@ export async function mapParseResultToGymData(
     location: parseResult.venue || baseData?.location || "",
     customFields: {
       ...(baseData?.customFields || {}),
-      team:
-        sanitizeHostGymValue(parseResult.hostGym) ||
-        sanitizeHostGymValue(athlete.team) ||
-        "",
+      team: sanitizeHostGymValue(parseResult.hostGym) || sanitizeHostGymValue(athlete.team) || "",
       season: baseData?.customFields?.season || "",
       coach: baseData?.customFields?.coach || derivedCoachName || "",
-      assistantCoach:
-        baseData?.customFields?.assistantCoach || derivedAssistantCoachName || "",
+      assistantCoach: baseData?.customFields?.assistantCoach || derivedAssistantCoachName || "",
       coachPhone: baseData?.customFields?.coachPhone || derivedCoachPhone || "",
       admission: admissionText,
       discoveryDocumentProfile: parseResult.documentProfile,
@@ -14351,10 +13732,8 @@ export async function mapParseResultToGymData(
         inferredResultsLink,
         inferredHotelLink,
         inferredRotationLink,
-      ].filter(
-        (item): item is { label?: string; url: string } => Boolean(item?.url)
-      ),
-      (item) => item.url
+      ].filter((item): item is { label?: string; url: string } => Boolean(item?.url)),
+      (item) => item.url,
     ),
     advancedSections: nextAdvanced,
     accessControl: nextAccessControl || baseData?.accessControl || null,
@@ -14391,10 +13770,10 @@ export async function mapParseResultToGymData(
                 evidenceSignals[key],
                 rawSnapshot[key].score,
                 sanitizedSnapshot[key].score,
-                mappedSnapshot[key].score
+                mappedSnapshot[key].score,
               ),
             },
-          ])
+          ]),
         ) as Record<
           string,
           {
@@ -14416,9 +13795,6 @@ export const __testUtils = {
   deriveDateRangeFromText,
   classifyMeetDateCandidates,
   sanitizeHostGymValue,
-  findBestScheduleSessionColorBox,
-  findBestScheduleClubColorBox,
-  deriveScheduleLegendEntriesFromOcrTextBoxes,
   normalizeParseResult,
   normalizeParseClassification,
   inferHeuristicParseClassification,
@@ -14433,21 +13809,6 @@ export const __testUtils = {
   computeParseCompletenessSnapshot,
   computeMappedCompletenessSnapshot,
   determineCompletenessSparsity,
-  deriveScheduleFromTextFallback,
-  deriveScheduleFromExtractedText,
-  alignScheduleDatesToEventRange,
-  deriveDateRangeFromScheduleDays,
-  parseNarrativeScheduleSessionsFromPage,
-  parseScheduleAnnotationsFromPages,
-  parseScheduleAssignmentsFromPages,
-  classifySchedulePageText,
-  selectScheduleSegments,
-  shouldUseVisualScheduleRepair,
-  mergeScheduleWithFallback,
-  supplementScheduleWithFallback,
-  mergeScheduleAwardFlags,
-  extractScheduleLegendNotes,
-  isStaleDerivedSchedule,
   parseResourceStatusFromLabel,
   classifyResourceLink,
   buildEventFingerprint,

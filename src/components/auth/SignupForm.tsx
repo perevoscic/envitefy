@@ -21,12 +21,14 @@ export type SignupFormProps = {
   onSuccess?: () => void;
   onSwitchMode?: (mode: "login" | "signup") => void;
   successRedirectUrl?: string;
+  signupSource?: "snap" | "gymnastics";
 };
 
 export default function SignupForm({
   onSuccess,
   onSwitchMode,
   successRedirectUrl = "/",
+  signupSource,
 }: SignupFormProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -150,6 +152,7 @@ export default function SignupForm({
           lastName,
           password,
           recaptchaToken,
+          signupSource,
         }),
         credentials: "include",
       });

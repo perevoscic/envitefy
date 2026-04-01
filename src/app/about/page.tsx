@@ -5,11 +5,11 @@ import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 export const metadata: Metadata = {
   title: "About — Envitefy",
   description:
-    "Envitefy turns school flyers, invites, and schedules into calendar events in seconds — built for busy parents.",
+    "Envitefy focuses on Snap for flyer capture and Gymnastics for meet pages and logistics.",
   openGraph: {
     title: "About — Envitefy",
     description:
-      "Envitefy turns school flyers, invites, and schedules into calendar events in seconds — built for busy parents.",
+      "Envitefy focuses on Snap for flyer capture and Gymnastics for meet pages and logistics.",
     url: "https://envitefy.com/about",
     siteName: "Envitefy",
     images: [
@@ -24,54 +24,41 @@ export const metadata: Metadata = {
   },
 };
 
-const FeatureCard = ({
-  icon,
-  title,
-  description,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-}) => (
-  <div className="rounded-2xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-6 hover:border-[#cfc2ff] hover:shadow-lg transition-all duration-300">
-    <div className="text-4xl mb-3">{icon}</div>
-    <h3 className="text-xl font-semibold mb-2 text-foreground">{title}</h3>
-    <p className="text-foreground/70 leading-relaxed">{description}</p>
-  </div>
-);
-
-const FeatureList = ({ items }: { items: string[] }) => (
-  <ul className="space-y-3">
-    {items.map((item, idx) => (
-      <li key={idx} className="flex items-start gap-3 text-foreground/80">
-        <svg
-          className="w-5 h-5 text-[#7F8CFF] mt-0.5 flex-shrink-0"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-        <span>{item}</span>
-      </li>
-    ))}
-  </ul>
-);
+const featureCards = [
+  {
+    icon: "📸",
+    title: "Snap capture",
+    description:
+      "Snap turns flyers, screenshots, and invites into clean event details that are ready to review and save.",
+  },
+  {
+    icon: "🤸",
+    title: "Gymnastics pages",
+    description:
+      "Gymnastics accounts unlock polished meet pages with session details, venue information, and parent-friendly sharing.",
+  },
+  {
+    icon: "📅",
+    title: "Calendar ready",
+    description:
+      "Dates, times, and locations stay structured so events are easy to save to Google, Apple, and Outlook.",
+  },
+  {
+    icon: "🔗",
+    title: "One clean link",
+    description:
+      "Share a page that stays current instead of passing around another screenshot, PDF, or text thread.",
+  },
+] as const;
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-foreground py-12 px-4 sm:px-6">
-      <section className="w-full max-w-6xl mx-auto">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] rounded-3xl p-1 mb-8">
-            <div className="rounded-3xl bg-white/95 backdrop-blur-sm p-10 sm:p-12 border border-[#e5dcff]">
-              <h1 className="overflow-visible text-[clamp(2.9rem,7vw,5.25rem)] font-extrabold leading-[1.24] tracking-tight pb-10 pt-3">
+    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] px-4 py-12 text-foreground sm:px-6">
+      <section className="mx-auto w-full max-w-6xl">
+        <div className="mb-16 text-center">
+          <div className="mb-8 rounded-3xl bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] p-1">
+            <div className="rounded-3xl border border-[#e5dcff] bg-white/95 p-10 backdrop-blur-sm sm:p-12">
+              <h1 className="overflow-visible pb-10 pt-3 text-[clamp(2.9rem,7vw,5.25rem)] font-extrabold leading-[1.24] tracking-tight">
                 <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-2 sm:gap-x-3">
                   <span
                     className="text-[#6c5fd6]"
@@ -86,291 +73,105 @@ export default function AboutPage() {
                   <EnvitefyWordmark className="text-[1.50em]" scaled={false} />
                 </span>
               </h1>
-              <p className="mt-4 text-base sm:text-lg uppercase tracking-[0.2em] text-foreground/60 font-medium">
-                Snap it. Save it. Stay organized.
+              <p className="mt-4 text-base font-medium uppercase tracking-[0.2em] text-foreground/60 sm:text-lg">
+                Snap it. Save it. Share it.
               </p>
-              <p className="mt-8 text-lg sm:text-xl text-foreground/80 max-w-3xl mx-auto leading-relaxed">
-                Envitefy was built by parents who were tired of digging through
-                backpacks and group chats. Snap a picture of any flyer, invite,
-                practice chart, or appointment card and we turn it into a clean
-                calendar event with the right title, place, and reminders — no
-                typing and no guesswork.
+              <p className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed text-foreground/80 sm:text-xl">
+                Envitefy now focuses on two product surfaces: Snap for quick
+                flyer capture, and Gymnastics for meet pages and logistics.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Core Features Grid */}
-        <div className="mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-10 bg-clip-text text-transparent bg-gradient-to-r from-[#5a56d6] to-[#8a78f8]">
-            Powerful Features for Busy Families
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <FeatureCard
-              icon="📸"
-              title="Advanced OCR Technology"
-              description="Powered by OpenAI Vision with Google Vision fallback. Reads cursive handwriting, decorative fonts, and complex layouts with remarkable accuracy."
-            />
-            <FeatureCard
-              icon="🎨"
-              title="14+ Event Templates"
-              description="Specialized templates for Birthdays, Weddings, Baby Showers, Sports, Appointments, and more. Each designed for its unique use case."
-            />
-            <FeatureCard
-              icon="📅"
-              title="Multi-Calendar Sync"
-              description="Add events to Google Calendar, Microsoft Outlook, and Apple Calendar simultaneously. One tap, multiple calendars updated."
-            />
-            <FeatureCard
-              icon="🎁"
-              title="Registry Integration"
-              description="Link gift registries from Amazon, Target, Walmart, Babylist, and MyRegistry directly in your event pages for Birthdays, Weddings, and Baby Showers."
-            />
-            <FeatureCard
-              icon="⚽"
-              title="Sports-Specific Templates"
-              description="Football Season, Soccer, Gymnastics, Cheerleading, Dance/Ballet templates with rosters, practice schedules, and game tracking."
-            />
-            <FeatureCard
-              icon="🔄"
-              title="Recurring Events"
-              description="Automatically converts weekly practice schedules into recurring calendar events. Season flyers become complete schedules in one file."
-            />
-            <FeatureCard
-              icon="👥"
-              title="RSVP & Attendance"
-              description="Track RSVPs and attendance with roster management. Perfect for team events, parties, and gatherings with guest lists."
-            />
-            <FeatureCard
-              icon="📝"
-              title="Smart Sign-Up Forms"
-              description="Volunteer slots, snack sign-ups, and custom forms with automatic waitlisting and capacity management."
-            />
-            <FeatureCard
-              icon="🔗"
-              title="Event Sharing"
-              description="Share events with other users. Perfect for coaches sharing schedules or families coordinating celebrations."
-            />
-            <FeatureCard
-              icon="💝"
-              title="Gift Subscriptions"
-              description="Gift paid months to friends, coaches, or family members. We handle the delivery and activation automatically."
-            />
-            <FeatureCard
-              icon="📱"
-              title="Cross-Device Sync"
-              description="Access your event history and settings from any device. Your data stays in sync wherever you go."
-            />
-            <FeatureCard
-              icon="🏷️"
-              title="Custom Categories"
-              description="Create your own event categories with custom icons. Organize events your way with personalized color coding."
-            />
-          </div>
+        <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-2">
+          {featureCards.map((card) => (
+            <div
+              key={card.title}
+              className="rounded-2xl border border-[#e5dcff] bg-gradient-to-br from-white to-[#f8f4ff] p-6 transition-all duration-300 hover:border-[#cfc2ff] hover:shadow-lg"
+            >
+              <div className="mb-3 text-4xl">{card.icon}</div>
+              <h2 className="mb-2 text-xl font-semibold text-foreground">
+                {card.title}
+              </h2>
+              <p className="leading-relaxed text-foreground/70">
+                {card.description}
+              </p>
+            </div>
+          ))}
         </div>
 
-        {/* Event Templates Section */}
-        <div className="mb-16 rounded-3xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-8 sm:p-10">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8">
-            Comprehensive Event Templates
+        <div className="mb-16 rounded-3xl border border-[#e5dcff] bg-gradient-to-br from-white to-[#f8f4ff] p-8 sm:p-10">
+          <h2 className="mb-8 text-center text-3xl font-bold sm:text-4xl">
+            Why the narrower focus
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-xl font-semibold mb-4 text-[#6d5eea]">
-                Life Milestones & Celebrations
-              </h3>
-              <FeatureList
-                items={[
-                  "Birthdays with registry support",
-                  "Weddings with gift registries",
-                  "Baby Showers with registry links",
-                  "Gender Reveal parties",
-                ]}
-              />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold mb-4 text-[#6d5eea]">
-                Sports & Activities
-              </h3>
-              <FeatureList
-                items={[
-                  "Football Season & Practice",
-                  "Soccer with lineup tracking",
-                  "Gymnastics schedules",
-                  "Cheerleading events",
-                  "Dance & Ballet classes",
-                  "General sport events",
-                ]}
-              />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold mb-4 text-[#6d5eea]">
-                Appointments & Classes
-              </h3>
-              <FeatureList
-                items={[
-                  "Doctor & medical appointments",
-                  "Workshops & classes",
-                  "General events",
-                  "Special events",
-                ]}
-              />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold mb-4 text-[#6d5eea]">
-                Advanced Features
-              </h3>
-              <FeatureList
-                items={[
-                  "Team rosters with contact info",
-                  "Practice schedule automation",
-                  "Travel & logistics planning",
-                  "Equipment checklists",
-                  "Volunteer coordination",
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Technology & Accuracy */}
-        <div className="mb-16 rounded-3xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-8 sm:p-10">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8">
-            Built for Real Life
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div>
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <span className="text-2xl">🎯</span>
-                Intelligent Recognition
-              </h3>
-              <ul className="space-y-3 text-foreground/80">
-                <li>• Reads names in cursive and decorative fonts</li>
-                <li>
-                  • Understands spelled-out times (&quot;four
-                  o&apos;clock&quot;)
-                </li>
-                <li>• Distinguishes home vs. away games</li>
-                <li>• Extracts RSVP contact information</li>
-                <li>• Recognizes event categories automatically</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <span className="text-2xl">⚡</span>
-                Seamless Workflow
-              </h3>
-              <ul className="space-y-3 text-foreground/80">
-                <li>• Snap or upload — works with photos and PDFs</li>
-                <li>• One-tap calendar integration</li>
-                <li>• Bulk import for season schedules</li>
-                <li>• Share entire seasons in one file</li>
-                <li>• Automatic timezone detection</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* What Families Love */}
-        <div className="mb-16 rounded-3xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-8 sm:p-10">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8">
-            What Families Love
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-surface/40">
-              <div className="text-3xl">🌅</div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Calm Mornings</h3>
-                <p className="text-foreground/70">
-                  Events land on your calendar before the bells ring, so the
-                  whole household knows where to be.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-surface/40">
-              <div className="text-3xl">💌</div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">
-                  Every Invitation Covered
-                </h3>
-                <p className="text-foreground/70">
-                  Handles weddings, showers, and milestone birthdays without
-                  generic filler, keeping wording true to the card.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-surface/40">
-              <div className="text-3xl">👨‍👩‍👧‍👦</div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">
-                  Team & Club Friendly
-                </h3>
-                <p className="text-foreground/70">
-                  Save one clean file with every meet or match, then text or
-                  email it to other parents in seconds.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-surface/40">
-              <div className="text-3xl">🎁</div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Thoughtful Gifts</h3>
-                <p className="text-foreground/70">
-                  Send a friend or coach a bundle of paid months and we&apos;ll
-                  deliver a ready-to-use gift message when payment clears.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Our Story */}
-        <div className="mb-16 rounded-3xl bg-gradient-to-br from-white to-[#f8f4ff] border border-[#e5dcff] p-8 sm:p-10">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8">
-            Our Story
-          </h2>
-          <div className="max-w-3xl mx-auto space-y-6 text-lg text-foreground/80 leading-relaxed">
+          <div className="mx-auto max-w-4xl space-y-6 text-lg leading-relaxed text-foreground/80">
             <p>
-              We started Envitefy as parents juggling concerts, practices,
-              appointments, and invites across group chats and crumpled flyers.
-              We knew there had to be a better way.
+              We built Envitefy to reduce event-entry friction for busy
+              families. The fastest path to that goal is keeping the product
+              surface smaller and clearer.
             </p>
             <p>
-              We obsessed over accuracy — script names, spelled-out times, home
-              vs. away — so the saved event feels like the original. Every
-              detail matters when you&apos;re coordinating a busy family
-              schedule.
+              Snap stays available to every profile because quick capture is the
+              foundation. Gymnastics is the second live surface because meet
+              workflows need their own dedicated structure, not a generic event
+              builder.
             </p>
             <p>
-              Today, families, coaches, and club organizers use Envitefy to stay
-              in sync without extra typing. From kindergarten concerts to travel
-              tournaments, we&apos;re here to make event management effortless.
+              Existing users can keep signing in. New account creation starts
+              only from the Snap or Gymnastics entry points so the right product
+              access is assigned from day one.
             </p>
           </div>
         </div>
 
-        {/* CTA Section */}
+        <div className="mb-16 rounded-3xl border border-[#e5dcff] bg-gradient-to-br from-white to-[#f8f4ff] p-8 sm:p-10">
+          <h2 className="mb-8 text-center text-3xl font-bold sm:text-4xl">
+            Our story
+          </h2>
+          <div className="mx-auto max-w-3xl space-y-6 text-lg leading-relaxed text-foreground/80">
+            <p>
+              We started Envitefy as parents trying to make sense of event
+              details scattered across flyers, screenshots, and chat threads.
+            </p>
+            <p>
+              The product keeps evolving, but the core standard stays the same:
+              event details should be accurate, fast to save, and easy to share.
+            </p>
+            <p>
+              That is why the product now centers on Snap and Gymnastics instead
+              of trying to market every possible event vertical at once.
+            </p>
+          </div>
+        </div>
+
         <div className="text-center">
-          <div className="bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] rounded-3xl p-8 sm:p-10 border border-[#d9ceff]">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Ready to Get Started?
+          <div className="rounded-3xl border border-[#d9ceff] bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] p-8 sm:p-10">
+            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
+              Pick the right starting point
             </h2>
-            <p className="text-lg text-foreground/80 mb-8 max-w-2xl mx-auto">
-              Join thousands of families who are already using Envitefy to
-              simplify their event management and stay organized.
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-foreground/80">
+              New users can create an account from Snap or Gymnastics. Existing
+              users can continue logging in.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Link
-                href="/"
-                className="inline-flex items-center justify-center rounded-2xl px-8 py-4 text-lg font-semibold bg-[#7F8CFF] hover:bg-[#6d7af5] active:bg-[#5e69d9] text-white shadow-lg shadow-[#7F8CFF]/25 transition-all duration-200"
+                href="/snap"
+                className="inline-flex items-center justify-center rounded-2xl bg-[#7F8CFF] px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-[#7F8CFF]/25 transition-all duration-200 hover:bg-[#6d7af5] active:bg-[#5e69d9]"
               >
-                Start Snapping Events
+                Snap account
+              </Link>
+              <Link
+                href="/gymnastics"
+                className="inline-flex items-center justify-center rounded-2xl border-2 border-[#d9ceff] bg-white px-8 py-4 text-lg font-semibold text-[#433b66] transition-all duration-200 hover:border-[#c6b8ff] hover:text-[#2f2850]"
+              >
+                Gymnastics account
               </Link>
               <Link
                 href="/contact"
-                className="inline-flex items-center justify-center rounded-2xl px-8 py-4 text-lg font-semibold border-2 border-[#d9ceff] text-[#433b66] hover:text-[#2f2850] hover:border-[#c6b8ff] bg-white transition-all duration-200"
+                className="inline-flex items-center justify-center rounded-2xl border-2 border-transparent px-8 py-4 text-lg font-semibold text-[#433b66] transition-all duration-200 hover:text-[#2f2850]"
               >
-                Contact Us
+                Contact us
               </Link>
             </div>
           </div>

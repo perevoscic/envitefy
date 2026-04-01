@@ -30,10 +30,10 @@ export default function EventSharePreviewPage() {
 
   // Generate sample email
   const senderName = "John Doe";
-  const eventTitle = "Sarah's Birthday Party";
+  const eventTitle = "Spring Invitational";
   const acceptUrl =
-    "https://envitefy.com/event/sarahs-birthday-party-123?accept=1";
-  const signupUrl = "https://envitefy.com/?auth=signup";
+    "https://envitefy.com/event/spring-invitational-123?accept=1";
+  const signupUrl = "https://envitefy.com/snap";
   const greeting = "Hi Emily";
   const preheader = `${senderName} shared "${eventTitle}" with you`;
 
@@ -55,11 +55,11 @@ export default function EventSharePreviewPage() {
   `;
 
   const footerText = `
-    Don't have a Envitefy account yet? 
+    Need an Envitefy account? 
     <a href="${escapeHtml(
       signupUrl,
-    )}" target="_blank" style="color:#2DD4BF; text-decoration: none;">Sign up now</a> 
-    to manage all your events in one place.
+    )}" target="_blank" style="color:#2DD4BF; text-decoration: none;">Start with Snap</a> 
+    to manage and save shared events.
   `;
 
   const html = createEmailTemplate({

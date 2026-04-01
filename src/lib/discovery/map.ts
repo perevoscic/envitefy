@@ -1,5 +1,6 @@
 import { DEFAULT_GYM_MEET_TEMPLATE_ID } from "@/components/gym-meet-templates/registry";
 import { getEventHistoryById } from "@/lib/db";
+import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
 import { safeString, uniqueStrings } from "@/lib/discovery/shared";
 import type {
   DiscoveryBuilderDraft,
@@ -73,7 +74,11 @@ export function buildFootballBuilderDraft(params: {
   };
 }
 
-export async function runDiscoveryMapStage(discovery: EventDiscoveryRow) {
+export async function runDiscoveryMapStage(
+  discovery: EventDiscoveryRow,
+  options?: { signal?: AbortSignal },
+) {
+  throwIfDiscoveryCancelled(options?.signal);
   const row = await getEventHistoryById(discovery.eventId);
   if (!row) throw new Error("Event shell not found");
   const currentData = (row.data || {}) as Record<string, any>;
@@ -91,6 +96,7 @@ export async function runDiscoveryMapStage(discovery: EventDiscoveryRow) {
           currentData,
           discovery.document?.extractionMeta as any,
         );
+  throwIfDiscoveryCancelled(options?.signal);
   const reviewFlags = uniqueStrings(
     [
       ...(discovery.pipeline.reviewFlags || []),

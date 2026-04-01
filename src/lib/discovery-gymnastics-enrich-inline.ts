@@ -13,7 +13,6 @@ import {
   isDiscoveryDebugArtifactsEnabled,
   mapParseResultToGymData,
   resolveDiscoveryBudget,
-  stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
 import {
   buildTravelAccommodationState,
@@ -26,11 +25,7 @@ function safeString(value: unknown): string {
 
 function sanitizeExtractionMetaForPersistence(meta: any, debugArtifacts: boolean) {
   if (!meta || typeof meta !== "object") return meta;
-  const next = { ...meta } as Record<string, any>;
-  if (!debugArtifacts) {
-    delete next.schedulePageImages;
-  }
-  return next;
+  return { ...meta } as Record<string, any>;
 }
 
 function buildPersistedPerformance(
@@ -154,9 +149,7 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
           }
         : {}),
       travelAccommodation: travelAccommodationState,
-      parseResult: stripGymScheduleGridsFromParseResult(
-        publicArtifacts?.parseResult || enrichedParseResult,
-      ),
+      parseResult: publicArtifacts?.parseResult || enrichedParseResult,
       enrichment: enrichmentState,
       enrichedAt: finishedAt,
       updatedAt: finishedAt,

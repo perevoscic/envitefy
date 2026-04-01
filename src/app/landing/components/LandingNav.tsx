@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useSession } from "next-auth/react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -11,7 +11,6 @@ export default function LandingNav() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const { status } = useSession();
 
   useEffect(() => {
@@ -41,13 +40,8 @@ export default function LandingNav() {
     };
   }, [mobileMenuOpen]);
 
-  const openAuth = (mode: "login" | "signup") => {
-    setAuthMode(mode);
-    setAuthModalOpen(true);
-    setMobileMenuOpen(false);
-  };
-
   const navLinks = [
+    { name: "Snap", href: "/snap" },
     { name: "Gymnastics", href: "/gymnastics" },
     { name: "How it works", href: "/#how-it-works" },
     { name: "Features", href: "/#features" },
@@ -57,10 +51,10 @@ export default function LandingNav() {
   return (
     <>
       {!mobileMenuOpen && (
-        <header className="fixed inset-x-0 top-0 z-[6500] flex items-center justify-between px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] bg-[#F8F5FF]/95 backdrop-blur-md shadow-sm md:hidden">
+        <header className="fixed inset-x-0 top-0 z-[6500] flex items-center justify-between bg-[#F8F5FF]/95 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] shadow-sm backdrop-blur-md md:hidden">
           <button
             type="button"
-            className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center text-slate-700 touch-manipulation cursor-pointer"
+            className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center text-slate-700"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Open navigation"
             aria-expanded={mobileMenuOpen}
@@ -94,8 +88,8 @@ export default function LandingNav() {
       <div
         className={`fixed inset-0 z-[5999] bg-black/20 backdrop-blur-sm transition-opacity duration-200 md:hidden ${
           mobileMenuOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
         }`}
         onClick={() => setMobileMenuOpen(false)}
         aria-hidden="true"
@@ -121,7 +115,7 @@ export default function LandingNav() {
             <div className="flex w-full justify-end pr-24">
               <Link
                 href="/"
-                className="inline-flex max-w-[190px] translate-y-1 items-center -translate-x-3"
+                className="inline-flex max-w-[190px] -translate-x-3 translate-y-1 items-center"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <EnvitefyWordmark className="text-[1.75rem] leading-none" />
@@ -159,16 +153,13 @@ export default function LandingNav() {
               ) : (
                 <>
                   <button
-                    onClick={() => openAuth("login")}
+                    onClick={() => {
+                      setAuthModalOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
                     className="flex w-full items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     Log in
-                  </button>
-                  <button
-                    onClick={() => openAuth("signup")}
-                    className="flex w-full items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                  >
-                    Get started
                   </button>
                 </>
               )}
@@ -178,10 +169,10 @@ export default function LandingNav() {
       </aside>
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 hidden bg-white transition-all duration-300 ease-in-out md:block ${
+        className={`fixed left-0 right-0 top-0 z-50 hidden bg-white transition-all duration-300 ease-in-out md:block ${
           isScrolled
-            ? "border-b border-white/60 pt-6 pb-3 shadow-sm backdrop-blur-md"
-            : "pt-8 pb-5"
+            ? "border-b border-white/60 pb-3 pt-6 shadow-sm backdrop-blur-md"
+            : "pb-5 pt-8"
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
@@ -195,39 +186,33 @@ export default function LandingNav() {
             />
           </Link>
 
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden items-center gap-8 md:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
               >
                 {link.name}
               </Link>
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden items-center gap-4 md:flex">
             {status === "authenticated" ? (
               <Link
                 href="/"
-                className="px-5 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-gray-800 hover:shadow-xl"
               >
                 Go to Dashboard
               </Link>
             ) : (
               <>
                 <button
-                  onClick={() => openAuth("login")}
-                  className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                  onClick={() => setAuthModalOpen(true)}
+                  className="text-sm font-medium text-gray-700 transition-colors hover:text-black"
                 >
                   Log in
-                </button>
-                <button
-                  onClick={() => openAuth("signup")}
-                  className="px-5 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                >
-                  Get Started
                 </button>
               </>
             )}
@@ -237,9 +222,9 @@ export default function LandingNav() {
 
       <AuthModal
         open={authModalOpen}
-        mode={authMode}
+        mode="login"
         onClose={() => setAuthModalOpen(false)}
-        onModeChange={setAuthMode}
+        allowSignupSwitch={false}
       />
     </>
   );

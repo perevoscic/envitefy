@@ -3,6 +3,7 @@ import {
   TEMPLATE_DEFINITIONS,
   type TemplateKey,
 } from "@/config/feature-visibility";
+import { hasProductScope } from "@/lib/product-scopes";
 
 export type NavItem = {
   label: string;
@@ -29,73 +30,45 @@ export type TemplateLink = {
   icon?: React.ReactNode;
 };
 
-const ALL_TEMPLATE_LINKS: TemplateLink[] = TEMPLATE_DEFINITIONS.map((t) => ({
+const ALL_TEMPLATE_LINKS: TemplateLink[] = TEMPLATE_DEFINITIONS.filter(
+  (t) => t.key !== "football_season",
+).map((t) => ({
   key: t.key,
   label: t.label,
   href: t.href,
   icon: t.icon,
 }));
 
-const QUICK_ACCESS_ITEMS: CreateEventSection["items"] = [
-  { label: "Snap Event", href: "/event", icon: "📸" },
-  { label: "Upload Event", href: "/?action=upload", icon: "📤" },
-  {
-    label: "Sign up",
-    href: "/smart-signup-form",
-    icon: "📝",
-  },
-];
+export function getTemplateLinks(
+  visibleTemplateKeys?: TemplateKey[],
+  productScopes?: string[],
+): TemplateLink[] {
+  const visible = visibleTemplateKeys?.length
+    ? new Set(visibleTemplateKeys)
+    : null;
+  const restrictToScopedProducts = Array.isArray(productScopes);
 
-export function getTemplateLinks(visibleTemplateKeys?: TemplateKey[]): TemplateLink[] {
-  if (!visibleTemplateKeys || visibleTemplateKeys.length === 0) {
-    return ALL_TEMPLATE_LINKS;
-  }
-  const visible = new Set(visibleTemplateKeys);
-  return ALL_TEMPLATE_LINKS.filter((t) => visible.has(t.key));
+  return ALL_TEMPLATE_LINKS.filter((t) => {
+    if (visible && !visible.has(t.key)) return false;
+    if (!restrictToScopedProducts) return true;
+    return t.key === "gymnastics" && hasProductScope(productScopes, "gymnastics");
+  });
 }
 
 export function getCreateEventSections(
-  visibleTemplateKeys?: TemplateKey[]
+  visibleTemplateKeys?: TemplateKey[],
+  productScopes?: string[],
 ): CreateEventSection[] {
-  const links = getTemplateLinks(visibleTemplateKeys);
+  const links = getTemplateLinks(visibleTemplateKeys, productScopes);
   const byKey = new Map(links.map((l) => [l.key, l]));
   const pick = (key: TemplateKey) => byKey.get(key);
 
   return [
     {
-      title: "Quick access",
-      items: QUICK_ACCESS_ITEMS,
+      title: "Gymnastics",
+      items: [pick("gymnastics")].filter(Boolean) as CreateEventSection["items"],
     },
-    {
-      title: "Life Milestones & Celebrations",
-      items: [
-        pick("birthdays"),
-        pick("weddings"),
-        pick("baby_showers"),
-        pick("gender_reveal"),
-      ].filter(Boolean) as CreateEventSection["items"],
-    },
-    {
-      title: "Sports Season '25-'26",
-      items: [
-        pick("football_season"),
-        pick("gymnastics"),
-        pick("cheerleading"),
-        pick("dance_ballet"),
-        pick("soccer"),
-        pick("sport_events"),
-      ].filter(Boolean) as CreateEventSection["items"],
-    },
-    {
-      title: "Appointments & General Events",
-      items: [
-        pick("appointments"),
-        pick("workshops"),
-        pick("general"),
-        pick("special_events"),
-      ].filter(Boolean) as CreateEventSection["items"],
-    },
-  ];
+  ].filter((section) => section.items.length > 0);
 }
 
 // Backward-compatible full lists for code paths not yet visibility-aware.

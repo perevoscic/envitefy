@@ -11,6 +11,13 @@ import type {
 } from "@/lib/discovery/types";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
+import {
+  normalizePrimarySignupSource,
+  normalizeProductScopes,
+  productScopesForSignupSource,
+  type PrimarySignupSource,
+  type ProductScope,
+} from "@/lib/product-scopes";
 
 const scrypt = promisify(nodeScrypt);
 
@@ -249,6 +256,7 @@ const USER_SELECT_COLUMNS = `
   stripe_customer_id, stripe_subscription_id, stripe_subscription_status,
   stripe_price_id, stripe_current_period_end, stripe_cancel_at_period_end,
   password_hash, created_at,
+  primary_signup_source, product_scopes,
   is_admin,
   scans_total, scans_birthdays, scans_weddings,
   scans_sport_events, scans_appointments, scans_doctor_appointments,
@@ -275,6 +283,8 @@ export type AppUserRow = {
   stripe_cancel_at_period_end?: boolean | null;
   password_hash: string | null;
   created_at?: string;
+  primary_signup_source?: PrimarySignupSource | null;
+  product_scopes?: ProductScope[] | null;
   is_admin?: boolean | null;
   scans_total?: number | null;
   scans_birthdays?: number | null;
@@ -291,6 +301,7 @@ export type AppUserRow = {
 
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
   await ensureUsersHasFeatureVisibilityColumn();
+  await ensureUsersHasProductScopeColumns();
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS}
@@ -299,16 +310,37 @@ export async function getUserByEmail(email: string): Promise<AppUserRow | null> 
      limit 1`,
     [lower],
   );
-  return res.rows[0] || null;
+  const row = res.rows[0] || null;
+  if (!row) return null;
+  if (!Array.isArray(row.product_scopes) || row.product_scopes.length === 0) {
+    return await backfillUserProductAccess(row);
+  }
+  return {
+    ...row,
+    primary_signup_source:
+      normalizePrimarySignupSource(row.primary_signup_source) || "legacy",
+    product_scopes: normalizeProductScopes(row.product_scopes),
+  };
 }
 
 export async function getUserById(id: string): Promise<AppUserRow | null> {
   await ensureUsersHasFeatureVisibilityColumn();
+  await ensureUsersHasProductScopeColumns();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS} from users where id = $1 limit 1`,
     [id],
   );
-  return res.rows[0] || null;
+  const row = res.rows[0] || null;
+  if (!row) return null;
+  if (!Array.isArray(row.product_scopes) || row.product_scopes.length === 0) {
+    return await backfillUserProductAccess(row);
+  }
+  return {
+    ...row,
+    primary_signup_source:
+      normalizePrimarySignupSource(row.primary_signup_source) || "legacy",
+    product_scopes: normalizeProductScopes(row.product_scopes),
+  };
 }
 
 // Ensure admin/metrics columns exist for compatibility with older DBs
@@ -590,6 +622,70 @@ async function ensureUsersHasFeatureVisibilityColumn(): Promise<void> {
   });
 }
 
+async function ensureUsersHasProductScopeColumns(): Promise<void> {
+  await ensureOnce("users_product_scope_columns", async () => {
+    await query(`
+      alter table users add column if not exists primary_signup_source text;
+      alter table users add column if not exists product_scopes text[];
+      alter table users alter column product_scopes set default ARRAY['snap']::text[];
+    `);
+  });
+}
+
+async function userHasGymnasticsHistory(userId: string): Promise<boolean> {
+  const res = await query<{ has_match: boolean }>(
+    `select exists(
+       select 1
+       from event_history
+       where user_id = $1
+         and (
+           lower(coalesce(data->>'category', '')) like '%gymnastics%'
+           or lower(coalesce(data->>'templateId', '')) like '%gymnastics%'
+           or lower(coalesce(data->>'createdVia', '')) like '%meet-discovery%'
+         )
+     ) as has_match`,
+    [userId],
+  );
+  return Boolean(res.rows[0]?.has_match);
+}
+
+async function backfillUserProductAccess(row: AppUserRow): Promise<AppUserRow> {
+  await ensureUsersHasProductScopeColumns();
+  const nextSource =
+    normalizePrimarySignupSource(row.primary_signup_source) || "legacy";
+  let nextScopes = normalizeProductScopes(row.product_scopes);
+  const shouldInferGymnastics =
+    !Array.isArray(row.product_scopes) || row.product_scopes.length === 0;
+
+  if (shouldInferGymnastics && row.id) {
+    try {
+      if (await userHasGymnasticsHistory(row.id)) {
+        nextScopes = productScopesForSignupSource("gymnastics");
+      }
+    } catch (err) {
+      if (!isTransientPgError(err)) throw err;
+      console.warn(
+        "[db] userHasGymnasticsHistory skipped during scope backfill",
+        (err as any)?.message || err,
+      );
+    }
+  }
+
+  await query(
+    `update users
+        set primary_signup_source = $2,
+            product_scopes = $3::text[]
+      where id = $1`,
+    [row.id, nextSource, nextScopes],
+  );
+
+  return {
+    ...row,
+    primary_signup_source: nextSource,
+    product_scopes: nextScopes,
+  };
+}
+
 type FeatureVisibilityRow = {
   feature_visibility: any;
 };
@@ -640,20 +736,31 @@ export async function createUserWithEmailPassword(params: {
   firstName?: string;
   lastName?: string;
   password: string;
+  signupSource: "snap" | "gymnastics";
 }): Promise<AppUserRow> {
-  const { email, firstName, lastName, password } = params;
+  const { email, firstName, lastName, password, signupSource } = params;
   await ensureUsersHasFeatureVisibilityColumn();
+  await ensureUsersHasProductScopeColumns();
   const existing = await getUserByEmail(email);
   if (existing) throw new Error("Account already exists for this email");
   const password_hash = await hashPassword(password);
   const lower = email.toLowerCase();
+  const productScopes = productScopesForSignupSource(signupSource);
   const res = await query<AppUserRow>(
     `insert into users (
-       email, first_name, last_name, password_hash, subscription_plan, ever_paid
+       email, first_name, last_name, password_hash, subscription_plan, ever_paid,
+       primary_signup_source, product_scopes
      )
-     values ($1, $2, $3, $4, 'freemium', false)
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
-    [lower, firstName || null, lastName || null, password_hash],
+     values ($1, $2, $3, $4, 'freemium', false, $5, $6::text[])
+     returning ${USER_SELECT_COLUMNS}`,
+    [
+      lower,
+      firstName || null,
+      lastName || null,
+      password_hash,
+      signupSource,
+      productScopes,
+    ],
   );
   return res.rows[0];
 }
@@ -701,8 +808,10 @@ export async function createOrUpdateOAuthUser(params: {
   firstName?: string | null;
   lastName?: string | null;
   provider: string;
+  signupSource?: "snap" | "gymnastics";
 }): Promise<AppUserRow> {
   await ensureUsersHasFeatureVisibilityColumn();
+  await ensureUsersHasProductScopeColumns();
   const lower = params.email.toLowerCase();
   const existing = await getUserByEmail(lower);
 
@@ -712,13 +821,22 @@ export async function createOrUpdateOAuthUser(params: {
   }
 
   // Create new OAuth user with NULL password_hash
+  const signupSource = params.signupSource || "snap";
+  const productScopes = productScopesForSignupSource(signupSource);
   const res = await query<AppUserRow>(
     `insert into users (
-       email, first_name, last_name, password_hash, subscription_plan, ever_paid
+       email, first_name, last_name, password_hash, subscription_plan, ever_paid,
+       primary_signup_source, product_scopes
      )
-     values ($1, $2, $3, NULL, 'freemium', false)
-     returning id, email, first_name, last_name, preferred_provider, subscription_plan, ever_paid, credits, password_hash, created_at`,
-    [lower, params.firstName || null, params.lastName || null],
+     values ($1, $2, $3, NULL, 'freemium', false, $4, $5::text[])
+     returning ${USER_SELECT_COLUMNS}`,
+    [
+      lower,
+      params.firstName || null,
+      params.lastName || null,
+      signupSource,
+      productScopes,
+    ],
   );
   return res.rows[0];
 }

@@ -1,3 +1,4 @@
+import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
 import { safeString, uniqueStrings } from "@/lib/discovery/shared";
 import type {
   CanonicalDiscoveryParse,
@@ -6,10 +7,7 @@ import type {
   EventDiscoveryRow,
 } from "@/lib/discovery/types";
 import { parseFootballFromExtractedText } from "@/lib/football-discovery";
-import {
-  parseMeetFromExtractedText,
-  stripGymScheduleGridsFromParseResult,
-} from "@/lib/meet-discovery";
+import { parseMeetFromExtractedText } from "@/lib/meet-discovery";
 
 function buildCanonicalDiscoveryParse(params: {
   workflow: DiscoveryWorkflow;
@@ -73,7 +71,11 @@ function buildCanonicalDiscoveryParse(params: {
   };
 }
 
-export async function runDiscoveryParseStage(discovery: EventDiscoveryRow) {
+export async function runDiscoveryParseStage(
+  discovery: EventDiscoveryRow,
+  options?: { signal?: AbortSignal },
+) {
+  throwIfDiscoveryCancelled(options?.signal);
   const document = discovery.document;
   if (!document) throw new Error("Document extraction must complete before parse.");
   const extractedText = safeString((document.extractionMeta as any)?.extractedText);
@@ -84,10 +86,8 @@ export async function runDiscoveryParseStage(discovery: EventDiscoveryRow) {
           traceId: discovery.eventId,
           mode: "core",
         });
-  const parseResult =
-    discovery.workflow === "football"
-      ? (parsed.parseResult as any)
-      : stripGymScheduleGridsFromParseResult(parsed.parseResult as any);
+  throwIfDiscoveryCancelled(options?.signal);
+  const parseResult = parsed.parseResult as any;
   return {
     canonicalParse: buildCanonicalDiscoveryParse({
       workflow: discovery.workflow,

@@ -2,22 +2,15 @@
 // @ts-nocheck
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { ExternalLink } from "lucide-react";
+import Image from "next/image";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import StaticMap from "@/components/StaticMap";
-import ScheduleBoard from "./ScheduleBoard";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2";
 
-const TabHeading = ({
-  title,
-  style,
-}: {
-  title: string;
-  style?: React.CSSProperties;
-}) => (
+const TabHeading = ({ title, style }: { title: string; style?: React.CSSProperties }) => (
   <h3
     className="mb-4 flex items-center gap-2 text-lg font-black tracking-tight text-inherit sm:text-xl"
     style={style}
@@ -34,7 +27,7 @@ const EmptyState = ({ className, children }: { className: string; children: Reac
 
 const renderLineList = (
   lines: Array<{ text: string; href?: string }>,
-  secondaryButtonClass: string
+  secondaryButtonClass: string,
 ) => (
   <ul className="space-y-4">
     {lines.map((line) => (
@@ -71,7 +64,11 @@ const gridClassForColumns = (columns?: number) => {
 
 const hotelCardGridClass = "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]";
 
-const getCollectionItemKey = (parentId: string | undefined, explicitKey: unknown, index: number) => {
+const getCollectionItemKey = (
+  parentId: string | undefined,
+  explicitKey: unknown,
+  index: number,
+) => {
   const normalizedParentId =
     typeof parentId === "string" && parentId.trim() ? parentId.trim() : "item";
   const normalizedExplicitKey =
@@ -84,19 +81,13 @@ const getCollectionItemKey = (parentId: string | undefined, explicitKey: unknown
 const MOBILE_NAV_SAFE_EDGE_PX = 48;
 const DESKTOP_NAV_SAFE_EDGE_PX = 8;
 
-export default function GymMeetDiscoveryContent({
-  model,
-  variant,
-}: {
-  model: any;
-  variant: any;
-}) {
+export default function GymMeetDiscoveryContent({ model, variant }: { model: any; variant: any }) {
   const sections = useMemo(
     () =>
       (Array.isArray(model?.discovery?.sections) ? model.discovery.sections : []).filter(
-        (section: any) => section?.hasContent !== false && Array.isArray(section?.blocks)
+        (section: any) => section?.hasContent !== false && Array.isArray(section?.blocks),
       ),
-    [model?.discovery?.sections]
+    [model?.discovery?.sections],
   );
   const [activeSectionId, setActiveSectionId] = useState(sections[0]?.id || "");
   const railRef = useRef<HTMLDivElement | null>(null);
@@ -114,16 +105,12 @@ export default function GymMeetDiscoveryContent({
   const idleTabClass = variant.navIdleClass;
   const navFadeClass = variant.navFadeClass || "rgba(255,255,255,0.82)";
   const baseNavRailClass =
-    variant.navRailClass ||
-    "no-scrollbar flex gap-2 overflow-x-auto px-1 py-1";
+    variant.navRailClass || "no-scrollbar flex gap-2 overflow-x-auto px-1 py-1";
   const navRailClass = `${baseNavRailClass} pr-12 md:pr-1`;
   const navButtonClass = variant.navButtonClass || "";
   const navTextClass =
-    sections.length >= 6
-      ? "text-[10px] tracking-[0.14em]"
-      : "text-[11px] tracking-[0.18em]";
-  const resolvedNavButtonClass =
-    `inline-flex shrink-0 items-center justify-center whitespace-nowrap max-w-[220px] sm:max-w-[240px] min-w-fit ${navTextClass} ${navButtonClass}`;
+    sections.length >= 6 ? "text-[10px] tracking-[0.14em]" : "text-[11px] tracking-[0.18em]";
+  const resolvedNavButtonClass = `inline-flex shrink-0 items-center justify-center whitespace-nowrap max-w-[220px] sm:max-w-[240px] min-w-fit ${navTextClass} ${navButtonClass}`;
   const secondaryButtonClass = variant.secondaryButtonClass;
   const primaryButtonClass = variant.primaryButtonClass || secondaryButtonClass;
   const sectionTitleClass = variant.sectionTitleClass || "";
@@ -172,10 +159,7 @@ export default function GymMeetDiscoveryContent({
     const safeViewportRight = rail.scrollLeft + rail.clientWidth - rightInset;
     const epsilon = 1;
 
-    if (
-      buttonLeft >= safeViewportLeft - epsilon &&
-      buttonRight <= safeViewportRight + epsilon
-    ) {
+    if (buttonLeft >= safeViewportLeft - epsilon && buttonRight <= safeViewportRight + epsilon) {
       return;
     }
 
@@ -254,22 +238,24 @@ export default function GymMeetDiscoveryContent({
     return () => window.cancelAnimationFrame(rafId);
   }, [activeSectionId, centerTab, getScrollBehavior, updateEdgeHints]);
 
-  const activeSection = sections.find((section: any) => section.id === activeSectionId) || sections[0];
-  const isBareScheduleSection =
-    Boolean(activeSection?.hideSectionHeading) &&
-    Array.isArray(activeSection?.blocks) &&
-    activeSection.blocks.length === 1 &&
-    activeSection.blocks[0]?.type === "schedule-board";
+  const activeSection =
+    sections.find((section: any) => section.id === activeSectionId) || sections[0];
 
   const renderBlock = (block: any) => {
     switch (block.type) {
       case "line-list":
-        return <div className={panelClass}>{renderLineList(block.lines || [], secondaryButtonClass)}</div>;
+        return (
+          <div className={panelClass}>
+            {renderLineList(block.lines || [], secondaryButtonClass)}
+          </div>
+        );
       case "text":
         return (
           <div className={panelClass}>
             {block.title ? (
-              <p className={`text-[10px] font-black uppercase tracking-[0.18em] opacity-60 ${cardTitleClass}`}>
+              <p
+                className={`text-[10px] font-black uppercase tracking-[0.18em] opacity-60 ${cardTitleClass}`}
+              >
                 {block.title}
               </p>
             ) : null}
@@ -301,12 +287,10 @@ export default function GymMeetDiscoveryContent({
                     : "text-[10px] font-black uppercase tracking-[0.18em] opacity-60";
                 return (
                   <div key={cardReactKey} className={`${cardClass} ${hotelCardLayoutClass}`.trim()}>
-                    {card.label ? (
-                      <p className={cardLabelClass}>
-                        {card.label}
-                      </p>
+                    {card.label ? <p className={cardLabelClass}>{card.label}</p> : null}
+                    {card.value ? (
+                      <p className="mt-2 text-2xl font-black leading-none">{card.value}</p>
                     ) : null}
-                    {card.value ? <p className="mt-2 text-2xl font-black leading-none">{card.value}</p> : null}
                     {card.body ? (
                       <p
                         className={`${card.value || card.label ? "mt-2" : ""} whitespace-pre-line text-sm leading-relaxed opacity-85`}
@@ -375,7 +359,9 @@ export default function GymMeetDiscoveryContent({
                 {block.title}
               </h4>
             ) : null}
-            {block.text ? <p className="mt-2 text-sm leading-relaxed opacity-85">{block.text}</p> : null}
+            {block.text ? (
+              <p className="mt-2 text-sm leading-relaxed opacity-85">{block.text}</p>
+            ) : null}
             <a
               href={block.action?.url}
               target="_blank"
@@ -415,34 +401,13 @@ export default function GymMeetDiscoveryContent({
                 {block.title}
               </h4>
             ) : null}
-            {block.text ? <p className="mb-4 text-sm leading-relaxed opacity-85">{block.text}</p> : null}
+            {block.text ? (
+              <p className="mb-4 text-sm leading-relaxed opacity-85">{block.text}</p>
+            ) : null}
             <div className="overflow-hidden rounded-[24px] border border-black/10">
               <StaticMap address={block.address} height={360} />
             </div>
           </div>
-        );
-      case "schedule-board":
-        return (
-          <ScheduleBoard
-            schedule={block.data}
-            preferredClubName={model?.assignedGym}
-            appearance={{
-              panelClass,
-              cardClass,
-              summaryCardClass: cardClass,
-              navShellClass,
-              navActiveClass: activeTabClass,
-              navIdleClass: idleTabClass,
-              accentClass: variant.accentClass,
-              sectionTitleClass,
-              sectionTitleStyle,
-              sectionMutedClass: variant.sectionMutedClass,
-              primaryButtonClass,
-              secondaryButtonClass,
-              sessionTitleClass: sectionTitleClass,
-              sessionTitleStyle: sectionTitleStyle,
-            }}
-          />
         );
       default:
         return null;
@@ -507,20 +472,16 @@ export default function GymMeetDiscoveryContent({
       </div>
 
       {activeSection ? (
-        isBareScheduleSection ? (
-          renderBlock(activeSection.blocks[0])
-        ) : (
-          <div className="space-y-4">
-            {activeSection.hideSectionHeading ? null : (
-              <div className={sectionTitleClass}>
-                <TabHeading title={activeSection.label} style={sectionTitleStyle} />
-              </div>
-            )}
-            {activeSection.blocks.map((block: any) => (
-              <React.Fragment key={block.id}>{renderBlock(block)}</React.Fragment>
-            ))}
-          </div>
-        )
+        <div className="space-y-4">
+          {activeSection.hideSectionHeading ? null : (
+            <div className={sectionTitleClass}>
+              <TabHeading title={activeSection.label} style={sectionTitleStyle} />
+            </div>
+          )}
+          {activeSection.blocks.map((block: any) => (
+            <React.Fragment key={block.id}>{renderBlock(block)}</React.Fragment>
+          ))}
+        </div>
       ) : (
         <EmptyState className={panelClass}>No discovery sections are available yet.</EmptyState>
       )}

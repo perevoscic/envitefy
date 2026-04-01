@@ -1,30 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import AuthModal from "@/components/auth/AuthModal";
+import Link from "next/link";
 
 export default function CreateShareCta() {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"login" | "signup">("signup");
-
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => {
-          setMode("signup");
-          setOpen(true);
-        }}
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <Link
+        href="/snap"
         className="btn btn-primary btn-lg w-full sm:w-auto"
       >
-        Create your first event
-      </button>
-      <AuthModal
-        open={open}
-        mode={mode}
-        onClose={() => setOpen(false)}
-        onModeChange={setMode}
-      />
-    </>
+        Create a Snap account
+      </Link>
+      <Link
+        href="/gymnastics"
+        className="btn btn-outline btn-lg w-full sm:w-auto"
+      >
+        Gymnastics account
+      </Link>
+    </div>
   );
 }

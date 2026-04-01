@@ -24,6 +24,16 @@ type EnrichParams = {
   extractionMeta: Record<string, any> | null | undefined;
 };
 
+type ParsedHotelCard = {
+  name: string;
+  bookingUrl?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  reservationDeadline?: string | null;
+  rateSummary?: string | null;
+  notes?: string | null;
+};
+
 function safeString(value: unknown): string {
   return typeof value === "string"
     ? value.trim()
@@ -40,6 +50,151 @@ function normalizeUrl(value: unknown): string {
   } catch {
     return "";
   }
+}
+
+function normalizeLine(value: unknown): string {
+  return safeString(value)
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .trim();
+}
+
+function isSectionBoundary(line: string): boolean {
+  return /^(?:local attractions|parking(?: information)?|traffic(?: & arrival)?|quick access|documents|results|admission(?: & sales)?|spectator(?: information)?|venue details|event info|photo\/video|vendors?|sponsors?)$/i.test(
+    normalizeLine(line)
+  );
+}
+
+function isBookingLabel(line: string): boolean {
+  return /^(?:reserve|book)(?: hotel)?(?: online| now| here)?$/i.test(line);
+}
+
+function looksLikeAddress(line: string): boolean {
+  return /\b\d{2,6}\s+[a-z0-9.'-]+(?:\s+[a-z0-9.'-]+){1,6}\b/i.test(line);
+}
+
+function looksLikeHotelName(line: string): boolean {
+  const normalized = normalizeLine(line);
+  if (!normalized || normalized.length < 3 || normalized.length > 90) return false;
+  if (/:/.test(normalized)) return false;
+  if (isBookingLabel(normalized) || isSectionBoundary(normalized)) return false;
+  if (/^(?:host hotel(?: information| info)?|hotels?(?: & travel)?)$/i.test(normalized)) return false;
+  return /\b(?:hotel|hilton|hampton|hyatt|indigo|aloft|homewood|springhill|fairfield|courtyard|doubletree|embassy|holiday inn|marriott|suites|inn|resort|lodge)\b/i.test(
+    normalized
+  );
+}
+
+function extractHotelSectionLines(content: string): string[] {
+  const lines = safeString(content)
+    .replace(/\r/g, "\n")
+    .split(/\n+/)
+    .map((line) => normalizeLine(line))
+    .filter(Boolean);
+  const start = lines.findIndex((line) =>
+    /\b(?:host hotel(?: information| info)?|historic district hotels|hotels?(?: & travel)?)\b/i.test(
+      line
+    )
+  );
+  if (start < 0) return [];
+  const section: string[] = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index]!;
+    if (isSectionBoundary(line)) break;
+    section.push(line);
+  }
+  return section;
+}
+
+function findMatchingBookingUrl(name: string, links: Array<{ url: string; contextText?: string | null }>): string | null {
+  const normalizedName = normalizeLine(name).toLowerCase();
+  if (!normalizedName) return null;
+  const matches = links.filter((link) =>
+    normalizeLine(link.contextText).toLowerCase().includes(normalizedName)
+  );
+  if (matches.length !== 1) return null;
+  return matches[0]?.url || null;
+}
+
+export function extractHotelCardsFromContent(content: string): ParsedHotelCard[] {
+  const lines = extractHotelSectionLines(content);
+  if (lines.length === 0) return [];
+  const cards: string[][] = [];
+  let current: string[] = [];
+
+  for (const line of lines) {
+    if (looksLikeHotelName(line)) {
+      if (current.length > 0) cards.push(current);
+      current = [line];
+      continue;
+    }
+    if (current.length === 0) continue;
+    if (
+      current.length === 1 &&
+      !/:/.test(line) &&
+      !isBookingLabel(line) &&
+      !looksLikeHotelName(line) &&
+      /^[A-Za-z][A-Za-z\s.'&-]{1,40}$/.test(line)
+    ) {
+      current[0] = `${current[0]} ${line}`.trim();
+      continue;
+    }
+    if (isBookingLabel(line) && current.some((value) => isBookingLabel(value))) continue;
+    current.push(line);
+  }
+  if (current.length > 0) cards.push(current);
+
+  return cards
+    .map((card) => {
+      const [nameLine, ...detailLines] = card;
+      const bookingUrl = null;
+      const address = detailLines.find((line) => looksLikeAddress(line)) || null;
+      const phone =
+        detailLines.find((line) => /^(?:phone|phone reservations?)\s*:/i.test(line))?.replace(/^phone(?: reservations?)?\s*:\s*/i, "") ||
+        detailLines.find((line) => /\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/.test(line)) ||
+        null;
+      const reservationDeadline =
+        detailLines.find((line) => /^(?:reservation deadline|deadline to book)\s*:/i.test(line))?.replace(/^(?:reservation deadline|deadline to book)\s*:\s*/i, "") ||
+        null;
+      const rateSummary =
+        detailLines.find((line) => /^(?:rate|rates)\s*:/i.test(line))?.replace(/^(?:rate|rates)\s*:\s*/i, "") ||
+        null;
+      const notes = detailLines
+        .filter((line) => line !== address)
+        .filter((line) => line !== phone)
+        .filter((line) => line !== reservationDeadline)
+        .filter((line) => line !== rateSummary)
+        .filter((line) => !isBookingLabel(line))
+        .join(" | ");
+      return {
+        name: nameLine,
+        bookingUrl,
+        address,
+        phone,
+        reservationDeadline,
+        rateSummary,
+        notes: notes || null,
+      };
+    })
+    .filter((card) => safeString(card.name))
+    .filter((card) => Boolean(card.phone || card.rateSummary || card.notes || card.address));
+}
+
+export function extractHotelCandidatesFromMarkdown(markdown: string): Array<{ name: string; url: string }> {
+  const lines = safeString(markdown)
+    .replace(/\r/g, "\n")
+    .split(/\n+/)
+    .map((line) => normalizeLine(line))
+    .filter(Boolean);
+  const out: Array<{ name: string; url: string }> = [];
+  for (let index = 1; index < lines.length; index += 1) {
+    const line = lines[index]!;
+    const match = line.match(/\((https?:\/\/[^)]+)\)/i);
+    if (!match) continue;
+    const previous = lines[index - 1]!;
+    if (!looksLikeHotelName(previous) || /\bhost hotels?\b/i.test(previous)) continue;
+    out.push({ name: previous, url: normalizeUrl(match[1]) });
+  }
+  return out;
 }
 
 function buildCandidateLinks(extractionMeta: Record<string, any> | null | undefined) {
@@ -75,6 +230,28 @@ function buildPages(extractionMeta: Record<string, any> | null | undefined, extr
     : [];
   if (scheduleTexts.length > 0) return scheduleTexts;
   return [{ pageNumber: null, text: extractedText }];
+}
+
+function buildInlineHotelsFromExtractedText(
+  extractedText: string,
+  candidateLinks: Array<{ url: string; contextText?: string | null }>
+): TravelAccommodationHotel[] {
+  return extractHotelCardsFromContent(extractedText).map((card) => ({
+    name: card.name,
+    imageUrl: null,
+    distanceFromVenue:
+      card.notes?.match(/Distance from Venue\s*:\s*([^|]+)/i)?.[1]?.trim() || null,
+    groupRate: card.rateSummary || null,
+    parking: card.notes?.match(/Parking\s*:\s*([^|]+)/i)?.[1]?.trim() || null,
+    breakfast: card.notes?.match(/Breakfast\s*:\s*([^|]+)/i)?.[1]?.trim() || null,
+    reservationDeadline: card.reservationDeadline || null,
+    phone: card.phone || null,
+    bookingUrl: card.bookingUrl || findMatchingBookingUrl(card.name, candidateLinks),
+    notes: card.notes ? [card.notes] : [],
+    sourceType: "web",
+    contentOrigin: "public_travel_section",
+    confidence: 0.88,
+  }));
 }
 
 function hasFirecrawl() {
@@ -149,18 +326,36 @@ function pickPrimaryTravelTarget(params: {
 
 export async function enrichTravelAccommodation(params: EnrichParams): Promise<TravelAccommodationResult> {
   const pages = buildPages(params.extractionMeta, params.extractedText);
+  const candidateLinks = buildCandidateLinks(params.extractionMeta);
   const candidates = detectTravelAccommodationCandidates({
     source: params.sourceType === "file" ? "pdf" : "url",
     extractedText: params.extractedText,
     pages,
-    links: buildCandidateLinks(params.extractionMeta),
+    links: candidateLinks,
   });
   const pdfHotels = params.sourceType === "file" ? extractHotelObjectsFromPdf(null, candidates) : [];
+  const inlineHotels =
+    params.sourceType === "url" ? buildInlineHotelsFromExtractedText(params.extractedText, candidateLinks) : [];
   const base = buildTravelAccommodationResult({
     candidates,
     pdfHotels,
-    webHotels: [],
+    webHotels: inlineHotels,
   });
+  if (inlineHotels.length > 0) {
+    return buildTravelAccommodationResult({
+      candidates,
+      pdfHotels,
+      webHotels: inlineHotels,
+      fallbackLink: selectFallbackTravelLink(candidates),
+      resolution: {
+        resolvedUrl: null,
+        provider: "none",
+        resolutionType: "same_page_section",
+        confidence: Math.max(...inlineHotels.map((hotel) => hotel.confidence)),
+      },
+      attempts: [],
+    });
+  }
   const primaryTarget = pickPrimaryTravelTarget({
     result: base,
     preferNonBookingWhenPdfHotelsExist: pdfHotels.length > 0,

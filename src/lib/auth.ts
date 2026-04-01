@@ -1,7 +1,14 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import { cookies } from "next/headers";
 import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken, getUserIdByEmail } from "@/lib/db";
+import {
+  normalizePrimarySignupSource,
+  normalizeProductScopes,
+  type PrimarySignupSource,
+  type ProductScope,
+} from "@/lib/product-scopes";
 
 function isTransientDbError(err: unknown): boolean {
   const anyErr = err as any;
@@ -20,6 +27,52 @@ type SessionUserLike = {
 
 const USER_ID_CACHE_TTL_MS = 60_000;
 const userIdByEmailCache = new Map<string, { userId: string; expiresAt: number }>();
+const USER_ACCESS_CACHE_TTL_MS = 5 * 60_000;
+const userAccessByEmailCache = new Map<
+  string,
+  {
+    expiresAt: number;
+    primarySignupSource: PrimarySignupSource;
+    productScopes: ProductScope[];
+  }
+>();
+
+function readSignupSourceCookie(): "snap" | "gymnastics" | null {
+  try {
+    const jar = cookies();
+    const value = jar.get("envitefy_signup_source")?.value || null;
+    return value === "snap" || value === "gymnastics" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveUserAccessMetadata(email: string): Promise<{
+  primarySignupSource: PrimarySignupSource;
+  productScopes: ProductScope[];
+} | null> {
+  const lower = email.trim().toLowerCase();
+  const cached = userAccessByEmailCache.get(lower);
+  if (cached && cached.expiresAt > Date.now()) {
+    return {
+      primarySignupSource: cached.primarySignupSource,
+      productScopes: cached.productScopes,
+    };
+  }
+
+  const user = await getUserByEmail(lower);
+  if (!user) return null;
+  const metadata = {
+    primarySignupSource:
+      normalizePrimarySignupSource(user.primary_signup_source) || "legacy",
+    productScopes: normalizeProductScopes(user.product_scopes),
+  };
+  userAccessByEmailCache.set(lower, {
+    ...metadata,
+    expiresAt: Date.now() + USER_ACCESS_CACHE_TTL_MS,
+  });
+  return metadata;
+}
 
 export async function resolveSessionUserId(sessionLike: {
   user?: SessionUserLike;
@@ -161,18 +214,31 @@ export function getAuthOptions(): NextAuthOptions {
             if (authDebugEnabled) {
               console.log("[auth] Google sign-in", { email: user.email });
             }
-            
-            // Create or update user in database
+
+            const existingUser = await getUserByEmail(user.email);
+            if (existingUser) {
+              return true;
+            }
+
+            const signupSource = readSignupSourceCookie();
+            if (!signupSource) {
+              console.warn("[auth] blocked Google signup without source", {
+                email: user.email,
+              });
+              return false;
+            }
+
             const firstName = (profile as any)?.given_name || user.name?.split(" ")[0] || null;
             const lastName = (profile as any)?.family_name || user.name?.split(" ").slice(1).join(" ") || null;
-            
+
             await createOrUpdateOAuthUser({
               email: user.email,
               firstName,
               lastName,
               provider: "google",
+              signupSource,
             });
-            
+
             return true;
           }
           return true;
@@ -199,6 +265,7 @@ export function getAuthOptions(): NextAuthOptions {
           // We refresh periodically instead of only once to avoid stale JWT claims.
           const now = Date.now();
           const ADMIN_CLAIM_REFRESH_MS = 15 * 60 * 1000;
+          const ACCESS_METADATA_REFRESH_MS = 15 * 60 * 1000;
           const PROVIDER_TOKEN_REFRESH_MS = 60 * 60 * 1000;
           const lastAdminCheckAt =
             typeof tokenAny?.isAdminCheckedAt === "number"
@@ -222,6 +289,37 @@ export function getAuthOptions(): NextAuthOptions {
               tokenAny.isAdmin = false;
             } finally {
               tokenAny.isAdminCheckedAt = now;
+            }
+          }
+
+          const lastAccessMetadataCheckAt =
+            typeof tokenAny?.accessMetadataCheckedAt === "number"
+              ? tokenAny.accessMetadataCheckedAt
+              : 0;
+          const shouldRefreshAccessMetadata =
+            Boolean(email) &&
+            (account?.provider != null ||
+              tokenAny.accessMetadataCheckedAt === undefined ||
+              tokenAny.primarySignupSource === undefined ||
+              tokenAny.productScopes === undefined ||
+              now - lastAccessMetadataCheckAt > ACCESS_METADATA_REFRESH_MS);
+
+          if (email && shouldRefreshAccessMetadata) {
+            try {
+              const accessMetadata = await resolveUserAccessMetadata(email);
+              if (accessMetadata) {
+                tokenAny.primarySignupSource = accessMetadata.primarySignupSource;
+                tokenAny.productScopes = accessMetadata.productScopes;
+              }
+            } catch (err) {
+              const message = (err as any)?.message || String(err);
+              if (isTransientDbError(err)) {
+                console.warn("[auth] product scope lookup skipped: database unavailable", message);
+              } else {
+                console.error("[auth] product scope lookup failed", message);
+              }
+            } finally {
+              tokenAny.accessMetadataCheckedAt = now;
             }
           }
 
@@ -326,6 +424,11 @@ export function getAuthOptions(): NextAuthOptions {
               null;
             (session.user as any).isAdmin = Boolean((token as any)?.isAdmin);
             (session.user as any).provider = (token as any)?.provider || "credentials";
+            (session.user as any).primarySignupSource =
+              normalizePrimarySignupSource((token as any)?.primarySignupSource) || "legacy";
+            (session.user as any).productScopes = normalizeProductScopes(
+              (token as any)?.productScopes,
+            );
           }
         } catch {}
         return session;

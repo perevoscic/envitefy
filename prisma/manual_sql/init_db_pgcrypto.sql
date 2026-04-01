@@ -206,6 +206,9 @@ ALTER TABLE users ALTER COLUMN scans_general_events SET DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS scans_car_pool integer;
 ALTER TABLE users ALTER COLUMN scans_car_pool SET DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS feature_visibility jsonb;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS primary_signup_source text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS product_scopes text[];
+ALTER TABLE users ALTER COLUMN product_scopes SET DEFAULT ARRAY['snap']::text[];
 
 -- Ensure promo_codes has new Stripe linkage columns when upgrading
 ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS stripe_payment_intent_id text;

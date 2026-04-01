@@ -133,8 +133,6 @@ export const resolveEditHref = (
 
     // Sports & activity templates
     const templateSlugById: Record<string, string> = {
-      "football-season": "football",
-      "football-practice": "football-practice",
       soccer: "soccer",
       "sport-event": "sport-events",
       "cheerleading-season": "cheerleading",
@@ -142,8 +140,6 @@ export const resolveEditHref = (
       "gymnastics-schedule": "gymnastics",
     };
     const templateSlugByCategory: Record<string, string> = {
-      sport_football_season: "football",
-      sport_football_practice: "football-practice",
       sport_soccer: "soccer",
       sport_event: "sport-events",
       sport_cheerleading: "cheerleading",
@@ -156,6 +152,17 @@ export const resolveEditHref = (
       templateSlugByCategory[
         normalizedCategory as keyof typeof templateSlugByCategory
       ];
+
+    const isFootballEvent =
+      templateId === "football-season" ||
+      templateId === "football-practice" ||
+      normalizedCategory === "sport_football_season" ||
+      normalizedCategory === "sport_football_practice" ||
+      normalizedCategory.includes("football");
+
+    if (isFootballEvent) {
+      return "/event";
+    }
 
     if (sportSlug) {
       return `/event/${sportSlug}/customize?edit=${encodeURIComponent(eventId)}`;

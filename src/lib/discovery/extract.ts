@@ -19,13 +19,17 @@ function sourceTypeFromInput(input: DiscoverySourceInput): "pdf" | "image" | "ur
   return /pdf/i.test(input.mimeType || "") ? "pdf" : "image";
 }
 
-export async function runDiscoveryExtractStage(discovery: EventDiscoveryRow) {
-  return runDiscoveryExtractStageWithMode(discovery, "core");
+export async function runDiscoveryExtractStage(
+  discovery: EventDiscoveryRow,
+  options?: { signal?: AbortSignal },
+) {
+  return runDiscoveryExtractStageWithMode(discovery, "core", options);
 }
 
 export async function runDiscoveryExtractStageWithMode(
   discovery: EventDiscoveryRow,
   mode: "core" | "enrich",
+  options?: { signal?: AbortSignal },
 ) {
   let sourceInput = discovery.source as DiscoverySourceInput;
   if (sourceInput.type === "file" && !safeString(sourceInput.dataUrl)) {
@@ -43,6 +47,7 @@ export async function runDiscoveryExtractStageWithMode(
     budgetMs: resolveDiscoveryBudget(mode, sourceInput.type),
     debugArtifacts: isDiscoveryDebugArtifactsEnabled(),
     performance,
+    signal: options?.signal,
   });
 
   const rawPages = Array.isArray((extraction.extractionMeta as any)?.pages)

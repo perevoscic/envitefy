@@ -31,7 +31,6 @@ import {
   isDiscoveryDebugArtifactsEnabled,
   mapParseResultToGymData,
   resolveDiscoveryBudget,
-  stripGymScheduleGridsFromParseResult,
 } from "@/lib/meet-discovery";
 
 export const runtime = "nodejs";
@@ -50,11 +49,7 @@ function durationMs(startedAt: number): number {
 
 function sanitizeExtractionMetaForPersistence(meta: any, debugArtifacts: boolean) {
   if (!meta || typeof meta !== "object") return meta;
-  const next = { ...meta } as Record<string, any>;
-  if (!debugArtifacts) {
-    delete next.schedulePageImages;
-  }
-  return next;
+  return { ...meta } as Record<string, any>;
 }
 
 function buildPersistedPerformance(
@@ -404,9 +399,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
             }
           : {}),
         travelAccommodation: buildTravelAccommodationState(travelAccommodation),
-        parseResult: stripGymScheduleGridsFromParseResult(
-          publicArtifacts?.parseResult || enrichedParseResult
-        ),
+        parseResult: publicArtifacts?.parseResult || enrichedParseResult,
         enrichment: enrichmentState,
         enrichedAt: finishedAt,
         updatedAt: finishedAt,

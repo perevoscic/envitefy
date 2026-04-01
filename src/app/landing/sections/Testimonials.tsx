@@ -2,7 +2,7 @@ const groups = [
   {
     title: "Parents",
     summary:
-      "Envitefy keeps family calendars in sync and wrangles snack sign-ups without retyping flyers or invites.",
+      "Envitefy helps parents capture flyer details fast and keep calendars current.",
     quotes: [
       {
         quote:
@@ -17,35 +17,36 @@ const groups = [
     ],
   },
   {
-    title: "Coaches",
+    title: "Gym families",
     summary:
-      "Seasons, practices, and carpools shared instantly with every player.",
+      "Meet pages keep sessions, venues, and updates in one shareable place.",
     quotes: [
       {
-        quote: "I snapped the soccer schedule and it added every date perfectly.",
-        by: "Marcus, dad & coach",
+        quote:
+          "Having one meet page instead of another PDF thread makes travel weekends much easier.",
+        by: "Marcus, gym dad",
       },
       {
         quote:
-          "Our basketball season imported in one tap — home and away labeled.",
+          "Parents know exactly where to look for the latest session updates.",
         by: "Coach Maya",
       },
     ],
   },
   {
-    title: "Planners",
+    title: "Organizers",
     summary:
-      "Events look polished and stay updated for guests and vendors.",
+      "Shared event pages stay polished and easy to open on any phone.",
     quotes: [
       {
         quote:
-          "Wedding invites were parsed flawlessly—ceremony and reception saved in seconds.",
-        by: "Ava & Noah",
+          "Snap cleaned up the invite details faster than typing them myself.",
+        by: "Ava",
       },
       {
         quote:
-          "Birthday party details captured from the invite — reminders set automatically.",
-        by: "Jen, party planner",
+          "We finally have one link to send instead of juggling screenshots.",
+        by: "Jen, organizer",
       },
     ],
   },
@@ -59,7 +60,7 @@ export default function Testimonials() {
           id="testimonials"
           className="text-2xl sm:text-3xl font-bold text-center"
         >
-          Why Families &amp; Teams Love It
+          Why people keep using it
         </h2>
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
           {groups.map((group) => (

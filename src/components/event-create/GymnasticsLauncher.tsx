@@ -72,6 +72,7 @@ export default function GymnasticsLauncher({
   const parseAbortRef = useRef<AbortController | null>(null);
   const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cancelRequestedRef = useRef(false);
+  const currentDiscoveryEventIdRef = useRef<string | null>(null);
   const discoveryLogStateRef = useRef<{
     status: string;
     bucket: number;
@@ -159,9 +160,25 @@ export default function GymnasticsLauncher({
     }
   };
 
+  const requestDiscoveryCancel = async (eventId: string | null) => {
+    if (!eventId) return;
+    try {
+      await fetch(`/api/discovery/${eventId}/cancel`, {
+        method: "POST",
+        credentials: "include",
+        keepalive: true,
+      });
+    } catch {
+      // Best effort only. Local abort still clears the UI immediately.
+    }
+  };
+
   const cancelDiscovery = () => {
     console.log(`${GYM_DISCOVERY_LOG_PREFIX} cancel requested`);
     cancelRequestedRef.current = true;
+    const eventId = currentDiscoveryEventIdRef.current;
+    currentDiscoveryEventIdRef.current = null;
+    void requestDiscoveryCancel(eventId);
     clearDiscoveryHandles();
     setUploadBusy(false);
     setUrlBusy(false);
@@ -177,6 +194,9 @@ export default function GymnasticsLauncher({
   useEffect(() => {
     return () => {
       cancelRequestedRef.current = true;
+      const eventId = currentDiscoveryEventIdRef.current;
+      currentDiscoveryEventIdRef.current = null;
+      void requestDiscoveryCancel(eventId);
       clearDiscoveryHandles();
     };
   }, []);
@@ -320,6 +340,7 @@ export default function GymnasticsLauncher({
     }
 
     const eventId = String(ingestJson.eventId);
+    currentDiscoveryEventIdRef.current = eventId;
     log("starting discovery pipeline", {
       eventId,
       discoveryId: ingestJson.discoveryId || null,
@@ -400,6 +421,7 @@ export default function GymnasticsLauncher({
     }
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
+    currentDiscoveryEventIdRef.current = null;
     const baseUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}&new=1`;
     if (status === "authenticated") {
       router.push(baseUrl);
@@ -441,11 +463,13 @@ export default function GymnasticsLauncher({
         console.log(`${GYM_DISCOVERY_LOG_PREFIX} discovery cancelled by user`);
         setUploadStatus("");
         setUploadProgress(0);
+        currentDiscoveryEventIdRef.current = null;
         return;
       }
       console.error(`${GYM_DISCOVERY_LOG_PREFIX} discovery failed`, err);
       setUploadError(toDiscoveryUiError(err, "Failed to parse file"));
       setUploadStatus("");
+      currentDiscoveryEventIdRef.current = null;
     } finally {
       setUploadBusy(false);
     }
@@ -491,11 +515,13 @@ export default function GymnasticsLauncher({
         setUrlProgress(0);
         setUrlStatus("");
         setUrlIndeterminate(false);
+        currentDiscoveryEventIdRef.current = null;
         return;
       }
       setUrlError(toDiscoveryUiError(err, "Failed to sync URL"));
       setUrlStatus("");
       setUrlIndeterminate(false);
+      currentDiscoveryEventIdRef.current = null;
     } finally {
       setUrlBusy(false);
     }

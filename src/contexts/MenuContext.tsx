@@ -14,6 +14,10 @@ import { usePathname } from "next/navigation";
 import { useEventCategories } from "@/hooks/useEventCategories";
 import { useFeatureVisibility } from "@/hooks/useFeatureVisibility";
 import type { TemplateKey } from "@/config/feature-visibility";
+import {
+  normalizePrimarySignupSource,
+  type PrimarySignupSource,
+} from "@/lib/product-scopes";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
 type SessionUserWithAdmin = {
@@ -38,6 +42,8 @@ interface MenuContextValue {
   isAdmin: boolean;
   initials: string;
   displayName: string;
+  primarySignupSource: PrimarySignupSource;
+  productScopes: string[];
   visibleTemplateKeys: TemplateKey[];
   featureVisibility: ReturnType<typeof useFeatureVisibility>;
 }
@@ -50,6 +56,12 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const { categories, history } = useEventCategories();
   const featureVisibility = useFeatureVisibility();
   const { visibleTemplateKeys } = featureVisibility;
+  const primarySignupSource =
+    normalizePrimarySignupSource((session?.user as any)?.primarySignupSource) ||
+    "legacy";
+  const productScopes = Array.isArray((session?.user as any)?.productScopes)
+    ? ((session?.user as any)?.productScopes as string[])
+    : ["snap"];
 
   const [connectedCalendars, setConnectedCalendars] = useState<{
     google: boolean;
@@ -112,6 +124,8 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       isAdmin,
       initials,
       displayName,
+      primarySignupSource,
+      productScopes,
       visibleTemplateKeys,
       featureVisibility,
     }),
@@ -127,6 +141,8 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       isAdmin,
       initials,
       displayName,
+      primarySignupSource,
+      productScopes,
       visibleTemplateKeys,
       featureVisibility,
     ]

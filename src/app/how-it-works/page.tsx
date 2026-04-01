@@ -5,11 +5,11 @@ import HowItWorks from "../landing/sections/HowItWorks";
 export const metadata: Metadata = {
   title: "How Envitefy Works",
   description:
-    "See how Envitefy turns flyers and invitations into shareable calendar events with smart RSVPs and sign‑up forms.",
+    "See how Envitefy turns flyers into clean event details and powers gymnastics meet pages.",
   openGraph: {
     title: "How Envitefy Works",
     description:
-      "Turn flyers and invites into calendar events with RSVPs and smart sign‑ups.",
+      "Turn flyers into clean event details and publish gymnastics meet pages.",
     url: "https://envitefy.com/how-it-works",
     siteName: "Envitefy",
     images: [
@@ -52,8 +52,8 @@ export default function HowItWorksPage() {
           How Envitefy works
         </h1>
         <p className="mt-3 text-center text-[#5a5377]">
-          From snap to share in seconds — add events to your calendar without
-          manual entry.
+          From Snap capture to Gymnastics meet pages, Envitefy keeps event
+          details clean and shareable.
         </p>
       </section>
       <HowItWorks />

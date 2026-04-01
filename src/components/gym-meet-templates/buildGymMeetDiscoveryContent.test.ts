@@ -9,20 +9,6 @@ const findSection = (discovery: any, id: string) =>
 const findBlock = (section: any, id: string) =>
   (section?.blocks || []).find((block: any) => block.id === id);
 
-function withScheduleGridsEnabled<T>(fn: () => T): T {
-  const prev = process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
-  process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED = "1";
-  try {
-    return fn();
-  } finally {
-    if (prev === undefined) {
-      delete process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
-    } else {
-      process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED = prev;
-    }
-  }
-}
-
 test("USAG packet cover prose yields a meet-details section (not only admission)", () => {
   const discovery = buildGymMeetDiscoveryContent({
     eventData: {
@@ -48,7 +34,10 @@ test("USAG packet cover prose yields a meet-details section (not only admission)
   const meet = findSection(discovery, "meet-details");
   assert.ok(meet?.hasContent, "expected meet-details tab content from narrative packet lines");
   const linesBlock = findBlock(meet, "meet-lines");
-  assert.ok(linesBlock?.lines?.length, "expected meet-lines from cover letter + coach membership prose");
+  assert.ok(
+    linesBlock?.lines?.length,
+    "expected meet-lines from cover letter + coach membership prose",
+  );
 });
 
 test("preamble before the first -- N of M -- PDF marker is included in routable extracted text", () => {
@@ -74,7 +63,11 @@ test("preamble before the first -- N of M -- PDF marker is included in routable 
   });
 
   const blob = JSON.stringify(discovery);
-  assert.match(blob, /\$26\.00/i, "preamble with pricing must survive page splitting (real PDFs put cover letter before page 1 marker)");
+  assert.match(
+    blob,
+    /\$26\.00/i,
+    "preamble with pricing must survive page splitting (real PDFs put cover letter before page 1 marker)",
+  );
 });
 
 test("meet-details is not a ghost tab when only results links exist (communication cards live on results section)", () => {
@@ -98,7 +91,7 @@ test("meet-details is not a ghost tab when only results links exist (communicati
   assert.equal(
     findSection(discovery, "meet-details"),
     undefined,
-    "meet-details must not claim hasContent from communicationCards; those blocks are only on results"
+    "meet-details must not claim hasContent from communicationCards; those blocks are only on results",
   );
   const results = findSection(discovery, "results");
   assert.ok(results?.hasContent);
@@ -162,7 +155,9 @@ test("mixed packet content keeps rich operational sections separate while preser
           ],
         },
         extractionMeta: {
-          coachPageHints: [{ page: 2, heading: "Coaches Information", excerpt: "Sign-in and late fees." }],
+          coachPageHints: [
+            { page: 2, heading: "Coaches Information", excerpt: "Sign-in and late fees." },
+          ],
           discoveredLinks: [
             { label: "Official Results", url: "https://example.com/results" },
             { label: "Host Hotel", url: "https://example.com/hotel" },
@@ -203,7 +198,10 @@ test("mixed packet content keeps rich operational sections separate while preser
   assert.equal(documentsSection, undefined);
   assert.equal(findSection(discovery, "hotels"), undefined);
   assert.match(JSON.stringify(findSection(discovery, "results")), /Live scoring available online/);
-  assert.doesNotMatch(JSON.stringify(findSection(discovery, "traffic-parking")), /Host Hotel|MeetMaker/i);
+  assert.doesNotMatch(
+    JSON.stringify(findSection(discovery, "traffic-parking")),
+    /Host Hotel|MeetMaker/i,
+  );
 });
 
 test("payment instructions do not leak into the hero header", () => {
@@ -247,7 +245,7 @@ test("discovery hero summary excludes arrival guidance cards", () => {
 
   assert.deepEqual(
     model.summaryItems.map((item) => item.label),
-    ["Doors Open"]
+    ["Doors Open"],
   );
 });
 
@@ -292,143 +290,6 @@ test("detailsTextForDiscovery alone can populate doors open when hero detailsTex
   const meet = findSection(discovery, "meet-details");
   assert.ok(meet);
   assert.match(JSON.stringify(meet), /7:15\s*AM/i);
-});
-
-test("schedule and session assignments render ahead of venue details when populated", () => {
-  const discovery = withScheduleGridsEnabled(() =>
-    buildGymMeetDiscoveryContent({
-      eventData: {
-        discoverySource: {
-          parseResult: {
-            admission: [{ label: "Adults", price: "$20", note: "" }],
-            contacts: [{ role: "Meet Director", email: "director@example.com" }],
-            links: [],
-          },
-          extractionMeta: {},
-          extractedText: "",
-        },
-      },
-      customFields: { admission: "Adults: $20" },
-      advancedSections: {
-        meet: {},
-        logistics: { gymLayoutLabel: "Assigned gym location: Hall B" },
-        coaches: { enabled: true, signIn: "Sign in at the scoring table." },
-        schedule: {
-          enabled: true,
-          venueLabel: "Greater Fort Lauderdale / Broward County Convention Center",
-          supportEmail: "director@example.com",
-          assignments: [
-            {
-              id: "assign-1",
-              level: "Level 9",
-              groupLabel: "Group 1",
-              birthDateRange: "7/3/2010 — 10/27/2011",
-              sessionCode: "SU2",
-            },
-          ],
-          days: [
-            {
-              id: "fri",
-              date: "Friday, March 13, 2026",
-              shortDate: "Friday • Mar 13",
-              sessions: [
-                {
-                  id: "fri-1",
-                  code: "FR1",
-                  label: "Session FR1",
-                  group: "Bronze",
-                  startTime: "8:00 AM",
-                  clubs: [
-                    { id: "club-1", name: "Browns Gym", teamAwardEligible: true },
-                    { id: "club-2", name: "Twisters Canada", teamAwardEligible: false },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      },
-      venue: "Coral Springs Gymnasium",
-      address: "123 Main St, Coral Springs, FL 33065",
-    })
-  );
-
-  const schedule = findSection(discovery, "schedule");
-  const assignments = findSection(discovery, "session-assignments");
-  const orderedIds = discovery.sections.map((section: any) => section.id);
-
-  assert.ok(schedule);
-  assert.ok(assignments);
-  assert.ok(findBlock(schedule, "schedule-board"));
-  assert.ok(findBlock(assignments, "session-assignment-cards"));
-  assert.equal(schedule?.hideSectionHeading, true);
-  assert.deepEqual(
-    orderedIds.filter((id: string) =>
-      ["admission", "coaches", "schedule", "session-assignments", "venue-details"].includes(id)
-    ),
-    ["schedule", "session-assignments", "admission", "coaches", "venue-details"]
-  );
-});
-
-test("schedule section stays hidden when no usable schedule sessions exist", () => {
-  const discovery = buildGymMeetDiscoveryContent({
-    eventData: {
-      discoverySource: {
-        parseResult: { links: [] },
-        extractionMeta: {},
-        extractedText: "",
-      },
-    },
-    customFields: {},
-    advancedSections: {
-      meet: {},
-      logistics: { gymLayoutLabel: "Assigned gym location: Hall B" },
-      coaches: {},
-      schedule: {
-        enabled: true,
-        days: [{ id: "fri", date: "Friday, March 13, 2026", shortDate: "Friday • Mar 13", sessions: [] }],
-      },
-    },
-    venue: "Coral Springs Gymnasium",
-    address: "123 Main St, Coral Springs, FL 33065",
-  });
-
-  assert.equal(findSection(discovery, "schedule"), undefined);
-});
-
-test("schedule section renders when only session codes are present", () => {
-  const discovery = withScheduleGridsEnabled(() =>
-    buildGymMeetDiscoveryContent({
-      eventData: {
-        discoverySource: {
-          parseResult: { links: [] },
-          extractionMeta: {},
-          extractedText: "",
-        },
-      },
-      customFields: {},
-      advancedSections: {
-        meet: {},
-        logistics: {},
-        coaches: {},
-        schedule: {
-          enabled: true,
-          days: [
-            {
-              id: "fri",
-              date: "Friday, March 13, 2026",
-              shortDate: "Friday • Mar 13",
-              sessions: [{ id: "fri-1", code: "FR1", clubs: [] }],
-            },
-          ],
-        },
-      },
-      venue: "Coral Springs Gymnasium",
-      address: "123 Main St, Coral Springs, FL 33065",
-    })
-  );
-
-  assert.ok(findSection(discovery, "schedule"));
 });
 
 test("resource links route only approved public links into hotels and results", () => {
@@ -538,116 +399,12 @@ test("resource links route only approved public links into hotels and results", 
   assert.match(JSON.stringify(hotels), /https:\/\/api\.groupbook\.io\/booking\/state-host-hotel/i);
   assert.match(JSON.stringify(results), /https:\/\/results\.scorecatonline\.com\/state-2026/i);
   assert.doesNotMatch(JSON.stringify(trafficParking), /https:\/\/example\.com\/parking-map/i);
-  assert.doesNotMatch(allContent, /https:\/\/usacompetitions\.com\/docs\/event-rotation-sheet\.pdf/i);
+  assert.doesNotMatch(
+    allContent,
+    /https:\/\/usacompetitions\.com\/docs\/event-rotation-sheet\.pdf/i,
+  );
   assert.doesNotMatch(allContent, /https:\/\/usacompetitions\.com\/docs\/state-packet\.pdf/i);
   assert.doesNotMatch(allContent, /https:\/\/usacompetitions\.com\/rotation-sheets\//i);
-});
-
-test("session assignment verification notes stay in their own section", () => {
-  const discovery = withScheduleGridsEnabled(() =>
-    buildGymMeetDiscoveryContent({
-      eventData: {
-        discoverySource: {
-          parseResult: {
-            links: [],
-          },
-          extractionMeta: {},
-          extractedText: [
-            "Session assignments are listed on club rosters, posted at usacompetitions.com",
-            "***If there is an incorrect session assignment listed on your roster, email info@usacompetitions.com ASAP***",
-          ].join("\n"),
-        },
-      },
-      customFields: {},
-      advancedSections: {
-        meet: {},
-        logistics: {},
-        coaches: {},
-        schedule: {
-          enabled: true,
-          assignments: [
-            {
-              id: "assign-1",
-              level: "XCEL GOLD",
-              groupLabel: "Group 1",
-              birthDateRange: "9/30/2017 — Younger",
-              sessionCode: "B1",
-            },
-          ],
-          days: [],
-        },
-      },
-      venue: "State Arena",
-      address: "123 Main St, Chicago, IL 60601",
-    })
-  );
-
-  const assignments = findSection(discovery, "session-assignments");
-
-  assert.ok(assignments);
-  assert.match(JSON.stringify(assignments), /Group 1/);
-  assert.match(JSON.stringify(assignments), /incorrect session assignment/i);
-  assert.equal(findSection(discovery, "documents")?.label, undefined);
-});
-
-test("schedule and session assignments stay hidden when GYM_DISCOVERY_SCHEDULE_GRID_ENABLED is unset", () => {
-  const prev = process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
-  delete process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
-  try {
-    const discovery = buildGymMeetDiscoveryContent({
-      eventData: {
-        discoverySource: {
-          parseResult: { links: [] },
-          extractionMeta: {},
-          extractedText:
-            "Session assignments are listed on club rosters. Incorrect session assignment email info@example.com",
-        },
-      },
-      customFields: {},
-      advancedSections: {
-        meet: {},
-        logistics: {},
-        coaches: {},
-        schedule: {
-          enabled: true,
-          assignments: [
-            {
-              id: "assign-1",
-              level: "Level 4",
-              groupLabel: "Group 1",
-              sessionCode: "B1",
-            },
-          ],
-          days: [
-            {
-              id: "fri",
-              date: "Friday, March 13, 2026",
-              shortDate: "Friday • Mar 13",
-              sessions: [
-                {
-                  id: "fri-1",
-                  code: "FR1",
-                  group: "Gold",
-                  startTime: "8:00 AM",
-                  clubs: [{ id: "c1", name: "Test Gym" }],
-                },
-              ],
-            },
-          ],
-        },
-      },
-      venue: "Arena",
-      address: "1 Main St",
-    });
-    assert.equal(findSection(discovery, "schedule"), undefined);
-    assert.equal(findSection(discovery, "session-assignments"), undefined);
-  } finally {
-    if (prev === undefined) {
-      delete process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED;
-    } else {
-      process.env.GYM_DISCOVERY_SCHEDULE_GRID_ENABLED = prev;
-    }
-  }
 });
 
 test("parking resource links render under Traffic and Parking without a Resources tab", () => {
@@ -754,7 +511,11 @@ test("lightweight results stay in the results section without leaking into admis
       },
     },
     customFields: { admission: "Adults: $20" },
-    advancedSections: { logistics: {}, meet: { resultsInfo: "Live scoring available online." }, coaches: {} },
+    advancedSections: {
+      logistics: {},
+      meet: { resultsInfo: "Live scoring available online." },
+      coaches: {},
+    },
     date: "2026-03-20",
     venue: "State Arena",
     address: "123 Main St, Chicago, IL 60601",
@@ -767,7 +528,7 @@ test("lightweight results stay in the results section without leaking into admis
   assert.equal(
     findSection(discovery, "meet-details"),
     undefined,
-    "results copy and links belong on the results section, not an empty meet-details shell"
+    "results copy and links belong on the results section, not an empty meet-details shell",
   );
   assert.match(JSON.stringify(results), /Live scoring available online/);
   assert.ok(admission);
@@ -1036,7 +797,7 @@ test("coach deadline cards render month day year instead of raw ISO dates", () =
 
   const coaches = findSection(discovery, "coaches");
   const registrationBlock = (coaches?.blocks || []).find(
-    (block: any) => block.id === "registration-cards"
+    (block: any) => block.id === "registration-cards",
   );
   const values = (registrationBlock?.cards || []).map((card: any) => card.value);
 
@@ -1085,7 +846,7 @@ test("spectator presale announcements route into admission and linked domains st
   const admission = findSection(discovery, "admission");
   const results = findSection(discovery, "results");
   const admissionCopy = JSON.stringify(
-    (admission?.blocks || []).filter((block: any) => block.type !== "link-list")
+    (admission?.blocks || []).filter((block: any) => block.type !== "link-list"),
   );
   const resultsCopy = JSON.stringify(
     (results?.blocks || [])
@@ -1099,8 +860,8 @@ test("spectator presale announcements route into admission and linked domains st
                 action: card?.action ? { ...card.action, url: "" } : undefined,
               })),
             }
-          : block
-      )
+          : block,
+      ),
   );
 
   assert.ok(admission);
@@ -1157,7 +918,10 @@ test("normalized logistics policies, hotel notes, and bare-domain results links 
   assert.match(JSON.stringify(hotels), /Book rooms/i);
   assert.match(JSON.stringify(hotels), /https:\/\/groupbook\.com\/state-host-hotel/i);
   assert.ok(safety);
-  assert.match(JSON.stringify(safety), /Outside food is not permitted|Bring a refillable water bottle|service animals|throwing objects/i);
+  assert.match(
+    JSON.stringify(safety),
+    /Outside food is not permitted|Bring a refillable water bottle|service animals|throwing objects/i,
+  );
 });
 
 test("normalized operational-note noise stays out of meet details and coach notes", () => {
@@ -1166,11 +930,7 @@ test("normalized operational-note noise stays out of meet details and coach note
       discoverySource: {
         parseResult: {
           meetDetails: {
-            operationalNotes: [
-              "Gym A\tGym B",
-              "B1\tW04",
-              "8:00 AM\t12:30 PM",
-            ],
+            operationalNotes: ["Gym A\tGym B", "B1\tW04", "8:00 AM\t12:30 PM"],
           },
           coachInfo: {
             notes: ["Coaches sign in at the registration table."],
@@ -1183,11 +943,7 @@ test("normalized operational-note noise stays out of meet details and coach note
     customFields: {},
     advancedSections: {
       meet: {
-        operationalNotes: [
-          "Gym A\tGym B",
-          "B1\tW04",
-          "8:00 AM\t12:30 PM",
-        ],
+        operationalNotes: ["Gym A\tGym B", "B1\tW04", "8:00 AM\t12:30 PM"],
       },
       logistics: {},
       coaches: {
@@ -1303,7 +1059,10 @@ test("operational routing keeps public meet facts out of announcements", () => {
   assert.ok(coaches);
   assert.ok(venueDetails);
 
-  assert.match(JSON.stringify(meetDetails), /Rotation sheets will be available Friday night online/i);
+  assert.match(
+    JSON.stringify(meetDetails),
+    /Rotation sheets will be available Friday night online/i,
+  );
   assert.match(JSON.stringify(meetDetails), /Awards will begin immediately after each session/i);
   assert.match(JSON.stringify(meetDetails), /Shane Cummings/i);
   assert.match(JSON.stringify(meetDetails), /Sharyn Strickland/i);
@@ -1317,7 +1076,7 @@ test("operational routing keeps public meet facts out of announcements", () => {
 
   assert.match(
     JSON.stringify(coaches),
-    /Coaches not in Meet Reservations and without verifiable Pro member status/i
+    /Coaches not in Meet Reservations and without verifiable Pro member status/i,
   );
 
   assert.match(JSON.stringify(venueDetails), /954-345-2201/i);
@@ -1346,8 +1105,7 @@ test("persisted generated announcements are suppressed while transient updates r
     customFields: {},
     advancedSections: {
       meet: {
-        rotationSheetsInfo:
-          "Rotation sheets will be posted online before the event.",
+        rotationSheetsInfo: "Rotation sheets will be posted online before the event.",
       },
       logistics: {},
       coaches: {},
@@ -1396,11 +1154,11 @@ test("venue details stay venue-only and absorb the venue map blocks", () => {
         parseResult: {
           meetDetails: {
             arrivalGuidance: "Sessions can begin up to 30 minutes early.",
-            registrationInfo: "Athletes check in at registration before entering the competition area.",
+            registrationInfo:
+              "Athletes check in at registration before entering the competition area.",
             rotationSheetsInfo:
               "Rotation sheets will be posted online the week before the event and a copy will be available at the floor music table each session.",
-            awardsInfo:
-              "Awards ceremonies take place immediately following every session.",
+            awardsInfo: "Awards ceremonies take place immediately following every session.",
           },
           gear: {
             uniform:
@@ -1485,7 +1243,10 @@ test("venue details stay venue-only and absorb the venue map blocks", () => {
   assert.match(JSON.stringify(admission), /Admission tickets purchased in advance/i);
   assert.match(JSON.stringify(admission), /credit\/debit card only; cash is not accepted/i);
   assert.match(JSON.stringify(meetDetails), /Athlete card for recording scores after competition/i);
-  assert.match(JSON.stringify(venueDetails), /Coral Springs Gymnasium phone numbers are 954-345-2201 and 954-345-2107/i);
+  assert.match(
+    JSON.stringify(venueDetails),
+    /Coral Springs Gymnasium phone numbers are 954-345-2201 and 954-345-2107/i,
+  );
   assert.match(JSON.stringify(venueDetails), /"label":"Assigned Gym","value":"Gym B"/i);
   assert.match(JSON.stringify(venueDetails), /"title":"Venue Map"/i);
   assert.doesNotMatch(JSON.stringify(venueDetails), /Athletes check in at registration/i);
@@ -1589,7 +1350,10 @@ test("builder announcements render inside the meet details tab", () => {
   const meetDetails = findSection(discovery, "meet-details");
 
   assert.ok(meetDetails);
-  assert.match(JSON.stringify(meetDetails), /Spectator admission pre-sale closes Thursday at 8:00 PM/i);
+  assert.match(
+    JSON.stringify(meetDetails),
+    /Spectator admission pre-sale closes Thursday at 8:00 PM/i,
+  );
   assert.match(JSON.stringify(meetDetails), /Session 2 families should arrive 20 minutes earlier/i);
   assert.match(JSON.stringify(meetDetails), /Urgent Update/i);
   assert.doesNotMatch(JSON.stringify(meetDetails), /"label":"Announcement"/i);
@@ -1634,7 +1398,10 @@ test("club_participation announcement fragments are suppressed", () => {
     address: "123 Main St, Chicago, IL 60601",
   });
 
-  assert.doesNotMatch(JSON.stringify(discovery.sections), /club_participation|360 Gymnastics FL|Alpha Gymnastics|Christi's Gymnastics/i);
+  assert.doesNotMatch(
+    JSON.stringify(discovery.sections),
+    /club_participation|360 Gymnastics FL|Alpha Gymnastics|Christi's Gymnastics/i,
+  );
 });
 
 test("duplicate announcement ids are normalized to unique card keys", () => {
@@ -1679,7 +1446,9 @@ test("duplicate announcement ids are normalized to unique card keys", () => {
 
   const meetDetails = findSection(discovery, "meet-details");
   const cardKeys = (meetDetails?.blocks || [])
-    .flatMap((block: any) => (block?.type === "card-grid" && Array.isArray(block.cards) ? block.cards : []))
+    .flatMap((block: any) =>
+      block?.type === "card-grid" && Array.isArray(block.cards) ? block.cards : [],
+    )
     .map((card: any) => card.key)
     .filter((key: string) => /^announcement-2(?:-\d+)?$/.test(key));
 
@@ -1758,7 +1527,14 @@ test("public-page-v2 discovery renders attendee sections and suppresses schedule
       coaches: { enabled: true, signIn: "Legacy coach sign-in" },
       schedule: {
         enabled: true,
-        days: [{ id: "fri", date: "Friday", shortDate: "Fri", sessions: [{ id: "s1", label: "S1", group: "Gold", startTime: "8:00 AM", clubs: [] }] }],
+        days: [
+          {
+            id: "fri",
+            date: "Friday",
+            shortDate: "Fri",
+            sessions: [{ id: "s1", label: "S1", group: "Gold", startTime: "8:00 AM", clubs: [] }],
+          },
+        ],
       },
     },
     venue: "Coral Springs Gymnasium",
@@ -1771,7 +1547,10 @@ test("public-page-v2 discovery renders attendee sections and suppresses schedule
   assert.equal(findSection(discovery, "announcements"), undefined);
   assert.equal(findSection(discovery, "schedule"), undefined);
   assert.equal(findSection(discovery, "coaches"), undefined);
-  assert.match(JSON.stringify(findSection(discovery, "traffic-parking")), /Follow on-site signage|arrival time/i);
+  assert.match(
+    JSON.stringify(findSection(discovery, "traffic-parking")),
+    /Follow on-site signage|arrival time/i,
+  );
 });
 
 test("legacy gymnastics discovery without pipeline version still suppresses schedule/coaches", () => {
@@ -1804,7 +1583,14 @@ test("legacy gymnastics discovery without pipeline version still suppresses sche
       coaches: { enabled: true, signIn: "Legacy coach sign-in" },
       schedule: {
         enabled: true,
-        days: [{ id: "fri", date: "Friday", shortDate: "Fri", sessions: [{ id: "s1", label: "S1", group: "Gold", startTime: "8:00 AM", clubs: [] }] }],
+        days: [
+          {
+            id: "fri",
+            date: "Friday",
+            shortDate: "Fri",
+            sessions: [{ id: "s1", label: "S1", group: "Gold", startTime: "8:00 AM", clubs: [] }],
+          },
+        ],
       },
     },
     venue: "Coral Springs Gymnasium",
@@ -1815,7 +1601,10 @@ test("legacy gymnastics discovery without pipeline version still suppresses sche
   assert.ok(findSection(discovery, "traffic-parking"));
   assert.equal(findSection(discovery, "schedule"), undefined);
   assert.equal(findSection(discovery, "coaches"), undefined);
-  assert.match(JSON.stringify(findSection(discovery, "meet-details")), /venue guidance|Doors open/i);
+  assert.match(
+    JSON.stringify(findSection(discovery, "meet-details")),
+    /venue guidance|Doors open/i,
+  );
 });
 
 test("mixed public packet hides weak sections, merges admission variants, and limits quick access to approved links", () => {
@@ -1942,11 +1731,13 @@ test("mixed public packet hides weak sections, merges admission variants, and li
   const results = findSection(discovery, "results");
   const traffic = findSection(discovery, "traffic-parking");
 
-  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map((card: any) => ({
-    label: card.label,
-    value: card.value,
-    body: card.body,
-  }));
+  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map(
+    (card: any) => ({
+      label: card.label,
+      value: card.value,
+      body: card.body,
+    }),
+  );
 
   assert.deepEqual(admissionCards, [
     { label: "Adults (13+)", value: "Card $26", body: "Cash $25" },
@@ -1991,7 +1782,11 @@ test("admission discount notes do not overwrite actual prices or mark child tick
         parseResult: {
           admission: [
             { label: "Adults (13+)", price: "$26.00", note: "Cash Price is $1.00 less." },
-            { label: "Children (5-12)", price: "$16.00", note: "Cash Price is $1.00 less. Under 5 free." },
+            {
+              label: "Children (5-12)",
+              price: "$16.00",
+              note: "Cash Price is $1.00 less. Under 5 free.",
+            },
             { label: "Under 5", price: "Free", note: "" },
           ],
           meetDetails: {},
@@ -2005,11 +1800,13 @@ test("admission discount notes do not overwrite actual prices or mark child tick
   });
 
   const admission = findSection(discovery, "admission");
-  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map((card: any) => ({
-    label: card.label,
-    value: card.value,
-    body: card.body,
-  }));
+  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map(
+    (card: any) => ({
+      label: card.label,
+      value: card.value,
+      body: card.body,
+    }),
+  );
 
   assert.deepEqual(admissionCards, [
     { label: "Adults (13+)", value: "Card $26", body: "Cash $25" },
@@ -2041,11 +1838,13 @@ test("legacy discovery admission cards also preserve card prices over cash disco
   });
 
   const admission = findSection(discovery, "admission");
-  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map((card: any) => ({
-    label: card.label,
-    value: card.value,
-    body: card.body,
-  }));
+  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map(
+    (card: any) => ({
+      label: card.label,
+      value: card.value,
+      body: card.body,
+    }),
+  );
 
   assert.deepEqual(admissionCards, [
     { label: "Adults (13+)", value: "Card $26", body: "Cash $25" },
@@ -2062,7 +1861,11 @@ test("legacy discovery recovers credit-card and cash pricing from source lines w
         parseResult: {
           admission: [
             { label: "Adults (13+)", price: "$25", note: "Credit Card Price" },
-            { label: "Children (5-12)", price: "$15", note: "Credit Card Price (under 5 yrs. free)" },
+            {
+              label: "Children (5-12)",
+              price: "$15",
+              note: "Credit Card Price (under 5 yrs. free)",
+            },
             { label: "Adults (13+)", price: "$25", note: "Cash Price" },
             { label: "Children (5-12)", price: "$15", note: "Cash Price" },
           ],
@@ -2087,11 +1890,13 @@ test("legacy discovery recovers credit-card and cash pricing from source lines w
   });
 
   const admission = findSection(discovery, "admission");
-  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map((card: any) => ({
-    label: card.label,
-    value: card.value,
-    body: card.body,
-  }));
+  const admissionCards = (findBlock(admission, "admission-cards")?.cards || []).map(
+    (card: any) => ({
+      label: card.label,
+      value: card.value,
+      body: card.body,
+    }),
+  );
 
   assert.deepEqual(admissionCards, [
     { label: "Adults (13+)", value: "Card $26", body: "Cash $25" },
@@ -2162,7 +1967,12 @@ test("public hotel section drops duplicate travel copy when it only repeats the 
           ],
         },
         publicPageSections: {
-          meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
+          meetDetails: {
+            title: "Meet Details",
+            body: "Welcome families.",
+            bullets: [],
+            visibility: "visible",
+          },
           travel: {
             title: "Hotels & Travel",
             body: "Host Hotels",
@@ -2280,7 +2090,12 @@ test("structured travel hotels render as hotel cards with fallback link", () => 
           ],
         },
         publicPageSections: {
-          meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
+          meetDetails: {
+            title: "Meet Details",
+            body: "Welcome families.",
+            bullets: [],
+            visibility: "visible",
+          },
           travel: {
             title: "Hotels & Travel",
             body: "",
@@ -2368,7 +2183,12 @@ test("quick access collapses duplicate labels even when discovery finds multiple
         ],
       },
       publicPageSections: {
-        meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
+        meetDetails: {
+          title: "Meet Details",
+          body: "Welcome families.",
+          bullets: [],
+          visibility: "visible",
+        },
         travel: {
           title: "Hotels & Travel",
           body: "Use the host hotel booking page.",
@@ -2456,10 +2276,25 @@ test("quick access prioritizes parking, hotels, documents, then results", () => 
         ],
       },
       publicPageSections: {
-        meetDetails: { title: "Meet Details", body: "Welcome families.", bullets: [], visibility: "visible" },
-        parking: { title: "Parking", body: "Use the parking garage.", bullets: [], visibility: "visible" },
+        meetDetails: {
+          title: "Meet Details",
+          body: "Welcome families.",
+          bullets: [],
+          visibility: "visible",
+        },
+        parking: {
+          title: "Parking",
+          body: "Use the parking garage.",
+          bullets: [],
+          visibility: "visible",
+        },
         traffic: { title: "Traffic", body: "", bullets: [], visibility: "hidden" },
-        travel: { title: "Hotels & Travel", body: "Reserve nearby rooms.", bullets: [], visibility: "visible" },
+        travel: {
+          title: "Hotels & Travel",
+          body: "Reserve nearby rooms.",
+          bullets: [],
+          visibility: "visible",
+        },
         documents: { title: "Documents", links: [], visibility: "hidden" },
         spectatorInfo: { title: "Spectator Info", body: "", bullets: [], visibility: "hidden" },
         venue: { title: "Venue Details", body: "", bullets: [], visibility: "hidden" },

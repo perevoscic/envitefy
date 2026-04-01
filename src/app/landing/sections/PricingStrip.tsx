@@ -1,67 +1,61 @@
 "use client";
-import { useState } from "react";
+
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import AuthModal from "@/components/auth/AuthModal";
 
 export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"login" | "signup">("signup");
-  const primaryHref = "/";
-
   return (
-    <section className="w-full py-20 bg-white">
-      <div className="max-w-5xl mx-auto px-6">
-        <div className="relative rounded-[3rem] overflow-hidden bg-white text-gray-900 px-6 py-16 md:px-16 md:py-20 text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-gray-100">
-          {/* Background Effects */}
-          <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none opacity-40">
-            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-50 rounded-full blur-[100px] -translate-y-1/2" />
-            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-violet-50 rounded-full blur-[100px] translate-y-1/2" />
+    <section className="w-full bg-white py-20">
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="relative overflow-hidden rounded-[3rem] border border-gray-100 bg-white px-6 py-16 text-center text-gray-900 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] md:px-16 md:py-20">
+          <div className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full overflow-hidden opacity-40">
+            <div className="absolute left-1/4 top-0 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-blue-50 blur-[100px]" />
+            <div className="absolute bottom-0 right-1/4 h-[500px] w-[500px] translate-y-1/2 rounded-full bg-violet-50 blur-[100px]" />
           </div>
 
           <div className="relative z-10">
-            <h3 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-              Ready to clear the clutter?
+            <h3 className="mb-6 text-3xl font-bold tracking-tight md:text-5xl">
+              Choose your entry point
             </h3>
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Join thousands of parents and planners who save hours every week.
-              Start snapping your events today.
+            <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-gray-600 md:text-xl">
+              New accounts start from Snap or Gymnastics. Existing users can
+              keep signing in as usual.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               {isAuthed ? (
                 <Link
-                  href={primaryHref}
-                  className="px-8 py-4 bg-black text-white rounded-full text-lg font-semibold hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  href="/"
+                  className="rounded-full bg-black px-8 py-4 text-lg font-semibold text-white shadow-lg transition-colors hover:-translate-y-0.5 hover:bg-gray-800 hover:shadow-xl"
                 >
                   Go to Dashboard
                 </Link>
               ) : (
-                <button
-                  onClick={() => {
-                    setMode("signup");
-                    setOpen(true);
-                  }}
-                  className="group px-8 py-4 bg-black text-white rounded-full text-lg font-semibold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2"
-                >
-                  Get Started for Free
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                <>
+                  <Link
+                    href="/snap"
+                    className="group flex items-center gap-2 rounded-full bg-black px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-gray-800 hover:shadow-xl"
+                  >
+                    Create a Snap account
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                  <Link
+                    href="/gymnastics"
+                    className="rounded-full border border-gray-200 bg-white px-8 py-4 text-lg font-semibold text-gray-800 transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-lg"
+                  >
+                    Create a Gymnastics account
+                  </Link>
+                </>
               )}
             </div>
 
             <p className="mt-6 text-sm text-gray-500">
-              No credit card required • Free plan available
+              Snap is available to every account. Gymnastics signups include
+              both products.
             </p>
           </div>
         </div>
       </div>
-      <AuthModal
-        open={open}
-        mode={mode}
-        onClose={() => setOpen(false)}
-        onModeChange={setMode}
-      />
     </section>
   );
 }
