@@ -1,5 +1,6 @@
 import { getEventHistoryById } from "@/lib/db";
 import { buildFootballBuilderDraft, buildGymBuilderDraft } from "@/lib/discovery/map";
+import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
 import {
   buildEmptyDiscoveryPublicArtifacts,
   safeString,
@@ -84,7 +85,11 @@ function normalizeQuickAccessLabel(value: unknown) {
     .trim();
 }
 
-export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRow) {
+export async function runDiscoveryComposePublicStage(
+  discovery: EventDiscoveryRow,
+  options?: { signal?: AbortSignal },
+) {
+  throwIfDiscoveryCancelled(options?.signal);
   const row = await getEventHistoryById(discovery.eventId);
   if (!row) throw new Error("Event shell not found");
   const currentData = (row.data || {}) as Record<string, any>;
@@ -96,6 +101,7 @@ export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRo
   }
   if (discovery.workflow === "football") {
     const mappedData = await mapParseResultToFootballData(parseResult as any, currentData);
+    throwIfDiscoveryCancelled(options?.signal);
     const publicArtifacts: DiscoveryPublicArtifacts = {
       ...buildEmptyDiscoveryPublicArtifacts(safeString(mappedData.title)),
       hero: {
@@ -158,6 +164,7 @@ export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRo
     currentDataWithTravel,
     discovery.document?.extractionMeta as any,
   );
+  throwIfDiscoveryCancelled(options?.signal);
   const mappedDataWithTravel =
     travelAccommodationState && typeof travelAccommodationState === "object"
       ? {
@@ -173,6 +180,7 @@ export async function runDiscoveryComposePublicStage(discovery: EventDiscoveryRo
     baseData: mappedDataWithTravel,
     extractionMeta: discovery.document?.extractionMeta as any,
   });
+  throwIfDiscoveryCancelled(options?.signal);
   const sectionTitles: Record<string, string> = {
     meetDetails: "Meet Details",
     parking: "Parking",

@@ -52,6 +52,7 @@ export default function FootballLauncher({
   const parseAbortRef = useRef<AbortController | null>(null);
   const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cancelRequestedRef = useRef(false);
+  const currentDiscoveryEventIdRef = useRef<string | null>(null);
   const discoveryBusy = uploadBusy || urlBusy;
   const uploadStageLabel = getDiscoveryStageLabel("football-upload", uploadProgress);
   const urlStageLabel = getDiscoveryStageLabel("football-url", urlProgress);
@@ -107,9 +108,25 @@ export default function FootballLauncher({
     }
   };
 
+  const requestDiscoveryCancel = async (eventId: string | null) => {
+    if (!eventId) return;
+    try {
+      await fetch(`/api/discovery/${eventId}/cancel`, {
+        method: "POST",
+        credentials: "include",
+        keepalive: true,
+      });
+    } catch {
+      // Best effort only. Local abort still clears the UI immediately.
+    }
+  };
+
   const cancelDiscovery = () => {
     console.log(`${FOOTBALL_DISCOVERY_LOG_PREFIX} cancel requested`);
     cancelRequestedRef.current = true;
+    const eventId = currentDiscoveryEventIdRef.current;
+    currentDiscoveryEventIdRef.current = null;
+    void requestDiscoveryCancel(eventId);
     clearDiscoveryHandles();
     setUploadBusy(false);
     setUrlBusy(false);
@@ -122,6 +139,9 @@ export default function FootballLauncher({
   useEffect(() => {
     return () => {
       cancelRequestedRef.current = true;
+      const eventId = currentDiscoveryEventIdRef.current;
+      currentDiscoveryEventIdRef.current = null;
+      void requestDiscoveryCancel(eventId);
       clearDiscoveryHandles();
     };
   }, []);
@@ -215,6 +235,7 @@ export default function FootballLauncher({
     }
 
     const eventId = String(ingestJson.eventId);
+    currentDiscoveryEventIdRef.current = eventId;
     const parseStartedAt = Date.now();
     reportProgress(72, "Processing football file...");
     let parseProgress = 72;
@@ -286,6 +307,7 @@ export default function FootballLauncher({
     reportProgress(100, "Opening football builder...");
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
+    currentDiscoveryEventIdRef.current = null;
     router.push(`/event/football/customize?edit=${encodeURIComponent(eventId)}&new=1`);
   };
 
@@ -306,9 +328,11 @@ export default function FootballLauncher({
     } catch (err: unknown) {
       if (isAbortError(err)) {
         setUploadProgress(0);
+        currentDiscoveryEventIdRef.current = null;
         return;
       }
       setUploadError(toErrorMessage(err, "Failed to parse file"));
+      currentDiscoveryEventIdRef.current = null;
     } finally {
       setUploadBusy(false);
     }
@@ -346,9 +370,11 @@ export default function FootballLauncher({
     } catch (err: unknown) {
       if (isAbortError(err)) {
         setUrlProgress(0);
+        currentDiscoveryEventIdRef.current = null;
         return;
       }
       setUrlError(toErrorMessage(err, "Failed to sync URL"));
+      currentDiscoveryEventIdRef.current = null;
     } finally {
       setUrlBusy(false);
     }

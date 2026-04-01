@@ -1,12 +1,9 @@
 "use client";
 
-import React from "react";
-import Image from "next/image";
-import StaticMap from "@/components/StaticMap";
 import {
   Activity,
-  Car,
   Calendar,
+  Car,
   ClipboardList,
   ExternalLink,
   MapPin,
@@ -14,10 +11,12 @@ import {
   Ticket,
   Users,
 } from "lucide-react";
+import Image from "next/image";
+import React from "react";
+import StaticMap from "@/components/StaticMap";
+import { stripLinkedDomainMentions } from "./displayText";
 import { ShowcaseThemeConfig } from "./showcaseThemes";
 import { GymMeetRenderModel } from "./types";
-import { stripLinkedDomainMentions } from "./displayText";
-import ScheduleBoard from "./ScheduleBoard";
 
 const safeUrl = (value: unknown) => {
   const text = typeof value === "string" ? value.trim() : "";
@@ -98,7 +97,11 @@ const gridClassForColumns = (columns?: number) => {
 
 const hotelCardGridClass = "grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(340px,1fr))]";
 
-const getCollectionItemKey = (parentId: string | undefined, explicitKey: unknown, index: number) => {
+const getCollectionItemKey = (
+  parentId: string | undefined,
+  explicitKey: unknown,
+  index: number,
+) => {
   const normalizedParentId =
     typeof parentId === "string" && parentId.trim() ? parentId.trim() : "item";
   const normalizedExplicitKey =
@@ -124,23 +127,21 @@ export default function ShowcaseDiscoveryContent({
   const cardTitleClass = panelTitleClass;
   const cardTitleStyle = panelTitleStyle;
   const sectionEyebrow = (() => {
-    const eyebrow = String(section?.kind || "").replace(/_/g, " ").trim();
+    const eyebrow = String(section?.kind || "")
+      .replace(/_/g, " ")
+      .trim();
     const label = String(section?.label || "").trim();
     if (!eyebrow) return "";
     if (eyebrow.toLowerCase() === label.toLowerCase()) return "";
     return eyebrow;
   })();
-  const sectionLinks = (Array.isArray(section?.blocks) ? section.blocks : []).flatMap((block: any) => {
-    if (block?.type === "link-list" && Array.isArray(block.links)) return block.links;
-    if (block?.type === "cta" && block.action) return [block.action];
-    return [];
-  });
-  const isBareScheduleSection =
-    Boolean(section?.hideSectionHeading) &&
-    Array.isArray(section?.blocks) &&
-    section.blocks.length === 1 &&
-    section.blocks[0]?.type === "schedule-board";
-
+  const sectionLinks = (Array.isArray(section?.blocks) ? section.blocks : []).flatMap(
+    (block: any) => {
+      if (block?.type === "link-list" && Array.isArray(block.links)) return block.links;
+      if (block?.type === "cta" && block.action) return [block.action];
+      return [];
+    },
+  );
   if (!section) {
     return (
       <section className={theme.panelClass}>
@@ -189,7 +190,14 @@ export default function ShowcaseDiscoveryContent({
                   ...card,
                   body: stripLinkedDomainMentions(card.body, sectionLinks),
                 }))
-                .filter((card: any) => card.label || card.value || card.body || (Array.isArray(card.items) && card.items.length > 0) || card.meta)
+                .filter(
+                  (card: any) =>
+                    card.label ||
+                    card.value ||
+                    card.body ||
+                    (Array.isArray(card.items) && card.items.length > 0) ||
+                    card.meta,
+                )
                 .map((card: any, index: number) => {
                   const cardReactKey = getCollectionItemKey(block.id, card?.key, index);
                   const hotelCardLayoutClass =
@@ -203,11 +211,7 @@ export default function ShowcaseDiscoveryContent({
                       key={cardReactKey}
                       className={`${theme.cardClass} ${hotelCardLayoutClass}`.trim()}
                     >
-                      {card.label ? (
-                        <p className={cardLabelClass}>
-                          {card.label}
-                        </p>
-                      ) : null}
+                      {card.label ? <p className={cardLabelClass}>{card.label}</p> : null}
                       {card.value ? (
                         <p className="mt-2 text-3xl font-black leading-none">{card.value}</p>
                       ) : null}
@@ -282,7 +286,9 @@ export default function ShowcaseDiscoveryContent({
                 {block.title}
               </h3>
             ) : null}
-            {block.text ? <p className="mt-2 text-sm leading-relaxed opacity-88">{block.text}</p> : null}
+            {block.text ? (
+              <p className="mt-2 text-sm leading-relaxed opacity-88">{block.text}</p>
+            ) : null}
             {safeUrl(block.action?.url) ? (
               <a
                 href={block.action.url}
@@ -324,41 +330,16 @@ export default function ShowcaseDiscoveryContent({
                 {block.title}
               </h3>
             ) : null}
-            {block.text ? <p className="mb-4 text-sm leading-relaxed opacity-88">{block.text}</p> : null}
+            {block.text ? (
+              <p className="mb-4 text-sm leading-relaxed opacity-88">{block.text}</p>
+            ) : null}
             <StaticMap address={block.address} height={360} />
           </div>
-        );
-      case "schedule-board":
-        return (
-          <ScheduleBoard
-            schedule={block.data}
-            preferredClubName={model?.assignedGym}
-            appearance={{
-              panelClass: theme.cardClass,
-              cardClass: theme.cardClass,
-              summaryCardClass: theme.summaryCardClass,
-              navShellClass: theme.navShellClass,
-              navActiveClass: theme.navActiveClass,
-              navIdleClass: theme.navIdleClass,
-              sectionTitleClass: theme.sectionTitleClass,
-              sectionTitleStyle: theme.sectionTitleStyle,
-              accentClass: theme.accentClass,
-              sectionMutedClass: theme.sectionMutedClass,
-              primaryButtonClass: theme.ctaPrimaryClass,
-              secondaryButtonClass: theme.ctaSecondaryClass,
-              sessionTitleClass: theme.sectionTitleClass,
-              sessionTitleStyle: theme.sectionTitleStyle,
-            }}
-          />
         );
       default:
         return null;
     }
   };
-
-  if (isBareScheduleSection) {
-    return <>{renderBlock(section.blocks[0])}</>;
-  }
 
   return (
     <section className={theme.panelClass}>
@@ -366,7 +347,9 @@ export default function ShowcaseDiscoveryContent({
         {section.hideSectionHeading ? null : (
           <div>
             {sectionEyebrow ? (
-              <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}>
+              <p
+                className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.accentClass}`}
+              >
                 {sectionEyebrow}
               </p>
             ) : null}
@@ -379,7 +362,11 @@ export default function ShowcaseDiscoveryContent({
           </div>
         )}
 
-        <div className="space-y-4">{section.blocks.map((block: any) => <div key={block.id}>{renderBlock(block)}</div>)}</div>
+        <div className="space-y-4">
+          {section.blocks.map((block: any) => (
+            <div key={block.id}>{renderBlock(block)}</div>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -1,3 +1,4 @@
+import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
 import { runDiscoveryExtractStageWithMode } from "@/lib/discovery/extract";
 import { safeString } from "@/lib/discovery/shared";
 import type { EventDiscoveryRow } from "@/lib/discovery/types";
@@ -12,7 +13,11 @@ import {
   enrichTravelAccommodation,
 } from "@/lib/travel-accommodation-enrichment";
 
-export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
+export async function runDiscoveryEnrichStage(
+  discovery: EventDiscoveryRow,
+  options?: { signal?: AbortSignal },
+) {
+  throwIfDiscoveryCancelled(options?.signal);
   if (discovery.workflow === "football") {
     return {
       document: discovery.document,
@@ -41,7 +46,9 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
       document: existingDocument,
     },
     "enrich",
+    { signal: options?.signal },
   );
+  throwIfDiscoveryCancelled(options?.signal);
   const extractedText =
     safeString((refreshedExtraction.document.extractionMeta as any)?.extractedText) ||
     safeString((existingDocument.extractionMeta as any)?.extractedText);
@@ -57,12 +64,14 @@ export async function runDiscoveryEnrichStage(discovery: EventDiscoveryRow) {
       budgetMs: enrichBudgetMs,
     } as any,
   );
+  throwIfDiscoveryCancelled(options?.signal);
 
   const travelAccommodation = await enrichTravelAccommodation({
     sourceType: discovery.source.type,
     extractedText,
     extractionMeta: refreshedExtraction.document.extractionMeta as any,
   });
+  throwIfDiscoveryCancelled(options?.signal);
 
   return {
     document: refreshedExtraction.document,

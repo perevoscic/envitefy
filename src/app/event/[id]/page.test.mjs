@@ -33,11 +33,11 @@ test("event route branches football discovery/template events into the football 
       source.indexOf("if (isSimpleTemplate)"),
     "football renderer branch should run before the generic SimpleTemplateView branch"
   );
-  assert.ok(
-    source.indexOf("const footballEventView = (") <
-      source.indexOf("if (discoveryEditConfig) {"),
-    "football edit URLs should remain wrapped in DiscoveryEventEditLayout"
+  assert.match(
+    source,
+    /if \(editParam && canManageCreatedEvent && isFootballDiscoveryTemplate\) \{/,
   );
+  assert.match(source, /redirect\("\/event"\)/);
   assert.match(source, /isOcrBirthdayRenderer/);
   assert.match(source, /const isBirthdayRendererEvent =/);
   assert.match(source, /createdVia === "birthday-renderer" \|\| isOcrBirthdayRenderer\(createdVia\)/);

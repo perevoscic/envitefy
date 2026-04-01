@@ -1,160 +1,198 @@
 import {
-  Scan,
-  Calendar,
-  Users,
-  Gift,
-  CheckSquare,
-  ArrowRight,
+  CheckSquare2,
+  FileText,
+  Link2,
+  Map as MapIcon,
+  Megaphone,
+  Route,
+  ScanText,
+  Smartphone,
   Sparkles,
-  Globe,
+  Trophy,
 } from "lucide-react";
+import GymnasticsMeetPreview from "@/components/landing/GymnasticsMeetPreview";
+import SnapEventPreview from "@/components/landing/SnapEventPreview";
+
+const featureCards = [
+  {
+    icon: Sparkles,
+    title: "AI-powered detail extraction",
+    copy: "Start from a source file and pull the event basics into a structured draft instead of copying them manually.",
+  },
+  {
+    icon: Trophy,
+    title: "Gymnastics meet pages",
+    copy: "Give families, coaches, and organizers one polished destination for the full meet weekend.",
+  },
+  {
+    icon: Smartphone,
+    title: "Mobile event hubs",
+    copy: "Pages are built to be opened, scanned, and shared on phones first.",
+  },
+  {
+    icon: MapIcon,
+    title: "Venue and parking info",
+    copy: "Keep directions, parking notes, and arrival guidance attached to the same shareable page.",
+  },
+  {
+    icon: FileText,
+    title: "Schedules and documents together",
+    copy: "Session timing, supporting docs, and key links stay in one clear place instead of scattered files.",
+  },
+  {
+    icon: CheckSquare2,
+    title: "Editable after import",
+    copy: "Review, refine, and publish the details instead of being locked into raw extraction output.",
+  },
+] as const;
+
+const gymnasticsModules = [
+  "Meet schedule and session timing",
+  "Venue details, parking, and maps",
+  "Documents, announcements, and links",
+  "One shareable destination for families and coaches",
+] as const;
+
+const snapModules = [
+  "Upload or snap the image you already have",
+  "Extract title, date, time, and location details",
+  "Review and refine before sharing",
+  "Publish a polished page instead of a messy thread",
+] as const;
 
 export default function Features() {
   return (
-    <section
-      id="features"
-      className="py-10 bg-gray-50 border-t border-gray-100"
-    >
-      <div className="max-w-7xl mx-auto px-6">
-        {/* Hero-style Header */}
-        <div className="max-w-3xl mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-50 border border-violet-100 text-violet-600 text-xs font-semibold tracking-wide uppercase mb-6">
-            <Sparkles size={12} className="text-violet-500" />
-            <span>Features</span>
-          </div>
-
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 mb-6">
-            More than just <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-pink-600">
-              a calendar tool.
-            </span>
+    <section className="py-20 sm:py-24 lg:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[#856ed1]">
+            Product depth
+          </p>
+          <h2
+            className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-[#17132b] sm:text-5xl"
+            style={{
+              fontFamily:
+                'var(--font-montserrat), var(--font-sans), sans-serif',
+            }}
+          >
+            Concrete product value, not generic marketing promises.
           </h2>
-
-          <p className="text-xl text-gray-600 max-w-2xl">
-            Envitefy is a complete event command center. From the first invite
-            to the final RSVP.
+          <p className="mt-5 text-lg leading-8 text-[#58536e]">
+            Envitefy is useful because it turns messy inputs into usable event
+            pages. These are the product capabilities people actually care
+            about.
           </p>
         </div>
 
-        {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-[minmax(240px,auto)]">
-          {/* Feature 1: OCR (Large) */}
-          <div className="md:col-span-2 bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden group">
-            <div className="relative z-10 max-w-md h-full flex flex-col">
-              <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-8">
-                <Scan className="w-7 h-7 text-blue-600" />
+        <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {featureCards.map(({ icon: Icon, title, copy }) => (
+            <article
+              key={title}
+              className="rounded-[2rem] border border-[#ece4ff] bg-white p-7 shadow-[0_20px_55px_rgba(102,76,189,0.08)]"
+            >
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#f1e9ff_0%,#ffffff_100%)] text-[#6d52cc] shadow-[0_10px_24px_rgba(108,82,196,0.1)]">
+                <Icon className="h-5 w-5" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                Unbeatable Accuracy
+              <h3
+                className="mt-5 text-xl font-semibold tracking-[-0.03em] text-[#1b1530]"
+                style={{
+                  fontFamily:
+                    'var(--font-montserrat), var(--font-sans), sans-serif',
+                }}
+              >
+                {title}
               </h3>
-              <p className="text-gray-600 text-lg leading-relaxed mb-8">
-                Our AI reads handwriting, complex tables, and multi-page PDFs.
-                It doesn't just find the date—it understands the context.
-              </p>
+              <p className="mt-3 text-base leading-7 text-[#59546c]">{copy}</p>
+            </article>
+          ))}
+        </div>
 
-              <div className="mt-auto inline-flex items-center gap-2 text-blue-600 font-semibold group-hover:gap-3 transition-all cursor-pointer">
-                Try it now <ArrowRight size={18} />
+        <div className="mt-12 space-y-8">
+          <article className="overflow-hidden rounded-[2.5rem] border border-[#e9dfff] bg-white p-6 shadow-[0_28px_70px_rgba(96,69,183,0.1)] sm:p-8">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1.06fr)_minmax(0,0.94fr)] lg:items-center">
+              <GymnasticsMeetPreview className="min-h-[unset] pt-0" />
+
+              <div className="max-w-xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#e7ddff] bg-[#f8f4ff] px-4 py-2 text-sm font-semibold text-[#6148c3]">
+                  <Smartphone className="h-4 w-4" />
+                  Gymnastics page modules
+                </div>
+                <h3
+                  className="mt-5 text-[2rem] font-semibold leading-tight tracking-[-0.05em] text-[#17132b] sm:text-[2.5rem]"
+                  style={{
+                    fontFamily:
+                      'var(--font-montserrat), var(--font-sans), sans-serif',
+                  }}
+                >
+                  A better destination for meet weekends.
+                </h3>
+                <p className="mt-5 text-lg leading-8 text-[#58536e]">
+                  Gymnastics is strongest when the page feels like a polished
+                  event product, not a static packet. Families should be able to
+                  find what they need in seconds.
+                </p>
+
+                <div className="mt-6 grid gap-3">
+                  {gymnasticsModules.map((item, index) => {
+                    const icons = [Route, MapIcon, Link2, Megaphone];
+                    const Icon = icons[index];
+
+                    return (
+                      <div
+                        key={item}
+                        className="flex items-center gap-3 rounded-2xl border border-[#efe8ff] bg-[#faf7ff] px-4 py-3"
+                      >
+                        <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#6f55c9] shadow-sm">
+                          <Icon className="h-4.5 w-4.5" />
+                        </div>
+                        <p className="text-sm font-semibold text-[#2f2550]">
+                          {item}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
+          </article>
 
-            {/* Decorative visual */}
-            <div className="absolute right-0 bottom-0 w-80 h-80 bg-gradient-to-tl from-blue-50 to-transparent rounded-tl-[4rem] opacity-60 group-hover:scale-105 transition-transform duration-700" />
-          </div>
+          <article className="overflow-hidden rounded-[2.5rem] border border-[#e9dfff] bg-[linear-gradient(180deg,#ffffff_0%,#faf7ff_100%)] p-6 shadow-[0_24px_64px_rgba(96,69,183,0.08)] sm:p-8">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-center">
+              <div className="max-w-xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#e7ddff] bg-white px-4 py-2 text-sm font-semibold text-[#6148c3]">
+                  <ScanText className="h-4 w-4" />
+                  Snap-to-page workflow
+                </div>
+                <h3
+                  className="mt-5 text-[2rem] font-semibold leading-tight tracking-[-0.05em] text-[#17132b] sm:text-[2.5rem]"
+                  style={{
+                    fontFamily:
+                      'var(--font-montserrat), var(--font-sans), sans-serif',
+                  }}
+                >
+                  Start from the image. End with a usable event page.
+                </h3>
+                <p className="mt-5 text-lg leading-8 text-[#58536e]">
+                  Snap matters because the input is usually imperfect. The value
+                  is not just OCR. It is getting from the messy original to a
+                  page that is structured, clean, and easy to share.
+                </p>
 
-          {/* Feature 2: Calendar Sync */}
-          <div className="md:col-span-2 lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-violet-100 rounded-2xl flex items-center justify-center mb-6">
-                <Calendar className="w-6 h-6 text-violet-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Instant Sync
-              </h3>
-              <p className="text-gray-600">
-                Google, Outlook, Apple. All synced in real-time.
-              </p>
-            </div>
-          </div>
-
-          {/* Feature 3: RSVPs */}
-          <div className="md:col-span-2 lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-pink-100 rounded-2xl flex items-center justify-center mb-6">
-                <Users className="w-6 h-6 text-pink-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Smart RSVPs
-              </h3>
-              <p className="text-gray-600">
-                Collect Yes/No/Maybe via simple text links.
-              </p>
-            </div>
-          </div>
-
-          {/* Feature 4: Sign-up Forms (Wide) */}
-          <div className="md:col-span-3 lg:col-span-2 bg-emerald-50 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden flex flex-col justify-between group border border-emerald-100">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-emerald-100 to-transparent rounded-bl-full opacity-60" />
-
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-6 text-emerald-700 font-medium uppercase tracking-wider text-xs">
-                <CheckSquare className="w-4 h-4" />
-                <span>Sign-up Sheets</span>
-              </div>
-              <h3 className="text-3xl font-bold mb-4 text-emerald-950">
-                Volunteer & Potluck Management
-              </h3>
-              <p className="text-emerald-800 max-w-md text-lg">
-                Create slots for anything—snacks, rides, shifts. We track who
-                signed up and remind them automatically.
-              </p>
-            </div>
-
-            <div className="mt-8 relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3].map((i) => (
+                <div className="mt-6 space-y-3">
+                  {snapModules.map((item) => (
                     <div
-                      key={i}
-                      className="w-8 h-8 rounded-full border-2 border-emerald-50 bg-emerald-200"
-                    />
+                      key={item}
+                      className="rounded-2xl border border-[#efe8ff] bg-white px-4 py-3 text-sm font-semibold text-[#2f2550] shadow-sm"
+                    >
+                      {item}
+                    </div>
                   ))}
                 </div>
-                <span className="text-sm text-emerald-700 font-medium">
-                  12 spots filled
-                </span>
               </div>
-            </div>
-          </div>
 
-          {/* Feature 5: Registries */}
-          <div className="lg:col-span-1 bg-gradient-to-br from-amber-50 to-orange-50 rounded-[2.5rem] p-8 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] border border-amber-100 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm text-amber-600">
-                <Gift className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Registries
-              </h3>
-              <p className="text-gray-600 text-sm">
-                Amazon, Target, Walmart. Link them all.
-              </p>
+              <SnapEventPreview />
             </div>
-          </div>
-
-          {/* Feature 6: Website */}
-          <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-sky-100 rounded-2xl flex items-center justify-center mb-6 text-sky-600">
-                <Globe className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Event Page
-              </h3>
-              <p className="text-gray-600 text-sm">
-                A beautiful landing page for every event.
-              </p>
-            </div>
-          </div>
+          </article>
         </div>
       </div>
     </section>

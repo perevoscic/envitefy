@@ -389,6 +389,12 @@ async function renderPdfPageToPngWithPdfJs(
   try {
     const loadingTask = getServerPdfDocument(deps.pdfjs, pdfBuffer);
     const doc = await loadingTask.promise;
+    const pageCount = Number(doc?.numPages) || 0;
+    if (pageIndex < 0 || pageIndex >= pageCount) {
+      if (typeof doc.cleanup === "function") doc.cleanup();
+      if (typeof doc.destroy === "function") await doc.destroy();
+      return null;
+    }
     const page = await doc.getPage(pageIndex + 1);
     const viewport = page.getViewport({ scale });
     const width = Math.max(1, Math.ceil(viewport.width));

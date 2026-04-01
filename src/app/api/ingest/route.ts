@@ -15,17 +15,13 @@ import { getVisionClient } from "@/lib/gcp";
 import { prepareDiscoverySourceFile, readAndValidateUploadFile } from "@/lib/media-upload";
 import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
 import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
+import { hasProductScope, normalizeProductScopes } from "@/lib/product-scopes";
 
 export const runtime = "nodejs";
 const DISCOVERY_INGEST_LOG_PREFIX = "[discovery-ingest]";
 
 export function OPTIONS(request: Request) {
   return corsPreflight(request);
-}
-
-async function getSessionUserId() {
-  const session: any = await getServerSession(authOptions);
-  return await resolveSessionUserId(session);
 }
 
 async function handleDiscoveryIngest(
@@ -36,6 +32,19 @@ async function handleDiscoveryIngest(
     buildBaseData: () => Record<string, any>;
   },
 ) {
+  const session: any = await getServerSession(authOptions);
+  const productScopes = normalizeProductScopes((session?.user as any)?.productScopes);
+  const userId = await resolveSessionUserId(session);
+  if (!userId) {
+    return corsJson(request, { error: "Unauthorized" }, { status: 401 });
+  }
+  if (options.workflow === "football") {
+    return corsJson(request, { error: "Football is not live yet." }, { status: 410 });
+  }
+  if (!hasProductScope(productScopes, "gymnastics")) {
+    return corsJson(request, { error: "Gymnastics access required." }, { status: 403 });
+  }
+
   const formData = await request.formData();
   const file = formData.get("file");
   const rawUrl = String(formData.get("url") || "").trim();
@@ -57,7 +66,6 @@ async function handleDiscoveryIngest(
     return corsJson(request, { error: "Use one input at a time (file or url)" }, { status: 400 });
   }
 
-  const userId = await getSessionUserId();
   console.log(`${DISCOVERY_INGEST_LOG_PREFIX} resolved user`, {
     workflow: options.workflow,
     userId,

@@ -703,7 +703,7 @@ export default async function EventPage({
     discoveryCreatedVia === "football-discovery" ||
     discoveryCreatedVia === "football-discovery-v2";
   const showHostDashboard = canManageCreatedEvent && !hideHostDashboard;
-  const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" | "football" } | null =
+  const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" } | null =
     editParam && canManageCreatedEvent
       ? (() => {
           if (isGymnasticsDiscoveryTemplate) {
@@ -715,16 +715,12 @@ export default async function EventPage({
             } as const;
           }
 
-          if (isFootballDiscoveryTemplate) {
-            return {
-              customizeUrl: `/event/football/customize?edit=${encodeURIComponent(row.id)}&embed=1`,
-              workflow: "football",
-            } as const;
-          }
-
           return null;
         })()
       : null;
+  if (editParam && canManageCreatedEvent && isFootballDiscoveryTemplate) {
+    redirect("/event");
+  }
   if (editParam && canManageCreatedEvent && !discoveryEditConfig) {
     const editUrl = resolveEditHref(row.id, data, title);
     redirect(editUrl);

@@ -15,7 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { CSSProperties } from "react";
+import type { ComponentType, CSSProperties } from "react";
 import { useSidebar, type EventContextTab } from "./sidebar-context";
 import { useEventCache } from "@/app/event-cache-context";
 import { useSession } from "next-auth/react";
@@ -28,6 +28,7 @@ import { secureSignOut } from "@/utils/secureSignOut";
 import { buildEventPath } from "@/utils/event-url";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
+import { normalizePrimarySignupSource } from "@/lib/product-scopes";
 import {
   getCreateEventSections,
   getTemplateLinks,
@@ -79,6 +80,14 @@ type CompactNavItemId =
   | "create"
   | "myEvents"
   | "invitedEvents";
+type CompactNavItem = {
+  id: CompactNavItemId;
+  icon: ComponentType<any>;
+  label: string;
+  href?: string;
+  onClick: () => void;
+  badge?: number;
+};
 type SubscriptionPlan =
   | "freemium"
   | "free"
@@ -458,6 +467,8 @@ export default function LeftSidebar() {
     handleCalendarConnect,
     refreshConnectedCalendars,
     featureVisibility,
+    primarySignupSource,
+    productScopes,
   } = useMenu();
   const { historySidebarItems } = useEventCache();
   const profileEmail = (session?.user as any)?.email?.toLowerCase?.() ?? null;
@@ -860,7 +871,13 @@ export default function LeftSidebar() {
   const [isAdmin, setIsAdmin] = useState<boolean>(
     Boolean((session?.user as any)?.isAdmin)
   );
+  const [profilePrimarySignupSource, setProfilePrimarySignupSource] = useState<
+    "snap" | "gymnastics" | "legacy" | null
+  >(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const effectivePrimarySignupSource =
+    profilePrimarySignupSource ?? primarySignupSource;
+
   const userTitleLabel = useMemo(
     () => (isAdmin ? `${displayName} (Admin)` : displayName),
     [displayName, isAdmin]
@@ -965,6 +982,9 @@ export default function LeftSidebar() {
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
           }
+          setProfilePrimarySignupSource(
+            normalizePrimarySignupSource(json.primarySignupSource) || "legacy"
+          );
           setDefaultCalendarProvider(
             normalizeCalendarProvider(json.preferredProvider)
           );
@@ -1000,6 +1020,7 @@ export default function LeftSidebar() {
       const hasFreshCache =
         cached && Date.now() - cached.timestamp < PROFILE_CACHE_TTL_MS;
       setIsAdmin(Boolean((session?.user as any)?.isAdmin));
+      setProfilePrimarySignupSource(null);
       setProfileLoaded(true);
       if (cached) {
         applyProfile(cached.plan, cached.credits);
@@ -1012,12 +1033,20 @@ export default function LeftSidebar() {
       } else {
         setCredits(null);
       }
+      if (primarySignupSource === "legacy") {
+        void loadProfile();
+        return () => {
+          ignore = true;
+          cancelScheduledLoad();
+        };
+      }
       scheduleProfileLoad();
     } else if (status === "unauthenticated") {
       cancelScheduledLoad();
       clearProfileCache(profileEmailRef.current || profileEmail);
       profileEmailRef.current = null;
       savedCalendarProviderRef.current = "__unset";
+      setProfilePrimarySignupSource(null);
       setProfileLoaded(true);
       setCredits(null);
     }
@@ -1025,7 +1054,7 @@ export default function LeftSidebar() {
       ignore = true;
       cancelScheduledLoad();
     };
-  }, [status, profileEmail, session?.user]);
+  }, [status, profileEmail, primarySignupSource, session?.user]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1117,10 +1146,12 @@ export default function LeftSidebar() {
     setSidebarPage("root");
     collapseSidebarOnTouch();
   }, [clearEventContext, setSidebarPage, collapseSidebarOnTouch]);
+  const useGymnasticsDirectCreate =
+    effectivePrimarySignupSource === "gymnastics";
   const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
   const visibleTemplateLinks = useMemo(
-    () => getTemplateLinks(visibleTemplateKeys),
-    [visibleTemplateKeys]
+    () => getTemplateLinks(visibleTemplateKeys, productScopes),
+    [productScopes, visibleTemplateKeys]
   );
 
   const templateHrefMap = useMemo(() => {
@@ -1174,27 +1205,11 @@ export default function LeftSidebar() {
   };
 
   const createMenuItems = useMemo(() => {
-    return getCreateEventSections(visibleTemplateKeys).flatMap(
+    return getCreateEventSections(visibleTemplateKeys, productScopes).flatMap(
       (section) => section.items
     );
-  }, [visibleTemplateKeys]);
-  const gymnasticsCreateItem = useMemo(
-    () => createMenuItems.find((item) => item.label === "Gymnastics") ?? null,
-    [createMenuItems]
-  );
-  const footballCreateItem = useMemo(
-    () =>
-      createMenuItems.find((item) => item.label === "Football Season") ?? null,
-    [createMenuItems]
-  );
-  const otherCreateMenuItems = useMemo(
-    () =>
-      createMenuItems.filter(
-        (item) =>
-          item.label !== "Gymnastics" && item.label !== "Football Season"
-      ),
-    [createMenuItems]
-  );
+  }, [productScopes, visibleTemplateKeys]);
+  const otherCreateMenuItems = useMemo(() => [], []);
   const isCreateItemActive = useCallback(
     (item: { href: string }) => {
       if (!pathname) return false;
@@ -1214,11 +1229,8 @@ export default function LeftSidebar() {
     [sidebarPage]
   );
   const createMenuOptionCount = useMemo(
-    () =>
-      Number(Boolean(gymnasticsCreateItem)) +
-      Number(Boolean(footballCreateItem)) +
-      Number(otherCreateMenuItems.length > 0),
-    [gymnasticsCreateItem, footballCreateItem, otherCreateMenuItems.length]
+    () => createMenuItems.length,
+    [createMenuItems]
   );
 
   useEffect(() => {
@@ -1226,7 +1238,7 @@ export default function LeftSidebar() {
       setLastCreateSelection(activeCreateItem.label);
       return;
     }
-    // Avoid leaving Gymnastics/Football highlighted on /event/... routes that
+    // Avoid leaving create items highlighted on /event/... routes that
     // are not a create-template path (e.g. published event by id).
     if (pathname?.startsWith("/event")) {
       setLastCreateSelection(null);
@@ -1268,9 +1280,23 @@ export default function LeftSidebar() {
     [clearEventContext, setIsCollapsed, setSidebarPage]
   );
   const openCreateEventPage = useCallback(() => {
+    if (useGymnasticsDirectCreate) {
+      clearEventContext();
+      setSidebarPage("root");
+      collapseSidebarOnTouch();
+      router.push("/event/gymnastics");
+      return;
+    }
     setIsCollapsed(false);
     setSidebarPage("createEvent");
-  }, [setIsCollapsed, setSidebarPage]);
+  }, [
+    clearEventContext,
+    collapseSidebarOnTouch,
+    router,
+    setIsCollapsed,
+    setSidebarPage,
+    useGymnasticsDirectCreate,
+  ]);
   const isCompactNavActive = useCallback(
     (id: CompactNavItemId) => {
       switch (id) {
@@ -1279,9 +1305,9 @@ export default function LeftSidebar() {
         case "snap":
           return pathname === "/event" && sidebarPage === "root";
         case "create":
-          return (
-            sidebarPage === "createEvent" || sidebarPage === "createEventOther"
-          );
+          return useGymnasticsDirectCreate
+            ? Boolean(pathname?.startsWith("/event/gymnastics"))
+            : sidebarPage === "createEvent" || sidebarPage === "createEventOther";
         case "myEvents":
           return (
             sidebarPage === "myEvents" ||
@@ -1298,7 +1324,7 @@ export default function LeftSidebar() {
           return false;
       }
     },
-    [pathname, sidebarPage, eventContextSourcePage]
+    [pathname, sidebarPage, eventContextSourcePage, useGymnasticsDirectCreate]
   );
   const defaultCategoryColor = (c: string): string => {
     const trimmed = String(c || "").trim();
@@ -1815,47 +1841,54 @@ export default function LeftSidebar() {
     () => countGroupedEventItems(invitedEventsGrouped.upcoming),
     [countGroupedEventItems, invitedEventsGrouped.upcoming]
   );
+  const isCreateEntryActive =
+    useGymnasticsDirectCreate
+      ? Boolean(pathname?.startsWith("/event/gymnastics"))
+      : sidebarPage === "createEvent" || sidebarPage === "createEventOther";
   const compactNavItems = useMemo(
-    () => [
-      {
-        id: "home" as const,
-        icon: Home,
-        label: "Home",
-        href: "/",
-        onClick: goHomeFromSidebar,
-      },
-      {
-        id: "snap" as const,
-        icon: Camera,
-        label: "Snap event",
-        href: "/event",
-        onClick: () => {
-          clearEventContext();
-          setSidebarPage("root");
-          collapseSidebarOnTouch();
+    () =>
+      [
+        {
+          id: "home" as const,
+          icon: Home,
+          label: "Home",
+          href: "/",
+          onClick: goHomeFromSidebar,
         },
-      },
-      {
-        id: "create" as const,
-        icon: Plus,
-        label: "Create event",
-        onClick: openCreateEventPage,
-      },
-      {
-        id: "myEvents" as const,
-        icon: SidebarMyEventsMenuIcon,
-        label: "My events",
-        onClick: () => openCompactEventsPage("myEvents"),
-        badge: createdEventsCount,
-      },
-      {
-        id: "invitedEvents" as const,
-        icon: Users,
-        label: "Invited events",
-        onClick: () => openCompactEventsPage("invitedEvents"),
-        badge: invitedEventsCount,
-      },
-    ],
+        !useGymnasticsDirectCreate
+          ? {
+              id: "snap" as const,
+              icon: Camera,
+              label: "Snap event",
+              href: "/event",
+              onClick: () => {
+                clearEventContext();
+                setSidebarPage("root");
+                collapseSidebarOnTouch();
+              },
+            }
+          : null,
+        {
+          id: "create" as const,
+          icon: Plus,
+          label: "Create event",
+          onClick: openCreateEventPage,
+        },
+        {
+          id: "myEvents" as const,
+          icon: SidebarMyEventsMenuIcon,
+          label: "My events",
+          onClick: () => openCompactEventsPage("myEvents"),
+          badge: createdEventsCount,
+        },
+        {
+          id: "invitedEvents" as const,
+          icon: Users,
+          label: "Invited events",
+          onClick: () => openCompactEventsPage("invitedEvents"),
+          badge: invitedEventsCount,
+        },
+      ].filter((item): item is CompactNavItem => Boolean(item)),
     [
       clearEventContext,
       collapseSidebarOnTouch,
@@ -1865,6 +1898,7 @@ export default function LeftSidebar() {
       openCompactEventsPage,
       openCreateEventPage,
       setSidebarPage,
+      useGymnasticsDirectCreate,
     ]
   );
   useEffect(() => {
@@ -2445,44 +2479,44 @@ export default function LeftSidebar() {
                           </span>
                           <span className="truncate">Home</span>
                         </Link>
-                        <Link
-                          href="/event"
-                          onClick={() => {
-                            clearEventContext();
-                            setSidebarPage("root");
-                            collapseSidebarOnTouch();
-                          }}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-                            pathname === "/event" && sidebarPage === "root"
-                              ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
-                              : "hover:bg-slate-200/40 text-slate-500"
-                          } py-3 pl-3 pr-4`}
-                        >
-                          <span
-                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                        {!useGymnasticsDirectCreate ? (
+                          <Link
+                            href="/event"
+                            onClick={() => {
+                              clearEventContext();
+                              setSidebarPage("root");
+                              collapseSidebarOnTouch();
+                            }}
+                            className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
                               pathname === "/event" && sidebarPage === "root"
-                                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
-                                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
-                            }`}
+                                ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
+                                : "hover:bg-slate-200/40 text-slate-500"
+                            } py-3 pl-3 pr-4`}
                           >
-                            <Camera size={18} />
-                          </span>
-                          <span className="truncate">Snap event</span>
-                        </Link>
+                            <span
+                              className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                                pathname === "/event" && sidebarPage === "root"
+                                  ? "border-indigo-100 bg-indigo-50 text-indigo-600"
+                                  : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                              }`}
+                            >
+                              <Camera size={18} />
+                            </span>
+                            <span className="truncate">Snap event</span>
+                          </Link>
+                        ) : null}
                         <button
                           type="button"
                           onClick={openCreateEventPage}
                           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-                            sidebarPage === "createEvent" ||
-                            sidebarPage === "createEventOther"
+                            isCreateEntryActive
                               ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
                               : "text-slate-500 hover:bg-slate-200/40"
                           } py-3 pl-3 pr-4`}
                         >
                           <span
                             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-                              sidebarPage === "createEvent" ||
-                              sidebarPage === "createEventOther"
+                              isCreateEntryActive
                                 ? "border-indigo-100 bg-indigo-50 text-indigo-600"
                                 : SIDEBAR_ICON_CHIP_ACCENT_CLASS
                             }`}
@@ -2490,15 +2524,17 @@ export default function LeftSidebar() {
                             <Plus size={18} />
                           </span>
                           <span className="truncate">Create Event</span>
-                          <span className="ml-auto flex items-center gap-2">
-                            <span className={SIDEBAR_BADGE_CLASS}>
-                              {createMenuOptionCount}
+                          {!useGymnasticsDirectCreate ? (
+                            <span className="ml-auto flex items-center gap-2">
+                              <span className={SIDEBAR_BADGE_CLASS}>
+                                {createMenuOptionCount}
+                              </span>
+                              <ChevronRight
+                                size={16}
+                                className="text-slate-400"
+                              />
                             </span>
-                            <ChevronRight
-                              size={16}
-                              className="text-slate-400"
-                            />
-                          </span>
+                          ) : null}
                         </button>
 
                         <button
@@ -2613,12 +2649,9 @@ export default function LeftSidebar() {
                         </button>
                       </div>
                       <div className="space-y-3">
-                        {gymnasticsCreateItem
-                          ? renderCreateMenuButton(gymnasticsCreateItem, 0)
-                          : null}
-                        {footballCreateItem
-                          ? renderCreateMenuButton(footballCreateItem, 1)
-                          : null}
+                        {createMenuItems.map((item, index) =>
+                          renderCreateMenuButton(item, index)
+                        )}
                         {otherCreateMenuItems.length > 0 ? (
                           <button
                             type="button"
@@ -2643,14 +2676,7 @@ export default function LeftSidebar() {
                               className={`flex h-11 w-11 items-center justify-center rounded-xl border shadow-sm ${
                                 isOtherEventsActive
                                   ? "border-purple-200 bg-white text-purple-700"
-                                  : CREATE_SECTION_COLORS[
-                                      gymnasticsCreateItem && footballCreateItem
-                                        ? 2
-                                        : gymnasticsCreateItem ||
-                                          footballCreateItem
-                                        ? 1
-                                        : 0
-                                    ]
+                                  : CREATE_SECTION_COLORS[0]
                               }`}
                             >
                               <CalendarDays size={17} />

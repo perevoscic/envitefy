@@ -10,12 +10,15 @@ const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativ
 test("discovery v2 adds the new API route surface", () => {
   const intakeSource = readSource("src/app/api/discovery/intake/route.ts");
   const runSource = readSource("src/app/api/discovery/[eventId]/run/route.ts");
+  const cancelSource = readSource("src/app/api/discovery/[eventId]/cancel/route.ts");
   const statusSource = readSource("src/app/api/discovery/[eventId]/status/route.ts");
 
   assert.match(intakeSource, /export async function POST/);
   assert.match(runSource, /export async function POST/);
+  assert.match(cancelSource, /export async function POST/);
   assert.match(statusSource, /export async function GET/);
   assert.match(runSource, /dispatchDiscoveryPipeline/);
+  assert.match(cancelSource, /cancelDiscoveryPipeline/);
   assert.match(statusSource, /buildDiscoveryStatusResponse/);
   assert.match(statusSource, /ensureDiscoveryForExistingEvent/);
 });
@@ -58,6 +61,7 @@ test("gymnastics discovery clients use the v2 intake run status flow", () => {
 
   assert.match(launcherSource, /\/api\/discovery\/intake/);
   assert.match(launcherSource, /\/api\/discovery\/\$\{eventId\}\/run/);
+  assert.match(launcherSource, /\/api\/discovery\/\$\{eventId\}\/cancel/);
   assert.match(launcherSource, /\/api\/discovery\/\$\{eventId\}\/status/);
   assert.match(customizeSource, /\/api\/discovery\/intake/);
   assert.match(customizeSource, /\/api\/discovery\/\$\{eventId\}\/run/);
@@ -72,6 +76,7 @@ test("football discovery clients no longer use legacy ingest or parse routes", (
 
   assert.match(launcherSource, /\/api\/discovery\/intake/);
   assert.match(launcherSource, /\/api\/discovery\/\$\{eventId\}\/run/);
+  assert.match(launcherSource, /\/api\/discovery\/\$\{eventId\}\/cancel/);
   assert.match(launcherSource, /\/api\/discovery\/\$\{eventId\}\/status/);
   assert.doesNotMatch(launcherSource, /\/api\/parse\/\$\{eventId\}/);
   assert.doesNotMatch(launcherSource, /\/api\/ingest\?mode=football_discovery/);

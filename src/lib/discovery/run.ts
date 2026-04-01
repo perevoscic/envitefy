@@ -1,4 +1,10 @@
 import { getEventDiscoveryByEventId, updateEventDiscovery, updateEventHistoryDataMerge } from "@/lib/db";
+import {
+  beginDiscoveryPipelineCancellationScope,
+  finishDiscoveryPipelineCancellationScope,
+  isDiscoveryCancellationError,
+  throwIfDiscoveryCancelled,
+} from "@/lib/discovery/cancel";
 import { runDiscoveryComposePublicStage } from "@/lib/discovery/compose-public";
 import { runDiscoveryEnrichStage } from "@/lib/discovery/enrich";
 import { runDiscoveryExtractStage } from "@/lib/discovery/extract";
@@ -76,7 +82,14 @@ async function enterStage(
   });
 }
 
-export async function runDiscoveryPipeline(eventId: string) {
+function assertActive(signal?: AbortSignal) {
+  throwIfDiscoveryCancelled(signal);
+}
+
+export async function runDiscoveryPipeline(
+  eventId: string,
+  options?: { signal?: AbortSignal },
+) {
   const discovery = await getEventDiscoveryByEventId(eventId);
   if (!discovery) return null;
   const leased = await acquireDiscoveryLease(discovery);
@@ -88,8 +101,10 @@ export async function runDiscoveryPipeline(eventId: string) {
   let current = leased.discovery;
   try {
     let startedAt = Date.now();
+    assertActive(options?.signal);
     current = await enterStage(current, "extract");
-    const extracted = await runDiscoveryExtractStage(current);
+    const extracted = await runDiscoveryExtractStage(current, { signal: options?.signal });
+    assertActive(options?.signal);
     current = await persistDiscoveryRow({
       discovery: current,
       patch: {
@@ -108,8 +123,10 @@ export async function runDiscoveryPipeline(eventId: string) {
     });
 
     startedAt = Date.now();
+    assertActive(options?.signal);
     current = await enterStage(current, "parse");
-    const parsed = await runDiscoveryParseStage(current);
+    const parsed = await runDiscoveryParseStage(current, { signal: options?.signal });
+    assertActive(options?.signal);
     current = await persistDiscoveryRow({
       discovery: current,
       patch: {
@@ -123,8 +140,10 @@ export async function runDiscoveryPipeline(eventId: string) {
     });
 
     startedAt = Date.now();
+    assertActive(options?.signal);
     current = await enterStage(current, "map");
-    const mapped = await runDiscoveryMapStage(current);
+    const mapped = await runDiscoveryMapStage(current, { signal: options?.signal });
+    assertActive(options?.signal);
     const mappedPipeline = {
       ...completeDiscoveryStage(current.pipeline, "map", Date.now() - startedAt),
       reviewFlags: mapped.builderDraft.reviewFlags || [],
@@ -157,10 +176,13 @@ export async function runDiscoveryPipeline(eventId: string) {
       pageTemplateId: safeString(mapped.mappedData.pageTemplateId),
       status: "processing",
     });
+    assertActive(options?.signal);
 
     startedAt = Date.now();
+    assertActive(options?.signal);
     current = await enterStage(current, "enrich");
-    const enriched = await runDiscoveryEnrichStage(current);
+    const enriched = await runDiscoveryEnrichStage(current, { signal: options?.signal });
+    assertActive(options?.signal);
     current = await persistDiscoveryRow({
       discovery: current,
       patch: {
@@ -186,10 +208,13 @@ export async function runDiscoveryPipeline(eventId: string) {
         },
       }).catch(() => {});
     }
+    assertActive(options?.signal);
 
     startedAt = Date.now();
+    assertActive(options?.signal);
     current = await enterStage(current, "compose_public");
-    const composed = await runDiscoveryComposePublicStage(current);
+    const composed = await runDiscoveryComposePublicStage(current, { signal: options?.signal });
+    assertActive(options?.signal);
     const publishReady =
       safeString(composed.publicArtifacts.publishAssessment.state) === "auto_publish" ||
       (composed.publicArtifacts.publishAssessment.reasons || []).length === 0;
@@ -237,6 +262,7 @@ export async function runDiscoveryPipeline(eventId: string) {
       status: "review_ready",
       eventDataPatch: composed.eventDataPatch,
     });
+    assertActive(options?.signal);
     return buildDiscoveryStatusResponse(current);
   } catch (error) {
     const stageAtFailure = safeString(current.pipeline.processingStage) || "extract";
@@ -250,8 +276,8 @@ export async function runDiscoveryPipeline(eventId: string) {
     const failedPipeline = failDiscoveryStage(
       current.pipeline,
       failedStage,
-      failedStage,
-      failureSummary.errorMessage,
+      isDiscoveryCancellationError(error) ? "cancelled" : failedStage,
+      isDiscoveryCancellationError(error) ? "Discovery cancelled" : failureSummary.errorMessage,
     );
     await persistDiscoveryRow({
       discovery: current,
@@ -269,7 +295,10 @@ export async function runDiscoveryPipeline(eventId: string) {
 }
 
 export function dispatchDiscoveryPipeline(eventId: string) {
+  const controller = beginDiscoveryPipelineCancellationScope(eventId);
   setTimeout(() => {
-    void runDiscoveryPipeline(eventId);
+    void runDiscoveryPipeline(eventId, { signal: controller.signal }).finally(() => {
+      finishDiscoveryPipelineCancellationScope(eventId, controller);
+    });
   }, 0);
 }

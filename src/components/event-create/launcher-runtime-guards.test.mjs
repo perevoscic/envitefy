@@ -20,6 +20,8 @@ test("launcher URL sync flows add explicit timeout handling and start logs", () 
   assert.match(gymnasticsSource, /URL sync requested/);
   assert.match(gymnasticsSource, /ingest url request timed out/);
   assert.match(gymnasticsSource, /Live URL Sync timed out before the server responded/);
+  assert.match(gymnasticsSource, /requestDiscoveryCancel/);
+  assert.match(gymnasticsSource, /\/api\/discovery\/\$\{eventId\}\/cancel/);
 
   assert.match(footballSource, /const INGEST_REQUEST_TIMEOUT_MS = 15_000;/);
   assert.match(footballSource, /from "@\/lib\/discovery-budget"/);
@@ -28,6 +30,8 @@ test("launcher URL sync flows add explicit timeout handling and start logs", () 
   assert.match(footballSource, /URL sync requested/);
   assert.match(footballSource, /ingest url request timed out/);
   assert.match(footballSource, /Football URL sync timed out before the server responded/);
+  assert.match(footballSource, /requestDiscoveryCancel/);
+  assert.match(footballSource, /\/api\/discovery\/\$\{eventId\}\/cancel/);
 });
 
 test("dev server startup isolates non-default ports and checks for occupied ports", () => {

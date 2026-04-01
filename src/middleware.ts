@@ -2,14 +2,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { hasProductScope } from "@/lib/product-scopes";
 
 const PUBLIC_UNAUTH_PATHS = new Set([
   "/",
   "/landing",
   "/gymnastics",
-  "/football",
-  "/event/gymnastics",
-  "/event/football",
   "/open",
   "/about",
   "/how-it-works",
@@ -66,6 +64,20 @@ const getSessionCookie = (req: NextRequest) =>
   req.cookies.get("__Secure-next-auth.session-token") ??
   req.cookies.get("__Host-next-auth.session-token") ??
   req.cookies.get("next-auth.session-token");
+
+const attachSignupSourceCookie = (
+  res: NextResponse,
+  source: "snap" | "gymnastics",
+) => {
+  res.cookies.set("envitefy_signup_source", source, {
+    httpOnly: true,
+    maxAge: 60 * 10,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+  return res;
+};
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -128,16 +140,34 @@ export async function middleware(req: NextRequest) {
     return ok();
   }
 
-  if (pathname === "/snap" || pathname.startsWith("/snap/")) {
+  const queryAuthMode = req.nextUrl.searchParams.get("auth");
+
+  if (
+    queryAuthMode === "signup" &&
+    normalizedPathname !== "/snap" &&
+    normalizedPathname !== "/gymnastics"
+  ) {
     const url = req.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/snap";
+    url.searchParams.delete("auth");
     return redirectWithMarker(url, 308);
   }
 
-  // Optional: redirect legacy /signup to the public homepage
+  if (
+    normalizedPathname === "/football" ||
+    normalizedPathname === "/event/football" ||
+    normalizedPathname.startsWith("/event/football/") ||
+    normalizedPathname.startsWith("/event/football-season")
+  ) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/gymnastics";
+    url.search = "";
+    return redirectWithMarker(url, 308);
+  }
+
   if (pathname === "/signup") {
     const url = req.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/snap";
     return redirectWithMarker(url, 308);
   }
 
@@ -152,9 +182,9 @@ export async function middleware(req: NextRequest) {
     return ok();
   }
 
-  const resolveHasSession = async () => {
+  const resolveAuthState = async () => {
     const sessionCookie = getSessionCookie(req);
-    if (!sessionCookie?.value) return false;
+    if (!sessionCookie?.value) return { hasSession: false, token: null as any };
 
     const secret =
       process.env.AUTH_SECRET ??
@@ -165,18 +195,26 @@ export async function middleware(req: NextRequest) {
 
     try {
       const token = await getToken({ req, secret });
-      if (token) return true;
+      if (token) return { hasSession: true, token };
     } catch {
       // fall through to cookie fallback
     }
 
     // Fallback: some browsers omit the JWT when the secret mismatches or during races.
-    return Boolean(sessionCookie.value);
+    return { hasSession: Boolean(sessionCookie.value), token: null as any };
   };
 
+  if (normalizedPathname === "/snap" || normalizedPathname === "/gymnastics") {
+    const response = ok();
+    return attachSignupSourceCookie(
+      response,
+      normalizedPathname === "/gymnastics" ? "gymnastics" : "snap",
+    );
+  }
+
   if (pathname === "/") {
-    const hasSession = await resolveHasSession();
-    if (!hasSession) {
+    const authState = await resolveAuthState();
+    if (!authState.hasSession) {
       // Render landing content at "/" without changing the URL
       const url = req.nextUrl.clone();
       url.pathname = "/landing";
@@ -193,11 +231,23 @@ export async function middleware(req: NextRequest) {
     return ok();
   }
 
-  const hasSession = await resolveHasSession();
-  if (!hasSession) {
+  const authState = await resolveAuthState();
+  if (!authState.hasSession) {
     const url = req.nextUrl.clone();
     url.pathname = "/";
     return redirectWithMarker(url, 302);
+  }
+
+  if (
+    normalizedPathname === "/event/gymnastics" ||
+    normalizedPathname.startsWith("/event/gymnastics/")
+  ) {
+    if (!hasProductScope(authState.token?.productScopes, "gymnastics")) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/event";
+      url.search = "";
+      return redirectWithMarker(url, 302);
+    }
   }
 
   // Protect subscription pages when not signed in

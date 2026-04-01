@@ -92,6 +92,7 @@ export function normalizeDiscoveryErrorCode(error: unknown, fallbackCode: string
   if (detailCode) return detailCode;
 
   const message = sanitizeDiscoveryErrorMessage(error).toLowerCase();
+  if (message.includes("discovery cancelled")) return "cancelled";
   if (message.includes("not enough text extracted")) return "not_enough_text";
   if (message.includes("invalid file payload")) return "invalid_file_payload";
   if (message.includes("unsupported file type")) return "unsupported_file_type";

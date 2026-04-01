@@ -1,0 +1,137 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,600;0,700;0,800;1,600;1,700;1,800&display=swap");
+
+.root {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+.headline {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.glassNav {
+  background: transparent;
+}
+
+.glassPill {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 18px 60px rgba(67, 43, 153, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.bloomEffect {
+  background: radial-gradient(
+    circle at top center,
+    rgba(124, 58, 237, 0.08) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+}
+
+.btnRolling {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+  box-shadow:
+    0 -2px 10px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.1),
+    0 25px 50px -12px rgba(124, 58, 237, 0.5);
+}
+
+.btnRolling:hover {
+  transform: translateY(-2px);
+}
+
+.btnRolling:active {
+  transform: scale(0.95);
+}
+
+.cardGroup {
+  display: block;
+}
+
+.cardGroup:hover .heroSnapCard,
+.cardGroup:hover .heroLiveCard {
+  transform: rotate(0deg);
+}
+
+.heroSnapCard {
+  transform: rotate(-6deg);
+  transition: transform 0.5s ease;
+}
+
+.heroLiveCard {
+  transform: rotate(4deg);
+  transition: transform 0.5s ease;
+}
+
+.processingPulse {
+  animation: pulseScale 2s ease-in-out infinite;
+}
+
+.floatUp {
+  animation: floatUp 4s ease-in-out infinite;
+}
+
+.floatDown {
+  animation: floatDown 5s ease-in-out infinite;
+}
+
+.floatLift {
+  animation: floatLift 6s ease-in-out infinite;
+}
+
+.halo {
+  background: rgba(124, 58, 237, 0.08);
+  filter: blur(72px);
+}
+
+@keyframes pulseScale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes floatUp {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes floatDown {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(10px);
+  }
+}
+
+@keyframes floatLift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+}

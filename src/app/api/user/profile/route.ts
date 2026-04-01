@@ -35,6 +35,8 @@ export async function GET() {
     credits: creditsValue,
     name: session.user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
     isAdmin: Boolean(user?.is_admin),
+    primarySignupSource: user?.primary_signup_source || "legacy",
+    productScopes: Array.isArray(user?.product_scopes) ? user.product_scopes : ["snap"],
   });
 }
 
@@ -130,6 +132,10 @@ export async function PUT(req: Request) {
       lastName: updatedUser.last_name,
       preferredProvider: updatedUser.preferred_provider || null,
       subscriptionPlan: nextPlan,
+      primarySignupSource: updatedUser.primary_signup_source || "legacy",
+      productScopes: Array.isArray(updatedUser.product_scopes)
+        ? updatedUser.product_scopes
+        : ["snap"],
     });
   } catch (err: any) {
     const message = typeof err?.message === "string" ? err.message : "Failed to update profile";

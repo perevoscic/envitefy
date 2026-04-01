@@ -6,11 +6,11 @@ import UseCases from "../landing/sections/UseCases";
 export const metadata: Metadata = {
   title: "Who Envitefy is for",
   description:
-    "Parents, coaches, teachers, and couples use Envitefy to share events, collect RSVPs, and keep calendars in sync.",
+    "Parents, gymnastics families, coaches, and meet organizers use Envitefy to capture and share event details.",
   openGraph: {
     title: "Who Envitefy is for",
     description:
-      "See how parents, coaches, teachers, and couples use Envitefy.",
+      "See how parents, gymnastics families, coaches, and meet organizers use Envitefy.",
     url: "https://envitefy.com/who-its-for",
     siteName: "Envitefy",
     images: [
@@ -52,14 +52,20 @@ export default function WhoItsForPage() {
           Who it’s for
         </h1>
         <p className="mt-3 text-center text-[#5a5377]">
-          Envitefy helps busy families, teams, and classrooms stay coordinated.
+          Envitefy helps busy families and gymnastics communities stay coordinated.
         </p>
-        <div className="mt-6 flex justify-center">
+        <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
-            href="/open"
+            href="/snap"
             className="inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-[#7F8CFF] to-[#6d7af5] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#7F8CFF]/30 transition hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6d7af5]"
           >
-            Open the app
+            Snap account
+          </Link>
+          <Link
+            href="/gymnastics"
+            className="inline-flex items-center justify-center gap-2 overflow-hidden rounded-full border border-[#d9ceff] bg-white px-6 py-3 text-sm font-semibold text-[#433b66] transition hover:border-[#c6b8ff]"
+          >
+            Gymnastics account
           </Link>
         </div>
       </section>

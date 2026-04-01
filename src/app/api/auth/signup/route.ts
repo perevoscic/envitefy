@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import { createUserWithEmailPassword } from "@/lib/db";
 
+function getSignupSourceFromCookieHeader(cookieHeader: string | null): "snap" | "gymnastics" | null {
+  if (!cookieHeader) return null;
+  const pairs = cookieHeader.split(";");
+  for (const pair of pairs) {
+    const [rawKey, ...rawValue] = pair.trim().split("=");
+    if (rawKey !== "envitefy_signup_source") continue;
+    const value = rawValue.join("=");
+    return value === "snap" || value === "gymnastics" ? value : null;
+  }
+  return null;
+}
+
 async function verifyRecaptcha(token: string): Promise<boolean> {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
   if (!secretKey) {
@@ -54,16 +66,39 @@ export async function POST(req: Request) {
     const firstName = (body.firstName as string) || undefined;
     const lastName = (body.lastName as string) || undefined;
     const recaptchaToken = (body.recaptchaToken as string) || "";
+    const requestedSignupSource =
+      body.signupSource === "snap" || body.signupSource === "gymnastics"
+        ? body.signupSource
+        : null;
+    const cookieSignupSource = getSignupSourceFromCookieHeader(
+      req.headers.get("cookie"),
+    );
 
     console.log("[signup] Request received", { 
       email, 
       hasToken: !!recaptchaToken,
       tokenLength: recaptchaToken?.length || 0,
-      hasSecretKey: !!process.env.RECAPTCHA_SECRET_KEY
+      hasSecretKey: !!process.env.RECAPTCHA_SECRET_KEY,
+      requestedSignupSource,
+      cookieSignupSource,
     });
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+    }
+
+    if (!cookieSignupSource) {
+      return NextResponse.json(
+        { error: "Create accounts only from /snap or /gymnastics." },
+        { status: 400 },
+      );
+    }
+
+    if (requestedSignupSource && requestedSignupSource !== cookieSignupSource) {
+      return NextResponse.json(
+        { error: "Signup source mismatch. Restart from /snap or /gymnastics." },
+        { status: 400 },
+      );
     }
 
     // Verify reCAPTCHA if token provided and secret key is configured
@@ -84,8 +119,21 @@ export async function POST(req: Request) {
       });
     }
 
-    await createUserWithEmailPassword({ email, password, firstName, lastName });
-    return NextResponse.json({ ok: true });
+    await createUserWithEmailPassword({
+      email,
+      password,
+      firstName,
+      lastName,
+      signupSource: cookieSignupSource,
+    });
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set("envitefy_signup_source", "", {
+      expires: new Date(0),
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+    });
+    return response;
   } catch (err: any) {
     const message = typeof err?.message === "string" ? err.message : "Failed to create account";
     return NextResponse.json({ error: message }, { status: 400 });

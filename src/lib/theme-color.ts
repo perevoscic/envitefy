@@ -1,7 +1,6 @@
 const BRAND_THEME_COLOR = "#7F67D3";
 const BRAND_BACKGROUND_COLOR = "#F8F5FF";
 const GYMNASTICS_THEME_COLOR = "#7C5CDB";
-const FOOTBALL_THEME_COLOR = "#1F5A45";
 const EVENT_THEME_COLOR_FALLBACK = BRAND_THEME_COLOR;
 
 export type ThemeColorSource = "route" | "hero" | "event" | "default";
@@ -34,10 +33,6 @@ export function getThemeColorForPath(pathname?: string | null): string {
     return GYMNASTICS_THEME_COLOR;
   }
 
-  if (path === "/football" || path.startsWith("/event/football")) {
-    return FOOTBALL_THEME_COLOR;
-  }
-
   if (EVENT_ROUTE_PATTERN.test(path)) {
     return EVENT_THEME_COLOR_FALLBACK;
   }
@@ -54,9 +49,7 @@ export function getThemeColorDefinitionForPath(
       ? "event"
       : pathname === "/gymnastics" || pathname.startsWith("/event/gymnastics")
         ? "route"
-        : pathname === "/football" || pathname.startsWith("/event/football")
-          ? "route"
-          : "default"
+        : "default"
     : "default";
 
   return { color, source };
@@ -151,7 +144,6 @@ export const themeColorPalette = {
   brand: BRAND_THEME_COLOR,
   background: BRAND_BACKGROUND_COLOR,
   gymnastics: GYMNASTICS_THEME_COLOR,
-  football: FOOTBALL_THEME_COLOR,
   eventFallback: EVENT_THEME_COLOR_FALLBACK,
 } as const;
 

@@ -1,31 +1,24 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
 // @ts-nocheck
-import { inflateGymDiscoveryV2EventData, isGymDiscoveryV2EventData } from "@/lib/discovery/event-data";
-import { isGymDiscoveryScheduleGridEnabled } from "@/lib/meet-discovery/constants";
+import {
+  inflateGymDiscoveryV2EventData,
+  isGymDiscoveryV2EventData,
+} from "@/lib/discovery/event-data";
 import {
   normalizeVenueFactForCompare,
   sanitizeVenueFactLines,
   stitchVenueContinuationLines,
 } from "@/lib/venue-facts";
 import {
-  GymMeetDiscoveryContent,
-  GymMeetDiscoverySection,
-  GymMeetLinkAction,
-  GymMeetScheduleInfo,
-} from "./types";
-import {
   collapseRepeatedDisplayText,
   formatGymMeetDate,
   sanitizeGymMeetDisplayDateLabel,
   stripLinkedDomainMentions,
 } from "./displayText";
+import { GymMeetDiscoveryContent, GymMeetDiscoverySection, GymMeetLinkAction } from "./types";
 
 const safeString = (value: unknown): string =>
-  typeof value === "string"
-    ? value.trim()
-    : value == null
-    ? ""
-    : String(value).trim();
+  typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
 
 const countCurrencyAmounts = (value: string) =>
   (safeString(value).match(/\$\s*\d+(?:\.\d{2})?/g) || []).length;
@@ -51,7 +44,7 @@ const normalizeLinkDedupLabel = (value: unknown) =>
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
-const uniqueBy = <T,>(items: T[], getKey: (item: T) => string): T[] => {
+const uniqueBy = <T>(items: T[], getKey: (item: T) => string): T[] => {
   const seen = new Set<string>();
   const out: T[] = [];
   for (const item of Array.isArray(items) ? items : []) {
@@ -63,133 +56,13 @@ const uniqueBy = <T,>(items: T[], getKey: (item: T) => string): T[] => {
   return out;
 };
 
-const normalizeScheduleInfo = (
-  value: unknown,
-  fallback: Partial<GymMeetScheduleInfo> = {}
-): GymMeetScheduleInfo => {
-  const schedule = (value && typeof value === "object" ? value : {}) as Record<string, any>;
-  const days = (Array.isArray(schedule.days) ? schedule.days : [])
-    .map((day: any, dayIndex: number) => {
-      const sessions = (Array.isArray(day?.sessions) ? day.sessions : [])
-        .map((session: any, sessionIndex: number) => ({
-          id:
-            safeString(session?.id) ||
-            `${safeString(day?.id) || `day-${dayIndex + 1}`}-session-${sessionIndex + 1}`,
-          code: safeString(session?.code),
-          label:
-            safeString(session?.label) ||
-            (safeString(session?.code) ? `Session ${safeString(session?.code)}` : `Session ${sessionIndex + 1}`),
-          group: safeString(session?.group),
-          startTime: safeString(session?.startTime),
-          warmupTime: safeString(session?.warmupTime),
-          note: safeString(session?.note),
-          clubs: uniqueBy(
-            (Array.isArray(session?.clubs) ? session.clubs : [])
-              .map((club: any, clubIndex: number) => ({
-                id:
-                  safeString(club?.id) ||
-                  `${safeString(session?.id) || `session-${sessionIndex + 1}`}-club-${clubIndex + 1}`,
-                name: safeString(club?.name),
-                teamAwardEligible:
-                  typeof club?.teamAwardEligible === "boolean"
-                    ? club.teamAwardEligible
-                    : null,
-                athleteCount:
-                  typeof club?.athleteCount === "number" && Number.isFinite(club.athleteCount)
-                    ? club.athleteCount
-                    : null,
-                divisionLabel: safeString(club?.divisionLabel),
-              }))
-              .filter((club) => club.name),
-            (club) => [club.name, club.divisionLabel, `${club.athleteCount ?? ""}`].join("|")
-          ),
-        }))
-        .filter((session) => session.code || session.group || session.startTime || session.clubs.length > 0);
-      if (!safeString(day?.date) && !safeString(day?.shortDate) && sessions.length === 0) return null;
-      return {
-        id: safeString(day?.id) || `schedule-day-${dayIndex + 1}`,
-        date: safeString(day?.date),
-        shortDate: safeString(day?.shortDate) || safeString(day?.date),
-        isoDate: safeString(day?.isoDate) || undefined,
-        sessions,
-      };
-    })
-    .filter((day): day is NonNullable<typeof day> => Boolean(day));
-
-  return {
-    enabled: schedule.enabled !== false,
-    venueLabel: safeString(schedule.venueLabel || fallback.venueLabel),
-    supportEmail: safeString(schedule.supportEmail || fallback.supportEmail),
-    notes: uniqueBy(
-      [
-        ...(Array.isArray(schedule.notes) ? schedule.notes : []),
-        ...(Array.isArray(fallback.notes) ? fallback.notes : []),
-      ]
-        .map((item) => safeString(item))
-        .filter(Boolean),
-      (item) => item
-    ),
-    annotations: uniqueBy(
-      [
-        ...(Array.isArray(schedule.annotations) ? schedule.annotations : []),
-        ...(Array.isArray(fallback.annotations) ? fallback.annotations : []),
-      ]
-        .map((item: any) => ({
-          id: safeString(item?.id) || undefined,
-          kind: safeString(item?.kind) || undefined,
-          level: safeString(item?.level) || undefined,
-          sessionCode: safeString(item?.sessionCode) || undefined,
-          date: safeString(item?.date) || undefined,
-          time: safeString(item?.time) || undefined,
-          text: safeString(item?.text),
-        }))
-        .filter((item) => item.text),
-      (item) =>
-        `${item.kind || ""}|${item.level || ""}|${item.sessionCode || ""}|${item.date || ""}|${item.time || ""}|${item.text}`
-    ),
-    assignments: uniqueBy(
-      [
-        ...(Array.isArray(schedule.assignments) ? schedule.assignments : []),
-        ...(Array.isArray(fallback.assignments) ? fallback.assignments : []),
-      ]
-        .map((item: any) => ({
-          id: safeString(item?.id) || undefined,
-          level: safeString(item?.level) || undefined,
-          groupLabel: safeString(item?.groupLabel) || undefined,
-          sessionCode: safeString(item?.sessionCode) || undefined,
-          birthDateRange: safeString(item?.birthDateRange) || undefined,
-          divisionLabel: safeString(item?.divisionLabel) || undefined,
-          note: safeString(item?.note) || undefined,
-        }))
-        .filter(
-          (item) =>
-            item.sessionCode ||
-            item.groupLabel ||
-            item.birthDateRange ||
-            item.divisionLabel ||
-            item.note
-        ),
-      (item) =>
-        `${item.level || ""}|${item.groupLabel || ""}|${item.sessionCode || ""}|${item.birthDateRange || ""}|${item.divisionLabel || ""}|${item.note || ""}`
-    ),
-    days,
-  };
-};
-
-const hasScheduleInfoContent = (value: unknown) => {
-  const schedule = normalizeScheduleInfo(value);
-  return schedule.days.some((day) =>
-    day.sessions.some((session) => session.clubs.length > 0 || session.group || session.startTime || session.code)
-  );
-};
-
 const normalizePossibleUrl = (value: unknown) => {
   const raw = safeString(value).replace(/[)\],.;!?]+$/, "");
   if (!raw) return "";
-  const withProtocol =
-    /^https?:\/\//i.test(raw)
-      ? raw
-      : /^www\./i.test(raw) || (/^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(raw) && !/@/.test(raw))
+  const withProtocol = /^https?:\/\//i.test(raw)
+    ? raw
+    : /^www\./i.test(raw) ||
+        (/^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(raw) && !/@/.test(raw))
       ? `https://${raw}`
       : "";
   if (!withProtocol) return "";
@@ -202,7 +75,7 @@ const normalizePossibleUrl = (value: unknown) => {
 
 const extractInlineUrl = (line: string) => {
   const urlMatch = line.match(
-    /(?:https?:\/\/[^\s)]+|www\.[^\s)]+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s),;!?]*)?)/i
+    /(?:https?:\/\/[^\s)]+|www\.[^\s)]+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s),;!?]*)?)/i,
   );
   if (!urlMatch) {
     return { text: line, href: undefined };
@@ -214,7 +87,7 @@ const extractInlineUrl = (line: string) => {
   }
   const matchIndex = urlMatch.index ?? line.indexOf(urlMatch[0]);
   const text = `${line.slice(0, Math.max(0, matchIndex))}${line.slice(
-    Math.max(0, matchIndex) + (urlMatch[0] || "").length
+    Math.max(0, matchIndex) + (urlMatch[0] || "").length,
   )}`
     .replace(/\s{2,}/g, " ")
     .replace(/\s+([.,;:!?])/g, "$1")
@@ -234,7 +107,7 @@ const toStructuredListItems = (text: string, stripPrefixPattern?: RegExp): strin
       part
         .replace(/^[-*•\u2022]\s+/, "")
         .replace(/^\d+[.)]\s+/, "")
-        .trim()
+        .trim(),
     )
     .filter(Boolean);
 
@@ -243,8 +116,8 @@ const toStructuredListItems = (text: string, stripPrefixPattern?: RegExp): strin
       arr.findIndex(
         (candidate) =>
           candidate.toLowerCase().replace(/\s+/g, " ").trim() ===
-          item.toLowerCase().replace(/\s+/g, " ").trim()
-      ) === idx
+          item.toLowerCase().replace(/\s+/g, " ").trim(),
+      ) === idx,
   );
 };
 
@@ -305,7 +178,7 @@ const normalizeDiscoveryResourceLinks = (items: any[]) =>
         renderTarget: safeString(item?.renderTarget),
       }))
       .filter((item) => /^https?:\/\//i.test(item.url)),
-    (item) => `${item.kind}|${item.url}`
+    (item) => `${item.kind}|${item.url}`,
   );
 
 const normalizeTravelHotels = (items: any[]) =>
@@ -323,7 +196,7 @@ const normalizeTravelHotels = (items: any[]) =>
         bookingUrl: safeString(item?.bookingUrl) || null,
       }))
       .filter((item) => item.name),
-    (item) => `${item.name.toLowerCase()}|${(item.bookingUrl || "").toLowerCase()}`
+    (item) => `${item.name.toLowerCase()}|${(item.bookingUrl || "").toLowerCase()}`,
   );
 
 const buildStructuredHotelCards = (items: any[]) =>
@@ -340,13 +213,12 @@ const buildStructuredHotelCards = (items: any[]) =>
       label: item.name,
       meta,
       body: details.join("\n"),
-      action:
-        /^https?:\/\//i.test(item.bookingUrl || "")
-          ? {
-              label: "Book Hotel",
-              url: item.bookingUrl,
-            }
-          : undefined,
+      action: /^https?:\/\//i.test(item.bookingUrl || "")
+        ? {
+            label: "Book Hotel",
+            url: item.bookingUrl,
+          }
+        : undefined,
     };
   });
 
@@ -356,8 +228,6 @@ const PUBLIC_DISCOVERY_OVERVIEW_PATTERN =
   /\b(championships?|classic|invitational|state meet|regional meet|national meet|takes place|host(?:ed)? by|awards ceremon|team awards?|all around awards?)\b/i;
 const PUBLIC_DISCOVERY_COACH_OPS_PATTERN =
   /\b(coach(?:es)?(?:\s+only)?|meet reservations?|membership verification|pro member|sign[-\s]?in|attire|competition floor access|scratches?|master rotation sheet|floor music|regional(?:s)?|qualification|entry fees?|late fee|meetmaker|payment instructions?|check payable|coach hospitality)\b/i;
-const PUBLIC_DISCOVERY_SESSION_OPS_PATTERN =
-  /\b(session assignments?|verify athlete session assignment|club rosters?|roster corrections?|athlete birth[-\s]?date|birth[-\s]?date correction|age[-\s]?group|group\/session|session code|division table|team divisions?|session eligibility|rotation ops?)\b/i;
 const PUBLIC_DISCOVERY_DOCUMENT_PATTERN =
   /\b(faq|program|spectator guide|visitor guide|event guide|public document|order form|sizing form|apparel form|photo\s*\/?\s*video)\b/i;
 const PUBLIC_DISCOVERY_MIXED_DOCUMENT_PATTERN =
@@ -369,16 +239,14 @@ const classifyPublicAudience = (text: unknown) => {
   const normalized = safeString(text).replace(/\s+/g, " ").trim();
   if (!normalized) return "unknown";
   const hasCoachOps = PUBLIC_DISCOVERY_COACH_OPS_PATTERN.test(normalized);
-  const hasSessionOps = PUBLIC_DISCOVERY_SESSION_OPS_PATTERN.test(normalized);
   const hasPublicAttendee =
     PUBLIC_DISCOVERY_ATTENDEE_PATTERN.test(normalized) ||
     PUBLIC_DISCOVERY_OVERVIEW_PATTERN.test(normalized) ||
     /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|\d{1,2}\/\d{1,2}\/\d{2,4})\b/i.test(
-      normalized
+      normalized,
     ) ||
     /\b\d{3,5}\s+[a-z0-9].*,\s*[a-z]{2}\s+\d{5}\b/i.test(normalized);
-  if ((hasCoachOps || hasSessionOps) && hasPublicAttendee) return "mixed";
-  if (hasSessionOps) return "session_ops";
+  if (hasCoachOps && hasPublicAttendee) return "mixed";
   if (hasCoachOps) return "coach_ops";
   if (hasPublicAttendee) return "public_attendee";
   if (PUBLIC_DISCOVERY_MIXED_DOCUMENT_PATTERN.test(normalized)) return "mixed";
@@ -386,10 +254,11 @@ const classifyPublicAudience = (text: unknown) => {
 };
 
 const classifyResourceRenderTarget = (item: any) => {
-  const audience = safeString(item?.audience) || classifyPublicAudience(`${item?.label || ""} ${item?.url || ""}`);
+  const audience =
+    safeString(item?.audience) || classifyPublicAudience(`${item?.label || ""} ${item?.url || ""}`);
   const kind = safeString(item?.kind);
   const haystack = `${safeString(item?.label)} ${safeString(item?.url)}`.toLowerCase();
-  if (audience === "coach_ops" || audience === "session_ops") {
+  if (audience === "coach_ops") {
     return "hidden";
   }
   if (["roster", "team_divisions", "rotation_hub", "rotation_sheet"].includes(kind)) {
@@ -411,7 +280,11 @@ const classifyResourceRenderTarget = (item: any) => {
   return audience === "public_attendee" ? "meet_details" : "hidden";
 };
 
-const normalizePublicSection = (section: any, title: string, fallback?: { body?: unknown; bullets?: unknown[]; hideReason?: string }) => {
+const normalizePublicSection = (
+  section: any,
+  title: string,
+  fallback?: { body?: unknown; bullets?: unknown[]; hideReason?: string },
+) => {
   const existing = section && typeof section === "object" ? section : null;
   const body = collapseRepeatedDisplayText(existing ? existing?.body : fallback?.body || "");
   const bulletSource = existing
@@ -419,11 +292,11 @@ const normalizePublicSection = (section: any, title: string, fallback?: { body?:
       ? existing.bullets
       : []
     : Array.isArray(fallback?.bullets)
-    ? fallback.bullets
-    : [];
+      ? fallback.bullets
+      : [];
   const bullets = uniqueTextLines(
     bulletSource.map((item) => safeString(item)),
-    8
+    8,
   );
   const items = normalizeTravelHotels(existing?.items);
   const explicitVisibility = safeString(existing?.visibility);
@@ -431,8 +304,8 @@ const normalizePublicSection = (section: any, title: string, fallback?: { body?:
     explicitVisibility === "visible" || explicitVisibility === "hidden"
       ? explicitVisibility
       : body || bullets.length > 0 || items.length > 0
-      ? "visible"
-      : "hidden";
+        ? "visible"
+        : "hidden";
   return {
     title: safeString(existing?.title || title) || title,
     body,
@@ -451,17 +324,17 @@ const normalizePublicSection = (section: any, title: string, fallback?: { body?:
 const normalizePublicDocumentSection = (section: any) => {
   const links = uniqueLinks(
     (Array.isArray(section?.links) ? section.links : []).filter((item: any) =>
-      PUBLIC_DISCOVERY_DOCUMENT_PATTERN.test(`${safeString(item?.label)} ${safeString(item?.url)}`)
+      PUBLIC_DISCOVERY_DOCUMENT_PATTERN.test(`${safeString(item?.label)} ${safeString(item?.url)}`),
     ),
-    12
+    12,
   );
   const explicitVisibility = safeString(section?.visibility);
   const visibility =
     explicitVisibility === "visible" || explicitVisibility === "hidden"
       ? explicitVisibility
       : links.length > 0
-      ? "visible"
-      : "hidden";
+        ? "visible"
+        : "hidden";
   return {
     title: safeString(section?.title || "Documents") || "Documents",
     links,
@@ -479,10 +352,13 @@ const selectSectionResourceLinks = (resourceLinks: any[], target: string, limit 
       .filter((item) => safeString(item?.renderTarget) === target)
       .filter((item) => safeString(item?.audience || "public_attendee") === "public_attendee")
       .map((item) => ({ label: item.label, url: item.url })),
-    limit
+    limit,
   );
 
-const collectPublicBodyLines = (value: unknown, options?: { excludeMeetDetailKeywords?: boolean; limit?: number }) =>
+const collectPublicBodyLines = (
+  value: unknown,
+  options?: { excludeMeetDetailKeywords?: boolean; limit?: number },
+) =>
   uniqueTextLines(
     safeString(value)
       .split(/\n+/)
@@ -490,9 +366,11 @@ const collectPublicBodyLines = (value: unknown, options?: { excludeMeetDetailKey
       .filter(Boolean)
       .filter((line) => classifyPublicAudience(line) === "public_attendee")
       .filter((line) =>
-        options?.excludeMeetDetailKeywords ? !PUBLIC_DISCOVERY_NOT_MEET_DETAILS_PATTERN.test(line) : true
+        options?.excludeMeetDetailKeywords
+          ? !PUBLIC_DISCOVERY_NOT_MEET_DETAILS_PATTERN.test(line)
+          : true,
       ),
-    options?.limit || 6
+    options?.limit || 6,
   );
 
 const buildFallbackPublicMeetDetailsBody = (params: {
@@ -526,7 +404,7 @@ const buildFallbackPublicMeetDetailsBody = (params: {
       safeString(params.arrivalGuidance),
       safeString(params.awardsInfo),
     ],
-    5
+    5,
   ).join(" ");
 };
 
@@ -569,11 +447,14 @@ const extractMarkedAdmissionAmount = (value: unknown, markerPattern: RegExp) => 
   }
   const markerSource = markerPattern.source;
   const beforeMatch = text.match(
-    new RegExp(`\\b(?:${markerSource})\\b(?:\\s+price)?\\b[^$]{0,24}(\\$\\s*\\d+(?:\\.\\d{2})?)`, "i")
+    new RegExp(
+      `\\b(?:${markerSource})\\b(?:\\s+price)?\\b[^$]{0,24}(\\$\\s*\\d+(?:\\.\\d{2})?)`,
+      "i",
+    ),
   );
   if (beforeMatch?.[1]) return normalizeCurrencyDisplay(beforeMatch[1]);
   const afterMatch = text.match(
-    new RegExp(`(\\$\\s*\\d+(?:\\.\\d{2})?)(?:(?!\\$).){0,12}\\b(?:${markerSource})\\b`, "i")
+    new RegExp(`(\\$\\s*\\d+(?:\\.\\d{2})?)(?:(?!\\$).){0,12}\\b(?:${markerSource})\\b`, "i"),
   );
   return normalizeCurrencyDisplay(afterMatch?.[1]);
 };
@@ -583,15 +464,13 @@ const extractAdmissionVariantAmounts = (item: any) => {
   const price = safeString(item?.price);
   const note = safeString(item?.note);
   const normalizedAudience = normalizeAdmissionAudience(label);
-  const text = [label, price, note]
-    .filter(Boolean)
-    .join(" ");
+  const text = [label, price, note].filter(Boolean).join(" ");
   const amounts = Array.from(text.matchAll(/\$\s*\d+(?:\.\d{2})?/g)).map((match) =>
-    normalizeCurrencyDisplay(match[0])
+    normalizeCurrencyDisplay(match[0]),
   );
   const priceAmount = normalizeCurrencyDisplay(price);
   const relativeCashDiscount = parseCurrencyAmount(
-    (text.match(/\bcash(?:\s+price)?(?:\s+is)?\s+\$?\s*(\d+(?:\.\d{2})?)\s+less\b/i) || [])[1]
+    (text.match(/\bcash(?:\s+price)?(?:\s+is)?\s+\$?\s*(\d+(?:\.\d{2})?)\s+less\b/i) || [])[1],
   );
   const cashMarker =
     /\bcash\b/i.test(`${label} ${note}`) && !/\b(?:less|off|discount)\b/i.test(note);
@@ -652,10 +531,14 @@ const parseAdmissionMatrixFromSourceLines = (lines: string[]) => {
 
     const adultAmount =
       (line.match(/(\$\s*\d+(?:\.\d{2})?)(?:(?!\$).){0,24}\badult/i) || [])[1] ||
-      (line.match(/\badult(?:s)?(?:\s*\(?(?:13\+|13\s*\+\s*up|13\s*and\s*up|13\s*up)?\)?)?(?:(?!\$).){0,24}(\$\s*\d+(?:\.\d{2})?)/i) || [])[1];
+      (line.match(
+        /\badult(?:s)?(?:\s*\(?(?:13\+|13\s*\+\s*up|13\s*and\s*up|13\s*up)?\)?)?(?:(?!\$).){0,24}(\$\s*\d+(?:\.\d{2})?)/i,
+      ) || [])[1];
     const childAmount =
       (line.match(/(\$\s*\d+(?:\.\d{2})?)(?:(?!\$).){0,24}\bchild/i) || [])[1] ||
-      (line.match(/\bchild(?:ren)?(?:\s*\(?(?:5\s*-\s*12|5-12)\)?)?(?:(?!\$).){0,24}(\$\s*\d+(?:\.\d{2})?)/i) || [])[1];
+      (line.match(
+        /\bchild(?:ren)?(?:\s*\(?(?:5\s*-\s*12|5-12)\)?)?(?:(?!\$).){0,24}(\$\s*\d+(?:\.\d{2})?)/i,
+      ) || [])[1];
 
     if (adultAmount) pushVariantItem("Adults (13+)", adultAmount);
     if (childAmount) pushVariantItem("Children (5-12)", childAmount);
@@ -716,17 +599,17 @@ const mergeAdmissionVariants = (items: any[]) => {
     const value = item.free
       ? "Free"
       : item.card && item.cash
-      ? `Card ${item.card}`
-      : item.card
-      ? item.card
-      : item.cash
-      ? `Cash ${item.cash}`
-      : item.standard || "";
+        ? `Card ${item.card}`
+        : item.card
+          ? item.card
+          : item.cash
+            ? `Cash ${item.cash}`
+            : item.standard || "";
     const body = item.free
       ? item.note || ""
       : item.card && item.cash
-      ? `Cash ${item.cash}`
-      : item.note || "";
+        ? `Cash ${item.cash}`
+        : item.note || "";
     return {
       key: `admission-${index + 1}`,
       label: item.label,
@@ -742,7 +625,7 @@ const sanitizeVenueSectionForMap = (section: any, venueLabel: string, addressLab
       .split(/\n+|(?<=[.!?])\s+/)
       .map((line) => line.trim())
       .filter(Boolean),
-    6
+    6,
   );
   const removableVenueTokens = uniqueTextLines(
     [
@@ -751,7 +634,7 @@ const sanitizeVenueSectionForMap = (section: any, venueLabel: string, addressLab
       [venueLabel, addressLabel].filter(Boolean).join(", "),
       [venueLabel, addressLabel].filter(Boolean).join(" "),
     ].filter(Boolean),
-    8
+    8,
   ).map((item) => item.toLowerCase().replace(/\s+/g, " ").trim());
 
   const filteredBody = bodyLines.filter((line) => {
@@ -766,7 +649,7 @@ const sanitizeVenueSectionForMap = (section: any, venueLabel: string, addressLab
         const key = line.toLowerCase().replace(/\s+/g, " ").trim();
         return key && !removableVenueTokens.includes(key);
       }),
-    6
+    6,
   );
 
   return {
@@ -780,7 +663,9 @@ const sanitizeSpectatorBody = (body: unknown, hasStructuredAdmissionCards: boole
   const normalized = collapseRepeatedDisplayText(body);
   if (!normalized) return "";
   const lines = uniqueTextLines(normalized.split(/(?<=[.!?])\s+|\n+/), 6).filter(
-    (line) => !hasStructuredAdmissionCards || !/\b(adults?|children|under\s*5|cash|card|credit|debit|\$\d)/i.test(line)
+    (line) =>
+      !hasStructuredAdmissionCards ||
+      !/\b(adults?|children|under\s*5|cash|card|credit|debit|\$\d)/i.test(line),
   );
   return lines.join(" ");
 };
@@ -800,7 +685,7 @@ const shouldRenderPublicAnnouncementCard = (item: any) => {
 
 const ensureUniqueDiscoveryCardKeys = <T extends { key?: string }>(
   items: T[],
-  fallbackPrefix: string
+  fallbackPrefix: string,
 ): T[] => {
   const seen = new Map<string, number>();
   return items.map((item, index) => {
@@ -816,10 +701,11 @@ const ensureUniqueDiscoveryCardKeys = <T extends { key?: string }>(
 };
 
 const buildPublicSectionBlocks = (section: any) => {
-  const titleKey = safeString(section?.title || "section")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "section";
+  const titleKey =
+    safeString(section?.title || "section")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "section";
   const blocks: any[] = [];
   const body = safeString(section?.body);
   const bullets = uniqueTextLines(Array.isArray(section?.bullets) ? section.bullets : [], 8);
@@ -883,7 +769,7 @@ const isLowSignalTravelSummaryText = (value: unknown) => {
   return (
     normalizedValue.split(" ").length <= 3 &&
     /\b(host|group|hotel|hotels|travel|lodging|accommodation|accommodations|housing|reservation|reservations|booking|stay)\b/i.test(
-      normalizedValue
+      normalizedValue,
     )
   );
 };
@@ -908,8 +794,8 @@ const normalizeAnnouncementCards = (items: any[], source: "builder" | "parsed") 
           explicitLabel && !/^announcement$/i.test(explicitLabel)
             ? explicitLabel
             : safeString(item?.priority).toLowerCase() === "urgent"
-            ? "Urgent Update"
-            : "";
+              ? "Urgent Update"
+              : "";
         const body = collapseRepeatedDisplayText(item?.body || item?.text || item?.message);
         return {
           key: safeString(item?.id || `announcement-${index + 1}`),
@@ -925,7 +811,7 @@ const normalizeAnnouncementCards = (items: any[], source: "builder" | "parsed") 
         seen.add(dedupeKey);
         return true;
       }),
-    "announcement"
+    "announcement",
   );
 };
 
@@ -983,12 +869,14 @@ type ExtractedPageKind =
   | "empty"
   | "unknown";
 
-const _normalizeLineKey = (value: string) => safeString(value).toLowerCase().replace(/\s+/g, " ").trim();
+const _normalizeLineKey = (value: string) =>
+  safeString(value).toLowerCase().replace(/\s+/g, " ").trim();
 
 const isUsableEmail = (value: unknown) => USABLE_EMAIL_PATTERN.test(safeString(value));
 const isUsablePhone = (value: unknown) => safeString(value).replace(/\D/g, "").length >= 7;
-const isMarketingLikeSourceLine = (value: string) => MARKETING_SOURCE_PATTERN.test(safeString(value));
-/** Sync string heuristic only: keeps obvious session/schedule *table rows* out of Meet Details prose. Unrelated to gym-layout vision in meet-discovery. Structured schedule derivation is gated by `GYM_DISCOVERY_SCHEDULE_GRID_ENABLED`. */
+const isMarketingLikeSourceLine = (value: string) =>
+  MARKETING_SOURCE_PATTERN.test(safeString(value));
+/** Sync string heuristic only: keeps obvious session/schedule table rows out of Meet Details prose. */
 const isScheduleGridLikeSourceLine = (value: string) => {
   const text = safeString(value);
   if (!text) return false;
@@ -1011,7 +899,7 @@ const isNarrativeMeetPacketLine = (value: string) => {
   if (/^session\s+[a-z]?\d+/i.test(text) && words < 16) return false;
   if (!/[.!?]/.test(text) && words < 15) return false;
   return /\b(coaches?|athletes?|awards?\s+ceremon|awards?\b|membership|rosters?|sanction|hospitality|regionals?|qualif|ineligible|attire|dress\s+code|sign[-\s]?in\b|usa\s+gymnastics|rotation\s+sheet|scratches?|professional\s+membership|competition\s+floor|team\s+twisters|twisters\b|packet|enclosed|birth\s+dates?|meet\s+reservations?|session\s+assignments?|xcel\b|championship|proud\s+to\s+host|director\s+of\s+operations|meet\s+director)\b/i.test(
-    text
+    text,
   );
 };
 const isClubParticipationLikeSourceLine = (value: string) =>
@@ -1027,9 +915,13 @@ const isParticipantListingLine = (value: string) => {
 };
 const isTrueGearLine = (value: string) => {
   const text = safeString(value);
-  return Boolean(text) && TRUE_GEAR_TEXT_PATTERN.test(text) && !GEAR_EXCLUDED_TEXT_PATTERN.test(text);
+  return (
+    Boolean(text) && TRUE_GEAR_TEXT_PATTERN.test(text) && !GEAR_EXCLUDED_TEXT_PATTERN.test(text)
+  );
 };
-const classifyOperationalLine = (value: string): "venue" | "admission" | "meet" | "suppress" | "other" => {
+const classifyOperationalLine = (
+  value: string,
+): "venue" | "admission" | "meet" | "suppress" | "other" => {
   const text = safeString(value);
   if (!text) return "suppress";
   if (isMarketingLikeSourceLine(text) || isScheduleGridLikeSourceLine(text)) return "suppress";
@@ -1050,7 +942,10 @@ const splitExtractedDiscoveryPages = (text: string) => {
       {
         pageNumber: 1,
         text: normalized,
-        lines: normalized.split(/\n+/).map((line) => safeString(line)).filter(Boolean),
+        lines: normalized
+          .split(/\n+/)
+          .map((line) => safeString(line))
+          .filter(Boolean),
       },
     ];
   }
@@ -1060,7 +955,10 @@ const splitExtractedDiscoveryPages = (text: string) => {
   if (firstMarkerIndex > 0) {
     const preamble = normalized.slice(0, firstMarkerIndex).trim();
     if (preamble) {
-      const lines = preamble.split(/\n+/).map((line) => safeString(line)).filter(Boolean);
+      const lines = preamble
+        .split(/\n+/)
+        .map((line) => safeString(line))
+        .filter(Boolean);
       pages.push({ pageNumber: 0, text: preamble, lines });
     }
   }
@@ -1068,9 +966,15 @@ const splitExtractedDiscoveryPages = (text: string) => {
     const match = matches[index];
     const pageNumber = Number.parseInt(match[1] || `${index + 1}`, 10) || index + 1;
     const start = (match.index || 0) + match[0].length;
-    const end = index + 1 < matches.length ? matches[index + 1].index || normalized.length : normalized.length;
+    const end =
+      index + 1 < matches.length
+        ? matches[index + 1].index || normalized.length
+        : normalized.length;
     const pageText = normalized.slice(start, end).trim();
-    const lines = pageText.split(/\n+/).map((line) => safeString(line)).filter(Boolean);
+    const lines = pageText
+      .split(/\n+/)
+      .map((line) => safeString(line))
+      .filter(Boolean);
     pages.push({ pageNumber, text: pageText, lines });
   }
   return pages;
@@ -1078,7 +982,9 @@ const splitExtractedDiscoveryPages = (text: string) => {
 
 const classifyExtractedPageKind = (page: { text: string; lines: string[] }): ExtractedPageKind => {
   const text = safeString(page?.text);
-  const lines = Array.isArray(page?.lines) ? page.lines.map((line) => safeString(line)).filter(Boolean) : [];
+  const lines = Array.isArray(page?.lines)
+    ? page.lines.map((line) => safeString(line)).filter(Boolean)
+    : [];
   if (!text || !lines.length) return "empty";
   const combined = lines.join(" ");
   if (isMarketingLikeSourceLine(combined)) return "marketing";
@@ -1093,10 +999,13 @@ const collectRoutableSourceLines = (text: string) =>
   uniqueTextLines(
     splitExtractedDiscoveryPages(text)
       .map((page) => ({ ...page, kind: classifyExtractedPageKind(page) }))
-      .filter((page) => page.kind !== "marketing" && page.kind !== "schedule_grid" && page.kind !== "empty")
+      .filter(
+        (page) =>
+          page.kind !== "marketing" && page.kind !== "schedule_grid" && page.kind !== "empty",
+      )
       .flatMap((page) => page.lines)
       .filter(Boolean),
-    220
+    220,
   );
 
 const sanitizeContactRecord = (item: any, fallbackRole = "Contact") => {
@@ -1169,12 +1078,12 @@ const getSectionMetrics = (section: any) => {
     cardCount: blocks.reduce(
       (sum: number, block: any) =>
         sum + (block?.type === "card-grid" && Array.isArray(block.cards) ? block.cards.length : 0),
-      0
+      0,
     ),
     linkCount: blocks.reduce(
       (sum: number, block: any) =>
         sum + (block?.type === "link-list" && Array.isArray(block.links) ? block.links.length : 0),
-      0
+      0,
     ),
     hasVisualBlock: blocks.some((block: any) => block?.type === "image" || block?.type === "map"),
     hasPrimaryAction: blocks.some((block: any) => block?.type === "cta"),
@@ -1218,7 +1127,10 @@ const mergeSections = ({
   navLabel: label || primary.navLabel || primary.label,
   priority: Math.min(primary.priority ?? 999, secondary.priority ?? 999),
   hasContent: true,
-  blocks: [...(Array.isArray(primary.blocks) ? primary.blocks : []), ...(Array.isArray(secondary.blocks) ? secondary.blocks : [])],
+  blocks: [
+    ...(Array.isArray(primary.blocks) ? primary.blocks : []),
+    ...(Array.isArray(secondary.blocks) ? secondary.blocks : []),
+  ],
 });
 
 const compactNavLabel = (label: string) => {
@@ -1316,21 +1228,21 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
       ...(documentsMatch.section.blocks || []).flatMap((block: any) =>
         block?.type === "link-list" && Array.isArray(block.links)
           ? block.links.map((link: any) => `${safeString(link?.label)} ${safeString(link?.url)}`)
-          : []
+          : [],
       ),
     ]
       .join(" ")
       .toLowerCase();
     const targetId =
       /(parking|garage|parkmobile|pay\s+by\s+phone|lots\s+and\s+garages|parking\s+rates?|hourly\s+and\s+daily\s+rates)/i.test(
-        documentText
+        documentText,
       )
         ? "traffic-parking"
         : /(coach|meetmaker|entry|registration|regional)/i.test(documentText)
-        ? "coaches"
-        : /(venue|floor|hall|map|facility)/i.test(documentText)
-        ? "venue-details"
-        : "meet-details";
+          ? "coaches"
+          : /(venue|floor|hall|map|facility)/i.test(documentText)
+            ? "venue-details"
+            : "meet-details";
     const targetMatch =
       takeSection(targetId) ||
       (targetId === "meet-details"
@@ -1345,24 +1257,26 @@ const mergeSparseDiscoverySections = (sections: GymMeetDiscoverySection[]) => {
             return { section: synthetic, index: working.length - 1 };
           })()
         : targetId === "traffic-parking"
-        ? (() => {
-            const synthetic = createSyntheticSection({
-              id: "traffic-parking",
-              label: "Traffic & Parking",
-              kind: "traffic_parking",
-              priority: 60,
-            });
-            working.push(synthetic);
-            return { section: synthetic, index: working.length - 1 };
-          })()
-        : null);
+          ? (() => {
+              const synthetic = createSyntheticSection({
+                id: "traffic-parking",
+                label: "Traffic & Parking",
+                kind: "traffic_parking",
+                priority: 60,
+              });
+              working.push(synthetic);
+              return { section: synthetic, index: working.length - 1 };
+            })()
+          : null);
     if (targetMatch) {
       const merged = mergeSections({
         primary: targetMatch.section,
         secondary: documentsMatch.section,
       });
       replaceAt(targetMatch.index, merged);
-      removeAt(documentsMatch.index > targetMatch.index ? documentsMatch.index : documentsMatch.index);
+      removeAt(
+        documentsMatch.index > targetMatch.index ? documentsMatch.index : documentsMatch.index,
+      );
     }
   }
 
@@ -1395,7 +1309,6 @@ export function buildGymMeetDiscoveryContent({
   address?: string;
 }): GymMeetDiscoveryContent {
   eventData = inflateGymDiscoveryV2EventData(eventData);
-  const scheduleGridsEnabled = isGymDiscoveryScheduleGridEnabled();
   const logistics = advancedSections?.logistics || {};
   const meetSection = advancedSections?.meet || {};
   const gearSection = advancedSections?.gear || {};
@@ -1420,15 +1333,18 @@ export function buildGymMeetDiscoveryContent({
     ? eventData.discoverySource.extractionMeta.discoveredLinks
     : [];
   const resourceLinks = normalizeDiscoveryResourceLinks(
-    eventData?.discoverySource?.extractionMeta?.resourceLinks
+    eventData?.discoverySource?.extractionMeta?.resourceLinks,
   ).map((item: any) => {
     const audience =
       safeString(item?.audience) ||
-      classifyPublicAudience(`${safeString(item?.label)} ${safeString(item?.url)} ${safeString(item?.sourceUrl)}`);
+      classifyPublicAudience(
+        `${safeString(item?.label)} ${safeString(item?.url)} ${safeString(item?.sourceUrl)}`,
+      );
     return {
       ...item,
       audience,
-      renderTarget: safeString(item?.renderTarget) || classifyResourceRenderTarget({ ...item, audience }),
+      renderTarget:
+        safeString(item?.renderTarget) || classifyResourceRenderTarget({ ...item, audience }),
     };
   });
   const hasStructuredResources = resourceLinks.length > 0;
@@ -1440,7 +1356,7 @@ export function buildGymMeetDiscoveryContent({
         label: item.label,
         url: item.url,
       })),
-      8
+      8,
     );
   const quickLinks = uniqueLinks(
     [
@@ -1449,7 +1365,7 @@ export function buildGymMeetDiscoveryContent({
       ...parseLinks,
       ...discoveredLinks,
     ],
-    24
+    24,
   );
   const normalizedLinks = quickLinks;
 
@@ -1457,14 +1373,16 @@ export function buildGymMeetDiscoveryContent({
     normalizedLinks.find(
       (item) =>
         include.test(`${item.label} ${item.url}`) &&
-        (!exclude || !exclude.test(`${item.label} ${item.url}`))
+        (!exclude || !exclude.test(`${item.label} ${item.url}`)),
     );
   const pickLinks = (include: RegExp, exclude?: RegExp, limit = 6) =>
-    normalizedLinks.filter(
-      (item) =>
-        include.test(`${item.label} ${item.url}`) &&
-        (!exclude || !exclude.test(`${item.label} ${item.url}`))
-    ).slice(0, limit);
+    normalizedLinks
+      .filter(
+        (item) =>
+          include.test(`${item.label} ${item.url}`) &&
+          (!exclude || !exclude.test(`${item.label} ${item.url}`)),
+      )
+      .slice(0, limit);
 
   const parseAdmissionsFromText = (value: any) =>
     String(value || "")
@@ -1517,7 +1435,7 @@ export function buildGymMeetDiscoveryContent({
       return (
         arr.findIndex((candidate) => {
           const candidateKey = normalizeVenueFactForCompare(
-            `${safeString(candidate.label)} ${safeString(candidate.price)}`
+            `${safeString(candidate.label)} ${safeString(candidate.price)}`,
           );
           return candidateKey === key;
         }) === idx
@@ -1530,17 +1448,19 @@ export function buildGymMeetDiscoveryContent({
 
   const rotationLink = pickLink(
     /(rotation|result|score|schedule|meet\s*info|program|packet|official)/i,
-    /(arcgis|parking|traffic|parkmobile|garage|rate|wayfinding)/i
+    /(arcgis|parking|traffic|parkmobile|garage|rate|wayfinding)/i,
   );
   const structuredRotationHub = pickStructuredResourceLinks("rotation_hub")[0];
   const structuredRotationSheet = pickStructuredResourceLinks("rotation_sheet")[0];
   const mapDashboardLink = pickLink(
-    /(map|dashboard|parking|traffic|arcgis|parkmobile|garage|arrival|route)/i
+    /(map|dashboard|parking|traffic|arcgis|parkmobile|garage|arrival|route)/i,
   );
   const ratesInfoLink = pickLink(/(rate|pricing|fee|parking)/i, /(rotation|result|score)/i);
   const merchandiseLink = pickLink(/(merch|shop|store|vendor|apparel|souvenir|leotard)/i);
   const normalizedParkingLinks = (
-    Array.isArray(logistics?.parkingLinks) ? logistics.parkingLinks : parseLogistics?.parkingLinks || []
+    Array.isArray(logistics?.parkingLinks)
+      ? logistics.parkingLinks
+      : parseLogistics?.parkingLinks || []
   )
     .map(toAction)
     .filter(Boolean);
@@ -1562,7 +1482,7 @@ export function buildGymMeetDiscoveryContent({
   const extractedDiscoveryText = safeString(eventData?.discoverySource?.extractedText);
   const isHtmlNoiseLine = (line: string) =>
     /("@context"|schema\.org|@graph|breadcrumb|myftpupload|wp-content|wordpress|site name|home\s*>\s*|json-ld|application\/ld\+json)/i.test(
-      safeString(line)
+      safeString(line),
     );
   const sourceLines = collectRoutableSourceLines(extractedDiscoveryText)
     .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
@@ -1574,19 +1494,19 @@ export function buildGymMeetDiscoveryContent({
   const recoveredAdmissionMatrixCards = parseAdmissionMatrixFromSourceLines(sourceLines);
   const reroutedAdmissionMeetLines = uniqueTextLines(
     baseAdmissionNoteCandidates.filter((line) => ADMISSION_NOTE_MEET_PATTERN.test(line)),
-    6
+    6,
   );
   const facilityMapAddress = addressLabel || venueLabel;
   const gymLayoutImageUrl = safeString(
     advancedSections?.logistics?.gymLayoutImage ||
-      eventData?.discoverySource?.extractionMeta?.gymLayoutImageDataUrl
+      eventData?.discoverySource?.extractionMeta?.gymLayoutImageDataUrl,
   );
   const assignedGymRaw = collapseRepeatedDisplayText(
-    advancedSections?.meet?.assignedGym || parseResult?.athlete?.assignedGym || ""
+    advancedSections?.meet?.assignedGym || parseResult?.athlete?.assignedGym || "",
   );
   const gymLayoutLabel = safeString(
     advancedSections?.logistics?.gymLayoutLabel ||
-      (assignedGymRaw ? `Assigned gym location: ${assignedGymRaw}` : "")
+      (assignedGymRaw ? `Assigned gym location: ${assignedGymRaw}` : ""),
   );
   const gymLayoutLabelValue = gymLayoutLabel
     ? gymLayoutLabel.replace(/^assigned gym location:\s*/i, "").trim() || gymLayoutLabel
@@ -1615,7 +1535,7 @@ export function buildGymMeetDiscoveryContent({
           safeString(logistics?.rideShare || parseLogistics?.rideShare),
           safeString(logistics?.accessibility || parseLogistics?.accessibility),
         ].join("\n"),
-        { limit: 3 }
+        { limit: 3 },
       ).join(" ") ||
       (facilityMapAddress
         ? `Parking details were not listed in the packet. Plan to arrive early at ${facilityMapAddress} and follow on-site signage for spectator parking and drop-off.`
@@ -1623,7 +1543,7 @@ export function buildGymMeetDiscoveryContent({
     const fallbackTrafficBody =
       collectPublicBodyLines(
         safeString(logistics?.trafficAlerts || parseLogistics?.trafficAlerts),
-        { limit: 2 }
+        { limit: 2 },
       ).join(" ") ||
       (facilityMapAddress
         ? "Allow extra arrival time near the venue and follow posted event traffic direction on arrival."
@@ -1632,18 +1552,21 @@ export function buildGymMeetDiscoveryContent({
       [
         venueLabel,
         addressLabel,
-        ...collectPublicBodyLines(safeString(meetSection?.facilityLayout || parseMeetDetails?.facilityLayout), {
-          limit: 2,
-        }),
+        ...collectPublicBodyLines(
+          safeString(meetSection?.facilityLayout || parseMeetDetails?.facilityLayout),
+          {
+            limit: 2,
+          },
+        ),
       ],
-      3
+      3,
     ).join(" ");
     const fallbackSpectatorBody = uniqueTextLines(
       [
         ...parseResultAdmission.map((item: any) =>
           [safeString(item?.label), safeString(item?.price), safeString(item?.note)]
             .filter(Boolean)
-            .join(": ")
+            .join(": "),
         ),
         ...collectPublicBodyLines(
           [
@@ -1652,15 +1575,17 @@ export function buildGymMeetDiscoveryContent({
             safeString(logistics?.policySafety),
             safeString(logistics?.policyAnimals),
           ].join("\n"),
-          { limit: 4 }
+          { limit: 4 },
         ),
       ],
-      5
+      5,
     ).join(" ");
-    const fallbackTravelBody =
-      collectPublicBodyLines(safeString(logistics?.hotelInfo || parseLogistics?.hotel), {
+    const fallbackTravelBody = collectPublicBodyLines(
+      safeString(logistics?.hotelInfo || parseLogistics?.hotel),
+      {
         limit: 2,
-      }).join(" ");
+      },
+    ).join(" ");
     const effectivePublicSections = {
       meetDetails: normalizePublicSection(publicPageSections?.meetDetails, "Meet Details", {
         body: fallbackMeetDetailsBody,
@@ -1696,52 +1621,60 @@ export function buildGymMeetDiscoveryContent({
     const sanitizedVenueSection = sanitizeVenueSectionForMap(
       effectivePublicSections?.venue,
       venueLabel,
-      addressLabel
+      addressLabel,
     );
     const admissionCardsNormalized = mergeAdmissionVariants(
       Array.isArray(parseResult?.admission) && parseResult.admission.length > 0
         ? [...parseResult.admission, ...recoveredAdmissionMatrixCards]
-        : rawAdmissionCards
+        : rawAdmissionCards,
     );
     const spectatorBody = sanitizeSpectatorBody(
       effectivePublicSections?.spectatorInfo?.body,
-      admissionCardsNormalized.length > 0
+      admissionCardsNormalized.length > 0,
     );
     const resultLinks = selectSectionResourceLinks(resourceLinks, "results", 8);
     const hotelLinks = selectSectionResourceLinks(resourceLinks, "hotels", 8);
-    const publicTravelHotelCards = buildStructuredHotelCards(effectivePublicSections?.travel?.items);
+    const publicTravelHotelCards = buildStructuredHotelCards(
+      effectivePublicSections?.travel?.items,
+    );
     const publicTravelFallbackLinks = uniqueLinks(
       [
         ...hotelLinks,
         safeString(effectivePublicSections?.travel?.fallbackLink)
-          ? { label: "Hotels & Travel", url: safeString(effectivePublicSections?.travel?.fallbackLink) }
+          ? {
+              label: "Hotels & Travel",
+              url: safeString(effectivePublicSections?.travel?.fallbackLink),
+            }
           : null,
       ].filter(Boolean),
-      8
+      8,
     );
     const publicTravelBody = sanitizeLinkedCopy(
       effectivePublicSections?.travel?.body,
-      publicTravelFallbackLinks
+      publicTravelFallbackLinks,
     );
     const publicTravelBlocks = buildPublicSectionBlocks({
       ...effectivePublicSections?.travel,
       body:
         isLowSignalTravelSummaryText(publicTravelBody) ||
         isRedundantLinkSummaryText(publicTravelBody, publicTravelFallbackLinks)
-        ? ""
-        : publicTravelBody,
+          ? ""
+          : publicTravelBody,
     });
     const parkingLinks = selectSectionResourceLinks(resourceLinks, "traffic_parking", 8);
-    const documentLinks = effectivePublicSections?.documents?.visibility === "visible"
-      ? uniqueLinks(effectivePublicSections.documents.links, 12)
-      : [];
+    const documentLinks =
+      effectivePublicSections?.documents?.visibility === "visible"
+        ? uniqueLinks(effectivePublicSections.documents.links, 12)
+        : [];
     const resultsBody =
       classifyPublicAudience(safeString(parseMeetDetails?.resultsInfo)) === "public_attendee"
         ? safeString(parseMeetDetails?.resultsInfo)
         : "";
     const announcementCards = uniqueBy(
       [
-        ...(Array.isArray(parseCommunications?.announcements) ? parseCommunications.announcements : []),
+        ...(Array.isArray(parseCommunications?.announcements)
+          ? parseCommunications.announcements
+          : []),
         ...(Array.isArray(advancedSections?.announcements?.announcements)
           ? advancedSections.announcements.announcements
           : []),
@@ -1753,7 +1686,7 @@ export function buildGymMeetDiscoveryContent({
           body: safeString(item?.body || item?.text || item?.message || item?.title),
         }))
         .filter((item) => item.body),
-      (item) => `${item.label}|${item.body}`
+      (item) => `${item.label}|${item.body}`,
     );
 
     const sections: GymMeetDiscoverySection[] = [
@@ -1949,29 +1882,29 @@ export function buildGymMeetDiscoveryContent({
 
   const isVenueHeaderNoiseLine = (line: string) =>
     /^(spectator admission\b|updated\s+[a-z]+\s+\d{1,2},\s+\d{4}\b|page\s+\d+\s+of\s+\d+\b)/i.test(
-      safeString(line)
+      safeString(line),
     );
   const isHydrationLine = (line: string) =>
     /(water bottles?|bottle filling|filling stations?|hydration|bring water)/i.test(
-      safeString(line)
+      safeString(line),
     );
   const isMerchandiseLine = (line: string) =>
     /(event merchandise|merchandise|leotards?|gymnastics apparel|accessories)/i.test(
-      safeString(line)
+      safeString(line),
     );
   const isResultsLine = (line: string) =>
     /(official results|live scoring|meetscoresonline|results will be posted)/i.test(
-      safeString(line)
+      safeString(line),
     );
   const isDaylightLine = (line: string) => /daylight savings/i.test(safeString(line));
   const isSafetyObjectsLine = (line: string) =>
     /(keep an eye on your children|footballs?|baseballs?|objects?\s+for\s+throwing|safety of all the gymnasts|not competing for their safety)/i.test(
-      safeString(line)
+      safeString(line),
     );
 
   const extractVenueParagraphSentences = (lines: string[]) => {
     const startIdx = lines.findIndex((line) =>
-      /competition will take place in the east,\s*central and west halls/i.test(line)
+      /competition will take place in the east,\s*central and west halls/i.test(line),
     );
     if (startIdx < 0) return [] as string[];
     const chunk: string[] = [];
@@ -2007,10 +1940,9 @@ export function buildGymMeetDiscoveryContent({
   ];
 
   const extractionLayoutFacts = sanitizeVenueFactLines(
-    (
-      Array.isArray(eventData?.discoverySource?.extractionMeta?.gymLayoutFacts)
-        ? eventData.discoverySource.extractionMeta.gymLayoutFacts
-        : []
+    (Array.isArray(eventData?.discoverySource?.extractionMeta?.gymLayoutFacts)
+      ? eventData.discoverySource.extractionMeta.gymLayoutFacts
+      : []
     )
       .map((line: any) => safeString(line))
       .filter(Boolean),
@@ -2019,7 +1951,7 @@ export function buildGymMeetDiscoveryContent({
       maxLines: 14,
       requireAnchor: true,
       excludePatterns: venueExcludePatterns,
-    }
+    },
   );
 
   const trafficText = safeString(logistics?.trafficAlerts || parseLogistics?.trafficAlerts);
@@ -2035,9 +1967,7 @@ export function buildGymMeetDiscoveryContent({
     const fullNormalized = normalizeCompareText(trafficText);
     if (!normalized) return false;
     if (normalized === fullNormalized) return false;
-    return (
-      arr.findIndex((candidate) => normalizeCompareText(candidate) === normalized) === idx
-    );
+    return arr.findIndex((candidate) => normalizeCompareText(candidate) === normalized) === idx;
   });
 
   const trafficSlotsFromText = (() => {
@@ -2045,14 +1975,14 @@ export function buildGymMeetDiscoveryContent({
       .map((line) => safeString(line))
       .filter(Boolean)
       .filter((line) =>
-        /(traffic|disney on ice|benchmark|march|\bam\b|\bpm\b|parking)/i.test(line)
+        /(traffic|disney on ice|benchmark|march|\bam\b|\bpm\b|parking)/i.test(line),
       );
     const slots: Array<{ date: string; times: string }> = [];
     const seen = new Set<string>();
     let pendingDate = "";
     for (const line of candidateLines) {
       const dateMatch = line.match(
-        /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}\b/i
+        /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}\b/i,
       );
       if (dateMatch?.[0]) pendingDate = dateMatch[0];
       const timeRanges =
@@ -2084,24 +2014,20 @@ export function buildGymMeetDiscoveryContent({
   const sourceArrivalGuidanceLine =
     sourceLines.find((line) =>
       /^(arrival guidance\b|arrive\s+one\s+hour\s+before\b|arrive\s+45\s+minutes\s+before\b|arrive\s+forty[-\s]?five\s+minutes\s+before\b)/i.test(
-        safeString(line)
-      )
+        safeString(line),
+      ),
     ) || "";
   const sourceRegistrationLine =
     sourceLines.find((line) =>
-      /^(registration\b|the registration area will be\b)/i.test(safeString(line))
+      /^(registration\b|the registration area will be\b)/i.test(safeString(line)),
     ) || "";
-  const sourceSafetyObjectsLine =
-    sourceLines.find((line) => isSafetyObjectsLine(line)) || "";
+  const sourceSafetyObjectsLine = sourceLines.find((line) => isSafetyObjectsLine(line)) || "";
   const sourceResultsLines = uniqueTextLines(
     sourceLines.filter((line) => isResultsLine(line)),
-    4
+    4,
   );
   const sourceResultsText = sourceResultsLines.join(" ");
-  const venueParagraphSentences = uniqueTextLines(
-    extractVenueParagraphSentences(sourceLines),
-    8
-  );
+  const venueParagraphSentences = uniqueTextLines(extractVenueParagraphSentences(sourceLines), 8);
   const firstAnnouncement = Array.isArray(parseCommunications?.announcements)
     ? parseCommunications.announcements.find((item: any) => safeString(item?.body))
     : null;
@@ -2110,8 +2036,11 @@ export function buildGymMeetDiscoveryContent({
       ...baseAdmissionNoteCandidates,
       ...sourceLines.filter((line) => /(door fees?|weekend passes?)/i.test(line)),
     ],
-    8
-  ).filter((line) => /(door fees?|weekend passes?)/i.test(line) || classifyOperationalLine(line) === "admission");
+    8,
+  ).filter(
+    (line) =>
+      /(door fees?|weekend passes?)/i.test(line) || classifyOperationalLine(line) === "admission",
+  );
   const sourceAdmissionFactLines = uniqueTextLines(
     sourceLines.filter((line) => {
       const text = safeString(line);
@@ -2120,12 +2049,12 @@ export function buildGymMeetDiscoveryContent({
         !/(arrival guidance|registration|rotation sheets?|results?)/i.test(text)
       );
     }),
-    8
+    8,
   );
   const admissionPrimaryNote = (() => {
     const hasDoorFees = admissionNoteCandidates.some((line) => /\bdoor fees?\b/i.test(line));
     const hasWeekendPass = admissionNoteCandidates.some((line) =>
-      /\bweekend passes?\b/i.test(line)
+      /\bweekend passes?\b/i.test(line),
     );
     if (hasDoorFees || hasWeekendPass) {
       return [hasDoorFees ? "Door fees are daily." : "", hasWeekendPass ? "No weekend passes." : ""]
@@ -2142,53 +2071,57 @@ export function buildGymMeetDiscoveryContent({
     "team_divisions",
     "rotation_sheet",
     "photo_video",
-    "apparel_form"
+    "apparel_form",
   );
   const structuredHotelLinks = toResourceActions("travel_accommodation", "hotel_booking");
 
   const resultsLinks = uniqueTextLines(
-    (
-      structuredResultsLinks.length > 0
-        ? pickStructuredResourceLinks("results_live", "results_hub", "results_pdf").map(
-            (item) => item.url
+    structuredResultsLinks.length > 0
+      ? pickStructuredResourceLinks("results_live", "results_hub", "results_pdf").map(
+          (item) => item.url,
+        )
+      : normalizedLinks
+          .filter((item) =>
+            /(result|score|meetscoresonline|lightningcity|usacompetitions)/i.test(
+              `${item.label} ${item.url}`,
+            ),
           )
-        : normalizedLinks
-            .filter((item) =>
-              /(result|score|meetscoresonline|lightningcity|usacompetitions)/i.test(
-                `${item.label} ${item.url}`
-              )
-            )
-            .map((item) => item.url)
-    ),
-    3
+          .map((item) => item.url),
+    3,
   );
   const announcementBody = safeString(firstAnnouncement?.body);
   const merchandiseText = /(merch|shop|store|vendor|apparel|souvenir|leotard)/i.test(
-    announcementBody
+    announcementBody,
   )
     ? announcementBody
     : sourceMerchandiseLine;
-  const parsedUnmappedFacts = Array.isArray(parseResult?.unmappedFacts) ? parseResult.unmappedFacts : [];
+  const parsedUnmappedFacts = Array.isArray(parseResult?.unmappedFacts)
+    ? parseResult.unmappedFacts
+    : [];
   const parsedVenueDetailLines = uniqueTextLines(
     parsedUnmappedFacts
       .filter((fact: any) => !shouldSuppressUnmappedFact(fact))
-      .filter((fact: any) => /\bvenue(?:[_\s-]?detail|[_\s-]?contact)?\b/i.test(safeString(fact?.category)))
+      .filter((fact: any) =>
+        /\bvenue(?:[_\s-]?detail|[_\s-]?contact)?\b/i.test(safeString(fact?.category)),
+      )
       .map((fact: any) => safeString(fact?.detail)),
-    8
+    8,
   );
   const parsedMeetDetailLines = uniqueTextLines(
     parsedUnmappedFacts
       .filter((fact: any) => !shouldSuppressUnmappedFact(fact))
       .filter((fact: any) => /\bmeet[_\s-]?detail\b/i.test(safeString(fact?.category)))
       .map((fact: any) => safeString(fact?.detail)),
-    8
+    8,
   );
   const normalizedOperationalNotes = uniqueTextLines(
     [
       ...(Array.isArray(meetSection?.operationalNotes) ? meetSection.operationalNotes : []),
-      ...(Array.isArray(parseMeetDetails?.operationalNotes) ? parseMeetDetails.operationalNotes : []),
+      ...(Array.isArray(parseMeetDetails?.operationalNotes)
+        ? parseMeetDetails.operationalNotes
+        : []),
     ],
-    12
+    12,
   );
   const resultsInfoTextRaw =
     safeString(meetSection?.resultsInfo || parseMeetDetails?.resultsInfo) ||
@@ -2248,18 +2181,18 @@ export function buildGymMeetDiscoveryContent({
     if (venueLower.includes("orlando")) return "orlando";
     return "";
   })();
-  const additionalInfoStartIdx = sourceLines.findIndex((line) =>
-    /additional\s*info/i.test(line)
-  );
+  const additionalInfoStartIdx = sourceLines.findIndex((line) => /additional\s*info/i.test(line));
   const additionalInfoBlock =
-    additionalInfoStartIdx >= 0 ? sourceLines.slice(additionalInfoStartIdx + 1, additionalInfoStartIdx + 20) : [];
+    additionalInfoStartIdx >= 0
+      ? sourceLines.slice(additionalInfoStartIdx + 1, additionalInfoStartIdx + 20)
+      : [];
   const rideSharePattern = /(rideshare|ride share|uber|lyft|taxi|front drive|drop-?off)/i;
   const meetDetailCandidateLines = [
     ...additionalInfoBlock,
     ...sourceLines.filter((line) =>
       /(allow extra time|30-45 minutes|east|central|west halls|registration area|guest services|competition area|coffee bar|admission tickets|official results|live scoring|daylight savings|service dogs)/i.test(
-        line
-      )
+        line,
+      ),
     ),
     ...sourceLines.filter((line) => isNarrativeMeetPacketLine(line)),
   ];
@@ -2273,8 +2206,7 @@ export function buildGymMeetDiscoveryContent({
     const prev = acc[acc.length - 1];
     const prevEndsSentence = /[.!?]$/.test(prev);
     const startsContinuation =
-      /^[a-z(]/.test(line) ||
-      /^(and|or|but|because|which|that|to|for|with|on|in|at)\b/i.test(line);
+      /^[a-z(]/.test(line) || /^(and|or|but|because|which|that|to|for|with|on|in|at)\b/i.test(line);
     if (!prevEndsSentence && startsContinuation) {
       acc[acc.length - 1] = `${prev} ${line}`.replace(/\s+/g, " ").trim();
     } else {
@@ -2296,8 +2228,7 @@ export function buildGymMeetDiscoveryContent({
       const normalized = line.toLowerCase().replace(/\s+/g, " ").trim();
       return (
         arr.findIndex(
-          (candidate) =>
-            candidate.toLowerCase().replace(/\s+/g, " ").trim() === normalized
+          (candidate) => candidate.toLowerCase().replace(/\s+/g, " ").trim() === normalized,
         ) === idx
       );
     })
@@ -2305,7 +2236,7 @@ export function buildGymMeetDiscoveryContent({
 
   const isVenueDetailLine = (line: string) =>
     /(east hall|west hall|central hall|north hall|south hall|registration|guest services|entrance|coffee bar|competition area|awards area|gym\s*[a-z0-9]{1,2}|2nd floor|second floor|3rd floor|third floor|check-?in|freight door|right door|meet site|phone numbers?|ph:\s*\d|temperature inside the venue|inside the venue is chilly|please come prepared|beyond our control|coral springs gymnasium)/i.test(
-      line
+      line,
     );
   const eventDatesLabelNormalized = normalizeCompareText(eventDatesLabel);
   const isAdmissionLine = (line: string) =>
@@ -2314,17 +2245,17 @@ export function buildGymMeetDiscoveryContent({
       const normalized = safeString(text);
       return (
         /(spectator admission|admission|tickets?|day passes?|all session passes?|weekend passes?|credit card|cash only|adults?\b|child(?:ren)?(?:\s*under)?\b|children\s+\d+\s+and\s+under\b|seniors?\b|military\b|free\b)/i.test(
-          normalized
+          normalized,
         ) &&
         (currencyCount > 0 ||
           /(door fees?|tickets?|day passes?|all session passes?|weekend passes?|credit card|cash only|under\s+\d+\s*:\s*free|children\s+\d+\s+and\s+under\s*:\s*free|free admission|child under|children?\b.*\bfree\b|adults?\b.*\$|children?\b.*\$)/i.test(
-            normalized
+            normalized,
           ))
       );
     })(safeString(line));
   const isPaymentLine = (line: string) =>
     /^(payment|payment instructions?:|checks?\s+payable|check:\s*make payable|make payable to|payable to)/i.test(
-      safeString(line)
+      safeString(line),
     );
   const isSpectatorLogisticsLine = (line: string) =>
     /^(doors open|arrival guidance|registration):/i.test(safeString(line));
@@ -2389,20 +2320,24 @@ export function buildGymMeetDiscoveryContent({
       ...parsedMeetDetailLines,
       ...normalizedOperationalNotes,
     ],
-    12
+    12,
   ).filter((line) => line.length > 10);
   const descriptionLines = uniqueTextLines(
     normalizedDetailsText
       .split(/\n+/)
       .map((line) => line.replace(/^[-\u2022]\s*/, "").trim())
       .filter(Boolean),
-    8
+    8,
   ).filter((line) => line.length > 10 && !isMeetDetailsExcludedLine(line));
 
   const meetDetailsRawLines = (() => {
     const out: string[] = [];
     const seen = new Set<string>();
-    for (const rawLine of [...descriptionLines, ...meetDetailsFallbackLines, ...primaryMeetDetailsLines]) {
+    for (const rawLine of [
+      ...descriptionLines,
+      ...meetDetailsFallbackLines,
+      ...primaryMeetDetailsLines,
+    ]) {
       const line = safeString(rawLine);
       if (!line || line.length <= 10) continue;
       if (isMeetDetailsExcludedLine(line)) continue;
@@ -2429,7 +2364,7 @@ export function buildGymMeetDiscoveryContent({
       maxLines: 14,
       requireAnchor: true,
       excludePatterns: venueExcludePatterns,
-    }
+    },
   );
   const facilityLinesFromSource = sanitizeVenueFactLines(
     sourceLines.filter((line) => !rideSharePattern.test(line)),
@@ -2438,22 +2373,22 @@ export function buildGymMeetDiscoveryContent({
       maxLines: 10,
       requireAnchor: true,
       excludePatterns: venueExcludePatterns,
-    }
+    },
   );
   const facilityLinesRaw = uniqueTextLines(
     stitchSentenceFragments([...facilityLinesFromFacts, ...facilityLinesFromSource]),
-    14
+    14,
   ).filter((line) => line.length > 10);
   const meetDetailsLines = uniqueTextLines(
     meetDetailsRawLines.filter((line) => {
       if (!isVenueDetailLine(line)) return true;
       return !meetsAnyLine(line, facilityLinesRaw);
     }),
-    16
+    16,
   ).filter((line) => line.length > 10);
   const facilityLines = uniqueTextLines(
     facilityLinesRaw.filter((line) => !meetsAnyLine(line, meetDetailsLines)),
-    14
+    14,
   ).filter((line) => line.length > 10);
 
   const isSentenceLikeVenueLine = (line: string) => {
@@ -2485,11 +2420,13 @@ export function buildGymMeetDiscoveryContent({
       ...facilityLines,
       ...parsedVenueDetailLines,
     ],
-    14
+    14,
   );
   const venueListLines = uniqueTextLines(
-    venueListLinesRaw.filter((line) => isSentenceLikeVenueLine(line) && isVenueOnlyDisplayLine(line)),
-    12
+    venueListLinesRaw.filter(
+      (line) => isSentenceLikeVenueLine(line) && isVenueOnlyDisplayLine(line),
+    ),
+    12,
   );
   const parsedAwardsFallback =
     sanitizeVenueFactLines([safeString(parseResult?.athlete?.awards)], {
@@ -2499,8 +2436,12 @@ export function buildGymMeetDiscoveryContent({
       excludePatterns: venueExcludePatterns,
     })[0] || "";
   const registrationDeskNote =
-    facilityLines.find((line) => /(registration|guest services|2nd floor|second floor)/i.test(line)) ||
-    extractionLayoutFacts.find((line) => /(registration|guest services|2nd floor|second floor)/i.test(line)) ||
+    facilityLines.find((line) =>
+      /(registration|guest services|2nd floor|second floor)/i.test(line),
+    ) ||
+    extractionLayoutFacts.find((line) =>
+      /(registration|guest services|2nd floor|second floor)/i.test(line),
+    ) ||
     "";
   const awardsAreaNote =
     facilityLines.find((line) => /(awards area|north side)/i.test(line)) ||
@@ -2549,7 +2490,7 @@ export function buildGymMeetDiscoveryContent({
       sourcePolicyLine(/(safety policy|throwing objects|baseballs|footballs|safety)/i),
   ];
   const extractionCoachPageHints = Array.isArray(
-    eventData?.discoverySource?.extractionMeta?.coachPageHints
+    eventData?.discoverySource?.extractionMeta?.coachPageHints,
   )
     ? eventData.discoverySource.extractionMeta.coachPageHints
     : [];
@@ -2566,7 +2507,7 @@ export function buildGymMeetDiscoveryContent({
         return (
           arr.findIndex((candidate) => {
             const candidateKey = normalizeCompareText(
-              `${safeString(candidate.label)}|${safeString(candidate.amount)}|${safeString(candidate.note)}`
+              `${safeString(candidate.label)}|${safeString(candidate.amount)}|${safeString(candidate.note)}`,
             );
             return candidateKey === key;
           }) === idx
@@ -2583,14 +2524,14 @@ export function buildGymMeetDiscoveryContent({
       .filter((item) => item.label || item.amount || item.trigger || item.note)
       .filter((item, idx, arr) => {
         const key = normalizeCompareText(
-          `${item.label}|${item.amount}|${item.trigger}|${item.note}`
+          `${item.label}|${item.amount}|${item.trigger}|${item.note}`,
         );
         return (
           arr.findIndex((candidate) => {
             const candidateKey = normalizeCompareText(
               `${safeString(candidate.label)}|${safeString(candidate.amount)}|${safeString(
-                candidate.trigger
-              )}|${safeString(candidate.note)}`
+                candidate.trigger,
+              )}|${safeString(candidate.note)}`,
             );
             return candidateKey === key;
           }) === idx
@@ -2608,71 +2549,75 @@ export function buildGymMeetDiscoveryContent({
         const key = normalizeCompareText(item.url);
         return arr.findIndex((candidate) => normalizeCompareText(candidate.url) === key) === idx;
       });
-  const publicMeetContacts = ([
-    ...((Array.isArray(meetSection?.staffContacts) ? meetSection.staffContacts : []) as any[]),
-    ...((Array.isArray(parseResult?.contacts) ? parseResult.contacts : []).filter((item: any) =>
-      classifyParsedContactRole(item) === "public"
-    ) as any[]),
-  ] as any[])
+  const publicMeetContacts = (
+    [
+      ...((Array.isArray(meetSection?.staffContacts) ? meetSection.staffContacts : []) as any[]),
+      ...((Array.isArray(parseResult?.contacts) ? parseResult.contacts : []).filter(
+        (item: any) => classifyParsedContactRole(item) === "public",
+      ) as any[]),
+    ] as any[]
+  )
     .map((item: any) => sanitizeContactRecord(item, "Meet staff"))
     .filter(Boolean)
     .filter((item, idx, arr) => {
       const key = normalizeCompareText(
-        `${safeString(item?.role)}|${safeString(item?.name)}|${safeString(item?.email)}|${safeString(item?.phone)}`
+        `${safeString(item?.role)}|${safeString(item?.name)}|${safeString(item?.email)}|${safeString(item?.phone)}`,
       );
       return (
         arr.findIndex((candidate) => {
           const candidateKey = normalizeCompareText(
             `${safeString(candidate?.role)}|${safeString(candidate?.name)}|${safeString(
-              candidate?.email
-            )}|${safeString(candidate?.phone)}`
+              candidate?.email,
+            )}|${safeString(candidate?.phone)}`,
           );
           return candidateKey === key;
         }) === idx
       );
     });
-  const venueContacts = ([
-    ...((Array.isArray(logistics?.venueContacts) ? logistics.venueContacts : []) as any[]),
-    ...((Array.isArray(parseResult?.contacts) ? parseResult.contacts : []).filter((item: any) =>
-      classifyParsedContactRole(item) === "venue"
-    ) as any[]),
-  ] as any[])
+  const venueContacts = (
+    [
+      ...((Array.isArray(logistics?.venueContacts) ? logistics.venueContacts : []) as any[]),
+      ...((Array.isArray(parseResult?.contacts) ? parseResult.contacts : []).filter(
+        (item: any) => classifyParsedContactRole(item) === "venue",
+      ) as any[]),
+    ] as any[]
+  )
     .map((item: any) => sanitizeContactRecord(item, "Venue contact"))
     .filter(Boolean)
     .filter((item, idx, arr) => {
       const key = normalizeCompareText(
-        `${safeString(item?.role)}|${safeString(item?.name)}|${safeString(item?.email)}|${safeString(item?.phone)}`
+        `${safeString(item?.role)}|${safeString(item?.name)}|${safeString(item?.email)}|${safeString(item?.phone)}`,
       );
       return (
         arr.findIndex((candidate) => {
           const candidateKey = normalizeCompareText(
             `${safeString(candidate?.role)}|${safeString(candidate?.name)}|${safeString(
-              candidate?.email
-            )}|${safeString(candidate?.phone)}`
+              candidate?.email,
+            )}|${safeString(candidate?.phone)}`,
           );
           return candidateKey === key;
         }) === idx
       );
     });
-  const coachContacts = ([
-    ...((Array.isArray(coachesSection?.contacts) ? coachesSection.contacts : []) as any[]),
-    ...((Array.isArray(parseCoachInfo?.contacts) ? parseCoachInfo.contacts : []) as any[]),
-    ...((Array.isArray(parseResult?.contacts) ? parseResult.contacts : []).filter((item: any) =>
-      classifyParsedContactRole(item) === "coach"
-    ) as any[]),
-  ] as any[])
+  const coachContacts = (
+    [
+      ...((Array.isArray(coachesSection?.contacts) ? coachesSection.contacts : []) as any[]),
+      ...((Array.isArray(parseCoachInfo?.contacts) ? parseCoachInfo.contacts : []) as any[]),
+      ...((Array.isArray(parseResult?.contacts) ? parseResult.contacts : []).filter(
+        (item: any) => classifyParsedContactRole(item) === "coach",
+      ) as any[]),
+    ] as any[]
+  )
     .map((item: any) => sanitizeContactRecord(item, "Coach contact"))
     .filter(Boolean)
     .filter((item, idx, arr) => {
-      const key = normalizeCompareText(
-        `${item.role}|${item.name}|${item.email}|${item.phone}`
-      );
+      const key = normalizeCompareText(`${item.role}|${item.name}|${item.email}|${item.phone}`);
       return (
         arr.findIndex((candidate) => {
           const candidateKey = normalizeCompareText(
             `${safeString(candidate.role)}|${safeString(candidate.name)}|${safeString(
-              candidate.email
-            )}|${safeString(candidate.phone)}`
+              candidate.email,
+            )}|${safeString(candidate.phone)}`,
           );
           return candidateKey === key;
         }) === idx
@@ -2683,8 +2628,8 @@ export function buildGymMeetDiscoveryContent({
     ...((Array.isArray(parseCoachInfo?.deadlines) ? parseCoachInfo.deadlines : []) as any[]),
     ...((Array.isArray(parseResult?.deadlines) ? parseResult.deadlines : []).filter((item: any) =>
       /(regional|entry|registration|deadline|meet reservation|meet maker)/i.test(
-        `${safeString(item?.label)} ${safeString(item?.note)}`
-      )
+        `${safeString(item?.label)} ${safeString(item?.note)}`,
+      ),
     ) as any[]),
   ]
     .map((item: any) => ({
@@ -2699,8 +2644,8 @@ export function buildGymMeetDiscoveryContent({
         arr.findIndex((candidate) => {
           const candidateKey = normalizeCompareText(
             `${safeString(candidate.label)}|${safeString(candidate.date)}|${safeString(
-              candidate.note
-            )}`
+              candidate.note,
+            )}`,
           );
           return candidateKey === key;
         }) === idx
@@ -2709,73 +2654,75 @@ export function buildGymMeetDiscoveryContent({
   const sourceCoachSignInLine =
     sourceLines.find((line) =>
       /(coaches?\s+sign[- ]?in|sign the official .*sign[- ]?in sheet|main computer scoring table)/i.test(
-        line
-      )
+        line,
+      ),
     ) || "";
   const sourceCoachHospitalityLine =
     sourceLines.find((line) =>
       /(coaches?\s+hospitality|lunch and dinner provided to coaches|grab\s*&\s*go snacks|coffee.*water.*coaches)/i.test(
-        line
-      )
+        line,
+      ),
     ) || "";
   const sourceCoachFloorAccessLine =
     sourceLines.find((line) =>
       /(competition floor|verifiable member status|allowed entry via spectator admission|children of coaches)/i.test(
-        line
-      )
+        line,
+      ),
     ) || "";
-  const sourceCoachScratchesLine =
-    sourceLines.find((line) => /\bscratches?\b/i.test(line)) || "";
+  const sourceCoachScratchesLine = sourceLines.find((line) => /\bscratches?\b/i.test(line)) || "";
   const sourceCoachRotationLine =
     sourceLines.find((line) =>
-      /(rotation sheets?|rotationsheets\.com|master rotation sheet)/i.test(line)
+      /(rotation sheets?|rotationsheets\.com|master rotation sheet)/i.test(line),
     ) || "";
   const sourceCoachRegionalLine =
     sourceLines.find((line) =>
       /(regional meet coaches information|regional commitment|qualifying athletes|meet maker|meet reservation|must enter by noon)/i.test(
-        line
-      )
+        line,
+      ),
     ) || "";
   const sourceCoachPaymentLine =
     sourceLines.find((line) =>
       /(payment|payable|credit card|convenience fee|cashier'?s check|meet maker|venmo|zelle|checks? payable|refund)/i.test(
-        line
-      )
+        line,
+      ),
     ) || "";
   const sourceCoachQualificationLine =
-    sourceLines.find((line) => /(qualif|state meet|qualifying score|must qualify)/i.test(line)) || "";
+    sourceLines.find((line) => /(qualif|state meet|qualifying score|must qualify)/i.test(line)) ||
+    "";
   const sourceCoachFormatLine =
-    sourceLines.find((line) => /(modified capital cup|meet format|capital cup|super team|competition format)/i.test(line)) ||
-    "";
+    sourceLines.find((line) =>
+      /(modified capital cup|meet format|capital cup|super team|competition format)/i.test(line),
+    ) || "";
   const sourceCoachEquipmentLine =
-    sourceLines.find((line) => /(equipment|ub mats|sting mats|vault table|rod floor|apparatus)/i.test(line)) ||
-    "";
+    sourceLines.find((line) =>
+      /(equipment|ub mats|sting mats|vault table|rod floor|apparatus)/i.test(line),
+    ) || "";
   const sourceCoachAwardsLine =
-    sourceLines.find((line) => /(team awards?|awards ceremony|awards will be|awards presented)/i.test(line)) ||
-    "";
+    sourceLines.find((line) =>
+      /(team awards?|awards ceremony|awards will be|awards presented)/i.test(line),
+    ) || "";
   const sourceCoachFloorMusicLine =
-    sourceLines.find((line) => /(floor music|music file|music upload|music must be)/i.test(line)) || "";
+    sourceLines.find((line) => /(floor music|music file|music upload|music must be)/i.test(line)) ||
+    "";
   const coachAttire = uniqueTextLines(
     [
       ...toStructuredListItems(parseCoachInfo?.attire || ""),
       ...toStructuredListItems(coachesSection?.attire || ""),
       ...sourceLines.filter((line) =>
         /(closed toe athletic shoes|athletic or tailored shorts|collared or business casual|no hats or visors|dress code|coaches attire)/i.test(
-          line
-        )
+          line,
+        ),
       ),
     ],
-    8
+    8,
   );
   const coachNotes = uniqueTextLines(
     [
       ...((Array.isArray(coachesSection?.notes) ? coachesSection.notes : []) as any[]),
       ...(Array.isArray(parseCoachInfo?.notes) ? parseCoachInfo.notes : []),
-      ...extractionCoachPageHints
-        .map((item: any) => safeString(item?.excerpt))
-        .filter(Boolean),
+      ...extractionCoachPageHints.map((item: any) => safeString(item?.excerpt)).filter(Boolean),
     ],
-    8
+    8,
   ).filter(
     (line) =>
       ![
@@ -2787,69 +2734,77 @@ export function buildGymMeetDiscoveryContent({
         safeString(parseCoachInfo?.regionalCommitment),
       ]
         .filter(Boolean)
-        .some((candidate) => normalizeCompareText(candidate) === normalizeCompareText(line))
+        .some((candidate) => normalizeCompareText(candidate) === normalizeCompareText(line)),
   );
-  const coachSignIn = safeString(coachesSection?.signIn || parseCoachInfo?.signIn || sourceCoachSignInLine);
+  const coachSignIn = safeString(
+    coachesSection?.signIn || parseCoachInfo?.signIn || sourceCoachSignInLine,
+  );
   const coachHospitality = safeString(
-    coachesSection?.hospitality || parseCoachInfo?.hospitality || sourceCoachHospitalityLine
+    coachesSection?.hospitality || parseCoachInfo?.hospitality || sourceCoachHospitalityLine,
   );
   const coachFloorAccess = safeString(
-    coachesSection?.floorAccess || parseCoachInfo?.floorAccess || sourceCoachFloorAccessLine
+    coachesSection?.floorAccess || parseCoachInfo?.floorAccess || sourceCoachFloorAccessLine,
   );
   const coachScratches = safeString(
-    coachesSection?.scratches || parseCoachInfo?.scratches || sourceCoachScratchesLine
+    coachesSection?.scratches || parseCoachInfo?.scratches || sourceCoachScratchesLine,
   );
   const coachFloorMusic = safeString(
-    coachesSection?.floorMusic || parseCoachInfo?.floorMusic || sourceCoachFloorMusicLine
+    coachesSection?.floorMusic || parseCoachInfo?.floorMusic || sourceCoachFloorMusicLine,
   );
   const coachRotationSheets = safeString(
-    coachesSection?.rotationSheets || parseCoachInfo?.rotationSheets || sourceCoachRotationLine
+    coachesSection?.rotationSheets || parseCoachInfo?.rotationSheets || sourceCoachRotationLine,
   );
   const coachRegionalCommitment = safeString(
-    coachesSection?.regionalCommitment || parseCoachInfo?.regionalCommitment || sourceCoachRegionalLine
+    coachesSection?.regionalCommitment ||
+      parseCoachInfo?.regionalCommitment ||
+      sourceCoachRegionalLine,
   );
   const coachAwards = safeString(
-    coachesSection?.awards || parseCoachInfo?.awards || sourceCoachAwardsLine
+    coachesSection?.awards || parseCoachInfo?.awards || sourceCoachAwardsLine,
   );
   const coachQualification = safeString(
-    coachesSection?.qualification || parseCoachInfo?.qualification || sourceCoachQualificationLine
+    coachesSection?.qualification || parseCoachInfo?.qualification || sourceCoachQualificationLine,
   );
   const coachMeetFormat = safeString(
-    coachesSection?.meetFormat || parseCoachInfo?.meetFormat || sourceCoachFormatLine
+    coachesSection?.meetFormat || parseCoachInfo?.meetFormat || sourceCoachFormatLine,
   );
   const coachEquipment = safeString(
-    coachesSection?.equipment || parseCoachInfo?.equipment || sourceCoachEquipmentLine
+    coachesSection?.equipment || parseCoachInfo?.equipment || sourceCoachEquipmentLine,
   );
   const coachRefundPolicy = safeString(
-    coachesSection?.refundPolicy || parseCoachInfo?.refundPolicy || ""
+    coachesSection?.refundPolicy || parseCoachInfo?.refundPolicy || "",
   );
   const coachPaymentInstructions = safeString(
-    coachesSection?.paymentInstructions || parseCoachInfo?.paymentInstructions || sourceCoachPaymentLine
+    coachesSection?.paymentInstructions ||
+      parseCoachInfo?.paymentInstructions ||
+      sourceCoachPaymentLine,
   );
   const coachEntryFees = normalizeCoachFeeItems(
     [
       ...((coachesSection?.entryFees as any[]) || []),
       ...((parseCoachInfo?.entryFees as any[]) || []),
     ],
-    "Entry fee"
+    "Entry fee",
   );
   const coachTeamFees = normalizeCoachFeeItems(
     [
       ...((coachesSection?.teamFees as any[]) || []),
       ...((parseCoachInfo?.teamFees as any[]) || []),
     ],
-    "Team fee"
+    "Team fee",
   );
-  const coachLateFees = normalizeCoachLateFeeItems(
-    [
-      ...((coachesSection?.lateFees as any[]) || []),
-      ...((parseCoachInfo?.lateFees as any[]) || []),
-    ]
-  );
+  const coachLateFees = normalizeCoachLateFeeItems([
+    ...((coachesSection?.lateFees as any[]) || []),
+    ...((parseCoachInfo?.lateFees as any[]) || []),
+  ]);
   const structuredCoachLinkUrls = new Set(
-    toResourceActions("rotation_sheet", "rotation_hub", "results_live", "results_hub", "results_pdf").map(
-      (item) => item.url
-    )
+    toResourceActions(
+      "rotation_sheet",
+      "rotation_hub",
+      "results_live",
+      "results_hub",
+      "results_pdf",
+    ).map((item) => item.url),
   );
   const coachLinks = normalizeCoachLinks([
     ...((coachesSection?.links as any[]) || []),
@@ -2857,13 +2812,13 @@ export function buildGymMeetDiscoveryContent({
     ...pickLinks(
       /(coach|entry|payment|refund|qualification|regional|rotation|meet maker|reservation)/i,
       /(parking|traffic|parkmobile|garage|rate|wayfinding)/i,
-      8
+      8,
     ),
   ]).filter(
     (item) =>
       !hasStructuredResources ||
       !/(rotation|score|result)/i.test(`${item.label} ${item.url}`) ||
-      structuredCoachLinkUrls.has(item.url)
+      structuredCoachLinkUrls.has(item.url),
   );
   const coachesHasContent =
     Boolean(coachesSection?.enabled) ||
@@ -2895,24 +2850,26 @@ export function buildGymMeetDiscoveryContent({
   const venueDetailsInlineBase = venueListLines.map(extractInlineUrl);
   const venueContactNotes = uniqueTextLines(
     [
-      ...((Array.isArray(logistics?.venueContactNotes) ? logistics.venueContactNotes : []) as string[]),
+      ...((Array.isArray(logistics?.venueContactNotes)
+        ? logistics.venueContactNotes
+        : []) as string[]),
       ...(parsedUnmappedFacts as any[])
         .filter((fact: any) => !shouldSuppressUnmappedFact(fact))
         .filter((fact: any) => /\bvenue_contact\b/i.test(safeString(fact?.category)))
         .map((fact: any) => safeString(fact?.detail)),
     ],
-    6
+    6,
   );
   const authoredAnnouncementsRaw = Array.isArray(advancedSections?.announcements?.items)
     ? advancedSections.announcements.items
     : Array.isArray(advancedSections?.announcements?.announcements)
-    ? advancedSections.announcements.announcements
-    : [];
+      ? advancedSections.announcements.announcements
+      : [];
   const rawAnnouncements = [
     ...normalizeAnnouncementCards(authoredAnnouncementsRaw, "builder"),
     ...normalizeAnnouncementCards(
       Array.isArray(parseCommunications?.announcements) ? parseCommunications.announcements : [],
-      "parsed"
+      "parsed",
     ),
   ];
 
@@ -2921,31 +2878,28 @@ export function buildGymMeetDiscoveryContent({
       ...pickLinks(
         /(registration|register|meetmaker|entry|deadline|reservation|regional|coach)/i,
         /(parking|traffic|hotel|result|score|admission|ticket)/i,
-        8
+        8,
       ),
       ...coachLinks.filter((item) =>
         /(registration|register|meetmaker|entry|deadline|reservation|regional|coach)/i.test(
-          `${safeString(item?.label)} ${safeString(item?.url)}`
-        )
+          `${safeString(item?.label)} ${safeString(item?.url)}`,
+        ),
       ),
     ],
-    8
+    8,
   );
   const admissionLinks = uniqueLinks(
     structuredAdmissionLinks.length > 0
-      ? [
-          ...structuredAdmissionLinks,
-          toAction(merchandiseLink),
-        ].filter(Boolean)
+      ? [...structuredAdmissionLinks, toAction(merchandiseLink)].filter(Boolean)
       : [
           ...pickLinks(
             /(admission|ticket|purchase|buy|spectator|sales?)/i,
             /(parking|traffic|hotel|result|score|rotation|packet|faq)/i,
-            8
+            8,
           ),
           toAction(merchandiseLink),
         ].filter(Boolean),
-    8
+    8,
   );
   const inferredResultsLink = (() => {
     const inline = extractInlineUrl(resultsInfoTextRaw);
@@ -2957,12 +2911,12 @@ export function buildGymMeetDiscoveryContent({
       : [
           ...normalizedLinks.filter((item) =>
             /(result|score|live scoring|meetscoresonline|lightningcity|usacompetitions)/i.test(
-              `${item.label} ${item.url}`
-            )
+              `${item.label} ${item.url}`,
+            ),
           ),
           inferredResultsLink,
         ],
-    8
+    8,
   );
   const resultsLinkTargets =
     resultsLinkItems.length > 0 ? resultsLinkItems : resultsLinks.map((url) => ({ url }));
@@ -2996,7 +2950,7 @@ export function buildGymMeetDiscoveryContent({
       safeString(gearSection?.leotardOfDay || parseGear?.uniform),
       safeString(gearSection?.hairMakeupNotes),
     ],
-    4
+    4,
   ).filter((line) => {
     if (isTrueGearLine(line)) return true;
     routeRejectedGearLine(line);
@@ -3008,19 +2962,19 @@ export function buildGymMeetDiscoveryContent({
         .filter((fact: any) => !shouldSuppressUnmappedFact(fact))
         .filter((fact: any) =>
           /(admission|ticket|pre[-\s]?sale|spectator|credit\/debit|credit card|debit card|cashless|cash is not accepted|cash not accepted|no cash)/i.test(
-            `${safeString(fact?.category)} ${safeString(fact?.detail)}`
-          )
+            `${safeString(fact?.category)} ${safeString(fact?.detail)}`,
+          ),
         )
         .map((fact: any) => safeString(fact?.detail))
         .concat(sourceAdmissionFactLines)
         .concat(reroutedGearAdmissionLines),
-      6
+      6,
     ).map((detail, index) => ({
       key: `admission-detail-${index + 1}`,
       label: /(pre[-\s]?sale|ticket)/i.test(detail) ? "Spectator Pre-Sale" : "Admission Policy",
       body: sanitizeLinkedCopy(detail, admissionLinks),
     })),
-    "admission-detail"
+    "admission-detail",
   );
   const generalAnnouncements = rawAnnouncements
     .filter((item) => shouldKeepAnnouncementCard(item))
@@ -3028,8 +2982,8 @@ export function buildGymMeetDiscoveryContent({
       (item) =>
         item.source === "builder" ||
         !/(admission|ticket|pre[-\s]?sale|spectator|credit\/debit|credit card|debit card|cashless|cash is not accepted|cash not accepted|no cash|results|live scoring|rotation sheets?|awards|arrival guidance|registration\b|sponsor|visit lauderdale|hairstyle to impress|final posting)/i.test(
-          `${item.label} ${item.body}`
-        )
+          `${item.label} ${item.body}`,
+        ),
     )
     .map((item) => ({
       ...item,
@@ -3042,8 +2996,8 @@ export function buildGymMeetDiscoveryContent({
       (item) =>
         item.source !== "builder" &&
         /(admission|ticket|pre[-\s]?sale|spectator|credit\/debit|credit card|debit card|cashless|cash is not accepted|cash not accepted|no cash)/i.test(
-          `${item.label} ${item.body}`
-        )
+          `${item.label} ${item.body}`,
+        ),
     )
     .map((item) => ({
       ...item,
@@ -3057,7 +3011,7 @@ export function buildGymMeetDiscoveryContent({
         : []),
       ...(Array.isArray(parseGear?.checklist) ? parseGear.checklist : []),
     ],
-    10
+    10,
   ).filter((line) => {
     if (isTrueGearLine(line)) return true;
     routeRejectedGearLine(line);
@@ -3084,10 +3038,10 @@ export function buildGymMeetDiscoveryContent({
       toAction(
         safeString(gearSection?.musicFileLink)
           ? { label: "Floor Music", url: gearSection.musicFileLink }
-          : null
+          : null,
       ),
     ].filter(Boolean),
-    4
+    4,
   );
   const documentLinks = uniqueLinks(
     structuredDocumentLinks.length > 0 || Boolean(structuredRotationHub)
@@ -3096,30 +3050,35 @@ export function buildGymMeetDiscoveryContent({
           ...(structuredRotationSheet
             ? []
             : structuredRotationHub
-            ? [{ label: structuredRotationHub.label || "Rotation Sheets", url: structuredRotationHub.url }]
-            : [toAction(rotationLink)]),
+              ? [
+                  {
+                    label: structuredRotationHub.label || "Rotation Sheets",
+                    url: structuredRotationHub.url,
+                  },
+                ]
+              : [toAction(rotationLink)]),
         ].filter(Boolean)
       : [
           ...normalizedLinks.filter((item) =>
             /(packet|schedule|info packet|faq|document|program|rotation|roster|waiver)/i.test(
-              `${item.label} ${item.url}`
-            )
+              `${item.label} ${item.url}`,
+            ),
           ),
           toAction(rotationLink),
         ].filter(Boolean),
-    8
+    8,
   ).filter(
     (item) =>
       !/(result|score|live scoring|admission|ticket|parking|hotel)/i.test(
-        `${item.label} ${item.url}`
-      )
+        `${item.label} ${item.url}`,
+      ),
   );
   const hotelLinks = uniqueLinks(
     structuredHotelLinks.length > 0
       ? structuredHotelLinks
       : [
           ...normalizedLinks.filter((item) =>
-            /(hotel|travel|visitor|stay|lodging|book)/i.test(`${item.label} ${item.url}`)
+            /(hotel|travel|visitor|stay|lodging|book)/i.test(`${item.label} ${item.url}`),
           ),
           safeString(advancedSections?.logistics?.fallbackTravelLink)
             ? {
@@ -3128,20 +3087,23 @@ export function buildGymMeetDiscoveryContent({
               }
             : null,
           (() => {
-            const inline = extractInlineUrl(safeString(logistics?.hotelInfo || parseLogistics?.hotel));
+            const inline = extractInlineUrl(
+              safeString(logistics?.hotelInfo || parseLogistics?.hotel),
+            );
             return inline.href ? { label: "Hotel Booking", url: inline.href } : null;
           })(),
         ],
-    8
+    8,
   );
   const structuredHotelCards = buildStructuredHotelCards(advancedSections?.logistics?.hotels);
   const venueLinks = uniqueLinks(
     normalizedLinks.filter((item) =>
-      /(venue|facility|floor|map|hall|arena|location)/i.test(`${item.label} ${item.url}`)
+      /(venue|facility|floor|map|hall|arena|location)/i.test(`${item.label} ${item.url}`),
     ),
-    8
+    8,
   ).filter(
-    (item) => !/(parking|traffic|hotel|result|score|admission|ticket)/i.test(`${item.label} ${item.url}`)
+    (item) =>
+      !/(parking|traffic|hotel|result|score|admission|ticket)/i.test(`${item.label} ${item.url}`),
   );
   const parkingLinks = uniqueLinks(
     [
@@ -3151,7 +3113,7 @@ export function buildGymMeetDiscoveryContent({
       toAction(mapDashboardLink),
       toAction(ratesInfoLink),
     ].filter(Boolean),
-    8
+    8,
   );
   const meetOverviewCards = [
     ...spectatorLogisticsItems.map((item) => ({
@@ -3165,7 +3127,7 @@ export function buildGymMeetDiscoveryContent({
           label: "Scoring",
           body: sanitizeLinkedCopy(
             safeString(meetSection?.scoringInfo || parseMeetDetails?.scoringInfo),
-            normalizedLinks
+            normalizedLinks,
           ),
         }
       : null,
@@ -3175,7 +3137,7 @@ export function buildGymMeetDiscoveryContent({
           label: "Rotation Sheets",
           body: sanitizeLinkedCopy(
             safeString(meetSection?.rotationSheetsInfo || parseMeetDetails?.rotationSheetsInfo),
-            normalizedLinks
+            normalizedLinks,
           ),
         }
       : null,
@@ -3198,7 +3160,7 @@ export function buildGymMeetDiscoveryContent({
           label: "Awards",
           body: sanitizeLinkedCopy(
             safeString(meetSection?.awardsInfo || parseMeetDetails?.awardsInfo),
-            normalizedLinks
+            normalizedLinks,
           ),
         }
       : null,
@@ -3271,7 +3233,10 @@ export function buildGymMeetDiscoveryContent({
         body: sanitizeLinkedCopy(detail, normalizedLinks),
       })),
     ].filter((item) => item.value || item.body),
-    (item) => normalizeCompareText(`${safeString(item.label)}|${safeString(item.value)}|${safeString(item.body)}`)
+    (item) =>
+      normalizeCompareText(
+        `${safeString(item.label)}|${safeString(item.value)}|${safeString(item.body)}`,
+      ),
   );
   const venueCards = [
     showRegistrationDeskNote
@@ -3313,20 +3278,23 @@ export function buildGymMeetDiscoveryContent({
   }));
   const admissionInfoCards = uniqueBy(
     [...admissionAnnouncements, ...parsedAdmissionFactCards, ...reroutedGearAdmissionCards].filter(
-      (item) => item.body
+      (item) => item.body,
     ),
-    (item) => normalizeCompareText(`${safeString(item.label)}|${safeString(item.body)}`)
+    (item) => normalizeCompareText(`${safeString(item.label)}|${safeString(item.body)}`),
   );
   const admissionPrimaryNoteText = sanitizeLinkedCopy(admissionPrimaryNote, admissionLinks);
   const merchandiseNoteText = sanitizeLinkedCopy(merchandiseText, admissionLinks);
   const resultsInfoText = sanitizeLinkedCopy(resultsInfoTextRaw, resultsLinkTargets);
   const meetDetailsInline = uniqueBy(
     [...meetDetailsInlineBase, ...reroutedGearMeetLines.map(extractInlineUrl)],
-    (item) => normalizeCompareText(`${safeString(item?.text)}|${safeString(item?.href)}`)
+    (item) => normalizeCompareText(`${safeString(item?.text)}|${safeString(item?.href)}`),
   );
   const venueDetailsInline = uniqueBy(
-    [...venueDetailsInlineBase, ...reroutedGearVenueLines.filter(isVenueOnlyDisplayLine).map(extractInlineUrl)],
-    (item) => normalizeCompareText(`${safeString(item?.text)}|${safeString(item?.href)}`)
+    [
+      ...venueDetailsInlineBase,
+      ...reroutedGearVenueLines.filter(isVenueOnlyDisplayLine).map(extractInlineUrl),
+    ],
+    (item) => normalizeCompareText(`${safeString(item?.text)}|${safeString(item?.href)}`),
   );
   const resultsCards = resultsInfoText
     ? [{ key: "results-info", label: "Results & Live Scoring", body: resultsInfoText }]
@@ -3350,108 +3318,43 @@ export function buildGymMeetDiscoveryContent({
         body: safeString(logistics?.parking || parseLogistics?.parking),
       }
     : null;
-  const hotelInfoText = sanitizeLinkedCopy(safeString(logistics?.hotelInfo || parseLogistics?.hotel), hotelLinks);
+  const hotelInfoText = sanitizeLinkedCopy(
+    safeString(logistics?.hotelInfo || parseLogistics?.hotel),
+    hotelLinks,
+  );
   const hotelCards =
     hotelInfoText &&
     !isLowSignalTravelSummaryText(hotelInfoText) &&
     !isRedundantLinkSummaryText(hotelInfoText, hotelLinks)
-    ? [
-        {
-          key: "hotel-info",
-          label: "Stay / Travel Note",
-          body: hotelInfoText,
-        },
-      ]
-    : [];
+      ? [
+          {
+            key: "hotel-info",
+            label: "Stay / Travel Note",
+            body: hotelInfoText,
+          },
+        ]
+      : [];
   const trafficPrimaryCards = [parkingCard, ...hotelCards].filter(Boolean);
   const trafficSecondaryCards = [
     trafficText ? { key: "traffic-alert", label: "Traffic Alert", body: trafficText } : null,
-    sourceDaylightLine
-      ? { key: "daylight", label: "Timing Note", body: sourceDaylightLine }
-      : null,
+    sourceDaylightLine ? { key: "daylight", label: "Timing Note", body: sourceDaylightLine } : null,
     rideShareNote ? { key: "ride-share", label: "Ride Share", body: rideShareNote } : null,
   ].filter(Boolean);
   const safetyCards = [
-    policyNotes[0] ? { key: "food-beverage", label: "Food & Beverage", body: policyNotes[0] } : null,
+    policyNotes[0]
+      ? { key: "food-beverage", label: "Food & Beverage", body: policyNotes[0] }
+      : null,
     policyNotes[1] ? { key: "hydration", label: "Hydration", body: policyNotes[1] } : null,
-    policyNotes[2] ? { key: "service-animals", label: "Service Animals", body: policyNotes[2] } : null,
+    policyNotes[2]
+      ? { key: "service-animals", label: "Service Animals", body: policyNotes[2] }
+      : null,
     policyNotes[3] ? { key: "safety-policy", label: "Safety Policy", body: policyNotes[3] } : null,
   ].filter(Boolean);
-  const scheduleSupportEmail = safeString(
-    advancedSections?.schedule?.supportEmail ||
-      (Array.isArray(advancedSections?.meet?.staffContacts)
-        ? advancedSections.meet.staffContacts.find((item: any) => safeString(item?.email))?.email
-        : "") ||
-      (Array.isArray(advancedSections?.coaches?.contacts)
-        ? advancedSections.coaches.contacts.find((item: any) => safeString(item?.email))?.email
-        : "") ||
-      (Array.isArray(advancedSections?.logistics?.venueContacts)
-        ? advancedSections.logistics.venueContacts.find((item: any) => safeString(item?.email))?.email
-        : "") ||
-      (Array.isArray(parseResult?.contacts)
-        ? parseResult.contacts.find((item: any) => safeString(item?.email))?.email
-        : "")
-  );
-  const scheduleInfo = normalizeScheduleInfo(
-    advancedSections?.schedule || parseResult?.schedule || {},
-    {
-      venueLabel:
-        safeString(advancedSections?.schedule?.venueLabel) ||
-        safeString(addressLabel || venueLabel),
-      supportEmail: scheduleSupportEmail,
-    }
-  );
-  const scheduleHasContent =
-    scheduleGridsEnabled && scheduleInfo.enabled !== false && hasScheduleInfoContent(scheduleInfo);
-  const sessionAssignmentCards = ensureUniqueDiscoveryCardKeys(
-    scheduleInfo.assignments.map((item, index) => {
-      const label = [safeString(item.level), safeString(item.groupLabel || item.divisionLabel)]
-        .filter(Boolean)
-        .join(" • ");
-      const sessionCode = safeString(item.sessionCode);
-      const body = [safeString(item.birthDateRange), safeString(item.note)]
-        .filter(Boolean)
-        .join("\n");
-      return {
-        key: safeString(item.id || `session-assignment-${index + 1}`),
-        label: label || (sessionCode ? `Session ${sessionCode}` : `Assignment ${index + 1}`),
-        value: sessionCode ? `Session ${sessionCode}` : "",
-        body,
-      };
-    }),
-    "session-assignment"
-  );
-  const sessionAssignmentNotes = uniqueTextLines(
-    [
-      ...sourceLines.filter((line) =>
-        /(session assignments? are listed|incorrect session assignment|verify athlete|check your team rosters|official session assignment document|club roster will always be considered the official session assignment document|make sure athlete birth dates are correct|designated by her birthday|designated by their birthday)/i.test(
-          line
-        )
-      ),
-      ...(Array.isArray(scheduleInfo.notes) ? scheduleInfo.notes : []).filter((line) =>
-        /(session assignments?|rosters?|birth date|official session assignment)/i.test(
-          safeString(line)
-        )
-      ),
-    ],
-    8
-  );
-  const sessionAssignmentLinks = uniqueLinks(
-    [
-      ...toResourceActions("roster", "team_divisions"),
-      ...documentLinks.filter((item) =>
-        /(roster|session assignment|team divisions?|age groups?)/i.test(
-          `${item.label} ${item.url}`
-        )
-      ),
-    ],
-    8
-  );
   const visitorGuideLinks = uniqueLinks(
     normalizedLinks.filter((item) =>
-      /(visitor|guide|travel|sports and events center)/i.test(`${item.label} ${item.url}`)
+      /(visitor|guide|travel|sports and events center)/i.test(`${item.label} ${item.url}`),
     ),
-    6
+    6,
   );
   const resourceLinksForSection = uniqueLinks(
     [
@@ -3464,17 +3367,16 @@ export function buildGymMeetDiscoveryContent({
       ...hotelLinks,
       ...visitorGuideLinks,
     ],
-    16
+    16,
   );
   const hasOperationalResourceLinks = resourceLinksForSection.some((item) =>
     /(result|score|rotation|roster|hotel|travel|visitor|ticket|admission)/i.test(
-      `${item.label} ${item.url}`
-    )
+      `${item.label} ${item.url}`,
+    ),
   );
-  const documentSectionLabel =
-    hasOperationalResourceLinks
-      ? "Resources"
-      : /faq/i.test(documentLinks.map((item) => item.label).join(" "))
+  const documentSectionLabel = hasOperationalResourceLinks
+    ? "Resources"
+    : /faq/i.test(documentLinks.map((item) => item.label).join(" "))
       ? "FAQ"
       : "Documents";
 
@@ -3551,69 +3453,6 @@ export function buildGymMeetDiscoveryContent({
                 type: "link-list" as const,
                 title: "Meet Files",
                 links: gearLinks,
-              },
-            ]
-          : []),
-      ],
-    },
-    {
-      id: "schedule",
-      label: "Schedule",
-      kind: "schedule",
-      priority: 20,
-      hasContent: scheduleHasContent,
-      hideSectionHeading: true,
-      blocks: scheduleHasContent
-        ? [
-            {
-              id: "schedule-board",
-              type: "schedule-board" as const,
-              data: scheduleInfo,
-            },
-          ]
-        : [],
-    },
-    {
-      id: "session-assignments",
-      label: "Session Assignments",
-      kind: "session_assignments",
-      priority: 25,
-      preserveStandalone:
-        scheduleGridsEnabled &&
-        (sessionAssignmentCards.length > 0 || sessionAssignmentLinks.length > 0),
-      hasContent:
-        scheduleGridsEnabled &&
-        (sessionAssignmentCards.length > 0 ||
-          sessionAssignmentNotes.length > 0 ||
-          sessionAssignmentLinks.length > 0),
-      blocks: [
-        ...(sessionAssignmentCards.length > 0
-          ? [
-              {
-                id: "session-assignment-cards",
-                type: "card-grid" as const,
-                columns: 3 as const,
-                cards: sessionAssignmentCards,
-              },
-            ]
-          : []),
-        ...(sessionAssignmentNotes.length > 0
-          ? [
-              {
-                id: "session-assignment-notes",
-                type: "line-list" as const,
-                title: "Roster & Verification Notes",
-                lines: sessionAssignmentNotes.map((line) => ({ text: line })),
-              },
-            ]
-          : []),
-        ...(sessionAssignmentLinks.length > 0
-          ? [
-              {
-                id: "session-assignment-links",
-                type: "link-list" as const,
-                title: "Session Resources",
-                links: sessionAssignmentLinks,
               },
             ]
           : []),
@@ -4007,7 +3846,7 @@ export function buildGymMeetDiscoveryContent({
       ],
     },
   ]
-    .filter((section) => !["schedule", "session-assignments", "coaches"].includes(section.id))
+    .filter((section) => section.id !== "coaches")
     .filter((section) => section.hasContent);
 
   return {

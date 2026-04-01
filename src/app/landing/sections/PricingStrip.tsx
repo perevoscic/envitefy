@@ -1,67 +1,73 @@
 "use client";
-import { useState } from "react";
+
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import AuthModal from "@/components/auth/AuthModal";
 
 export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"login" | "signup">("signup");
-  const primaryHref = "/";
-
   return (
-    <section className="w-full py-20 bg-white">
-      <div className="max-w-5xl mx-auto px-6">
-        <div className="relative rounded-[3rem] overflow-hidden bg-white text-gray-900 px-6 py-16 md:px-16 md:py-20 text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-gray-100">
-          {/* Background Effects */}
-          <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none opacity-40">
-            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-50 rounded-full blur-[100px] -translate-y-1/2" />
-            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-violet-50 rounded-full blur-[100px] translate-y-1/2" />
+    <section className="w-full py-20 sm:py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-[2.8rem] border border-[#e8ddff] bg-[linear-gradient(180deg,#ffffff_0%,#f8f4ff_100%)] px-6 py-14 text-center text-[#17132b] shadow-[0_30px_80px_rgba(98,71,186,0.12)] md:px-16 md:py-16">
+          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-95">
+            <div className="absolute left-[10%] top-0 h-[24rem] w-[24rem] -translate-y-1/2 rounded-full bg-[#eadfff] blur-[100px]" />
+            <div className="absolute bottom-0 right-[8%] h-[24rem] w-[24rem] translate-y-1/2 rounded-full bg-[#efe8ff] blur-[100px]" />
           </div>
 
           <div className="relative z-10">
-            <h3 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-              Ready to clear the clutter?
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[#856ed1]">
+              Start from the file you already have
+            </p>
+            <h3
+              className="mx-auto mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.05em] md:text-6xl"
+              style={{
+                fontFamily:
+                  'var(--font-montserrat), var(--font-sans), sans-serif',
+              }}
+            >
+              Turn PDFs, schedules, flyers, and invites into a live page people
+              will actually open.
             </h3>
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Join thousands of parents and planners who save hours every week.
-              Start snapping your events today.
+            <p className="mx-auto mb-10 mt-5 max-w-3xl text-lg leading-8 text-[#58536e] md:text-xl">
+              Start with Gymnastics when the flagship use case is meet-weekend
+              coordination. Use Snap when the input is a flyer, schedule,
+              invite, or event image that needs fast cleanup and sharing.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               {isAuthed ? (
                 <Link
-                  href={primaryHref}
-                  className="px-8 py-4 bg-black text-white rounded-full text-lg font-semibold hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  href="/"
+                  className="rounded-full bg-slate-900 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-xl"
                 >
                   Go to Dashboard
                 </Link>
               ) : (
-                <button
-                  onClick={() => {
-                    setMode("signup");
-                    setOpen(true);
-                  }}
-                  className="group px-8 py-4 bg-black text-white rounded-full text-lg font-semibold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2"
-                >
-                  Get Started for Free
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                <>
+                  <Link
+                    href="/gymnastics"
+                    className="group flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-8 py-4 text-lg font-semibold text-white shadow-[0_20px_46px_rgba(111,76,255,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_52px_rgba(111,76,255,0.3)]"
+                  >
+                    Start with Gymnastics
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                  <Link
+                    href="/snap"
+                    className="rounded-full border border-[#e6dcff] bg-white px-8 py-4 text-lg font-semibold text-[#2f2550] transition-all hover:-translate-y-0.5 hover:border-[#d9cbff] hover:bg-[#faf7ff] hover:shadow-lg"
+                  >
+                    Try Snap
+                  </Link>
+                </>
               )}
             </div>
 
-            <p className="mt-6 text-sm text-gray-500">
-              No credit card required • Free plan available
+            <p className="mt-6 text-sm text-[#68627d]">
+              Gymnastics is the clearest flagship claim. Snap stays available
+              for fast capture across invites, flyers, schedules, and event
+              images.
             </p>
           </div>
         </div>
       </div>
-      <AuthModal
-        open={open}
-        mode={mode}
-        onClose={() => setOpen(false)}
-        onModeChange={setMode}
-      />
     </section>
   );
 }

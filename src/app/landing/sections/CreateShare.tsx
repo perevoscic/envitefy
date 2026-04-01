@@ -2,17 +2,16 @@ import Image from "next/image";
 import CreateShareCta from "./CreateShareCta";
 
 const points = [
-  "Share one link by text or email—guests don’t need an account.",
+  "Snap flyers, screenshots, and invites into a clean event record.",
+  "Share one link by text or email without asking guests to install anything.",
   "Add to Google, Apple, or Outlook calendars in one tap.",
-  "Tap to RSVP by text or email with a pre‑filled message.",
-  "Show a friendly venue name and full address; open maps for directions.",
-  "Attach the invite or photos to the event page.",
-  "Edit time or place later — everyone sees updates instantly.",
-  "Guests can open the link in any browser to RSVP by text or email.",
-  "Add registries or wish lists (Amazon, Target, Walmart, Babylist).",
-  "Choose a category (Birthday, Wedding, Baby Shower, etc.).",
-  "Quick RSVP prompt with Yes/No/Maybe when a phone number is shown.",
-  "Share, Email, RSVP and Directions buttons on the event page.",
+  "Keep venue names, addresses, and directions together on the page.",
+  "Edit time or place later and the shared page stays current.",
+  "Gymnastics accounts keep meet sessions, venues, and updates in one place.",
+  "Guests can open the link in any browser to view the latest details.",
+  "Use one polished page instead of juggling screenshots and PDFs.",
+  "Keep Snap available for every account while Gymnastics adds meet tools.",
+  "Share, email, and directions stay easy to find on the event page.",
 ];
 
 const calendarTargets = [
@@ -51,24 +50,24 @@ const rsvpStatuses = [
   },
 ];
 
-const registries = [
+const quickAccess = [
   {
-    label: "Amazon",
-    badge: "A",
-    badgeClass:
-      "bg-[#f4e4d6] text-[#7b4d2a] text-xs font-semibold tracking-wide",
-  },
-  {
-    label: "Target",
-    badge: "T",
-    badgeClass:
-      "bg-[#fce9ef] text-[#7a2f47] text-xs font-semibold tracking-wide",
-  },
-  {
-    label: "Walmart",
-    badge: "W",
+    label: "Snap",
+    badge: "S",
     badgeClass:
       "bg-[#e8f0ff] text-[#1f498a] text-xs font-semibold tracking-wide",
+  },
+  {
+    label: "Gymnastics",
+    badge: "G",
+    badgeClass:
+      "bg-[#efe9ff] text-[#6d5eea] text-xs font-semibold tracking-wide",
+  },
+  {
+    label: "Calendar Sync",
+    badge: "C",
+    badgeClass:
+      "bg-[#e6f6ef] text-[#1f3b32] text-xs font-semibold tracking-wide",
   },
 ];
 
@@ -160,7 +159,7 @@ export default function CreateShare() {
       <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-2 gap-14 items-start">
         <div className="space-y-6 text-center lg:text-left">
           <p className="wedding-kicker text-foreground/60">
-            Share one elegant link
+            Share one clean link
           </p>
           <h2
             id="create-share"
@@ -169,11 +168,11 @@ export default function CreateShare() {
               fontFamily: 'var(--font-playfair), "Times New Roman", serif',
             }}
           >
-            All-in-one event tools without the spreadsheets.
+            Focused event tools for Snap and Gymnastics.
           </h2>
           <p className="text-base sm:text-lg text-foreground/70 max-w-2xl mx-auto lg:mx-0">
-            Envitefy keeps RSVPs, directions, registries, and travel info in one
-            polished place, so guests always see the latest details.
+            Envitefy keeps captured event details, calendars, and shared pages
+            in one polished place without the old multi-vertical marketing.
           </p>
           <ul className="mt-8 space-y-4 pb-4 text-foreground/85 text-base sm:text-lg leading-relaxed">
             {points.map((point, index) => (
@@ -196,17 +195,17 @@ export default function CreateShare() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-                    Birthdays
+                    Gymnastics
                   </p>
                   <h3 className="mt-2 text-xl font-semibold text-foreground">
-                    Dominic&apos;s 7th Birthday Party
+                    Spring Invitational Weekend
                   </h3>
                   <p className="mt-1 text-sm text-foreground/70">
-                    Hosted by Russell Jason
+                    Shared for parents and coaches
                   </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-2xl shadow-md">
-                  {"\u{1F382}"}
+                  {"\u{1F938}"}
                 </div>
               </div>
             </div>
@@ -217,7 +216,7 @@ export default function CreateShare() {
                     When
                   </dt>
                   <dd className="mt-1 text-base font-semibold text-foreground">
-                    Apr 10, 2026 {"\u00B7"} 10:15 PM {"\u2013"} 11:15 PM
+                    Apr 10, 2026 {"\u00B7"} Session A starts at 6:00 PM
                   </dd>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -283,7 +282,7 @@ export default function CreateShare() {
                   </div>
                   <div>
                     <dt className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                      RSVP
+                      Status
                     </dt>
                     <dd className="mt-2 flex items-center gap-2">
                       {rsvpStatuses.map((status) => (
@@ -303,18 +302,18 @@ export default function CreateShare() {
               </dl>
               <div>
                 <h4 className="text-sm font-semibold text-foreground">
-                  Dominic&apos;s Birthday Party at US Gold Gymnastics.
+                  Spring Invitational at US Gold Gymnastics.
                 </h4>
                 <p className="mt-1 text-sm text-foreground/70">
-                  Guests can see updates instantly and RSVP in one tap.
+                  Families can see schedule updates, venue details, and directions instantly.
                 </p>
               </div>
               <div>
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-                  Registries
+                  Access
                 </h4>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {registries.map((registry) => (
+                  {quickAccess.map((registry) => (
                     <span
                       key={registry.label}
                       className="flex items-center gap-1.5 rounded-xl border border-border/70 bg-white/90 px-2.5 py-1 text-xs sm:text-sm font-semibold text-foreground max-w-[46%] truncate shadow-sm"

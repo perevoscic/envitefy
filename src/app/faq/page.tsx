@@ -5,11 +5,11 @@ import FAQ from "../landing/sections/FAQ";
 export const metadata: Metadata = {
   title: "Envitefy FAQ",
   description:
-    "Answers about scanning invites, creating events, RSVPs, and smart sign‑up forms.",
+    "Answers about Snap accounts, Gymnastics accounts, event sharing, and calendars.",
   openGraph: {
     title: "Envitefy FAQ",
     description:
-      "Find answers about Envitefy features, calendars, RSVPs, and free accounts.",
+      "Find answers about Snap, Gymnastics, calendars, and existing accounts.",
     url: "https://envitefy.com/faq",
     siteName: "Envitefy",
     images: [
@@ -40,8 +40,8 @@ const faqPairs = [
     "Absolutely. The shared link always reflects the latest info, so everyone stays on the same page.",
   ],
   [
-    "What are smart sign-up forms?",
-    "Smart sign-up forms let families claim snack duty or volunteer slots with capacity limits and waitlists.",
+    "How do Snap and Gymnastics access work?",
+    "Snap is available to every account. Gymnastics accounts include both gymnastics and snap access.",
   ],
 ];
 

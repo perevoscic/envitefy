@@ -49,10 +49,7 @@ export type GymMeetTemplateGroup =
   | "editorial"
   | "dashboard";
 
-export type GymMeetTemplateLayoutFamily =
-  | "standard"
-  | "editorial"
-  | "dashboard";
+export type GymMeetTemplateLayoutFamily = "standard" | "editorial" | "dashboard";
 
 export type GymMeetTitleTypographyId =
   | "anton"
@@ -290,11 +287,6 @@ export type GymMeetDiscoveryBlock =
       title?: string;
       address: string;
       text?: string;
-    }
-  | {
-      id: string;
-      type: "schedule-board";
-      data: GymMeetScheduleInfo;
     };
 
 export type GymMeetDiscoverySection = {

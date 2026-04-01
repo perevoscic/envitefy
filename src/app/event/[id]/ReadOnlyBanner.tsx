@@ -6,17 +6,6 @@ import AuthModal from "@/components/auth/AuthModal";
 
 export default function ReadOnlyBanner() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-
-  const handleSignIn = () => {
-    setAuthMode("login");
-    setAuthModalOpen(true);
-  };
-
-  const handleSignUp = () => {
-    setAuthMode("signup");
-    setAuthModalOpen(true);
-  };
 
   return (
     <>
@@ -39,19 +28,26 @@ export default function ReadOnlyBanner() {
           <p className="text-sm text-blue-800 dark:text-blue-200">
             You are viewing this event in read-only mode.{" "}
             <button
-              onClick={handleSignIn}
+              onClick={() => setAuthModalOpen(true)}
               className="underline hover:no-underline font-medium"
             >
               Sign in
             </button>{" "}
-            or{" "}
-            <button
-              onClick={handleSignUp}
+            to access full features. New here? Start with{" "}
+            <Link
+              href="/snap"
               className="underline hover:no-underline font-medium"
             >
-              Sign up
-            </button>{" "}
-            to access full features, or{" "}
+              Snap
+            </Link>{" "}
+            or{" "}
+            <Link
+              href="/gymnastics"
+              className="underline hover:no-underline font-medium"
+            >
+              Gymnastics
+            </Link>
+            , or{" "}
             <Link
               href="/"
               className="underline hover:no-underline font-medium"
@@ -65,9 +61,9 @@ export default function ReadOnlyBanner() {
 
       <AuthModal
         open={authModalOpen}
-        mode={authMode}
+        mode="login"
         onClose={() => setAuthModalOpen(false)}
-        onModeChange={(mode) => setAuthMode(mode)}
+        allowSignupSwitch={false}
       />
     </>
   );
