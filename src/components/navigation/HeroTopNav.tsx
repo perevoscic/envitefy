@@ -86,105 +86,118 @@ export default function HeroTopNav({
         isScrolled ? "drop-shadow-[0_18px_44px_rgba(87,67,157,0.14)]" : ""
       }`}
     >
-      <div className="mx-auto max-w-7xl rounded-full border border-white/90 bg-white/88 px-4 py-3 shadow-[0_18px_44px_rgba(87,67,157,0.1)] backdrop-blur-xl sm:px-6">
-        <div className="flex items-center justify-between gap-4">
-          <Link
-            href={brandHref}
-            className="group flex min-w-0 flex-1 items-center overflow-hidden lg:flex-none"
-            aria-label="Envitefy"
-          >
-            <EnvitefyWordmark
-              scaled={false}
-              className="max-w-full text-[1.45rem] leading-none transition-transform duration-300 group-hover:scale-[1.02] sm:text-[1.65rem] md:text-[1.9rem]"
-            />
-          </Link>
-
-          <nav
-            className="hidden items-center gap-1 rounded-full bg-[#fbf8ff] px-2 py-1.5 lg:flex"
-            aria-label="Hero navigation"
-          >
-            {navLinks.map((link) => (
-              <NavLinkItem
-                key={`${link.label}:${link.href}`}
-                href={link.href}
-                label={link.label}
-                className="rounded-full px-4 py-2 text-sm font-semibold text-[#5f5678] transition hover:bg-white hover:text-[#241b45]"
+      <div className="relative mx-auto max-w-7xl">
+        <div className="rounded-full border border-white/90 bg-white/96 px-4 py-3 shadow-[0_18px_44px_rgba(87,67,157,0.1)] backdrop-blur-xl sm:px-6">
+          <div className="flex items-center justify-between gap-4">
+            <Link
+              href={brandHref}
+              className="group flex min-w-0 flex-1 items-center overflow-hidden lg:flex-none"
+              aria-label="Envitefy"
+            >
+              <EnvitefyWordmark
+                scaled={false}
+                className="max-w-full text-[1.78rem] leading-none transition-transform duration-300 group-hover:scale-[1.02] sm:text-[1.96rem] md:text-[2.18rem]"
               />
-            ))}
-          </nav>
+            </Link>
 
-          <div className="hidden items-center gap-3 lg:flex">
-            {status === "authenticated" ? (
-              <Link
-                href={dashboardHref}
-                className="rounded-full px-3 py-2 text-sm font-semibold text-[#30264f] transition hover:text-[#1f1635]"
-              >
-                Dashboard
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={onGuestLoginAction}
-                className="rounded-full px-3 py-2 text-sm font-semibold text-[#30264f] transition hover:text-[#1f1635]"
-              >
-                Login
-              </button>
-            )}
+            <nav
+              className="hidden items-center gap-1 rounded-full bg-[#fbf8ff] px-2 py-1.5 lg:flex"
+              aria-label="Hero navigation"
+            >
+              {navLinks.map((link) => (
+                <NavLinkItem
+                  key={`${link.label}:${link.href}`}
+                  href={link.href}
+                  label={link.label}
+                  className="rounded-full px-4 py-2 text-sm font-semibold text-[#5f5678] transition hover:bg-white hover:text-[#241b45]"
+                />
+              ))}
+            </nav>
 
-            {status === "authenticated" ? (
-              <Link
-                href={authenticatedPrimaryHref}
-                className="cta-shell h-11 rounded-full bg-[linear-gradient(135deg,#7b4dff_0%,#9d63ff_100%)] px-6 text-sm font-semibold text-white shadow-[0_18px_38px_rgba(123,77,255,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]"
-              >
-                <AnimatedButtonLabel label={primaryCtaLabel} />
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={onGuestPrimaryAction}
-                className="cta-shell h-11 rounded-full bg-[linear-gradient(135deg,#7b4dff_0%,#9d63ff_100%)] px-6 text-sm font-semibold text-white shadow-[0_18px_38px_rgba(123,77,255,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]"
-              >
-                <AnimatedButtonLabel label={primaryCtaLabel} />
-              </button>
-            )}
+            <div className="hidden items-center gap-3 lg:flex">
+              {status === "authenticated" ? (
+                <Link
+                  href={dashboardHref}
+                  className="rounded-full px-3 py-2 text-sm font-semibold text-[#30264f] transition hover:text-[#1f1635]"
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onGuestLoginAction}
+                  className="rounded-full px-3 py-2 text-sm font-semibold text-[#30264f] transition hover:text-[#1f1635]"
+                >
+                  Login
+                </button>
+              )}
+
+              {status === "authenticated" ? (
+                <Link
+                  href={authenticatedPrimaryHref}
+                  className="cta-shell h-11 rounded-full bg-[linear-gradient(135deg,#7b4dff_0%,#9d63ff_100%)] px-6 text-sm font-semibold text-white shadow-[0_18px_38px_rgba(123,77,255,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]"
+                >
+                  <AnimatedButtonLabel label={primaryCtaLabel} />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onGuestPrimaryAction}
+                  className="cta-shell h-11 rounded-full bg-[linear-gradient(135deg,#7b4dff_0%,#9d63ff_100%)] px-6 text-sm font-semibold text-white shadow-[0_18px_38px_rgba(123,77,255,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]"
+                >
+                  <AnimatedButtonLabel label={primaryCtaLabel} />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#eadfff] bg-white text-[#31264f] shadow-sm lg:hidden"
+              onClick={() => setMobileMenuOpen((value) => !value)}
+              aria-label={
+                mobileMenuOpen ? "Close navigation" : "Open navigation"
+              }
+              aria-expanded={mobileMenuOpen}
+              aria-controls="hero-top-nav-mobile"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </button>
           </div>
-
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#eadfff] bg-white text-[#31264f] shadow-sm lg:hidden"
-            onClick={() => setMobileMenuOpen((value) => !value)}
-            aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
-            aria-expanded={mobileMenuOpen}
-            aria-controls="hero-top-nav-mobile"
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
         </div>
 
         <div
           id="hero-top-nav-mobile"
-          className={`overflow-hidden transition-[max-height,opacity] duration-300 lg:hidden ${
-            mobileMenuOpen ? "max-h-[28rem] pt-4 opacity-100" : "max-h-0 opacity-0"
+          className={`pointer-events-none absolute right-0 top-full z-10 w-full pt-4 transition-[opacity,transform] duration-300 lg:hidden ${
+            mobileMenuOpen
+              ? "translate-y-0 opacity-100"
+              : "-translate-y-2 opacity-0"
           }`}
         >
-          <div className="rounded-[1.75rem] border border-[#efe6ff] bg-[#fbf8ff] p-3">
-            <nav className="flex flex-col gap-1" aria-label="Hero navigation">
+          <div className="pointer-events-auto ml-auto w-full max-w-[20rem] rounded-[1.75rem] border border-[#efe6ff] bg-white/98 p-3 shadow-[0_24px_54px_rgba(87,67,157,0.16)] backdrop-blur-xl">
+            <nav
+              className="flex flex-col items-end gap-1 text-right"
+              aria-label="Hero navigation"
+            >
               {navLinks.map((link) => (
                 <NavLinkItem
                   key={`${link.label}:${link.href}:mobile`}
                   href={link.href}
                   label={link.label}
-                  className="rounded-2xl px-4 py-3 text-sm font-semibold text-[#433865] transition hover:bg-white"
+                  className="w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold text-[#433865] transition hover:bg-[#f8f4ff]"
                   onClick={() => setMobileMenuOpen(false)}
                 />
               ))}
             </nav>
 
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-[1.4rem] border border-[#eee3ff] bg-white px-4 py-4">
+            <div className="mt-3 flex items-center justify-end gap-3 rounded-[1.4rem] border border-[#eee3ff] bg-[#fcfbff] px-4 py-4">
               {status === "authenticated" ? (
                 <Link
                   href={dashboardHref}
-                  className="text-sm font-semibold text-[#30264f]"
+                  className="text-right text-sm font-semibold text-[#30264f]"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Dashboard
@@ -196,7 +209,7 @@ export default function HeroTopNav({
                     setMobileMenuOpen(false);
                     onGuestLoginAction();
                   }}
-                  className="text-sm font-semibold text-[#30264f]"
+                  className="text-right text-sm font-semibold text-[#30264f]"
                 >
                   Login
                 </button>
