@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowRight,
   CalendarDays,
@@ -14,6 +12,9 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 const navLinks = [
   { label: "Preview", href: "#hero" },
@@ -45,8 +46,7 @@ const showcasePanels = [
     id: "season-hub",
     title: "Season hub",
     eyebrow: "For coaches and parents",
-    copy:
-      "A polished public home for the season with dates, field info, travel notes, and the right links up front.",
+    copy: "A polished public home for the season with dates, field info, travel notes, and the right links up front.",
     accent: "from-[#fff1e8] via-white to-[#fff8f2]",
     badge: "Season-ready",
     visual: [
@@ -59,8 +59,7 @@ const showcasePanels = [
     id: "sideline-dashboard",
     title: "Sideline dashboard",
     eyebrow: "For staff and players",
-    copy:
-      "A focused view for game-day call times, roster context, equipment, and the documents you actually need.",
+    copy: "A focused view for game-day call times, roster context, equipment, and the documents you actually need.",
     accent: "from-[#e7f0ff] via-white to-[#f5f9ff]",
     badge: "Team view",
     visual: [
@@ -73,8 +72,7 @@ const showcasePanels = [
     id: "fan-guide",
     title: "Fan guide",
     eyebrow: "For families and guests",
-    copy:
-      "A mobile-first guide with entrance details, parking, concessions, and the latest season updates.",
+    copy: "A mobile-first guide with entrance details, parking, concessions, and the latest season updates.",
     accent: "from-[#fff5f0] via-white to-[#fffaf8]",
     badge: "Guest friendly",
     visual: [
@@ -89,26 +87,22 @@ const benefits = [
   {
     icon: Users,
     title: "Built for the whole sideline",
-    copy:
-      "Players, coaches, and families all need different details. Envitefy keeps one source of truth while presenting the right information to each audience.",
+    copy: "Players, coaches, and families all need different details. Envitefy keeps one source of truth while presenting the right information to each audience.",
   },
   {
     icon: MapPinned,
     title: "Field and venue details that stay usable on mobile",
-    copy:
-      "Directions, parking guidance, and venue context are surfaced in a clean card stack instead of disappearing in a PDF.",
+    copy: "Directions, parking guidance, and venue context are surfaced in a clean card stack instead of disappearing in a PDF.",
   },
   {
     icon: Route,
     title: "Season schedules with visual hierarchy",
-    copy:
-      "Games, practices, and travel notes are grouped so the next important moment is obvious at a glance.",
+    copy: "Games, practices, and travel notes are grouped so the next important moment is obvious at a glance.",
   },
   {
     icon: Share2,
     title: "One shareable football link",
-    copy:
-      "Send one polished page instead of juggling screenshots, texts, and attachments across team chats.",
+    copy: "Send one polished page instead of juggling screenshots, texts, and attachments across team chats.",
   },
 ];
 
@@ -120,9 +114,7 @@ function BrandMark() {
         <span className="relative text-lg leading-none">🏈</span>
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#7d869d]">
-          Envitefy
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#7d869d]">Envitefy</p>
         <p className="text-sm font-medium text-[#1f2438]">Football</p>
       </div>
     </div>
@@ -140,18 +132,14 @@ function SectionHeading({
 }) {
   return (
     <div className="max-w-3xl">
-      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#7b84a0]">
-        {eyebrow}
-      </p>
+      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#7b84a0]">{eyebrow}</p>
       <h2
         className="mt-4 text-[clamp(2.1rem,5vw,4.5rem)] leading-[0.96] tracking-[-0.05em] text-[#1f2438]"
         style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
       >
         {title}
       </h2>
-      <p className="mt-5 max-w-2xl text-base leading-8 text-[#61708a] sm:text-lg">
-        {copy}
-      </p>
+      <p className="mt-5 max-w-2xl text-base leading-8 text-[#61708a] sm:text-lg">{copy}</p>
     </div>
   );
 }
@@ -225,9 +213,7 @@ function EditorialPanel({
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8b93ad]">
               {item.label}
             </p>
-            <p className="mt-2 text-sm font-medium text-[#1f2438]">
-              {item.value}
-            </p>
+            <p className="mt-2 text-sm font-medium text-[#1f2438]">{item.value}</p>
           </div>
         ))}
       </div>
@@ -256,8 +242,8 @@ function HeroPreview() {
                 Panthers Football 2025
               </h2>
               <p className="mt-4 text-sm leading-7 text-[#61708a]">
-                One public page for games, practices, field locations, travel
-                notes, and the season details parents ask for most.
+                One public page for games, practices, field locations, travel notes, and the season
+                details parents ask for most.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 {["Games", "Travel", "Roster", "Practice"].map((chip) => (
@@ -287,9 +273,7 @@ function HeroPreview() {
                       <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/70">
                         Next game
                       </p>
-                      <p className="mt-1 text-lg font-semibold">
-                        Friday vs Central Wildcats
-                      </p>
+                      <p className="mt-1 text-lg font-semibold">Friday vs Central Wildcats</p>
                     </div>
                     <div className="rounded-full bg-white/18 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em]">
                       7:00 PM
@@ -297,9 +281,7 @@ function HeroPreview() {
                   </div>
                   <div className="mt-3 grid gap-2 text-sm text-white/88 sm:grid-cols-3">
                     <div className="rounded-2xl bg-white/12 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-[0.22em] text-white/65">
-                        Field
-                      </p>
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-white/65">Field</p>
                       <p className="mt-1">Panthers Stadium</p>
                     </div>
                     <div className="rounded-2xl bg-white/12 px-3 py-2">
@@ -330,9 +312,7 @@ function HeroPreview() {
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b93ad]">
                     Season schedule
                   </p>
-                  <p className="mt-1 text-base text-[#1f2438]">
-                    12 games, 1 bye week
-                  </p>
+                  <p className="mt-1 text-base text-[#1f2438]">12 games, 1 bye week</p>
                 </div>
               </div>
             </div>
@@ -346,9 +326,7 @@ function HeroPreview() {
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b93ad]">
                     Travel
                   </p>
-                  <p className="mt-1 text-base text-[#1f2438]">
-                    Hotel block closes Thursday
-                  </p>
+                  <p className="mt-1 text-base text-[#1f2438]">Hotel block closes Thursday</p>
                 </div>
               </div>
             </div>
@@ -362,9 +340,7 @@ function HeroPreview() {
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8b93ad]">
                     Fan guide
                   </p>
-                  <p className="mt-1 text-base text-[#1f2438]">
-                    Entry, concessions, and field map
-                  </p>
+                  <p className="mt-1 text-base text-[#1f2438]">Entry, concessions, and field map</p>
                 </div>
               </div>
             </div>
@@ -411,25 +387,21 @@ export default function FootballLanding() {
             <div className="flex items-center gap-2">
               <Link
                 href="/event/football"
-                className="hidden rounded-full border border-[#dbe1f0] bg-white px-4 py-2 text-sm font-medium text-[#1f2438] transition hover:-translate-y-0.5 hover:shadow-md sm:inline-flex"
+                className="cta-shell hidden h-10 rounded-full border border-[#dbe1f0] bg-white px-4 text-sm font-medium text-[#1f2438] transition hover:-translate-y-0.5 hover:shadow-md sm:inline-flex"
               >
-                View builder
+                <AnimatedButtonLabel label="View builder" />
               </Link>
               <Link
                 href="/event/football"
-                className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a_56%,#4c6ddf)] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(103,117,222,0.22)] transition hover:-translate-y-0.5"
+                className="cta-shell h-10 rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a_56%,#4c6ddf)] px-4 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(103,117,222,0.22)] transition hover:-translate-y-0.5"
               >
-                Start a season
-                <ArrowRight className="h-4 w-4" />
+                <AnimatedButtonLabel label="Start a season" icon={ArrowRight} />
               </Link>
             </div>
           </nav>
         </header>
 
-        <section
-          id="hero"
-          className="scroll-mt-28 pb-16 pt-10 sm:pb-20 lg:pb-24 lg:pt-14"
-        >
+        <section id="hero" className="scroll-mt-28 pb-16 pt-10 sm:pb-20 lg:pb-24 lg:pt-14">
           <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-12">
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#73809e] shadow-[0_14px_30px_rgba(113,126,161,0.08)]">
@@ -445,38 +417,34 @@ export default function FootballLanding() {
               </h1>
 
               <p className="mt-6 max-w-xl text-lg leading-8 text-[#61708a] sm:text-xl">
-                Envitefy turns game schedules, travel details, roster notes,
-                equipment reminders, and fan guidance into one polished public
-                experience for the whole sideline.
+                Envitefy turns game schedules, travel details, roster notes, equipment reminders,
+                and fan guidance into one polished public experience for the whole sideline.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/event/football"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a)] px-6 py-4 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(197,107,30,0.24)] transition hover:-translate-y-0.5"
+                  className="cta-shell h-14 rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a)] px-6 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(197,107,30,0.24)] transition hover:-translate-y-0.5"
                 >
-                  Start your football page
-                  <ArrowRight className="h-4 w-4" />
+                  <AnimatedButtonLabel label="Start your football page" icon={ArrowRight} />
                 </Link>
                 <a
                   href="#showcase"
-                  className="inline-flex items-center justify-center rounded-full border border-[#dbe1f0] bg-white/80 px-6 py-4 text-sm font-semibold text-[#1f2438] shadow-[0_14px_30px_rgba(113,126,161,0.08)] transition hover:-translate-y-0.5"
+                  className="cta-shell h-14 rounded-full border border-[#dbe1f0] bg-white/80 px-6 text-sm font-semibold text-[#1f2438] shadow-[0_14px_30px_rgba(113,126,161,0.08)] transition hover:-translate-y-0.5"
                 >
-                  See the layouts
+                  <AnimatedButtonLabel label="See the layouts" />
                 </a>
               </div>
 
               <div className="mt-8 flex flex-wrap gap-2">
-                {["Schedules", "Field maps", "Hotel blocks", "Practice notes"].map(
-                  (chip) => (
-                    <span
-                      key={chip}
-                      className="rounded-full border border-white/80 bg-white/75 px-3 py-1.5 text-xs font-medium text-[#66738f] shadow-[0_12px_25px_rgba(113,126,161,0.08)]"
-                    >
-                      {chip}
-                    </span>
-                  ),
-                )}
+                {["Schedules", "Field maps", "Hotel blocks", "Practice notes"].map((chip) => (
+                  <span
+                    key={chip}
+                    className="rounded-full border border-white/80 bg-white/75 px-3 py-1.5 text-xs font-medium text-[#66738f] shadow-[0_12px_25px_rgba(113,126,161,0.08)]"
+                  >
+                    {chip}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -535,9 +503,7 @@ export default function FootballLanding() {
                   >
                     {item.title}
                   </h3>
-                  <p className="mt-3 text-sm leading-7 text-[#63718b]">
-                    {item.copy}
-                  </p>
+                  <p className="mt-3 text-sm leading-7 text-[#63718b]">{item.copy}</p>
                 </article>
               ))}
             </div>
@@ -559,25 +525,23 @@ export default function FootballLanding() {
                   Make the next football season feel polished from the first tap.
                 </h2>
                 <p className="mt-5 max-w-xl text-base leading-8 text-white/88 sm:text-lg">
-                  Build one premium page for schedules, hotels, maps, and live
-                  updates so every parent, player, and coach lands in the same
-                  place.
+                  Build one premium page for schedules, hotels, maps, and live updates so every
+                  parent, player, and coach lands in the same place.
                 </p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
                 <Link
                   href="/event/football"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-4 text-sm font-semibold text-[#3e4fd0] shadow-[0_18px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5"
+                  className="cta-shell h-14 rounded-full bg-white px-6 text-sm font-semibold text-[#3e4fd0] shadow-[0_18px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5"
                 >
-                  Start your football page
-                  <ArrowRight className="h-4 w-4" />
+                  <AnimatedButtonLabel label="Start your football page" icon={ArrowRight} />
                 </Link>
                 <a
                   href="#hero"
-                  className="inline-flex items-center justify-center rounded-full border border-white/28 bg-white/12 px-6 py-4 text-sm font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/18"
+                  className="cta-shell h-14 rounded-full border border-white/28 bg-white/12 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/18"
                 >
-                  Back to top
+                  <AnimatedButtonLabel label="Back to top" />
                 </a>
               </div>
             </div>

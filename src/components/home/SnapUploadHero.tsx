@@ -2,6 +2,7 @@
 
 import { Camera, ScanLine, UploadCloud } from "lucide-react";
 import type { ReactNode } from "react";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 type SnapUploadHeroProps = {
   onSnap: () => void;
@@ -22,11 +23,7 @@ const _BENEFITS: Array<{ icon: ReactNode; label: string; copy: string }> = [
   },
 ];
 
-export function SnapUploadHero({
-  onSnap,
-  onUpload,
-  className,
-}: SnapUploadHeroProps) {
+export function SnapUploadHero({ onSnap, onUpload, className }: SnapUploadHeroProps) {
   return (
     <section
       className={`rounded-[40px] bg-gradient-to-bl from-[#F9F2FF] via-white to-[#FFEAF4] p-6 shadow-xl shadow-[#E8DFFF]/70 sm:p-8 ${
@@ -43,10 +40,14 @@ export function SnapUploadHero({
             <button
               type="button"
               onClick={onSnap}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#7F8CFF] px-6 py-3 text-base font-semibold text-white shadow-lg shadow-[#7F8CFF]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ACAFFF] sm:w-auto"
+              className="cta-shell h-12 w-full rounded-full bg-[#7F8CFF] px-6 text-base font-semibold text-white shadow-lg shadow-[#7F8CFF]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ACAFFF] sm:w-auto"
             >
-              <Camera className="h-5 w-5" aria-hidden="true" />
-              Open Camera
+              <AnimatedButtonLabel
+                label="Open Camera"
+                icon={Camera}
+                iconClassName="h-5 w-5"
+                iconPosition="leading"
+              />
             </button>
           </div>
 
@@ -58,10 +59,14 @@ export function SnapUploadHero({
             <button
               type="button"
               onClick={onUpload}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#E4D8FF] bg-white px-6 py-3 text-base font-semibold text-[#3F2F60] shadow-sm transition hover:bg-[#F9F5FF] sm:w-auto"
+              className="cta-shell h-12 w-full rounded-full border border-[#E4D8FF] bg-white px-6 text-base font-semibold text-[#3F2F60] shadow-sm transition hover:bg-[#F9F5FF] sm:w-auto"
             >
-              <UploadCloud className="h-5 w-5" aria-hidden="true" />
-              Select File
+              <AnimatedButtonLabel
+                label="Select File"
+                icon={UploadCloud}
+                iconClassName="h-5 w-5"
+                iconPosition="leading"
+              />
             </button>
           </div>
 

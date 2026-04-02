@@ -7,6 +7,7 @@ import {
   GYM_DISCOVERY_STATUS_PHRASES,
   pickNextRandomPhrase,
 } from "@/components/event-create/gym-discovery-status-phrases";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import styles from "./gymnastics-landing.module.css";
 
 type StartYourMeetProps = {
@@ -71,12 +72,10 @@ export default function StartYourMeet({
     : uploadStatus || "Processing meet info...";
 
   return (
-    <section
-      id="gym-start-meet"
-      ref={sectionRef}
-      className="px-4 py-20 sm:px-6 lg:px-8 lg:py-24"
-    >
-      <div className={`${styles.container} rounded-[2.6rem] border border-[#dbe0ee] bg-[linear-gradient(180deg,#ffffff_0%,#f7f8fc_100%)] p-6 shadow-[0_26px_70px_rgba(23,27,70,0.08)] sm:p-8 lg:p-10`}>
+    <section id="gym-start-meet" ref={sectionRef} className="px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+      <div
+        className={`${styles.container} rounded-[2.6rem] border border-[#dbe0ee] bg-[linear-gradient(180deg,#ffffff_0%,#f7f8fc_100%)] p-6 shadow-[0_26px_70px_rgba(23,27,70,0.08)] sm:p-8 lg:p-10`}
+      >
         <div className="grid gap-8 xl:grid-cols-[minmax(0,0.8fr)_minmax(620px,1.2fr)] xl:items-start">
           <div className="max-w-[540px]">
             <p className="text-sm font-semibold uppercase tracking-[0.26em] text-[#4f46e5]">
@@ -86,8 +85,8 @@ export default function StartYourMeet({
               Upload once and let Envitefy build the cleaner meet page
             </h2>
             <p className="mt-6 text-lg leading-8 text-[#55627f]">
-              The workflow stays simple. Bring your gymnastics meet information
-              in once, then share one organized page instead of a stack of files.
+              The workflow stays simple. Bring your gymnastics meet information in once, then share
+              one organized page instead of a stack of files.
             </p>
 
             <div className="mt-8 space-y-3">
@@ -109,9 +108,7 @@ export default function StartYourMeet({
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#c8cdef]">
                     Primary path
                   </p>
-                  <h3 className="mt-3 text-2xl font-semibold text-white">
-                    Upload meet info
-                  </h3>
+                  <h3 className="mt-3 text-2xl font-semibold text-white">Upload meet info</h3>
                 </div>
                 <div className="rounded-2xl bg-white/10 p-3 text-[#f3d97d]">
                   <Upload className="h-5 w-5" />
@@ -119,8 +116,8 @@ export default function StartYourMeet({
               </div>
 
               <p className="mt-4 text-sm leading-7 text-[#dce2fb]">
-                Best when you already have the meet packet, session grid, venue
-                document, or hotel sheet ready to go.
+                Best when you already have the meet packet, session grid, venue document, or hotel
+                sheet ready to go.
               </p>
 
               <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/6 p-4">
@@ -129,10 +126,13 @@ export default function StartYourMeet({
                     type="button"
                     onClick={onPickUpload}
                     disabled={discoveryBusy}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-[1.15rem] bg-[#d4af37] px-4 py-3.5 text-sm font-semibold text-[#392d07] transition hover:bg-[#e1bc4b] disabled:cursor-not-allowed disabled:opacity-70"
+                    className="cta-shell h-14 w-full rounded-[1.15rem] bg-[#d4af37] px-4 text-sm font-semibold text-[#392d07] transition hover:bg-[#e1bc4b] disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    <Upload className="h-4 w-4" />
-                    Upload PDF, JPG, or PNG
+                    <AnimatedButtonLabel
+                      label="Upload PDF, JPG, or PNG"
+                      icon={Upload}
+                      iconPosition="leading"
+                    />
                   </button>
                 ) : (
                   <div className="space-y-3">
@@ -153,10 +153,7 @@ export default function StartYourMeet({
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/12">
                       {uploadIndeterminate ? (
                         <div className="relative h-full w-full overflow-hidden">
-                          <div
-                            ref={barAnimRef}
-                            className={styles.landingIndeterminateBar}
-                          />
+                          <div ref={barAnimRef} className={styles.landingIndeterminateBar} />
                         </div>
                       ) : (
                         <div
@@ -181,9 +178,7 @@ export default function StartYourMeet({
                 />
 
                 {uploadFileName ? (
-                  <p className="mt-4 truncate text-xs text-[#cfd5f6]">
-                    Selected: {uploadFileName}
-                  </p>
+                  <p className="mt-4 truncate text-xs text-[#cfd5f6]">Selected: {uploadFileName}</p>
                 ) : (
                   <p className="mt-4 text-xs text-[#cfd5f6]">
                     Typical upload: meet packet, session grid, hotel sheet, venue doc
@@ -205,21 +200,17 @@ export default function StartYourMeet({
               <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#818aa4]">
                 Secondary path
               </p>
-              <h3 className="mt-3 text-2xl font-semibold text-[#171b46]">
-                Open visual builder
-              </h3>
+              <h3 className="mt-3 text-2xl font-semibold text-[#171b46]">Open visual builder</h3>
               <p className="mt-4 text-sm leading-7 text-[#5a6782]">
-                Use the builder when you want to shape the meet page manually
-                before publishing.
+                Use the builder when you want to shape the meet page manually before publishing.
               </p>
               <button
                 type="button"
                 onClick={onOpenBuilder}
                 disabled={discoveryBusy}
-                className="mt-8 inline-flex items-center gap-2 rounded-full border border-[#d9deef] bg-[#171b46] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#121538] disabled:cursor-not-allowed disabled:opacity-70"
+                className="cta-shell mt-8 h-12 rounded-full border border-[#d9deef] bg-[#171b46] px-5 text-sm font-semibold text-white transition hover:bg-[#121538] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Open builder
-                <ArrowRight className="h-4 w-4" />
+                <AnimatedButtonLabel label="Open builder" icon={ArrowRight} />
               </button>
             </article>
           </div>

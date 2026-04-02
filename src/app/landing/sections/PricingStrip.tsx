@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
   return (
@@ -20,50 +20,46 @@ export default function PricingStrip({ isAuthed }: { isAuthed: boolean }) {
             <h3
               className="mx-auto mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.05em] md:text-6xl"
               style={{
-                fontFamily:
-                  'var(--font-montserrat), var(--font-sans), sans-serif',
+                fontFamily: "var(--font-montserrat), var(--font-sans), sans-serif",
               }}
             >
-              Turn PDFs, schedules, flyers, and invites into a live page people
-              will actually open.
+              Turn PDFs, schedules, flyers, and invites into a live page people will actually open.
             </h3>
             <p className="mx-auto mb-10 mt-5 max-w-3xl text-lg leading-8 text-[#58536e] md:text-xl">
-              Start with Gymnastics when the flagship use case is meet-weekend
-              coordination. Use Snap when the input is a flyer, schedule,
-              invite, or event image that needs fast cleanup and sharing.
+              Start with Gymnastics when the flagship use case is meet-weekend coordination. Use
+              Snap when the input is a flyer, schedule, invite, or event image that needs fast
+              cleanup and sharing.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               {isAuthed ? (
                 <Link
                   href="/"
-                  className="rounded-full bg-slate-900 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-xl"
+                  className="cta-shell h-14 rounded-full bg-slate-900 px-8 text-lg font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-xl"
                 >
-                  Go to Dashboard
+                  <AnimatedButtonLabel label="Go to Dashboard" />
                 </Link>
               ) : (
                 <>
                   <Link
                     href="/gymnastics"
-                    className="group flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-8 py-4 text-lg font-semibold text-white shadow-[0_20px_46px_rgba(111,76,255,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_52px_rgba(111,76,255,0.3)]"
+                    className="cta-shell h-14 rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-8 text-lg font-semibold text-white shadow-[0_20px_46px_rgba(111,76,255,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_52px_rgba(111,76,255,0.3)]"
                   >
-                    Start with Gymnastics
-                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    <AnimatedButtonLabel label="Start with Gymnastics" />
                   </Link>
                   <Link
                     href="/snap"
-                    className="rounded-full border border-[#e6dcff] bg-white px-8 py-4 text-lg font-semibold text-[#2f2550] transition-all hover:-translate-y-0.5 hover:border-[#d9cbff] hover:bg-[#faf7ff] hover:shadow-lg"
+                    className="cta-shell h-14 rounded-full border border-[#e6dcff] bg-white px-8 text-lg font-semibold text-[#2f2550] transition-all hover:-translate-y-0.5 hover:border-[#d9cbff] hover:bg-[#faf7ff] hover:shadow-lg"
                   >
-                    Try Snap
+                    <AnimatedButtonLabel label="Try Snap" />
                   </Link>
                 </>
               )}
             </div>
 
             <p className="mt-6 text-sm text-[#68627d]">
-              Gymnastics is the clearest flagship claim. Snap stays available
-              for fast capture across invites, flyers, schedules, and event
-              images.
+              Gymnastics is the clearest flagship claim. Snap stays available for fast capture
+              across invites, flyers, schedules, and event images.
             </p>
           </div>
         </div>

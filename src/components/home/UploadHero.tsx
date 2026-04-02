@@ -1,6 +1,7 @@
 "use client";
 
 import { UploadCloud } from "lucide-react";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 type UploadHeroProps = {
   onUpload: () => void;
@@ -23,10 +24,14 @@ export function UploadHero({ onUpload, className }: UploadHeroProps) {
             <button
               type="button"
               onClick={onUpload}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#3975C3] px-6 py-3 text-base font-semibold text-white shadow-lg shadow-[#3975C3]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3975C3]/50 sm:w-auto"
+              className="cta-shell h-12 rounded-full bg-[#3975C3] px-6 text-base font-semibold text-white shadow-lg shadow-[#3975C3]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3975C3]/50 sm:w-auto"
             >
-              <UploadCloud className="h-5 w-5" aria-hidden="true" />
-              Select File
+              <AnimatedButtonLabel
+                label="Select File"
+                icon={UploadCloud}
+                iconClassName="h-5 w-5"
+                iconPosition="leading"
+              />
             </button>
           </div>
         </div>

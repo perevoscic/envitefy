@@ -61,6 +61,7 @@ export default function ConditionalFooter({
   const isMarketingRoot = pathname === "/" && hasNoSession;
   const isMarketingRoute =
     isMarketingRoot ||
+    pathname === "/landing" ||
     pathname === "/snap" ||
     pathname === "/gymnastics";
 
@@ -130,9 +131,9 @@ export default function ConditionalFooter({
           </div>
         </div>
         <div className="border-t border-[#efe8ff]">
-          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-sm text-[#6b6581] sm:px-6 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-6 text-sm text-[#6b6581] sm:px-6 lg:px-8">
             <p>© {new Date().getFullYear()} Envitefy</p>
-            <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
               <Link href="/gymnastics" className="hover:text-[#2a2048]">
                 Start with Gymnastics
               </Link>

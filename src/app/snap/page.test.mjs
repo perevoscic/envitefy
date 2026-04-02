@@ -8,16 +8,20 @@ const repoRoot = process.cwd();
 const readSource = (relativePath) =>
   fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("/snap reuses the shared landing navigation and key anchors", () => {
+test("/snap reuses the shared hero navigation and key anchors", () => {
   const page = readSource("src/app/snap/page.tsx");
   const snapLanding = readSource(
     "src/components/snap-landing/SnapSignupLanding.tsx",
   );
 
   assert.match(page, /<SnapSignupLanding \/>/);
-  assert.match(snapLanding, /<LandingNav gymnasticsHref="\/gymnastics" \/>/);
+  assert.match(snapLanding, /<HeroTopNav/);
+  assert.match(snapLanding, /label: "Gymnastics", href: "\/landing#gymnastics"/);
+  assert.match(snapLanding, /label: "Snap", href: "#snap"/);
+  assert.match(snapLanding, /label: "Features", href: "#features"/);
+  assert.match(snapLanding, /label: "FAQ", href: "#faq"/);
   assert.match(snapLanding, /id="snap"/);
-  assert.match(snapLanding, /id="benefits"/);
+  assert.match(snapLanding, /id="features"/);
   assert.match(snapLanding, /id="how-it-works"/);
   assert.match(snapLanding, /id="faq"/);
 });
@@ -30,5 +34,6 @@ test("/snap keeps snap-specific auth and CTA wiring", () => {
   assert.match(snapLanding, /signupSource="snap"/);
   assert.match(snapLanding, /successRedirectUrl="\/event"/);
   assert.match(snapLanding, /href="\/event"/);
-  assert.match(snapLanding, /openAuth\("signup"\)/);
+  assert.match(snapLanding, /onGuestLoginAction=\{\(\) => openAuth\("login"\)\}/);
+  assert.match(snapLanding, /onGuestPrimaryAction=\{\(\) => openAuth\("signup"\)\}/);
 });

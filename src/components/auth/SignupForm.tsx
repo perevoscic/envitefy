@@ -84,11 +84,29 @@ export default function SignupForm({
     }
   }, []);
 
+  const ensureSignupSourceCookie = async () => {
+    if (!signupSource) return;
+
+    const response = await fetch("/api/auth/signup-source", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: signupSource }),
+      credentials: "include",
+    });
+
+    if (response.ok) return;
+
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.error || "Unable to start signup from this page.");
+  };
+
   const onEmailSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setMessage(null);
     try {
+      await ensureSignupSourceCookie();
+
       if (password !== confirmPassword) {
         const err = "Passwords do not match.";
         setMessage(err);
@@ -195,10 +213,11 @@ export default function SignupForm({
   const onGoogleSignUp = async () => {
     setSubmitting(true);
     try {
+      await ensureSignupSourceCookie();
       await signIn("google", { callbackUrl: successRedirectUrl });
     } catch (err) {
       console.error("Google sign-up error:", err);
-      setMessage("Failed to sign up with Google");
+      setMessage(err instanceof Error ? err.message : "Failed to sign up with Google");
     } finally {
       setSubmitting(false);
     }

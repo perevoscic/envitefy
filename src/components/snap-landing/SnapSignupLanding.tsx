@@ -1,26 +1,27 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import {
   CalendarPlus2,
   Camera,
   ChevronDown,
   Heart,
   ImageUp,
+  type LucideIcon,
   MapPin,
   PartyPopper,
   PencilLine,
   Share2,
   Sparkles,
   Users,
-  type LucideIcon,
 } from "lucide-react";
-import LandingNav from "@/app/landing/components/LandingNav";
+import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import HeroTopNav from "@/components/navigation/HeroTopNav";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 const useCaseCards = [
   {
@@ -143,9 +144,7 @@ function SectionHeading({
       <h2 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-[#17132b] sm:text-5xl">
         {title}
       </h2>
-      {body ? (
-        <p className="mt-5 text-lg leading-8 text-[#58536e]">{body}</p>
-      ) : null}
+      {body ? <p className="mt-5 text-lg leading-8 text-[#58536e]">{body}</p> : null}
     </div>
   );
 }
@@ -162,37 +161,31 @@ function PrimaryButton({
   light?: boolean;
 }) {
   const className = light
-    ? "inline-flex items-center justify-center rounded-full bg-white px-7 py-4 text-base font-semibold text-[#5a33d6] shadow-[0_18px_42px_rgba(31,22,53,0.16)] transition-all hover:-translate-y-0.5"
-    : "inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] px-7 py-4 text-base font-semibold text-white shadow-[0_18px_42px_rgba(124,58,237,0.24)] transition-all hover:-translate-y-0.5";
+    ? "cta-shell h-14 rounded-full bg-white px-7 text-base font-semibold text-[#5a33d6] shadow-[0_18px_42px_rgba(31,22,53,0.16)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5"
+    : "cta-shell h-14 rounded-full bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] px-7 text-base font-semibold text-white shadow-[0_18px_42px_rgba(124,58,237,0.24)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5";
 
   if (href) {
     return (
       <Link href={href} className={className}>
-        {children}
+        {typeof children === "string" ? <AnimatedButtonLabel label={children} /> : children}
       </Link>
     );
   }
 
   return (
     <button type="button" onClick={onClick} className={className}>
-      {children}
+      {typeof children === "string" ? <AnimatedButtonLabel label={children} /> : children}
     </button>
   );
 }
 
-function SecondaryButton({
-  children,
-  href,
-}: {
-  children: React.ReactNode;
-  href: string;
-}) {
+function SecondaryButton({ children, href }: { children: React.ReactNode; href: string }) {
   return (
     <a
       href={href}
-      className="inline-flex items-center justify-center rounded-full border border-[#e7ddff] bg-white px-7 py-4 text-base font-semibold text-[#2f2550] shadow-[0_12px_30px_rgba(93,67,171,0.08)] transition-all hover:-translate-y-0.5 hover:bg-[#faf7ff]"
+      className="cta-shell h-14 rounded-full border border-[#e7ddff] bg-white px-7 text-base font-semibold text-[#2f2550] shadow-[0_12px_30px_rgba(93,67,171,0.08)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:bg-[#faf7ff]"
     >
-      {children}
+      {typeof children === "string" ? <AnimatedButtonLabel label={children} /> : children}
     </a>
   );
 }
@@ -214,8 +207,8 @@ function BenefitTile({
       <h3
         className="text-xl font-semibold"
         style={{
-          color: "#ffffff",
-          textShadow: "0 0 18px rgba(188,168,255,0.16)",
+          color: "#f8f4ff",
+          textShadow: "0 0 24px rgba(188,168,255,0.22)",
         }}
       >
         {title}
@@ -241,9 +234,7 @@ function ProcessVisual({ step }: { step: 1 | 2 | 3 }) {
               <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-[1.4rem] bg-white text-[#a072ff] shadow-sm">
                 <ImageUp className="h-7 w-7" />
               </div>
-              <p className="mt-4 text-sm font-semibold text-[#9b85d6]">
-                Drop your invite here
-              </p>
+              <p className="mt-4 text-sm font-semibold text-[#9b85d6]">Drop your invite here</p>
             </div>
           </div>
         </div>
@@ -261,17 +252,13 @@ function ProcessVisual({ step }: { step: 1 | 2 | 3 }) {
                 <div className="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#9c86d6]">
                   Date
                 </div>
-                <div className="mt-1 text-sm font-semibold text-[#1f1635]">
-                  Sat, Oct 12
-                </div>
+                <div className="mt-1 text-sm font-semibold text-[#1f1635]">Sat, Oct 12</div>
               </div>
               <div className="flex-1 rounded-2xl border border-[#eee5ff] px-4 py-3">
                 <div className="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#9c86d6]">
                   Time
                 </div>
-                <div className="mt-1 text-sm font-semibold text-[#1f1635]">
-                  7:00 PM
-                </div>
+                <div className="mt-1 text-sm font-semibold text-[#1f1635]">7:00 PM</div>
               </div>
             </div>
             <div className="rounded-2xl border border-[#eee5ff] px-4 py-4">
@@ -302,9 +289,7 @@ function ProcessVisual({ step }: { step: 1 | 2 | 3 }) {
         <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#ebfff1] text-[#2bbf6a]">
           <Sparkles className="h-7 w-7" />
         </div>
-        <h3 className="mt-5 text-2xl font-semibold text-[#1f1635]">
-          Event is Live!
-        </h3>
+        <h3 className="mt-5 text-2xl font-semibold text-[#1f1635]">Event is Live!</h3>
         <div className="mt-8 space-y-3">
           <div className="rounded-full bg-[#1f1635] px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white">
             Copy Link
@@ -352,7 +337,17 @@ export default function SnapSignupLanding() {
 
   return (
     <main className="min-h-screen w-full overflow-x-clip bg-[#fcfbff] text-[#17132b] selection:bg-[#ddd1ff] selection:text-[#241a52]">
-      <LandingNav gymnasticsHref="/gymnastics" />
+      <HeroTopNav
+        navLinks={[
+          { label: "Gymnastics", href: "/landing#gymnastics" },
+          { label: "Snap", href: "#snap" },
+          { label: "Features", href: "#features" },
+          { label: "FAQ", href: "#faq" },
+        ]}
+        authenticatedPrimaryHref="/event"
+        onGuestLoginAction={() => openAuth("login")}
+        onGuestPrimaryAction={() => openAuth("signup")}
+      />
 
       <section
         id="snap"
@@ -381,21 +376,18 @@ export default function SnapSignupLanding() {
             </h1>
 
             <p className="mt-7 max-w-xl text-lg leading-8 text-[#5b5570] sm:text-xl">
-              Upload invites, flyers, schedules, event images, or PDFs. Envitefy
-              uses AI to turn static files into polished digital event pages
-              with RSVPs, links, and clean mobile sharing built in.
+              Upload invites, flyers, schedules, event images, or PDFs. Envitefy uses AI to turn
+              static files into polished digital event pages with RSVPs, links, and clean mobile
+              sharing built in.
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               {renderPrimaryCta("Try Snap Upload")}
-              <SecondaryButton href="#how-it-works">
-                See How It Works
-              </SecondaryButton>
+              <SecondaryButton href="#how-it-works">See How It Works</SecondaryButton>
             </div>
 
             <div className="mt-8 text-sm font-medium text-[#6b6482]">
-              Works with birthday invites, wedding invites, school flyers,
-              schedules, and PDFs.
+              Works with birthday invites, wedding invites, school flyers, schedules, and PDFs.
             </div>
           </div>
 
@@ -468,12 +460,10 @@ export default function SnapSignupLanding() {
               <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f6efff] text-[#7c3aed]">
                 <PartyPopper className="h-5 w-5" />
               </div>
-              <h3 className="mt-6 text-3xl font-semibold text-[#1f1635]">
-                Birthday Invitations
-              </h3>
+              <h3 className="mt-6 text-3xl font-semibold text-[#1f1635]">Birthday Invitations</h3>
               <p className="mt-4 max-w-xl text-lg leading-8 text-[#5f5875]">
-                Turn that text-message flyer or photo invite into a beautiful
-                page where guests can RSVP and get the details fast.
+                Turn that text-message flyer or photo invite into a beautiful page where guests can
+                RSVP and get the details fast.
               </p>
               <div className="mt-10 overflow-hidden rounded-[2rem] shadow-[0_20px_48px_rgba(31,22,53,0.12)]">
                 <Image
@@ -490,12 +480,10 @@ export default function SnapSignupLanding() {
               <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#7c3aed] shadow-sm">
                 <Heart className="h-5 w-5" />
               </div>
-              <h3 className="mt-6 text-3xl font-semibold text-[#1f1635]">
-                Wedding Invites
-              </h3>
+              <h3 className="mt-6 text-3xl font-semibold text-[#1f1635]">Wedding Invites</h3>
               <p className="mt-4 text-lg leading-8 text-[#5f5875]">
-                Convert elegant paper invitations into a mobile-first digital
-                home your guests can actually use.
+                Convert elegant paper invitations into a mobile-first digital home your guests can
+                actually use.
               </p>
               <div className="mt-10 overflow-hidden rounded-[2rem] shadow-[0_20px_48px_rgba(31,22,53,0.12)]">
                 <Image
@@ -516,12 +504,8 @@ export default function SnapSignupLanding() {
                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f6efff] text-[#7c3aed]">
                   <Icon className="h-5 w-5" />
                 </div>
-                <h4 className="mt-5 text-2xl font-semibold text-[#1f1635]">
-                  {title}
-                </h4>
-                <p className="mt-3 text-base leading-7 text-[#5f5875]">
-                  {body}
-                </p>
+                <h4 className="mt-5 text-2xl font-semibold text-[#1f1635]">{title}</h4>
+                <p className="mt-3 text-base leading-7 text-[#5f5875]">{body}</p>
               </article>
             ))}
           </div>
@@ -538,13 +522,10 @@ export default function SnapSignupLanding() {
                 <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] text-sm font-bold text-white shadow-[0_16px_30px_rgba(124,58,237,0.24)]">
                   1
                 </div>
-                <h3 className="mt-6 text-4xl font-semibold text-[#1f1635]">
-                  Snap or Upload
-                </h3>
+                <h3 className="mt-6 text-4xl font-semibold text-[#1f1635]">Snap or Upload</h3>
                 <p className="mt-5 text-lg leading-8 text-[#5f5875]">
-                  Simply take a photo of a printed flyer or upload a digital
-                  invitation from your camera roll. Our AI analyzes the visual
-                  elements instantly.
+                  Simply take a photo of a printed flyer or upload a digital invitation from your
+                  camera roll. Our AI analyzes the visual elements instantly.
                 </p>
               </div>
               <ProcessVisual step={1} />
@@ -558,13 +539,10 @@ export default function SnapSignupLanding() {
                 <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] text-sm font-bold text-white shadow-[0_16px_30px_rgba(124,58,237,0.24)]">
                   2
                 </div>
-                <h3 className="mt-6 text-4xl font-semibold text-[#1f1635]">
-                  Review and Edit
-                </h3>
+                <h3 className="mt-6 text-4xl font-semibold text-[#1f1635]">Review and Edit</h3>
                 <p className="mt-5 text-lg leading-8 text-[#5f5875]">
-                  Envitefy automatically pulls dates, times, and location data.
-                  You can tweak any details, add extra links, and clean
-                  everything up in seconds.
+                  Envitefy automatically pulls dates, times, and location data. You can tweak any
+                  details, add extra links, and clean everything up in seconds.
                 </p>
               </div>
             </div>
@@ -578,8 +556,8 @@ export default function SnapSignupLanding() {
                   Save and Share the Page
                 </h3>
                 <p className="mt-5 text-lg leading-8 text-[#5f5875]">
-                  Publish your shareable event page. Guests can RSVP with one
-                  tap, and the event is easier to save, revisit, and share.
+                  Publish your shareable event page. Guests can RSVP with one tap, and the event is
+                  easier to save, revisit, and share.
                 </p>
               </div>
               <ProcessVisual step={3} />
@@ -592,12 +570,7 @@ export default function SnapSignupLanding() {
         <div className="mx-auto max-w-7xl rounded-[3rem] bg-[#24163f] p-8 text-white shadow-[0_32px_90px_rgba(31,22,53,0.18)] sm:p-12 lg:p-16">
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {benefitCards.map((card) => (
-              <BenefitTile
-                key={card.title}
-                icon={card.icon}
-                title={card.title}
-                body={card.body}
-              />
+              <BenefitTile key={card.title} icon={card.icon} title={card.title} body={card.body} />
             ))}
           </div>
         </div>
@@ -658,9 +631,7 @@ export default function SnapSignupLanding() {
             </article>
 
             <article className="rounded-[2.4rem] border border-[#ece4ff] bg-[#faf7ff] p-8 shadow-[0_24px_60px_rgba(102,76,189,0.08)]">
-              <h3 className="text-3xl font-semibold text-[#1f1635]">
-                Included on the page
-              </h3>
+              <h3 className="text-3xl font-semibold text-[#1f1635]">Included on the page</h3>
               <div className="mt-8 space-y-3">
                 {[
                   "Event title, date, time, and location",
@@ -744,14 +715,12 @@ export default function SnapSignupLanding() {
             Snap it. Upload it. Turn it into an event page.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/84">
-            Start with the invite or file you already have. Let Envitefy
-            organize the details and make the event easier to share.
+            Start with the invite or file you already have. Let Envitefy organize the details and
+            make the event easier to share.
           </p>
           <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
             {renderPrimaryCta("Try Snap Upload", true)}
-            <SecondaryButton href="#how-it-works">
-              See the workflow
-            </SecondaryButton>
+            <SecondaryButton href="#how-it-works">See the workflow</SecondaryButton>
           </div>
         </div>
       </section>

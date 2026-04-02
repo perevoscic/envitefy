@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ClipboardCheck } from "lucide-react";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 type SmartSignupHeroProps = {
   className?: string;
@@ -22,10 +23,14 @@ export function SmartSignupHero({ className }: SmartSignupHeroProps) {
           <div className="flex justify-center">
             <Link
               href="/smart-signup-form"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#4CAF50] px-6 py-3 text-base font-semibold text-white shadow-lg shadow-[#4CAF50]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4CAF50]/50 sm:w-auto"
+              className="cta-shell h-12 rounded-full bg-[#4CAF50] px-6 text-base font-semibold text-white shadow-lg shadow-[#4CAF50]/40 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4CAF50]/50 sm:w-auto"
             >
-              <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
-              Open sign-up builder
+              <AnimatedButtonLabel
+                label="Open sign-up builder"
+                icon={ClipboardCheck}
+                iconClassName="h-5 w-5"
+                iconPosition="leading"
+              />
             </Link>
           </div>
         </div>

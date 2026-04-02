@@ -1,6 +1,7 @@
-import Link from "next/link";
 import { ArrowRight, FileText, Sparkles, WandSparkles } from "lucide-react";
+import Link from "next/link";
 import GymnasticsMeetPreview from "@/components/landing/GymnasticsMeetPreview";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 export default function Hero() {
   return (
@@ -25,8 +26,7 @@ export default function Hero() {
             <h1
               className="mt-7 text-[clamp(3rem,7vw,5.7rem)] font-semibold leading-[0.94] tracking-[-0.055em] text-[#161129]"
               style={{
-                fontFamily:
-                  'var(--font-montserrat), var(--font-sans), sans-serif',
+                fontFamily: "var(--font-montserrat), var(--font-sans), sans-serif",
               }}
             >
               Turn meet PDFs, invites, flyers, and schedules into
@@ -36,25 +36,23 @@ export default function Hero() {
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[#544f6b] sm:text-xl">
-              Built for gymnastics meets and effortless event sharing.
-              Envitefy helps you upload or capture the file you already have,
-              organize the details, and share one polished mobile-friendly page
-              people can actually use.
+              Built for gymnastics meets and effortless event sharing. Envitefy helps you upload or
+              capture the file you already have, organize the details, and share one polished
+              mobile-friendly page people can actually use.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/gymnastics"
-                className="group inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-7 py-4 text-base font-semibold text-white shadow-[0_20px_44px_rgba(111,76,255,0.26)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_52px_rgba(111,76,255,0.32)]"
+                className="cta-shell h-14 rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-7 text-base font-semibold text-white shadow-[0_20px_44px_rgba(111,76,255,0.26)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_52px_rgba(111,76,255,0.32)]"
               >
-                Start with Gymnastics
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                <AnimatedButtonLabel label="Start with Gymnastics" icon={ArrowRight} />
               </Link>
               <Link
                 href="/snap"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#e6dcff] bg-white px-7 py-4 text-base font-semibold text-[#2f2550] shadow-[0_14px_32px_rgba(93,67,171,0.08)] transition-all hover:-translate-y-0.5 hover:border-[#d9cbff] hover:bg-[#faf7ff]"
+                className="cta-shell h-14 rounded-full border border-[#e6dcff] bg-white px-7 text-base font-semibold text-[#2f2550] shadow-[0_14px_32px_rgba(93,67,171,0.08)] transition-all hover:-translate-y-0.5 hover:border-[#d9cbff] hover:bg-[#faf7ff]"
               >
-                Try Snap
+                <AnimatedButtonLabel label="Try Snap" />
               </Link>
             </div>
 
