@@ -311,40 +311,6 @@ export default function LandingExperience() {
             className={`${styles.bloomEffect} pointer-events-none absolute left-1/2 top-0 h-full w-full -translate-x-1/2`}
           />
           <div className="relative mx-auto flex max-w-7xl flex-col items-center gap-16 lg:flex-row lg:gap-24">
-            <div className={`${styles.gymnasticsCopy} z-10 flex-1 text-center lg:text-left`}>
-                <span className={styles.gymnasticsEyebrow}>Sports Edition</span>
-                <h2
-                  className={`${styles.headline} text-4xl font-extrabold tracking-tight text-[#1f1635] lg:text-5xl`}
-                >
-                  Perfect for Gymnastics Meets &amp; Competitions
-                </h2>
-                <p className="max-w-2xl text-lg font-medium leading-relaxed text-[#53496b] lg:text-xl">
-                  Upload competition flyers and Envitefy can extract multi-day schedules, session
-                  times, and venue maps into one polished live page that is easier for families,
-                  coaches, and teams to follow.
-                </p>
-
-                <div className={styles.gymnasticsBulletGrid}>
-                  {gymnasticsHighlights.map((item) => (
-                    <div key={item.title} className={styles.gymnasticsBulletCard}>
-                      <div className={styles.gymnasticsBulletIcon}>
-                        <item.icon size={20} />
-                      </div>
-                      <div className="space-y-2">
-                        <h3 className={`${styles.headline} text-xl font-bold text-[#1f1635]`}>
-                          {item.title}
-                        </h3>
-                        <p className="text-sm font-medium leading-6 text-[#5d5475]">{item.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <PrimaryCta href="/gymnastics" className="w-full sm:w-auto">
-                  Explore Gymnastics
-                </PrimaryCta>
-              </div>
-
             <div className="relative w-full flex-1">
               <div
                 ref={gymnasticsHighlightRef}
@@ -410,6 +376,40 @@ export default function LandingExperience() {
                   <span>Meet details</span>
                 </div>
               </div>
+            </div>
+
+            <div className={`${styles.gymnasticsCopy} z-10 flex-1 text-center lg:text-left`}>
+              <span className={styles.gymnasticsEyebrow}>Sports Edition</span>
+              <h2
+                className={`${styles.headline} text-4xl font-extrabold tracking-tight text-[#1f1635] lg:text-5xl`}
+              >
+                Perfect for Gymnastics Meets &amp; Competitions
+              </h2>
+              <p className="max-w-2xl text-lg font-medium leading-relaxed text-[#53496b] lg:text-xl">
+                Upload competition flyers and Envitefy can extract multi-day schedules, session
+                times, and venue maps into one polished live page that is easier for families,
+                coaches, and teams to follow.
+              </p>
+
+              <div className={styles.gymnasticsBulletGrid}>
+                {gymnasticsHighlights.map((item) => (
+                  <div key={item.title} className={styles.gymnasticsBulletCard}>
+                    <div className={styles.gymnasticsBulletIcon}>
+                      <item.icon size={20} />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className={`${styles.headline} text-xl font-bold text-[#1f1635]`}>
+                        {item.title}
+                      </h3>
+                      <p className="text-sm font-medium leading-6 text-[#5d5475]">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <PrimaryCta href="/gymnastics" className="w-full sm:w-auto">
+                Explore Gymnastics
+              </PrimaryCta>
             </div>
           </div>
         </section>
