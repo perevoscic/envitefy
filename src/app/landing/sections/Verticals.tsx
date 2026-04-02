@@ -93,15 +93,15 @@ export default function Verticals() {
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/gymnastics"
-                  className="group inline-flex items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-6 py-3.5 text-base font-semibold text-white shadow-[0_18px_40px_rgba(111,76,255,0.24)] transition-all hover:-translate-y-0.5"
+                  className="cta-shell h-14 rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-6 text-base font-semibold text-white shadow-[0_18px_40px_rgba(111,76,255,0.24)] transition-all hover:-translate-y-0.5"
                 >
                   <AnimatedButtonLabel label="Explore Gymnastics" icon={ArrowRight} />
                 </Link>
                 <a
                   href="#features"
-                  className="inline-flex items-center justify-center rounded-full border border-[#e4d9ff] bg-white px-6 py-3.5 text-base font-semibold text-[#2f2550] transition-all hover:bg-[#faf7ff]"
+                  className="cta-shell h-14 rounded-full border border-[#e4d9ff] bg-white px-6 text-base font-semibold text-[#2f2550] transition-all hover:bg-[#faf7ff]"
                 >
-                  See the core features
+                  <AnimatedButtonLabel label="See the core features" />
                 </a>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function Verticals() {
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/snap"
-                  className="group inline-flex items-center justify-center overflow-hidden rounded-full border border-[#e3d7ff] bg-[#f7f3ff] px-6 py-3.5 text-base font-semibold text-[#392d61] transition-all hover:-translate-y-0.5 hover:bg-white"
+                  className="cta-shell h-14 rounded-full border border-[#e3d7ff] bg-[#f7f3ff] px-6 text-base font-semibold text-[#392d61] transition-all hover:-translate-y-0.5 hover:bg-white"
                 >
                   <AnimatedButtonLabel label="Explore Snap" icon={ArrowRight} />
                 </Link>

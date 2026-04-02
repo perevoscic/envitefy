@@ -44,15 +44,15 @@ export default function Hero() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/gymnastics"
-                className="group inline-flex items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-7 py-4 text-base font-semibold text-white shadow-[0_20px_44px_rgba(111,76,255,0.26)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_52px_rgba(111,76,255,0.32)]"
+                className="cta-shell h-14 rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-7 text-base font-semibold text-white shadow-[0_20px_44px_rgba(111,76,255,0.26)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_52px_rgba(111,76,255,0.32)]"
               >
                 <AnimatedButtonLabel label="Start with Gymnastics" icon={ArrowRight} />
               </Link>
               <Link
                 href="/snap"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#e6dcff] bg-white px-7 py-4 text-base font-semibold text-[#2f2550] shadow-[0_14px_32px_rgba(93,67,171,0.08)] transition-all hover:-translate-y-0.5 hover:border-[#d9cbff] hover:bg-[#faf7ff]"
+                className="cta-shell h-14 rounded-full border border-[#e6dcff] bg-white px-7 text-base font-semibold text-[#2f2550] shadow-[0_14px_32px_rgba(93,67,171,0.08)] transition-all hover:-translate-y-0.5 hover:border-[#d9cbff] hover:bg-[#faf7ff]"
               >
-                Try Snap
+                <AnimatedButtonLabel label="Try Snap" />
               </Link>
             </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { MoveRight, Upload } from "lucide-react";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import styles from "./gymnastics-landing.module.css";
 
 type HeroProps = {
@@ -30,7 +31,9 @@ export default function Hero({ onGoToStart, onOpenBuilder }: HeroProps) {
       <div className={`${styles.beamLine} ${styles.beamLineLeft}`} aria-hidden="true" />
       <div className={`${styles.beamLine} ${styles.beamLineRight}`} aria-hidden="true" />
 
-      <div className={`${styles.container} grid gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(560px,0.98fr)] lg:items-center xl:gap-16`}>
+      <div
+        className={`${styles.container} grid gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(560px,0.98fr)] lg:items-center xl:gap-16`}
+      >
         <div className="max-w-[720px]">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#d8d9eb] bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#4c4b82] shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
             <span className="h-2 w-2 rounded-full bg-[#d4af37]" />
@@ -42,19 +45,18 @@ export default function Hero({ onGoToStart, onOpenBuilder }: HeroProps) {
           </h1>
 
           <p className="mt-6 max-w-[60ch] text-lg leading-8 text-[#55607d] sm:text-xl">
-            Upload your meet packet, venue details, hotels, admission notes, and
-            documents once. Envitefy turns them into one polished meet hub for
-            parents, athletes, coaches, and spectators.
+            Upload your meet packet, venue details, hotels, admission notes, and documents once.
+            Envitefy turns them into one polished meet hub for parents, athletes, coaches, and
+            spectators.
           </p>
 
           <div className="mt-9">
             <button
               type="button"
               onClick={onGoToStart}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#171b46] px-7 py-4 text-sm font-semibold text-white shadow-[0_22px_46px_rgba(23,27,70,0.24)] transition hover:-translate-y-0.5 hover:bg-[#121538]"
+              className="cta-shell h-14 rounded-full bg-[#171b46] px-7 text-sm font-semibold text-white shadow-[0_22px_46px_rgba(23,27,70,0.24)] transition hover:-translate-y-0.5 hover:bg-[#121538]"
             >
-              <Upload className="h-4 w-4" />
-              Upload Meet Info
+              <AnimatedButtonLabel label="Upload Meet Info" icon={Upload} iconPosition="leading" />
             </button>
           </div>
 
@@ -96,9 +98,7 @@ export default function Hero({ onGoToStart, onOpenBuilder }: HeroProps) {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#8188a2]">
                     Upload packet
                   </p>
-                  <p className="mt-2 text-xl font-semibold text-[#171b46]">
-                    Meet information
-                  </p>
+                  <p className="mt-2 text-xl font-semibold text-[#171b46]">Meet information</p>
                 </div>
                 <div className="rounded-2xl bg-[#f3f1fb] p-3 text-[#4c4b82]">
                   <Upload className="h-4 w-4" />
@@ -137,20 +137,18 @@ export default function Hero({ onGoToStart, onOpenBuilder }: HeroProps) {
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                {["Sessions", "Venue", "Hotels", "Results", "Spectator Info"].map(
-                  (tab, index) => (
-                    <span
-                      key={tab}
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                        index === 0
-                          ? "bg-[#d4af37] text-[#3d2f06]"
-                          : "border border-white/10 bg-white/6 text-[#e5e8ff]"
-                      }`}
-                    >
-                      {tab}
-                    </span>
-                  ),
-                )}
+                {["Sessions", "Venue", "Hotels", "Results", "Spectator Info"].map((tab, index) => (
+                  <span
+                    key={tab}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                      index === 0
+                        ? "bg-[#d4af37] text-[#3d2f06]"
+                        : "border border-white/10 bg-white/6 text-[#e5e8ff]"
+                    }`}
+                  >
+                    {tab}
+                  </span>
+                ))}
               </div>
 
               <div className="mt-6 rounded-[1.8rem] bg-white p-5 text-[#1d2447]">
@@ -180,9 +178,7 @@ export default function Hero({ onGoToStart, onOpenBuilder }: HeroProps) {
                       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8690ab]">
                         Venue
                       </p>
-                      <p className="mt-2 text-lg font-semibold text-[#171b46]">
-                        Convention Hall B
-                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#171b46]">Convention Hall B</p>
                       <p className="mt-2 text-sm leading-6 text-[#64708b]">
                         Parking map, entry doors, and parent seating notes.
                       </p>

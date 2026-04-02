@@ -4,59 +4,44 @@ type AnimatedButtonLabelProps = {
   label: string;
   icon?: ComponentType<{ className?: string }>;
   iconClassName?: string;
+  iconPosition?: "leading" | "trailing";
   className?: string;
-  fullHeight?: boolean;
 };
 
 export default function AnimatedButtonLabel({
   label,
   icon: Icon,
   iconClassName = "h-4 w-4",
+  iconPosition = "trailing",
   className = "",
-  fullHeight = false,
 }: AnimatedButtonLabelProps) {
-  const labelTrackClass = fullHeight
-    ? "relative block h-full min-h-[1em] overflow-hidden"
-    : "relative block h-[1.1em] overflow-hidden";
-  const iconTrackClass = fullHeight
-    ? "relative block h-full w-4 min-h-4 overflow-hidden"
-    : "relative block h-4 w-4 overflow-hidden";
-  const rollerClass =
-    "absolute inset-0 flex items-center whitespace-nowrap transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform";
+  const iconTrack = Icon ? (
+    <span className="cta-roller-icon-track">
+      <span className="cta-roller-icon-measure">
+        <span className="cta-roller-icon-slot">
+          <Icon className={iconClassName} />
+        </span>
+      </span>
+      <span className="cta-roller-item cta-roller-item--current cta-roller-icon-slot">
+        <Icon className={iconClassName} />
+      </span>
+      <span className="cta-roller-item cta-roller-item--next cta-roller-icon-slot">
+        <Icon className={iconClassName} />
+      </span>
+    </span>
+  ) : null;
 
   return (
     <>
       <span className="sr-only">{label}</span>
-      <span
-        aria-hidden="true"
-        className={`relative flex items-center gap-2 leading-none ${
-          fullHeight ? "self-stretch" : ""
-        } ${className}`}
-      >
-        <span className={labelTrackClass}>
-          <span className="invisible whitespace-nowrap">{label}</span>
-          <span className={`${rollerClass} translate-y-0 group-hover:-translate-y-full`}>
-            {label}
-          </span>
-          <span className={`${rollerClass} translate-y-full group-hover:translate-y-0`}>
-            {label}
-          </span>
+      <span aria-hidden="true" className={`cta-roller-content ${className}`.trim()}>
+        {iconPosition === "leading" ? iconTrack : null}
+        <span className="cta-roller-track">
+          <span className="cta-roller-measure">{label}</span>
+          <span className="cta-roller-item cta-roller-item--current">{label}</span>
+          <span className="cta-roller-item cta-roller-item--next">{label}</span>
         </span>
-
-        {Icon ? (
-          <span className={iconTrackClass}>
-            <span className={`${rollerClass} translate-y-0 justify-center group-hover:-translate-y-full`}>
-              <span className="flex h-4 w-4 items-center justify-center">
-                <Icon className={iconClassName} />
-              </span>
-            </span>
-            <span className={`${rollerClass} translate-y-full justify-center group-hover:translate-y-0`}>
-              <span className="flex h-4 w-4 items-center justify-center">
-                <Icon className={iconClassName} />
-              </span>
-            </span>
-          </span>
-        ) : null}
+        {iconPosition === "trailing" ? iconTrack : null}
       </span>
     </>
   );

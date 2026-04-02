@@ -387,13 +387,13 @@ export default function FootballLanding() {
             <div className="flex items-center gap-2">
               <Link
                 href="/event/football"
-                className="hidden rounded-full border border-[#dbe1f0] bg-white px-4 py-2 text-sm font-medium text-[#1f2438] transition hover:-translate-y-0.5 hover:shadow-md sm:inline-flex"
+                className="cta-shell hidden h-10 rounded-full border border-[#dbe1f0] bg-white px-4 text-sm font-medium text-[#1f2438] transition hover:-translate-y-0.5 hover:shadow-md sm:inline-flex"
               >
-                View builder
+                <AnimatedButtonLabel label="View builder" />
               </Link>
               <Link
                 href="/event/football"
-                className="group inline-flex items-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a_56%,#4c6ddf)] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(103,117,222,0.22)] transition hover:-translate-y-0.5"
+                className="cta-shell h-10 rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a_56%,#4c6ddf)] px-4 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(103,117,222,0.22)] transition hover:-translate-y-0.5"
               >
                 <AnimatedButtonLabel label="Start a season" icon={ArrowRight} />
               </Link>
@@ -424,15 +424,15 @@ export default function FootballLanding() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/event/football"
-                  className="group inline-flex items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a)] px-6 py-4 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(197,107,30,0.24)] transition hover:-translate-y-0.5"
+                  className="cta-shell h-14 rounded-full bg-[linear-gradient(135deg,#c05d1f,#edb64a)] px-6 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(197,107,30,0.24)] transition hover:-translate-y-0.5"
                 >
                   <AnimatedButtonLabel label="Start your football page" icon={ArrowRight} />
                 </Link>
                 <a
                   href="#showcase"
-                  className="inline-flex items-center justify-center rounded-full border border-[#dbe1f0] bg-white/80 px-6 py-4 text-sm font-semibold text-[#1f2438] shadow-[0_14px_30px_rgba(113,126,161,0.08)] transition hover:-translate-y-0.5"
+                  className="cta-shell h-14 rounded-full border border-[#dbe1f0] bg-white/80 px-6 text-sm font-semibold text-[#1f2438] shadow-[0_14px_30px_rgba(113,126,161,0.08)] transition hover:-translate-y-0.5"
                 >
-                  See the layouts
+                  <AnimatedButtonLabel label="See the layouts" />
                 </a>
               </div>
 
@@ -533,15 +533,15 @@ export default function FootballLanding() {
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
                 <Link
                   href="/event/football"
-                  className="group inline-flex items-center justify-center overflow-hidden rounded-full bg-white px-6 py-4 text-sm font-semibold text-[#3e4fd0] shadow-[0_18px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5"
+                  className="cta-shell h-14 rounded-full bg-white px-6 text-sm font-semibold text-[#3e4fd0] shadow-[0_18px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5"
                 >
                   <AnimatedButtonLabel label="Start your football page" icon={ArrowRight} />
                 </Link>
                 <a
                   href="#hero"
-                  className="inline-flex items-center justify-center rounded-full border border-white/28 bg-white/12 px-6 py-4 text-sm font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/18"
+                  className="cta-shell h-14 rounded-full border border-white/28 bg-white/12 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/18"
                 >
-                  Back to top
+                  <AnimatedButtonLabel label="Back to top" />
                 </a>
               </div>
             </div>

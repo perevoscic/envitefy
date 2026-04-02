@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import GymnasticsHeroBackground from "./GymnasticsHeroBackground";
 import Link from "next/link";
 import Image from "next/image";
 import AuthModal from "@/components/auth/AuthModal";
-import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import HeroTopNav from "@/components/navigation/HeroTopNav";
 import {
   ArrowRight,
   CalendarDays,
@@ -194,23 +192,12 @@ function FeatureFlipCard({ f }: { f: (typeof features)[number] }) {
 }
 
 export default function GymnasticsLanding() {
-  const router = useRouter();
-  const { status } = useSession();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
 
-  const openSignup = () => {
-    setAuthMode("signup");
+  const openAuth = (mode: "login" | "signup") => {
+    setAuthMode(mode);
     setAuthModalOpen(true);
-  };
-
-  const handleStartMeet = () => {
-    if (status === "authenticated") {
-      router.push("/event/gymnastics");
-      return;
-    }
-
-    openSignup();
   };
 
   return (
@@ -223,52 +210,17 @@ export default function GymnasticsLanding() {
         <GymnasticsHeroBackground />
       </div>
 
-      {/* ═══ NAV ═══ */}
-      <header className="sticky top-0 z-50">
-        <div className="mx-auto max-w-[1400px] px-4 pt-3 sm:px-6 lg:px-8">
-          <nav className="flex items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-5 py-3 shadow-[0_8px_32px_rgba(99,102,241,0.06)] backdrop-blur-xl">
-            {/* brand */}
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="hidden sm:block">
-                <EnvitefyWordmark className="ml-8 mt-1 text-[2.5rem] sm:ml-8" />
-                <p className="text-sm font-semibold text-slate-900">
-                  Gymnastics
-                </p>
-              </div>
-            </Link>
-
-            {/* center links */}
-            <div className="hidden items-center gap-1 lg:flex">
-              {[
-                { label: "Features", href: "#features" },
-                { label: "How It Works", href: "#how-it-works" },
-                { label: "Use Cases", href: "#use-cases" },
-                { label: "Why Envitefy", href: "#why-envitefy" },
-              ].map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* right CTA */}
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={handleStartMeet}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:-translate-y-px hover:shadow-xl hover:shadow-indigo-500/30"
-              >
-                Start a Meet
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </nav>
-        </div>
-      </header>
+      <HeroTopNav
+        navLinks={[
+          { label: "Gymnastics", href: "#hero" },
+          { label: "Snap", href: "/snap" },
+          { label: "Features", href: "#features" },
+          { label: "FAQ", href: "/faq" },
+        ]}
+        authenticatedPrimaryHref="/event/gymnastics"
+        onGuestLoginAction={() => openAuth("login")}
+        onGuestPrimaryAction={() => openAuth("signup")}
+      />
 
       {/* ═══ HERO ═══ */}
       <section id="hero" className="relative z-10 scroll-mt-20 overflow-hidden">

@@ -19,8 +19,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import LandingNav from "@/app/landing/components/LandingNav";
 import AuthModal from "@/components/auth/AuthModal";
+import HeroTopNav from "@/components/navigation/HeroTopNav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 const useCaseCards = [
@@ -161,8 +161,8 @@ function PrimaryButton({
   light?: boolean;
 }) {
   const className = light
-    ? "group inline-flex items-center justify-center overflow-hidden rounded-full bg-white px-7 py-4 text-base font-semibold text-[#5a33d6] shadow-[0_18px_42px_rgba(31,22,53,0.16)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5"
-    : "group inline-flex items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] px-7 py-4 text-base font-semibold text-white shadow-[0_18px_42px_rgba(124,58,237,0.24)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5";
+    ? "cta-shell h-14 rounded-full bg-white px-7 text-base font-semibold text-[#5a33d6] shadow-[0_18px_42px_rgba(31,22,53,0.16)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5"
+    : "cta-shell h-14 rounded-full bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] px-7 text-base font-semibold text-white shadow-[0_18px_42px_rgba(124,58,237,0.24)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5";
 
   if (href) {
     return (
@@ -183,7 +183,7 @@ function SecondaryButton({ children, href }: { children: React.ReactNode; href: 
   return (
     <a
       href={href}
-      className="group inline-flex items-center justify-center overflow-hidden rounded-full border border-[#e7ddff] bg-white px-7 py-4 text-base font-semibold text-[#2f2550] shadow-[0_12px_30px_rgba(93,67,171,0.08)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:bg-[#faf7ff]"
+      className="cta-shell h-14 rounded-full border border-[#e7ddff] bg-white px-7 text-base font-semibold text-[#2f2550] shadow-[0_12px_30px_rgba(93,67,171,0.08)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:bg-[#faf7ff]"
     >
       {typeof children === "string" ? <AnimatedButtonLabel label={children} /> : children}
     </a>
@@ -337,7 +337,17 @@ export default function SnapSignupLanding() {
 
   return (
     <main className="min-h-screen w-full overflow-x-clip bg-[#fcfbff] text-[#17132b] selection:bg-[#ddd1ff] selection:text-[#241a52]">
-      <LandingNav gymnasticsHref="/gymnastics" />
+      <HeroTopNav
+        navLinks={[
+          { label: "Gymnastics", href: "/landing#gymnastics" },
+          { label: "Snap", href: "#snap" },
+          { label: "Features", href: "#features" },
+          { label: "FAQ", href: "#faq" },
+        ]}
+        authenticatedPrimaryHref="/event"
+        onGuestLoginAction={() => openAuth("login")}
+        onGuestPrimaryAction={() => openAuth("signup")}
+      />
 
       <section
         id="snap"
