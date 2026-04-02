@@ -56,6 +56,33 @@
   display: block;
 }
 
+.heroRevealReady {
+  opacity: 0;
+  transform: translateY(28px) scale(0.98);
+  will-change: transform, opacity;
+}
+
+.heroRevealPrimary,
+.heroRevealCenter,
+.heroRevealSecondary {
+  animation-name: heroSoftReveal;
+  animation-duration: 0.95s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
+.heroRevealPrimary {
+  animation-delay: 0.08s;
+}
+
+.heroRevealCenter {
+  animation-delay: 0.2s;
+}
+
+.heroRevealSecondary {
+  animation-delay: 0.34s;
+}
+
 .cardGroup:hover .heroSnapCard,
 .cardGroup:hover .heroLiveCard {
   transform: rotate(0deg);
@@ -90,6 +117,18 @@
 .halo {
   background: rgba(124, 58, 237, 0.08);
   filter: blur(72px);
+}
+
+@keyframes heroSoftReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes pulseScale {
@@ -133,5 +172,15 @@
 
   50% {
     transform: translateY(-15px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroRevealPrimary,
+  .heroRevealCenter,
+  .heroRevealSecondary {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }

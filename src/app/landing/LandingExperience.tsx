@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
@@ -159,7 +159,9 @@ export default function LandingExperience() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [birthdayHeroVisible, setBirthdayHeroVisible] = useState(false);
   const { status } = useSession();
+  const birthdayHeroRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -179,6 +181,27 @@ export default function LandingExperience() {
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const node = birthdayHeroRef.current;
+    if (!node || birthdayHeroVisible || typeof window === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        setBirthdayHeroVisible(true);
+        observer.disconnect();
+      },
+      {
+        threshold: 0.28,
+        rootMargin: "0px 0px -8% 0px",
+      },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [birthdayHeroVisible]);
 
   return (
     <>
@@ -328,7 +351,7 @@ export default function LandingExperience() {
 
             <div className="relative flex-1">
               <div className="relative z-10 flex flex-col items-center justify-center gap-6 sm:flex-row lg:gap-10">
-                <div className={`${styles.cardGroup} group relative`}>
+                <div className={`${styles.cardGroup} ${styles.heroRevealPrimary} group relative`}>
                   <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-[#7C3AED]/10 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
                     1. Snap
                   </div>
@@ -344,7 +367,7 @@ export default function LandingExperience() {
                   </div>
                 </div>
 
-                <div className="hidden flex-col items-center gap-2 sm:flex">
+                <div className={`${styles.heroRevealCenter} hidden flex-col items-center gap-2 sm:flex`}>
                   <div
                     className={`${styles.processingPulse} flex h-12 w-12 items-center justify-center rounded-full bg-[#7C3AED]/10 text-[#7C3AED] shadow-inner`}
                   >
@@ -356,7 +379,7 @@ export default function LandingExperience() {
                   </span>
                 </div>
 
-                <div className={`${styles.cardGroup} group relative`}>
+                <div className={`${styles.cardGroup} ${styles.heroRevealSecondary} group relative`}>
                   <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#7C3AED] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
                     2. Live Event
                   </div>
@@ -405,8 +428,15 @@ export default function LandingExperience() {
                   </p>
                 </div>
                 <div className="mt-12 flex items-center justify-center">
-                  <div className="relative flex w-full max-w-[44rem] flex-col items-center justify-center gap-5 sm:flex-row sm:gap-8">
-                    <div className={`${styles.cardGroup} group relative`}>
+                  <div
+                    ref={birthdayHeroRef}
+                    className="relative flex w-full max-w-[44rem] flex-col items-center justify-center gap-5 sm:flex-row sm:gap-8"
+                  >
+                    <div
+                      className={`${styles.cardGroup} ${styles.heroRevealReady} ${
+                        birthdayHeroVisible ? styles.heroRevealPrimary : ""
+                      } group relative`}
+                    >
                       <div className="absolute -top-5 left-1/2 z-20 -translate-x-1/2 rounded-full border border-[#7C3AED]/10 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
                         Upload
                       </div>
@@ -421,7 +451,11 @@ export default function LandingExperience() {
                       </div>
                     </div>
 
-                    <div className="hidden flex-col items-center gap-2 sm:flex">
+                    <div
+                      className={`${styles.heroRevealReady} ${
+                        birthdayHeroVisible ? styles.heroRevealCenter : ""
+                      } hidden flex-col items-center gap-2 sm:flex`}
+                    >
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#7C3AED]/10 text-[#7C3AED] shadow-inner">
                         <Sparkles size={18} />
                       </div>
@@ -431,7 +465,11 @@ export default function LandingExperience() {
                       </span>
                     </div>
 
-                    <div className={`${styles.cardGroup} group relative`}>
+                    <div
+                      className={`${styles.cardGroup} ${styles.heroRevealReady} ${
+                        birthdayHeroVisible ? styles.heroRevealSecondary : ""
+                      } group relative`}
+                    >
                       <div className="absolute -top-5 left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#7C3AED] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
                         Event Page
                       </div>
