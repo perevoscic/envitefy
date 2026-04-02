@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { ArrowRight, Camera, CheckCircle2, Quote, Trophy } from "lucide-react";
+import Link from "next/link";
 import GymnasticsMeetPreview from "@/components/landing/GymnasticsMeetPreview";
 import SnapEventPreview from "@/components/landing/SnapEventPreview";
+import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 const gymnasticsBullets = [
   "Meet schedules, session timing, and venue details stay on one page.",
@@ -26,16 +27,14 @@ export default function Verticals() {
           <h2
             className="mt-4 text-4xl font-semibold leading-tight tracking-[-0.05em] text-[#17132b] sm:text-5xl"
             style={{
-              fontFamily:
-                'var(--font-montserrat), var(--font-sans), sans-serif',
+              fontFamily: "var(--font-montserrat), var(--font-sans), sans-serif",
             }}
           >
             Gymnastics leads. Snap expands what you can turn into a live page.
           </h2>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-[#58536e]">
-            The homepage now centers the two strongest use cases: meet-weekend
-            coordination for gymnastics and fast event-page creation from images
-            or PDFs.
+            The homepage now centers the two strongest use cases: meet-weekend coordination for
+            gymnastics and fast event-page creation from images or PDFs.
           </p>
         </div>
 
@@ -56,17 +55,15 @@ export default function Verticals() {
               <h3
                 className="mt-5 text-[2.2rem] font-semibold leading-tight tracking-[-0.05em] text-[#17132b] sm:text-[2.9rem]"
                 style={{
-                  fontFamily:
-                    'var(--font-montserrat), var(--font-sans), sans-serif',
+                  fontFamily: "var(--font-montserrat), var(--font-sans), sans-serif",
                 }}
               >
-                Turn gymnastics meet documents into one live page families can
-                actually use.
+                Turn gymnastics meet documents into one live page families can actually use.
               </h3>
               <p className="mt-5 text-lg leading-8 text-[#56516c]">
-                Envitefy takes the strongest use case in the product today and
-                makes it obvious: meet packets become mobile-ready event pages
-                with logistics, updates, and sharing built in.
+                Envitefy takes the strongest use case in the product today and makes it obvious:
+                meet packets become mobile-ready event pages with logistics, updates, and sharing
+                built in.
               </p>
 
               <div className="mt-6 space-y-3">
@@ -83,12 +80,11 @@ export default function Verticals() {
                   <Quote className="mt-0.5 h-5 w-5 shrink-0 text-[#7b63cf]" />
                   <div>
                     <p className="text-sm font-semibold text-[#241c44]">
-                      &quot;It gave families one current link instead of four
-                      different PDFs.&quot;
+                      &quot;It gave families one current link instead of four different PDFs.&quot;
                     </p>
                     <p className="mt-2 text-sm text-[#655f7c]">
-                      Typical gymnastics use case: schedule, venue, parking,
-                      documents, and updates in one place.
+                      Typical gymnastics use case: schedule, venue, parking, documents, and updates
+                      in one place.
                     </p>
                   </div>
                 </div>
@@ -97,10 +93,9 @@ export default function Verticals() {
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/gymnastics"
-                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-6 py-3.5 text-base font-semibold text-white shadow-[0_18px_40px_rgba(111,76,255,0.24)] transition-all hover:-translate-y-0.5"
+                  className="group inline-flex items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#6f4cff_0%,#8f67ff_100%)] px-6 py-3.5 text-base font-semibold text-white shadow-[0_18px_40px_rgba(111,76,255,0.24)] transition-all hover:-translate-y-0.5"
                 >
-                  Explore Gymnastics
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  <AnimatedButtonLabel label="Explore Gymnastics" icon={ArrowRight} />
                 </Link>
                 <a
                   href="#features"
@@ -134,17 +129,15 @@ export default function Verticals() {
               <h3
                 className="mt-5 text-[2rem] font-semibold leading-tight tracking-[-0.05em] text-[#17132b] sm:text-[2.7rem]"
                 style={{
-                  fontFamily:
-                    'var(--font-montserrat), var(--font-sans), sans-serif',
+                  fontFamily: "var(--font-montserrat), var(--font-sans), sans-serif",
                 }}
               >
-                Snap or upload the image. Envitefy extracts, organizes, and
-                readies the shareable page.
+                Snap or upload the image. Envitefy extracts, organizes, and readies the shareable
+                page.
               </h3>
               <p className="mt-5 text-lg leading-8 text-[#58536e]">
-                Snap is the fast path for invites, flyers, schedules, and event
-                graphics when you want the details extracted, cleaned up, and
-                published without manual entry.
+                Snap is the fast path for invites, flyers, schedules, and event graphics when you
+                want the details extracted, cleaned up, and published without manual entry.
               </p>
 
               <div className="mt-6 space-y-3">
@@ -159,10 +152,9 @@ export default function Verticals() {
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/snap"
-                  className="group inline-flex items-center justify-center gap-2 rounded-full border border-[#e3d7ff] bg-[#f7f3ff] px-6 py-3.5 text-base font-semibold text-[#392d61] transition-all hover:-translate-y-0.5 hover:bg-white"
+                  className="group inline-flex items-center justify-center overflow-hidden rounded-full border border-[#e3d7ff] bg-[#f7f3ff] px-6 py-3.5 text-base font-semibold text-[#392d61] transition-all hover:-translate-y-0.5 hover:bg-white"
                 >
-                  Explore Snap
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  <AnimatedButtonLabel label="Explore Snap" icon={ArrowRight} />
                 </Link>
               </div>
             </div>
