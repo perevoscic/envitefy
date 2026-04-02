@@ -31,10 +31,8 @@ import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import styles from "./LandingExperience.module.css";
 
 const IMAGES = {
-  heroFlyer:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDmn3wfTHN0K_xMfkEsIp-vMQ7JD7IBTd3Wrdq3VAJHTa3xNFWNj9wY4Brk4a4jd_cc2hKWuMA7wByB3p4FIMsGmjfAsfAZAJuic1o4TJLfZeS6FHdgnsIWY0UU2XXBNauif5tm_5hVnRKqlDyvqLwMqJFaLxOaQNr187GmTMHmJ7hJ06U9B54ah4Xg7VIaL8JCKLjrGD5J9hzpU9jxOf1UnZz3JiIg_t3bt3nDAhqXTTe5wjM7kF08V6kvqX-UDFqBMji5ISxs",
-  heroEvent:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCFXJUaZveRg8YnIGAYV6jlq18Y35aWEG6STbtvU6LrXymeQZCq7zbPClr6VqkTA91sJHwqu5fQwNzAs8FyXjyLA1R_EWPapPs_vpsQa_jwc7oQplYxl5JR8AFXfV_NhNzbcniP0Z3QnJ9AeyDQ2ertQW1Ef0QoHTmwALFJLJWlD9JTzosL2ZeTzT0Ts4PTMZjebpU4dBQsYIsccnLy0ccqDtit9CAB21zRCi20zDPNOivUfRr8nD1SA8Em9H6v9ZskfiOSKOkJ",
+  heroFlyer: "/images/hero-1-landing.png",
+  heroEvent: "/images/hero-2-landing.png",
   birthday:
     "https://lh3.googleusercontent.com/aida-public/AB6AXuC2SdbjJ2Q2yAa7pkrD491ZXZFqo0mEaCDzTM49Z2j38h99LUPSwLTq-5lTP0LEx7POmydICQgGMueDi2983410a7qIWCf8aXnbiSWFadoT_HcTYTwu3qIs_gDx3pnUPy-ynTKeYyv8OuATjDAtcSL_BtLkYjnOc7iOpwTiN58O-nm16LVyOWFfkQzailswcnJ2S5sq_N3rhjBN1aMjFEx1rQBzXGnkru1ZnyWLCwGL_LJDWuX_xqkDzlmVCOTQ2TQ8gdR2Wr0A",
   wedding:
@@ -138,7 +136,13 @@ function BenefitCard({
       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-[#7C3AED]">
         <Icon size={28} />
       </div>
-      <h3 className={`${styles.headline} text-2xl font-bold tracking-tight`}>
+      <h3
+        className={`${styles.headline} text-2xl font-bold tracking-tight`}
+        style={{
+          color: "#f7f3ff",
+          textShadow: "0 0 22px rgba(156, 120, 255, 0.18)",
+        }}
+      >
         {title}
       </h3>
       <p className="text-lg leading-relaxed text-white/60">{desc}</p>
@@ -324,12 +328,12 @@ export default function LandingExperience() {
                     1. Snap
                   </div>
                   <div
-                    className={`${styles.heroSnapCard} w-48 overflow-hidden rounded-[1.5rem] border border-[#1f1635]/5 bg-white p-2.5 shadow-2xl`}
+                    className={`${styles.heroSnapCard} w-62 overflow-hidden rounded-[1.5rem] shadow-2xl`}
                   >
                     <img
                       referrerPolicy="no-referrer"
                       alt="Original flyer"
-                      className="aspect-[3/4] h-full w-full rounded-xl object-cover grayscale-[0.2]"
+                      className="aspect-[3/4] h-full w-full rounded-[1.5rem] object-cover grayscale-[0.2]"
                       src={IMAGES.heroFlyer}
                     />
                   </div>
@@ -342,8 +346,8 @@ export default function LandingExperience() {
                     <Sparkles size={20} />
                   </div>
                   <div className="h-16 w-px bg-gradient-to-b from-[#7C3AED]/30 to-transparent" />
-                  <span className="text-[10px] font-bold uppercase tracking-tight text-[#7C3AED]/60">
-                    AI Processing
+                  <span className="text-[10px] font-bold uppercase tracking-tight align-middle text-[#7C3AED]/60">
+                    Envitefy Processing
                   </span>
                 </div>
 
@@ -352,26 +356,14 @@ export default function LandingExperience() {
                     2. Live Event
                   </div>
                   <div
-                    className={`${styles.heroLiveCard} w-64 rounded-[3rem] border-[10px] border-[#1f1635]/5 bg-white p-4 shadow-[0px_48px_80px_rgba(31,22,53,0.15)]`}
+                    className={`${styles.heroLiveCard} w-64 overflow-hidden rounded-[3rem] shadow-[0px_48px_80px_rgba(31,22,53,0.15)]`}
                   >
-                    <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-[#f9f9f9]" />
-                    <div className="mb-6 h-36 overflow-hidden rounded-2xl">
-                      <img
-                        referrerPolicy="no-referrer"
-                        alt="Live event preview"
-                        className="h-full w-full object-cover"
-                        src={IMAGES.heroEvent}
-                      />
-                    </div>
-                    <div className="space-y-3 px-1">
-                      <div className="h-4 w-5/6 rounded-full bg-[#7C3AED]/10" />
-                      <div className="h-3 w-1/2 rounded-full bg-[#f9f9f9]" />
-                      <div className="pt-6">
-                        <div className="flex h-10 w-full items-center justify-center rounded-xl bg-[#7C3AED] text-[10px] font-bold uppercase tracking-wider text-white">
-                          RSVP Now
-                        </div>
-                      </div>
-                    </div>
+                    <img
+                      referrerPolicy="no-referrer"
+                      alt="Live event preview"
+                      className="h-full w-full rounded-[3rem] object-cover"
+                      src={IMAGES.heroEvent}
+                    />
                   </div>
                 </div>
               </div>
@@ -558,7 +550,7 @@ export default function LandingExperience() {
                   <h3
                     className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}
                   >
-                    Save and Share the Page
+                    Save and Share
                   </h3>
                   <p className="text-xl font-medium leading-relaxed text-[#53496b]">
                     Publish your shareable event page. Guests can RSVP with one

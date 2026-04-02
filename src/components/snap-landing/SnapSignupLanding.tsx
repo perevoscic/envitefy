@@ -214,8 +214,8 @@ function BenefitTile({
       <h3
         className="text-xl font-semibold"
         style={{
-          color: "#ffffff",
-          textShadow: "0 0 18px rgba(188,168,255,0.16)",
+          color: "#f8f4ff",
+          textShadow: "0 0 24px rgba(188,168,255,0.22)",
         }}
       >
         {title}
