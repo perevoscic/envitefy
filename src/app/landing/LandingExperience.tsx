@@ -27,6 +27,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import styles from "./LandingExperience.module.css";
 
 const IMAGES = {
@@ -185,10 +186,13 @@ export default function LandingExperience() {
           >
             <Link
               href="/landing"
-              className="flex items-center gap-3 text-xl font-bold tracking-tighter text-[#1f1635]"
+              className="flex items-center"
+              aria-label="Envitefy"
             >
-              <Sparkles className="h-5 w-5 text-[#7C3AED]" fill="currentColor" />
-              <span className={styles.headline}>Envitefy</span>
+              <EnvitefyWordmark
+                scaled={false}
+                className="text-[3.35rem] leading-none"
+              />
             </Link>
 
             <div className="hidden items-center space-x-10 text-sm font-semibold text-[#58506d] lg:flex">
