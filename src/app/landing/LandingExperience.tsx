@@ -31,8 +31,8 @@ const IMAGES = {
   heroEvent: "/images/hero-2-landing.png",
   birthdayFlyer: "/images/birthday-1-landing.png",
   birthdayEvent: "/images/birthday-2-landing.png",
-  gymnasticsFlyer: "/images/birthday-1-landing.png",
-  gymnasticsEvent: "/images/birthday-2-landing.png",
+  gymnasticsFlyer: "/images/gymanstic-1-landing.png",
+  gymnasticsEvent: "/images/gymanstic-2-landing.png",
   weddingFlyer: "/images/wedding-1-landing.png",
   weddingEvent: "/images/wedding-2-landing.png",
 };
@@ -97,13 +97,13 @@ const rsvpHighlights = [
 const gymnasticsHighlights = [
   {
     icon: CalendarCheck,
-    title: "Schedules",
-    desc: "Pull multi-day sessions, warmups, and competition blocks into one live page.",
+    title: "Meet Details",
+    desc: "Bring competition notes, lineup info, and event-day updates into one live page.",
   },
   {
     icon: Trophy,
-    title: "Scoring Links",
-    desc: "Keep results, livestreams, and score pages attached to the meet instead of buried in texts.",
+    title: "Hotels",
+    desc: "Keep hotel blocks, booking details, and stay info attached to the meet instead of buried in texts.",
   },
   {
     icon: MapPin,
@@ -131,7 +131,11 @@ function PrimaryCta({
       href={href}
       className={`${styles.btnRolling} cta-shell h-[3.75rem] rounded-full bg-[#7C3AED] px-10 font-bold text-lg text-white shadow-xl shadow-[#7C3AED]/20 hover:bg-[#630ed4] ${className}`}
     >
-      {typeof children === "string" ? <AnimatedButtonLabel label={children} /> : children}
+      {typeof children === "string" ? (
+        <AnimatedButtonLabel label={children} />
+      ) : (
+        children
+      )}
     </Link>
   );
 }
@@ -182,7 +186,7 @@ function useRevealOnce() {
       {
         threshold: 0.28,
         rootMargin: "0px 0px -8% 0px",
-      },
+      }
     );
 
     observer.observe(node);
@@ -195,8 +199,10 @@ function useRevealOnce() {
 export default function LandingExperience() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const { ref: gymnasticsHighlightRef, visible: gymnasticsHighlightVisible } = useRevealOnce();
-  const { ref: birthdayHeroRef, visible: birthdayHeroVisible } = useRevealOnce();
+  const { ref: gymnasticsHighlightRef, visible: gymnasticsHighlightVisible } =
+    useRevealOnce();
+  const { ref: birthdayHeroRef, visible: birthdayHeroVisible } =
+    useRevealOnce();
   const { ref: weddingHeroRef, visible: weddingHeroVisible } = useRevealOnce();
 
   const openAuth = (mode: "login" | "signup") => {
@@ -222,7 +228,10 @@ export default function LandingExperience() {
         />
 
         <section id="snap">
-          <header id="landing-hero" className="relative overflow-hidden px-6 pb-24 pt-32 lg:pt-48">
+          <header
+            id="landing-hero"
+            className="relative overflow-hidden px-6 pb-24 pt-32 lg:pt-48"
+          >
             <div
               className={`${styles.bloomEffect} pointer-events-none absolute left-1/2 top-0 h-full w-full -translate-x-1/2`}
             />
@@ -231,11 +240,13 @@ export default function LandingExperience() {
                 <h1
                   className={`${styles.headline} mb-8 text-5xl font-extrabold leading-[1.05] tracking-tight text-[#1f1635] lg:text-7xl`}
                 >
-                  Snap Any Invite Into an <span className="italic text-[#7C3AED]">Event Page</span>
+                  Snap Any Invite Into an{" "}
+                  <span className="italic text-[#7C3AED]">Event Page</span>
                 </h1>
                 <p className="mb-12 max-w-2xl text-xl font-medium leading-relaxed text-[#53496b]">
-                  Upload birthdays, wedding invites, or baby shower flyers. Envitefy uses AI to turn
-                  static images into polished digital event pages with RSVPs built in.
+                  Upload birthdays, wedding invites, or baby shower flyers.
+                  Envitefy uses AI to turn static images into polished digital
+                  event pages with RSVPs built in.
                 </p>
                 <div className="flex flex-col justify-center gap-5 sm:flex-row lg:justify-start">
                   <PrimaryCta href="/snap">Try Snap Upload</PrimaryCta>
@@ -250,7 +261,9 @@ export default function LandingExperience() {
 
               <div className="relative flex-1">
                 <div className="relative z-10 flex flex-col items-center justify-center gap-6 sm:flex-row lg:gap-10">
-                  <div className={`${styles.cardGroup} ${styles.heroRevealPrimary} group relative`}>
+                  <div
+                    className={`${styles.cardGroup} ${styles.heroRevealPrimary} group relative`}
+                  >
                     <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-[#7C3AED]/10 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
                       1. Snap
                     </div>
@@ -322,7 +335,7 @@ export default function LandingExperience() {
                   } group relative`}
                 >
                   <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-[#7C3AED]/10 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
-                    Meet Flyer
+                    Meet PDF
                   </div>
                   <div
                     className={`${styles.heroSnapCard} w-40 overflow-hidden rounded-[1.35rem] shadow-[0_28px_60px_rgba(31,22,53,0.14)] sm:w-48 lg:w-52`}
@@ -368,17 +381,11 @@ export default function LandingExperience() {
                   </div>
                 </div>
               </div>
-
-              <div className="mt-8 flex justify-center lg:justify-start">
-                <div className={styles.gymnasticsInfoRows}>
-                  <span>Session times</span>
-                  <span>Venue maps</span>
-                  <span>Meet details</span>
-                </div>
-              </div>
             </div>
 
-            <div className={`${styles.gymnasticsCopy} z-10 flex-1 text-center lg:text-left`}>
+            <div
+              className={`${styles.gymnasticsCopy} z-10 flex-1 text-center lg:text-left`}
+            >
               <span className={styles.gymnasticsEyebrow}>Sports Edition</span>
               <h2
                 className={`${styles.headline} text-4xl font-extrabold tracking-tight text-[#1f1635] lg:text-5xl`}
@@ -386,9 +393,9 @@ export default function LandingExperience() {
                 Perfect for Gymnastics Meets &amp; Competitions
               </h2>
               <p className="max-w-2xl text-lg font-medium leading-relaxed text-[#53496b] lg:text-xl">
-                Upload competition flyers and Envitefy can extract multi-day schedules, session
-                times, and venue maps into one polished live page that is easier for families,
-                coaches, and teams to follow.
+                Upload competition flyers and Envitefy can pull venue maps,
+                scoring links, and meet-day details into one polished live page
+                that is easier for families, coaches, and teams to follow.
               </p>
 
               <div className={styles.gymnasticsBulletGrid}>
@@ -398,10 +405,14 @@ export default function LandingExperience() {
                       <item.icon size={20} />
                     </div>
                     <div className="space-y-2">
-                      <h3 className={`${styles.headline} text-xl font-bold text-[#1f1635]`}>
+                      <h3
+                        className={`${styles.headline} text-xl font-bold text-[#1f1635]`}
+                      >
                         {item.title}
                       </h3>
-                      <p className="text-sm font-medium leading-6 text-[#5d5475]">{item.desc}</p>
+                      <p className="text-sm font-medium leading-6 text-[#5d5475]">
+                        {item.desc}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -423,7 +434,8 @@ export default function LandingExperience() {
                 Anything you snap, we transform.
               </h2>
               <p className="mx-auto max-w-2xl text-lg font-medium text-[#53496b]">
-                Designed for every occasion, from personal parties to professional schedules.
+                Designed for every occasion, from personal parties to
+                professional schedules.
               </p>
             </div>
 
@@ -437,8 +449,8 @@ export default function LandingExperience() {
                     Birthday Invitations
                   </h3>
                   <p className="max-w-md text-lg leading-relaxed text-[#53496b]">
-                    Turn that text message flyer into a beautiful page where guests can RSVP and see
-                    the gift registry.
+                    Turn that text message flyer into a beautiful page where
+                    guests can RSVP and see the gift registry.
                   </p>
                 </div>
                 <div className="mt-12 flex items-center justify-center">
@@ -447,7 +459,9 @@ export default function LandingExperience() {
                     className="relative flex w-full max-w-[44rem] flex-col items-center justify-center gap-5 sm:flex-row sm:gap-8"
                   >
                     <div
-                      className={`${styles.cardGroup} ${styles.heroRevealReady} ${
+                      className={`${styles.cardGroup} ${
+                        styles.heroRevealReady
+                      } ${
                         birthdayHeroVisible ? styles.heroRevealPrimary : ""
                       } group relative`}
                     >
@@ -480,7 +494,9 @@ export default function LandingExperience() {
                     </div>
 
                     <div
-                      className={`${styles.cardGroup} ${styles.heroRevealReady} ${
+                      className={`${styles.cardGroup} ${
+                        styles.heroRevealReady
+                      } ${
                         birthdayHeroVisible ? styles.heroRevealSecondary : ""
                       } group relative`}
                     >
@@ -505,17 +521,21 @@ export default function LandingExperience() {
                 <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#7C3AED] shadow-sm">
                   <Heart size={32} />
                 </div>
-                <h3 className={`${styles.headline} mb-4 text-3xl font-bold`}>Wedding Invites</h3>
+                <h3 className={`${styles.headline} mb-4 text-3xl font-bold`}>
+                  Wedding Invites
+                </h3>
                 <p className="mb-10 text-lg leading-relaxed text-[#53496b]">
-                  Convert elegant paper invitations into mobile-first digital homes for your big
-                  day.
+                  Convert elegant paper invitations into mobile-first digital
+                  homes for your big day.
                 </p>
                 <div className="mt-6 flex min-h-[18rem] items-center justify-center px-1 pb-1 pt-2 sm:min-h-[20rem] sm:px-2">
                   <div ref={weddingHeroRef} className={styles.weddingStack}>
                     <div
-                      className={`${styles.heroRevealReady} ${styles.weddingRevealPrimary} ${
-                        weddingHeroVisible ? styles.heroRevealPrimary : ""
-                      } ${styles.weddingInviteLayer}`}
+                      className={`${styles.heroRevealReady} ${
+                        styles.weddingRevealPrimary
+                      } ${weddingHeroVisible ? styles.heroRevealPrimary : ""} ${
+                        styles.weddingInviteLayer
+                      }`}
                     >
                       <div className={styles.weddingInviteCard}>
                         <img
@@ -528,9 +548,11 @@ export default function LandingExperience() {
 
                     <div
                       aria-hidden="true"
-                      className={`${styles.heroRevealReady} ${styles.weddingRevealCenter} ${
-                        weddingHeroVisible ? styles.heroRevealCenter : ""
-                      } ${styles.weddingStackConnector}`}
+                      className={`${styles.heroRevealReady} ${
+                        styles.weddingRevealCenter
+                      } ${weddingHeroVisible ? styles.heroRevealCenter : ""} ${
+                        styles.weddingStackConnector
+                      }`}
                     >
                       <span className={styles.weddingSparkle}>
                         <Sparkles size={16} />
@@ -538,7 +560,9 @@ export default function LandingExperience() {
                     </div>
 
                     <div
-                      className={`${styles.heroRevealReady} ${styles.weddingRevealSecondary} ${
+                      className={`${styles.heroRevealReady} ${
+                        styles.weddingRevealSecondary
+                      } ${
                         weddingHeroVisible ? styles.heroRevealSecondary : ""
                       } ${styles.weddingPhoneLayer}`}
                     >
@@ -562,8 +586,12 @@ export default function LandingExperience() {
                   className="rounded-[2rem] border border-[#1f1635]/5 bg-white p-8 transition-all hover:-translate-y-1 hover:shadow-md"
                 >
                   <item.icon className="mb-6 text-[#7C3AED]" size={32} />
-                  <h4 className={`${styles.headline} mb-3 text-xl font-bold`}>{item.title}</h4>
-                  <p className="text-base leading-relaxed text-[#53496b]">{item.desc}</p>
+                  <h4 className={`${styles.headline} mb-3 text-xl font-bold`}>
+                    {item.title}
+                  </h4>
+                  <p className="text-base leading-relaxed text-[#53496b]">
+                    {item.desc}
+                  </p>
                 </div>
               ))}
             </div>
@@ -583,12 +611,15 @@ export default function LandingExperience() {
                   <div className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#7C3AED] text-xl font-bold text-white shadow-lg shadow-[#7C3AED]/20">
                     1
                   </div>
-                  <h3 className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}>
+                  <h3
+                    className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}
+                  >
                     Snap or Upload
                   </h3>
                   <p className="text-xl font-medium leading-relaxed text-[#53496b]">
-                    Simply take a photo of a printed flyer or upload a digital invitation from your
-                    camera roll. Our AI analyzes the visual elements instantly.
+                    Simply take a photo of a printed flyer or upload a digital
+                    invitation from your camera roll. Our AI analyzes the visual
+                    elements instantly.
                   </p>
                 </div>
                 <div className="order-1 w-full flex-1 lg:order-2">
@@ -637,7 +668,9 @@ export default function LandingExperience() {
                         <span className="mb-1 text-[10px] font-bold uppercase text-[#7C3AED]/60">
                           Location
                         </span>
-                        <span className="text-sm font-bold">Sunset Garden, 123 Maple St.</span>
+                        <span className="text-sm font-bold">
+                          Sunset Garden, 123 Maple St.
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -646,12 +679,15 @@ export default function LandingExperience() {
                   <div className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#7C3AED] text-xl font-bold text-white shadow-lg shadow-[#7C3AED]/20">
                     2
                   </div>
-                  <h3 className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}>
+                  <h3
+                    className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}
+                  >
                     Review and Edit
                   </h3>
                   <p className="text-xl font-medium leading-relaxed text-[#53496b]">
-                    Envitefy automatically pulls dates, times, and location data. You can tweak any
-                    details or add a custom registry link in seconds.
+                    Envitefy automatically pulls dates, times, and location
+                    data. You can tweak any details or add a custom registry
+                    link in seconds.
                   </p>
                 </div>
               </div>
@@ -661,12 +697,15 @@ export default function LandingExperience() {
                   <div className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#7C3AED] text-xl font-bold text-white shadow-lg shadow-[#7C3AED]/20">
                     3
                   </div>
-                  <h3 className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}>
+                  <h3
+                    className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}
+                  >
                     Save and Share
                   </h3>
                   <p className="text-xl font-medium leading-relaxed text-[#53496b]">
-                    Publish your shareable event page. Guests can RSVP with one tap, and the event
-                    syncs directly to their Apple or Google Calendar.
+                    Publish your shareable event page. Guests can RSVP with one
+                    tap, and the event syncs directly to their Apple or Google
+                    Calendar.
                   </p>
                 </div>
                 <div className="order-1 w-full flex-1 lg:order-2">
@@ -675,7 +714,9 @@ export default function LandingExperience() {
                       <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-50">
                         <CheckCircle2 className="text-green-500" size={40} />
                       </div>
-                      <h4 className={`${styles.headline} mb-8 text-2xl font-bold`}>
+                      <h4
+                        className={`${styles.headline} mb-8 text-2xl font-bold`}
+                      >
                         Event is Live!
                       </h4>
                       <div className="flex flex-col gap-3">
@@ -740,11 +781,15 @@ export default function LandingExperience() {
               <div className="absolute bottom-24 right-12 z-10 cursor-pointer rounded-full bg-[#7C3AED] px-10 py-6 text-white shadow-2xl shadow-[#7C3AED]/30 transition-transform hover:scale-105">
                 <div className="flex items-center gap-4">
                   <CheckCircle2 size={32} />
-                  <span className="text-xl font-extrabold">I&apos;m Attending!</span>
+                  <span className="text-xl font-extrabold">
+                    I&apos;m Attending!
+                  </span>
                 </div>
               </div>
 
-              <div className={`${styles.halo} absolute inset-0 -z-10 scale-125 rounded-full`} />
+              <div
+                className={`${styles.halo} absolute inset-0 -z-10 scale-125 rounded-full`}
+              />
             </div>
 
             <div className="flex-1">
@@ -754,8 +799,9 @@ export default function LandingExperience() {
                 Designed to Get a &apos;Yes&apos;.
               </h2>
               <p className="mb-12 text-xl font-medium leading-relaxed text-[#53496b]">
-                We&apos;ve optimized the RSVP experience to be frictionless. No accounts required
-                for guests-just simple, beautiful interactions that make people excited to attend.
+                We&apos;ve optimized the RSVP experience to be frictionless. No
+                accounts required for guests-just simple, beautiful interactions
+                that make people excited to attend.
               </p>
               <ul className="space-y-8">
                 {rsvpHighlights.map((item) => (
@@ -786,15 +832,17 @@ export default function LandingExperience() {
               <span className="italic text-[#7C3AED]">Shareable Event</span>.
             </h2>
             <p className="relative z-10 mx-auto mb-14 max-w-2xl text-xl font-medium text-[#53496b]">
-              Snap it. Edit it. Share it. Your digital curator is ready to transform your
-              celebrations.
+              Snap it. Edit it. Share it. Your digital curator is ready to
+              transform your celebrations.
             </p>
-            <PrimaryCta href="/snap" className="relative z-10 h-[5.5rem] px-14 text-2xl">
+            <PrimaryCta
+              href="/snap"
+              className="relative z-10 h-[5.5rem] px-14 text-2xl"
+            >
               Try Snap Upload
             </PrimaryCta>
           </div>
         </section>
-
       </div>
 
       <AuthModal
