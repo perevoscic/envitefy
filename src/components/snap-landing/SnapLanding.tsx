@@ -145,6 +145,27 @@ function CtaButton({
   );
 }
 
+function SnapProcessMedia() {
+  return (
+    <div className="group relative aspect-square overflow-hidden rounded-3xl bg-indigo-600 shadow-2xl">
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-label="Envitefy Snap upload-to-event demo"
+        className="absolute inset-0 h-full w-full object-cover"
+      >
+        <source src="/videos/sanp.webm" type="video/webm" />
+        <source src="/videos/sanp.optimized.mp4" type="video/mp4" />
+      </video>
+
+      <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/60 to-transparent" />
+    </div>
+  );
+}
+
 function Hero({
   onPrimaryAction,
   primaryHref,
@@ -284,26 +305,7 @@ function HowItWorks() {
           </div>
         </div>
         <div className="relative">
-          <div className="group relative aspect-square overflow-hidden rounded-3xl bg-indigo-600 shadow-2xl">
-            <img
-              src="https://picsum.photos/seed/snap-process/800/800"
-              alt="AI Extraction Process"
-              className="h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/60 to-transparent" />
-            <div className="absolute right-8 bottom-8 left-8 rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md">
-              <div className="mb-2 flex items-center gap-3">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-                <span className="text-sm font-bold tracking-wider text-white uppercase">
-                  AI Processing Complete
-                </span>
-              </div>
-              <p className="text-sm text-white/90">
-                Extracted: Birthday Party, Oct 12th, 2:00 PM
-              </p>
-            </div>
-          </div>
+          <SnapProcessMedia />
         </div>
       </div>
     </section>
