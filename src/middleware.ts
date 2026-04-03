@@ -133,6 +133,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/public/") ||
     pathname.startsWith("/icons/") ||
+    pathname.startsWith("/videos/") ||
     pathname === "/manifest.webmanifest" ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml"
@@ -280,4 +281,4 @@ export async function middleware(req: NextRequest) {
   return ok();
 }
 
-export const config = { matcher: ["/((?!_next|api|public|icons|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map|webmanifest)).*)"] };
+export const config = { matcher: ["/((?!_next|api|public|icons|videos|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map|webmanifest|mp4|webm)).*)"] };

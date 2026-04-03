@@ -8,10 +8,13 @@ import {
   Camera,
   CheckCircle2,
   Clock,
+  Copy,
+  Edit3,
   FileEdit,
   Heart,
   type LucideIcon,
   MapPin,
+  MessageCircle,
   Share2,
   Sparkles,
   TowerControl,
@@ -19,6 +22,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -116,6 +120,115 @@ const gymnasticsHighlights = [
     desc: "Track coaches, volunteers, and family attendance without manual follow-up.",
   },
 ] as const;
+
+interface Step {
+  id: number;
+  title: string;
+  description: string;
+  icon: ReactNode;
+  visual: ReactNode;
+}
+
+const steps: Step[] = [
+  {
+    id: 1,
+    title: "Snap or Upload",
+    description:
+      "Simply take a photo of a printed flyer or upload a digital invitation from your camera roll. Our AI analyzes the visual elements instantly.",
+    icon: <Camera className="h-6 w-6" />,
+    visual: (
+      <div className="relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-xl">
+        <div className="absolute left-6 top-4 text-[10px] font-bold tracking-widest text-[#7C3AED] uppercase">
+          Camera Mode
+        </div>
+        <div className="absolute right-6 top-4">
+          <Camera className="h-4 w-4 text-[#7C3AED]" />
+        </div>
+        <div className="mt-4 flex h-full w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#7C3AED]/15 bg-[#7C3AED]/[0.03]">
+          <div className="mb-3 rounded-2xl bg-white p-4 shadow-sm">
+            <Camera className="h-8 w-8 text-[#7C3AED]/40" />
+          </div>
+          <p className="text-xs font-medium text-[#7C3AED]/60">
+            Drop your invite here
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 2,
+    title: "Review and Edit",
+    description:
+      "Envitefy automatically pulls dates, times, and location data. You can tweak any details or add a custom registry link in seconds.",
+    icon: <Edit3 className="h-6 w-6" />,
+    visual: (
+      <div className="relative flex aspect-[4/3] w-full flex-col gap-4 overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-xl">
+        <div className="mb-2 flex gap-2">
+          <div className="h-3 w-12 rounded-full bg-[#7C3AED]/15" />
+          <div className="h-3 w-20 rounded-full bg-[#7C3AED]/8" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+            <div className="mb-1 text-[8px] font-bold text-[#7C3AED] uppercase">
+              Date
+            </div>
+            <div className="text-xs font-semibold text-slate-900">
+              Sat, Oct 12
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+            <div className="mb-1 text-[8px] font-bold text-[#7C3AED] uppercase">
+              Time
+            </div>
+            <div className="text-xs font-semibold text-slate-900">7:00 PM</div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+          <div className="mb-1 text-[8px] font-bold text-[#7C3AED] uppercase">
+            Location
+          </div>
+          <div className="text-xs font-semibold text-slate-900">
+            Sunset Garden, 123 Maple St.
+          </div>
+        </div>
+        <div className="mt-auto h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="h-full w-2/3 bg-[#7C3AED]" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 3,
+    title: "Save and Share",
+    description:
+      "Publish your shareable event page. Guests can RSVP with one tap, and the event syncs directly to their Apple or Google Calendar.",
+    icon: <Share2 className="h-6 w-6" />,
+    visual: (
+      <div className="relative flex aspect-[4/3] w-full flex-col items-center justify-center gap-6 overflow-hidden rounded-3xl border border-slate-100 bg-white p-8 shadow-xl">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
+          <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+        </div>
+        <h4 className={`${styles.headline} text-sm font-bold text-slate-800`}>
+          Event is Live!
+        </h4>
+        <div className="w-full space-y-2">
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-[10px] font-bold tracking-wider text-white uppercase transition-colors hover:bg-slate-800"
+          >
+            <Copy className="h-3 w-3" /> Copy Link
+          </button>
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#7C3AED] py-3 text-[10px] font-bold tracking-wider text-white uppercase transition-colors hover:bg-[#630ed4]"
+          >
+            <Share2 className="h-3 w-3" /> Share
+          </button>
+        </div>
+      </div>
+    ),
+  },
+];
 
 function PrimaryCta({
   href,
@@ -599,144 +712,40 @@ export default function LandingExperience() {
         </section>
 
         <section id="how-it-works" className="px-6 py-20">
-          <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-7xl py-20">
             <h2
-              className={`${styles.headline} mb-28 text-center text-4xl font-bold tracking-tight text-[#1f1635]`}
+              className={`${styles.headline} mb-14 text-center text-4xl font-bold tracking-tight text-[#1f1635] lg:text-5xl`}
             >
               The Magic Behind the Snap
             </h2>
-            <div className="space-y-40">
-              <div className="flex flex-col items-center gap-20 lg:flex-row">
-                <div className="order-2 flex-1 lg:order-1">
-                  <div className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#7C3AED] text-xl font-bold text-white shadow-lg shadow-[#7C3AED]/20">
-                    1
-                  </div>
-                  <h3
-                    className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}
+            <div className="relative">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 gap-8 md:grid-cols-3"
+              >
+                {steps.map((step) => (
+                  <div
+                    key={step.id}
+                    className="group flex flex-col rounded-[2rem] border border-slate-100 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
-                    Snap or Upload
-                  </h3>
-                  <p className="text-xl font-medium leading-relaxed text-[#53496b]">
-                    Simply take a photo of a printed flyer or upload a digital
-                    invitation from your camera roll. Our AI analyzes the visual
-                    elements instantly.
-                  </p>
-                </div>
-                <div className="order-1 w-full flex-1 lg:order-2">
-                  <div className="rotate-2 rounded-[2rem] border border-[#1f1635]/5 bg-[#f9f9f9] p-10 shadow-sm">
-                    <div className="rounded-[2rem] bg-white p-6 shadow-2xl">
-                      <div className="mb-6 flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-widest text-[#7C3AED]">
-                          Camera Mode
-                        </span>
-                        <Camera className="text-[#7C3AED]" size={20} />
+                    <div className="mb-8">{step.visual}</div>
+                    <div className="mt-auto space-y-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#7C3AED]/8 font-bold text-[#7C3AED]">
+                        {step.id}
                       </div>
-                      <div className="flex h-72 w-full flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[#7C3AED]/20 bg-[#7C3AED]/5">
-                        <Camera className="text-[#7C3AED]/40" size={48} />
-                        <span className="text-sm font-semibold text-[#7C3AED]/60">
-                          Drop your invite here
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center gap-20 lg:flex-row">
-                <div className="w-full flex-1">
-                  <div className="-rotate-2 rounded-[2rem] border border-[#7C3AED]/10 bg-[#7C3AED]/5 p-10 shadow-sm">
-                    <div className="space-y-6 rounded-[2rem] bg-white p-8 shadow-2xl">
-                      <div className="flex items-center gap-3">
-                        <div className="h-3 w-12 rounded-full bg-[#7C3AED]/20" />
-                        <div className="h-3 w-24 rounded-full bg-[#7C3AED]/10" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex h-14 flex-col justify-center rounded-xl border border-[#1f1635]/10 px-4">
-                          <span className="text-[10px] font-bold uppercase text-[#7C3AED]/60">
-                            Date
-                          </span>
-                          <span className="text-sm font-bold">Sat, Oct 12</span>
-                        </div>
-                        <div className="flex h-14 flex-col justify-center rounded-xl border border-[#1f1635]/10 px-4">
-                          <span className="text-[10px] font-bold uppercase text-[#7C3AED]/60">
-                            Time
-                          </span>
-                          <span className="text-sm font-bold">7:00 PM</span>
-                        </div>
-                      </div>
-                      <div className="flex h-24 w-full flex-col rounded-xl border border-[#1f1635]/10 p-4">
-                        <span className="mb-1 text-[10px] font-bold uppercase text-[#7C3AED]/60">
-                          Location
-                        </span>
-                        <span className="text-sm font-bold">
-                          Sunset Garden, 123 Maple St.
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#7C3AED] text-xl font-bold text-white shadow-lg shadow-[#7C3AED]/20">
-                    2
-                  </div>
-                  <h3
-                    className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}
-                  >
-                    Review and Edit
-                  </h3>
-                  <p className="text-xl font-medium leading-relaxed text-[#53496b]">
-                    Envitefy automatically pulls dates, times, and location
-                    data. You can tweak any details or add a custom registry
-                    link in seconds.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center gap-20 lg:flex-row">
-                <div className="order-2 flex-1 lg:order-1">
-                  <div className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#7C3AED] text-xl font-bold text-white shadow-lg shadow-[#7C3AED]/20">
-                    3
-                  </div>
-                  <h3
-                    className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight`}
-                  >
-                    Save and Share
-                  </h3>
-                  <p className="text-xl font-medium leading-relaxed text-[#53496b]">
-                    Publish your shareable event page. Guests can RSVP with one
-                    tap, and the event syncs directly to their Apple or Google
-                    Calendar.
-                  </p>
-                </div>
-                <div className="order-1 w-full flex-1 lg:order-2">
-                  <div className="rotate-1 rounded-[2rem] border border-[#7C3AED]/10 bg-[#7C3AED]/5 p-10 shadow-sm">
-                    <div className="rounded-[2rem] bg-white p-10 text-center shadow-2xl">
-                      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-50">
-                        <CheckCircle2 className="text-green-500" size={40} />
-                      </div>
-                      <h4
-                        className={`${styles.headline} mb-8 text-2xl font-bold`}
+                      <h3
+                        className={`${styles.headline} text-xl font-bold text-slate-900`}
                       >
-                        Event is Live!
-                      </h4>
-                      <div className="flex flex-col gap-3">
-                        <button
-                          type="button"
-                          className="w-full rounded-xl bg-[#1f1635] py-4 text-sm font-bold tracking-wide text-white transition-colors hover:bg-[#1f1635]/90"
-                        >
-                          COPY LINK
-                        </button>
-                        <button
-                          type="button"
-                          className="w-full rounded-xl bg-[#7C3AED] py-4 text-sm font-bold tracking-wide text-white shadow-lg shadow-[#7C3AED]/20 transition-colors hover:bg-[#630ed4]"
-                        >
-                          SHARE VIA WHATSAPP
-                        </button>
-                      </div>
+                        {step.title}
+                      </h3>
+                      <p className="text-sm leading-relaxed text-slate-500">
+                        {step.description}
+                      </p>
                     </div>
                   </div>
-                </div>
-              </div>
+                ))}
+              </motion.div>
             </div>
           </div>
         </section>
@@ -765,7 +774,7 @@ export default function LandingExperience() {
               >
                 <CalendarCheck className="h-5 w-5 text-[#7C3AED] sm:h-6 sm:w-6" />
                 <span className="text-sm font-bold sm:text-lg">
-                  Oct 24, 2024
+                  Oct 24, 2026
                 </span>
               </div>
 
