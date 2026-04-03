@@ -1,4 +1,7 @@
-import { DEFAULT_GYM_MEET_TEMPLATE_ID } from "@/components/gym-meet-templates/registry";
+import {
+  DEFAULT_GYM_MEET_TEMPLATE_ID,
+  DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+} from "@/components/gym-meet-templates/registry";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   deleteEventHistoryById,
@@ -59,7 +62,9 @@ export function buildDiscoveryShellEventData(params: {
     createdVia: isFootball ? "football-discovery-v2" : "meet-discovery-v2",
     templateId: isFootball ? "football-season" : "gymnastics-schedule",
     templateKey: isFootball ? "football" : "gymnastics",
-    pageTemplateId: DEFAULT_GYM_MEET_TEMPLATE_ID,
+    pageTemplateId: isFootball
+      ? DEFAULT_GYM_MEET_TEMPLATE_ID
+      : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
     builderDraft: isFootball
       ? buildEmptyDiscoveryBuilderDraft()
       : buildEmptyGymBuilderDraft(),
@@ -240,7 +245,7 @@ export async function persistDiscoveryEventSnapshot(params: {
       safeString(params.pageTemplateId) ||
       safeString(builderEvent.pageTemplateId) ||
       safeString(current.pageTemplateId) ||
-      DEFAULT_GYM_MEET_TEMPLATE_ID,
+      (isFootball ? DEFAULT_GYM_MEET_TEMPLATE_ID : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID),
     builderDraft: params.builderDraft,
     publicArtifacts: params.publicArtifacts,
     pipelineSummary: buildDiscoveryPipelineSummary({

@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import sharp from "sharp";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
+  DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
 import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
@@ -6666,7 +6667,7 @@ export function buildDefaultGymMeetData() {
     createdManually: false,
     templateId: "gymnastics-schedule",
     templateKey: "gymnastics",
-    pageTemplateId: DEFAULT_GYM_MEET_TEMPLATE_ID,
+    pageTemplateId: DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
     date: "",
     time: "",
     timezone: "America/Chicago",

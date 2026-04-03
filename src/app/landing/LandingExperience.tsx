@@ -260,15 +260,15 @@ export default function LandingExperience() {
               </div>
 
               <div className="relative flex-1">
-                <div className="relative z-10 flex flex-col items-center justify-center gap-6 sm:flex-row lg:gap-10">
+                <div className="relative z-10 flex flex-row flex-nowrap items-start justify-center gap-3 sm:flex-row sm:items-center sm:gap-6 lg:gap-10">
                   <div
                     className={`${styles.cardGroup} ${styles.heroRevealPrimary} group relative`}
                   >
-                    <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-[#7C3AED]/10 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
+                    <div className="absolute -top-6 left-1/2 z-20 inline-flex min-w-max -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-full border border-[#7C3AED]/10 bg-white px-4 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
                       1. Snap
                     </div>
                     <div
-                      className={`${styles.heroSnapCard} w-62 overflow-hidden rounded-[1.5rem] shadow-2xl`}
+                      className={`${styles.heroSnapCard} w-[8.5rem] overflow-hidden rounded-[1.5rem] shadow-2xl sm:w-62`}
                     >
                       <img
                         referrerPolicy="no-referrer"
@@ -294,13 +294,13 @@ export default function LandingExperience() {
                   </div>
 
                   <div
-                    className={`${styles.cardGroup} ${styles.heroRevealSecondary} group relative`}
+                    className={`${styles.cardGroup} ${styles.heroRevealSecondary} group relative mt-5 sm:mt-0`}
                   >
-                    <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#7C3AED] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
+                    <div className="absolute -top-6 left-1/2 z-20 inline-flex min-w-max -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-full bg-[#7C3AED] px-4 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
                       2. Live Event
                     </div>
                     <div
-                      className={`${styles.heroLiveCard} w-64 overflow-hidden rounded-[3rem] shadow-[0px_48px_80px_rgba(31,22,53,0.15)]`}
+                      className={`${styles.heroLiveCard} w-[9.5rem] overflow-hidden rounded-[3rem] shadow-[0px_48px_80px_rgba(31,22,53,0.15)] sm:w-64`}
                     >
                       <img
                         referrerPolicy="no-referrer"
@@ -324,21 +324,21 @@ export default function LandingExperience() {
             className={`${styles.bloomEffect} pointer-events-none absolute left-1/2 top-0 h-full w-full -translate-x-1/2`}
           />
           <div className="relative mx-auto flex max-w-7xl flex-col items-center gap-16 lg:flex-row lg:gap-24">
-            <div className="relative w-full flex-1">
+            <div className="order-2 relative w-full flex-1 lg:order-1">
               <div
                 ref={gymnasticsHighlightRef}
-                className="relative z-10 flex flex-col items-center justify-center gap-6 sm:flex-row lg:gap-10"
+                className="relative z-10 flex flex-row flex-nowrap items-start justify-center gap-3 sm:flex-row sm:items-center sm:gap-6 lg:gap-10"
               >
                 <div
                   className={`${styles.cardGroup} ${styles.heroRevealReady} ${
                     gymnasticsHighlightVisible ? styles.heroRevealPrimary : ""
                   } group relative`}
                 >
-                  <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-[#7C3AED]/10 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
+                  <div className="absolute -top-6 left-1/2 z-20 inline-flex min-w-max -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-full border border-[#7C3AED]/10 bg-white px-4 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
                     Meet PDF
                   </div>
                   <div
-                    className={`${styles.heroSnapCard} w-40 overflow-hidden rounded-[1.35rem] shadow-[0_28px_60px_rgba(31,22,53,0.14)] sm:w-48 lg:w-52`}
+                    className={`${styles.heroSnapCard} w-[7.5rem] overflow-hidden rounded-[1.35rem] shadow-[0_28px_60px_rgba(31,22,53,0.14)] sm:w-48 lg:w-52`}
                   >
                     <img
                       alt="Gymnastics meet flyer preview"
@@ -365,13 +365,13 @@ export default function LandingExperience() {
                 <div
                   className={`${styles.cardGroup} ${styles.heroRevealReady} ${
                     gymnasticsHighlightVisible ? styles.heroRevealSecondary : ""
-                  } group relative`}
+                  } group relative mt-5 sm:mt-0`}
                 >
-                  <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#7C3AED] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
+                  <div className="absolute -top-6 left-1/2 z-20 inline-flex min-w-max -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-full bg-[#7C3AED] px-4 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
                     Live Meet Page
                   </div>
                   <div
-                    className={`${styles.heroLiveCard} w-48 overflow-hidden rounded-[2.4rem] shadow-[0_32px_72px_rgba(31,22,53,0.15)] sm:w-56 lg:w-60`}
+                    className={`${styles.heroLiveCard} w-[8.75rem] overflow-hidden rounded-[2.4rem] shadow-[0_32px_72px_rgba(31,22,53,0.15)] sm:w-56 lg:w-60`}
                   >
                     <img
                       alt="Gymnastics event page preview"
@@ -384,7 +384,7 @@ export default function LandingExperience() {
             </div>
 
             <div
-              className={`${styles.gymnasticsCopy} z-10 flex-1 text-center lg:text-left`}
+              className={`${styles.gymnasticsCopy} order-1 z-10 flex-1 text-center lg:order-2 lg:text-left`}
             >
               <span className={styles.gymnasticsEyebrow}>Sports Edition</span>
               <h2
@@ -425,7 +425,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="what-you-can-snap" className="bg-[#f9f9f9]/50 px-6 py-32">
+        <section id="what-you-can-snap" className="bg-[#f9f9f9]/50 px-6 py-20">
           <div className="mx-auto max-w-7xl">
             <div className="mb-20 text-center">
               <h2
@@ -456,7 +456,7 @@ export default function LandingExperience() {
                 <div className="mt-12 flex items-center justify-center">
                   <div
                     ref={birthdayHeroRef}
-                    className="relative flex w-full max-w-[44rem] flex-col items-center justify-center gap-5 sm:flex-row sm:gap-8"
+                    className="relative flex w-full max-w-[44rem] flex-row flex-nowrap items-start justify-center gap-3 sm:flex-row sm:items-center sm:gap-8"
                   >
                     <div
                       className={`${styles.cardGroup} ${
@@ -465,11 +465,11 @@ export default function LandingExperience() {
                         birthdayHeroVisible ? styles.heroRevealPrimary : ""
                       } group relative`}
                     >
-                      <div className="absolute -top-5 left-1/2 z-20 -translate-x-1/2 rounded-full border border-[#7C3AED]/10 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
+                      <div className="absolute -top-5 left-1/2 z-20 inline-flex min-w-max -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-full border border-[#7C3AED]/10 bg-white px-4 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] shadow-sm">
                         Upload
                       </div>
                       <div
-                        className={`${styles.heroSnapCard} w-40 overflow-hidden rounded-[1.35rem] shadow-[0_28px_60px_rgba(31,22,53,0.14)] sm:w-48`}
+                        className={`${styles.heroSnapCard} w-[7.5rem] overflow-hidden rounded-[1.35rem] shadow-[0_28px_60px_rgba(31,22,53,0.14)] sm:w-48`}
                       >
                         <img
                           alt="Birthday invitation flyer"
@@ -498,13 +498,13 @@ export default function LandingExperience() {
                         styles.heroRevealReady
                       } ${
                         birthdayHeroVisible ? styles.heroRevealSecondary : ""
-                      } group relative`}
+                      } group relative mt-5 sm:mt-0`}
                     >
-                      <div className="absolute -top-5 left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#7C3AED] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
+                      <div className="absolute -top-5 left-1/2 z-20 inline-flex min-w-max -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-full bg-[#7C3AED] px-4 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
                         Event Page
                       </div>
                       <div
-                        className={`${styles.heroLiveCard} w-48 overflow-hidden rounded-[2.4rem] shadow-[0_32px_72px_rgba(31,22,53,0.15)] sm:w-56`}
+                        className={`${styles.heroLiveCard} w-[8.75rem] overflow-hidden rounded-[2.4rem] shadow-[0_32px_72px_rgba(31,22,53,0.15)] sm:w-56`}
                       >
                         <img
                           alt="Birthday event page preview"
@@ -598,7 +598,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="how-it-works" className="px-6 py-32">
+        <section id="how-it-works" className="px-6 py-20">
           <div className="mx-auto max-w-7xl">
             <h2
               className={`${styles.headline} mb-28 text-center text-4xl font-bold tracking-tight text-[#1f1635]`}
@@ -754,34 +754,43 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="rsvp-calendar" className="overflow-hidden px-6 py-32">
+        <section
+          id="rsvp-calendar"
+          className="overflow-hidden px-6 pt-20 pb-12"
+        >
           <div className="mx-auto flex max-w-7xl flex-col items-center gap-24 lg:flex-row">
             <div className="relative h-[500px] w-full flex-1">
               <div
-                className={`${styles.floatUp} absolute left-0 top-10 flex items-center gap-4 rounded-full border border-[#1f1635]/5 bg-white px-8 py-5 shadow-2xl`}
+                className={`${styles.floatUp} absolute left-2 top-8 flex max-w-[calc(100%-4rem)] items-center gap-2 rounded-full border border-[#1f1635]/5 bg-white px-4 py-3 shadow-2xl sm:left-0 sm:top-10 sm:max-w-none sm:gap-4 sm:px-8 sm:py-5`}
               >
-                <CalendarCheck className="text-[#7C3AED]" size={24} />
-                <span className="text-lg font-bold">Oct 24, 2024</span>
+                <CalendarCheck className="h-5 w-5 text-[#7C3AED] sm:h-6 sm:w-6" />
+                <span className="text-sm font-bold sm:text-lg">
+                  Oct 24, 2024
+                </span>
               </div>
 
               <div
-                className={`${styles.floatDown} absolute right-0 top-[46%] flex items-center gap-4 rounded-full border border-[#1f1635]/5 bg-white px-8 py-5 shadow-2xl`}
+                className={`${styles.floatDown} absolute right-2 top-[43%] flex max-w-[calc(100%-1rem)] items-center gap-2 rounded-full border border-[#1f1635]/5 bg-white px-4 py-3 shadow-2xl sm:right-0 sm:top-[46%] sm:max-w-none sm:gap-4 sm:px-8 sm:py-5`}
               >
-                <Clock className="text-[#7C3AED]" size={24} />
-                <span className="text-lg font-bold">6:30 PM - 10:00 PM</span>
+                <Clock className="h-5 w-5 text-[#7C3AED] sm:h-6 sm:w-6" />
+                <span className="text-sm font-bold sm:text-lg">
+                  6:30 PM - 10:00 PM
+                </span>
               </div>
 
               <div
-                className={`${styles.floatLift} absolute bottom-10 left-12 flex items-center gap-4 rounded-full border border-[#1f1635]/5 bg-white px-8 py-5 shadow-2xl`}
+                className={`${styles.floatLift} absolute bottom-8 left-4 flex max-w-[calc(100%-5rem)] items-center gap-2 rounded-full border border-[#1f1635]/5 bg-white px-4 py-3 shadow-2xl sm:bottom-10 sm:left-12 sm:max-w-none sm:gap-4 sm:px-8 sm:py-5`}
               >
-                <MapPin className="text-[#7C3AED]" size={24} />
-                <span className="text-lg font-bold">The Glass House Venue</span>
+                <MapPin className="h-5 w-5 text-[#7C3AED] sm:h-6 sm:w-6" />
+                <span className="text-sm font-bold sm:text-lg">
+                  The Glass House Venue
+                </span>
               </div>
 
-              <div className="absolute bottom-24 right-12 z-10 cursor-pointer rounded-full bg-[#7C3AED] px-10 py-6 text-white shadow-2xl shadow-[#7C3AED]/30 transition-transform hover:scale-105">
-                <div className="flex items-center gap-4">
-                  <CheckCircle2 size={32} />
-                  <span className="text-xl font-extrabold">
+              <div className="absolute left-1/2 -top-8 z-10 w-max max-w-[calc(100%-2rem)] -translate-x-1/2 cursor-pointer rounded-full bg-[#7C3AED] px-5 py-3 text-white shadow-2xl shadow-[#7C3AED]/30 transition-transform hover:scale-105 sm:top-auto sm:bottom-24 sm:left-auto sm:right-12 sm:max-w-none sm:translate-x-0 sm:px-10 sm:py-6">
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <CheckCircle2 className="h-5 w-5 sm:h-8 sm:w-8" />
+                  <span className="text-sm font-extrabold sm:text-xl">
                     I&apos;m Attending!
                   </span>
                 </div>
@@ -820,15 +829,16 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section className="px-6 py-32">
-          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[3rem] bg-[#7C3AED]/5 p-16 text-center lg:p-24">
+        <section className="px-6 py-20">
+          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[3rem] bg-[#7C3AED]/5 p-8 text-center sm:p-16 lg:p-24">
             <div className="absolute -right-10 -top-10 p-12 text-[#7C3AED] opacity-5">
               <Sparkles size={240} />
             </div>
             <h2
-              className={`${styles.headline} relative z-10 mb-8 text-4xl font-extrabold leading-tight tracking-tight text-[#1f1635] lg:text-6xl`}
+              className={`${styles.headline} relative z-10 mx-auto mb-8 text-[2rem] font-extrabold leading-[1.08] tracking-tight text-[#1f1635] sm:text-4xl lg:text-6xl`}
             >
-              Turn Your Next Invite Into a{" "}
+              Turn Your Next Invite Into a
+              <br className="sm:hidden" />{" "}
               <span className="italic text-[#7C3AED]">Shareable Event</span>.
             </h2>
             <p className="relative z-10 mx-auto mb-14 max-w-2xl text-xl font-medium text-[#53496b]">

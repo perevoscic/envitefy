@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import AuthModal from "@/components/auth/AuthModal";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
+  DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
 import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
@@ -815,7 +816,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               return d.toISOString().split("T")[0];
             })()
           : "",
-      pageTemplateId: editEventId ? undefined : DEFAULT_GYM_MEET_TEMPLATE_ID,
+      pageTemplateId: editEventId ? undefined : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
       fontId: (config as any)?.prefill?.fontId || GYM_FONTS[0]?.id || "inter",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
       passcodeRequired: false,
@@ -2431,7 +2432,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setData((prev) => ({
         ...prev,
         title: config.prefill?.title ?? `${config.displayName}`,
-        pageTemplateId: prev.pageTemplateId || DEFAULT_GYM_MEET_TEMPLATE_ID,
+        pageTemplateId: prev.pageTemplateId || DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
         hostGym: config.prefill?.extra?.team || prev.hostGym,
         city: config.prefill?.city || prev.city,
         state: config.prefill?.state || prev.state,
@@ -2462,7 +2463,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setData((prev) => ({
         ...prev,
         title: "",
-        pageTemplateId: DEFAULT_GYM_MEET_TEMPLATE_ID,
+        pageTemplateId: DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
         hostGym: "",
         city: "",
         state: "",

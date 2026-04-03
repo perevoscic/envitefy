@@ -13,6 +13,7 @@ test("gym meet title typography maps key templates to explicit Google fonts", ()
     "src/components/gym-meet-templates/registry.ts"
   );
 
+  assert.match(source, /id: "meet-app-shell"[\s\S]*titleTypographyId: "manrope"/);
   assert.match(source, /id: "toxic-kinetic"[\s\S]*titleTypographyId: "kanit"/);
   assert.match(source, /id: "luxe-magazine"[\s\S]*titleTypographyId: "cormorant"/);
   assert.match(source, /id: "chalk-strike"[\s\S]*titleTypographyId: "space-mono"/);

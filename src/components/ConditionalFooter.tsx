@@ -70,8 +70,14 @@ export default function ConditionalFooter({
       <footer className="border-t border-[#ece3ff] bg-[linear-gradient(180deg,#ffffff_0%,#faf7ff_100%)]">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,0.7fr))] lg:px-8">
           <div className="pr-4">
-            <Link href="/" className="inline-flex items-center">
-              <EnvitefyWordmark className="text-[1.9rem] leading-none" />
+            <Link
+              href="/"
+              className="inline-flex items-center overflow-visible"
+            >
+              <EnvitefyWordmark
+                className="text-[4rem] leading-none sm:text-[3.5rem]"
+                scaled={false}
+              />
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-7 text-[#615a7c]">
               Turn schedules, PDFs, invites, and flyers into cleaner shareable
@@ -164,11 +170,17 @@ export default function ConditionalFooter({
               FAQ
             </Link>
             <span className="hidden opacity-40 sm:inline">•</span>
-            <Link href="https://envitefy.com/terms" className="hover:text-foreground">
+            <Link
+              href="https://envitefy.com/terms"
+              className="hover:text-foreground"
+            >
               Terms of Use
             </Link>
             <span className="hidden opacity-40 sm:inline">•</span>
-            <Link href="https://envitefy.com/privacy" className="hover:text-foreground">
+            <Link
+              href="https://envitefy.com/privacy"
+              className="hover:text-foreground"
+            >
               Privacy Policy
             </Link>
             <span className="hidden opacity-40 sm:inline">•</span>
