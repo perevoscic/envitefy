@@ -8,32 +8,25 @@ const repoRoot = process.cwd();
 const readSource = (relativePath) =>
   fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("/snap reuses the shared hero navigation and key anchors", () => {
+test("/snap renders the new landing component with key sections", () => {
   const page = readSource("src/app/snap/page.tsx");
-  const snapLanding = readSource(
-    "src/components/snap-landing/SnapSignupLanding.tsx",
-  );
+  const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
 
-  assert.match(page, /<SnapSignupLanding \/>/);
-  assert.match(snapLanding, /<HeroTopNav/);
-  assert.match(snapLanding, /label: "Gymnastics", href: "\/landing#gymnastics"/);
-  assert.match(snapLanding, /label: "Snap", href: "#snap"/);
-  assert.match(snapLanding, /label: "Features", href: "#features"/);
-  assert.match(snapLanding, /label: "FAQ", href: "#faq"/);
+  assert.match(page, /<SnapLanding \/>/);
+  assert.match(snapLanding, /label: "Gymnastics", href: "\/gymnastics"/);
+  assert.match(snapLanding, /Stop sharing screenshots\./);
+  assert.match(snapLanding, /Start sharing events\./);
   assert.match(snapLanding, /id="snap"/);
-  assert.match(snapLanding, /id="features"/);
   assert.match(snapLanding, /id="how-it-works"/);
+  assert.match(snapLanding, /id="use-cases"/);
   assert.match(snapLanding, /id="faq"/);
 });
 
-test("/snap keeps snap-specific auth and CTA wiring", () => {
-  const snapLanding = readSource(
-    "src/components/snap-landing/SnapSignupLanding.tsx",
-  );
+test("/snap includes the updated social-proof and CTA copy", () => {
+  const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
 
-  assert.match(snapLanding, /signupSource="snap"/);
-  assert.match(snapLanding, /successRedirectUrl="\/event"/);
-  assert.match(snapLanding, /href="\/event"/);
-  assert.match(snapLanding, /onGuestLoginAction=\{\(\) => openAuth\("login"\)\}/);
-  assert.match(snapLanding, /onGuestPrimaryAction=\{\(\) => openAuth\("signup"\)\}/);
+  assert.match(snapLanding, /Trusted by 10,000\+ busy parents & organizers/);
+  assert.match(snapLanding, /One tool\. Infinite events\./);
+  assert.match(snapLanding, /Ready to clear the/);
+  assert.match(snapLanding, /Get Started Free/);
 });

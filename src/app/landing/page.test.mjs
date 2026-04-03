@@ -45,6 +45,7 @@ test("landing preserves auth-aware nav behavior and snap-first CTA wiring", () =
   assert.match(landingExperience, /signupSource="snap"/);
   assert.match(landingExperience, /successRedirectUrl="\/event"/);
   assert.match(landingExperience, /allowSignupSwitch=\{false\}/);
+  assert.match(landingExperience, /label: "Snap", href: "\/snap"/);
   assert.match(landingExperience, /href="\/snap"/);
   assert.match(landingExperience, /href="\/gymnastics"/);
   assert.doesNotMatch(landingExperience, /Start with Gymnastics/);

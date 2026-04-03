@@ -182,28 +182,28 @@ export default function PwaInstallToast() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[9999] px-4 pt-2 pb-2 safe-inset-x"
+      className="fixed top-0 left-0 right-0 z-[9999] px-3 pt-1.5 pb-1.5 safe-inset-x"
       style={{
-        paddingTop: `calc(0.5rem + env(safe-area-inset-top))`,
+        paddingTop: `calc(0.35rem + env(safe-area-inset-top))`,
       }}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto max-w-6xl">
         <div
-          className="relative overflow-hidden rounded-[28px] border border-[#e7e1ff] bg-white/95 p-4 shadow-[0_24px_70px_rgba(103,87,255,0.16)] backdrop-blur-xl transition-all duration-300 ease-out"
+          className="relative overflow-hidden rounded-[22px] border border-[#e7e1ff] bg-white/95 px-3.5 py-2.5 shadow-[0_18px_48px_rgba(103,87,255,0.14)] backdrop-blur-xl transition-all duration-300 ease-out"
           style={{
             opacity: isAnimating ? 1 : 0,
             transform: isAnimating ? "translateY(0)" : "translateY(-20px)",
           }}
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(123,97,255,0.14),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(55,168,255,0.1),transparent_32%)]" />
-          <div className="relative flex items-center gap-4">
+          <div className="relative flex items-center gap-3">
             {/* App Icon */}
             <div className="flex-shrink-0">
-              <div className="flex h-14 w-14 items-center justify-center rounded-[20px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] shadow-[0_12px_30px_rgba(103,87,255,0.12)]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] shadow-[0_10px_24px_rgba(103,87,255,0.1)]">
                 <img
                   src={APP_ICON_SRC}
                   alt="Envitefy"
-                  className="h-10 w-10 rounded-lg"
+                  className="h-8 w-8 rounded-md"
                   onError={(e) => {
                     // Fallback to SVG if image fails
                     const target = e.target as HTMLImageElement;
@@ -213,8 +213,8 @@ export default function PwaInstallToast() {
                   }}
                 />
                 <svg
-                  width="28"
-                  height="28"
+                  width="22"
+                  height="22"
                   viewBox="0 0 24 24"
                   fill="none"
                   className="hidden text-[#6b3cff]"
@@ -247,10 +247,10 @@ export default function PwaInstallToast() {
 
             {/* Text Content */}
             <div className="min-w-0 flex-1">
-              <div className="text-base font-semibold leading-tight text-[#1f2340]">
+              <div className="text-sm font-semibold leading-tight text-[#1f2340] sm:text-[15px]">
                 Install Envitefy
               </div>
-              <div className="mt-0.5 text-xs text-[#6b7390]">
+              <div className="mt-0.5 text-[11px] leading-none text-[#6b7390] sm:text-xs">
                 envitefy.com
               </div>
             </div>
@@ -258,13 +258,19 @@ export default function PwaInstallToast() {
             {/* Action Buttons */}
             <div className="flex flex-shrink-0 items-center gap-2">
               <button
+                onClick={handleInstall}
+                className="rounded-full bg-[linear-gradient(96deg,#6b3cff_0%,#6757ff_42%,#5a7dff_100%)] px-4 py-2 text-xs font-semibold text-white shadow-[0_14px_26px_rgba(103,87,255,0.28)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_30px_rgba(103,87,255,0.32)] active:scale-95 sm:text-sm"
+              >
+                Install
+              </button>
+              <button
                 onClick={handleDismiss}
-                className="rounded-full border border-[#ece8ff] bg-white/85 p-2 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]"
+                className="rounded-full border border-[#ece8ff] bg-white/85 p-1.5 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]"
                 aria-label="Dismiss"
               >
                 <svg
-                  width="18"
-                  height="18"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -275,12 +281,6 @@ export default function PwaInstallToast() {
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
-              </button>
-              <button
-                onClick={handleInstall}
-                className="rounded-full bg-[linear-gradient(96deg,#6b3cff_0%,#6757ff_42%,#5a7dff_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(103,87,255,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_34px_rgba(103,87,255,0.34)] active:scale-95"
-              >
-                Install
               </button>
             </div>
           </div>

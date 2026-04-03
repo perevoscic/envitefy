@@ -15,17 +15,21 @@ const LeftSidebar = dynamic(() => import("./left-sidebar"), {
 
 export default function AppShell({
   children,
+  serverSession = null,
 }: {
   children: React.ReactNode;
+  serverSession?: any;
 }) {
   const pathname = usePathname();
   const { status } = useSession();
   const wasAuthenticated = useRef(false);
+  const hasServerSession = Boolean(serverSession?.user);
   if (status === "authenticated") wasAuthenticated.current = true;
   if (status === "unauthenticated") wasAuthenticated.current = false;
 
   const isAuthenticated =
     status === "authenticated" ||
+    (status === "loading" && hasServerSession) ||
     (status === "loading" && wasAuthenticated.current);
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 

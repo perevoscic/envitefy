@@ -1,0 +1,15 @@
+.snapPage {
+  font-family: var(--font-snap-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.snapPage h1,
+.snapPage h2,
+.snapPage h3,
+.snapPage h4,
+.snapPage h5,
+.snapPage h6 {
+  font-family: var(--font-snap-display), var(--font-snap-sans), ui-sans-serif,
+    system-ui, sans-serif;
+  letter-spacing: normal;
+  color: inherit;
+}

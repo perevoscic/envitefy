@@ -82,11 +82,16 @@ export function useTheme() {
 
 export default function Providers({
   children,
+  session = null,
 }: {
   children: ReactNode;
+  session?: any;
 }) {
   return (
-    <SessionProvider refetchOnWindowFocus={process.env.NODE_ENV === "production"}>
+    <SessionProvider
+      session={session}
+      refetchOnWindowFocus={process.env.NODE_ENV === "production"}
+    >
       <SidebarProvider>
         <ThemeProvider>
           <RegisterServiceWorker />

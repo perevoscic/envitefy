@@ -29,9 +29,8 @@ export default function LoginForm({ onSuccess, onSwitchMode }: LoginFormProps) {
         callbackUrl: "/",
       });
       if (result?.ok) {
-        onSuccess?.();
-        // Force a full page reload to ensure session is available
-        window.location.href = "/";
+        // Keep the modal open until navigation so the current page does not flash.
+        window.location.replace("/");
         return;
       }
       setMessage("Invalid email or password");
