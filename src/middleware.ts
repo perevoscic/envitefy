@@ -204,12 +204,26 @@ export async function middleware(req: NextRequest) {
     return { hasSession: Boolean(sessionCookie.value), token: null as any };
   };
 
-  if (normalizedPathname === "/snap" || normalizedPathname === "/gymnastics") {
-    const response = ok();
-    return attachSignupSourceCookie(
-      response,
-      normalizedPathname === "/gymnastics" ? "gymnastics" : "snap",
-    );
+  if (
+    normalizedPathname === "/landing" ||
+    normalizedPathname === "/snap" ||
+    normalizedPathname === "/gymnastics"
+  ) {
+    const authState = await resolveAuthState();
+    if (authState.hasSession) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.search = "";
+      return redirectWithMarker(url, 302);
+    }
+    if (normalizedPathname === "/snap" || normalizedPathname === "/gymnastics") {
+      const response = ok();
+      return attachSignupSourceCookie(
+        response,
+        normalizedPathname === "/gymnastics" ? "gymnastics" : "snap",
+      );
+    }
+    return ok();
   }
 
   if (pathname === "/") {
@@ -254,7 +268,7 @@ export async function middleware(req: NextRequest) {
   const protectedPrefixes = ["/subscription"];
   for (const prefix of protectedPrefixes) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
-      if (!hasSession) {
+      if (!authState.hasSession) {
         const url = req.nextUrl.clone();
         url.pathname = "/";
         return redirectWithMarker(url, 302);

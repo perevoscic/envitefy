@@ -26,6 +26,23 @@ export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
     previewTitleClassName: "font-sans font-extrabold tracking-tight text-white",
   },
   {
+    id: "session-companion",
+    name: "Session Companion",
+    style: "Mobile Native / Live Companion",
+    description:
+      "A phone-first meet companion with live agenda cards, sticky shell chrome, and parent-friendly tabs.",
+    group: "current",
+    layoutFamily: "app-shell",
+    thumbnailMode: "rendered-card",
+    previewTitle: "Session Companion",
+    previewKicker: "Live Agenda",
+    previewClassName:
+      "bg-[linear-gradient(160deg,#020617_0%,#1d4ed8_42%,#38bdf8_100%)] text-sky-50",
+    previewAccentClassName: "text-sky-200",
+    titleTypographyId: "sora",
+    previewTitleClassName: "font-sans font-black tracking-tight text-white",
+  },
+  {
     id: "launchpad-editorial",
     name: "Launchpad Editorial",
     style: "Editorial / Light Launch",

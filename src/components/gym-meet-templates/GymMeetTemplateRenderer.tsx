@@ -7,6 +7,7 @@ import {
   resolveGymMeetTemplateId,
 } from "./registry";
 import MeetAppShellTemplate from "./renderers/MeetAppShellTemplate";
+import SessionCompanionTemplate from "./renderers/SessionCompanionTemplate";
 import LaunchpadEditorialTemplate from "./renderers/LaunchpadEditorialTemplate";
 import BentoBoxTemplate from "./renderers/BentoBoxTemplate";
 import BlueprintTechTemplate from "./renderers/BlueprintTechTemplate";
@@ -54,6 +55,8 @@ export default function GymMeetTemplateRenderer(props: any) {
   switch (pageTemplateId) {
     case "meet-app-shell":
       return <MeetAppShellTemplate {...props} />;
+    case "session-companion":
+      return <SessionCompanionTemplate {...props} />;
     case "launchpad-editorial":
       return <LaunchpadEditorialTemplate {...props} />;
     case "bento-box":

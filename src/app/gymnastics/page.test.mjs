@@ -35,4 +35,6 @@ test("/gymnastics keeps gymnastics signup and launch wiring", () => {
   assert.match(gymnasticsLanding, /signupSource="gymnastics"/);
   assert.match(gymnasticsLanding, /successRedirectUrl="\/event\/gymnastics"/);
   assert.match(gymnasticsLanding, /href="\/event\/gymnastics"/);
+  assert.match(gymnasticsLanding, /onClick=\{\(\) => openAuth\("signup"\)\}/);
+  assert.match(gymnasticsLanding, /Start Your Meet Page/);
 });

@@ -218,7 +218,7 @@ export default function LandingExperience() {
         <HeroTopNav
           navLinks={[
             { label: "Gymnastics", href: "#gymnastics" },
-            { label: "Snap", href: "#snap" },
+            { label: "Snap", href: "/snap" },
             { label: "Features", href: "#what-you-can-snap" },
             { label: "FAQ", href: "/faq" },
           ]}
@@ -300,12 +300,12 @@ export default function LandingExperience() {
                       2. Live Event
                     </div>
                     <div
-                      className={`${styles.heroLiveCard} w-[9.5rem] overflow-hidden rounded-[3rem] shadow-[0px_48px_80px_rgba(31,22,53,0.15)] sm:w-64`}
+                      className={`${styles.heroLiveCard} w-[9.5rem] overflow-hidden rounded-[2rem] shadow-[0px_48px_80px_rgba(31,22,53,0.15)] sm:w-64 sm:rounded-[3rem]`}
                     >
                       <img
                         referrerPolicy="no-referrer"
                         alt="Live event preview"
-                        className="h-full w-full rounded-[3rem] object-cover"
+                        className="h-full w-full rounded-[2rem] object-cover sm:rounded-[3rem]"
                         src={IMAGES.heroEvent}
                       />
                     </div>
@@ -371,11 +371,11 @@ export default function LandingExperience() {
                     Live Meet Page
                   </div>
                   <div
-                    className={`${styles.heroLiveCard} w-[8.75rem] overflow-hidden rounded-[2.4rem] shadow-[0_32px_72px_rgba(31,22,53,0.15)] sm:w-56 lg:w-60`}
+                    className={`${styles.heroLiveCard} w-[8.75rem] overflow-hidden rounded-[1.75rem] shadow-[0_32px_72px_rgba(31,22,53,0.15)] sm:w-56 sm:rounded-[2.4rem] lg:w-60`}
                   >
                     <img
                       alt="Gymnastics event page preview"
-                      className="h-full w-full rounded-[2.4rem] object-cover"
+                      className="h-full w-full rounded-[1.75rem] object-cover sm:rounded-[2.4rem]"
                       src={IMAGES.gymnasticsEvent}
                     />
                   </div>
@@ -504,11 +504,11 @@ export default function LandingExperience() {
                         Event Page
                       </div>
                       <div
-                        className={`${styles.heroLiveCard} w-[8.75rem] overflow-hidden rounded-[2.4rem] shadow-[0_32px_72px_rgba(31,22,53,0.15)] sm:w-56`}
+                        className={`${styles.heroLiveCard} w-[8.75rem] overflow-hidden rounded-[1.75rem] shadow-[0_32px_72px_rgba(31,22,53,0.15)] sm:w-56 sm:rounded-[2.4rem]`}
                       >
                         <img
                           alt="Birthday event page preview"
-                          className="h-full w-full rounded-[2.4rem] object-cover"
+                          className="h-full w-full rounded-[1.75rem] object-cover sm:rounded-[2.4rem]"
                           src={IMAGES.birthdayEvent}
                         />
                       </div>

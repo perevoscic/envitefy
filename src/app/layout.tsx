@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { getServerSession } from "next-auth";
 import Providers from "./providers";
 import AppShell from "./AppShell";
 import "./globals.css";
+import { authOptions } from "@/lib/auth";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import { themeColorPalette } from "@/lib/theme-color";
 import { Suspense } from "react";
@@ -95,11 +97,12 @@ export const viewport: Viewport = {
   themeColor: themeColorPalette.brand,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const serverSession = await getServerSession(authOptions as any);
   const themeKey: ThemeKey = "general";
   const htmlVariant: ThemeVariant = "light";
   const cssVariables = resolveThemeCssVariables(themeKey, htmlVariant);
@@ -181,9 +184,9 @@ export default function RootLayout({
           gtag('js', new Date());
           gtag('config', 'G-3X25SZMRFY');
         `}</Script>
-        <Providers>
+        <Providers session={serverSession}>
           <Suspense fallback={null}>
-            <AppShell>{children}</AppShell>
+            <AppShell serverSession={serverSession}>{children}</AppShell>
           </Suspense>
         </Providers>
         <SpeedInsights />

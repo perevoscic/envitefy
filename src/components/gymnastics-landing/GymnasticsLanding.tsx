@@ -150,10 +150,10 @@ const trustItems = [
 const features = [
   {
     icon: CalendarDays,
-    title: "Meet Schedules",
-    copy: "Sessions, warm-ups, rotations, and awards timing in a clean layout that parents can scan in seconds.",
+    title: "Meet Details",
+    copy: "Start times, warm-ups, rotations, and awards timing in a clean layout that parents can scan in seconds.",
     backCopy:
-      "Every session is broken down with check-in times, warm-up windows, rotation orders, and awards timing. Parents see exactly when their athlete competes — no more decoding spreadsheets or PDF tables on a tiny phone screen.",
+      "Every competition block is broken down with check-in times, warm-up windows, rotation orders, and awards timing. Parents see exactly when their athlete competes — no more decoding spreadsheets or PDF tables on a tiny phone screen.",
     accent: "from-indigo-500/10 to-violet-500/10",
     iconColor: "text-indigo-600",
   },
@@ -162,7 +162,7 @@ const features = [
     title: "Travel & Hotels",
     copy: "Block booking links, parking notes, shuttle info, and venue directions — all in one place.",
     backCopy:
-      "Attach hotel block links with deadlines, embed venue maps with parking notes, and include shuttle schedules. Families stop hunting through separate docs — everything travel-related lives right on the meet page.",
+      "Attach hotel block links with deadlines, embed venue maps with parking notes, and include shuttle timing details. Families stop hunting through separate docs — everything travel-related lives right on the meet page.",
     accent: "from-violet-500/10 to-fuchsia-500/10",
     iconColor: "text-violet-600",
   },
@@ -180,7 +180,7 @@ const features = [
     title: "Updates & Announcements",
     copy: "Last-minute changes reach everyone instantly instead of getting buried in group chats.",
     backCopy:
-      "Schedule changes, venue updates, and weather delays are posted once and visible to every family immediately. No more re-sending PDFs or hoping a text chain reaches everyone in time.",
+      "Timeline changes, venue updates, and weather delays are posted once and visible to every family immediately. No more re-sending PDFs or hoping a text chain reaches everyone in time.",
     accent: "from-pink-500/10 to-rose-500/10",
     iconColor: "text-pink-600",
   },
@@ -191,7 +191,7 @@ const useCases = [
   {
     eyebrow: "For parents",
     title: "Know exactly what to expect",
-    copy: "One link with session times, venue directions, parking, and spectator info — no more hunting through PDFs and email threads.",
+    copy: "One link with start times, venue directions, parking, and spectator info — no more hunting through PDFs and email threads.",
     icon: Smartphone,
   },
   {
@@ -203,7 +203,7 @@ const useCases = [
   {
     eyebrow: "For meet directors",
     title: "Present a polished event",
-    copy: "Give your meet a professional public page with schedules, venue maps, hotel blocks, and spectator guidance.",
+    copy: "Give your meet a professional public page with start times, venue maps, hotel blocks, and spectator guidance.",
     icon: Trophy,
   },
 ];
@@ -627,13 +627,13 @@ export default function GymnasticsLanding() {
                 step: "01",
                 icon: Upload,
                 title: "Upload Meet Info",
-                copy: "Bring in your meet packet, session schedule, venue details, hotel sheet, and documents.",
+                copy: "Bring in your meet packet, event rundown, venue details, hotel sheet, and documents.",
               },
               {
                 step: "02",
                 icon: Sparkles,
                 title: "Envitefy Organizes It",
-                copy: "We structure everything into the sections gymnasts families need: sessions, venue, travel, and updates.",
+                copy: "We structure everything into the sections gymnastics families need: start times, venue, travel, and updates.",
               },
               {
                 step: "03",
@@ -726,95 +726,93 @@ export default function GymnasticsLanding() {
                 className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-indigo-100/50 via-violet-50/40 to-fuchsia-100/30 blur-2xl"
               />
 
-              <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-xl sm:p-6">
-                {/* mobile frame */}
-                <div className="mx-auto max-w-[340px] overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-lg">
-                  {/* status bar */}
-                  <div className="flex items-center justify-center bg-slate-900 px-4 py-2">
-                    <span className="text-[11px] font-medium text-white/70">
-                      envitefy.com
-                    </span>
+              {/* mobile frame */}
+              <div className="relative mx-auto max-w-[340px] overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-lg">
+                {/* status bar */}
+                <div className="flex items-center justify-center bg-slate-900 px-4 py-2">
+                  <span className="text-[11px] font-medium text-white/70">
+                    envitefy.com
+                  </span>
+                </div>
+
+                {/* mobile content */}
+                <div className="space-y-3 p-4">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Gymnastics Meet
+                    </p>
+                    <p className="mt-1 text-lg font-bold text-slate-900">
+                      Summit Invitational
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      April 18–20 · Aurora Convention Hall
+                    </p>
                   </div>
 
-                  {/* mobile content */}
-                  <div className="space-y-3 p-4">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                        Gymnastics Meet
-                      </p>
-                      <p className="mt-1 text-lg font-bold text-slate-900">
-                        Summit Invitational
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        April 18–20 · Aurora Convention Hall
-                      </p>
-                    </div>
+                  {/* tabs */}
+                  <div className="flex gap-1.5 overflow-x-auto">
+                    {["Lineup", "Venue", "Hotels", "Info"].map((tab, i) => (
+                      <span
+                        key={tab}
+                        className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                          i === 0
+                            ? "bg-indigo-600 text-white"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {tab}
+                      </span>
+                    ))}
+                  </div>
 
-                    {/* tabs */}
-                    <div className="flex gap-1.5 overflow-x-auto">
-                      {["Sessions", "Venue", "Hotels", "Info"].map((tab, i) => (
-                        <span
-                          key={tab}
-                          className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold ${
-                            i === 0
-                              ? "bg-indigo-600 text-white"
-                              : "bg-slate-100 text-slate-500"
-                          }`}
+                  {/* competition card */}
+                  <div className="rounded-xl bg-slate-50 p-3.5">
+                    <p className="text-xs font-semibold text-slate-600">
+                      Competition Block 2 · Level 7 & Xcel Gold
+                    </p>
+                    <div className="mt-2 space-y-1.5">
+                      {[
+                        ["Check-in", "7:10 AM"],
+                        ["Warm-up", "7:35 AM"],
+                        ["Awards", "11:40 AM"],
+                      ].map(([lbl, val]) => (
+                        <div
+                          key={lbl}
+                          className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs"
                         >
-                          {tab}
-                        </span>
+                          <span className="text-slate-400">{lbl}</span>
+                          <span className="font-semibold text-slate-700">
+                            {val}
+                          </span>
+                        </div>
                       ))}
                     </div>
+                  </div>
 
-                    {/* session card */}
-                    <div className="rounded-xl bg-slate-50 p-3.5">
-                      <p className="text-xs font-semibold text-slate-600">
-                        Session 2 · Level 7 & Xcel Gold
-                      </p>
-                      <div className="mt-2 space-y-1.5">
-                        {[
-                          ["Check-in", "7:10 AM"],
-                          ["Warm-up", "7:35 AM"],
-                          ["Awards", "11:40 AM"],
-                        ].map(([lbl, val]) => (
-                          <div
-                            key={lbl}
-                            className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs"
-                          >
-                            <span className="text-slate-400">{lbl}</span>
-                            <span className="font-semibold text-slate-700">
-                              {val}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* venue snippet */}
-                    <div className="rounded-xl bg-violet-50 p-3.5">
-                      <div className="flex items-center gap-2">
-                        <MapPinned className="h-4 w-4 text-violet-500" />
-                        <p className="text-xs font-semibold text-slate-700">
-                          Aurora Convention Hall
-                        </p>
-                      </div>
-                      <p className="mt-1.5 text-[11px] text-slate-500">
-                        West lobby · Upper balcony seating
+                  {/* venue snippet */}
+                  <div className="rounded-xl bg-violet-50 p-3.5">
+                    <div className="flex items-center gap-2">
+                      <MapPinned className="h-4 w-4 text-violet-500" />
+                      <p className="text-xs font-semibold text-slate-700">
+                        Aurora Convention Hall
                       </p>
                     </div>
+                    <p className="mt-1.5 text-[11px] text-slate-500">
+                      West lobby · Upper balcony seating
+                    </p>
+                  </div>
 
-                    {/* hotel snippet */}
-                    <div className="rounded-xl bg-fuchsia-50 p-3.5">
-                      <div className="flex items-center gap-2">
-                        <Hotel className="h-4 w-4 text-fuchsia-500" />
-                        <p className="text-xs font-semibold text-slate-700">
-                          Hotel block closes March 26
-                        </p>
-                      </div>
-                      <p className="mt-1.5 text-[11px] text-slate-500">
-                        Booking link · Shuttle schedule
+                  {/* hotel snippet */}
+                  <div className="rounded-xl bg-fuchsia-50 p-3.5">
+                    <div className="flex items-center gap-2">
+                      <Hotel className="h-4 w-4 text-fuchsia-500" />
+                      <p className="text-xs font-semibold text-slate-700">
+                        Hotel block closes March 26
                       </p>
                     </div>
+                    <p className="mt-1.5 text-[11px] text-slate-500">
+                      Booking link · Shuttle details
+                    </p>
                   </div>
                 </div>
               </div>
@@ -923,7 +921,7 @@ export default function GymnasticsLanding() {
                 {[
                   "Replace PDF packets with a clean meeting page",
                   "Works on every phone — no app download",
-                  "Schedule changes reach everyone instantly",
+                  "Timeline changes reach everyone instantly",
                   "Venue maps and hotel info in one view",
                   "Share one link across all team channels",
                   "Professional presentation for your organization",
@@ -962,18 +960,29 @@ export default function GymnasticsLanding() {
                 Make the next gymnastics meet feel polished from the first tap
               </h2>
               <p className="mt-5 text-base leading-7 text-white/80 sm:text-lg">
-                Build one premium page for schedules, hotels, maps, and updates
+                Build one premium page for meet details, hotels, maps, and updates
                 so every parent, athlete, and coach lands in the same place.
               </p>
 
               <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link
-                  href="/event/gymnastics"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-8 py-4.5 text-base font-semibold text-indigo-700 shadow-xl shadow-black/10 transition hover:-translate-y-0.5 hover:shadow-2xl"
-                >
-                  Start Your Meet Page
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+                {isAuthenticated ? (
+                  <Link
+                    href="/event/gymnastics"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-8 py-4.5 text-base font-semibold text-indigo-700 shadow-xl shadow-black/10 transition hover:-translate-y-0.5 hover:shadow-2xl"
+                  >
+                    Start Your Meet Page
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => openAuth("signup")}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-8 py-4.5 text-base font-semibold text-indigo-700 shadow-xl shadow-black/10 transition hover:-translate-y-0.5 hover:shadow-2xl"
+                  >
+                    Start Your Meet Page
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                )}
                 <a
                   href="#hero"
                   className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-8 py-4.5 text-base font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/15"

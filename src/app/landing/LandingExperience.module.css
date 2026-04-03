@@ -238,7 +238,7 @@
 
 .weddingPhoneShell {
   position: relative;
-  border-radius: 2.15rem;
+  border-radius: 1.75rem;
   padding: 0;
   background: transparent;
   transform: rotate(3.8deg);
@@ -256,7 +256,7 @@
 
 .weddingPhoneFrame {
   overflow: hidden;
-  border-radius: 2.15rem;
+  border-radius: 1.75rem;
   background: #f7f3fb;
 }
 
@@ -672,6 +672,11 @@
 }
 
 @media (min-width: 768px) {
+  .weddingPhoneShell,
+  .weddingPhoneFrame {
+    border-radius: 2.15rem;
+  }
+
   .weddingStack {
     display: block;
     width: min(100%, 23rem);

@@ -4,6 +4,7 @@ import React from "react";
 
 export type GymMeetTemplateId =
   | "meet-app-shell"
+  | "session-companion"
   | "launchpad-editorial"
   | "elite-athlete"
   | "bento-box"

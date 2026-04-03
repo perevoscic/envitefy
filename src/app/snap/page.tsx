@@ -1,15 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import SnapSignupLanding from "@/components/snap-landing/SnapSignupLanding";
+import { Inter, Outfit } from "next/font/google";
+import SnapLanding from "@/components/snap-landing/SnapLanding";
 import { themeColorPalette } from "@/lib/theme-color";
+import styles from "./page.module.css";
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-snap-display",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-snap-sans",
+});
 
 export const metadata: Metadata = {
-  title: "Envitefy Snap | Turn event photos into shareable event pages",
+  title: "Envitefy Snap | Turn invites, flyers, and PDFs into event pages",
   description:
-    "Snap a photo or upload an invite, flyer, or schedule and turn it into a polished event page with RSVPs, sign-ups, and more.",
+    "Upload an invite, flyer, screenshot, schedule, or PDF and turn it into a polished event page with RSVPs, links, and mobile-friendly sharing.",
   openGraph: {
     title: "Envitefy Snap",
     description:
-      "Snap a photo or upload an invite, flyer, or schedule and turn it into a polished event page with RSVPs, sign-ups, and more.",
+      "Upload an invite, flyer, screenshot, schedule, or PDF and turn it into a polished event page with RSVPs, links, and mobile-friendly sharing.",
     url: "https://envitefy.com/snap",
     siteName: "Envitefy",
     type: "website",
@@ -18,7 +32,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Envitefy Snap",
     description:
-      "Snap a photo or upload an invite, flyer, or schedule and turn it into a polished event page with RSVPs, sign-ups, and more.",
+      "Upload an invite, flyer, screenshot, schedule, or PDF and turn it into a polished event page with RSVPs, links, and mobile-friendly sharing.",
   },
 };
 
@@ -27,5 +41,9 @@ export const viewport: Viewport = {
 };
 
 export default function SnapPage() {
-  return <SnapSignupLanding />;
+  return (
+    <div className={`${outfit.variable} ${inter.variable} ${styles.snapPage}`}>
+      <SnapLanding />
+    </div>
+  );
 }

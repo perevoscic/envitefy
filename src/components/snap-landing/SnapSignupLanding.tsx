@@ -23,103 +23,128 @@ import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
-const useCaseCards = [
+const heroHighlights = [
+  "Invites, flyers, screenshots, schedules, and PDFs",
+  "Review the extracted details before you publish",
+  "One clean mobile-ready link with RSVPs, links, and updates",
+] as const;
+
+const featuredUseCases = [
   {
-    title: "Birthday Invitations",
-    body: "Turn that text-message flyer or photo invite into a beautiful page where guests can RSVP and get the details fast.",
+    title: "Birthday parties",
+    body: "Turn the invite already living in a group chat into a page guests can actually use.",
     image: "/templates/birthdays/birthday-bash.webp",
     icon: PartyPopper,
-    large: true,
-    tone: "white",
   },
   {
-    title: "Wedding Invites",
-    body: "Convert elegant paper invitations into a mobile-first digital home your guests can actually use.",
+    title: "Wedding invites",
+    body: "Start from the beautiful invitation, then give guests a simpler digital home for the details.",
     image: "/phone-placeholders/wedding-couple.jpeg",
     icon: Heart,
-    large: false,
-    tone: "tint",
   },
+] as const;
+
+const useCaseCards = [
   {
-    title: "Baby Showers",
-    body: "Organize dates, addresses, and details from social posts and flyer screenshots instantly.",
+    title: "Baby showers",
+    body: "Make it easy to see the date, address, registry, and RSVP without sending five follow-up messages.",
     icon: Users,
   },
   {
-    title: "Sports Schedules",
-    body: "Upload team or league schedules and give families a cleaner event page to reference and share.",
+    title: "Sports schedules",
+    body: "Upload a schedule or flyer and turn it into something families can reference and share on mobile.",
     icon: CalendarPlus2,
   },
   {
-    title: "Community Events",
-    body: "Markets, school nights, and local gatherings become easier to spread with one polished event page.",
+    title: "School and community events",
+    body: "Take a poster, handout, or announcement and give people one link with the details in one place.",
     icon: Share2,
   },
 ] as const;
 
 const benefitCards = [
   {
-    title: "Skip Manual Setup",
-    body: "No more typing addresses or copying event descriptions. Snap handles the heavy lifting first.",
-    icon: PencilLine,
-  },
-  {
-    title: "Printed to Digital",
-    body: "Modernize physical flyers, handouts, posters, and invites into something easier to read and share.",
+    title: "Start with what you already have",
+    body: "No redesign required. Use the invite, flyer, schedule, or PDF people are already sending around.",
     icon: Camera,
   },
   {
-    title: "Easy Sharing",
-    body: "One clean link for all the details instead of blurry screenshots and scattered group-chat messages.",
+    title: "Turn messy details into structure",
+    body: "Date, time, location, and extras become easier to scan than a screenshot or a zoomed-in PDF.",
+    icon: PencilLine,
+  },
+  {
+    title: "Share one link, not five files",
+    body: "Send guests to a single event page instead of resending the invite, address, and reminders separately.",
     icon: Share2,
   },
   {
-    title: "Collect RSVPs",
-    body: "Give guests a real event page with responses, schedules, links, and details in one place.",
+    title: "Collect RSVPs or sign-ups",
+    body: "Give people a clear place to respond instead of asking them to text back or reply in a crowded chat.",
     icon: Users,
   },
   {
-    title: "Instant Save-the-Date",
-    body: "Make the event easier to remember with structured details guests can save and come back to.",
-    icon: CalendarPlus2,
-  },
-  {
-    title: "Live Updates",
-    body: "If details change, update the page once instead of resending new screenshots to everyone.",
+    title: "Stay useful after the first share",
+    body: "If the details change, update the page once instead of sending another screenshot and hoping everyone sees it.",
     icon: Sparkles,
   },
+  {
+    title: "Built for the phone in your hand",
+    body: "The finished page is designed for quick reading, tapping, saving, and sharing on mobile.",
+    icon: MapPin,
+  },
+] as const;
+
+const beforeItems = [
+  "A flyer or invite buried in a group chat",
+  "Guests zooming in to read time and address",
+  "Repeated questions about where, when, and what to bring",
+] as const;
+
+const afterItems = [
+  "One polished event page built from the original file",
+  "Structured details people can scan in seconds",
+  "A link you can update instead of resending everything",
+] as const;
+
+const pageIncludes = [
+  "Event title, date, time, and location",
+  "RSVP or sign-up flow",
+  "Links, maps, schedules, and extra notes",
+  "A cleaner mobile experience than a PDF or screenshot",
+  "One shareable destination for the event",
 ] as const;
 
 const faqs = [
   {
     question: "What can I upload?",
     answer:
-      "Snap works with invites, flyers, screenshots, schedules, posters, event graphics, and similar event images people already use to share plans.",
+      "Snap is built for invites, flyers, screenshots, schedules, posters, and PDFs people already use to share event details.",
   },
   {
-    question: "Does Snap work with PDFs?",
+    question: "Does Snap work with PDFs too?",
     answer:
-      "Yes. PDFs are a core part of the workflow alongside camera photos and uploaded images.",
+      "Yes. PDFs are part of the core workflow alongside camera photos and uploaded images.",
   },
   {
-    question: "Can I edit the details after upload?",
+    question: "Can I fix the details before the page goes live?",
     answer:
-      "Yes. Snap speeds up setup, then lets you review and refine details before the page goes live.",
+      "Yes. Snap helps organize the first draft fast, then you can review, edit, and refine the details before sharing.",
   },
   {
-    question: "How fast is it?",
+    question: "What if the AI misses something?",
     answer:
-      "The workflow is designed to go from upload to organized event draft in seconds, then to a polished page after a quick review.",
+      "The page is still editable. Snap is meant to save setup time, not lock you into the first draft.",
   },
   {
-    question: "Is the final page mobile-friendly?",
+    question: "What does the finished page actually give me?",
     answer:
-      "Yes. The final event page is designed to be easier to scan and use on phones than a PDF or screenshot.",
+      "A cleaner mobile-friendly event page with structured details, sharing, and RSVP or sign-up flow in one place.",
   },
   {
-    question: "Can I share the event with others?",
+    question: "Why use this instead of sending the image?",
     answer:
-      "Yes. The goal is one clean shareable page instead of forwarding multiple files, screenshots, and follow-up messages.",
+      "Because an event page is easier to read, easier to revisit, easier to update, and easier for guests to act on than a screenshot or PDF.",
   },
 ] as const;
 
@@ -213,7 +238,7 @@ function BenefitTile({
       >
         {title}
       </h3>
-      <p className="text-sm leading-7 text-white/64">{body}</p>
+      <p className="text-sm leading-7 text-white/68">{body}</p>
     </article>
   );
 }
@@ -225,7 +250,7 @@ function ProcessVisual({ step }: { step: 1 | 2 | 3 }) {
         <div className="rounded-[1.9rem] border border-white bg-white p-5 shadow-[0_18px_42px_rgba(61,37,133,0.08)]">
           <div className="mb-6 flex items-center justify-between">
             <span className="text-[0.65rem] font-bold uppercase tracking-[0.28em] text-[#8d74e8]">
-              Camera Mode
+              Upload source
             </span>
             <Camera className="h-4 w-4 text-[#8d74e8]" />
           </div>
@@ -234,7 +259,7 @@ function ProcessVisual({ step }: { step: 1 | 2 | 3 }) {
               <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-[1.4rem] bg-white text-[#a072ff] shadow-sm">
                 <ImageUp className="h-7 w-7" />
               </div>
-              <p className="mt-4 text-sm font-semibold text-[#9b85d6]">Drop your invite here</p>
+              <p className="mt-4 text-sm font-semibold text-[#9b85d6]">Drop your invite, flyer, or PDF</p>
             </div>
           </div>
         </div>
@@ -271,10 +296,10 @@ function ProcessVisual({ step }: { step: 1 | 2 | 3 }) {
             </div>
             <div className="rounded-2xl border border-[#eee5ff] px-4 py-4">
               <div className="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#9c86d6]">
-                Extras
+                Included
               </div>
               <div className="mt-1 text-sm font-semibold text-[#1f1635]">
-                RSVP, registry link, and guest notes
+                RSVP, links, notes, and event extras
               </div>
             </div>
           </div>
@@ -289,13 +314,13 @@ function ProcessVisual({ step }: { step: 1 | 2 | 3 }) {
         <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#ebfff1] text-[#2bbf6a]">
           <Sparkles className="h-7 w-7" />
         </div>
-        <h3 className="mt-5 text-2xl font-semibold text-[#1f1635]">Event is Live!</h3>
+        <h3 className="mt-5 text-2xl font-semibold text-[#1f1635]">Ready to share</h3>
         <div className="mt-8 space-y-3">
           <div className="rounded-full bg-[#1f1635] px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white">
-            Copy Link
+            Copy Event Link
           </div>
           <div className="rounded-full bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white">
-            Share via WhatsApp
+            Send RSVP Page
           </div>
         </div>
       </div>
@@ -339,7 +364,7 @@ export default function SnapSignupLanding() {
     <main className="min-h-screen w-full overflow-x-clip bg-[#fcfbff] text-[#17132b] selection:bg-[#ddd1ff] selection:text-[#241a52]">
       <HeroTopNav
         navLinks={[
-          { label: "Gymnastics", href: "/landing#gymnastics" },
+          { label: "Gymnastics", href: "/gymnastics" },
           { label: "Snap", href: "#snap" },
           { label: "Features", href: "#features" },
           { label: "FAQ", href: "#faq" },
@@ -363,82 +388,127 @@ export default function SnapSignupLanding() {
           <div className="max-w-2xl">
             <p className="inline-flex items-center gap-2 rounded-full border border-[#e9defe] bg-white/90 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-[#7b5de4] shadow-[0_10px_24px_rgba(124,58,237,0.08)]">
               <Sparkles className="h-4 w-4" />
-              Snap Upload
+              AI Snap Upload
             </p>
 
-            <h1 className="mt-7 text-[clamp(3.2rem,7vw,5.7rem)] font-semibold leading-[0.94] tracking-[-0.06em] text-[#1c1435]">
-              Snap Any Invite
+            <h1 className="mt-7 text-[clamp(3.1rem,7vw,5.7rem)] font-semibold leading-[0.94] tracking-[-0.06em] text-[#1c1435]">
+              From invite
               <br />
-              Into an{" "}
+              to{" "}
               <span className="bg-[linear-gradient(135deg,#6d39ff_0%,#9f5bff_100%)] bg-clip-text italic text-transparent">
-                Event Page
+                event page
               </span>
             </h1>
 
-            <p className="mt-7 max-w-xl text-lg leading-8 text-[#5b5570] sm:text-xl">
-              Upload invites, flyers, schedules, event images, or PDFs. Envitefy uses AI to turn
-              static files into polished digital event pages with RSVPs, links, and clean mobile
-              sharing built in.
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-[#5b5570] sm:text-xl">
+              Upload the flyer, screenshot, schedule, or PDF you already have. Envitefy Snap turns
+              it into a polished event page that is easier to read, easier to share, and easier for
+              guests to respond to.
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-              {renderPrimaryCta("Try Snap Upload")}
-              <SecondaryButton href="#how-it-works">See How It Works</SecondaryButton>
+              {renderPrimaryCta("Create with Snap")}
+              <SecondaryButton href="#how-it-works">See how it works</SecondaryButton>
             </div>
 
-            <div className="mt-8 text-sm font-medium text-[#6b6482]">
-              Works with birthday invites, wedding invites, school flyers, schedules, and PDFs.
+            <div className="mt-8 grid gap-3 text-sm font-medium text-[#5f5974] sm:grid-cols-3">
+              {heroHighlights.map((item) => (
+                <div
+                  key={item}
+                  className="rounded-2xl border border-[#ebe2ff] bg-white/90 px-4 py-4 shadow-[0_10px_28px_rgba(124,58,237,0.06)]"
+                >
+                  {item}
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="relative mx-auto flex w-full max-w-[42rem] items-center justify-center gap-4 sm:gap-8">
-            <div className="relative shrink-0">
-              <div className="absolute -top-5 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-1 text-[0.58rem] font-bold uppercase tracking-[0.24em] text-[#8f74eb] shadow-sm">
-                1. Snap
-              </div>
-              <div className="w-[10.5rem] rotate-[-7deg] rounded-[2rem] border border-white bg-white p-3 shadow-[0_28px_80px_rgba(66,42,140,0.14)] sm:w-[13rem]">
-                <div className="overflow-hidden rounded-[1.5rem]">
-                  <Image
-                    src="/phone-placeholders/birthday-maya.jpeg"
-                    alt="Uploaded invite"
-                    width={520}
-                    height={700}
-                    className="h-auto w-full object-cover"
-                  />
+          <div className="relative mx-auto w-full max-w-[44rem]">
+            <div className="absolute -right-3 top-10 hidden rounded-full bg-white px-4 py-2 text-[0.62rem] font-bold uppercase tracking-[0.24em] text-[#8f74eb] shadow-[0_12px_32px_rgba(66,42,140,0.12)] sm:block">
+              Better than sharing a screenshot
+            </div>
+
+            <div className="grid gap-5 rounded-[2.4rem] border border-white/70 bg-white/80 p-5 shadow-[0_32px_90px_rgba(66,42,140,0.12)] backdrop-blur-xl sm:p-6">
+              <div className="grid items-center gap-4 sm:grid-cols-[0.76fr_1fr]">
+                <div className="rounded-[2rem] border border-[#efe7ff] bg-[#faf7ff] p-4">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.24em] text-[#8f74eb]">
+                    Original file
+                  </p>
+                  <div className="mt-4 overflow-hidden rounded-[1.4rem]">
+                    <Image
+                      src="/phone-placeholders/birthday-maya.jpeg"
+                      alt="Uploaded invite preview"
+                      width={520}
+                      height={700}
+                      className="h-[15rem] w-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-[2rem] border border-[#efe7ff] bg-white p-5 shadow-[0_18px_42px_rgba(61,37,133,0.06)]">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.24em] text-[#8f74eb]">
+                      Structured details
+                    </p>
+                    <Sparkles className="h-4 w-4 text-[#8f74eb]" />
+                  </div>
+
+                  <div className="mt-5 grid gap-3 text-sm font-semibold text-[#22183f]">
+                    <div className="rounded-2xl border border-[#eee5ff] px-4 py-3">
+                      Title: Maya's Birthday Bash
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-[#eee5ff] px-4 py-3">
+                        Date: Sat, Oct 12
+                      </div>
+                      <div className="rounded-2xl border border-[#eee5ff] px-4 py-3">
+                        Time: 7:00 PM
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-[#eee5ff] px-4 py-3">
+                      Address: 123 Maple St.
+                    </div>
+                    <div className="rounded-2xl border border-[#eee5ff] px-4 py-3">
+                      Extras: RSVP, links, notes
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="hidden flex-col items-center sm:flex">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#f0e7ff] text-[#8b5cf6] shadow-[0_16px_32px_rgba(139,92,246,0.18)]">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div className="mt-3 h-24 w-px bg-gradient-to-b from-[#b690ff] to-transparent" />
-              <p className="mt-3 text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#9b89d6]">
-                AI Processing
-              </p>
-            </div>
+              <div className="rounded-[2rem] border border-[#ece4ff] bg-[#24163f] p-5 text-white shadow-[0_22px_52px_rgba(31,22,53,0.18)]">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.24em] text-[#bca8ff]">
+                      Live event page
+                    </p>
+                    <h3 className="mt-2 text-2xl font-semibold">One clean link for guests</h3>
+                  </div>
+                  <div className="rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/86">
+                    Mobile ready
+                  </div>
+                </div>
 
-            <div className="relative shrink-0">
-              <div className="absolute -top-5 right-6 rounded-full bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] px-3 py-1 text-[0.58rem] font-bold uppercase tracking-[0.24em] text-white shadow-[0_12px_26px_rgba(124,58,237,0.24)]">
-                2. Live Event
-              </div>
-              <div className="w-[13.5rem] rotate-[4deg] rounded-[2.8rem] border border-white bg-white p-3 shadow-[0_36px_90px_rgba(66,42,140,0.15)] sm:w-[17rem]">
-                <div className="mb-4 mt-1 h-1.5 w-14 rounded-full bg-[#e8e0fb] mx-auto" />
-                <div className="overflow-hidden rounded-[1.7rem] bg-[#faf8ff] p-4">
-                  <div className="overflow-hidden rounded-[1.25rem]">
+                <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.88fr]">
+                  <div className="overflow-hidden rounded-[1.5rem]">
                     <Image
                       src="/templates/hero-images/general-events-hero.jpeg"
                       alt="Live event page preview"
-                      width={640}
-                      height={360}
-                      className="h-28 w-full object-cover sm:h-36"
+                      width={900}
+                      height={520}
+                      className="h-[14rem] w-full object-cover"
                     />
                   </div>
-                  <div className="mt-4 h-4 w-3/4 rounded-full bg-[#efe8ff]" />
-                  <div className="mt-2 h-3 w-1/2 rounded-full bg-[#f5f0ff]" />
-                  <div className="mt-6 rounded-full bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] px-5 py-3 text-center text-xs font-bold uppercase tracking-[0.18em] text-white">
-                    RSVP Now
+
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-medium text-white/86">
+                      RSVP or sign-up built in
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-medium text-white/86">
+                      Easier to read than a screenshot
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-medium text-white/86">
+                      Update once, then reshare the same link
+                    </div>
                   </div>
                 </div>
               </div>
@@ -451,52 +521,37 @@ export default function SnapSignupLanding() {
         <div className="mx-auto max-w-7xl">
           <SectionHeading
             center
-            title="Anything you snap, we transform."
-            body="Designed for every occasion, from personal parties to professional schedules."
+            eyebrow="Built for real event files"
+            title="Made for the things people already send"
+            body="Snap is not limited to one kind of event. It works across invites, flyers, schedules, and PDFs that already exist."
           />
 
           <div className="mt-16 grid gap-6 md:grid-cols-3">
-            <article className="group md:col-span-2 rounded-[2.5rem] border border-[#ece4ff] bg-white p-8 shadow-[0_24px_60px_rgba(102,76,189,0.08)] transition-all hover:-translate-y-1">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f6efff] text-[#7c3aed]">
-                <PartyPopper className="h-5 w-5" />
-              </div>
-              <h3 className="mt-6 text-3xl font-semibold text-[#1f1635]">Birthday Invitations</h3>
-              <p className="mt-4 max-w-xl text-lg leading-8 text-[#5f5875]">
-                Turn that text-message flyer or photo invite into a beautiful page where guests can
-                RSVP and get the details fast.
-              </p>
-              <div className="mt-10 overflow-hidden rounded-[2rem] shadow-[0_20px_48px_rgba(31,22,53,0.12)]">
-                <Image
-                  src="/templates/birthdays/birthday-bash.webp"
-                  alt="Birthday invitation use case"
-                  width={1400}
-                  height={760}
-                  className="h-[18rem] w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                />
-              </div>
-            </article>
+            {featuredUseCases.map(({ title, body, image, icon: Icon }, index) => (
+              <article
+                key={title}
+                className={`group rounded-[2.5rem] border p-8 shadow-[0_24px_60px_rgba(102,76,189,0.08)] transition-all hover:-translate-y-1 ${
+                  index === 0 ? "md:col-span-2 border-[#ece4ff] bg-white" : "border-[#eadfff] bg-[#f7f2ff]"
+                }`}
+              >
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f6efff] text-[#7c3aed]">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="mt-6 text-3xl font-semibold text-[#1f1635]">{title}</h3>
+                <p className="mt-4 max-w-xl text-lg leading-8 text-[#5f5875]">{body}</p>
+                <div className="mt-10 overflow-hidden rounded-[2rem] shadow-[0_20px_48px_rgba(31,22,53,0.12)]">
+                  <Image
+                    src={image}
+                    alt={`${title} use case`}
+                    width={1400}
+                    height={760}
+                    className="h-[18rem] w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  />
+                </div>
+              </article>
+            ))}
 
-            <article className="rounded-[2.5rem] border border-[#eadfff] bg-[#f7f2ff] p-8 shadow-[0_24px_60px_rgba(102,76,189,0.08)]">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#7c3aed] shadow-sm">
-                <Heart className="h-5 w-5" />
-              </div>
-              <h3 className="mt-6 text-3xl font-semibold text-[#1f1635]">Wedding Invites</h3>
-              <p className="mt-4 text-lg leading-8 text-[#5f5875]">
-                Convert elegant paper invitations into a mobile-first digital home your guests can
-                actually use.
-              </p>
-              <div className="mt-10 overflow-hidden rounded-[2rem] shadow-[0_20px_48px_rgba(31,22,53,0.12)]">
-                <Image
-                  src="/phone-placeholders/wedding-couple.jpeg"
-                  alt="Wedding invitation use case"
-                  width={700}
-                  height={920}
-                  className="h-[18rem] w-full object-cover"
-                />
-              </div>
-            </article>
-
-            {useCaseCards.slice(2).map(({ title, body, icon: Icon }) => (
+            {useCaseCards.map(({ title, body, icon: Icon }) => (
               <article
                 key={title}
                 className="rounded-[2rem] border border-[#ece4ff] bg-white p-7 shadow-[0_20px_48px_rgba(102,76,189,0.06)]"
@@ -514,7 +569,12 @@ export default function SnapSignupLanding() {
 
       <section id="how-it-works" className="px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <SectionHeading center title="The Magic Behind the Snap" />
+          <SectionHeading
+            center
+            eyebrow="How it works"
+            title="From file to finished page in three steps"
+            body="The goal is simple: start with the image or PDF you already have, then turn it into something people can actually use."
+          />
 
           <div className="mt-20 space-y-24">
             <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
@@ -522,10 +582,10 @@ export default function SnapSignupLanding() {
                 <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] text-sm font-bold text-white shadow-[0_16px_30px_rgba(124,58,237,0.24)]">
                   1
                 </div>
-                <h3 className="mt-6 text-4xl font-semibold text-[#1f1635]">Snap or Upload</h3>
+                <h3 className="mt-6 text-4xl font-semibold text-[#1f1635]">Snap or upload</h3>
                 <p className="mt-5 text-lg leading-8 text-[#5f5875]">
-                  Simply take a photo of a printed flyer or upload a digital invitation from your
-                  camera roll. Our AI analyzes the visual elements instantly.
+                  Start with the invite, flyer, screenshot, schedule, or PDF you already have. No
+                  manual setup first, no rebuilding the event from scratch.
                 </p>
               </div>
               <ProcessVisual step={1} />
@@ -539,10 +599,10 @@ export default function SnapSignupLanding() {
                 <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#7c3aed_0%,#944cff_100%)] text-sm font-bold text-white shadow-[0_16px_30px_rgba(124,58,237,0.24)]">
                   2
                 </div>
-                <h3 className="mt-6 text-4xl font-semibold text-[#1f1635]">Review and Edit</h3>
+                <h3 className="mt-6 text-4xl font-semibold text-[#1f1635]">Review what matters</h3>
                 <p className="mt-5 text-lg leading-8 text-[#5f5875]">
-                  Envitefy automatically pulls dates, times, and location data. You can tweak any
-                  details, add extra links, and clean everything up in seconds.
+                  Snap organizes the important details into a draft you can check, edit, and clean
+                  up before the page is shared.
                 </p>
               </div>
             </div>
@@ -553,11 +613,11 @@ export default function SnapSignupLanding() {
                   3
                 </div>
                 <h3 className="mt-6 text-4xl font-semibold text-[#1f1635]">
-                  Save and Share the Page
+                  Publish one link everyone can use
                 </h3>
                 <p className="mt-5 text-lg leading-8 text-[#5f5875]">
-                  Publish your shareable event page. Guests can RSVP with one tap, and the event is
-                  easier to save, revisit, and share.
+                  Share a polished event page instead of forwarding files around. Guests can read,
+                  respond, and come back to the details without digging through messages.
                 </p>
               </div>
               <ProcessVisual step={3} />
@@ -566,38 +626,22 @@ export default function SnapSignupLanding() {
         </div>
       </section>
 
-      <section id="benefits" className="px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl rounded-[3rem] bg-[#24163f] p-8 text-white shadow-[0_32px_90px_rgba(31,22,53,0.18)] sm:p-12 lg:p-16">
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {benefitCards.map((card) => (
-              <BenefitTile key={card.title} icon={card.icon} title={card.title} body={card.body} />
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <SectionHeading
             center
-            eyebrow="Product proof"
-            title="What the finished page gives people"
-            body="Use the uploaded image as the starting point, then publish a page that is easier to read, easier to share, and easier to update."
+            eyebrow="Why it converts better"
+            title="A better outcome than sending the file alone"
+            body="The original invite still matters. Snap just turns it into something more useful after the first share."
           />
 
           <div className="mt-16 grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
             <article className="rounded-[2.4rem] border border-[#ece4ff] bg-white p-8 shadow-[0_24px_60px_rgba(102,76,189,0.08)]">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-[1.8rem] border border-[#ece4ff] bg-[#faf7ff] p-6">
-                  <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#8b74de]">
-                    Before
-                  </p>
+                  <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#8b74de]">Before</p>
                   <div className="mt-5 space-y-3">
-                    {[
-                      "A screenshot in a group chat",
-                      "A flyer guests have to zoom into",
-                      "Repeated questions about time and location",
-                    ].map((item) => (
+                    {beforeItems.map((item) => (
                       <div
                         key={item}
                         className="rounded-2xl border border-[#e9defe] bg-white px-4 py-3 text-sm font-medium text-[#524a6d]"
@@ -609,15 +653,9 @@ export default function SnapSignupLanding() {
                 </div>
 
                 <div className="rounded-[1.8rem] border border-[#24163f] bg-[#24163f] p-6 text-white">
-                  <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#bca8ff]">
-                    After
-                  </p>
+                  <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#bca8ff]">After</p>
                   <div className="mt-5 space-y-3">
-                    {[
-                      "One clean mobile-friendly event page",
-                      "Structured details guests can actually scan",
-                      "A link you can update instead of resend",
-                    ].map((item) => (
+                    {afterItems.map((item) => (
                       <div
                         key={item}
                         className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white/90"
@@ -631,15 +669,9 @@ export default function SnapSignupLanding() {
             </article>
 
             <article className="rounded-[2.4rem] border border-[#ece4ff] bg-[#faf7ff] p-8 shadow-[0_24px_60px_rgba(102,76,189,0.08)]">
-              <h3 className="text-3xl font-semibold text-[#1f1635]">Included on the page</h3>
+              <h3 className="text-3xl font-semibold text-[#1f1635]">What the page gives guests</h3>
               <div className="mt-8 space-y-3">
-                {[
-                  "Event title, date, time, and location",
-                  "Clean mobile-ready layout",
-                  "RSVP or sign-up flow",
-                  "Links, maps, schedules, and extra notes",
-                  "One shareable destination for the event",
-                ].map((item) => (
+                {pageIncludes.map((item) => (
                   <div
                     key={item}
                     className="flex items-center gap-3 rounded-2xl border border-[#ece4ff] bg-white px-4 py-3 text-sm font-semibold text-[#2a2148] shadow-sm"
@@ -654,6 +686,25 @@ export default function SnapSignupLanding() {
         </div>
       </section>
 
+      <section id="benefits" className="px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl rounded-[3rem] bg-[#24163f] p-8 text-white shadow-[0_32px_90px_rgba(31,22,53,0.18)] sm:p-12 lg:p-16">
+          <div className="max-w-3xl">
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[#bca8ff]">
+              What Snap improves
+            </p>
+            <h2 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
+              More useful than a screenshot. Less work than rebuilding the event.
+            </h2>
+          </div>
+
+          <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {benefitCards.map((card) => (
+              <BenefitTile key={card.title} icon={card.icon} title={card.title} body={card.body} />
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section
         id="faq"
         className="bg-[linear-gradient(180deg,#faf7ff_0%,#ffffff_100%)] px-4 py-24 sm:px-6 lg:px-8"
@@ -662,8 +713,8 @@ export default function SnapSignupLanding() {
           <SectionHeading
             center
             eyebrow="FAQ"
-            title="Questions people ask before they click"
-            body="The answers should stay specific, useful, and grounded in what Snap actually does."
+            title="Questions people ask before they try Snap"
+            body="Short answers, grounded in what the product actually does."
           />
 
           <div className="mt-14 space-y-4">
@@ -712,14 +763,14 @@ export default function SnapSignupLanding() {
             Final CTA
           </p>
           <h2 className="mt-5 text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
-            Snap it. Upload it. Turn it into an event page.
+            Start with the file. End with a page people will actually use.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/84">
-            Start with the invite or file you already have. Let Envitefy organize the details and
-            make the event easier to share.
+            Upload the invite, flyer, screenshot, schedule, or PDF you already have and turn it
+            into one clean destination for the event.
           </p>
           <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-            {renderPrimaryCta("Try Snap Upload", true)}
+            {renderPrimaryCta("Try Snap now", true)}
             <SecondaryButton href="#how-it-works">See the workflow</SecondaryButton>
           </div>
         </div>
