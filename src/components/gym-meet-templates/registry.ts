@@ -4,8 +4,27 @@ import { GymMeetPageTemplateMeta, GymMeetTemplateId } from "./types";
 
 export const DEFAULT_GYM_MEET_TEMPLATE_ID: GymMeetTemplateId =
   "launchpad-editorial";
+export const DEFAULT_NEW_GYM_MEET_TEMPLATE_ID: GymMeetTemplateId =
+  "meet-app-shell";
 
 export const GYM_MEET_TEMPLATE_LIBRARY: GymMeetPageTemplateMeta[] = [
+  {
+    id: "meet-app-shell",
+    name: "Meet App Shell",
+    style: "Mobile Native / App Shell",
+    description:
+      "Phone-first shell with a stronger CTA, bottom tabs, and stacked meet-day cards.",
+    group: "current",
+    layoutFamily: "app-shell",
+    thumbnailMode: "rendered-card",
+    previewTitle: "State Meet Live",
+    previewKicker: "Phone First",
+    previewClassName:
+      "bg-[linear-gradient(165deg,#0f172a_0%,#111827_45%,#7c3aed_100%)] text-white",
+    previewAccentClassName: "text-violet-200",
+    titleTypographyId: "manrope",
+    previewTitleClassName: "font-sans font-extrabold tracking-tight text-white",
+  },
   {
     id: "launchpad-editorial",
     name: "Launchpad Editorial",

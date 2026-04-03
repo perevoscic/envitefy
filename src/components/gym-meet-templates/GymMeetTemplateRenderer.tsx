@@ -6,6 +6,7 @@ import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   resolveGymMeetTemplateId,
 } from "./registry";
+import MeetAppShellTemplate from "./renderers/MeetAppShellTemplate";
 import LaunchpadEditorialTemplate from "./renderers/LaunchpadEditorialTemplate";
 import BentoBoxTemplate from "./renderers/BentoBoxTemplate";
 import BlueprintTechTemplate from "./renderers/BlueprintTechTemplate";
@@ -51,6 +52,8 @@ export default function GymMeetTemplateRenderer(props: any) {
     DEFAULT_GYM_MEET_TEMPLATE_ID;
 
   switch (pageTemplateId) {
+    case "meet-app-shell":
+      return <MeetAppShellTemplate {...props} />;
     case "launchpad-editorial":
       return <LaunchpadEditorialTemplate {...props} />;
     case "bento-box":

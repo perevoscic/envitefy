@@ -3,6 +3,7 @@
 import React from "react";
 
 export type GymMeetTemplateId =
+  | "meet-app-shell"
   | "launchpad-editorial"
   | "elite-athlete"
   | "bento-box"
@@ -49,7 +50,11 @@ export type GymMeetTemplateGroup =
   | "editorial"
   | "dashboard";
 
-export type GymMeetTemplateLayoutFamily = "standard" | "editorial" | "dashboard";
+export type GymMeetTemplateLayoutFamily =
+  | "standard"
+  | "editorial"
+  | "dashboard"
+  | "app-shell";
 
 export type GymMeetTitleTypographyId =
   | "anton"

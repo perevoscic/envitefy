@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import GymnasticsHeroBackground from "./GymnasticsHeroBackground";
 import Link from "next/link";
 import Image from "next/image";
@@ -10,21 +11,131 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
-  ChevronRight,
-  Clock3,
-  Globe,
   Hotel,
   MapPinned,
   MessageSquare,
+  RefreshCw,
   Sparkles,
   Trophy,
   Upload,
   Users,
-  ClipboardList,
   Share2,
   Shield,
   Smartphone,
 } from "lucide-react";
+
+const heroImages = {
+  gymnastAction: "/images/gymnastic-hero.png",
+  attendeeAvatars: [
+    "https://i.pravatar.cc/100?img=11",
+    "https://i.pravatar.cc/100?img=12",
+    "https://i.pravatar.cc/100?img=13",
+  ],
+};
+
+type HeroStat = {
+  value: number;
+  suffix: string;
+  label: string;
+};
+
+const heroStats: HeroStat[] = [
+  { value: 500, suffix: "+", label: "Meets hosted" },
+  { value: 50, suffix: "k+", label: "Families reached" },
+  { value: 99, suffix: "%", label: "Mobile-ready experience" },
+];
+
+const heroAnimations = `
+@keyframes gymnasticsHeroFloatUp {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes gymnasticsHeroFloatDown {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(12px); }
+}
+`;
+
+function useInViewOnce<T extends HTMLElement>(threshold = 0.35) {
+  const ref = useRef<T | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || isVisible) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [isVisible, threshold]);
+
+  return { ref, isVisible };
+}
+
+function HeroStatValue({
+  value,
+  suffix,
+  duration = 1400,
+  delay = 0,
+}: {
+  value: number;
+  suffix: string;
+  duration?: number;
+  delay?: number;
+}) {
+  const { ref, isVisible } = useInViewOnce<HTMLSpanElement>(0.4);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    let frameId = 0;
+    let timeoutId: number | null = null;
+
+    const startAnimation = () => {
+      const startTime = performance.now();
+
+      const tick = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - (1 - progress) ** 3;
+
+        setCount(Math.round(value * eased));
+
+        if (progress < 1) {
+          frameId = window.requestAnimationFrame(tick);
+        }
+      };
+
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    timeoutId = window.setTimeout(startAnimation, delay);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [delay, duration, isVisible, value]);
+
+  return (
+    <span ref={ref}>
+      {count}
+      {suffix}
+    </span>
+  );
+}
 
 /* ─── trust strip logos (text-based, no images needed) ─── */
 const trustItems = [
@@ -111,7 +222,7 @@ function FeatureFlipCard({ f }: { f: (typeof features)[number] }) {
 
   return (
     <article
-      className="group cursor-pointer"
+      className="group relative cursor-pointer transition-transform duration-300 hover:-translate-y-1"
       style={{ perspective: "1000px" }}
       onClick={() => setFlipped((prev) => !prev)}
     >
@@ -127,14 +238,21 @@ function FeatureFlipCard({ f }: { f: (typeof features)[number] }) {
       >
         {/* ─── FRONT ─── */}
         <div
-          className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-shadow duration-300 ease-out hover:shadow-lg hover:shadow-indigo-500/5"
+          className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 ease-out group-hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
           style={{ backfaceVisibility: "hidden", minHeight: "260px" }}
         >
+          <div className="pointer-events-none absolute inset-0 rounded-2xl bg-violet-500/0 transition duration-300 group-hover:bg-violet-500/5" />
           {/* accent gradient bg */}
           <div
             className={`absolute inset-0 bg-gradient-to-br ${f.accent} opacity-0 transition-opacity duration-300 group-hover:opacity-100`}
           />
-          <div className="relative">
+          <div
+            aria-hidden="true"
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-400 opacity-40 shadow-sm transition-all duration-300 group-hover:-translate-y-0.5 group-hover:opacity-70"
+          >
+            <RefreshCw className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
+          </div>
+          <div className="relative flex h-full flex-col lg:-mt-20">
             <div
               className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${f.accent} ${f.iconColor}`}
             >
@@ -147,10 +265,6 @@ function FeatureFlipCard({ f }: { f: (typeof features)[number] }) {
               {f.title}
             </h3>
             <p className="mt-2.5 text-sm leading-6 text-slate-500">{f.copy}</p>
-            <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-indigo-600 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100">
-              Tap to learn more
-              <ChevronRight className="h-4 w-4" />
-            </div>
           </div>
         </div>
 
@@ -180,10 +294,6 @@ function FeatureFlipCard({ f }: { f: (typeof features)[number] }) {
             <p className="mt-4 flex-1 text-sm leading-6 text-white/85">
               {f.backCopy}
             </p>
-            <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-white/70">
-              Tap to flip back
-              <ChevronRight className="h-3.5 w-3.5" />
-            </div>
           </div>
         </div>
       </div>
@@ -192,8 +302,10 @@ function FeatureFlipCard({ f }: { f: (typeof features)[number] }) {
 }
 
 export default function GymnasticsLanding() {
+  const { status } = useSession();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
+  const isAuthenticated = status === "authenticated";
 
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
@@ -202,6 +314,8 @@ export default function GymnasticsLanding() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#fafbfe] text-[#0f172a] selection:bg-indigo-200 selection:text-indigo-900">
+      <style>{heroAnimations}</style>
+
       {/* page background sits behind the sticky nav and hero */}
       <div
         aria-hidden="true"
@@ -224,271 +338,206 @@ export default function GymnasticsLanding() {
 
       {/* ═══ HERO ═══ */}
       <section id="hero" className="relative z-10 scroll-mt-20 overflow-hidden">
-        <div className="relative z-10 mx-auto max-w-[1400px] px-4 pb-20 pt-16 sm:px-6 lg:px-8 lg:pb-28 lg:pt-24">
-          {/* centered hero content */}
-          <div className="mx-auto max-w-4xl text-center">
-            {/* social proof chip */}
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-indigo-100 bg-white px-4 py-2 shadow-sm">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500">
-                <span className="inline-flex h-2 w-2 animate-ping rounded-full bg-emerald-400 opacity-75" />
-              </span>
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Trusted by gymnastics families nationwide
-              </span>
-            </div>
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-full">
+          <div className="absolute left-[-8%] top-[8%] h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(124,58,237,0.16),transparent_68%)] blur-3xl" />
+          <div className="absolute bottom-[8%] right-[-10%] h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.12),transparent_70%)] blur-3xl" />
+        </div>
 
-            {/* headline */}
+        <div className="relative z-10 mx-auto grid max-w-[1400px] items-center gap-16 px-4 pb-20 pt-20 sm:px-6 md:pt-28 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:gap-20 lg:px-8 lg:pb-28 lg:pt-32">
+          <div className="max-w-2xl">
             <h1
-              className="mx-auto mt-8 max-w-[18ch] text-[clamp(2.8rem,6.5vw,5.5rem)] font-extrabold leading-[0.95] tracking-[-0.04em] text-slate-900"
+              className="max-w-[11ch] text-[clamp(3.15rem,7vw,6.3rem)] font-extrabold leading-[0.96] tracking-[-0.05em] text-slate-900"
               style={{ fontFamily: "inherit" }}
             >
-              Organize every{" "}
-              <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 bg-clip-text text-transparent">
-                gymnastics meet
+              <span className="inline-block whitespace-nowrap text-[0.94em]">
+                Elevate Your
               </span>{" "}
-              in one place
+              <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 bg-clip-text italic text-transparent">
+                Gymnastics Meet
+              </span>{" "}
+              Experience.
             </h1>
 
-            {/* subheadline */}
-            <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-slate-500 sm:text-xl sm:leading-9">
-              Envitefy turns meet schedules, venue details, hotel blocks, and
-              team updates into one polished page that parents, coaches, and
-              athletes can actually rely on.
+            <p className="mt-8 max-w-xl text-lg font-medium leading-8 text-slate-500 sm:text-xl sm:leading-9">
+              From local qualifiers to national championships, Envitefy turns
+              competition details into interactive, mobile-first meet pages with
+              venue details, team communication, and shareable updates.
             </p>
 
-            {/* CTA row */}
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                href="/event/gymnastics"
-                className="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-4.5 text-base font-semibold text-white shadow-xl shadow-indigo-500/25 transition hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-indigo-500/30"
-              >
-                Start Your Meet Page
-                <ArrowRight className="h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
-              </Link>
+            <div className="mt-11 flex flex-col gap-4 sm:flex-row">
+              {isAuthenticated ? (
+                <Link
+                  href="/event/gymnastics"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#7c3aed_0%,#8b5cf6_55%,#9f67ff_100%)] px-8 py-4 text-base font-semibold text-white shadow-[0_24px_50px_rgba(124,58,237,0.34)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_56px_rgba(124,58,237,0.4)]"
+                >
+                  Create Your Meet
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => openAuth("signup")}
+                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#7c3aed_0%,#8b5cf6_55%,#9f67ff_100%)] px-8 py-4 text-base font-semibold text-white shadow-[0_24px_50px_rgba(124,58,237,0.34)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_56px_rgba(124,58,237,0.4)]"
+                >
+                  Create Your Meet
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                </button>
+              )}
+
               <a
                 href="#how-it-works"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-8 py-4.5 text-base font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/90 px-8 py-4 text-base font-semibold text-slate-700 shadow-sm backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-md"
               >
                 See How It Works
               </a>
             </div>
-
-            {/* feature chips */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-              {[
-                "Schedules",
-                "Venue Maps",
-                "Hotel Blocks",
-                "Team Updates",
-                "Spectator Info",
-              ].map((chip) => (
-                <span
-                  key={chip}
-                  className="rounded-full border border-slate-100 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-500 shadow-sm"
-                >
-                  {chip}
-                </span>
-              ))}
-            </div>
           </div>
 
-          {/* ─── product preview mockup ─── */}
-          <div className="relative mx-auto mt-16 max-w-[1200px] lg:mt-20">
-            {/* subtle glow behind mockup */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-x-0 -top-8 h-[120%] rounded-[3rem] bg-gradient-to-b from-indigo-50/80 via-white/40 to-transparent"
-            />
+          <div className="relative">
+            <div className="absolute inset-0 rounded-[3rem] bg-[radial-gradient(circle,rgba(124,58,237,0.18),transparent_68%)] blur-3xl" />
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/60 bg-white p-1.5 shadow-2xl shadow-slate-900/8 sm:rounded-[2.5rem] sm:p-2">
-              {/* browser chrome bar */}
-              <div className="flex items-center gap-2 rounded-t-[1.75rem] bg-slate-50 px-4 py-3 sm:rounded-t-[2rem] sm:px-6">
-                <div className="flex gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-slate-200" />
-                  <div className="h-3 w-3 rounded-full bg-slate-200" />
-                  <div className="h-3 w-3 rounded-full bg-slate-200" />
-                </div>
-                <div className="mx-auto flex max-w-md flex-1 items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-xs text-slate-400 shadow-sm">
-                  <Globe className="h-3 w-3" />
-                  envitefy.com/meet/summit-invitational
+            <div className="relative mx-auto aspect-[4/5] w-full max-w-md">
+              <div className="absolute left-8 top-0 z-20 inline-flex -translate-y-1/2 items-center gap-2 rounded-full border border-white/70 bg-white/92 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.24em] text-indigo-700 shadow-[0_18px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+                <Trophy className="h-4 w-4" />
+                Elite Sports Management
+              </div>
+
+              <div className="group relative h-full overflow-hidden rounded-[2.75rem] border border-white/70 bg-white/90 p-4 shadow-[0_40px_90px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/72 via-slate-900/10 to-transparent opacity-90" />
+
+                <img
+                  src={heroImages.gymnastAction}
+                  alt="Gymnast in action"
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full rounded-[2.1rem] object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+
+                <div className="absolute inset-x-8 bottom-8 z-10 space-y-5">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md">
+                      Live Event
+                    </span>
+                    <div className="flex -space-x-2">
+                      {heroImages.attendeeAvatars.map((avatar, index) => (
+                        <div
+                          key={avatar}
+                          className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white/80 shadow-sm"
+                        >
+                          <img
+                            src={avatar}
+                            alt={`Attendee ${index + 1}`}
+                            referrerPolicy="no-referrer"
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-violet-600 text-[10px] font-bold text-white shadow-sm">
+                        +12
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2
+                      className="max-w-[12ch] text-3xl font-bold leading-tight tracking-[-0.03em] text-white sm:text-[2rem]"
+                      style={{ color: "#fff", fontFamily: "inherit" }}
+                    >
+                      2026 Regional Gymnastics Invitational
+                    </h2>
+                  </div>
+
+                  <div className="grid gap-3 text-sm font-medium text-white/90 sm:grid-cols-2">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-violet-300" />
+                      <span>Apr 18-20, 2027</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPinned className="h-4 w-4 text-violet-300" />
+                      <span>Aurora Convention Hall</span>
+                    </div>
+                  </div>
+
+                  {isAuthenticated ? (
+                    <Link
+                      href="/event/gymnastics"
+                      className="inline-flex w-full items-center justify-center rounded-[1.2rem] bg-white px-6 py-4 text-base font-semibold text-slate-900 shadow-lg transition hover:bg-violet-600 hover:text-white"
+                    >
+                      Digitize Your Meet
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openAuth("signup")}
+                      className="inline-flex w-full items-center justify-center rounded-[1.2rem] bg-white px-6 py-4 text-base font-semibold text-slate-900 shadow-lg transition hover:bg-violet-600 hover:text-white"
+                    >
+                      Digitize Your Meet
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* dashboard content */}
-              <div className="rounded-b-[1.75rem] bg-gradient-to-b from-slate-50 to-white p-4 sm:rounded-b-[2rem] sm:p-6 lg:p-8">
-                <div className="grid gap-5 lg:grid-cols-[1fr_0.42fr]">
-                  {/* main panel */}
-                  <div className="space-y-5">
-                    {/* event header */}
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
-                          Public Meet Page
-                        </p>
-                        <h3
-                          className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl"
-                          style={{ fontFamily: "inherit" }}
-                        >
-                          Summit Invitational
-                        </h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                          Aurora Convention Hall · April 18–20, 2026
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* session schedule card */}
-                    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <CalendarDays className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                              Session 2
-                            </p>
-                            <p className="text-base font-semibold text-slate-900">
-                              Level 7 & Xcel Gold
-                            </p>
-                          </div>
-                        </div>
-                        <Clock3 className="hidden h-5 w-5 text-slate-300 sm:block" />
-                      </div>
-
-                      <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
-                        {[
-                          ["Check-in", "7:10 AM"],
-                          ["Warm-up", "7:35 AM"],
-                          ["Awards", "11:40 AM"],
-                        ].map(([label, time]) => (
-                          <div
-                            key={label}
-                            className="rounded-xl bg-slate-50 px-3.5 py-3"
-                          >
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                              {label}
-                            </p>
-                            <p className="mt-1.5 text-sm font-semibold text-slate-800">
-                              {time}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* venue + travel row */}
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                            <MapPinned className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                              Venue
-                            </p>
-                            <p className="text-sm font-semibold text-slate-900">
-                              Aurora Convention Hall
-                            </p>
-                          </div>
-                        </div>
-                        <p className="mt-3 text-sm leading-6 text-slate-500">
-                          West lobby entry · Upper balcony seating
-                        </p>
-                      </div>
-
-                      <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-600">
-                            <Hotel className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                              Travel
-                            </p>
-                            <p className="text-sm font-semibold text-slate-900">
-                              Block closes March 26
-                            </p>
-                          </div>
-                        </div>
-                        <p className="mt-3 text-sm leading-6 text-slate-500">
-                          Booking link · Shuttle schedule
-                        </p>
-                      </div>
-                    </div>
+              <div
+                className="absolute -right-3 top-8 hidden rounded-[1.75rem] border border-white/70 bg-white/88 p-4 shadow-[0_20px_44px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:block lg:-right-10"
+                style={{
+                  animation: "gymnasticsHeroFloatUp 4.2s ease-in-out infinite",
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                    <Check className="h-5 w-5" />
                   </div>
-
-                  {/* side panel */}
-                  <div className="hidden space-y-4 lg:block">
-                    {/* spectator guide card */}
-                    <div className="rounded-2xl border border-slate-100 bg-gradient-to-b from-white to-slate-50 p-5 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-pink-600">
-                          <ClipboardList className="h-5 w-5" />
-                        </div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          Spectator Guide
-                        </p>
-                      </div>
-                      <div className="mt-4 space-y-2.5">
-                        {[
-                          "West lobby entry",
-                          "Upper balcony seating",
-                          "Concessions level 2",
-                        ].map((note) => (
-                          <div
-                            key={note}
-                            className="rounded-xl bg-white px-3 py-2.5 text-sm text-slate-500 shadow-sm"
-                          >
-                            {note}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* quick info */}
-                    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Quick share
-                      </p>
-                      <div className="mt-3 flex items-center justify-between">
-                        <p className="text-sm text-slate-500">
-                          One link for all families
-                        </p>
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                          <Share2 className="h-4 w-4" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* tag chips */}
-                    <div className="flex flex-wrap gap-2">
-                      {["Schedule", "Venue", "Hotels", "Maps"].map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-lg border border-slate-100 bg-white px-2.5 py-1 text-xs font-medium text-slate-500 shadow-sm"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                      Status
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      Updates Ready
+                    </p>
                   </div>
                 </div>
+              </div>
 
-                {/* bottom bar */}
-                <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Globe className="h-4 w-4 text-indigo-500" />
-                    Shareable public meet page
+              <div
+                className="absolute -left-3 bottom-20 hidden rounded-[1.75rem] border border-white/70 bg-white/88 p-4 shadow-[0_20px_44px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:block lg:-left-14"
+                style={{
+                  animation: "gymnasticsHeroFloatDown 5s ease-in-out infinite",
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                    <Users className="h-5 w-5" />
                   </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3.5 py-2 text-xs font-semibold text-white">
-                    View Meet
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </span>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                      Attendees
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      1,240 Registered
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-[1400px] px-4 pb-6 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-2xl flex-wrap items-start justify-center gap-x-14 gap-y-6 border-t border-slate-200/70 pt-8 text-center">
+            {heroStats.map((stat, index) => (
+              <div key={stat.label} className="min-w-[120px]">
+                <p className="text-3xl font-extrabold tracking-[-0.04em] text-slate-900">
+                  <HeroStatValue
+                    value={stat.value}
+                    suffix={stat.suffix}
+                    duration={1400}
+                    delay={index * 120}
+                  />
+                </p>
+                <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -513,7 +562,10 @@ export default function GymnasticsLanding() {
       </section>
 
       {/* ═══ FEATURES ═══ */}
-      <section id="features" className="scroll-mt-20 py-20 lg:py-28">
+      <section
+        id="features"
+        className="relative isolate scroll-mt-20 bg-[#fafbfe] py-20 lg:py-28"
+      >
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           {/* section header */}
           <div className="mx-auto max-w-2xl text-center">

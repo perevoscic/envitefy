@@ -159,3 +159,28 @@ test("hero address rendering falls back to parsed and map addresses when eventDa
     );
   }
 });
+
+test("new meet app shell stays the first picker option while launchpad remains the legacy fallback", () => {
+  const registrySource = readSource(
+    "src/components/gym-meet-templates/registry.ts"
+  );
+  const selectorSource = readSource(
+    "src/components/gym-meet-templates/TemplateSelector.tsx"
+  );
+
+  assert.match(
+    registrySource,
+    /DEFAULT_GYM_MEET_TEMPLATE_ID:\s*GymMeetTemplateId\s*=\s*"launchpad-editorial"/,
+    "registry.ts changed the legacy gym meet fallback unexpectedly"
+  );
+  assert.match(
+    registrySource,
+    /DEFAULT_NEW_GYM_MEET_TEMPLATE_ID:\s*GymMeetTemplateId\s*=\s*"meet-app-shell"/,
+    "registry.ts no longer pins the new meet default template id"
+  );
+  assert.match(
+    selectorSource,
+    /const FEATURED_TEMPLATE_IDS: GymMeetTemplateId\[] = \[\s*"meet-app-shell",\s*"launchpad-editorial"/,
+    "TemplateSelector.tsx no longer keeps the meet app shell first in the featured picker"
+  );
+});

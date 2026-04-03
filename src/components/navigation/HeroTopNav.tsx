@@ -86,7 +86,7 @@ export default function HeroTopNav({
         isScrolled ? "drop-shadow-[0_18px_44px_rgba(87,67,157,0.14)]" : ""
       }`}
     >
-      <div className="relative mx-auto max-w-7xl">
+      <div className="relative mx-auto max-w-[1400px]">
         <div className="rounded-full border border-white/90 bg-white/96 px-4 py-3 shadow-[0_18px_44px_rgba(87,67,157,0.1)] backdrop-blur-xl sm:px-6">
           <div className="flex items-center justify-between gap-4">
             <Link

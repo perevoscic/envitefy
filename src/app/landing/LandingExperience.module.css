@@ -189,8 +189,13 @@
 
 .weddingStack {
   position: relative;
-  width: min(100%, 22rem);
-  min-height: 19.5rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 0.8rem;
+  width: min(100%, 18.75rem);
+  min-height: auto;
   overflow: visible;
   isolation: isolate;
 }
@@ -198,14 +203,13 @@
 .weddingInviteLayer,
 .weddingPhoneLayer,
 .weddingStackConnector {
-  position: absolute;
+  position: static;
 }
 
 .weddingInviteLayer {
-  left: 0;
-  bottom: 0.8rem;
   z-index: 1;
-  width: min(13rem, 68%);
+  width: min(7.8rem, 42%);
+  flex: 0 0 auto;
   transform-origin: center bottom;
 }
 
@@ -225,45 +229,34 @@
 }
 
 .weddingPhoneLayer {
-  top: 0;
-  right: 0.15rem;
   z-index: 3;
-  width: min(10.75rem, 58%);
+  width: min(9rem, 48%);
+  flex: 0 0 auto;
+  margin-top: 2rem;
   transform-origin: center center;
 }
 
 .weddingPhoneShell {
   position: relative;
   border-radius: 2.15rem;
-  padding: 0.42rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f2edf8 100%);
+  padding: 0;
+  background: transparent;
   transform: rotate(3.8deg);
   box-shadow:
     0 24px 46px rgba(31, 22, 53, 0.12),
-    0 12px 24px rgba(31, 22, 53, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88),
-    inset 0 -1px 0 rgba(31, 22, 53, 0.06);
+    0 12px 24px rgba(31, 22, 53, 0.08);
   transition:
     transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .weddingPhoneShell::before {
-  content: "";
-  position: absolute;
-  top: 0.6rem;
-  left: 50%;
-  z-index: 2;
-  width: 28%;
-  height: 0.24rem;
-  border-radius: 999px;
-  background: rgba(31, 22, 53, 0.12);
-  transform: translateX(-50%);
+  display: none;
 }
 
 .weddingPhoneFrame {
   overflow: hidden;
-  border-radius: 1.8rem;
+  border-radius: 2.15rem;
   background: #f7f3fb;
 }
 
@@ -277,21 +270,11 @@
   transform: rotate(3.8deg) translateY(-4px);
   box-shadow:
     0 28px 58px rgba(31, 22, 53, 0.15),
-    0 16px 28px rgba(31, 22, 53, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(31, 22, 53, 0.06);
+    0 16px 28px rgba(31, 22, 53, 0.1);
 }
 
 .weddingStackConnector {
-  top: calc(47% - 2.25rem);
-  left: calc(52% - 2.25rem);
-  z-index: 2;
-  display: flex;
-  height: 4.5rem;
-  width: 4.5rem;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+  display: none;
 }
 
 .weddingStackConnector::before,
@@ -654,20 +637,6 @@
 }
 
 @media (min-width: 640px) {
-  .weddingStack {
-    width: min(100%, 23rem);
-    min-height: 21rem;
-  }
-
-  .weddingInviteLayer {
-    bottom: 0.35rem;
-    width: min(13.75rem, 68%);
-  }
-
-  .weddingPhoneLayer {
-    width: min(11.4rem, 58%);
-  }
-
   .gymnasticsLayout {
     padding: 2rem;
   }
@@ -699,6 +668,42 @@
 
   .gymnasticsBulletGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .weddingStack {
+    display: block;
+    width: min(100%, 23rem);
+    min-height: 21rem;
+  }
+
+  .weddingInviteLayer {
+    position: absolute;
+    left: 0;
+    bottom: 0.35rem;
+    width: min(13.75rem, 68%);
+  }
+
+  .weddingPhoneLayer {
+    position: absolute;
+    top: 0;
+    right: 0.15rem;
+    width: min(11.4rem, 58%);
+    margin-top: 0;
+  }
+
+  .weddingStackConnector {
+    position: absolute;
+    top: calc(47% - 2.25rem);
+    left: calc(52% - 2.25rem);
+    z-index: 2;
+    display: flex;
+    height: 4.5rem;
+    width: 4.5rem;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
   }
 }
 

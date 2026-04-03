@@ -1,4 +1,7 @@
-import { DEFAULT_GYM_MEET_TEMPLATE_ID } from "@/components/gym-meet-templates/registry";
+import {
+  DEFAULT_GYM_MEET_TEMPLATE_ID,
+  DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+} from "@/components/gym-meet-templates/registry";
 import { getEventHistoryById } from "@/lib/db";
 import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
 import { safeString, uniqueStrings } from "@/lib/discovery/shared";
@@ -25,7 +28,7 @@ export function buildGymBuilderDraft(params: {
   return {
     event: {
       ...mappedData,
-      pageTemplateId: safeString(mappedData.pageTemplateId) || DEFAULT_GYM_MEET_TEMPLATE_ID,
+      pageTemplateId: safeString(mappedData.pageTemplateId) || DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
       templateId: safeString(mappedData.templateId) || "gymnastics-schedule",
       createdVia: "meet-discovery-v2",
       category: "gymnastics",
