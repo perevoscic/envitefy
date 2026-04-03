@@ -87,6 +87,15 @@ function collectGalleryEntries(entries: EventMediaEntry[], source: any): void {
   }
 }
 
+function collectSignupHeaderEntries(entries: EventMediaEntry[], source: any): void {
+  const images = source?.signupForm?.header?.images;
+  if (!Array.isArray(images)) return;
+  for (let index = 0; index < images.length; index += 1) {
+    addEntry(entries, source, ["signupForm", "header", "images", index, "dataUrl"]);
+    addEntry(entries, source, ["signupForm", "header", "images", index, "thumbnailUrl"]);
+  }
+}
+
 export function listEventMediaEntries(source: unknown): EventMediaEntry[] {
   if (!source || typeof source !== "object") return [];
   const entries: EventMediaEntry[] = [];
@@ -94,6 +103,7 @@ export function listEventMediaEntries(source: unknown): EventMediaEntry[] {
     addEntry(entries, source, pathSegments);
   }
   collectGalleryEntries(entries, source);
+  collectSignupHeaderEntries(entries, source);
   return entries;
 }
 

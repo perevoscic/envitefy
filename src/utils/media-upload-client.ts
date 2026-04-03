@@ -7,6 +7,7 @@ import {
   resolveAttachmentPreviewUrl,
   validateUploadFileMeta,
 } from "@/lib/upload-config";
+import type { SignupHeaderImageAsset } from "@/types/signup";
 
 export function validateClientUploadFile(file: File, usage: UploadUsage): string | null {
   const validation = validateUploadFileMeta({
@@ -54,6 +55,34 @@ export async function uploadMediaFile(params: {
     );
   }
   return json as UploadResponse;
+}
+
+export function signupHeaderImageFromUpload(
+  upload: UploadResponse,
+  fallbackName = "image.webp",
+): SignupHeaderImageAsset {
+  return {
+    name: upload.eventMedia.attachment?.name || fallbackName,
+    type: upload.stored.display?.mimeType || "image/webp",
+    dataUrl: upload.stored.display?.url || upload.eventMedia.thumbnail || "",
+    thumbnailUrl: upload.stored.thumb?.url || upload.eventMedia.thumbnail || null,
+    sizeBytes: upload.stored.display?.sizeBytes ?? null,
+    width: upload.stored.display?.width ?? null,
+    height: upload.stored.display?.height ?? null,
+    originalName: upload.original.name || fallbackName,
+    originalType: upload.original.mimeType || null,
+    originalSizeBytes: upload.original.sizeBytes ?? null,
+    optimizedFromMimeType:
+      upload.eventMedia.attachment?.optimizedFromMimeType || upload.original.mimeType || null,
+  };
+}
+
+export async function uploadSignupHeaderImage(file: File): Promise<SignupHeaderImageAsset> {
+  const upload = await uploadMediaFile({
+    file,
+    usage: "header",
+  });
+  return signupHeaderImageFromUpload(upload, file.name || "image.webp");
 }
 
 async function fileFromMediaValue(value: string, fileName: string): Promise<File | null> {

@@ -29,6 +29,14 @@ type ValidatedUpload = {
   kind: UploadKind;
 };
 
+type ImageOptimizationOptions = {
+  displayMaxWidth?: number;
+  displayQuality?: number;
+  thumbWidth?: number;
+  thumbQuality?: number;
+  includeThumb?: boolean;
+};
+
 type WebpAsset = BlobAsset & {
   mimeType: "image/webp";
   width: number;
@@ -166,6 +174,18 @@ function getImageMetadata(meta: sharp.Metadata): { width?: number; height?: numb
   };
 }
 
+function resolveImageOptimizationOptions(
+  options?: ImageOptimizationOptions,
+): Required<ImageOptimizationOptions> {
+  return {
+    displayMaxWidth: options?.displayMaxWidth ?? SHARP_UPLOAD_PRESETS.displayMaxWidth,
+    displayQuality: options?.displayQuality ?? SHARP_UPLOAD_PRESETS.displayQuality,
+    thumbWidth: options?.thumbWidth ?? SHARP_UPLOAD_PRESETS.thumbWidth,
+    thumbQuality: options?.thumbQuality ?? SHARP_UPLOAD_PRESETS.thumbQuality,
+    includeThumb: options?.includeThumb ?? true,
+  };
+}
+
 export async function readAndValidateUploadFile(file: File, usage: UploadUsage): Promise<ValidatedUpload> {
   const validation = validateUploadFileMeta({
     fileName: file.name,
@@ -190,28 +210,41 @@ export async function readAndValidateUploadFile(file: File, usage: UploadUsage):
 
 async function renderImageVariants(
   inputBuffer: Buffer,
+  options?: ImageOptimizationOptions,
 ): Promise<{
   display: { bytes: Buffer; width: number; height: number };
-  thumb: { bytes: Buffer; width: number; height: number };
+  thumb: { bytes: Buffer; width: number; height: number } | null;
 }> {
+  const resolved = resolveImageOptimizationOptions(options);
   const displayBytes = await sharp(inputBuffer)
     .rotate()
     .resize({
-      width: SHARP_UPLOAD_PRESETS.displayMaxWidth,
+      width: resolved.displayMaxWidth,
       fit: "inside",
       withoutEnlargement: true,
     })
-    .webp({ quality: SHARP_UPLOAD_PRESETS.displayQuality })
+    .webp({ quality: resolved.displayQuality })
     .toBuffer();
   const displayMeta = await sharp(displayBytes).metadata();
 
+  if (!resolved.includeThumb) {
+    return {
+      display: {
+        bytes: displayBytes,
+        width: displayMeta.width || 1,
+        height: displayMeta.height || 1,
+      },
+      thumb: null,
+    };
+  }
+
   const thumbBytes = await sharp(displayBytes)
     .resize({
-      width: SHARP_UPLOAD_PRESETS.thumbWidth,
+      width: resolved.thumbWidth,
       fit: "inside",
       withoutEnlargement: true,
     })
-    .webp({ quality: SHARP_UPLOAD_PRESETS.thumbQuality })
+    .webp({ quality: resolved.thumbQuality })
     .toBuffer();
   const thumbMeta = await sharp(thumbBytes).metadata();
 
@@ -234,8 +267,27 @@ export async function processImageBufferForUpload(inputBuffer: Buffer): Promise<
   display: { bytes: Buffer; width: number; height: number };
   thumb: { bytes: Buffer; width: number; height: number };
 }> {
+  const processed = await processImageBufferWithVariants(inputBuffer);
+  if (!processed.thumb) {
+    throw new Error("Could not generate upload thumbnail");
+  }
+  return {
+    original: processed.original,
+    display: processed.display,
+    thumb: processed.thumb,
+  };
+}
+
+export async function processImageBufferWithVariants(
+  inputBuffer: Buffer,
+  options?: ImageOptimizationOptions,
+): Promise<{
+  original: { width?: number; height?: number };
+  display: { bytes: Buffer; width: number; height: number };
+  thumb: { bytes: Buffer; width: number; height: number } | null;
+}> {
   const originalMeta = await sharp(inputBuffer).metadata();
-  const variants = await renderImageVariants(inputBuffer);
+  const variants = await renderImageVariants(inputBuffer, options);
   return {
     original: getImageMetadata(originalMeta),
     display: variants.display,
@@ -248,7 +300,10 @@ async function processImageUpload(params: {
   scopeId: string;
   usage: UploadUsage;
 }): Promise<UploadResponse> {
-  const processed = await processImageBufferForUpload(params.validated.bytes);
+  const processed = await processImageBufferWithVariants(params.validated.bytes);
+  if (!processed.thumb) {
+    throw new Error("Could not generate upload thumbnail");
+  }
   const [display, thumb] = await Promise.all([
     uploadWebpAsset({
       scopeId: params.scopeId,
@@ -512,22 +567,16 @@ export async function prepareDiscoverySourceFile(file: File): Promise<DiscoveryS
     };
   }
 
-  const display = await sharp(validated.bytes)
-    .rotate()
-    .resize({
-      width: SHARP_UPLOAD_PRESETS.displayMaxWidth,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .webp({ quality: SHARP_UPLOAD_PRESETS.displayQuality })
-    .toBuffer();
+  const processed = await processImageBufferWithVariants(validated.bytes, {
+    includeThumb: false,
+  });
 
   return {
     fileName: getImageOutputName(validated.fileName),
     mimeType: "image/webp",
-    sizeBytes: display.length,
+    sizeBytes: processed.display.bytes.length,
     kind: "image",
-    buffer: display,
+    buffer: processed.display.bytes,
     originalName: validated.fileName,
     originalMimeType: validated.mimeType,
     originalSizeBytes: validated.sizeBytes,

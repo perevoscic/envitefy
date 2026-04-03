@@ -7,6 +7,7 @@ import {
   SignupResponse,
   SignupResponseStatus,
   SignupFormHeader,
+  SignupHeaderImageAsset,
   SignupSafetyFlags,
 } from "@/types/signup";
 
@@ -247,6 +248,58 @@ const sanitizeSafetyFlags = (raw: unknown): SignupSafetyFlags | null => {
   return anyTrue ? merged : null;
 };
 
+const sanitizeSignupHeaderImage = (raw: unknown): SignupHeaderImageAsset | null => {
+  if (!raw || typeof raw !== "object") return null;
+  const dataUrl =
+    typeof (raw as any).dataUrl === "string" && (raw as any).dataUrl.trim()
+      ? (raw as any).dataUrl.trim()
+      : null;
+  if (!dataUrl) return null;
+  const sizeBytes =
+    typeof (raw as any).sizeBytes === "number" && Number.isFinite((raw as any).sizeBytes)
+      ? Math.max(0, Math.round((raw as any).sizeBytes))
+      : null;
+  const width =
+    typeof (raw as any).width === "number" && Number.isFinite((raw as any).width)
+      ? Math.max(1, Math.round((raw as any).width))
+      : null;
+  const height =
+    typeof (raw as any).height === "number" && Number.isFinite((raw as any).height)
+      ? Math.max(1, Math.round((raw as any).height))
+      : null;
+
+  return {
+    name: String((raw as any).name || "image"),
+    type: String((raw as any).type || "image/*"),
+    dataUrl,
+    thumbnailUrl:
+      typeof (raw as any).thumbnailUrl === "string" && (raw as any).thumbnailUrl.trim()
+        ? (raw as any).thumbnailUrl.trim()
+        : null,
+    sizeBytes,
+    width,
+    height,
+    originalName:
+      typeof (raw as any).originalName === "string" && (raw as any).originalName.trim()
+        ? (raw as any).originalName.trim()
+        : null,
+    originalType:
+      typeof (raw as any).originalType === "string" && (raw as any).originalType.trim()
+        ? (raw as any).originalType.trim()
+        : null,
+    originalSizeBytes:
+      typeof (raw as any).originalSizeBytes === "number" &&
+      Number.isFinite((raw as any).originalSizeBytes)
+        ? Math.max(0, Math.round((raw as any).originalSizeBytes))
+        : null,
+    optimizedFromMimeType:
+      typeof (raw as any).optimizedFromMimeType === "string" &&
+      (raw as any).optimizedFromMimeType.trim()
+        ? (raw as any).optimizedFromMimeType.trim()
+        : null,
+  };
+};
+
 export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
   const sections = sanitizeSections(form.sections || []);
   const settings = sanitizeSettings(form.settings || DEFAULT_SIGNUP_SETTINGS);
@@ -263,14 +316,7 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
     const backgroundCss = typeof (raw as any).backgroundCss === "string" && (raw as any).backgroundCss.trim()
       ? (raw as any).backgroundCss.trim()
       : null;
-    const imageCandidate = (raw as any).backgroundImage;
-    const backgroundImage = imageCandidate && typeof imageCandidate === "object" && typeof imageCandidate.dataUrl === "string"
-      ? {
-          name: String(imageCandidate.name || "image"),
-          type: String(imageCandidate.type || "image/*"),
-          dataUrl: imageCandidate.dataUrl as string,
-        }
-      : null;
+    const backgroundImage = sanitizeSignupHeaderImage((raw as any).backgroundImage);
     const groupName = (raw as any).groupName?.trim() || null;
     const creatorName = (raw as any).creatorName?.trim() || null;
     const designTheme = (() => {
@@ -285,17 +331,15 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
     const buttonTextColor = typeof (raw as any).buttonTextColor === "string" ? ((raw as any).buttonTextColor as string) : null;
     const images = Array.isArray((raw as any).images)
       ? ((raw as any).images as Array<any>)
-          .map((img) =>
-            img && typeof img === "object" && typeof img.dataUrl === "string"
-              ? {
-                  id: String(img.id || generateSignupId()),
-                  name: String(img.name || "image"),
-                  type: String(img.type || "image/*"),
-                  dataUrl: img.dataUrl as string,
-                }
-              : null
-          )
-          .filter((v): v is { id: string; name: string; type: string; dataUrl: string } => Boolean(v))
+          .map((img) => {
+            const sanitized = sanitizeSignupHeaderImage(img);
+            if (!sanitized) return null;
+            return {
+              id: String(img?.id || generateSignupId()),
+              ...sanitized,
+            };
+          })
+          .filter(Boolean)
       : null;
     if (!backgroundColor && !backgroundCss && !backgroundImage && !groupName && !creatorName && !designTheme && !templateId && !images)
       return null;

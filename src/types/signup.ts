@@ -110,9 +110,23 @@ export type SignupForm = {
   safetyFlags?: SignupSafetyFlags | null;
 };
 
+export type SignupHeaderImageAsset = {
+  name: string;
+  type: string;
+  dataUrl: string;
+  thumbnailUrl?: string | null;
+  sizeBytes?: number | null;
+  width?: number | null;
+  height?: number | null;
+  originalName?: string | null;
+  originalType?: string | null;
+  originalSizeBytes?: number | null;
+  optimizedFromMimeType?: string | null;
+};
+
 export type SignupFormHeader = {
   backgroundColor?: string | null;
-  backgroundImage?: { name: string; type: string; dataUrl: string } | null;
+  backgroundImage?: SignupHeaderImageAsset | null;
   backgroundCss?: string | null;
   groupName?: string | null;
   creatorName?: string | null;
@@ -133,7 +147,7 @@ export type SignupFormHeader = {
   textColor2?: string | null;
   buttonColor?: string | null;
   buttonTextColor?: string | null;
-  images?: Array<{ id: string; name: string; type: string; dataUrl: string }> | null;
+  images?: Array<(SignupHeaderImageAsset & { id: string })> | null;
   designTheme?: SignupDesignTheme | null;
 };
 

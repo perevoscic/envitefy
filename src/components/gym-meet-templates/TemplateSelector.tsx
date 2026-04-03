@@ -11,8 +11,6 @@ import { getGymMeetTitleTypography } from "./titleTypography";
 import { GymMeetTemplateGroup, GymMeetTemplateId } from "./types";
 
 const FEATURED_TEMPLATE_IDS: GymMeetTemplateId[] = [
-  "meet-app-shell",
-  "session-companion",
   "launchpad-editorial",
   "glitch-sport",
   "organic-flow",
@@ -139,7 +137,7 @@ export default function TemplateSelector({
                 New Showcase Templates
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Responsive app-shell templates stay pinned first for new events.
+                Featured templates appear first in the picker.
               </p>
             </div>
             <div className="grid grid-cols-1 gap-3">

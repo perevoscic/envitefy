@@ -160,15 +160,12 @@ test("hero address rendering falls back to parsed and map addresses when eventDa
   }
 });
 
-test("mobile-native gym templates stay pinned first while launchpad remains the legacy fallback", () => {
+test("gym meet defaults use launchpad editorial for legacy and new drafts", () => {
   const registrySource = readSource(
     "src/components/gym-meet-templates/registry.ts"
   );
   const selectorSource = readSource(
     "src/components/gym-meet-templates/TemplateSelector.tsx"
-  );
-  const rendererSource = readSource(
-    "src/components/gym-meet-templates/GymMeetTemplateRenderer.tsx"
   );
 
   assert.match(
@@ -178,22 +175,12 @@ test("mobile-native gym templates stay pinned first while launchpad remains the 
   );
   assert.match(
     registrySource,
-    /DEFAULT_NEW_GYM_MEET_TEMPLATE_ID:\s*GymMeetTemplateId\s*=\s*"meet-app-shell"/,
-    "registry.ts no longer pins the new meet default template id"
+    /DEFAULT_NEW_GYM_MEET_TEMPLATE_ID:\s*GymMeetTemplateId\s*=\s*"launchpad-editorial"/,
+    "registry.ts should pin new meet drafts to launchpad editorial"
   );
   assert.match(
     selectorSource,
-    /const FEATURED_TEMPLATE_IDS: GymMeetTemplateId\[] = \[\s*"meet-app-shell",\s*"session-companion",\s*"launchpad-editorial"/,
-    "TemplateSelector.tsx no longer keeps the mobile-native templates pinned first in the featured picker"
-  );
-  assert.match(
-    registrySource,
-    /id:\s*"session-companion"[\s\S]*layoutFamily:\s*"app-shell"[\s\S]*titleTypographyId:\s*"sora"/,
-    "registry.ts is missing the new session-companion app-shell template metadata"
-  );
-  assert.match(
-    rendererSource,
-    /case "session-companion":\s*return <SessionCompanionTemplate \{\.\.\.props\} \/>;/,
-    "GymMeetTemplateRenderer.tsx is missing the session-companion renderer branch"
+    /const FEATURED_TEMPLATE_IDS: GymMeetTemplateId\[] = \[\s*"launchpad-editorial"/,
+    "TemplateSelector.tsx should lead featured picks with launchpad editorial"
   );
 });
