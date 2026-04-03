@@ -96,7 +96,7 @@ export default function HeroTopNav({
             >
               <EnvitefyWordmark
                 scaled={false}
-                className="max-w-full text-[1.78rem] leading-none transition-transform duration-300 group-hover:scale-[1.02] sm:text-[1.96rem] md:text-[2.18rem]"
+                className="max-w-full text-[2.05rem] leading-none transition-transform duration-300 group-hover:scale-[1.02] sm:text-[2.28rem] md:text-[2.52rem]"
               />
             </Link>
 

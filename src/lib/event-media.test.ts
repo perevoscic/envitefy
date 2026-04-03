@@ -12,6 +12,15 @@ test("findTransientEventMedia inspects nested fields and gallery items", () => {
   const data = {
     thumbnail: "data:image/png;base64,abc",
     customHeroImage: "blob:http://localhost/123",
+    signupForm: {
+      header: {
+        images: [
+          {
+            dataUrl: "data:image/webp;base64,signup",
+          },
+        ],
+      },
+    },
     gallery: [
       { url: "https://example.public.blob.vercel-storage.com/event-media/1/header/display.webp" },
       { preview: "data:image/jpeg;base64,def" },
@@ -19,7 +28,12 @@ test("findTransientEventMedia inspects nested fields and gallery items", () => {
   };
 
   const issues = findTransientEventMedia(data).map((issue) => issue.fieldPath);
-  assert.deepEqual(issues, ["thumbnail", "customHeroImage", "gallery[1].preview"]);
+  assert.deepEqual(issues, [
+    "thumbnail",
+    "customHeroImage",
+    "gallery[1].preview",
+    "signupForm.header.images[0].dataUrl",
+  ]);
 
   const blobUrls = collectAppOwnedBlobUrls(data);
   assert.deepEqual(blobUrls, [
