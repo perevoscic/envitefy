@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import GymnasticsHeroBackground from "./GymnasticsHeroBackground";
 import Link from "next/link";
-import Image from "next/image";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import {
@@ -993,28 +992,6 @@ export default function GymnasticsLanding() {
           </div>
         </div>
       </section>
-
-      {/* ═══ FOOTER ═══ */}
-      <footer className="border-t border-slate-100 py-10">
-        <div className="mx-auto max-w-[1400px] px-4 text-center sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center gap-2.5">
-            <Image
-              src="/favicon.png"
-              alt="Envitefy"
-              width={28}
-              height={28}
-              unoptimized
-              className="h-7 w-7 rounded-lg"
-            />
-            <span className="text-sm font-semibold text-slate-400">
-              Envitefy Gymnastics
-            </span>
-          </div>
-          <p className="mt-3 text-xs text-slate-400">
-            © {new Date().getFullYear()} Envitefy. All rights reserved.
-          </p>
-        </div>
-      </footer>
 
       <AuthModal
         open={authModalOpen}
