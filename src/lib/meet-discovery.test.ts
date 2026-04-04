@@ -81,3 +81,18 @@ test("meet discovery targeted parse calls run concurrently with deterministic me
     /const extractedResults = targetedParseResults[\s\S]*mergeParseResultsByProfile\(extractedResults\)/,
   );
 });
+
+test("gymnastics PDF vision handoff persists raster images before OpenAI calls", () => {
+  const source = readSource("src/lib/meet-discovery/core.ts");
+
+  assert.match(source, /async function persistVisionInputDebugArtifact\(/);
+  assert.match(source, /path\.join\(process\.cwd\(\), "qa-artifacts", "discovery-ai-inputs"\)/);
+  assert.match(source, /const GYM_LAYOUT_PDF_MAX_PAGES = 10;/);
+  assert.match(source, /stage:\s*"pdf-raster-page"/);
+  assert.match(source, /const image = await rasterizePdfPageToPng\(pdfBuffer, pageIndex\);/);
+  assert.match(source, /await persistVisionInputDebugArtifact\(buffer,\s*\{/);
+  assert.match(source, /stage:\s*"pdf-ocr-page"/);
+  assert.match(source, /stage:\s*"pdf-layout-ocr-page"/);
+  assert.match(source, /stage:\s*"pdf-layout-page"/);
+  assert.match(source, /stage:\s*"pdf-layout-zones"/);
+});

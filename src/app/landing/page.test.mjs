@@ -11,6 +11,7 @@ const readSource = (relativePath) =>
 test("landing page renders the new dedicated landing experience component", () => {
   const page = readSource("src/app/landing/page.tsx");
   const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
+  const landingStyles = readSource("src/app/landing/LandingExperience.module.css");
   const landingFaq = readSource("src/app/landing/sections/LandingFaq.tsx");
   const gymnasticsIndex = landingExperience.indexOf('id="gymnastics"');
   const snapIndex = landingExperience.indexOf('id="snap"');
@@ -24,6 +25,15 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingExperience, /id="how-it-works"/);
   assert.match(landingExperience, /id="use-cases"/);
   assert.match(landingExperience, /id="rsvp-calendar"/);
+  assert.match(landingExperience, /useReducedMotion/);
+  assert.match(landingExperience, /styles\.gymnasticsSportsPdfCard/);
+  assert.match(landingExperience, /styles\.gymnasticsSportsScanBeam/);
+  assert.match(landingExperience, /styles\.gymnasticsSportsConnector/);
+  assert.match(landingExperience, /styles\.gymnasticsSportsPhoneShell/);
+  assert.match(landingStyles, /\.gymnasticsSportsPdfCard\s*\{/);
+  assert.match(landingStyles, /\.gymnasticsSportsScanBeam\s*\{/);
+  assert.match(landingStyles, /\.gymnasticsSportsConnectorPulse\s*\{/);
+  assert.match(landingStyles, /\.gymnasticsSportsPhoneShell\s*\{/);
   assert.match(landingExperience, /<LandingFaq/);
   assert.match(landingFaq, /id="faq"/);
   assert.match(

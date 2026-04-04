@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { inflateRawSync, inflateSync } from "node:zlib";
 import * as chrono from "chrono-node";
 import OpenAI from "openai";
@@ -894,12 +897,73 @@ function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+type DiscoveryAiImageArtifact = {
+  workflow?: DiscoveryWorkflow | null;
+  stage: string;
+  page?: number | null;
+  mimeType?: string | null;
+};
+
+function sanitizeArtifactPathPart(value: string, fallback: string): string {
+  const normalized = safeString(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized || fallback;
+}
+
+function getArtifactExtensionForMimeType(mimeType?: string | null): string {
+  const normalized = safeString(mimeType).toLowerCase();
+  if (normalized.includes("png")) return ".png";
+  if (normalized.includes("webp")) return ".webp";
+  if (normalized.includes("jpeg") || normalized.includes("jpg")) return ".jpg";
+  return ".bin";
+}
+
+async function persistVisionInputDebugArtifact(
+  buffer: Buffer,
+  artifact?: DiscoveryAiImageArtifact,
+): Promise<string | null> {
+  if (!artifact?.stage || buffer.length === 0) return null;
+  try {
+    const baseDir =
+      safeString(process.env.DISCOVERY_DEBUG_ARTIFACT_DIR) ||
+      path.join(process.cwd(), "qa-artifacts", "discovery-ai-inputs");
+    const workflow = sanitizeArtifactPathPart(artifact.workflow || "gymnastics", "gymnastics");
+    const stage = sanitizeArtifactPathPart(artifact.stage, "vision-input");
+    const pageNumber =
+      typeof artifact.page === "number" && Number.isFinite(artifact.page) ? artifact.page + 1 : null;
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const hash = createHash("sha1").update(buffer).digest("hex").slice(0, 12);
+    const fileName = `${stamp}${pageNumber ? `-page-${pageNumber}` : ""}-${hash}${getArtifactExtensionForMimeType(
+      artifact.mimeType,
+    )}`;
+    const dir = path.join(baseDir, workflow, stage);
+    const filePath = path.join(dir, fileName);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(filePath, buffer);
+    return filePath;
+  } catch (error) {
+    console.warn("[meet-discovery] failed to persist AI input image", {
+      stage: artifact?.stage || null,
+      page:
+        typeof artifact?.page === "number" && Number.isFinite(artifact.page)
+          ? artifact.page + 1
+          : null,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
 const HOST_GYM_PACKET_TEXT_PATTERN =
   /\b(?:please review|following items enclosed|this packet|info packet|packet:|competition to follow|recognized at|award ceremony)\b/i;
 const HOST_GYM_EVENT_TITLE_PATTERN =
   /\b(?:state championships?|regional championships?|national championships?|session\s+[A-Z]{2}\d+|schedule|info packet|meet packet)\b/i;
 const HOST_GYM_PAYMENT_LINE_PATTERN =
   /^(?:payment|payment instructions?:|checks?\s+payable|check:\s*make payable|make payable to|payable to)/i;
+const GYM_LAYOUT_PDF_MAX_PAGES = 10;
 
 function sanitizeHostGymValue(value: unknown): string | null {
   let text = safeString(value).replace(/\s+/g, " ").trim();
@@ -2881,8 +2945,20 @@ async function getPdfPageImage(
   pdfBuffer: Buffer,
   pageIndex: number,
   cache?: DiscoveryRequestCache,
+  artifact?: DiscoveryAiImageArtifact,
 ): Promise<Buffer | null> {
-  const render = async () => rasterizePdfPageToPng(pdfBuffer, pageIndex);
+  const render = async () => {
+    const image = await rasterizePdfPageToPng(pdfBuffer, pageIndex);
+    if (image) {
+      await persistVisionInputDebugArtifact(image, {
+        workflow: artifact?.workflow || "gymnastics",
+        stage: artifact?.stage || "pdf-raster-page",
+        page: typeof artifact?.page === "number" ? artifact.page : pageIndex,
+        mimeType: artifact?.mimeType || "image/png",
+      });
+    }
+    return image;
+  };
   return cache ? getOrCreatePdfPageImage(cache, pdfBuffer, pageIndex, render) : render();
 }
 
@@ -3738,11 +3814,19 @@ async function ocrBuffer(buffer: Buffer): Promise<string> {
   return (result.fullTextAnnotation?.text || result.textAnnotations?.[0]?.description || "").trim();
 }
 
-async function openAiOcrTextFromImage(buffer: Buffer, mimeType = "image/png"): Promise<string> {
+async function openAiOcrTextFromImage(
+  buffer: Buffer,
+  mimeType = "image/png",
+  artifact?: DiscoveryAiImageArtifact,
+): Promise<string> {
   const apiKey = safeString(process.env.OPENAI_API_KEY || "");
   if (!apiKey) return "";
   const model = resolveOpenAiMiniModel();
   try {
+    await persistVisionInputDebugArtifact(buffer, {
+      ...artifact,
+      mimeType: artifact?.mimeType || mimeType,
+    });
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -3786,11 +3870,16 @@ async function openAiAnalyzeGymLayoutPage(
   buffer: Buffer,
   mimeType = "image/png",
   performance?: DiscoveryPerformance,
+  artifact?: DiscoveryAiImageArtifact,
 ): Promise<{ isLayout: boolean; confidence: number; facts: string[]; text: string } | null> {
   const apiKey = safeString(process.env.OPENAI_API_KEY || "");
   if (!apiKey) return null;
   const model = resolveDiscoveryVisionModel();
   try {
+    await persistVisionInputDebugArtifact(buffer, {
+      ...artifact,
+      mimeType: artifact?.mimeType || mimeType,
+    });
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -3862,6 +3951,7 @@ async function extractTextFromPdf(
     performance?: DiscoveryPerformance;
     cache?: DiscoveryRequestCache;
     mode?: DiscoveryMode;
+    workflow?: DiscoveryWorkflow;
     signal?: AbortSignal;
   },
 ): Promise<{
@@ -3971,12 +4061,29 @@ async function extractTextFromPdf(
     for (let page = 0; page < maxOcrPages; page += 1) {
       throwIfExtractionAborted(options?.signal);
       if (Date.now() >= deadline) break;
-      const pageImage = await getPdfPageImage(buffer, page, options?.cache);
+      const pageImage = await getPdfPageImage(buffer, page, options?.cache, {
+        workflow: options?.workflow || "gymnastics",
+        stage: "pdf-raster-page",
+        page,
+        mimeType: "image/png",
+      });
       if (!pageImage) break;
       if (options?.performance) {
         options.performance.ocrPageCount += 1;
       }
-      const text = cleanExtractedText(await extractTextFromImage(pageImage, options?.cache));
+      const text = cleanExtractedText(
+        await extractTextFromImage(pageImage, options?.cache, {
+          aiArtifact:
+            options?.workflow === "gymnastics"
+              ? {
+                  workflow: options.workflow,
+                  stage: "pdf-ocr-page",
+                  page,
+                  mimeType: "image/png",
+                }
+              : undefined,
+        }),
+      );
       if (text) {
         ocrPages.push(text);
         const aggregate = analyzeTextQuality(ocrPages.join("\n\n"));
@@ -4011,12 +4118,29 @@ async function extractTextFromPdf(
       for (let page = 0; page < maxFallbackPages; page += 1) {
         throwIfExtractionAborted(options?.signal);
         if (Date.now() >= deadline) break;
-        const pageImage = await getPdfPageImage(buffer, page, options?.cache);
+        const pageImage = await getPdfPageImage(buffer, page, options?.cache, {
+          workflow: options?.workflow || "gymnastics",
+          stage: "pdf-raster-page",
+          page,
+          mimeType: "image/png",
+        });
         if (!pageImage) break;
         if (options?.performance) {
           options.performance.ocrPageCount += 1;
         }
-        const text = cleanExtractedText(await extractTextFromImage(pageImage, options?.cache));
+        const text = cleanExtractedText(
+          await extractTextFromImage(pageImage, options?.cache, {
+            aiArtifact:
+              options?.workflow === "gymnastics"
+                ? {
+                    workflow: options.workflow,
+                    stage: "pdf-ocr-page",
+                    page,
+                    mimeType: "image/png",
+                  }
+                : undefined,
+          }),
+        );
         if (text) fallbackPages.push(text);
         throwIfExtractionAborted(options?.signal);
       }
@@ -4073,6 +4197,7 @@ async function extractTextFromPdf(
 async function extractTextFromImage(
   buffer: Buffer,
   cache?: DiscoveryRequestCache,
+  options?: { aiArtifact?: DiscoveryAiImageArtifact },
 ): Promise<string> {
   const run = async () => {
     const prepared = await sharp(buffer).resize(2200).grayscale().normalize().toBuffer();
@@ -4082,7 +4207,11 @@ async function extractTextFromImage(
     } catch {
       // Fall through to OpenAI OCR.
     }
-    const fallbackText = await openAiOcrTextFromImage(prepared, "image/png");
+    const fallbackText = await openAiOcrTextFromImage(
+      prepared,
+      "image/png",
+      options?.aiArtifact,
+    );
     return cleanExtractedText(fallbackText);
   };
   return cache ? getOrCreateWeakCacheValue(cache.imageText, buffer, run) : run();
@@ -4229,11 +4358,16 @@ async function openAiExtractGymLayoutZones(
   buffer: Buffer,
   mimeType = "image/png",
   performance?: DiscoveryPerformance,
+  artifact?: DiscoveryAiImageArtifact,
 ): Promise<GymLayoutZone[]> {
   const apiKey = safeString(process.env.OPENAI_API_KEY || "");
   if (!apiKey) return [];
   const model = resolveDiscoveryVisionModel();
   try {
+    await persistVisionInputDebugArtifact(buffer, {
+      ...artifact,
+      mimeType: artifact?.mimeType || mimeType,
+    });
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -4429,9 +4563,21 @@ async function extractGymLayoutImageFromPdf(
   for (let page = 0; page < maxPages; page += 1) {
     if (Date.now() >= deadline) break;
     try {
-      const pageImage = await getPdfPageImage(buffer, page, options?.cache);
+      const pageImage = await getPdfPageImage(buffer, page, options?.cache, {
+        workflow: "gymnastics",
+        stage: "pdf-raster-page",
+        page,
+        mimeType: "image/png",
+      });
       if (!pageImage) continue;
-      const pageText = await extractTextFromImage(pageImage, options?.cache);
+      const pageText = await extractTextFromImage(pageImage, options?.cache, {
+        aiArtifact: {
+          workflow: "gymnastics",
+          stage: "pdf-layout-ocr-page",
+          page,
+          mimeType: "image/png",
+        },
+      });
       const summary = summarizeGymLayoutText(pageText);
       const textScore = scoreGymLayoutSignals(pageText);
       const visualScore = await scoreGymLayoutVisualSignal(pageImage);
@@ -4490,7 +4636,17 @@ async function extractGymLayoutImageFromPdf(
     if (options?.performance) {
       options.performance.gymLayoutAiCalls += 1;
     }
-    const ai = await openAiAnalyzeGymLayoutPage(candidate.image, "image/png", options?.performance);
+    const ai = await openAiAnalyzeGymLayoutPage(
+      candidate.image,
+      "image/png",
+      options?.performance,
+      {
+        workflow: "gymnastics",
+        stage: "pdf-layout-page",
+        page: candidate.page,
+        mimeType: "image/png",
+      },
+    );
     if (!ai) continue;
     candidate.aiIsLayout = ai.isLayout;
     candidate.aiConfidence = ai.confidence;
@@ -4580,6 +4736,12 @@ async function extractGymLayoutImageFromPdf(
     selected.image,
     "image/png",
     options?.performance,
+    {
+      workflow: "gymnastics",
+      stage: "pdf-layout-zones",
+      page: selected.page,
+      mimeType: "image/png",
+    },
   );
   const facts = sanitizeVenueFactLines(
     [...selected.aiFacts, ...extractHallFactsFromText(selected.text)],
@@ -6317,7 +6479,7 @@ async function appendFetchedAssetText(
       const layoutBudgetMs = resolveRemainingAssetBudget(`asset_layout:${assetUrlString}`);
       if (layoutBudgetMs == null) return;
       const layout = await hooks.extractGymLayoutImageFromPdf(fetched.buffer, {
-        maxPages: 4,
+        maxPages: GYM_LAYOUT_PDF_MAX_PAGES,
         maxAiCandidates: 2,
         performance: options.performance,
         budgetMs: layoutBudgetMs,
@@ -6817,6 +6979,7 @@ export async function extractDiscoveryText(
           performance,
           cache: requestCache,
           mode: resolvedOptions.mode,
+          workflow: resolvedOptions.workflow,
           signal: resolvedOptions.signal,
         });
       throwIfExtractionAborted(resolvedOptions.signal);
@@ -6824,7 +6987,7 @@ export async function extractDiscoveryText(
         resolvedOptions.workflow === "gymnastics" && resolvedOptions.mode === "enrich";
       const gymLayout = shouldRunGymnasticsEnrichment
         ? await extractGymLayoutImageFromPdf(parsed.buffer, {
-            maxPages: 4,
+            maxPages: GYM_LAYOUT_PDF_MAX_PAGES,
             maxAiCandidates: 2,
             performance,
             budgetMs: resolvedOptions.budgetMs,

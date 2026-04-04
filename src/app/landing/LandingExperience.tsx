@@ -21,6 +21,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -488,6 +489,7 @@ function useRevealOnce() {
 export default function LandingExperience() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const reduceMotion = useReducedMotion();
   const activeScene = useActiveScene(LANDING_SCENE_ORDER, "snap");
   const { ref: gymnasticsHighlightRef, visible: gymnasticsHighlightVisible } =
     useRevealOnce();
@@ -654,69 +656,188 @@ export default function LandingExperience() {
             <div className="relative grid gap-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center">
               <div
                 ref={gymnasticsHighlightRef}
-                className="relative order-2 flex flex-row flex-nowrap items-start justify-center gap-4 sm:items-center sm:gap-6 lg:order-1 lg:justify-start"
+                className={`${styles.gymnasticsSportsVisual} relative order-2 flex flex-row flex-nowrap items-start justify-center gap-4 sm:items-center sm:gap-6 lg:order-1 lg:justify-start`}
               >
                 <div
-                  className={`${styles.cardGroup} ${styles.heroRevealReady} ${
-                    gymnasticsHighlightVisible ? styles.heroRevealPrimary : ""
-                  } group relative`}
+                  aria-hidden="true"
+                  className={styles.gymnasticsSportsGlow}
+                />
+
+                <motion.div
+                  initial={false}
+                  animate={
+                    reduceMotion
+                      ? { opacity: 1, x: 0, y: 0, rotate: -8, scale: 1 }
+                      : gymnasticsHighlightVisible
+                        ? {
+                            opacity: 1,
+                            x: 0,
+                            y: 0,
+                            rotate: -8,
+                            scale: 1,
+                            transition: {
+                              duration: 0.82,
+                              delay: 0.08,
+                              ease: [0.22, 1, 0.36, 1],
+                            },
+                          }
+                        : { opacity: 0, x: -52, y: 22, rotate: -15, scale: 0.94 }
+                  }
+                  className={`${styles.gymnasticsSportsPdfWrap} group relative`}
                 >
                   <div className={`${cardBubbleClass} -top-5 text-[#0EA5E9]`}>
                     Meet PDF
                   </div>
-                  <div
-                    className={`${styles.heroSnapCard} w-[7.8rem] overflow-hidden rounded-[1.35rem] shadow-[0_26px_58px_rgba(3,0,12,0.3)] sm:w-52`}
+                  <motion.div
+                    animate={
+                      reduceMotion || !gymnasticsHighlightVisible
+                        ? undefined
+                        : {
+                            y: [0, -8, 0],
+                            rotate: [-8, -10, -8],
+                            transition: {
+                              duration: 5.4,
+                              repeat: Number.POSITIVE_INFINITY,
+                              repeatType: "mirror",
+                              ease: "easeInOut",
+                            },
+                          }
+                    }
+                    whileHover={
+                      reduceMotion
+                        ? undefined
+                        : {
+                            y: -4,
+                            rotate: -5,
+                            transition: { duration: 0.26, ease: "easeOut" },
+                          }
+                    }
+                    className={`${styles.gymnasticsSportsPdfCard} w-[7.8rem] overflow-hidden rounded-[1.45rem] shadow-[0_26px_58px_rgba(3,0,12,0.3)] sm:w-52`}
                   >
+                    <div className={styles.gymnasticsSportsScanBeam} />
                     <Image
                       alt="Gymnastics meet flyer preview"
-                      className="block h-auto w-full scale-[1.08] rounded-[1.35rem]"
+                      className="block h-auto w-full scale-[1.08] rounded-[1.45rem]"
                       height={1024}
                       loading="eager"
                       sizes="(min-width: 640px) 13rem, 7.8rem"
                       src={IMAGES.gymnasticsFlyer}
                       width={768}
                     />
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
 
-                <div
-                  className={`${styles.heroRevealReady} ${
-                    gymnasticsHighlightVisible ? styles.heroRevealCenter : ""
-                  } hidden flex-col items-center gap-2 sm:flex`}
+                <motion.div
+                  initial={false}
+                  animate={
+                    reduceMotion
+                      ? { opacity: 1, y: 0, scale: 1 }
+                      : gymnasticsHighlightVisible
+                        ? {
+                            opacity: 1,
+                            y: 0,
+                            scale: 1,
+                            transition: {
+                              duration: 0.7,
+                              delay: 0.2,
+                              ease: [0.22, 1, 0.36, 1],
+                            },
+                          }
+                        : { opacity: 0, y: 20, scale: 0.92 }
+                  }
+                  className={`${styles.gymnasticsSportsConnector} hidden sm:flex`}
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white shadow-inner">
+                  <motion.div
+                    animate={
+                      reduceMotion || !gymnasticsHighlightVisible
+                        ? undefined
+                        : {
+                            scale: [1, 1.08, 1],
+                            opacity: [0.92, 1, 0.92],
+                            transition: {
+                              duration: 2.2,
+                              repeat: Number.POSITIVE_INFINITY,
+                              ease: "easeInOut",
+                            },
+                          }
+                    }
+                    className={styles.gymnasticsSportsConnectorNode}
+                  >
+                    <span className={styles.gymnasticsSportsConnectorPulse} />
                     <Sparkles size={18} />
-                  </div>
-                  <div className="h-14 w-px bg-gradient-to-b from-white/40 to-transparent" />
-                  <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white">
+                  </motion.div>
+                  <div className={styles.gymnasticsSportsConnectorLine} />
+                  <span className={styles.gymnasticsSportsConnectorLabel}>
                     Processing
                   </span>
-                </div>
+                </motion.div>
 
-                <div
-                  className={`${styles.cardGroup} ${styles.heroRevealReady} ${
-                    gymnasticsHighlightVisible ? styles.heroRevealSecondary : ""
-                  } group relative mt-5 sm:mt-0`}
+                <motion.div
+                  initial={false}
+                  animate={
+                    reduceMotion
+                      ? { opacity: 1, x: 0, y: 0, rotate: 5, scale: 1 }
+                      : gymnasticsHighlightVisible
+                        ? {
+                            opacity: 1,
+                            x: 0,
+                            y: 0,
+                            rotate: 5,
+                            scale: 1,
+                            transition: {
+                              duration: 0.88,
+                              delay: 0.16,
+                              ease: [0.22, 1, 0.36, 1],
+                            },
+                          }
+                        : { opacity: 0, x: 54, y: 26, rotate: 11, scale: 0.94 }
+                  }
+                  className={`${styles.gymnasticsSportsPhoneWrap} group relative mt-5 sm:mt-0`}
                 >
                   <div
                     className={`${cardBubbleClass} -top-5 border-white/24 text-[#140a27]`}
                   >
                     Live Meet
                   </div>
-                  <div
-                    className={`${styles.heroLiveCard} w-[8.8rem] overflow-hidden rounded-[1.75rem] shadow-[0_30px_64px_rgba(3,0,12,0.34)] sm:w-56 sm:rounded-[2.4rem]`}
+                  <motion.div
+                    animate={
+                      reduceMotion || !gymnasticsHighlightVisible
+                        ? undefined
+                        : {
+                            y: [0, -12, 0],
+                            rotate: [5, 3, 5],
+                            transition: {
+                              duration: 5.8,
+                              repeat: Number.POSITIVE_INFINITY,
+                              repeatType: "mirror",
+                              ease: "easeInOut",
+                            },
+                          }
+                    }
+                    whileHover={
+                      reduceMotion
+                        ? undefined
+                        : {
+                            y: -6,
+                            rotate: 3,
+                            transition: { duration: 0.26, ease: "easeOut" },
+                          }
+                    }
+                    className={`${styles.gymnasticsSportsPhoneShell} w-[8.8rem] overflow-hidden rounded-[1.9rem] shadow-[0_30px_64px_rgba(3,0,12,0.34)] sm:w-56 sm:rounded-[2.4rem]`}
                   >
-                    <Image
-                      alt="Gymnastics event page preview"
-                      className="h-auto w-full rounded-[1.75rem] sm:rounded-[2.4rem]"
-                      height={1600}
-                      loading="eager"
-                      sizes="(min-width: 640px) 14rem, 8.8rem"
-                      src={IMAGES.gymnasticsEvent}
-                      width={900}
-                    />
-                  </div>
-                </div>
+                    <div className={styles.gymnasticsSportsPhoneFrame}>
+                      <Image
+                        alt="Gymnastics event page preview"
+                        className="h-auto w-full rounded-[1.55rem] sm:rounded-[2rem]"
+                        height={1600}
+                        loading="eager"
+                        sizes="(min-width: 640px) 14rem, 8.8rem"
+                        src={IMAGES.gymnasticsEvent}
+                        width={900}
+                      />
+                    </div>
+                  </motion.div>
+                </motion.div>
               </div>
 
               <div className="z-10 order-1 text-center lg:order-2 lg:text-left">
