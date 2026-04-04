@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  motion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -49,7 +55,7 @@ const SNAP_SCENES: Record<string, ScenicScene> = {
       },
       {
         className:
-          "absolute right-[16%] top-[28%] h-[13rem] w-[13rem] rounded-[2.5rem] border border-white/10 bg-white/[0.05] rotate-12 backdrop-blur-3xl",
+          "theme-glass-ornament absolute right-[16%] top-[28%] h-[13rem] w-[13rem] rounded-[2.5rem] border border-white/10 rotate-12",
       },
     ],
   },
@@ -85,7 +91,7 @@ const SNAP_SCENES: Record<string, ScenicScene> = {
       },
       {
         className:
-          "absolute bottom-[-8rem] left-[28%] h-[20rem] w-[20rem] rounded-[2.6rem] border border-white/10 bg-white/[0.05] -rotate-6 backdrop-blur-3xl",
+          "theme-glass-ornament absolute bottom-[-8rem] left-[28%] h-[20rem] w-[20rem] rounded-[2.6rem] border border-white/10 -rotate-6",
       },
     ],
   },
@@ -206,7 +212,9 @@ const faqs = [
 ] as const;
 
 const glassPanelClass =
-  "relative isolate overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.1] shadow-[0_32px_90px_rgba(4,1,14,0.42)] backdrop-blur-[18px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]";
+  "theme-glass-surface relative isolate overflow-hidden rounded-[2rem] border border-white/12 shadow-[0_32px_90px_rgba(4,1,14,0.42)]";
+
+const snapSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";
 
 function CtaButton({
   label,
@@ -288,11 +296,28 @@ function Hero({
   onPrimaryAction: () => void;
   primaryHref?: string;
 }) {
+  const heroRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 92,
+    damping: 26,
+    mass: 0.45,
+  });
+  const beforeY = useTransform(smoothProgress, [0, 1], ["0%", "-100%"]);
+  const afterY = useTransform(smoothProgress, [0, 1], ["100%", "0%"]);
+
   return (
-    <section id="snap" className="px-4 pb-6 pt-32 sm:px-6 lg:px-8 lg:pt-40">
+    <section
+      ref={heroRef}
+      id="snap"
+      className="px-4 pb-6 pt-24 sm:px-6 lg:px-8 lg:pt-28"
+    >
       <div className="mx-auto max-w-7xl">
         <div
-          className={`${glassPanelClass} px-7 py-8 md:px-10 md:py-10 lg:px-14 lg:py-14`}
+          className={`${glassPanelClass} px-7 py-8 md:px-10 md:py-10 lg:px-14 lg:py-10`}
         >
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03)_40%,rgba(255,255,255,0.02))]" />
           <div className="absolute -left-16 top-0 h-56 w-56 rounded-full bg-white/8 blur-3xl" />
@@ -329,45 +354,20 @@ function Hero({
               </div>
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_7rem]">
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/12 bg-black/18 p-5 shadow-[0_24px_70px_rgba(3,0,12,0.32)] backdrop-blur-2xl">
-                <div className="grid gap-4 md:grid-cols-[0.8fr_1.2fr]">
-                  <div className="relative overflow-hidden rounded-[1.6rem] border border-white/12 bg-white/[0.08] p-4 backdrop-blur-xl">
-                    <div className="mb-3 rounded-[1.1rem] border border-dashed border-white/18 bg-black/16 p-4">
-                      <img
-                        src="/images/snap-hero.png"
-                        alt="Envitefy Snap Interface"
-                        className="block h-auto w-full rounded-[0.9rem]"
-                      />
-                    </div>
-                    <div className="text-xs font-medium text-white/65">
-                      Invite in, live page out.
-                    </div>
-                  </div>
-
-                  <SnapProcessMedia />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 xl:grid-cols-1">
-                {[
-                  { label: "Input", value: "PDFs" },
-                  { label: "Output", value: "Events" },
-                  { label: "Share", value: "Fast" },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex flex-col items-center justify-center rounded-[1.4rem] border border-white/10 bg-white/[0.07] px-3 py-5 text-center backdrop-blur-2xl"
-                  >
-                    <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/48">
-                      {item.label}
-                    </span>
-                    <span className="mt-2 text-sm font-semibold text-white/82">
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            <div className="relative h-[min(72vw,22rem)] w-full min-h-0 overflow-hidden rounded-[2rem] border border-white/12 bg-[#090d18] shadow-[0_26px_60px_rgba(3,0,12,0.3)] lg:h-full">
+              <motion.img
+                src="/images/snap-hero.png"
+                alt="Envitefy Snap interface before upload conversion"
+                style={{ y: beforeY }}
+                className="absolute inset-0 h-full w-full object-cover grayscale-[0.55] brightness-[0.94] contrast-[0.9] saturate-[0.78]"
+              />
+              <motion.img
+                src="/sliders/vertical/vertical-slide-1.jpg"
+                alt="Envitefy Snap interface after upload conversion"
+                style={{ y: afterY }}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,23,0.04),rgba(7,11,23,0.14)_72%,rgba(7,11,23,0.22))]" />
             </div>
           </div>
         </div>
@@ -378,7 +378,7 @@ function Hero({
 
 function TrustBar() {
   return (
-    <section className="px-4 py-6 sm:px-6 lg:px-8">
+    <section className={snapSectionSpacingClass}>
       <div className="mx-auto max-w-7xl">
         <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.06] px-6 py-8 text-center backdrop-blur-2xl">
           <p className="mb-6 text-sm font-semibold tracking-[0.28em] text-white/52 uppercase">
@@ -406,7 +406,7 @@ function TrustBar() {
 
 function ProblemSection() {
   return (
-    <section id="problem-section" className="px-4 py-6 sm:px-6 lg:px-8">
+    <section id="problem-section" className={snapSectionSpacingClass}>
       <div
         className={`mx-auto max-w-7xl ${glassPanelClass} px-7 py-8 md:px-10 md:py-10`}
       >
@@ -449,7 +449,7 @@ function ProblemSection() {
 
 function HowItWorks() {
   return (
-    <section id="how-it-works" className="px-4 py-6 sm:px-6 lg:px-8">
+    <section id="how-it-works" className={snapSectionSpacingClass}>
       <div
         className={`mx-auto max-w-7xl ${glassPanelClass} px-7 py-8 md:px-10 md:py-10`}
       >
@@ -496,7 +496,7 @@ function HowItWorks() {
 
 function UseCases() {
   return (
-    <section id="use-cases" className="px-4 py-6 sm:px-6 lg:px-8">
+    <section id="use-cases" className={snapSectionSpacingClass}>
       <div
         className={`mx-auto max-w-7xl ${glassPanelClass} px-7 py-8 md:px-10 md:py-10`}
       >
@@ -550,7 +550,7 @@ function CallToAction({
   onOpenSignup: () => void;
 }) {
   return (
-    <section className="px-4 py-6 sm:px-6 lg:px-8">
+    <section className={snapSectionSpacingClass}>
       <div className="relative mx-auto max-w-5xl">
         <div
           className={`${glassPanelClass} px-7 py-10 text-center md:px-12 md:py-14`}
@@ -591,7 +591,7 @@ function FAQ() {
   const [openIndex, setOpenIndex] = React.useState<number | null>(0);
 
   return (
-    <section id="faq" className="px-4 py-6 pb-16 sm:px-6 lg:px-8 lg:pb-24">
+    <section id="faq" className={snapSectionSpacingClass}>
       <div
         className={`mx-auto max-w-3xl ${glassPanelClass} px-7 py-8 md:px-10 md:py-10`}
       >

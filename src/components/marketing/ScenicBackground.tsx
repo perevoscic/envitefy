@@ -94,11 +94,10 @@ export default function ScenicBackground({
         return (
           <div
             key={key}
+            data-active={isActive ? "true" : "false"}
             className={cx(
-              "absolute inset-0 transition-all duration-[1200ms] ease-out",
-              isActive
-                ? "scale-100 opacity-100"
-                : "scale-[1.06] opacity-0 blur-[2px]",
+              "scenic-scene absolute inset-0 transition-opacity duration-[900ms] ease-out",
+              isActive ? "opacity-100" : "opacity-0",
               config.shellClassName,
             )}
           >
@@ -121,11 +120,30 @@ export default function ScenicBackground({
       <div className="absolute inset-0 bg-black/12" />
 
       <style jsx>{`
+        .scenic-scene {
+          will-change: opacity;
+        }
+
         .scenic-blob {
+          will-change: opacity;
+        }
+
+        .scenic-scene[data-active="true"] .scenic-blob {
           animation:
             scenicBlobPulse 10s ease-in-out infinite,
             scenicBlobDrift 18s ease-in-out infinite;
-          will-change: transform, opacity;
+        }
+
+        .scenic-scene[data-active="false"] .scenic-blob {
+          animation: none;
+          opacity: 0.72;
+          transform: none;
+        }
+
+        @media (max-width: 767px), (prefers-reduced-motion: reduce) {
+          .scenic-scene .scenic-blob {
+            animation: none;
+          }
         }
 
         @keyframes scenicBlobPulse {

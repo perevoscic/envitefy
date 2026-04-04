@@ -26,6 +26,15 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingExperience, /id="rsvp-calendar"/);
   assert.match(landingExperience, /<LandingFaq/);
   assert.match(landingFaq, /id="faq"/);
+  assert.match(
+    landingExperience,
+    /const landingSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";/,
+  );
+  assert.match(landingExperience, /id="cta" className=\{landingSectionSpacingClass\}/);
+  assert.match(
+    landingFaq,
+    /className="scroll-mt-24 px-4 py-6 sm:px-6 lg:px-8"/,
+  );
   assert.notStrictEqual(snapIndex, -1);
   assert.notStrictEqual(gymnasticsIndex, -1);
   assert.notStrictEqual(snapTransformIndex, -1);

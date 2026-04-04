@@ -5,7 +5,7 @@ import { Minus, Plus } from "lucide-react";
 import styles from "../LandingExperience.module.css";
 
 const glassSectionClass =
-  "relative isolate overflow-hidden rounded-[2rem] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,255,255,0.1))] shadow-[0_32px_90px_rgba(4,1,14,0.42),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-2xl [-webkit-backdrop-filter:blur(40px)]";
+  "theme-glass-surface relative isolate overflow-hidden rounded-[2rem] border border-white/14 shadow-[0_32px_90px_rgba(4,1,14,0.42)]";
 
 const sectionBubbleClass =
   "mb-5 inline-flex rounded-full border border-white/28 bg-[rgba(32,18,58,0.62)] px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-white shadow-[0_12px_28px_rgba(6,2,16,0.22)]";

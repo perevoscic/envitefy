@@ -45,6 +45,8 @@ const IMAGES = {
   weddingEvent: "/images/wedding-2-landing.png",
 };
 
+const landingSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";
+
 const LANDING_SCENE_ORDER = [
   "snap",
   "gymnastics",
@@ -118,7 +120,7 @@ const LANDING_SCENES: Record<string, ScenicScene> = {
       },
       {
         className:
-          "absolute right-[16%] bottom-[16%] h-[11rem] w-[11rem] rounded-full border border-white/10 bg-white/[0.05] backdrop-blur-3xl",
+          "theme-glass-ornament absolute right-[16%] bottom-[16%] h-[11rem] w-[11rem] rounded-full border border-white/10",
       },
     ],
   },
@@ -136,7 +138,7 @@ const LANDING_SCENES: Record<string, ScenicScene> = {
       },
       {
         className:
-          "absolute bottom-[-8rem] left-[30%] h-[20rem] w-[20rem] rounded-[2.8rem] border border-white/10 bg-white/[0.04] rotate-6 backdrop-blur-3xl",
+          "theme-glass-ornament absolute bottom-[-8rem] left-[30%] h-[20rem] w-[20rem] rounded-[2.8rem] border border-white/10 rotate-6",
       },
     ],
   },
@@ -158,7 +160,7 @@ const LANDING_SCENES: Record<string, ScenicScene> = {
       },
       {
         className:
-          "absolute left-[18%] bottom-[12%] h-[12rem] w-[12rem] rounded-full border border-white/10 bg-white/[0.05] backdrop-blur-3xl",
+          "theme-glass-ornament absolute left-[18%] bottom-[12%] h-[12rem] w-[12rem] rounded-full border border-white/10",
       },
     ],
   },
@@ -180,7 +182,7 @@ const LANDING_SCENES: Record<string, ScenicScene> = {
       },
       {
         className:
-          "absolute right-[18%] bottom-[12%] h-[10rem] w-[20rem] rounded-full border border-white/10 bg-white/[0.04] backdrop-blur-3xl",
+          "theme-glass-ornament absolute right-[18%] bottom-[12%] h-[10rem] w-[20rem] rounded-full border border-white/10",
       },
     ],
   },
@@ -202,7 +204,7 @@ const LANDING_SCENES: Record<string, ScenicScene> = {
       },
       {
         className:
-          "absolute right-[20%] bottom-[14%] h-[11rem] w-[11rem] rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur-3xl",
+          "theme-glass-ornament absolute right-[20%] bottom-[14%] h-[11rem] w-[11rem] rounded-2xl border border-white/10",
       },
     ],
   },
@@ -290,7 +292,7 @@ const gymnasticsHighlights = [
 
 /** Single backdrop-filter per glass section; inner panels use opaque tints only. */
 const glassSectionClass =
-  "relative isolate overflow-hidden rounded-[2rem] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,255,255,0.1))] shadow-[0_32px_90px_rgba(4,1,14,0.42),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-2xl [-webkit-backdrop-filter:blur(40px)]";
+  "theme-glass-surface relative isolate overflow-hidden rounded-[2rem] border border-white/14 shadow-[0_32px_90px_rgba(4,1,14,0.42)]";
 
 const sectionBubbleClass =
   "mb-5 inline-flex rounded-full border border-white/28 bg-[rgba(32,18,58,0.62)] px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-white shadow-[0_12px_28px_rgba(6,2,16,0.22)]";
@@ -513,8 +515,8 @@ export default function LandingExperience() {
             { label: "How it works", href: "#how-it-works" },
             { label: "Why it works", href: "#use-cases" },
             { label: "RSVP", href: "#rsvp-calendar" },
-            { label: "Get started", href: "#cta" },
             { label: "FAQ", href: "#faq" },
+            { label: "Get started", href: "#cta" },
           ]}
           variant="glass-dark"
           authenticatedPrimaryHref="/event"
@@ -522,9 +524,9 @@ export default function LandingExperience() {
           onGuestPrimaryAction={() => openAuth("signup")}
         />
 
-        <section id="snap" className="px-4 pb-8 pt-32 sm:px-6 lg:px-8 lg:pt-40">
+        <section id="snap" className="px-4 pb-6 pt-32 sm:px-6 lg:px-8 lg:pt-40">
           <header id="landing-hero" className="mx-auto max-w-7xl">
-            <div className="relative isolate overflow-hidden rounded-[2.4rem] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.24),rgba(255,255,255,0.12))] px-7 py-8 shadow-[0_38px_90px_rgba(4,1,14,0.34),inset_0_1px_0_rgba(255,255,255,0.3)] backdrop-blur-2xl [-webkit-backdrop-filter:blur(40px)] md:px-10 md:py-12 lg:px-14 lg:py-16">
+            <div className="theme-glass-surface relative isolate overflow-hidden rounded-[2.4rem] border border-white/14 px-7 py-8 shadow-[0_38px_90px_rgba(4,1,14,0.34)] md:px-10 md:py-12 lg:px-14 lg:py-16">
               <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(255,255,255,0.04)_38%,rgba(89,28,135,0.07)_100%)]" />
               <div className="absolute -left-24 bottom-[-5rem] h-72 w-72 rounded-full bg-[#22D3EE]/20 blur-[140px]" />
               <div className="absolute right-[-6rem] top-[-3rem] h-72 w-72 rounded-full bg-[#8B5CF6]/22 blur-[150px]" />
@@ -636,7 +638,7 @@ export default function LandingExperience() {
           </header>
         </section>
 
-        <section id="gymnastics" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="gymnastics" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -753,7 +755,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="what-you-can-snap" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="what-you-can-snap" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -958,7 +960,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="how-it-works" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="how-it-works" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -1003,7 +1005,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="use-cases" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="use-cases" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -1027,7 +1029,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="rsvp-calendar" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="rsvp-calendar" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} overflow-visible px-7 py-8 md:px-10 md:py-10`}
           >
@@ -1107,10 +1109,7 @@ export default function LandingExperience() {
 
         <LandingFaq />
 
-        <section
-          id="cta"
-          className="px-4 py-6 pb-10 sm:px-6 lg:px-8 lg:pb-14"
-        >
+        <section id="cta" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-5xl ${glassSectionClass} px-7 py-10 text-center md:px-12 md:py-14`}
           >

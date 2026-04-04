@@ -89,11 +89,10 @@ export default function HeroTopNav({
       <div className="relative mx-auto max-w-[1400px]">
         <div
           className={cx(
-            "px-4 py-3 backdrop-blur-xl sm:px-6",
+            "px-4 py-3 sm:px-6",
             isDarkGlass
               ? cx(
-                  "isolate rounded-[1.8rem] border shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[18px] [backface-visibility:hidden] [transform:translateZ(0)]",
-                  "border-white/14 bg-[linear-gradient(135deg,rgba(13,9,26,0.68)_0%,rgba(21,12,39,0.56)_54%,rgba(43,20,73,0.48)_100%)] shadow-[0_14px_36px_rgba(3,1,10,0.2),inset_0_1px_0_rgba(255,255,255,0.08)]",
+                  "theme-glass-nav rounded-[1.8rem] border border-white/14 shadow-[0_14px_36px_rgba(3,1,10,0.2)]",
                 )
               : "rounded-full border border-white/90 bg-white/96 shadow-[0_18px_44px_rgba(87,67,157,0.1)]",
           )}
@@ -225,9 +224,9 @@ export default function HeroTopNav({
         >
           <div
             className={cx(
-              "pointer-events-auto ml-auto w-full max-w-[20rem] p-3 backdrop-blur-xl",
+              "pointer-events-auto ml-auto w-full max-w-[20rem] p-3",
               isDarkGlass
-                ? "rounded-[1.75rem] border border-white/12 bg-[#150b29]/82 shadow-[0_24px_54px_rgba(0,0,0,0.26)]"
+                ? "theme-glass-menu rounded-[1.75rem] border border-white/12 shadow-[0_24px_54px_rgba(0,0,0,0.26)]"
                 : "rounded-[1.75rem] border border-[#efe6ff] bg-white/98 shadow-[0_24px_54px_rgba(87,67,157,0.16)]",
             )}
           >
