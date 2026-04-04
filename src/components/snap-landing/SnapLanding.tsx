@@ -49,7 +49,7 @@ const SNAP_SCENES: Record<string, ScenicScene> = {
       },
       {
         className:
-          "absolute right-[16%] top-[28%] h-[13rem] w-[13rem] rounded-[2.5rem] border border-white/10 bg-white/[0.05] rotate-12 backdrop-blur-3xl",
+          "theme-glass-ornament absolute right-[16%] top-[28%] h-[13rem] w-[13rem] rounded-[2.5rem] border border-white/10 rotate-12",
       },
     ],
   },
@@ -85,7 +85,7 @@ const SNAP_SCENES: Record<string, ScenicScene> = {
       },
       {
         className:
-          "absolute bottom-[-8rem] left-[28%] h-[20rem] w-[20rem] rounded-[2.6rem] border border-white/10 bg-white/[0.05] -rotate-6 backdrop-blur-3xl",
+          "theme-glass-ornament absolute bottom-[-8rem] left-[28%] h-[20rem] w-[20rem] rounded-[2.6rem] border border-white/10 -rotate-6",
       },
     ],
   },
@@ -206,7 +206,7 @@ const faqs = [
 ] as const;
 
 const glassPanelClass =
-  "relative isolate overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.1] shadow-[0_32px_90px_rgba(4,1,14,0.42)] backdrop-blur-[18px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]";
+  "theme-glass-surface relative isolate overflow-hidden rounded-[2rem] border border-white/12 shadow-[0_32px_90px_rgba(4,1,14,0.42)]";
 
 function CtaButton({
   label,
