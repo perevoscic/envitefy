@@ -1,6 +1,7 @@
 type EnvitefyWordmarkProps = {
   className?: string;
   scaled?: boolean;
+  tone?: "gradient" | "light";
 };
 
 const WORDMARK_GRADIENT =
@@ -9,6 +10,7 @@ const WORDMARK_GRADIENT =
 export default function EnvitefyWordmark({
   className = "",
   scaled = true,
+  tone = "gradient",
 }: EnvitefyWordmarkProps) {
   return (
     <span
@@ -27,11 +29,18 @@ export default function EnvitefyWordmark({
           fontOpticalSizing: "auto",
           letterSpacing: "-0.055em",
           fontStyle: "normal",
-          backgroundImage: WORDMARK_GRADIENT,
-          backgroundClip: "text",
-          WebkitBackgroundClip: "text",
-          color: "transparent",
-          WebkitTextFillColor: "transparent",
+          ...(tone === "gradient"
+            ? {
+                backgroundImage: WORDMARK_GRADIENT,
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                color: "transparent",
+                WebkitTextFillColor: "transparent",
+              }
+            : {
+                color: "#ffffff",
+                WebkitTextFillColor: "#ffffff",
+              }),
         }}
       >
         envitefy

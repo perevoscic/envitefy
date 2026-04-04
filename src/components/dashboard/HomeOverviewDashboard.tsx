@@ -423,7 +423,7 @@ function InvitationEventCard({
               >
                 {item.title}
               </h3>
-              <p className="flex items-center gap-2 text-sm font-medium text-white/70">
+              <p className="flex items-center gap-2 text-sm font-medium text-white">
                 <MapPin size={16} className="text-white/60" />
                 {item.locationText || "Location details coming soon"}
               </p>
@@ -919,7 +919,7 @@ export default function HomeOverviewDashboard({
                   <h2 className="mb-4 text-3xl font-black leading-tight tracking-tighter text-white md:text-5xl">
                     Nothing is scheduled yet
                   </h2>
-                  <p className="text-sm font-medium text-white/70">
+                  <p className="text-sm font-medium text-white">
                     Create or import an event and your home dashboard will start
                     highlighting what is next.
                   </p>

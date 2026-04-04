@@ -485,7 +485,7 @@ function ArchedHeroLayout({
             <p className="mt-2 text-sm text-white/80">{event.date}</p>
           )}
           {event.location && (
-            <p className="mt-1 text-xs uppercase tracking-[0.25em] text-white/70">
+            <p className="mt-1 text-xs uppercase tracking-[0.25em] text-white">
               {event.location}
             </p>
           )}

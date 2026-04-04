@@ -53,7 +53,7 @@ export default function CrestCenteredRibbon({
             <p className="mt-2 text-xs md:text-sm text-white/80">{event.date}</p>
           )}
           {event.location && (
-            <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-white/70">
+            <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-white">
               {event.location}
             </p>
           )}

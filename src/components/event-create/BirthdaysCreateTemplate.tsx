@@ -844,7 +844,7 @@ export default function BirthdaysCreateTemplate({ defaultDate }: Props) {
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#FFB4F3]">
                 Envitefy
               </p>
-              <p className="mt-3 text-sm text-white/70">
+              <p className="mt-3 text-sm text-white">
                 Shareable birthday invites with one smart link and
                 add-to-calendar buttons your guests will actually use.
               </p>
@@ -1217,7 +1217,7 @@ function FooterList({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
       <p className="text-sm font-semibold text-white">{title}</p>
-      <ul className="mt-3 space-y-2 text-sm text-white/70">
+      <ul className="mt-3 space-y-2 text-sm text-white">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}

@@ -13,15 +13,25 @@ test("/gymnastics renders the shared hero nav without duplicating the current pa
   const gymnasticsLanding = readSource(
     "src/components/gymnastics-landing/GymnasticsLanding.tsx",
   );
+  const gymnasticsFaq = readSource(
+    "src/components/gymnastics-landing/GymnasticsLandingFaq.tsx",
+  );
 
   assert.match(page, /<GymnasticsLanding \/>/);
   assert.match(gymnasticsLanding, /<HeroTopNav/);
   assert.match(gymnasticsLanding, /label: "Snap", href: "\/snap"/);
   assert.match(gymnasticsLanding, /label: "Features", href: "#features"/);
-  assert.match(gymnasticsLanding, /label: "FAQ", href: "\/faq"/);
+  assert.match(gymnasticsLanding, /label: "How it works", href: "#how-it-works"/);
+  assert.match(gymnasticsLanding, /label: "Preview", href: "#preview"/);
+  assert.match(gymnasticsLanding, /label: "Use cases", href: "#use-cases"/);
+  assert.match(gymnasticsLanding, /label: "Why Envitefy", href: "#why-envitefy"/);
+  assert.match(gymnasticsLanding, /label: "FAQ", href: "#faq"/);
   assert.match(gymnasticsLanding, /id="hero"/);
   assert.match(gymnasticsLanding, /id="features"/);
   assert.match(gymnasticsLanding, /id="how-it-works"/);
+  assert.match(gymnasticsLanding, /id="preview"/);
+  assert.match(gymnasticsFaq, /id="faq"/);
+  assert.match(gymnasticsLanding, /<GymnasticsLandingFaq/);
 });
 
 test("/gymnastics keeps gymnastics signup and launch wiring", () => {

@@ -101,7 +101,7 @@ const SectionCard = ({
 );
 
 const EmptySection = ({ text }: { text: string }) => (
-  <div className="rounded-3xl border border-dashed border-white/16 bg-white/5 px-5 py-8 text-sm text-white/70">
+  <div className="rounded-3xl border border-dashed border-white/16 bg-white/5 px-5 py-8 text-sm text-white">
     {text}
   </div>
 );

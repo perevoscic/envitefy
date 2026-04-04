@@ -11,6 +11,7 @@ const readSource = (relativePath) =>
 test("landing page renders the new dedicated landing experience component", () => {
   const page = readSource("src/app/landing/page.tsx");
   const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
+  const landingFaq = readSource("src/app/landing/sections/LandingFaq.tsx");
   const gymnasticsIndex = landingExperience.indexOf('id="gymnastics"');
   const snapIndex = landingExperience.indexOf('id="snap"');
   const snapTransformIndex = landingExperience.indexOf('id="what-you-can-snap"');
@@ -23,6 +24,8 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingExperience, /id="how-it-works"/);
   assert.match(landingExperience, /id="use-cases"/);
   assert.match(landingExperience, /id="rsvp-calendar"/);
+  assert.match(landingExperience, /<LandingFaq/);
+  assert.match(landingFaq, /id="faq"/);
   assert.notStrictEqual(snapIndex, -1);
   assert.notStrictEqual(gymnasticsIndex, -1);
   assert.notStrictEqual(snapTransformIndex, -1);
@@ -45,7 +48,8 @@ test("landing preserves auth-aware nav behavior and snap-first CTA wiring", () =
   assert.match(landingExperience, /signupSource="snap"/);
   assert.match(landingExperience, /successRedirectUrl="\/event"/);
   assert.match(landingExperience, /allowSignupSwitch=\{false\}/);
-  assert.match(landingExperience, /label: "Snap", href: "\/snap"/);
+  assert.match(landingExperience, /label: "Snap", href: "#snap"/);
+  assert.match(landingExperience, /label: "FAQ", href: "#faq"/);
   assert.match(landingExperience, /href="\/snap"/);
   assert.match(landingExperience, /href="\/gymnastics"/);
   assert.doesNotMatch(landingExperience, /Start with Gymnastics/);
