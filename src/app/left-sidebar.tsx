@@ -1232,6 +1232,10 @@ export default function LeftSidebar() {
     () => createMenuItems.length,
     [createMenuItems]
   );
+  const hasCreateEventAccess = useMemo(
+    () => useGymnasticsDirectCreate || createMenuOptionCount > 0,
+    [createMenuOptionCount, useGymnasticsDirectCreate]
+  );
 
   useEffect(() => {
     if (activeCreateItem) {
@@ -1270,6 +1274,16 @@ export default function LeftSidebar() {
       }
     } catch {}
   }, [lastCreateSelection]);
+  useEffect(() => {
+    if (
+      hasCreateEventAccess ||
+      (sidebarPage !== "createEvent" && sidebarPage !== "createEventOther")
+    ) {
+      return;
+    }
+    setForcedCreateActiveLabel(null);
+    setSidebarPage("root");
+  }, [hasCreateEventAccess, setSidebarPage, sidebarPage]);
   const history = historySidebarItems as HistoryRow[];
   const openCompactEventsPage = useCallback(
     (page: "myEvents" | "invitedEvents") => {
@@ -1280,6 +1294,11 @@ export default function LeftSidebar() {
     [clearEventContext, setIsCollapsed, setSidebarPage]
   );
   const openCreateEventPage = useCallback(() => {
+    if (!hasCreateEventAccess) {
+      setForcedCreateActiveLabel(null);
+      setSidebarPage("root");
+      return;
+    }
     if (useGymnasticsDirectCreate) {
       clearEventContext();
       setSidebarPage("root");
@@ -1292,6 +1311,7 @@ export default function LeftSidebar() {
   }, [
     clearEventContext,
     collapseSidebarOnTouch,
+    hasCreateEventAccess,
     router,
     setIsCollapsed,
     setSidebarPage,
@@ -1868,12 +1888,14 @@ export default function LeftSidebar() {
               },
             }
           : null,
-        {
-          id: "create" as const,
-          icon: Plus,
-          label: "Create event",
-          onClick: openCreateEventPage,
-        },
+        hasCreateEventAccess
+          ? {
+              id: "create" as const,
+              icon: Plus,
+              label: "Create event",
+              onClick: openCreateEventPage,
+            }
+          : null,
         {
           id: "myEvents" as const,
           icon: SidebarMyEventsMenuIcon,
@@ -1893,6 +1915,7 @@ export default function LeftSidebar() {
       clearEventContext,
       collapseSidebarOnTouch,
       createdEventsCount,
+      hasCreateEventAccess,
       invitedEventsCount,
       goHomeFromSidebar,
       openCompactEventsPage,
@@ -2505,37 +2528,39 @@ export default function LeftSidebar() {
                             <span className="truncate">Snap event</span>
                           </Link>
                         ) : null}
-                        <button
-                          type="button"
-                          onClick={openCreateEventPage}
-                          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-                            isCreateEntryActive
-                              ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
-                              : "text-slate-500 hover:bg-slate-200/40"
-                          } py-3 pl-3 pr-4`}
-                        >
-                          <span
-                            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                        {hasCreateEventAccess ? (
+                          <button
+                            type="button"
+                            onClick={openCreateEventPage}
+                            className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
                               isCreateEntryActive
-                                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
-                                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
-                            }`}
+                                ? "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
+                                : "text-slate-500 hover:bg-slate-200/40"
+                            } py-3 pl-3 pr-4`}
                           >
-                            <Plus size={18} />
-                          </span>
-                          <span className="truncate">Create Event</span>
-                          {!useGymnasticsDirectCreate ? (
-                            <span className="ml-auto flex items-center gap-2">
-                              <span className={SIDEBAR_BADGE_CLASS}>
-                                {createMenuOptionCount}
-                              </span>
-                              <ChevronRight
-                                size={16}
-                                className="text-slate-400"
-                              />
+                            <span
+                              className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                                isCreateEntryActive
+                                  ? "border-indigo-100 bg-indigo-50 text-indigo-600"
+                                  : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                              }`}
+                            >
+                              <Plus size={18} />
                             </span>
-                          ) : null}
-                        </button>
+                            <span className="truncate">Create Event</span>
+                            {!useGymnasticsDirectCreate ? (
+                              <span className="ml-auto flex items-center gap-2">
+                                <span className={SIDEBAR_BADGE_CLASS}>
+                                  {createMenuOptionCount}
+                                </span>
+                                <ChevronRight
+                                  size={16}
+                                  className="text-slate-400"
+                                />
+                              </span>
+                            ) : null}
+                          </button>
+                        ) : null}
 
                         <button
                           type="button"
