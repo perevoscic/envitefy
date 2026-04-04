@@ -261,11 +261,12 @@ const resolveInstallGuide = (win: Window): InstallGuide => {
         case "safari":
           return withSteps(
             [
-              `Tap the share icon (square with an arrow) in Safari on your ${deviceLabel}.`,
-              'Scroll and choose "Add to Home Screen".',
-              'Tap "Add" in the top-right corner.',
+              `Open Envitefy in Safari on your ${deviceLabel}, then tap the Share button.`,
+              'Scroll down and choose "Add to Home Screen".',
+              'Turn on "Open as Web App" so Envitefy launches like an app.',
+              'Tap "Add" to finish.',
             ],
-            noteSuffix
+            'If you do not see "Add to Home Screen," scroll to the bottom of the share sheet, tap "Edit Actions," add it, then try again.'
           );
         case "chrome":
         case "edge":
@@ -757,6 +758,11 @@ export default function PwaInstallButton({
     !showInstallCta &&
     Boolean(fallbackGuide) &&
     (showIosFallback || showGenericFallback);
+  const hidePanelHeaderForIosSafari =
+    Boolean(fallbackGuide) &&
+    showIosFallback &&
+    fallbackGuide?.browser === "safari" &&
+    (fallbackGuide?.os === "ios" || fallbackGuide?.os === "ipados");
   const headingText = (() => {
     if (showInstallCta) return "Add Envitefy to your home screen";
     if (fallbackGuide) {
@@ -824,9 +830,33 @@ export default function PwaInstallButton({
         <div className="relative w-[min(92vw,336px)]">
           <div className="relative overflow-hidden rounded-[28px] border border-[#e7e1ff] bg-white/96 p-4 text-[#1f2340] shadow-[0_28px_80px_rgba(103,87,255,0.18)] backdrop-blur-xl">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(123,97,255,0.14),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(55,168,255,0.1),transparent_34%)]" />
+            <button
+              type="button"
+              onClick={() => {
+                setExpanded(false);
+                setWasManuallyClosed(true);
+              }}
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#ece8ff] bg-white/85 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]"
+              aria-label="Collapse install options"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
             <div className="relative space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
+              {!hidePanelHeaderForIosSafari && (
+                <div className="flex items-start gap-3 pr-12">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-[#ebe6ff] bg-[linear-gradient(135deg,#f8f5ff_0%,#eef2ff_100%)] text-[#6b3cff] shadow-[0_10px_24px_rgba(103,87,255,0.12)]">
                     <Image
                       src={APP_ICON_SRC}
@@ -848,31 +878,7 @@ export default function PwaInstallButton({
                     ) : null}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExpanded(false);
-                    setWasManuallyClosed(true);
-                  }}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ece8ff] bg-white/85 text-[#7a8098] shadow-sm transition-all hover:bg-[#f6f3ff] hover:text-[#4d3bca]"
-                  aria-label="Collapse install options"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
+              )}
               {showInstallCta && (
                 <button
                   onClick={handleInstallAction}

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import GymnasticsHeroBackground from "./GymnasticsHeroBackground";
+import GymnasticsLandingFaq from "./GymnasticsLandingFaq";
 import Link from "next/link";
-import Image from "next/image";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import {
@@ -326,10 +326,13 @@ export default function GymnasticsLanding() {
 
       <HeroTopNav
         navLinks={[
-          { label: "Gymnastics", href: "#hero" },
-          { label: "Snap", href: "/snap" },
           { label: "Features", href: "#features" },
-          { label: "FAQ", href: "/faq" },
+          { label: "How it works", href: "#how-it-works" },
+          { label: "Preview", href: "#preview" },
+          { label: "Use cases", href: "#use-cases" },
+          { label: "Why Envitefy", href: "#why-envitefy" },
+          { label: "FAQ", href: "#faq" },
+          { label: "Snap", href: "/snap" },
         ]}
         authenticatedPrimaryHref="/event/gymnastics"
         onGuestLoginAction={() => openAuth("login")}
@@ -670,7 +673,10 @@ export default function GymnasticsLanding() {
       </section>
 
       {/* ═══ PRODUCT SHOWCASE ═══ */}
-      <section className="py-20 lg:py-28">
+      <section
+        id="preview"
+        className="scroll-mt-20 py-20 lg:py-28"
+      >
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
             {/* left: text */}
@@ -730,7 +736,7 @@ export default function GymnasticsLanding() {
               <div className="relative mx-auto max-w-[340px] overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-lg">
                 {/* status bar */}
                 <div className="flex items-center justify-center bg-slate-900 px-4 py-2">
-                  <span className="text-[11px] font-medium text-white/70">
+                  <span className="text-[11px] font-medium text-white">
                     envitefy.com
                   </span>
                 </div>
@@ -939,6 +945,8 @@ export default function GymnasticsLanding() {
         </div>
       </section>
 
+      <GymnasticsLandingFaq />
+
       {/* ═══ FINAL CTA ═══ */}
       <section className="pb-20 pt-4 lg:pb-28">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
@@ -950,7 +958,7 @@ export default function GymnasticsLanding() {
             />
 
             <div className="relative mx-auto max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white">
                 Ready to get started?
               </p>
               <h2
@@ -994,28 +1002,6 @@ export default function GymnasticsLanding() {
           </div>
         </div>
       </section>
-
-      {/* ═══ FOOTER ═══ */}
-      <footer className="border-t border-slate-100 py-10">
-        <div className="mx-auto max-w-[1400px] px-4 text-center sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center gap-2.5">
-            <Image
-              src="/favicon.png"
-              alt="Envitefy"
-              width={28}
-              height={28}
-              unoptimized
-              className="h-7 w-7 rounded-lg"
-            />
-            <span className="text-sm font-semibold text-slate-400">
-              Envitefy Gymnastics
-            </span>
-          </div>
-          <p className="mt-3 text-xs text-slate-400">
-            © {new Date().getFullYear()} Envitefy. All rights reserved.
-          </p>
-        </div>
-      </footer>
 
       <AuthModal
         open={authModalOpen}

@@ -12,6 +12,44 @@
   background: transparent;
 }
 
+.sectionShell {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    0 10px 30px rgba(80, 60, 140, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.sectionShell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.14) 100%
+  );
+}
+
+.sectionShell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sectionShellOverflowVisible {
+  overflow: visible;
+}
+
+.sectionInner {
+  contain: layout paint;
+}
+
 .glassPill {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(28px);
@@ -57,16 +95,16 @@
 }
 
 .heroRevealReady {
-  opacity: 0;
-  transform: translateY(var(--hero-reveal-offset, 28px)) scale(0.98);
-  will-change: transform, opacity;
+  opacity: 1;
+  transform: translateY(var(--hero-reveal-idle-offset, 6px));
+  will-change: transform;
 }
 
 .heroRevealPrimary,
 .heroRevealCenter,
 .heroRevealSecondary {
   animation-name: heroSoftReveal;
-  animation-duration: 0.95s;
+  animation-duration: 0.7s;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   animation-fill-mode: both;
 }
@@ -84,15 +122,15 @@
 }
 
 .weddingRevealPrimary {
-  --hero-reveal-offset: 40px;
+  --hero-reveal-offset: 24px;
 }
 
 .weddingRevealCenter {
-  --hero-reveal-offset: 34px;
+  --hero-reveal-offset: 20px;
 }
 
 .weddingRevealSecondary {
-  --hero-reveal-offset: 28px;
+  --hero-reveal-offset: 16px;
 }
 
 .cardGroup:hover .heroSnapCard,
@@ -101,11 +139,17 @@
 }
 
 .heroSnapCard {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+    linear-gradient(135deg, rgba(124, 58, 237, 0.28), rgba(34, 211, 238, 0.18));
   transform: rotate(-6deg);
   transition: transform 0.5s ease;
 }
 
 .heroLiveCard {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1)),
+    linear-gradient(135deg, rgba(20, 10, 39, 0.12), rgba(124, 58, 237, 0.2));
   transform: rotate(4deg);
   transition: transform 0.5s ease;
 }
@@ -133,13 +177,11 @@
 
 @keyframes heroSoftReveal {
   0% {
-    opacity: 0;
-    transform: translateY(var(--hero-reveal-offset, 28px)) scale(0.98);
+    transform: translateY(var(--hero-reveal-offset, 18px));
   }
 
   100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -216,6 +258,9 @@
 .weddingInviteCard {
   overflow: hidden;
   border-radius: 1.5rem;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.12)),
+    linear-gradient(145deg, rgba(244, 114, 182, 0.18), rgba(251, 191, 36, 0.14));
   box-shadow:
     0 26px 54px rgba(31, 22, 53, 0.16),
     0 12px 26px rgba(31, 22, 53, 0.08);
@@ -257,7 +302,9 @@
 .weddingPhoneFrame {
   overflow: hidden;
   border-radius: 1.75rem;
-  background: #f7f3fb;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(247, 243, 251, 0.82)),
+    linear-gradient(145deg, rgba(124, 58, 237, 0.12), rgba(244, 114, 182, 0.1));
 }
 
 .weddingPhoneImage {
@@ -547,9 +594,10 @@
   padding: 1rem 1.1rem;
   border: 1px solid rgba(124, 58, 237, 0.08);
   border-radius: 1.3rem;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 18px 38px rgba(31, 22, 53, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 18px 38px rgba(31, 22, 53, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34);
 }
 
 .gymnasticsInfoLabel {

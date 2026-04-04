@@ -270,7 +270,7 @@ function HeroPreview() {
                 <div className="absolute inset-x-4 bottom-4 rounded-[1.4rem] border border-white/25 bg-white/18 p-4 text-white backdrop-blur-md">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/70">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white">
                         Next game
                       </p>
                       <p className="mt-1 text-lg font-semibold">Friday vs Central Wildcats</p>

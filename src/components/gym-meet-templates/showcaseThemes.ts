@@ -813,7 +813,7 @@ export const SHOWCASE_THEMES: Record<ShowcaseThemeId, ShowcaseThemeConfig> = {
     navActiveClass:
       "rounded-none bg-white px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-black",
     navIdleClass:
-      "rounded-none border border-white/10 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white/70 transition hover:border-white/30 hover:text-white",
+      "rounded-none border border-white/10 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition hover:border-white/30 hover:text-white",
     panelClass:
       "rounded-none border-b-[6px] border-black bg-white px-5 py-5",
     cardClass:
