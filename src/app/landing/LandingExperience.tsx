@@ -22,7 +22,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";

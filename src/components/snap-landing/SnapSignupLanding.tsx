@@ -365,7 +365,6 @@ export default function SnapSignupLanding() {
       <HeroTopNav
         navLinks={[
           { label: "Gymnastics", href: "/gymnastics" },
-          { label: "Snap", href: "#snap" },
           { label: "Features", href: "#features" },
           { label: "FAQ", href: "#faq" },
         ]}

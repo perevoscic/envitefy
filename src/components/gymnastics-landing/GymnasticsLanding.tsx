@@ -326,7 +326,6 @@ export default function GymnasticsLanding() {
 
       <HeroTopNav
         navLinks={[
-          { label: "Gymnastics", href: "#hero" },
           { label: "Snap", href: "/snap" },
           { label: "Features", href: "#features" },
           { label: "FAQ", href: "/faq" },

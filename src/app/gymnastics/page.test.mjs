@@ -8,7 +8,7 @@ const repoRoot = process.cwd();
 const readSource = (relativePath) =>
   fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("/gymnastics renders the shared hero nav with gymnastics-specific anchors", () => {
+test("/gymnastics renders the shared hero nav without duplicating the current page", () => {
   const page = readSource("src/app/gymnastics/page.tsx");
   const gymnasticsLanding = readSource(
     "src/components/gymnastics-landing/GymnasticsLanding.tsx",
@@ -16,7 +16,6 @@ test("/gymnastics renders the shared hero nav with gymnastics-specific anchors",
 
   assert.match(page, /<GymnasticsLanding \/>/);
   assert.match(gymnasticsLanding, /<HeroTopNav/);
-  assert.match(gymnasticsLanding, /label: "Gymnastics", href: "#hero"/);
   assert.match(gymnasticsLanding, /label: "Snap", href: "\/snap"/);
   assert.match(gymnasticsLanding, /label: "Features", href: "#features"/);
   assert.match(gymnasticsLanding, /label: "FAQ", href: "\/faq"/);

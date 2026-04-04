@@ -421,7 +421,6 @@ export default function SnapLanding() {
       <HeroTopNav
         navLinks={[
           { label: "Gymnastics", href: "/gymnastics" },
-          { label: "Snap", href: "#snap" },
           { label: "How It Works", href: "#how-it-works" },
           { label: "Use Cases", href: "#use-cases" },
           { label: "FAQ", href: "#faq" },
