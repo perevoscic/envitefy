@@ -16,5 +16,7 @@ test("AppShell hides workspace chrome on marketing routes and redirects signed-i
   assert.match(appShell, /"\/gymnastics"/);
   assert.match(appShell, /"\/landing"/);
   assert.match(appShell, /showWorkspaceChrome/);
+  assert.match(appShell, /isRedirectingFromMarketing/);
   assert.match(appShell, /router\.replace\("\/"\)/);
+  assert.match(appShell, /animate-spin/);
 });

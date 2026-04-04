@@ -20,6 +20,25 @@ function isMarketingPath(pathname: string) {
   return MARKETING_PATHS.has(pathname);
 }
 
+function MarketingSignedInRedirectOverlay() {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-[#F8F5FF]/92 backdrop-blur-[8px]"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading your workspace"
+    >
+      <div
+        className="h-10 w-10 rounded-full border-2 border-foreground/15 border-t-foreground/65 animate-spin"
+        aria-hidden
+      />
+      <p className="text-sm font-medium text-foreground/75">
+        Taking you to your workspace…
+      </p>
+    </div>
+  );
+}
+
 export default function AppShell({
   children,
   serverSession = null,
@@ -41,18 +60,13 @@ export default function AppShell({
     (status === "loading" && wasAuthenticated.current);
   const onMarketing = isMarketingPath(pathname);
   const showWorkspaceChrome = isAuthenticated && !onMarketing;
+  const isRedirectingFromMarketing = onMarketing && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 
   useEffect(() => {
-    if (!onMarketing) return;
-    if (
-      status !== "authenticated" &&
-      !(status === "loading" && hasServerSession)
-    ) {
-      return;
-    }
+    if (!onMarketing || !isAuthenticated) return;
     router.replace("/");
-  }, [onMarketing, status, hasServerSession, router]);
+  }, [onMarketing, isAuthenticated, router]);
 
   if (isLightweightLanding) {
     return (
@@ -75,8 +89,14 @@ export default function AppShell({
         </MenuProvider>
       ) : (
         <MainContentWrapper isAuthenticated={false}>
-          <div className="flex-1 min-w-0">{children}</div>
-          <ConditionalFooter />
+          {isRedirectingFromMarketing ? (
+            <MarketingSignedInRedirectOverlay />
+          ) : (
+            <>
+              <div className="flex-1 min-w-0">{children}</div>
+              <ConditionalFooter />
+            </>
+          )}
         </MainContentWrapper>
       )}
     </EventCacheProvider>
