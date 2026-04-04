@@ -34,13 +34,15 @@ const items = [
   },
 ] as const;
 
+const gymnasticsSectionSpacingClass = "scroll-mt-20 py-16 lg:py-20";
+
 export default function GymnasticsLandingFaq() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
     <section
       id="faq"
-      className="scroll-mt-20 border-t border-slate-100 bg-gradient-to-b from-white to-[#fafbfe] py-20 lg:py-28"
+      className={`border-t border-slate-100 bg-gradient-to-b from-white to-[#fafbfe] ${gymnasticsSectionSpacingClass}`}
       aria-labelledby="gymnastics-faq-heading"
     >
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">

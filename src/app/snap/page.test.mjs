@@ -20,6 +20,16 @@ test("/snap renders the new landing component with key sections", () => {
   assert.match(snapLanding, /id="how-it-works"/);
   assert.match(snapLanding, /id="use-cases"/);
   assert.match(snapLanding, /id="faq"/);
+  assert.match(snapLanding, /src="\/images\/snap-hero\.png"/);
+  assert.match(
+    snapLanding,
+    /src="\/sliders\/vertical\/vertical-slide-1\.jpg"/,
+  );
+  assert.match(snapLanding, /useScroll\(/);
+  assert.doesNotMatch(snapLanding, /function ScrollRevealMediaCard\(\)/);
+  assert.doesNotMatch(snapLanding, /SNAP_HERO_BEFORE_IMAGE/);
+  assert.doesNotMatch(snapLanding, /SNAP_HERO_AFTER_IMAGE/);
+  assert.doesNotMatch(snapLanding, /sticky top-6 lg:top-8/);
 });
 
 test("/snap includes the updated social-proof and CTA copy", () => {

@@ -32,6 +32,15 @@ test("/gymnastics renders the shared hero nav without duplicating the current pa
   assert.match(gymnasticsLanding, /id="preview"/);
   assert.match(gymnasticsFaq, /id="faq"/);
   assert.match(gymnasticsLanding, /<GymnasticsLandingFaq/);
+  assert.match(
+    gymnasticsLanding,
+    /const gymnasticsSectionSpacingClass = "scroll-mt-20 py-16 lg:py-20";/,
+  );
+  assert.match(
+    gymnasticsFaq,
+    /const gymnasticsSectionSpacingClass = "scroll-mt-20 py-16 lg:py-20";/,
+  );
+  assert.match(gymnasticsLanding, /id="why-envitefy" className=\{gymnasticsSectionSpacingClass\}/);
 });
 
 test("/gymnastics keeps gymnastics signup and launch wiring", () => {

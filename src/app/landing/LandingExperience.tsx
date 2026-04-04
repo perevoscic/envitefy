@@ -45,6 +45,8 @@ const IMAGES = {
   weddingEvent: "/images/wedding-2-landing.png",
 };
 
+const landingSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";
+
 const LANDING_SCENE_ORDER = [
   "snap",
   "gymnastics",
@@ -513,8 +515,8 @@ export default function LandingExperience() {
             { label: "How it works", href: "#how-it-works" },
             { label: "Why it works", href: "#use-cases" },
             { label: "RSVP", href: "#rsvp-calendar" },
-            { label: "Get started", href: "#cta" },
             { label: "FAQ", href: "#faq" },
+            { label: "Get started", href: "#cta" },
           ]}
           variant="glass-dark"
           authenticatedPrimaryHref="/event"
@@ -522,7 +524,7 @@ export default function LandingExperience() {
           onGuestPrimaryAction={() => openAuth("signup")}
         />
 
-        <section id="snap" className="px-4 pb-8 pt-32 sm:px-6 lg:px-8 lg:pt-40">
+        <section id="snap" className="px-4 pb-6 pt-32 sm:px-6 lg:px-8 lg:pt-40">
           <header id="landing-hero" className="mx-auto max-w-7xl">
             <div className="theme-glass-surface relative isolate overflow-hidden rounded-[2.4rem] border border-white/14 px-7 py-8 shadow-[0_38px_90px_rgba(4,1,14,0.34)] md:px-10 md:py-12 lg:px-14 lg:py-16">
               <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(255,255,255,0.04)_38%,rgba(89,28,135,0.07)_100%)]" />
@@ -636,7 +638,7 @@ export default function LandingExperience() {
           </header>
         </section>
 
-        <section id="gymnastics" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="gymnastics" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -753,7 +755,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="what-you-can-snap" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="what-you-can-snap" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -958,7 +960,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="how-it-works" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="how-it-works" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -1003,7 +1005,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="use-cases" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="use-cases" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -1027,7 +1029,7 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="rsvp-calendar" className="px-4 py-6 sm:px-6 lg:px-8">
+        <section id="rsvp-calendar" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} overflow-visible px-7 py-8 md:px-10 md:py-10`}
           >
@@ -1107,10 +1109,7 @@ export default function LandingExperience() {
 
         <LandingFaq />
 
-        <section
-          id="cta"
-          className="px-4 py-6 pb-10 sm:px-6 lg:px-8 lg:pb-14"
-        >
+        <section id="cta" className={landingSectionSpacingClass}>
           <div
             className={`mx-auto max-w-5xl ${glassSectionClass} px-7 py-10 text-center md:px-12 md:py-14`}
           >

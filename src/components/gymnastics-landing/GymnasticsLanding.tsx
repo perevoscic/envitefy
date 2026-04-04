@@ -33,6 +33,8 @@ const heroImages = {
   ],
 };
 
+const gymnasticsSectionSpacingClass = "scroll-mt-20 py-16 lg:py-20";
+
 type HeroStat = {
   value: number;
   suffix: string;
@@ -567,7 +569,7 @@ export default function GymnasticsLanding() {
       {/* ═══ FEATURES ═══ */}
       <section
         id="features"
-        className="relative isolate scroll-mt-20 bg-[#fafbfe] py-20 lg:py-28"
+        className={`relative isolate bg-[#fafbfe] ${gymnasticsSectionSpacingClass}`}
       >
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           {/* section header */}
@@ -599,7 +601,7 @@ export default function GymnasticsLanding() {
       {/* ═══ HOW IT WORKS ═══ */}
       <section
         id="how-it-works"
-        className="scroll-mt-20 bg-gradient-to-b from-slate-50 to-white py-20 lg:py-28"
+        className={`bg-gradient-to-b from-slate-50 to-white ${gymnasticsSectionSpacingClass}`}
       >
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
@@ -675,7 +677,7 @@ export default function GymnasticsLanding() {
       {/* ═══ PRODUCT SHOWCASE ═══ */}
       <section
         id="preview"
-        className="scroll-mt-20 py-20 lg:py-28"
+        className={gymnasticsSectionSpacingClass}
       >
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
@@ -830,7 +832,7 @@ export default function GymnasticsLanding() {
       {/* ═══ USE CASES ═══ */}
       <section
         id="use-cases"
-        className="scroll-mt-20 bg-gradient-to-b from-white to-slate-50 py-20 lg:py-28"
+        className={`bg-gradient-to-b from-white to-slate-50 ${gymnasticsSectionSpacingClass}`}
       >
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
@@ -878,7 +880,7 @@ export default function GymnasticsLanding() {
       </section>
 
       {/* ═══ WHY ENVITEFY ═══ */}
-      <section id="why-envitefy" className="scroll-mt-20 py-20 lg:py-28">
+      <section id="why-envitefy" className={gymnasticsSectionSpacingClass}>
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/60 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-8 text-white shadow-2xl sm:p-12 lg:p-16">
             {/* subtle radial highlights */}
@@ -948,7 +950,7 @@ export default function GymnasticsLanding() {
       <GymnasticsLandingFaq />
 
       {/* ═══ FINAL CTA ═══ */}
-      <section className="pb-20 pt-4 lg:pb-28">
+      <section className="py-16 lg:py-20">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 p-8 text-center text-white shadow-2xl shadow-indigo-500/20 sm:p-12 lg:p-16">
             {/* refracted glow */}
