@@ -1,12 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import {
-  motion,
-  useScroll,
-  useSpring,
-  useTransform,
-} from "framer-motion";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -215,6 +209,7 @@ const glassPanelClass =
   "theme-glass-surface relative isolate overflow-hidden rounded-[2rem] border border-white/12 shadow-[0_32px_90px_rgba(4,1,14,0.42)]";
 
 const snapSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";
+const snapHashAnchorClass = "hash-anchor-below-fixed-nav";
 
 function CtaButton({
   label,
@@ -296,26 +291,12 @@ function Hero({
   onPrimaryAction: () => void;
   primaryHref?: string;
 }) {
-  const heroRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 92,
-    damping: 26,
-    mass: 0.45,
-  });
-  const beforeY = useTransform(smoothProgress, [0, 1], ["0%", "-100%"]);
-  const afterY = useTransform(smoothProgress, [0, 1], ["100%", "0%"]);
-
   return (
     <section
-      ref={heroRef}
       id="snap"
-      className="px-4 pb-6 pt-24 sm:px-6 lg:px-8 lg:pt-28"
+      className={`${snapHashAnchorClass} px-4 pb-6 pt-[calc(max(6.5rem,calc(env(safe-area-inset-top)+5.5rem))+1.5rem)] sm:px-6 lg:px-8`}
     >
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto min-w-0 w-full max-w-[min(90vw,100%)] pb-2">
         <div
           className={`${glassPanelClass} px-7 py-8 md:px-10 md:py-10 lg:px-14 lg:py-10`}
         >
@@ -323,8 +304,8 @@ function Hero({
           <div className="absolute -left-16 top-0 h-56 w-56 rounded-full bg-white/8 blur-3xl" />
           <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-[#7C3AED]/18 blur-[130px]" />
 
-          <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <div className="max-w-2xl">
+          <div className="relative grid items-start gap-8 xl:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)] xl:gap-8">
+            <div className="min-w-0 xl:max-w-2xl">
               <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.08] px-4 py-2 text-[0.68rem] font-bold tracking-[0.28em] text-white uppercase backdrop-blur-xl">
                 <Zap className="h-3.5 w-3.5" /> From Upload to Event
               </span>
@@ -343,7 +324,7 @@ function Hero({
                 details, no more group chat chaos.
               </p>
 
-              <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+              <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:items-start xl:items-start">
                 <CtaButton
                   label="Snap Your First Invite"
                   href={primaryHref}
@@ -354,20 +335,16 @@ function Hero({
               </div>
             </div>
 
-            <div className="relative h-[min(72vw,22rem)] w-full min-h-0 overflow-hidden rounded-[2rem] border border-white/12 bg-[#090d18] shadow-[0_26px_60px_rgba(3,0,12,0.3)] lg:h-full">
-              <motion.img
-                src="/images/snap-hero.png"
-                alt="Envitefy Snap interface before upload conversion"
-                style={{ y: beforeY }}
-                className="absolute inset-0 h-full w-full object-cover grayscale-[0.55] brightness-[0.94] contrast-[0.9] saturate-[0.78]"
-              />
-              <motion.img
-                src="/sliders/vertical/vertical-slide-1.jpg"
-                alt="Envitefy Snap interface after upload conversion"
-                style={{ y: afterY }}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,23,0.04),rgba(7,11,23,0.14)_72%,rgba(7,11,23,0.22))]" />
+            <div className="min-w-0 xl:-ml-20 2xl:-ml-28">
+              <div className="relative mt-2 h-[60vh] min-h-[22rem] w-full overflow-hidden rounded-[1.8rem] border border-white/14 bg-[#090d18]/88 shadow-[0_32px_90px_rgba(4,1,14,0.42)] sm:h-[62vh] xl:mt-0 xl:h-[58vh] 2xl:h-[56vh] md:rounded-[2rem]">
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(8,12,24,0.28)_18%,rgba(8,12,24,0.08)_72%,rgba(8,12,24,0.34))]" />
+                <img
+                  src="/images/snap-hero-after.webp"
+                  alt="Envitefy Snap interface after upload conversion"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,20,0.1),rgba(7,10,20,0.34))]" />
+              </div>
             </div>
           </div>
         </div>
@@ -378,7 +355,7 @@ function Hero({
 
 function TrustBar() {
   return (
-    <section className={snapSectionSpacingClass}>
+    <section className="px-4 pb-6 pt-2 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.06] px-6 py-8 text-center backdrop-blur-2xl">
           <p className="mb-6 text-sm font-semibold tracking-[0.28em] text-white/52 uppercase">
@@ -406,7 +383,10 @@ function TrustBar() {
 
 function ProblemSection() {
   return (
-    <section id="problem-section" className={snapSectionSpacingClass}>
+    <section
+      id="problem-section"
+      className={`${snapHashAnchorClass} ${snapSectionSpacingClass}`}
+    >
       <div
         className={`mx-auto max-w-7xl ${glassPanelClass} px-7 py-8 md:px-10 md:py-10`}
       >
@@ -449,7 +429,10 @@ function ProblemSection() {
 
 function HowItWorks() {
   return (
-    <section id="how-it-works" className={snapSectionSpacingClass}>
+    <section
+      id="how-it-works"
+      className={`${snapHashAnchorClass} ${snapSectionSpacingClass}`}
+    >
       <div
         className={`mx-auto max-w-7xl ${glassPanelClass} px-7 py-8 md:px-10 md:py-10`}
       >
@@ -496,7 +479,10 @@ function HowItWorks() {
 
 function UseCases() {
   return (
-    <section id="use-cases" className={snapSectionSpacingClass}>
+    <section
+      id="use-cases"
+      className={`${snapHashAnchorClass} ${snapSectionSpacingClass}`}
+    >
       <div
         className={`mx-auto max-w-7xl ${glassPanelClass} px-7 py-8 md:px-10 md:py-10`}
       >
@@ -591,7 +577,10 @@ function FAQ() {
   const [openIndex, setOpenIndex] = React.useState<number | null>(0);
 
   return (
-    <section id="faq" className={snapSectionSpacingClass}>
+    <section
+      id="faq"
+      className={`${snapHashAnchorClass} ${snapSectionSpacingClass}`}
+    >
       <div
         className={`mx-auto max-w-3xl ${glassPanelClass} px-7 py-8 md:px-10 md:py-10`}
       >
@@ -659,7 +648,7 @@ export default function SnapLanding() {
   };
 
   return (
-    <div className="relative isolate min-h-screen overflow-x-hidden bg-transparent font-sans text-white selection:bg-white/20 selection:text-white">
+    <div className="relative z-[1] isolate min-h-screen overflow-x-hidden bg-transparent font-sans text-white selection:bg-white/20 selection:text-white">
       <ScenicBackground scene={activeScene} scenes={SNAP_SCENES} />
 
       <HeroTopNav

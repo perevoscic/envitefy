@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
+import { useState } from "react";
+import styles from "./GymnasticsLanding.module.css";
 
 const items = [
   {
@@ -10,7 +11,7 @@ const items = [
   },
   {
     q: "How do rotations, warm-ups, and awards show up for parents?",
-    a: "Meet blocks can include check-in, warm-up windows, rotation context, and awards timing in scannable sections. The goal is a clear timeline parents can read on a phone at the venue—not a zoomed-in spreadsheet.",
+    a: "Meet blocks can include check-in, warm-up windows, rotation context, and awards timing in scannable sections. The goal is a clear timeline parents can read on a phone at the venue, not a zoomed-in spreadsheet.",
   },
   {
     q: "Can hotel blocks, maps, and parking live on the same page as the schedule?",
@@ -26,15 +27,19 @@ const items = [
   },
   {
     q: "How is Gymnastics on Envitefy different from Snap?",
-    a: "Gymnastics is built around meet pages—schedules, venues, hotels, team coordination, and updates in one hosted page. Snap is the broader capture flow for invites, flyers, and many other event types. Gymnastics accounts include both workflows.",
+    a: "Gymnastics is built around meet pages: schedules, venues, hotels, team coordination, and updates in one hosted page. Snap is the broader capture flow for invites, flyers, and many other event types. Gymnastics accounts include both workflows.",
   },
   {
-    q: "Who typically publishes the page—a club, meet director, or team parent?",
+    q: "Who typically publishes the page: a club, meet director, or team parent?",
     a: "Anyone organizing or communicating the meet can build the page: meet directors, club admins, booster reps, or coaches. The important part is one authoritative link for athletes, parents, and staff.",
   },
 ] as const;
 
-const gymnasticsSectionSpacingClass = "scroll-mt-20 py-16 lg:py-20";
+const gymnasticsSectionSpacingClass = "hash-anchor-below-fixed-nav px-4 py-6 sm:px-6 lg:px-8";
+const glassSectionClass =
+  "theme-glass-surface relative isolate overflow-hidden rounded-[2rem] border border-white/14 shadow-[0_32px_90px_rgba(4,1,14,0.42)]";
+const sectionBubbleClass =
+  "mb-5 inline-flex rounded-full border border-white/28 bg-[rgba(32,18,58,0.62)] px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-white shadow-[0_12px_28px_rgba(6,2,16,0.22)]";
 
 export default function GymnasticsLandingFaq() {
   const [open, setOpen] = useState<number | null>(0);
@@ -42,71 +47,69 @@ export default function GymnasticsLandingFaq() {
   return (
     <section
       id="faq"
-      className={`border-t border-slate-100 bg-gradient-to-b from-white to-[#fafbfe] ${gymnasticsSectionSpacingClass}`}
+      className={gymnasticsSectionSpacingClass}
       aria-labelledby="gymnastics-faq-heading"
     >
-      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
-            FAQ
-          </p>
-          <h2
-            id="gymnastics-faq-heading"
-            className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-slate-900"
-            style={{ fontFamily: "inherit" }}
-          >
-            Gymnastics meet pages, answered
-          </h2>
-          <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-500">
-            Practical questions coaches, meet directors, and parent reps ask
-            before moving a weekend off PDFs and text threads.
-          </p>
-        </div>
-
-        <div className="mx-auto mt-14 max-w-3xl space-y-3">
-          {items.map((item, idx) => (
-            <div
-              key={item.q}
-              className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm"
+      <div
+        className={`mx-auto max-w-5xl ${glassSectionClass} ${styles.sectionShell} px-7 py-8 md:px-12 md:py-10`}
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(129,140,248,0.08),transparent_40%,rgba(124,58,237,0.06))]" />
+        <div className="relative">
+          <div className="mx-auto w-full max-w-3xl text-center lg:text-left">
+            <span className={sectionBubbleClass}>FAQ</span>
+            <h2
+              id="gymnastics-faq-heading"
+              className={`${styles.headline} w-full text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl`}
             >
-              <button
-                type="button"
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6 sm:py-5"
-                onClick={() => setOpen(open === idx ? null : idx)}
-                aria-expanded={open === idx}
-              >
-                <span className="text-base font-semibold leading-snug text-slate-900 sm:text-lg">
-                  {item.q}
-                </span>
-                <span className="flex shrink-0 rounded-full border border-indigo-100 bg-indigo-50/80 p-2 text-indigo-600">
-                  {open === idx ? <Minus size={18} /> : <Plus size={18} />}
-                </span>
-              </button>
-              <div
-                className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-                  open === idx ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                }`}
-              >
-                <div className="min-h-0 overflow-hidden">
-                  <p className="px-5 pb-5 leading-7 text-slate-600 sm:px-6 sm:pb-6">
-                    {item.a}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              Gymnastics meet pages, answered
+            </h2>
+            <p className="mt-4 max-w-none text-lg leading-relaxed text-white/85">
+              Practical questions coaches, meet directors, and parent reps ask before moving a
+              weekend off PDFs and text threads.
+            </p>
 
-        <p className="mx-auto mt-10 max-w-xl text-center text-sm text-slate-500">
-          Looking for general product questions? See the{" "}
-          <a
-            href="/faq"
-            className="font-semibold text-indigo-600 underline decoration-indigo-200 underline-offset-2 transition hover:text-indigo-700"
-          >
-            full Envitefy FAQ
-          </a>
-          .
-        </p>
+            <div className="mt-10 space-y-3">
+              {items.map((item, idx) => (
+                <div
+                  key={item.q}
+                  className="overflow-hidden rounded-2xl border border-white/12 bg-white/[0.06]"
+                >
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left sm:px-5 sm:py-5"
+                    onClick={() => setOpen(open === idx ? null : idx)}
+                    aria-expanded={open === idx}
+                  >
+                    <span className="text-base font-semibold leading-snug text-white sm:text-lg">
+                      {item.q}
+                    </span>
+                    <span className="flex shrink-0 rounded-full border border-white/16 bg-white/10 p-2 text-white">
+                      {open === idx ? <Minus size={18} /> : <Plus size={18} />}
+                    </span>
+                  </button>
+                  <div
+                    className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${open === idx ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                  >
+                    <div className="min-h-0 overflow-hidden">
+                      <p className="px-4 pb-5 leading-7 text-white/80 sm:px-5 sm:pb-6">{item.a}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-8 text-sm text-white/66">
+              Looking for general product questions? See the{" "}
+              <a
+                href="/faq"
+                className="font-semibold text-white underline decoration-white/30 underline-offset-2 transition hover:text-white/90"
+              >
+                full Envitefy FAQ
+              </a>
+              .
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

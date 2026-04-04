@@ -30,11 +30,12 @@ test("landing page renders the new dedicated landing experience component", () =
     landingExperience,
     /const landingSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";/,
   );
-  assert.match(landingExperience, /id="cta" className=\{landingSectionSpacingClass\}/);
   assert.match(
-    landingFaq,
-    /className="scroll-mt-24 px-4 py-6 sm:px-6 lg:px-8"/,
+    landingExperience,
+    /id="cta"\s+className=\{`hash-anchor-below-fixed-nav \$\{landingSectionSpacingClass\}`\}/,
   );
+  assert.match(landingFaq, /hash-anchor-below-fixed-nav/);
+  assert.match(landingFaq, /px-4 py-6 sm:px-6 lg:px-8/);
   assert.notStrictEqual(snapIndex, -1);
   assert.notStrictEqual(gymnasticsIndex, -1);
   assert.notStrictEqual(snapTransformIndex, -1);
@@ -57,7 +58,7 @@ test("landing preserves auth-aware nav behavior and snap-first CTA wiring", () =
   assert.match(landingExperience, /signupSource="snap"/);
   assert.match(landingExperience, /successRedirectUrl="\/event"/);
   assert.match(landingExperience, /allowSignupSwitch=\{false\}/);
-  assert.match(landingExperience, /label: "Snap", href: "#snap"/);
+  assert.match(landingExperience, /label: "Snap", href: "\/snap"/);
   assert.match(landingExperience, /label: "FAQ", href: "#faq"/);
   assert.match(landingExperience, /href="\/snap"/);
   assert.match(landingExperience, /href="\/gymnastics"/);

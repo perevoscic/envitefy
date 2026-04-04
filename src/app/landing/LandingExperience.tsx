@@ -503,20 +503,19 @@ export default function LandingExperience() {
   return (
     <>
       <div
-        className={`${styles.root} relative isolate min-h-screen overflow-x-hidden bg-transparent text-white selection:bg-white/20 selection:text-white`}
+        className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-hidden bg-transparent text-white selection:bg-white/20 selection:text-white`}
       >
         <ScenicBackground scene={activeScene} scenes={LANDING_SCENES} />
 
         <HeroTopNav
           navLinks={[
-            { label: "Snap", href: "#snap" },
+            { label: "Snap", href: "/snap" },
             { label: "Gymnastics", href: "#gymnastics" },
             { label: "Features", href: "#what-you-can-snap" },
             { label: "How it works", href: "#how-it-works" },
             { label: "Why it works", href: "#use-cases" },
             { label: "RSVP", href: "#rsvp-calendar" },
             { label: "FAQ", href: "#faq" },
-            { label: "Get started", href: "#cta" },
           ]}
           variant="glass-dark"
           authenticatedPrimaryHref="/event"
@@ -524,14 +523,20 @@ export default function LandingExperience() {
           onGuestPrimaryAction={() => openAuth("signup")}
         />
 
-        <section id="snap" className="px-4 pb-6 pt-32 sm:px-6 lg:px-8 lg:pt-40">
-          <header id="landing-hero" className="mx-auto max-w-7xl">
+        <section
+          id="snap"
+          className={`hash-anchor-below-fixed-nav px-4 pb-6 pt-32 sm:px-6 lg:px-8 lg:pt-40`}
+        >
+          <header
+            id="landing-hero"
+            className="mx-auto min-w-0 w-full max-w-[min(90vw,100%)]"
+          >
             <div className="theme-glass-surface relative isolate overflow-hidden rounded-[2.4rem] border border-white/14 px-7 py-8 shadow-[0_38px_90px_rgba(4,1,14,0.34)] md:px-10 md:py-12 lg:px-14 lg:py-16">
               <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(255,255,255,0.04)_38%,rgba(89,28,135,0.07)_100%)]" />
               <div className="absolute -left-24 bottom-[-5rem] h-72 w-72 rounded-full bg-[#22D3EE]/20 blur-[140px]" />
               <div className="absolute right-[-6rem] top-[-3rem] h-72 w-72 rounded-full bg-[#8B5CF6]/22 blur-[150px]" />
 
-              <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-center">
+              <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:items-center">
                 <div className="max-w-3xl">
                   <div
                     className={`${sectionBubbleClass} mb-8 items-center tracking-[0.3em]`}
@@ -582,14 +587,14 @@ export default function LandingExperience() {
                       Snap
                     </div>
                     <div
-                      className={`${styles.heroSnapCard} w-[8.2rem] overflow-hidden rounded-[1.45rem] shadow-[0_24px_52px_rgba(0,0,0,0.24)] sm:w-48 lg:w-52`}
+                      className={`${styles.heroSnapCard} w-[10.25rem] overflow-hidden rounded-[1.45rem] shadow-[0_24px_52px_rgba(0,0,0,0.24)] sm:w-56 lg:w-64`}
                     >
                       <Image
                         alt="Original flyer"
                         className="h-auto w-full rounded-[1.45rem] grayscale-[0.1]"
                         height={1024}
                         priority
-                        sizes="(min-width: 1024px) 13rem, (min-width: 640px) 12rem, 8.2rem"
+                        sizes="(min-width: 1024px) 16rem, (min-width: 640px) 14rem, 10.25rem"
                         src={IMAGES.heroFlyer}
                         width={768}
                       />
@@ -619,14 +624,14 @@ export default function LandingExperience() {
                       Live Page
                     </div>
                     <div
-                      className={`${styles.heroLiveCard} w-[9rem] overflow-hidden rounded-[1.8rem] shadow-[0_28px_64px_rgba(0,0,0,0.28)] sm:w-56 sm:rounded-[2.4rem] lg:w-60`}
+                      className={`${styles.heroLiveCard} w-[11rem] overflow-hidden rounded-[1.8rem] shadow-[0_28px_64px_rgba(0,0,0,0.28)] sm:w-60 sm:rounded-[2.4rem] lg:w-72`}
                     >
                       <Image
                         alt="Live event preview"
                         className="h-auto w-full rounded-[1.8rem] sm:rounded-[2.4rem]"
                         height={1600}
                         priority
-                        sizes="(min-width: 1024px) 15rem, (min-width: 640px) 14rem, 9rem"
+                        sizes="(min-width: 1024px) 18rem, (min-width: 640px) 15rem, 11rem"
                         src={IMAGES.heroEvent}
                         width={900}
                       />
@@ -638,7 +643,10 @@ export default function LandingExperience() {
           </header>
         </section>
 
-        <section id="gymnastics" className={landingSectionSpacingClass}>
+        <section
+          id="gymnastics"
+          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
+        >
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -755,7 +763,10 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="what-you-can-snap" className={landingSectionSpacingClass}>
+        <section
+          id="what-you-can-snap"
+          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
+        >
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -960,7 +971,10 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="how-it-works" className={landingSectionSpacingClass}>
+        <section
+          id="how-it-works"
+          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
+        >
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -1005,7 +1019,10 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="use-cases" className={landingSectionSpacingClass}>
+        <section
+          id="use-cases"
+          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
+        >
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
           >
@@ -1029,7 +1046,10 @@ export default function LandingExperience() {
           </div>
         </section>
 
-        <section id="rsvp-calendar" className={landingSectionSpacingClass}>
+        <section
+          id="rsvp-calendar"
+          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
+        >
           <div
             className={`mx-auto max-w-7xl ${glassSectionClass} overflow-visible px-7 py-8 md:px-10 md:py-10`}
           >
@@ -1109,7 +1129,10 @@ export default function LandingExperience() {
 
         <LandingFaq />
 
-        <section id="cta" className={landingSectionSpacingClass}>
+        <section
+          id="cta"
+          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
+        >
           <div
             className={`mx-auto max-w-5xl ${glassSectionClass} px-7 py-10 text-center md:px-12 md:py-14`}
           >

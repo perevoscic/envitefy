@@ -3,627 +3,627 @@
     {
       "name": "Apple Picking",
       "tier": "free",
-      "path": "/templates/signup/fall-and-seasonal/apple-picking.png"
+      "path": "/templates/signup/fall-and-seasonal/apple-picking.webp"
     },
     {
       "name": "Fall Scene",
       "tier": "premium",
-      "path": "/templates/signup/fall-and-seasonal/fall-scene.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-scene.webp"
     },
     {
       "name": "Fall Fun 2",
       "tier": "free",
-      "path": "/templates/signup/fall-and-seasonal/fall-fun-2.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-fun-2.webp"
     },
     {
       "name": "Harvest Table",
       "tier": "premium",
-      "path": "/templates/signup/fall-and-seasonal/harvest-table.png"
+      "path": "/templates/signup/fall-and-seasonal/harvest-table.webp"
     },
     {
       "name": "Pumpkin Patch",
       "tier": "premium",
-      "path": "/templates/signup/fall-and-seasonal/pumpkin-patch.png"
+      "path": "/templates/signup/fall-and-seasonal/pumpkin-patch.webp"
     },
     {
       "name": "Fall Forest",
       "tier": "free",
-      "path": "/templates/signup/fall-and-seasonal/fall-forest.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-forest.webp"
     },
     {
       "name": "Fall Food Drive",
       "tier": "free",
-      "path": "/templates/signup/fall-and-seasonal/fall-food-drive.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-food-drive.webp"
     },
     {
       "name": "Fall Gathering",
       "tier": "premium",
-      "path": "/templates/signup/fall-and-seasonal/fall-gathering.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-gathering.webp"
     },
     {
       "name": "Corn Maze",
       "tier": "free",
-      "path": "/templates/signup/fall-and-seasonal/corn-maze.png"
+      "path": "/templates/signup/fall-and-seasonal/corn-maze.webp"
     },
     {
       "name": "Autumn Blessings",
       "tier": "premium",
-      "path": "/templates/signup/fall-and-seasonal/autumn-blessings.png"
+      "path": "/templates/signup/fall-and-seasonal/autumn-blessings.webp"
     },
     {
       "name": "Thanksgiving Feast",
       "tier": "free",
-      "path": "/templates/signup/fall-and-seasonal/thanksgiving-feast.png"
+      "path": "/templates/signup/fall-and-seasonal/thanksgiving-feast.webp"
     },
     {
       "name": "Friendsgiving",
       "tier": "premium",
-      "path": "/templates/signup/fall-and-seasonal/friendsgiving.png"
+      "path": "/templates/signup/fall-and-seasonal/friendsgiving.webp"
     },
     {
       "name": "Fall Food",
       "tier": "free",
-      "path": "/templates/signup/fall-and-seasonal/fall-food.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-food.webp"
     },
     {
       "name": "Fall Leaves",
       "tier": "free",
-      "path": "/templates/signup/fall-and-seasonal/fall-leaves.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-leaves.webp"
     },
     {
       "name": "Fall Y’all",
       "tier": "premium",
-      "path": "/templates/signup/fall-and-seasonal/fall-y-all.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-y-all.webp"
     },
     {
       "name": "Fall Festival",
       "tier": "free",
-      "path": "/templates/signup/fall-and-seasonal/fall-festival.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-festival.webp"
     },
     {
       "name": "Fall Pumpkins",
       "tier": "premium",
-      "path": "/templates/signup/fall-and-seasonal/fall-pumpkins.png"
+      "path": "/templates/signup/fall-and-seasonal/fall-pumpkins.webp"
     }
   ],
   "Church & Community": [
     {
       "name": "Service Project",
       "tier": "premium",
-      "path": "/templates/signup/church-and-community/service-project.png"
+      "path": "/templates/signup/church-and-community/service-project.webp"
     },
     {
       "name": "Community Picnic",
       "tier": "free",
-      "path": "/templates/signup/church-and-community/community-picnic.png"
+      "path": "/templates/signup/church-and-community/community-picnic.webp"
     },
     {
       "name": "Bible Study",
       "tier": "free",
-      "path": "/templates/signup/church-and-community/bible-study.png"
+      "path": "/templates/signup/church-and-community/bible-study.webp"
     },
     {
       "name": "Mission Trip",
       "tier": "premium",
-      "path": "/templates/signup/church-and-community/mission-trip.png"
+      "path": "/templates/signup/church-and-community/mission-trip.webp"
     },
     {
       "name": "Church Gathering",
       "tier": "free",
-      "path": "/templates/signup/church-and-community/church-gathering.png"
+      "path": "/templates/signup/church-and-community/church-gathering.webp"
     },
     {
       "name": "Volunteer Sign-Up",
       "tier": "free",
-      "path": "/templates/signup/church-and-community/volunteer-sign-up.png"
+      "path": "/templates/signup/church-and-community/volunteer-sign-up.webp"
     },
     {
       "name": "Worship Team",
       "tier": "premium",
-      "path": "/templates/signup/church-and-community/worship-team.png"
+      "path": "/templates/signup/church-and-community/worship-team.webp"
     },
     {
       "name": "Sunday School",
       "tier": "free",
-      "path": "/templates/signup/church-and-community/sunday-school.png"
+      "path": "/templates/signup/church-and-community/sunday-school.webp"
     },
     {
       "name": "Fundraiser",
       "tier": "free",
-      "path": "/templates/signup/church-and-community/fundraiser.png"
+      "path": "/templates/signup/church-and-community/fundraiser.webp"
     },
     {
       "name": "Food Drive",
       "tier": "free",
-      "path": "/templates/signup/church-and-community/food-drive.png"
+      "path": "/templates/signup/church-and-community/food-drive.webp"
     }
   ],
   "Sports & Recreation": [
     {
       "name": "Swim Team",
       "tier": "premium",
-      "path": "/templates/signup/sports-and-recreation/swim-team.png"
+      "path": "/templates/signup/sports-and-recreation/swim-team.webp"
     },
     {
       "name": "Cheer Squad",
       "tier": "premium",
-      "path": "/templates/signup/sports-and-recreation/cheer-squad.png"
+      "path": "/templates/signup/sports-and-recreation/cheer-squad.webp"
     },
     {
       "name": "Track Meet",
       "tier": "free",
-      "path": "/templates/signup/sports-and-recreation/track-meet.png"
+      "path": "/templates/signup/sports-and-recreation/track-meet.webp"
     },
     {
       "name": "Baseball Team",
       "tier": "free",
-      "path": "/templates/signup/sports-and-recreation/baseball-team.png"
+      "path": "/templates/signup/sports-and-recreation/baseball-team.webp"
     },
     {
       "name": "Sports Banquet",
       "tier": "free",
-      "path": "/templates/signup/sports-and-recreation/sports-banquet.png"
+      "path": "/templates/signup/sports-and-recreation/sports-banquet.webp"
     },
     {
       "name": "Gymnastics",
       "tier": "free",
-      "path": "/templates/signup/sports-and-recreation/gymnastics.png"
+      "path": "/templates/signup/sports-and-recreation/gymnastics.webp"
     },
     {
       "name": "Fitness Class",
       "tier": "free",
-      "path": "/templates/signup/sports-and-recreation/fitness-class.png"
+      "path": "/templates/signup/sports-and-recreation/fitness-class.webp"
     },
     {
       "name": "Soccer Game",
       "tier": "free",
-      "path": "/templates/signup/sports-and-recreation/soccer-game.png"
+      "path": "/templates/signup/sports-and-recreation/soccer-game.webp"
     },
     {
       "name": "Basketball Practice",
       "tier": "free",
-      "path": "/templates/signup/sports-and-recreation/basketball-practice.png"
+      "path": "/templates/signup/sports-and-recreation/basketball-practice.webp"
     },
     {
       "name": "Golf Tournament",
       "tier": "premium",
-      "path": "/templates/signup/sports-and-recreation/golf-tournament.png"
+      "path": "/templates/signup/sports-and-recreation/golf-tournament.webp"
     }
   ],
   "Fundraising & Food": [
     {
       "name": "Car Wash",
       "tier": "free",
-      "path": "/templates/signup/fundraising-and-food/car-wash.png"
+      "path": "/templates/signup/fundraising-and-food/car-wash.webp"
     },
     {
       "name": "Bake Sale",
       "tier": "free",
-      "path": "/templates/signup/fundraising-and-food/bake-sale.png"
+      "path": "/templates/signup/fundraising-and-food/bake-sale.webp"
     },
     {
       "name": "Charity Gala",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-and-food/charity-gala.png"
+      "path": "/templates/signup/fundraising-and-food/charity-gala.webp"
     },
     {
       "name": "Restaurant Night",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-and-food/restaurant-night.png"
+      "path": "/templates/signup/fundraising-and-food/restaurant-night.webp"
     },
     {
       "name": "Food Pantry",
       "tier": "free",
-      "path": "/templates/signup/fundraising-and-food/food-pantry.png"
+      "path": "/templates/signup/fundraising-and-food/food-pantry.webp"
     },
     {
       "name": "Auction Event",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-and-food/auction-event.png"
+      "path": "/templates/signup/fundraising-and-food/auction-event.webp"
     },
     {
       "name": "Donation Drive",
       "tier": "free",
-      "path": "/templates/signup/fundraising-and-food/donation-drive.png"
+      "path": "/templates/signup/fundraising-and-food/donation-drive.webp"
     },
     {
       "name": "Vendor Fair",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-and-food/vendor-fair.png"
+      "path": "/templates/signup/fundraising-and-food/vendor-fair.webp"
     },
     {
       "name": "Raffle",
       "tier": "premium",
-      "path": "/templates/signup/fundraising-and-food/raffle.png"
+      "path": "/templates/signup/fundraising-and-food/raffle.webp"
     },
     {
       "name": "Potluck Dinner",
       "tier": "free",
-      "path": "/templates/signup/fundraising-and-food/potluck-dinner.png"
+      "path": "/templates/signup/fundraising-and-food/potluck-dinner.webp"
     }
   ],
   "Family & Personal": [
     {
       "name": "Anniversary Celebration",
       "tier": "premium",
-      "path": "/templates/signup/family-and-personal/anniversary-celebration.png"
+      "path": "/templates/signup/family-and-personal/anniversary-celebration.webp"
     },
     {
       "name": "Family Event",
       "tier": "premium",
-      "path": "/templates/signup/family-and-personal/family-event.png"
+      "path": "/templates/signup/family-and-personal/family-event.webp"
     },
     {
       "name": "Housewarming",
       "tier": "free",
-      "path": "/templates/signup/family-and-personal/housewarming.png"
+      "path": "/templates/signup/family-and-personal/housewarming.webp"
     },
     {
       "name": "Birthday Party",
       "tier": "free",
-      "path": "/templates/signup/family-and-personal/birthday-party.png"
+      "path": "/templates/signup/family-and-personal/birthday-party.webp"
     },
     {
       "name": "Block Party",
       "tier": "free",
-      "path": "/templates/signup/family-and-personal/block-party.png"
+      "path": "/templates/signup/family-and-personal/block-party.webp"
     },
     {
       "name": "Wedding",
       "tier": "premium",
-      "path": "/templates/signup/family-and-personal/wedding.png"
+      "path": "/templates/signup/family-and-personal/wedding.webp"
     },
     {
       "name": "Baby Shower",
       "tier": "premium",
-      "path": "/templates/signup/family-and-personal/baby-shower.png"
+      "path": "/templates/signup/family-and-personal/baby-shower.webp"
     },
     {
       "name": "Game Night",
       "tier": "free",
-      "path": "/templates/signup/family-and-personal/game-night.png"
+      "path": "/templates/signup/family-and-personal/game-night.webp"
     },
     {
       "name": "Bridal Shower",
       "tier": "premium",
-      "path": "/templates/signup/family-and-personal/bridal-shower.png"
+      "path": "/templates/signup/family-and-personal/bridal-shower.webp"
     },
     {
       "name": "Family Holiday",
       "tier": "premium",
-      "path": "/templates/signup/family-and-personal/family-holiday.png"
+      "path": "/templates/signup/family-and-personal/family-holiday.webp"
     }
   ],
   "Business & Professional": [
     {
       "name": "Conference Schedule",
       "tier": "premium",
-      "path": "/templates/signup/business-and-professional/conference-schedule.png"
+      "path": "/templates/signup/business-and-professional/conference-schedule.webp"
     },
     {
       "name": "Client Meeting",
       "tier": "free",
-      "path": "/templates/signup/business-and-professional/client-meeting.png"
+      "path": "/templates/signup/business-and-professional/client-meeting.webp"
     },
     {
       "name": "Team Lunch",
       "tier": "free",
-      "path": "/templates/signup/business-and-professional/team-lunch.png"
+      "path": "/templates/signup/business-and-professional/team-lunch.webp"
     },
     {
       "name": "Corporate Event",
       "tier": "premium",
-      "path": "/templates/signup/business-and-professional/corporate-event.png"
+      "path": "/templates/signup/business-and-professional/corporate-event.webp"
     },
     {
       "name": "Workshop",
       "tier": "free",
-      "path": "/templates/signup/business-and-professional/workshop.png"
+      "path": "/templates/signup/business-and-professional/workshop.webp"
     },
     {
       "name": "Networking Night",
       "tier": "premium",
-      "path": "/templates/signup/business-and-professional/networking-night.png"
+      "path": "/templates/signup/business-and-professional/networking-night.webp"
     },
     {
       "name": "Professional Gathering",
       "tier": "premium",
-      "path": "/templates/signup/business-and-professional/professional-gathering.png"
+      "path": "/templates/signup/business-and-professional/professional-gathering.webp"
     },
     {
       "name": "Office Meeting",
       "tier": "free",
-      "path": "/templates/signup/business-and-professional/office-meeting.png"
+      "path": "/templates/signup/business-and-professional/office-meeting.webp"
     },
     {
       "name": "Training Session",
       "tier": "free",
-      "path": "/templates/signup/business-and-professional/training-session.png"
+      "path": "/templates/signup/business-and-professional/training-session.webp"
     }
   ],
   "Other / Special Interest": [
     {
       "name": "Tech Event",
       "tier": "free",
-      "path": "/templates/signup/other-special-interest/tech-event.png"
+      "path": "/templates/signup/other-special-interest/tech-event.webp"
     },
     {
       "name": "Political Campaign",
       "tier": "premium",
-      "path": "/templates/signup/other-special-interest/political-campaign.png"
+      "path": "/templates/signup/other-special-interest/political-campaign.webp"
     },
     {
       "name": "Gaming Tournament",
       "tier": "premium",
-      "path": "/templates/signup/other-special-interest/gaming-tournament.png"
+      "path": "/templates/signup/other-special-interest/gaming-tournament.webp"
     },
     {
       "name": "Environment & Cleanup",
       "tier": "free",
-      "path": "/templates/signup/other-special-interest/environment-and-cleanup.png"
+      "path": "/templates/signup/other-special-interest/environment-and-cleanup.webp"
     },
     {
       "name": "Senior Services",
       "tier": "free",
-      "path": "/templates/signup/other-special-interest/senior-services.png"
+      "path": "/templates/signup/other-special-interest/senior-services.webp"
     },
     {
       "name": "Travel Group",
       "tier": "free",
-      "path": "/templates/signup/other-special-interest/travel-group.png"
+      "path": "/templates/signup/other-special-interest/travel-group.webp"
     },
     {
       "name": "Real Estate Open House",
       "tier": "premium",
-      "path": "/templates/signup/other-special-interest/real-estate-open-house.png"
+      "path": "/templates/signup/other-special-interest/real-estate-open-house.webp"
     },
     {
       "name": "Arts & Culture",
       "tier": "free",
-      "path": "/templates/signup/other-special-interest/arts-and-culture.png"
+      "path": "/templates/signup/other-special-interest/arts-and-culture.webp"
     },
     {
       "name": "Pets & Animals",
       "tier": "free",
-      "path": "/templates/signup/other-special-interest/pets-and-animals.png"
+      "path": "/templates/signup/other-special-interest/pets-and-animals.webp"
     }
   ],
   "General": [
     {
       "name": "HOA Meeting",
       "tier": "free",
-      "path": "/templates/signup/general/hoa-meeting.png"
+      "path": "/templates/signup/general/hoa-meeting.webp"
     },
     {
       "name": "Ad Hoc Meeting",
       "tier": "premium",
-      "path": "/templates/signup/general/ad-hoc-meeting.png"
+      "path": "/templates/signup/general/ad-hoc-meeting.webp"
     },
     {
       "name": "Board Meeting",
       "tier": "free",
-      "path": "/templates/signup/general/board-meeting.png"
+      "path": "/templates/signup/general/board-meeting.webp"
     },
     {
       "name": "Team Planning Session",
       "tier": "free",
-      "path": "/templates/signup/general/team-planning-session.png"
+      "path": "/templates/signup/general/team-planning-session.webp"
     },
     {
       "name": "Volunteer Orientation",
       "tier": "premium",
-      "path": "/templates/signup/general/volunteer-orientation.png"
+      "path": "/templates/signup/general/volunteer-orientation.webp"
     },
     {
       "name": "Town Hall Meeting",
       "tier": "free",
-      "path": "/templates/signup/general/town-hall-meeting.png"
+      "path": "/templates/signup/general/town-hall-meeting.webp"
     },
     {
       "name": "Community Discussion",
       "tier": "free",
-      "path": "/templates/signup/general/community-discussion.png"
+      "path": "/templates/signup/general/community-discussion.webp"
     },
     {
       "name": "Staff Training",
       "tier": "premium",
-      "path": "/templates/signup/general/staff-training.png"
+      "path": "/templates/signup/general/staff-training.webp"
     },
     {
       "name": "Committee Meeting",
       "tier": "free",
-      "path": "/templates/signup/general/committee-meeting.png"
+      "path": "/templates/signup/general/committee-meeting.webp"
     },
     {
       "name": "Monthly Meetup",
       "tier": "free",
-      "path": "/templates/signup/general/monthly-meetup.png"
+      "path": "/templates/signup/general/monthly-meetup.webp"
     },
     {
       "name": "Project Kickoff",
       "tier": "premium",
-      "path": "/templates/signup/general/project-kickoff.png"
+      "path": "/templates/signup/general/project-kickoff.webp"
     },
     {
       "name": "Workshop Registration",
       "tier": "free",
-      "path": "/templates/signup/general/workshop-registration.png"
+      "path": "/templates/signup/general/workshop-registration.webp"
     }
   ],
   "Parties & Events": [
     {
       "name": "Birthday Party",
       "tier": "free",
-      "path": "/templates/signup/parties-and-events/birthday-party.png"
+      "path": "/templates/signup/parties-and-events/birthday-party.webp"
     },
     {
       "name": "Wedding",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/wedding.png"
+      "path": "/templates/signup/parties-and-events/wedding.webp"
     },
     {
       "name": "Baby Shower",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/baby-shower.png"
+      "path": "/templates/signup/parties-and-events/baby-shower.webp"
     },
     {
       "name": "Game Night",
       "tier": "free",
-      "path": "/templates/signup/parties-and-events/game-night.png"
+      "path": "/templates/signup/parties-and-events/game-night.webp"
     },
     {
       "name": "Bridal Shower",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/bridal-shower.png"
+      "path": "/templates/signup/parties-and-events/bridal-shower.webp"
     },
     {
       "name": "Family Holiday",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/family-holiday.png"
+      "path": "/templates/signup/parties-and-events/family-holiday.webp"
     },
     {
       "name": "Holiday Party",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/holiday-party.png"
+      "path": "/templates/signup/parties-and-events/holiday-party.webp"
     },
     {
       "name": "Graduation Party",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/graduation-party.png"
+      "path": "/templates/signup/parties-and-events/graduation-party.webp"
     },
     {
       "name": "Retirement Party",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/retirement-party.png"
+      "path": "/templates/signup/parties-and-events/retirement-party.webp"
     },
     {
       "name": "Engagement Party",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/engagement-party.png"
+      "path": "/templates/signup/parties-and-events/engagement-party.webp"
     },
     {
       "name": "Baby Shower",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/baby-shower.png"
+      "path": "/templates/signup/parties-and-events/baby-shower.webp"
     },
     {
       "name": "Game Night",
       "tier": "free",
-      "path": "/templates/signup/parties-and-events/game-night.png"
+      "path": "/templates/signup/parties-and-events/game-night.webp"
     },
     {
       "name": "Bridal Shower",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/bridal-shower.png"
+      "path": "/templates/signup/parties-and-events/bridal-shower.webp"
     },
     {
       "name": "Family Holiday",
       "tier": "premium",
-      "path": "/templates/signup/parties-and-events/family-holiday.png"
+      "path": "/templates/signup/parties-and-events/family-holiday.webp"
     }
   ],
   "Health & Fitness": [
     {
       "name": "Fitness Class",
       "tier": "free",
-      "path": "/templates/signup/health-and-fitness/fitness-class.png"
+      "path": "/templates/signup/health-and-fitness/fitness-class.webp"
     },
     {
       "name": "Yoga Class",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/yoga-class.png"
+      "path": "/templates/signup/health-and-fitness/yoga-class.webp"
     },
     {
       "name": "Pilates Class",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/pilates-class.png"
+      "path": "/templates/signup/health-and-fitness/pilates-class.webp"
     },
     {
       "name": "Spin Class",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/spin-class.png"
+      "path": "/templates/signup/health-and-fitness/spin-class.webp"
     },
     {
       "name": "Zumba Class",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/zumba-class.png"
+      "path": "/templates/signup/health-and-fitness/zumba-class.webp"
     },
     {
       "name": "Bootcamp Class",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/bootcamp-class.png"
+      "path": "/templates/signup/health-and-fitness/bootcamp-class.webp"
     },
     {
       "name": "Dance Class",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/dance-class.png"
+      "path": "/templates/signup/health-and-fitness/dance-class.webp"
     },
     {
       "name": "Morning Run",
       "tier": "free",
-      "path": "/templates/signup/health-and-fitness/morning-run.png"
+      "path": "/templates/signup/health-and-fitness/morning-run.webp"
     },
     {
       "name": "Cycling Club",
       "tier": "free",
-      "path": "/templates/signup/health-and-fitness/cycling-club.png"
+      "path": "/templates/signup/health-and-fitness/cycling-club.webp"
     },
     {
       "name": "CrossFit Session",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/crossfit-session.png"
+      "path": "/templates/signup/health-and-fitness/crossfit-session.webp"
     },
     {
       "name": "Martial Arts Class",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/martial-arts-class.png"
+      "path": "/templates/signup/health-and-fitness/martial-arts-class.webp"
     },
     {
       "name": "Boxing Class",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/boxing-class.png"
+      "path": "/templates/signup/health-and-fitness/boxing-class.webp"
     },
     {
       "name": "Swimming Lessons",
       "tier": "free",
-      "path": "/templates/signup/health-and-fitness/swimming-lessons.png"
+      "path": "/templates/signup/health-and-fitness/swimming-lessons.webp"
     },
     {
       "name": "Tennis Club",
       "tier": "free",
-      "path": "/templates/signup/health-and-fitness/tennis-club.png"
+      "path": "/templates/signup/health-and-fitness/tennis-club.webp"
     },
     {
       "name": "Basketball League",
       "tier": "free",
-      "path": "/templates/signup/health-and-fitness/basketball-league.png"
+      "path": "/templates/signup/health-and-fitness/basketball-league.webp"
     },
     {
       "name": "Volleyball League",
       "tier": "free",
-      "path": "/templates/signup/health-and-fitness/volleyball-league.png"
+      "path": "/templates/signup/health-and-fitness/volleyball-league.webp"
     },
     {
       "name": "Wellness Workshop",
       "tier": "premium",
-      "path": "/templates/signup/health-and-fitness/wellness-workshop.png"
+      "path": "/templates/signup/health-and-fitness/wellness-workshop.webp"
     }
   ],
   "Clubs & Groups": [
     {
       "name": "Book Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/book-club.png"
+      "path": "/templates/signup/clubs-and-groups/book-club.webp"
     },
     {
       "name": "Running Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/running-club.png"
+      "path": "/templates/signup/clubs-and-groups/running-club.webp"
     },
     {
       "name": "Bike Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/bike-club.png"
+      "path": "/templates/signup/clubs-and-groups/bike-club.webp"
     },
     {
       "name": "Hiking Club",
@@ -633,92 +633,92 @@
     {
       "name": "Rock Climbing Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/rock-climbing-club.png"
+      "path": "/templates/signup/clubs-and-groups/rock-climbing-club.webp"
     },
     {
       "name": "Swim Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/swim-club.png"
+      "path": "/templates/signup/clubs-and-groups/swim-club.webp"
     },
     {
       "name": "Soccer Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/soccer-club.png"
+      "path": "/templates/signup/clubs-and-groups/soccer-club.webp"
     },
     {
       "name": "Baseball Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/baseball-club.png"
+      "path": "/templates/signup/clubs-and-groups/baseball-club.webp"
     },
     {
       "name": "Basketball Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/basketball-club.png"
+      "path": "/templates/signup/clubs-and-groups/basketball-club.webp"
     },
     {
       "name": "Football Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/football-club.png"
+      "path": "/templates/signup/clubs-and-groups/football-club.webp"
     },
     {
       "name": "Tennis Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/tennis-club.png"
+      "path": "/templates/signup/clubs-and-groups/tennis-club.webp"
     },
     {
       "name": "Volleyball Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/volleyball-club.png"
+      "path": "/templates/signup/clubs-and-groups/volleyball-club.webp"
     },
     {
       "name": "Golf Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/golf-club.png"
+      "path": "/templates/signup/clubs-and-groups/golf-club.webp"
     },
     {
       "name": "Cheerleading Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/cheerleading-club.png"
+      "path": "/templates/signup/clubs-and-groups/cheerleading-club.webp"
     },
     {
       "name": "Dance Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/dance-club.png"
+      "path": "/templates/signup/clubs-and-groups/dance-club.webp"
     },
     {
       "name": "Cheerleading Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/cheerleading-club.png"
+      "path": "/templates/signup/clubs-and-groups/cheerleading-club.webp"
     },
     {
       "name": "Dance Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/dance-club.png"
+      "path": "/templates/signup/clubs-and-groups/dance-club.webp"
     },
     {
       "name": "Cheerleading Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/cheerleading-club.png"
+      "path": "/templates/signup/clubs-and-groups/cheerleading-club.webp"
     },
     {
       "name": "Dance Club",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/dance-club.png"
+      "path": "/templates/signup/clubs-and-groups/dance-club.webp"
     },
     {
       "name": "Drive Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/drive-group.png"
+      "path": "/templates/signup/clubs-and-groups/drive-group.webp"
     },
     {
       "name": "Fisherman Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/fisherman-group.png"
+      "path": "/templates/signup/clubs-and-groups/fisherman-group.webp"
     },
     {
       "name": "Horseback Riding Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/horseback-riding-group.png"
+      "path": "/templates/signup/clubs-and-groups/horseback-riding-group.webp"
     },
     {
       "name": "Bird Watching Group",
@@ -728,57 +728,57 @@
     {
       "name": "Gardening Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/gardening-group.png"
+      "path": "/templates/signup/clubs-and-groups/gardening-group.webp"
     },
     {
       "name": "Reading Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/reading-group.png"
+      "path": "/templates/signup/clubs-and-groups/reading-group.webp"
     },
     {
       "name": "Writing Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/writing-group.png"
+      "path": "/templates/signup/clubs-and-groups/writing-group.webp"
     },
     {
       "name": "Cooking Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/cooking-group.png"
+      "path": "/templates/signup/clubs-and-groups/cooking-group.webp"
     },
     {
       "name": "Baking Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/baking-group.png"
+      "path": "/templates/signup/clubs-and-groups/baking-group.webp"
     },
     {
       "name": "Painting Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/painting-group.png"
+      "path": "/templates/signup/clubs-and-groups/painting-group.webp"
     },
     {
       "name": "Pottery Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/pottery-group.png"
+      "path": "/templates/signup/clubs-and-groups/pottery-group.webp"
     },
     {
       "name": "Knitting Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/knitting-group.png"
+      "path": "/templates/signup/clubs-and-groups/knitting-group.webp"
     },
     {
       "name": "Crocheting Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/crocheting-group.png"
+      "path": "/templates/signup/clubs-and-groups/crocheting-group.webp"
     },
     {
       "name": "Sewing Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/sewing-group.png"
+      "path": "/templates/signup/clubs-and-groups/sewing-group.webp"
     },
     {
       "name": "Quilting Group",
       "tier": "free",
-      "path": "/templates/signup/clubs-and-groups/quilting-group.png"
+      "path": "/templates/signup/clubs-and-groups/quilting-group.webp"
     }
   ]
 }

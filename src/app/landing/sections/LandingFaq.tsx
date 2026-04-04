@@ -43,7 +43,7 @@ export default function LandingFaq() {
   return (
     <section
       id="faq"
-      className="scroll-mt-24 px-4 py-6 sm:px-6 lg:px-8"
+      className="hash-anchor-below-fixed-nav px-4 py-6 sm:px-6 lg:px-8"
       aria-labelledby="landing-faq-heading"
     >
       <div

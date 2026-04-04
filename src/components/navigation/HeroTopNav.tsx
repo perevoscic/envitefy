@@ -27,6 +27,9 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
+const glassGhostLoginClass =
+  "cta-shell h-11 shrink-0 rounded-full border border-white/14 bg-white/[0.1] px-6 text-sm font-bold text-white transition-all hover:bg-white/[0.14]";
+
 function NavLinkItem({
   href,
   label,
@@ -111,12 +114,7 @@ export default function HeroTopNav({
             </Link>
 
             <nav
-              className={cx(
-                "hidden items-center gap-1 px-2 py-1.5 lg:flex",
-                isDarkGlass
-                  ? "rounded-full border border-white/8 bg-white/[0.03]"
-                  : "rounded-full bg-[#fbf8ff]",
-              )}
+              className="hidden items-center gap-1 lg:flex"
               aria-label="Hero navigation"
             >
               {navLinks.map((link) => (
@@ -152,10 +150,9 @@ export default function HeroTopNav({
                   type="button"
                   onClick={onGuestLoginAction}
                   className={cx(
-                    "rounded-full px-3 py-2 text-sm font-semibold transition",
                     isDarkGlass
-                      ? "text-white"
-                      : "text-[#30264f] hover:text-[#1f1635]",
+                      ? glassGhostLoginClass
+                      : "rounded-full px-3 py-2 text-sm font-semibold text-[#30264f] transition hover:text-[#1f1635]",
                   )}
                 >
                   Login
@@ -248,22 +245,15 @@ export default function HeroTopNav({
                   onClick={() => setMobileMenuOpen(false)}
                 />
               ))}
-            </nav>
 
-            <div
-              className={cx(
-                "mt-3 flex items-center justify-end gap-3 rounded-[1.4rem] px-4 py-4",
-                isDarkGlass
-                  ? "border border-white/10 bg-white/[0.04]"
-                  : "border border-[#eee3ff] bg-[#fcfbff]",
-              )}
-            >
               {status === "authenticated" ? (
                 <Link
                   href={dashboardHref}
                   className={cx(
-                    "text-right text-sm font-semibold",
-                    isDarkGlass ? "text-white" : "text-[#30264f]",
+                    "mt-2 w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
+                    isDarkGlass
+                      ? "text-white hover:bg-white/[0.06]"
+                      : "text-[#433865] hover:bg-[#f8f4ff]",
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -277,8 +267,10 @@ export default function HeroTopNav({
                     onGuestLoginAction();
                   }}
                   className={cx(
-                    "text-right text-sm font-semibold",
-                    isDarkGlass ? "text-white" : "text-[#30264f]",
+                    "mt-2 transition",
+                    isDarkGlass
+                      ? `${glassGhostLoginClass} self-end`
+                      : "w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold text-[#433865] hover:bg-[#f8f4ff]",
                   )}
                 >
                   Login
@@ -315,7 +307,7 @@ export default function HeroTopNav({
                   <AnimatedButtonLabel label={primaryCtaLabel} />
                 </button>
               )}
-            </div>
+            </nav>
           </div>
         </div>
       </div>

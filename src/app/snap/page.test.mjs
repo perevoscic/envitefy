@@ -20,16 +20,36 @@ test("/snap renders the new landing component with key sections", () => {
   assert.match(snapLanding, /id="how-it-works"/);
   assert.match(snapLanding, /id="use-cases"/);
   assert.match(snapLanding, /id="faq"/);
-  assert.match(snapLanding, /src="\/images\/snap-hero\.png"/);
+  assert.match(snapLanding, /snapHashAnchorClass = "hash-anchor-below-fixed-nav"/);
   assert.match(
     snapLanding,
-    /src="\/sliders\/vertical\/vertical-slide-1\.jpg"/,
+    /src="\/images\/snap-hero-after\.webp"/,
   );
-  assert.match(snapLanding, /useScroll\(/);
-  assert.doesNotMatch(snapLanding, /function ScrollRevealMediaCard\(\)/);
-  assert.doesNotMatch(snapLanding, /SNAP_HERO_BEFORE_IMAGE/);
-  assert.doesNotMatch(snapLanding, /SNAP_HERO_AFTER_IMAGE/);
-  assert.doesNotMatch(snapLanding, /sticky top-6 lg:top-8/);
+  assert.match(
+    snapLanding,
+    /alt="Envitefy Snap interface after upload conversion"/,
+  );
+  assert.match(
+    snapLanding,
+    /className=\{`\$\{snapHashAnchorClass\} px-4 pb-6 pt-\[calc\(max\(6\.5rem,calc\(env\(safe-area-inset-top\)\+5\.5rem\)\)\+1\.5rem\)\] sm:px-6 lg:px-8`\}/,
+  );
+  assert.match(
+    snapLanding,
+    /className="relative mt-2 h-\[60vh\] min-h-\[22rem\] w-full overflow-hidden rounded-\[1\.8rem\] border border-white\/14 bg-\[#090d18\]\/88 shadow-\[0_32px_90px_rgba\(4,1,14,0\.42\)\] sm:h-\[62vh\] xl:mt-0 xl:h-\[58vh\] 2xl:h-\[56vh\] md:rounded-\[2rem\]"/,
+  );
+  assert.match(
+    snapLanding,
+    /bg-\[linear-gradient\(180deg,rgba\(7,10,20,0\.1\),rgba\(7,10,20,0\.34\)\)\]/,
+  );
+  assert.doesNotMatch(snapLanding, /ScrollPushTransition/);
+  assert.doesNotMatch(snapLanding, /useScroll\(/);
+  assert.doesNotMatch(snapLanding, /useSpring\(/);
+  assert.doesNotMatch(snapLanding, /useTransform\(/);
+  assert.doesNotMatch(snapLanding, /scroll-push-section/);
+  assert.doesNotMatch(snapLanding, /h-\[200vh\]/);
+  assert.doesNotMatch(snapLanding, /sticky top-0 flex min-h-screen/);
+  assert.doesNotMatch(snapLanding, /heroRef/);
+  assert.doesNotMatch(snapLanding, /src="\/images\/snap-hero-before\.webp"/);
 });
 
 test("/snap includes the updated social-proof and CTA copy", () => {
