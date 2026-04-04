@@ -1,6 +1,7 @@
 import React from "react";
 import {
   TEMPLATE_DEFINITIONS,
+  type TemplateDef,
   type TemplateKey,
 } from "@/config/feature-visibility";
 import { hasProductScope } from "@/lib/product-scopes";
@@ -28,6 +29,7 @@ export type TemplateLink = {
   label: string;
   href: string;
   icon?: React.ReactNode;
+  section: TemplateDef["section"];
 };
 
 const ALL_TEMPLATE_LINKS: TemplateLink[] = TEMPLATE_DEFINITIONS.filter(
@@ -37,7 +39,36 @@ const ALL_TEMPLATE_LINKS: TemplateLink[] = TEMPLATE_DEFINITIONS.filter(
   label: t.label,
   href: t.href,
   icon: t.icon,
+  section: t.section,
 }));
+
+const CREATE_EVENT_SECTION_ORDER: TemplateDef["section"][] = [
+  "milestones",
+  "sports",
+  "appointments_general",
+];
+
+const CREATE_EVENT_SECTION_TITLES: Record<TemplateDef["section"], string> = {
+  milestones: "Milestones",
+  sports: "Sports",
+  appointments_general: "General",
+};
+
+function matchesHrefPath(path: string, href: string): boolean {
+  if (!path || !href) return false;
+  return path === href || path.startsWith(`${href}/`);
+}
+
+function isTemplateAvailableForScopes(
+  key: TemplateKey,
+  productScopes?: string[],
+): boolean {
+  if (!Array.isArray(productScopes)) return true;
+  if (key === "gymnastics") {
+    return hasProductScope(productScopes, "gymnastics");
+  }
+  return hasProductScope(productScopes, "snap");
+}
 
 export function getTemplateLinks(
   visibleTemplateKeys?: TemplateKey[],
@@ -46,12 +77,10 @@ export function getTemplateLinks(
   const visible = visibleTemplateKeys?.length
     ? new Set(visibleTemplateKeys)
     : null;
-  const restrictToScopedProducts = Array.isArray(productScopes);
 
   return ALL_TEMPLATE_LINKS.filter((t) => {
     if (visible && !visible.has(t.key)) return false;
-    if (!restrictToScopedProducts) return true;
-    return t.key === "gymnastics" && hasProductScope(productScopes, "gymnastics");
+    return isTemplateAvailableForScopes(t.key, productScopes);
   });
 }
 
@@ -60,15 +89,20 @@ export function getCreateEventSections(
   productScopes?: string[],
 ): CreateEventSection[] {
   const links = getTemplateLinks(visibleTemplateKeys, productScopes);
-  const byKey = new Map(links.map((l) => [l.key, l]));
-  const pick = (key: TemplateKey) => byKey.get(key);
+  return CREATE_EVENT_SECTION_ORDER.map((section) => ({
+    title: CREATE_EVENT_SECTION_TITLES[section],
+    items: links
+      .filter((link) => link.section === section)
+      .map(({ label, href, icon }) => ({ label, href, icon })),
+  })).filter((section) => section.items.length > 0);
+}
 
-  return [
-    {
-      title: "Gymnastics",
-      items: [pick("gymnastics")].filter(Boolean) as CreateEventSection["items"],
-    },
-  ].filter((section) => section.items.length > 0);
+export function isCreateEventRoute(path: string | null | undefined): boolean {
+  if (!path) return false;
+  if (path === "/event/new" || path.startsWith("/event/new/")) return true;
+  return ALL_TEMPLATE_LINKS.some((link) =>
+    matchesHrefPath(path, link.href.split("?")[0] || "")
+  );
 }
 
 // Backward-compatible full lists for code paths not yet visibility-aware.
@@ -99,8 +133,7 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     label: "Create Event",
     href: "/event/new", // Fallback
     isAction: true,
-    match: (path) =>
-      path.startsWith("/event") && !path.startsWith("/event/new"),
+    match: (path) => isCreateEventRoute(path),
     icon: (
       <svg
         viewBox="0 0 32 32"

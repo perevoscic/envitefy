@@ -31,6 +31,7 @@ import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
 import { normalizePrimarySignupSource } from "@/lib/product-scopes";
 import {
   getCreateEventSections,
+  isCreateEventRoute,
   getTemplateLinks,
 } from "@/config/navigation-config";
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
@@ -1236,6 +1237,10 @@ export default function LeftSidebar() {
     () => useGymnasticsDirectCreate || createMenuOptionCount > 0,
     [createMenuOptionCount, useGymnasticsDirectCreate]
   );
+  const isCreateRouteActive = useMemo(
+    () => isCreateEventRoute(pathname),
+    [pathname]
+  );
 
   useEffect(() => {
     if (activeCreateItem) {
@@ -1325,9 +1330,11 @@ export default function LeftSidebar() {
         case "snap":
           return pathname === "/event" && sidebarPage === "root";
         case "create":
-          return useGymnasticsDirectCreate
-            ? Boolean(pathname?.startsWith("/event/gymnastics"))
-            : sidebarPage === "createEvent" || sidebarPage === "createEventOther";
+          return (
+            isCreateRouteActive ||
+            sidebarPage === "createEvent" ||
+            sidebarPage === "createEventOther"
+          );
         case "myEvents":
           return (
             sidebarPage === "myEvents" ||
@@ -1344,7 +1351,7 @@ export default function LeftSidebar() {
           return false;
       }
     },
-    [pathname, sidebarPage, eventContextSourcePage, useGymnasticsDirectCreate]
+    [eventContextSourcePage, isCreateRouteActive, pathname, sidebarPage]
   );
   const defaultCategoryColor = (c: string): string => {
     const trimmed = String(c || "").trim();
@@ -1854,17 +1861,25 @@ export default function LeftSidebar() {
     []
   );
   const createdEventsCount = useMemo(
-    () => countGroupedEventItems(myEventsGrouped.upcoming),
-    [countGroupedEventItems, myEventsGrouped.upcoming]
+    () =>
+      countGroupedEventItems(myEventsGrouped.upcoming) +
+      countGroupedEventItems(myEventsGrouped.past),
+    [countGroupedEventItems, myEventsGrouped.past, myEventsGrouped.upcoming]
   );
   const invitedEventsCount = useMemo(
-    () => countGroupedEventItems(invitedEventsGrouped.upcoming),
-    [countGroupedEventItems, invitedEventsGrouped.upcoming]
+    () =>
+      countGroupedEventItems(invitedEventsGrouped.upcoming) +
+      countGroupedEventItems(invitedEventsGrouped.past),
+    [
+      countGroupedEventItems,
+      invitedEventsGrouped.past,
+      invitedEventsGrouped.upcoming,
+    ]
   );
   const isCreateEntryActive =
-    useGymnasticsDirectCreate
-      ? Boolean(pathname?.startsWith("/event/gymnastics"))
-      : sidebarPage === "createEvent" || sidebarPage === "createEventOther";
+    isCreateRouteActive ||
+    sidebarPage === "createEvent" ||
+    sidebarPage === "createEventOther";
   const compactNavItems = useMemo(
     () =>
       [
