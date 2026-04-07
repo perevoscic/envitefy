@@ -6,8 +6,10 @@ import {
   ArrowLeft,
   Cake,
   Calendar,
+  CalendarDays,
   CheckCircle2,
   ChevronRight,
+  ClipboardList,
   Clock,
   Download,
   ExternalLink,
@@ -15,17 +17,18 @@ import {
   Heart,
   Home,
   Image as ImageIcon,
-  Info,
   Layout,
   Loader2,
+  Mail,
   MapPin,
+  MessageSquare,
   PartyPopper,
+  Phone,
   Plus,
   RefreshCw,
   Share2,
   Sparkles,
   Trash2,
-  User,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -1349,6 +1352,33 @@ function sanitizeMediaItems(value: unknown): MediaItem[] {
     .slice(0, STUDIO_LIBRARY_LIMIT);
 }
 
+function restoreHydratedMediaItems(items: MediaItem[]): MediaItem[] {
+  return items.map((item) => {
+    if (item.status !== "loading") return item;
+
+    const fallbackUrl = item.url || getFallbackThumbnail(item.details);
+    const canRecoverReadyState =
+      (item.type === "image" && Boolean(item.url)) || (item.type === "page" && Boolean(item.data));
+
+    if (canRecoverReadyState) {
+      return {
+        ...item,
+        status: "ready",
+        url: fallbackUrl,
+        errorMessage: undefined,
+      };
+    }
+
+    return {
+      ...item,
+      status: "error",
+      url: fallbackUrl,
+      errorMessage:
+        "This item was still generating when Studio closed. Open it in the editor to generate it again.",
+    };
+  });
+}
+
 function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateApiResponse | null {
   if (!isRecord(value)) return null;
 
@@ -1499,6 +1529,70 @@ function hasRegistryContent(details: EventDetails) {
       clean(details.giftNote) ||
       clean(details.bringABookNote),
   );
+}
+
+const RSVP_ACTION_OPTIONS = [
+  { label: "Yes", accentClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  { label: "No", accentClassName: "border-rose-200 bg-rose-50 text-rose-700" },
+  { label: "Maybe", accentClassName: "border-amber-200 bg-amber-50 text-amber-700" },
+] as const;
+
+function extractEmail(value: string) {
+  return value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+}
+
+function extractPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length < 7 || digits.length > 15) return "";
+  return `${value.trim().startsWith("+") ? "+" : ""}${digits}`;
+}
+
+function getRsvpContactMetadata(contact: string) {
+  const email = extractEmail(contact);
+  if (email) {
+    return {
+      kind: "email" as const,
+      icon: Mail,
+      actionLabel: "Opens email",
+      directHref: `mailto:${email}`,
+      value: email,
+    };
+  }
+
+  const phone = extractPhone(contact);
+  if (phone) {
+    return {
+      kind: "sms" as const,
+      icon: Phone,
+      actionLabel: "Opens text messages",
+      directHref: `sms:${phone}`,
+      value: phone,
+    };
+  }
+
+  return {
+    kind: "none" as const,
+    icon: null,
+    actionLabel: "",
+    directHref: "",
+    value: contact,
+  };
+}
+
+function buildRsvpResponseHref(contact: string, eventTitle: string, responseLabel: string) {
+  const metadata = getRsvpContactMetadata(contact);
+  const subject = encodeURIComponent(`RSVP for ${eventTitle}`);
+  const body = encodeURIComponent(`Hi! My RSVP for ${eventTitle}: ${responseLabel}.`);
+
+  if (metadata.kind === "email") {
+    return `mailto:${metadata.value}?subject=${subject}&body=${body}`;
+  }
+
+  if (metadata.kind === "sms") {
+    return `sms:${metadata.value}?body=${body}`;
+  }
+
+  return "";
 }
 
 function getFallbackThumbnail(details: EventDetails) {
@@ -1818,6 +1912,34 @@ function buildStudioVisualDirection(details: EventDetails) {
   return instructions.join(" ");
 }
 
+function buildStudioCategoryGuardrails(details: EventDetails) {
+  const categoryPromptByType: Record<InviteCategory, string> = {
+    Birthday:
+      "Generate a birthday invitation image. Keep the composition, props, mood, and styling clearly birthday-focused.",
+    Wedding:
+      "Generate a wedding invitation image. Keep the composition, props, mood, and styling clearly wedding-focused.",
+    "Baby Shower":
+      "Generate a baby shower invitation image. Keep the composition, props, mood, and styling clearly baby-shower-focused.",
+    "Bridal Shower":
+      "Generate a bridal shower invitation image. Keep the composition, props, mood, and styling clearly bridal-shower-focused.",
+    Anniversary:
+      "Generate an anniversary invitation image. Keep the composition, props, mood, and styling clearly anniversary-focused.",
+    Housewarming:
+      "Generate a housewarming invitation image. Keep the composition, props, mood, and styling clearly housewarming-focused.",
+    "Field Trip/Day":
+      "Generate a field trip or school day invitation image. Keep the composition, props, mood, and styling clearly school-event-focused.",
+    "Custom Invite":
+      "Generate an invitation image that fits the provided event details exactly and do not drift into a different celebration type.",
+  };
+
+  return [
+    categoryPromptByType[details.category],
+    "Do not hallucinate people, animals, venue features, decorations, dates, times, logos, outfits, gifts, cakes, rings, balloons, or activities that are not supported by the event details or the user's visual direction.",
+    "If an important visual detail is missing, keep it generic and restrained instead of inventing specifics.",
+    "Any visible wording must match the provided event details exactly. Never fabricate names, phone numbers, addresses, schedules, or event copy.",
+  ].join(" ");
+}
+
 function buildStudioRequest(
   details: EventDetails,
   mode: StudioGenerateMode,
@@ -1827,6 +1949,7 @@ function buildStudioRequest(
   const refinement = clean(editPrompt);
   const baseDescription = buildDescription(details);
   const visualDirection = buildStudioVisualDirection(details);
+  const categoryGuardrails = buildStudioCategoryGuardrails(details);
   const studioGuardrails =
     "Preserve exact spelling from the event details. Double-check visible words. Keep the lower button area visually clear and avoid placing important copy near the bottom of the card.";
   return {
@@ -1864,7 +1987,10 @@ function buildStudioRequest(
           details.style,
           details.category === "Birthday" ? "Playful and polished" : "Warm and elevated",
         ) || null,
-      style: [visualDirection, refinement, studioGuardrails].filter(Boolean).join(". ") || null,
+      style:
+        [visualDirection, categoryGuardrails, refinement, studioGuardrails]
+          .filter(Boolean)
+          .join(". ") || null,
       audience: pickFirst(details.invitedWho, details.audience, "Guests") || null,
       colorPalette: clean(details.colors) || null,
       includeEmoji: true,
@@ -2125,17 +2251,27 @@ export default function StudioWorkspace() {
   const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
 
+  const editingMediaItem = useMemo(
+    () => (editingId ? mediaList.find((item) => item.id === editingId) ?? null : null),
+    [editingId, mediaList],
+  );
+
+  const isEditingLiveCard = editingMediaItem?.type === "page";
+  const hasLiveCardSourceImage = Boolean(clean(editingMediaItem?.url));
+
   const activePageRecord = useMemo(
     () => mediaList.find((item) => item.id === activePage?.id) ?? activePage,
     [activePage, mediaList],
   );
+  const activePageRsvpContact = clean(activePageRecord?.data?.eventDetails.rsvpContact);
+  const activePageRsvpContactMetadata = getRsvpContactMetadata(activePageRsvpContact);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return;
       const parsed = JSON.parse(saved);
-      setMediaList(sanitizeMediaItems(parsed));
+      setMediaList(restoreHydratedMediaItems(sanitizeMediaItems(parsed)));
     } catch {
       setMediaList([]);
     }
@@ -2157,7 +2293,7 @@ export default function StudioWorkspace() {
   useEffect(() => {
     setEditPrompt("");
     setIsEditPanelOpen(false);
-  }, [selectedImage?.id, activePageRecord?.id]);
+  }, [selectedImage?.id, activePageRecord?.id, editingMediaItem?.id]);
 
   useEffect(() => {
     if (details.category !== "Birthday") return;
@@ -2224,6 +2360,8 @@ export default function StudioWorkspace() {
   function openLiveCardEditor(item: MediaItem) {
     setDetails(item.details);
     setEditingId(item.id);
+    setEditPrompt("");
+    setIsEditPanelOpen(false);
     setIsOptionalCollapsed(false);
     setActiveTab("none");
     setIsDesignMode(false);
@@ -2357,9 +2495,13 @@ export default function StudioWorkspace() {
     const existingItem = editingId
       ? mediaList.find((item) => item.id === editingId) ?? null
       : null;
+    const sourceImageDataUrl =
+      type === "page" && existingItem?.type === "page" ? clean(existingItem.url) : "";
     const loadingItem: MediaItem = {
       id: targetId,
       type,
+      url: existingItem?.url,
+      data: existingItem?.data,
       theme: pickFirst(currentDetails.theme, `${currentDetails.category} Event`),
       status: "loading",
       details: currentDetails,
@@ -2387,11 +2529,13 @@ export default function StudioWorkspace() {
       const response = await requestStudioGeneration(
         currentDetails,
         type === "page" ? "both" : "image",
+        sourceImageDataUrl ? editPrompt : undefined,
+        sourceImageDataUrl || undefined,
       );
       const nextItem: MediaItem = {
         ...loadingItem,
         status: "ready",
-        url: response.imageDataUrl || getFallbackThumbnail(currentDetails),
+        url: response.imageDataUrl || existingItem?.url || getFallbackThumbnail(currentDetails),
         data: type === "page" ? buildInvitationData(currentDetails, response) : undefined,
         errorMessage: undefined,
       };
@@ -2400,6 +2544,7 @@ export default function StudioWorkspace() {
         sanitizeMediaItems(prev.map((item) => (item.id === targetId ? nextItem : item))),
       );
       setEditingId(null);
+      setEditPrompt("");
       setStep("studio");
     } catch (error) {
       const errorMessage =
@@ -2414,7 +2559,7 @@ export default function StudioWorkspace() {
               ? {
                   ...item,
                   status: "error",
-                  url: getFallbackThumbnail(currentDetails),
+                  url: existingItem?.url || getFallbackThumbnail(currentDetails),
                   errorMessage,
                 }
               : item,
@@ -2705,7 +2850,7 @@ export default function StudioWorkspace() {
               </div>
 
               <div className="space-y-8">
-                <div className={`${shellClass} space-y-8`}>
+                <div className={`${shellClass} space-y-8 px-4 sm:px-6 lg:px-7`}>
                   <div className="space-y-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                       Required Information
@@ -3128,6 +3273,30 @@ export default function StudioWorkspace() {
                           <div className="absolute inset-0 flex items-center justify-center bg-[#faf7ff]">
                             <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
                           </div>
+                        ) : item.status === "error" ? (
+                          <div className="absolute inset-0">
+                            <img
+                              src={item.url || getFallbackThumbnail(item.details)}
+                              alt={item.theme}
+                              className="h-full w-full object-cover opacity-35"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white/55 px-6 text-center backdrop-blur-[3px]">
+                              <p className="text-sm font-semibold text-neutral-900">
+                                Generation interrupted
+                              </p>
+                              <p className="max-w-[18rem] text-xs leading-5 text-neutral-600">
+                                {item.errorMessage ||
+                                  "This saved card did not finish generating. Open it in the editor to rebuild it."}
+                              </p>
+                              <button
+                                onClick={() => openLiveCardEditor(item)}
+                                className="rounded-full bg-neutral-900 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-neutral-800"
+                              >
+                                Open Editor
+                              </button>
+                            </div>
+                          </div>
                         ) : (
                           <>
                             <img
@@ -3255,7 +3424,7 @@ export default function StudioWorkspace() {
                     {details.category === "Birthday" && birthdayPresets ? (
                       <div className="space-y-4">
                         {birthdayPresetAudience ? (
-                          <div className="rounded-[22px] border border-[#ece4f7] bg-[#faf7ff] px-4 py-3">
+                            <div className="rounded-[22px] border border-[#ece4f7] bg-[#faf7ff] px-3 py-3">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                               Showing 12 {birthdayPresetAudience === "female" ? "girl" : "boy"}{" "}
                               presets
@@ -3377,6 +3546,28 @@ export default function StudioWorkspace() {
                   <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                     Generate Media
                   </h2>
+                  {isEditingLiveCard ? (
+                    <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
+                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                        Edit current image
+                      </label>
+                      <p className="mb-3 text-sm leading-6 text-neutral-600">
+                        Update this live card by editing the current artwork in place while
+                        applying your detail changes.
+                      </p>
+                      <textarea
+                        placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
+                        className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
+                        value={editPrompt}
+                        onChange={(event) => setEditPrompt(event.target.value)}
+                      />
+                      <p className="mt-3 text-xs text-neutral-500">
+                        {hasLiveCardSourceImage
+                          ? "Update Invitation will keep your current card details and button placement while editing the current image."
+                          : "No current live-card image is available, so Update Invitation will regenerate artwork from the latest details."}
+                      </p>
+                    </div>
+                  ) : null}
                   <div className="space-y-3">
                     <button
                       onClick={() => generateMedia("page")}
@@ -3384,7 +3575,7 @@ export default function StudioWorkspace() {
                       className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(25,20,40,0.18)] transition-all hover:-translate-y-0.5 hover:bg-neutral-800 disabled:opacity-50"
                     >
                       <Layout className="h-5 w-5" />
-                      Create Live Card
+                      {isEditingLiveCard ? "Update Invitation" : "Create Live Card"}
                       <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
                     </button>
 
@@ -3664,22 +3855,18 @@ export default function StudioWorkspace() {
               >
                 <div className="flex items-center gap-3">
                   <div className="rounded-full bg-white/15 p-2 text-white">
-                    <Info className="h-4 w-4" />
+                    <WandSparkles className="h-4 w-4" />
                   </div>
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-                      Details
+                      Edit
                     </p>
-                    <p className="text-sm font-semibold text-white">Edit live card details</p>
+                    <p className="text-sm font-semibold text-white">Edit live card</p>
+                    <p className="text-xs text-white/55">Update details and current artwork</p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-white/70" />
               </button>
-
-              {renderEditImagePanel(
-                activePageRecord,
-                "Describe the change you want. This edits the current live-card artwork and keeps your existing card details and button placement.",
-              )}
 
               <div className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
                 <div>
@@ -3739,10 +3926,10 @@ export default function StudioWorkspace() {
                           <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
                               {activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
-                              {activeTab === "calendar" ? <Calendar className="h-5 w-5" /> : null}
-                              {activeTab === "registry" ? <Sparkles className="h-5 w-5" /> : null}
-                              {activeTab === "rsvp" ? <User className="h-5 w-5" /> : null}
-                              {activeTab === "details" ? <Info className="h-5 w-5" /> : null}
+                              {activeTab === "calendar" ? <CalendarDays className="h-5 w-5" /> : null}
+                              {activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
+                              {activeTab === "rsvp" ? <MessageSquare className="h-5 w-5" /> : null}
+                              {activeTab === "details" ? <ClipboardList className="h-5 w-5" /> : null}
                             </div>
                             <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
                               {activeTab === "location" ? "Event Location" : null}
@@ -3767,7 +3954,8 @@ export default function StudioWorkspace() {
                                 RSVP Details
                               </p>
                               <p className="text-sm leading-6 text-neutral-700">
-                                {activePageRecord.data.interactiveMetadata.rsvpMessage}
+                                {activePageRecord.data.interactiveMetadata.rsvpMessage ||
+                                  "Reply to let the host know you're coming."}
                               </p>
                               <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
                                 <div>
@@ -3783,9 +3971,26 @@ export default function StudioWorkspace() {
                                     <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                                       Contact Info
                                     </p>
-                                    <p className="text-sm text-neutral-700">
-                                      {activePageRecord.data.eventDetails.rsvpContact}
-                                    </p>
+                                    {activePageRsvpContactMetadata.directHref ? (
+                                      <a
+                                        href={activePageRsvpContactMetadata.directHref}
+                                        className="inline-flex items-center gap-2 text-sm font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-4 transition hover:text-neutral-700"
+                                      >
+                                        {activePageRsvpContactMetadata.icon ? (
+                                          <activePageRsvpContactMetadata.icon className="h-4 w-4 text-neutral-500" />
+                                        ) : null}
+                                        {activePageRecord.data.eventDetails.rsvpContact}
+                                      </a>
+                                    ) : (
+                                      <p className="text-sm text-neutral-700">
+                                        {activePageRecord.data.eventDetails.rsvpContact}
+                                      </p>
+                                    )}
+                                    {activePageRsvpContactMetadata.actionLabel ? (
+                                      <p className="mt-2 text-[11px] font-medium text-neutral-500">
+                                        {activePageRsvpContactMetadata.actionLabel}
+                                      </p>
+                                    ) : null}
                                   </div>
                                 ) : null}
                                 {activePageRecord.data.eventDetails.rsvpDeadline ? (
@@ -3799,10 +4004,28 @@ export default function StudioWorkspace() {
                                   </div>
                                 ) : null}
                               </div>
-                              <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 py-3 text-xs font-bold text-white">
-                                <CheckCircle2 className="h-3 w-3" />
-                                {activePageRecord.data.interactiveMetadata.ctaLabel}
-                              </button>
+                              {activePageRsvpContactMetadata.kind !== "none" ? (
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                    Quick Reply
+                                  </p>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {RSVP_ACTION_OPTIONS.map((option) => (
+                                      <a
+                                        key={option.label}
+                                        href={buildRsvpResponseHref(
+                                          activePageRsvpContact,
+                                          activePageRecord.data.title || "Event",
+                                          option.label,
+                                        )}
+                                        className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${option.accentClassName}`}
+                                      >
+                                        {option.label}
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : null}
                             </div>
                           ) : null}
 
@@ -3938,7 +4161,7 @@ export default function StudioWorkspace() {
                                 }}
                                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white"
                               >
-                                <Calendar className="h-3 w-3" />
+                                <CalendarDays className="h-3 w-3" />
                                 Add to Google Calendar
                               </button>
                             </>
@@ -3982,7 +4205,7 @@ export default function StudioWorkspace() {
                         {
                           key: "rsvp",
                           label: "RSVP",
-                          icon: User,
+                          icon: MessageSquare,
                           visible: Boolean(
                             activePageRecord.data.eventDetails.rsvpName ||
                               activePageRecord.data.eventDetails.rsvpContact,
@@ -3992,7 +4215,7 @@ export default function StudioWorkspace() {
                         {
                           key: "details",
                           label: "Details",
-                          icon: Info,
+                          icon: ClipboardList,
                           visible: true,
                           onClick: () => setActiveTab(activeTab === "details" ? "none" : "details"),
                         },
@@ -4007,7 +4230,7 @@ export default function StudioWorkspace() {
                         {
                           key: "calendar",
                           label: "Calendar",
-                          icon: Calendar,
+                          icon: CalendarDays,
                           visible: true,
                           onClick: () =>
                             setActiveTab(activeTab === "calendar" ? "none" : "calendar"),
@@ -4032,7 +4255,7 @@ export default function StudioWorkspace() {
                         {
                           key: "registry",
                           label: "Registry",
-                          icon: Sparkles,
+                          icon: Gift,
                           visible: hasRegistryContent(activePageRecord.data.eventDetails),
                           onClick: () =>
                             setActiveTab(activeTab === "registry" ? "none" : "registry"),

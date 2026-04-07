@@ -1,14 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import {
-  Calendar,
+  CalendarDays,
   CheckCircle2,
+  ClipboardList,
   ExternalLink,
-  Info,
+  Gift,
+  Mail,
   MapPin,
+  MessageSquare,
+  Phone,
   Share2,
-  Sparkles,
-  User,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -98,32 +101,100 @@ function buildGoogleCalendarUrl(title: string, invitationData?: InvitationData |
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&details=${description}&location=${location}&dates=${eventDate}/${eventDate}`;
 }
 
+const RSVP_ACTION_OPTIONS = [
+  { label: "Yes", accentClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  { label: "No", accentClassName: "border-rose-200 bg-rose-50 text-rose-700" },
+  { label: "Maybe", accentClassName: "border-amber-200 bg-amber-50 text-amber-700" },
+] as const;
+
+function extractEmail(value: string) {
+  return value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+}
+
+function extractPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length < 7 || digits.length > 15) return "";
+  return `${value.trim().startsWith("+") ? "+" : ""}${digits}`;
+}
+
+function getRsvpContactMetadata(contact: string) {
+  const email = extractEmail(contact);
+  if (email) {
+    return {
+      kind: "email" as const,
+      icon: Mail,
+      actionLabel: "Opens email",
+      directHref: `mailto:${email}`,
+      value: email,
+    };
+  }
+
+  const phone = extractPhone(contact);
+  if (phone) {
+    return {
+      kind: "sms" as const,
+      icon: Phone,
+      actionLabel: "Opens text messages",
+      directHref: `sms:${phone}`,
+      value: phone,
+    };
+  }
+
+  return {
+    kind: "none" as const,
+    icon: null,
+    actionLabel: "",
+    directHref: "",
+    value: contact,
+  };
+}
+
+function buildRsvpResponseHref(contact: string, eventTitle: string, responseLabel: string) {
+  const metadata = getRsvpContactMetadata(contact);
+  const subject = encodeURIComponent(`RSVP for ${eventTitle}`);
+  const body = encodeURIComponent(`Hi! My RSVP for ${eventTitle}: ${responseLabel}.`);
+
+  if (metadata.kind === "email") {
+    return `mailto:${metadata.value}?subject=${subject}&body=${body}`;
+  }
+
+  if (metadata.kind === "sms") {
+    return `sms:${metadata.value}?body=${body}`;
+  }
+
+  return "";
+}
+
 export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("none");
   const [copySuccess, setCopySuccess] = useState(false);
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
   const safeAreaStyle = {
-    paddingTop: "max(env(safe-area-inset-top), 1rem)",
+    paddingTop: "env(safe-area-inset-top)",
     paddingRight: "max(env(safe-area-inset-right), 1rem)",
     paddingBottom: "max(env(safe-area-inset-bottom), 1rem)",
     paddingLeft: "max(env(safe-area-inset-left), 1rem)",
   };
-
+  const buttonRailStyle = {
+    paddingBottom: "calc(env(safe-area-inset-bottom) + 1.35rem)",
+  };
+  const rsvpContact = readString(details?.rsvpContact);
+  const rsvpContactMetadata = getRsvpContactMetadata(rsvpContact);
   const buttonConfigs = useMemo(
     () =>
       [
         {
           key: "rsvp",
           label: "RSVP",
-          icon: User,
+          icon: MessageSquare,
           visible: Boolean(readString(details?.rsvpName) || readString(details?.rsvpContact)),
           onClick: () => setActiveTab(activeTab === "rsvp" ? "none" : "rsvp"),
         },
         {
           key: "details",
           label: "Details",
-          icon: Info,
+          icon: ClipboardList,
           visible: Boolean(invitationData),
           onClick: () => setActiveTab(activeTab === "details" ? "none" : "details"),
         },
@@ -137,7 +208,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         {
           key: "calendar",
           label: "Calendar",
-          icon: Calendar,
+          icon: CalendarDays,
           visible: Boolean(readString(details?.eventDate)),
           onClick: () => setActiveTab(activeTab === "calendar" ? "none" : "calendar"),
         },
@@ -176,7 +247,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         {
           key: "registry",
           label: "Registry",
-          icon: Sparkles,
+          icon: Gift,
           visible: Boolean(readString(details?.registryLink)),
           onClick: () => setActiveTab(activeTab === "registry" ? "none" : "registry"),
         },
@@ -185,7 +256,8 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   );
 
   return (
-    <main className="relative min-h-screen min-h-[100svh] min-h-[100dvh] w-full overflow-hidden bg-neutral-950">
+    <div className="min-h-screen min-h-[100svh] min-h-[100dvh] w-full bg-neutral-950">
+      <main className="relative h-screen h-[100svh] h-[100dvh] w-full overflow-hidden bg-neutral-950">
       <div className="absolute inset-0">
         <img
           src={props.imageUrl}
@@ -197,7 +269,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_rgba(10,10,10,0.24)_30%,_rgba(10,10,10,0.82)_100%)]" />
       </div>
 
-      <div className="relative flex h-screen h-[100svh] h-[100dvh] w-full items-center justify-center overflow-hidden">
+      <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
         <div className="relative h-full w-full overflow-hidden bg-neutral-900 shadow-2xl shadow-black/30">
           <img
             src={props.imageUrl}
@@ -216,10 +288,10 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                     <div className="flex items-center gap-3">
                       <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
                         {activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
-                        {activeTab === "calendar" ? <Calendar className="h-5 w-5" /> : null}
-                        {activeTab === "registry" ? <Sparkles className="h-5 w-5" /> : null}
-                        {activeTab === "rsvp" ? <User className="h-5 w-5" /> : null}
-                        {activeTab === "details" ? <Info className="h-5 w-5" /> : null}
+                        {activeTab === "calendar" ? <CalendarDays className="h-5 w-5" /> : null}
+                        {activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
+                        {activeTab === "rsvp" ? <MessageSquare className="h-5 w-5" /> : null}
+                        {activeTab === "details" ? <ClipboardList className="h-5 w-5" /> : null}
                       </div>
                       <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
                         {activeTab === "location" ? "Event Location" : null}
@@ -261,9 +333,26 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                               <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                                 Contact Info
                               </p>
-                              <p className="text-sm text-neutral-700">
-                                {readString(details?.rsvpContact)}
-                              </p>
+                              {rsvpContactMetadata.directHref ? (
+                                <a
+                                  href={rsvpContactMetadata.directHref}
+                                  className="inline-flex items-center gap-2 text-sm font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-4 transition hover:text-neutral-700"
+                                >
+                                  {rsvpContactMetadata.icon ? (
+                                    <rsvpContactMetadata.icon className="h-4 w-4 text-neutral-500" />
+                                  ) : null}
+                                  {readString(details?.rsvpContact)}
+                                </a>
+                              ) : (
+                                <p className="text-sm text-neutral-700">
+                                  {readString(details?.rsvpContact)}
+                                </p>
+                              )}
+                              {rsvpContactMetadata.actionLabel ? (
+                                <p className="mt-2 text-[11px] font-medium text-neutral-500">
+                                  {rsvpContactMetadata.actionLabel}
+                                </p>
+                              ) : null}
                             </div>
                           ) : null}
                           {readString(details?.rsvpDeadline) ? (
@@ -277,6 +366,24 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                             </div>
                           ) : null}
                         </div>
+                        {rsvpContactMetadata.kind !== "none" ? (
+                          <div className="space-y-2">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                              Quick Reply
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {RSVP_ACTION_OPTIONS.map((option) => (
+                                <a
+                                  key={option.label}
+                                  href={buildRsvpResponseHref(rsvpContact, props.title, option.label)}
+                                  className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${option.accentClassName}`}
+                                >
+                                  {option.label}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -373,7 +480,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                             }
                             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white"
                           >
-                            <Calendar className="h-3 w-3" />
+                            <CalendarDays className="h-3 w-3" />
                             Add to Google Calendar
                           </button>
                         ) : null}
@@ -399,7 +506,10 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                 </div>
               ) : null}
 
-              <div className="pointer-events-none flex items-end justify-center gap-3 px-2 pb-4 sm:gap-4 sm:px-4 sm:pb-8">
+              <div
+                className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-center gap-3 px-2 pt-16 sm:gap-4 sm:px-4"
+                style={buttonRailStyle}
+              >
                 {buttonConfigs
                   .filter((button) => button.visible)
                   .map((button) => {
@@ -416,7 +526,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                           className="group flex flex-col items-center gap-2"
                         >
                           <div
-                            className={`rounded-full border border-white/30 bg-white/20 p-3 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 ${
+                            className={`rounded-full border border-white/30 bg-white/20 p-2.5 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 sm:p-3 ${
                               (button.key === "rsvp" && activeTab === "rsvp") ||
                               (button.key === "details" && activeTab === "details") ||
                               (button.key === "location" && activeTab === "location") ||
@@ -427,25 +537,36 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                             }`}
                           >
                             <Icon
-                              className={`h-5 w-5 ${
+                              className={`h-4.5 w-4.5 sm:h-5 sm:w-5 ${
                                 button.key === "share" && copySuccess
                                   ? "text-green-400"
                                   : "text-white"
                               }`}
                             />
                           </div>
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-white drop-shadow-md">
+                          <span className="text-[8px] font-bold uppercase tracking-widest text-white drop-shadow-md sm:text-[9px]">
                             {button.label}
                           </span>
                         </button>
                       </div>
                     );
-                  })}
+                })}
               </div>
+
             </div>
           </div>
         </div>
       </div>
-    </main>
+      </main>
+
+      <div className="border-t border-white/10 bg-neutral-950 px-4 py-3 text-center">
+        <Link
+          href="/studio"
+          className="text-[10px] font-medium uppercase tracking-[0.24em] text-white/55 transition hover:text-white/80"
+        >
+          Created by Envitefy Studio
+        </Link>
+      </div>
+    </div>
   );
 }

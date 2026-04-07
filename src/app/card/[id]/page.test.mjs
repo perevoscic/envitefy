@@ -29,10 +29,25 @@ test("shared card route prefers the public-safe cover image url", () => {
 });
 
 test("shared card page uses a full-viewport responsive layout", () => {
+  const conditionalFooter = readSource("src/components/ConditionalFooter.tsx");
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
 
+  assert.match(conditionalFooter, /const isStudioCardSharePath = \(pathname: string\) => \{/);
+  assert.match(conditionalFooter, /segments\.length === 2 && segments\[0\] === "card"/);
+  assert.match(conditionalFooter, /if \(\(isEventShare && hasNoSession\) \|\| isStudioCardShare\) \{/);
+  assert.match(sharedPageSource, /Created by Envitefy Studio/);
+  assert.match(sharedPageSource, /href="\/studio"/);
   assert.match(sharedPageSource, /min-h-screen\s+min-h-\[100svh\]\s+min-h-\[100dvh\]/);
   assert.match(sharedPageSource, /h-screen\s+h-\[100svh\]\s+h-\[100dvh\]/);
   assert.match(sharedPageSource, /object-contain/);
+  assert.match(
+    sharedPageSource,
+    /className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-center gap-3 px-2 pt-16 sm:gap-4 sm:px-4"/,
+  );
+  assert.match(sharedPageSource, /paddingBottom: "calc\(env\(safe-area-inset-bottom\) \+ 1\.35rem\)"/);
+  assert.match(
+    sharedPageSource,
+    /<main className="relative h-screen h-\[100svh\] h-\[100dvh\] w-full overflow-hidden bg-neutral-950">[\s\S]*<\/main>\s*<div className="border-t border-white\/10 bg-neutral-950 px-4 py-3 text-center">/,
+  );
   assert.doesNotMatch(sharedPageSource, /max-w-md overflow-hidden rounded-\[3rem\]/);
 });
