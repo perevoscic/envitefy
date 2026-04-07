@@ -1,4 +1,5 @@
 import {
+  editInvitationImageWithGemini,
   generateInvitationImageWithGemini,
   generateStudioLiveCardWithGemini,
 } from "@/lib/studio/gemini";
@@ -40,8 +41,12 @@ export async function generateStudioInvitation(
   }
 
   if (wantsImage) {
-    const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard);
-    const imageResult = await generateInvitationImageWithGemini(imagePrompt);
+    const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard, {
+      editingExistingImage: Boolean(request.imageEdit?.sourceImageDataUrl),
+    });
+    const imageResult = request.imageEdit?.sourceImageDataUrl
+      ? await editInvitationImageWithGemini(imagePrompt, request.imageEdit.sourceImageDataUrl)
+      : await generateInvitationImageWithGemini(imagePrompt);
     warnings.push(...imageResult.warnings);
     if (imageResult.ok) {
       imageDataUrl = imageResult.imageDataUrl;

@@ -121,6 +121,14 @@ function resolveImageModel(): string {
   return process.env.STUDIO_GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
 }
 
+function resolveImageEditModel(): string {
+  return (
+    process.env.STUDIO_GEMINI_IMAGE_EDIT_MODEL ||
+    process.env.STUDIO_GEMINI_IMAGE_MODEL ||
+    "gemini-3.1-flash-image-preview"
+  );
+}
+
 function resolveVertexProject(): string {
   return (
     process.env.STUDIO_GOOGLE_VERTEX_PROJECT ||
@@ -215,6 +223,36 @@ function extractImageDataUrlFromGeminiResponse(response: any): string | null {
   return null;
 }
 
+async function resolveInlineImageSource(
+  value: string,
+): Promise<{ mimeType: string; data: string } | null> {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\r\n]+)$/);
+  if (match) {
+    return {
+      mimeType: match[1],
+      data: match[2].replace(/\s+/g, ""),
+    };
+  }
+
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+
+  try {
+    const response = await fetch(trimmed);
+    if (!response.ok) return null;
+    const mimeTypeHeader = safeString(response.headers.get("content-type"));
+    const mimeType = mimeTypeHeader.split(";")[0]?.trim() || "image/png";
+    if (!mimeType.startsWith("image/")) return null;
+    const bytes = Buffer.from(await response.arrayBuffer());
+    return {
+      mimeType,
+      data: bytes.toString("base64"),
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function postStructuredGeminiContent(
   model: string,
   prompt: string,
@@ -253,22 +291,59 @@ async function postStructuredGeminiContent(
 async function postGeminiImage(
   model: string,
   prompt: string,
+  sourceImageDataUrl?: string,
 ): Promise<
   | { ok: true; response: any; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
 > {
+  const sourceImage = sourceImageDataUrl
+    ? await resolveInlineImageSource(sourceImageDataUrl)
+    : null;
+  if (sourceImageDataUrl && !sourceImage) {
+    return {
+      ok: false,
+      error: buildError(
+        "invalid_source_image",
+        "The current image could not be prepared for editing.",
+        { retryable: false },
+      ),
+      warnings: [],
+    };
+  }
+
   try {
     const client = getGeminiClient();
     const response = await client.models.generateContent({
       model,
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: {
-          aspectRatio: "9:16",
-          imageSize: "1K",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            ...(sourceImage
+              ? [
+                  {
+                    inlineData: {
+                      mimeType: sourceImage.mimeType,
+                      data: sourceImage.data,
+                    },
+                  },
+                ]
+              : []),
+            { text: prompt },
+          ],
         },
-      },
+      ],
+      config: sourceImage
+        ? {
+            responseModalities: ["IMAGE"],
+          }
+        : {
+            responseModalities: ["TEXT", "IMAGE"],
+            imageConfig: {
+              aspectRatio: "9:16",
+              imageSize: "1K",
+            },
+          },
     });
     return { ok: true, response, warnings: [] };
   } catch (error) {
@@ -333,6 +408,28 @@ export async function generateInvitationImageWithGemini(
       error: buildError(
         "image_not_returned",
         "Gemini did not return an image payload for this request.",
+      ),
+      warnings: [],
+    };
+  }
+
+  return { ok: true, imageDataUrl, warnings: result.warnings };
+}
+
+export async function editInvitationImageWithGemini(
+  prompt: string,
+  sourceImageDataUrl: string,
+): Promise<GeminiImageResult> {
+  const result = await postGeminiImage(resolveImageEditModel(), prompt, sourceImageDataUrl);
+  if (!result.ok) return result;
+
+  const imageDataUrl = extractImageDataUrlFromGeminiResponse(result.response);
+  if (!imageDataUrl) {
+    return {
+      ok: false,
+      error: buildError(
+        "image_not_returned",
+        "Gemini did not return an edited image payload for this request.",
       ),
       warnings: [],
     };

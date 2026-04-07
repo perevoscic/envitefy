@@ -44,6 +44,9 @@ export type StudioGenerateRequest = {
   mode?: StudioGenerateMode;
   event: StudioEventDetails;
   guidance?: StudioGenerationGuidance;
+  imageEdit?: {
+    sourceImageDataUrl: string;
+  };
 };
 
 export type StudioInvitationText = {
@@ -168,6 +171,13 @@ function normalizeGuidance(value: unknown): StudioGenerationGuidance | undefined
   };
 }
 
+function normalizeImageEdit(value: unknown): { sourceImageDataUrl: string } | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const sourceImageDataUrl = safeString((value as any).sourceImageDataUrl);
+  if (!sourceImageDataUrl) return undefined;
+  return { sourceImageDataUrl };
+}
+
 export function parseStudioGenerateRequest(input: unknown): ParseSuccess | ParseFailure {
   if (!input || typeof input !== "object") {
     return { ok: false, error: "Request body must be a JSON object." };
@@ -184,6 +194,7 @@ export function parseStudioGenerateRequest(input: unknown): ParseSuccess | Parse
       mode,
       event,
       guidance: normalizeGuidance((input as any).guidance),
+      imageEdit: normalizeImageEdit((input as any).imageEdit),
     },
   };
 }

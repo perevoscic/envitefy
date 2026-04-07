@@ -18,6 +18,7 @@ export type EventMediaEntry = {
 
 const STATIC_STRING_PATHS: Array<Array<string | number>> = [
   ["thumbnail"],
+  ["hero"],
   ["heroImage"],
   ["customHeroImage"],
   ["headlineBg"],
@@ -96,6 +97,14 @@ function collectSignupHeaderEntries(entries: EventMediaEntry[], source: any): vo
   }
 }
 
+function collectSponsorEntries(entries: EventMediaEntry[], source: any): void {
+  const sponsors = source?.sponsors;
+  if (!Array.isArray(sponsors)) return;
+  for (let index = 0; index < sponsors.length; index += 1) {
+    addEntry(entries, source, ["sponsors", index, "logo"]);
+  }
+}
+
 export function listEventMediaEntries(source: unknown): EventMediaEntry[] {
   if (!source || typeof source !== "object") return [];
   const entries: EventMediaEntry[] = [];
@@ -104,6 +113,7 @@ export function listEventMediaEntries(source: unknown): EventMediaEntry[] {
   }
   collectGalleryEntries(entries, source);
   collectSignupHeaderEntries(entries, source);
+  collectSponsorEntries(entries, source);
   return entries;
 }
 

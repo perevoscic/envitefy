@@ -26,21 +26,21 @@ import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
 import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import BirthdayDesignThemes from "./_components/BirthdayDesignThemes";
 import { BIRTHDAY_THEMES } from "./birthdayThemes";
 
-function getTemplateById(
-  id?: string | null
-): BirthdayTemplateDefinition | null {
+const registryCopy = getRegistrySectionCopyForCategory("birthdays");
+
+function getTemplateById(id?: string | null): BirthdayTemplateDefinition | null {
   if (!birthdayTemplateCatalog || birthdayTemplateCatalog.length === 0) {
     return null;
   }
   if (!id) return birthdayTemplateCatalog[0];
 
   return (
-    birthdayTemplateCatalog.find((template) => template.id === id) ??
-    birthdayTemplateCatalog[0]
+    birthdayTemplateCatalog.find((template) => template.id === id) ?? birthdayTemplateCatalog[0]
   );
 }
 
@@ -115,49 +115,48 @@ type SimpleTemplateThemeSnapshot = {
   preview: string;
 };
 
-const PROFESSIONAL_THEME_CLASSES: Record<string, SimpleTemplateThemeSnapshot> =
-  {
-    construction_zone_party: {
-      id: "construction_zone_party",
-      name: "Construction Zone",
-      bg: "bg-gradient-to-br from-yellow-200 via-amber-200 to-amber-400",
-      text: "text-slate-900",
-      accent: "text-amber-900",
-      preview: "bg-amber-300",
-    },
-    rainbow_confetti_splash: {
-      id: "rainbow_confetti_splash",
-      name: "Rainbow Confetti",
-      bg: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100",
-      text: "text-slate-900",
-      accent: "text-pink-600",
-      preview: "bg-pink-200",
-    },
-    sparkle_starburst: {
-      id: "sparkle_starburst",
-      name: "Sparkle Starburst",
-      bg: "bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-200",
-      text: "text-slate-900",
-      accent: "text-amber-700",
-      preview: "bg-amber-200",
-    },
-    balloon_bouquet_arch: {
-      id: "balloon_bouquet_arch",
-      name: "Balloon Bouquet",
-      bg: "bg-gradient-to-br from-sky-100 via-blue-100 to-indigo-100",
-      text: "text-slate-900",
-      accent: "text-blue-700",
-      preview: "bg-sky-200",
-    },
-    default: {
-      id: "default",
-      name: "Default",
-      bg: "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700",
-      text: "text-white",
-      accent: "text-white",
-      preview: "bg-slate-800",
-    },
-  };
+const PROFESSIONAL_THEME_CLASSES: Record<string, SimpleTemplateThemeSnapshot> = {
+  construction_zone_party: {
+    id: "construction_zone_party",
+    name: "Construction Zone",
+    bg: "bg-gradient-to-br from-yellow-200 via-amber-200 to-amber-400",
+    text: "text-slate-900",
+    accent: "text-amber-900",
+    preview: "bg-amber-300",
+  },
+  rainbow_confetti_splash: {
+    id: "rainbow_confetti_splash",
+    name: "Rainbow Confetti",
+    bg: "bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100",
+    text: "text-slate-900",
+    accent: "text-pink-600",
+    preview: "bg-pink-200",
+  },
+  sparkle_starburst: {
+    id: "sparkle_starburst",
+    name: "Sparkle Starburst",
+    bg: "bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-200",
+    text: "text-slate-900",
+    accent: "text-amber-700",
+    preview: "bg-amber-200",
+  },
+  balloon_bouquet_arch: {
+    id: "balloon_bouquet_arch",
+    name: "Balloon Bouquet",
+    bg: "bg-gradient-to-br from-sky-100 via-blue-100 to-indigo-100",
+    text: "text-slate-900",
+    accent: "text-blue-700",
+    preview: "bg-sky-200",
+  },
+  default: {
+    id: "default",
+    name: "Default",
+    bg: "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700",
+    text: "text-white",
+    accent: "text-white",
+    preview: "bg-slate-800",
+  },
+};
 
 const INITIAL_DATA = {
   childName: "Emma",
@@ -174,8 +173,7 @@ const INITIAL_DATA = {
   venue: "Fun Zone Playground",
   partyDetails: {
     theme: "Princess Party",
-    activities:
-      "Face painting, bouncy castle, magic show, piñata, arts & crafts",
+    activities: "Face painting, bouncy castle, magic show, piñata, arts & crafts",
     notes:
       "Join us for an amazing birthday celebration! We'll have games, cake, and lots of fun activities. Can't wait to celebrate with you!",
   },
@@ -189,8 +187,8 @@ const INITIAL_DATA = {
     professionalThemeId: "rainbow_confetti_splash",
   },
   themePalette:
-    PROFESSIONAL_THEMES.find((t) => t.id === "rainbow_confetti_splash")
-      ?.recommendedColorPalette || [],
+    PROFESSIONAL_THEMES.find((t) => t.id === "rainbow_confetti_splash")?.recommendedColorPalette ||
+    [],
   images: {
     hero: null,
     headlineBg: null,
@@ -198,12 +196,12 @@ const INITIAL_DATA = {
   registries: [
     {
       id: 1,
-      label: "Amazon Registry",
+      label: "Amazon Gift List",
       url: "https://www.amazon.com/wishlist/emma-5th-birthday",
     },
     {
       id: 2,
-      label: "Target Registry",
+      label: "Target Gift List",
       url: "https://www.target.com/wishlist/emma-party",
     },
   ],
@@ -272,13 +270,7 @@ const EditorLayout = ({ title, onBack, children }) => (
   </div>
 );
 
-const InputGroup = ({
-  label,
-  value,
-  onChange,
-  type = "text",
-  placeholder = "",
-}) => (
+const InputGroup = ({ label, value, onChange, type = "text", placeholder = "" }) => (
   <div>
     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
       {label}
@@ -317,8 +309,7 @@ const isPaletteDark = (palette: string[]): boolean => {
   if (colors.length === 0) return false;
 
   const luminances = colors.map(getLuminance);
-  const avgLuminance =
-    luminances.reduce((a, b) => a + b, 0) / luminances.length;
+  const avgLuminance = luminances.reduce((a, b) => a + b, 0) / luminances.length;
   return avgLuminance < 0.5; // Dark if average luminance < 0.5
 };
 
@@ -364,9 +355,7 @@ const _ThemeSwatch = ({
       style={getPreviewStyle(theme.recommendedColorPalette)}
     />
     <div className="p-3">
-      <div className="text-sm font-semibold text-slate-700">
-        {theme.themeName}
-      </div>
+      <div className="text-sm font-semibold text-slate-700">{theme.themeName}</div>
       <div className="text-xs text-slate-400">Palette preset</div>
     </div>
   </button>
@@ -380,15 +369,12 @@ export default function BirthdayTemplateCustomizePage() {
   const templateId = search?.get("templateId");
   const variationIdParam = search?.get("variationId") ?? undefined;
   const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(
-    templateId || birthdayTemplateCatalog[0]?.id
+    templateId || birthdayTemplateCatalog[0]?.id,
   );
-  const [activeVariationId, setActiveVariationId] = useState<
-    string | undefined
-  >(
+  const [activeVariationId, setActiveVariationId] = useState<string | undefined>(
     variationIdParam ||
-      birthdayTemplateCatalog.find((t) => t.id === (templateId || ""))
-        ?.variations?.[0]?.id ||
-      birthdayTemplateCatalog[0]?.variations?.[0]?.id
+      birthdayTemplateCatalog.find((t) => t.id === (templateId || ""))?.variations?.[0]?.id ||
+      birthdayTemplateCatalog[0]?.variations?.[0]?.id,
   );
   const [loadingExisting, setLoadingExisting] = useState(false);
   const template = getTemplateById(activeTemplateId);
@@ -411,12 +397,14 @@ export default function BirthdayTemplateCustomizePage() {
   const [activeSection, setActiveSection] = useState<string>("details");
   const [submitting, setSubmitting] = useState(false);
   const [uploadingAssets, setUploadingAssets] = useState(false);
+  const assetUploadTokenRef = useRef(
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `birthday-upload-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   const assetUploadCounterRef = useRef(0);
   const bumpAssetUploadCounter = useCallback((delta: number) => {
-    assetUploadCounterRef.current = Math.max(
-      0,
-      assetUploadCounterRef.current + delta
-    );
+    assetUploadCounterRef.current = Math.max(0, assetUploadCounterRef.current + delta);
     setUploadingAssets(assetUploadCounterRef.current > 0);
   }, []);
   const [newHost, setNewHost] = useState({ name: "", role: "" });
@@ -430,9 +418,7 @@ export default function BirthdayTemplateCustomizePage() {
     }
     if (!start) start = new Date();
     const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const location = [data.address, data.city, data.state]
-      .filter(Boolean)
-      .join(", ");
+    const location = [data.address, data.city, data.state].filter(Boolean).join(", ");
     const description = data.details || "";
     return { title, start, end, location, description };
   };
@@ -477,13 +463,8 @@ export default function BirthdayTemplateCustomizePage() {
   const _handleShare = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     const details = buildCalendarDetails();
-    const shareUrl =
-      typeof window !== "undefined" ? window.location.href : undefined;
-    if (
-      typeof navigator !== "undefined" &&
-      (navigator as any).share &&
-      shareUrl
-    ) {
+    const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
+    if (typeof navigator !== "undefined" && (navigator as any).share && shareUrl) {
       (navigator as any)
         .share({
           title: details.title,
@@ -504,9 +485,9 @@ export default function BirthdayTemplateCustomizePage() {
     const start = toGoogleDate(details.start);
     const end = toGoogleDate(details.end);
     const query = `action=TEMPLATE&text=${encodeURIComponent(
-      details.title
+      details.title,
     )}&dates=${start}/${end}&location=${encodeURIComponent(
-      details.location
+      details.location,
     )}&details=${encodeURIComponent(details.description || "")}`;
     const webUrl = `https://calendar.google.com/calendar/render?${query}`;
     const appUrl = `comgooglecalendar://?${query}`;
@@ -517,22 +498,18 @@ export default function BirthdayTemplateCustomizePage() {
     e?.stopPropagation();
     const details = buildCalendarDetails();
     const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
-      details.title
-    )}&body=${encodeURIComponent(
-      details.description || ""
-    )}&location=${encodeURIComponent(
-      details.location
+      details.title,
+    )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
+      details.location,
     )}&startdt=${encodeURIComponent(
-      details.start.toISOString()
+      details.start.toISOString(),
     )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
     const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
-      details.title
-    )}&body=${encodeURIComponent(
-      details.description || ""
-    )}&location=${encodeURIComponent(
-      details.location
+      details.title,
+    )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
+      details.location,
     )}&startdt=${encodeURIComponent(
-      details.start.toISOString()
+      details.start.toISOString(),
     )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
     openWithAppFallback(appUrl, webUrl);
   };
@@ -548,9 +525,7 @@ export default function BirthdayTemplateCustomizePage() {
 
   const updateTheme = (field, value) => {
     if (field === "professionalThemeId") {
-      const _match =
-        BIRTHDAY_THEMES.find((t) => t.id === value) ||
-        BIRTHDAY_THEMES[0];
+      const _match = BIRTHDAY_THEMES.find((t) => t.id === value) || BIRTHDAY_THEMES[0];
       // Keep variation in lockstep with the chosen theme so saves reflect the same palette
       setActiveVariationId(value);
       setData((prev) => ({
@@ -580,6 +555,11 @@ export default function BirthdayTemplateCustomizePage() {
       try {
         const formData = new FormData();
         formData.append("file", file, file.name);
+        if (editEventId) {
+          formData.append("eventId", editEventId);
+        } else {
+          formData.append("uploadToken", assetUploadTokenRef.current);
+        }
         const res = await fetch("/api/uploads/birthday-asset", {
           method: "POST",
           body: formData,
@@ -597,7 +577,7 @@ export default function BirthdayTemplateCustomizePage() {
         bumpAssetUploadCounter(-1);
       }
     },
-    [bumpAssetUploadCounter]
+    [bumpAssetUploadCounter],
   );
 
   const handleImageUpload = useCallback(
@@ -622,7 +602,7 @@ export default function BirthdayTemplateCustomizePage() {
         };
       });
     },
-    [uploadBirthdayAsset]
+    [uploadBirthdayAsset],
   );
 
   const handleGalleryUpload = useCallback(
@@ -633,9 +613,7 @@ export default function BirthdayTemplateCustomizePage() {
         const previewUrl = URL.createObjectURL(file);
         return {
           file,
-          id: `${file.name}-${Date.now()}-${Math.random()
-            .toString(36)
-            .slice(2)}`,
+          id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
           previewUrl,
         };
       });
@@ -652,8 +630,7 @@ export default function BirthdayTemplateCustomizePage() {
         setData((prev) => ({
           ...prev,
           gallery: prev.gallery.map((item) => {
-            if (item.id !== entry.id || item.url !== entry.previewUrl)
-              return item;
+            if (item.id !== entry.id || item.url !== entry.previewUrl) return item;
             if (entry.previewUrl.startsWith("blob:")) {
               URL.revokeObjectURL(entry.previewUrl);
             }
@@ -662,7 +639,7 @@ export default function BirthdayTemplateCustomizePage() {
         }));
       }
     },
-    [uploadBirthdayAsset]
+    [uploadBirthdayAsset],
   );
 
   const removeGalleryImage = useCallback((id) => {
@@ -689,9 +666,8 @@ export default function BirthdayTemplateCustomizePage() {
   const _currentThemeDot = currentTheme.previewDot;
 
   const currentProfessionalTheme =
-    PROFESSIONAL_THEMES.find(
-      (theme) => theme.id === data.theme.professionalThemeId
-    ) || PROFESSIONAL_THEMES[0];
+    PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
+    PROFESSIONAL_THEMES[0];
   const professionalPalette =
     (Array.isArray(data.themePalette) && data.themePalette.length > 0
       ? data.themePalette
@@ -700,7 +676,7 @@ export default function BirthdayTemplateCustomizePage() {
   // Analyze palette to determine if it's dark or light
   const isDarkPalette = React.useMemo(
     () => isPaletteDark(professionalPalette),
-    [professionalPalette]
+    [professionalPalette],
   );
 
   // Set text colors based on palette darkness
@@ -713,10 +689,7 @@ export default function BirthdayTemplateCustomizePage() {
     : { color: "#475569" }; // Medium accent on light
 
   const professionalAccentColor =
-    professionalPalette[3] ??
-    professionalPalette[2] ??
-    professionalPalette[0] ??
-    undefined;
+    professionalPalette[3] ?? professionalPalette[2] ?? professionalPalette[0] ?? undefined;
 
   // Create gradient like football-season (using first 3 colors for smooth gradient)
   const _professionalBackgroundStyle =
@@ -725,12 +698,12 @@ export default function BirthdayTemplateCustomizePage() {
           backgroundImage: `linear-gradient(to bottom right, ${professionalPalette[0]}, ${professionalPalette[1]}, ${professionalPalette[2]})`,
         }
       : professionalPalette.length === 2
-      ? {
-          backgroundImage: `linear-gradient(to bottom right, ${professionalPalette[0]}, ${professionalPalette[1]})`,
-        }
-      : professionalPalette[0]
-      ? { backgroundColor: professionalPalette[0] }
-      : {};
+        ? {
+            backgroundImage: `linear-gradient(to bottom right, ${professionalPalette[0]}, ${professionalPalette[1]})`,
+          }
+        : professionalPalette[0]
+          ? { backgroundColor: professionalPalette[0] }
+          : {};
 
   // Use accent color from palette if available, otherwise use computed accent
   const _professionalAccentStyle = professionalAccentColor
@@ -738,9 +711,7 @@ export default function BirthdayTemplateCustomizePage() {
     : accentColorStyle;
 
   // Text shadow for better contrast on dark backgrounds
-  const _textShadowStyle = isDarkPalette
-    ? { textShadow: "0 1px 3px rgba(0,0,0,0.5)" }
-    : undefined;
+  const _textShadowStyle = isDarkPalette ? { textShadow: "0 1px 3px rgba(0,0,0,0.5)" } : undefined;
   const _currentFont = FONTS[data.theme.font] || FONTS.playfair;
   const _currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
@@ -762,7 +733,7 @@ export default function BirthdayTemplateCustomizePage() {
       { id: "gallery", label: "Gallery", enabled: data.gallery.length > 0 },
       {
         id: "registry",
-        label: "Registry",
+        label: registryCopy.sectionLabel,
         enabled: data.registries.length > 0,
       },
       { id: "rsvp", label: "RSVP", enabled: data.rsvp.isEnabled },
@@ -805,17 +776,14 @@ export default function BirthdayTemplateCustomizePage() {
             const id = entry.target.id;
             if (id && navItems.some((i) => i.id === id)) {
               setActiveSection(id);
-              if (
-                typeof window !== "undefined" &&
-                window.location.hash !== `#${id}`
-              ) {
+              if (typeof window !== "undefined" && window.location.hash !== `#${id}`) {
                 window.history.replaceState(null, "", `#${id}`);
               }
             }
           }
         });
       },
-      { root: null, rootMargin: "-20% 0px -60% 0px", threshold: 0 }
+      { root: null, rootMargin: "-20% 0px -60% 0px", threshold: 0 },
     );
     const targets = navItems
       .map((item) => document.getElementById(item.id))
@@ -841,9 +809,7 @@ export default function BirthdayTemplateCustomizePage() {
   // Keep theme + palette in sync with the active variation (especially when coming from URL)
   useEffect(() => {
     if (!activeVariationId) return;
-    const matchedTheme = PROFESSIONAL_THEMES.find(
-      (t) => t.id === activeVariationId
-    );
+    const matchedTheme = PROFESSIONAL_THEMES.find((t) => t.id === activeVariationId);
     if (!matchedTheme) return;
     setData((prev) => ({
       ...prev,
@@ -862,18 +828,16 @@ export default function BirthdayTemplateCustomizePage() {
       ? `/templates/birthdays/${template.heroImageName}`
       : "/templates/birthdays/rainbow-bash.webp";
   const activeRenderTheme =
-    PROFESSIONAL_THEMES.find(
-      (theme) => theme.id === data.theme.professionalThemeId
-    ) || PROFESSIONAL_THEMES[0];
+    PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
+    PROFESSIONAL_THEMES[0];
   const _activeGalleryItem =
-    data.gallery.length > 0
-      ? data.gallery[Math.min(galleryIndex, data.gallery.length - 1)]
-      : null;
+    data.gallery.length > 0 ? data.gallery[Math.min(galleryIndex, data.gallery.length - 1)] : null;
 
   const getAgeSuffix = (age: number | string) => {
-    const n = typeof age === 'string' ? parseInt(age, 10) : age;
+    const n = typeof age === "string" ? parseInt(age, 10) : age;
     if (Number.isNaN(n)) return "";
-    const j = n % 10, k = n % 100;
+    const j = n % 10,
+      k = n % 100;
     if (j === 1 && k !== 11) return "st";
     if (j === 2 && k !== 12) return "nd";
     if (j === 3 && k !== 13) return "rd";
@@ -898,8 +862,7 @@ export default function BirthdayTemplateCustomizePage() {
         const existing = json?.data || {};
 
         // Infer date/time from startISO/start/startIso
-        const startIso =
-          existing.start || existing.startISO || existing.startIso || null;
+        const startIso = existing.start || existing.startISO || existing.startIso || null;
         let loadedDate: string | undefined;
         let loadedTime: string | undefined;
         if (startIso) {
@@ -916,10 +879,7 @@ export default function BirthdayTemplateCustomizePage() {
           setActiveTemplateId(String(templateIdFromData));
         }
         const variationFromData =
-          existing.variationId ||
-          existing.theme?.professionalThemeId ||
-          variationIdParam ||
-          null;
+          existing.variationId || existing.theme?.professionalThemeId || variationIdParam || null;
         if (variationFromData) {
           setActiveVariationId(String(variationFromData));
         }
@@ -927,41 +887,33 @@ export default function BirthdayTemplateCustomizePage() {
         const paletteFromThemeId =
           existing.themePalette ||
           (() => {
-            const tid =
-              (existing.theme?.professionalThemeId) ||
-              existing.variationId ||
-              null;
-            const match = tid
-              ? PROFESSIONAL_THEMES.find((t) => t.id === tid)
-              : null;
-            return match?.recommendedColorPalette || (match ? [match.primaryColor, match.secondaryColor] : null);
+            const tid = existing.theme?.professionalThemeId || existing.variationId || null;
+            const match = tid ? PROFESSIONAL_THEMES.find((t) => t.id === tid) : null;
+            return (
+              match?.recommendedColorPalette ||
+              (match ? [match.primaryColor, match.secondaryColor] : null)
+            );
           })() ||
           null;
         const existingThemeKey =
-          (existing.theme &&
-            (existing.theme.id || existing.theme.professionalThemeId)) ||
+          (existing.theme && (existing.theme.id || existing.theme.professionalThemeId)) ||
           existing.variationId ||
           variationIdParam ||
           null;
-        
-        const matchedProfessionalTheme = PROFESSIONAL_THEMES.find(t => t.id === existingThemeKey);
+
+        const matchedProfessionalTheme = PROFESSIONAL_THEMES.find((t) => t.id === existingThemeKey);
         const existingThemeClasses =
-          (existingThemeKey && PROFESSIONAL_THEME_CLASSES[existingThemeKey]) ||
-          null;
+          (existingThemeKey && PROFESSIONAL_THEME_CLASSES[existingThemeKey]) || null;
 
         setData((prev) => {
-          const resolvedFont =
-            existing.theme?.font || existing.fontId || prev.theme.font;
+          const resolvedFont = existing.theme?.font || existing.fontId || prev.theme.font;
           const resolvedFontSize =
             existing.theme?.fontSize || existing.fontSize || prev.theme.fontSize;
 
           return {
             ...prev,
             childName:
-              existing.birthdayName ||
-              existing.childName ||
-              existing.name ||
-              prev.childName,
+              existing.birthdayName || existing.childName || existing.name || prev.childName,
             age: typeof existing.age === "number" ? existing.age : prev.age,
             date: existing.date || loadedDate || prev.date,
             time: existing.time || loadedTime || prev.time,
@@ -973,10 +925,7 @@ export default function BirthdayTemplateCustomizePage() {
             hosts: existing.hosts || prev.hosts,
             images: {
               ...prev.images,
-              hero:
-                existing.customHeroImage ||
-                existing.heroImage ||
-                prev.images.hero,
+              hero: existing.customHeroImage || existing.heroImage || prev.images.hero,
               headlineBg: existing.images?.headlineBg || prev.images.headlineBg,
             },
             theme: {
@@ -1042,22 +991,20 @@ export default function BirthdayTemplateCustomizePage() {
       }
 
       const locationParts = [data.venue, data.city, data.state].filter(Boolean);
-      const location =
-        locationParts.length > 0 ? locationParts.join(", ") : undefined;
+      const location = locationParts.length > 0 ? locationParts.join(", ") : undefined;
 
       // Convert hero/background/gallery uploads so they persist
       const heroToSave =
         (await persistImageMediaValue({
           value: data.images.hero,
           eventId: editEventId || undefined,
+          uploadToken: editEventId ? undefined : assetUploadTokenRef.current,
           fileName: "birthday-hero.png",
-        })) ||
-        (template?.heroImageName
-          ? `/templates/birthdays/${template.heroImageName}`
-          : null);
+        })) || (template?.heroImageName ? `/templates/birthdays/${template.heroImageName}` : null);
       const headlineBgToSave = await persistImageMediaValue({
         value: data.images.headlineBg,
         eventId: editEventId || undefined,
+        uploadToken: editEventId ? undefined : assetUploadTokenRef.current,
         fileName: "birthday-headline-bg.png",
       });
       const galleryToSave = await Promise.all(
@@ -1067,19 +1014,21 @@ export default function BirthdayTemplateCustomizePage() {
             (await persistImageMediaValue({
               value: item.url,
               eventId: editEventId || undefined,
+              uploadToken: editEventId ? undefined : assetUploadTokenRef.current,
               fileName: `birthday-gallery-${item.id || "image"}.png`,
             })) || item.url,
-        }))
+        })),
       );
 
       const currentProfessionalTheme =
-        PROFESSIONAL_THEMES.find(
-          (theme) => theme.id === data.theme.professionalThemeId
-        ) || PROFESSIONAL_THEMES[0];
-      
+        PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
+        PROFESSIONAL_THEMES[0];
+
       const professionalPalette =
-        currentProfessionalTheme.recommendedColorPalette || 
-        [currentProfessionalTheme.primaryColor, currentProfessionalTheme.secondaryColor].filter(Boolean);
+        currentProfessionalTheme.recommendedColorPalette ||
+        [currentProfessionalTheme.primaryColor, currentProfessionalTheme.secondaryColor].filter(
+          Boolean,
+        );
 
       const currentFont = FONTS[data.theme.font] || FONTS.playfair;
       const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
@@ -1095,9 +1044,7 @@ export default function BirthdayTemplateCustomizePage() {
         null;
 
       const payload: any = {
-        title: `${data.childName}'s ${data.age}${getAgeSuffix(
-          data.age
-        )} Birthday`,
+        title: `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Birthday`,
         data: {
           category: "Birthdays",
           createdVia: "birthday-renderer",
@@ -1110,9 +1057,7 @@ export default function BirthdayTemplateCustomizePage() {
           city: data.city || undefined,
           state: data.state || undefined,
           description: data.partyDetails?.notes || undefined,
-          rsvp: data.rsvp.isEnabled
-            ? data.rsvp.deadline || undefined
-            : undefined,
+          rsvp: data.rsvp.isEnabled ? data.rsvp.deadline || undefined : undefined,
           rsvpEnabled: data.rsvp.isEnabled,
           rsvpDeadline: data.rsvp.deadline || undefined,
           numberOfGuests: 0,
@@ -1143,7 +1088,7 @@ export default function BirthdayTemplateCustomizePage() {
           registries: data.registries
             .filter((r) => r.url.trim())
             .map((r) => ({
-              label: r.label.trim() || "Registry",
+              label: r.label.trim() || registryCopy.sectionLabel,
               url: r.url.trim(),
             })),
           customHeroImage: heroToSave || undefined,
@@ -1171,9 +1116,7 @@ export default function BirthdayTemplateCustomizePage() {
         });
         if (!res.ok) {
           const errorText = await res.text();
-          throw new Error(
-            errorText || "Failed to update event. Please try again."
-          );
+          throw new Error(errorText || "Failed to update event. Please try again.");
         }
         id = editEventId;
       } else {
@@ -1185,9 +1128,7 @@ export default function BirthdayTemplateCustomizePage() {
         });
         if (!r.ok) {
           const errorText = await r.text();
-          throw new Error(
-            errorText || "Failed to create event. Please try again."
-          );
+          throw new Error(errorText || "Failed to create event. Please try again.");
         }
         const j = await r.json().catch(() => ({}));
         id = (j as any)?.id as string | undefined;
@@ -1205,17 +1146,13 @@ export default function BirthdayTemplateCustomizePage() {
                     created_at: new Date().toISOString(),
                     data: payload.data,
                   },
-            })
+            }),
           );
         }
-        const params = editEventId
-          ? { updated: true, t: Date.now() }
-          : { created: true };
+        const params = editEventId ? { updated: true, t: Date.now() } : { created: true };
         router.push(buildEventPath(id, payload.title, params));
       } else {
-        throw new Error(
-          editEventId ? "Failed to update event" : "Failed to create event"
-        );
+        throw new Error(editEventId ? "Failed to update event" : "Failed to create event");
       }
     } catch (err: any) {
       const msg = String(err?.message || err || "Failed to create event");
@@ -1260,9 +1197,7 @@ export default function BirthdayTemplateCustomizePage() {
   const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
       <div className="mb-6 w-full max-w-sm text-center">
-        <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-          Add your details
-        </h2>
+        <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">Add your details</h2>
         <p className="text-slate-500 text-sm">
           Customize every aspect of your birthday party website.
         </p>
@@ -1312,9 +1247,9 @@ export default function BirthdayTemplateCustomizePage() {
           onClick={() => setActiveView("rsvp")}
         />
         <MenuCard
-          title="Registry"
+          title={registryCopy.sectionLabel}
           icon={<Gift size={18} />}
-          desc="Gift registry links."
+          desc="Gift list links."
           onClick={() => setActiveView("registry")}
         />
       </div>
@@ -1377,11 +1312,7 @@ export default function BirthdayTemplateCustomizePage() {
           <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
             {data.images.hero ? (
               <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                <img
-                  src={data.images.hero}
-                  alt="Hero"
-                  className="w-full h-full object-cover"
-                />
+                <img src={data.images.hero} alt="Hero" className="w-full h-full object-cover" />
                 <button
                   onClick={() =>
                     setData((prev) => ({
@@ -1400,9 +1331,7 @@ export default function BirthdayTemplateCustomizePage() {
                   <Upload size={20} />
                 </div>
                 <p className="text-sm text-slate-600 mb-1">Upload main photo</p>
-                <p className="text-xs text-slate-400">
-                  Recommended: 1600x900px
-                </p>
+                <p className="text-xs text-slate-400">Recommended: 1600x900px</p>
                 <input
                   type="file"
                   accept="image/*"
@@ -1443,12 +1372,8 @@ export default function BirthdayTemplateCustomizePage() {
                 <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
                   <ImageIcon size={20} />
                 </div>
-                <p className="text-sm text-slate-600 mb-1">
-                  Upload header texture
-                </p>
-                <p className="text-xs text-slate-400">
-                  Optional pattern behind names
-                </p>
+                <p className="text-sm text-slate-600 mb-1">Upload header texture</p>
+                <p className="text-xs text-slate-400">Optional pattern behind names</p>
                 <input
                   type="file"
                   accept="image/*"
@@ -1463,15 +1388,12 @@ export default function BirthdayTemplateCustomizePage() {
     </EditorLayout>
   );
 
-
   const renderDesignEditor = () => {
     return (
       <EditorLayout title="Design & Theme" onBack={() => setActiveView("main")}>
         <div className="space-y-6">
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-500 uppercase">
-              Choose a Theme
-            </h4>
+            <h4 className="text-xs font-bold text-slate-500 uppercase">Choose a Theme</h4>
             <BirthdayDesignThemes
               selectedTemplateId={data.theme.professionalThemeId}
               onSelect={(id) => updateTheme("professionalThemeId", id)}
@@ -1529,9 +1451,7 @@ export default function BirthdayTemplateCustomizePage() {
       <EditorLayout title="Hosts" onBack={() => setActiveView("main")}>
         <div className="space-y-6">
           <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
-            <h4 className="text-xs font-bold text-slate-500 uppercase">
-              Add Host
-            </h4>
+            <h4 className="text-xs font-bold text-slate-500 uppercase">Add Host</h4>
             <InputGroup
               label="Name"
               value={newHost.name}
@@ -1560,15 +1480,13 @@ export default function BirthdayTemplateCustomizePage() {
               >
                 <div>
                   <div className="font-bold text-slate-800">{host.name}</div>
-                  {host.role && (
-                    <div className="text-xs text-slate-500">{host.role}</div>
-                  )}
+                  {host.role && <div className="text-xs text-slate-500">{host.role}</div>}
                 </div>
                 <button
                   onClick={() =>
                     updateData(
                       "hosts",
-                      data.hosts.filter((h) => h.id !== host.id)
+                      data.hosts.filter((h) => h.id !== host.id),
                     )
                   }
                   className="text-slate-400 hover:text-red-500"
@@ -1590,9 +1508,7 @@ export default function BirthdayTemplateCustomizePage() {
           <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
             <Upload size={20} className="text-indigo-600" />
           </div>
-          <h3 className="text-sm font-bold text-slate-800 mb-1">
-            Upload Photos
-          </h3>
+          <h3 className="text-sm font-bold text-slate-800 mb-1">Upload Photos</h3>
           <p className="text-xs text-slate-500">JPG or PNG up to 5MB</p>
           <input
             type="file"
@@ -1607,11 +1523,7 @@ export default function BirthdayTemplateCustomizePage() {
           <div className="grid grid-cols-2 gap-3">
             {data.gallery.map((img) => (
               <div key={img.id} className="relative group">
-                <img
-                  src={img.url}
-                  alt="Gallery"
-                  className="w-full h-32 object-cover rounded-lg"
-                />
+                <img src={img.url} alt="Gallery" className="w-full h-32 object-cover rounded-lg" />
                 <button
                   onClick={() => removeGalleryImage(img.id)}
                   className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1630,9 +1542,7 @@ export default function BirthdayTemplateCustomizePage() {
     <EditorLayout title="RSVP Settings" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-          <span className="font-medium text-slate-700 text-sm">
-            Enable RSVP
-          </span>
+          <span className="font-medium text-slate-700 text-sm">Enable RSVP</span>
           <button
             onClick={() =>
               updateData("rsvp", {
@@ -1662,8 +1572,8 @@ export default function BirthdayTemplateCustomizePage() {
         )}
 
         <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
-          <strong>Preview:</strong> Check the preview pane to see the RSVP form
-          that your guests will see.
+          <strong>Preview:</strong> Check the preview pane to see the RSVP form that your guests
+          will see.
         </div>
       </div>
     </EditorLayout>
@@ -1672,39 +1582,34 @@ export default function BirthdayTemplateCustomizePage() {
   const renderRegistryEditor = () => {
     const addRegistry = () => {
       if (newRegistry.url) {
-        updateData("registries", [
-          ...data.registries,
-          { ...newRegistry, id: Date.now() },
-        ]);
+        updateData("registries", [...data.registries, { ...newRegistry, id: Date.now() }]);
         setNewRegistry({ label: "", url: "" });
       }
     };
 
     return (
-      <EditorLayout title="Registry" onBack={() => setActiveView("main")}>
+      <EditorLayout title={registryCopy.sectionLabel} onBack={() => setActiveView("main")}>
         <div className="space-y-6">
           <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
-            <h4 className="text-xs font-bold text-slate-500 uppercase">
-              Add Registry
-            </h4>
+            <h4 className="text-xs font-bold text-slate-500 uppercase">Add Gift Link</h4>
             <InputGroup
-              label="Registry Name"
+              label="Gift List Name"
               value={newRegistry.label}
               onChange={(v) => setNewRegistry({ ...newRegistry, label: v })}
-              placeholder="e.g. Amazon, Target, Toys R Us"
+              placeholder="e.g. Amazon Wish List, Target Wishlist"
             />
             <InputGroup
-              label="Registry URL"
+              label="Gift List URL"
               type="url"
               value={newRegistry.url}
-              onChange={(v) => setNewHost({ ...newRegistry, url: v })}
-              placeholder="https://www.example.com/registry"
+              onChange={(v) => setNewRegistry({ ...newRegistry, url: v })}
+              placeholder="https://www.example.com/gift-list"
             />
             <button
               onClick={addRegistry}
               className="w-full py-2 bg-indigo-600 text-white text-sm rounded-md font-medium hover:bg-indigo-700"
             >
-              Add Registry
+              Add Gift Link
             </button>
           </div>
 
@@ -1716,17 +1621,15 @@ export default function BirthdayTemplateCustomizePage() {
               >
                 <div>
                   <div className="font-bold text-slate-800">
-                    {registry.label || "Registry"}
+                    {registry.label || registryCopy.itemFallbackLabel}
                   </div>
-                  <div className="text-xs text-slate-500 truncate max-w-xs">
-                    {registry.url}
-                  </div>
+                  <div className="text-xs text-slate-500 truncate max-w-xs">{registry.url}</div>
                 </div>
                 <button
                   onClick={() =>
                     updateData(
                       "registries",
-                      data.registries.filter((r) => r.id !== registry.id)
+                      data.registries.filter((r) => r.id !== registry.id),
                     )
                   }
                   className="text-slate-400 hover:text-red-500"
@@ -1767,7 +1670,9 @@ export default function BirthdayTemplateCustomizePage() {
               event={{
                 headlineTitle: data.headlineTitle,
                 date: data.date && data.time ? `${data.date}T${data.time}` : data.date,
-                location: data.location || [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
+                location:
+                  data.location ||
+                  [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
                 story: data.partyDetails.notes,
                 schedule: data.schedule,
                 registries: data.registries,
@@ -1778,8 +1683,8 @@ export default function BirthdayTemplateCustomizePage() {
                 party: data.partyDetails,
                 thingsToDo: data.partyDetails.activities,
                 hosts: data.hosts,
-                gallery: data.gallery.map(item => item.url),
-                rsvpDeadline: data.rsvp.deadline
+                gallery: data.gallery.map((item) => item.url),
+                rsvpDeadline: data.rsvp.deadline,
               }}
             />
           </div>
@@ -1810,9 +1715,7 @@ export default function BirthdayTemplateCustomizePage() {
                 <ChevronLeft size={14} />
                 Back to preview
               </button>
-              <span className="text-sm font-semibold text-slate-700">
-                Customize
-              </span>
+              <span className="text-sm font-semibold text-slate-700">Customize</span>
             </div>
           )}
           <div className="p-6 pt-4 md:pt-6">
@@ -1850,14 +1753,13 @@ export default function BirthdayTemplateCustomizePage() {
                   ? "Saving..."
                   : "Publishing..."
                 : editEventId
-                ? "Save"
-                : "Publish"}
+                  ? "Save"
+                  : "Publish"}
             </button>
           </div>
           {uploadingAssets && (
             <p className="mt-2 text-xs text-slate-500">
-              Uploading one or more images—publish will finish once the upload
-              completes.
+              Uploading one or more images—publish will finish once the upload completes.
             </p>
           )}
         </div>

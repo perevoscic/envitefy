@@ -3,9 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "@/components/event-create/TemplateGallery.module.css";
-import {
-  resolveTemplateVariation,
-} from "@/components/event-create/TemplateGallery";
+import { resolveTemplateVariation } from "@/components/event-create/TemplateGallery";
 import {
   type BirthdayTemplateDefinition,
   birthdayTemplateCatalog,
@@ -26,15 +24,18 @@ import { combineVenueAndLocation } from "@/lib/mappers";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
+import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { CandyDreamsLayout } from "./templates/CandyDreamsLayout";
+
+const registryCopy = getRegistrySectionCopyForCategory("birthdays");
 // Format event range display - simplified version
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
   endInput: string | null | undefined,
-  options?: { timeZone?: string | null; allDay?: boolean }
+  options?: { timeZone?: string | null; allDay?: boolean },
 ): string | null {
   if (!startInput) return null;
   try {
@@ -84,9 +85,7 @@ function formatEventRangeDisplay(
         start.getMonth() === endDate.getMonth() &&
         start.getDate() === endDate.getDate();
       if (sameDay) {
-        return `${dateFmt.format(start)}, ${timeFmt.format(
-          start
-        )} – ${timeFmt.format(endDate)}`;
+        return `${dateFmt.format(start)}, ${timeFmt.format(start)} – ${timeFmt.format(endDate)}`;
       }
       const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
         month: "short",
@@ -119,18 +118,17 @@ function formatDateSimple(dateStr?: string) {
   if (!dateStr) return "";
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return dateStr;
-  
+
   // Use UTC to prevent shifts for YYYY-MM-DD
-  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(date.getUTCDate()).padStart(2, '0');
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
   const yyyy = date.getUTCFullYear();
   return `${mm}-${dd}-${yyyy}`;
 }
 
 function getTemplateById(id: string): BirthdayTemplateDefinition {
   return (
-    birthdayTemplateCatalog.find((template) => template.id === id) ??
-    birthdayTemplateCatalog[0]
+    birthdayTemplateCatalog.find((template) => template.id === id) ?? birthdayTemplateCatalog[0]
   );
 }
 
@@ -151,7 +149,7 @@ function formatDateLabel(value?: string) {
 
 function formatTimeLabel(
   value?: string | null,
-  options?: { timeZone?: string | null; allDay?: boolean }
+  options?: { timeZone?: string | null; allDay?: boolean },
 ) {
   if (!value || options?.allDay) return undefined;
   try {
@@ -220,8 +218,7 @@ const getLuminance = (hex: string): number => {
 const isPaletteDark = (palette: string[]): boolean => {
   const colors = (palette || []).filter(Boolean).slice(0, 3);
   if (!colors.length) return false;
-  const avg =
-    colors.reduce((acc, c) => acc + getLuminance(c), 0) / colors.length;
+  const avg = colors.reduce((acc, c) => acc + getLuminance(c), 0) / colors.length;
   return avg < 0.5;
 };
 
@@ -263,18 +260,13 @@ export default function BirthdayTemplateView({
   const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
   const template = useMemo(() => getTemplateById(templateId), [templateId]);
   const variation = useMemo(() => {
-    const v =
-      template.variations.find((v) => v.id === variationId) ??
-      template.variations[0];
+    const v = template.variations.find((v) => v.id === variationId) ?? template.variations[0];
     return resolveTemplateVariation(v);
   }, [template, variationId]);
-  const templateLayout: TemplateLayoutConfig | undefined =
-    template.templateConfig;
+  const templateLayout: TemplateLayoutConfig | undefined = template.templateConfig;
 
   const birthdayName =
-    (eventData?.birthdayName as string) ||
-    template.preview?.birthdayName ||
-    "Birthday Person";
+    (eventData?.birthdayName as string) || template.preview?.birthdayName || "Birthday Person";
 
   const startISO = eventData?.startISO || eventData?.start || null;
   const endISO = eventData?.endISO || eventData?.end || null;
@@ -312,17 +304,13 @@ export default function BirthdayTemplateView({
   const _rsvp = eventData?.rsvp || "";
   const numberOfGuests = eventData?.numberOfGuests || 0;
 
-  const registryLinks = Array.isArray(eventData?.registries)
-    ? eventData.registries
-    : [];
+  const registryLinks = Array.isArray(eventData?.registries) ? eventData.registries : [];
 
   const rsvpField = typeof eventData?.rsvp === "string" ? eventData.rsvp : "";
   const aggregateContactText = `${rsvpField} ${description} ${location}`.trim();
   const rsvpPhone = extractFirstPhoneNumber(aggregateContactText);
   const rsvpEmail =
-    findFirstEmail(rsvpField) ??
-    findFirstEmail(aggregateContactText) ??
-    findFirstEmail(eventData);
+    findFirstEmail(rsvpField) ?? findFirstEmail(aggregateContactText) ?? findFirstEmail(eventData);
   const rsvpContactSource = rsvpField || rsvpEmail || "";
   const rsvpNameRaw = rsvpContactSource
     ? rsvpContactSource
@@ -334,26 +322,20 @@ export default function BirthdayTemplateView({
   const _rsvpName = rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "";
   const hasRsvpContact = Boolean(rsvpPhone || rsvpEmail);
 
-  const calendarStartIso =
-    typeof startISO === "string" && startISO ? startISO : null;
+  const calendarStartIso = typeof startISO === "string" && startISO ? startISO : null;
   const calendarEndIso = calendarStartIso
     ? ensureEndIso(
         calendarStartIso,
         typeof endISO === "string" && endISO ? endISO : null,
-        Boolean(eventData?.allDay)
+        Boolean(eventData?.allDay),
       )
     : null;
   const reminders = Array.isArray(eventData?.reminders)
     ? (eventData.reminders as { minutes?: number }[])
-        .map((entry) =>
-          typeof entry?.minutes === "number" ? entry.minutes : null
-        )
-        .filter(
-          (value): value is number => typeof value === "number" && value > 0
-        )
+        .map((entry) => (typeof entry?.minutes === "number" ? entry.minutes : null))
+        .filter((value): value is number => typeof value === "number" && value > 0)
     : null;
-  const recurrence =
-    typeof eventData?.recurrence === "string" ? eventData.recurrence : null;
+  const recurrence = typeof eventData?.recurrence === "string" ? eventData.recurrence : null;
   const calendarLinks =
     calendarStartIso && calendarEndIso
       ? buildCalendarLinks({
@@ -362,9 +344,7 @@ export default function BirthdayTemplateView({
           location,
           startIso: calendarStartIso,
           endIso: calendarEndIso,
-          timezone:
-            (typeof eventData?.timezone === "string" && eventData.timezone) ||
-            "",
+          timezone: (typeof eventData?.timezone === "string" && eventData.timezone) || "",
           allDay: Boolean(eventData?.allDay),
           reminders,
           recurrence,
@@ -373,7 +353,7 @@ export default function BirthdayTemplateView({
 
   const locationQuery = combineVenueAndLocation(
     venue || null,
-    [address, city, state].filter(Boolean).join(", ") || location || null
+    [address, city, state].filter(Boolean).join(", ") || location || null,
   );
   const latValue = parseCoordinateValue(eventData?.lat);
   const lngValue = parseCoordinateValue(eventData?.lng);
@@ -385,21 +365,14 @@ export default function BirthdayTemplateView({
 
   const hosts = Array.isArray(eventData?.hosts) ? eventData.hosts : [];
   const partyDetails = eventData?.partyDetails || {};
-  const activities =
-    typeof partyDetails?.activities === "string"
-      ? partyDetails.activities
-      : "";
-  const partyTheme =
-    partyDetails?.theme || eventData?.theme?.themeLabel || null;
+  const activities = typeof partyDetails?.activities === "string" ? partyDetails.activities : "";
+  const partyTheme = partyDetails?.theme || eventData?.theme?.themeLabel || null;
 
   const hasHosts = hosts.length > 0;
   const hasDirectionSection = Boolean(location || venue || address || city);
-  const hasDescriptionSection = Boolean(
-    description || partyDetails?.notes || activities
-  );
+  const hasDescriptionSection = Boolean(description || partyDetails?.notes || activities);
   const hasWishlistSection = registryLinks.length > 0;
-  const hasGallerySection =
-    Array.isArray(eventData?.gallery) && eventData.gallery.length > 0;
+  const hasGallerySection = Array.isArray(eventData?.gallery) && eventData.gallery.length > 0;
   const hasRsvpSection = Boolean(eventData?.rsvpEnabled || hasRsvpContact);
 
   const navItems = useMemo(
@@ -410,7 +383,7 @@ export default function BirthdayTemplateView({
         { id: "location", label: "Location", enabled: hasDirectionSection },
         { id: "party", label: "Party Details", enabled: hasDescriptionSection },
         { id: "gallery", label: "Gallery", enabled: hasGallerySection },
-        { id: "registry", label: "Registry", enabled: hasWishlistSection },
+        { id: "registry", label: registryCopy.sectionLabel, enabled: hasWishlistSection },
         { id: "rsvp", label: "RSVP", enabled: hasRsvpSection },
       ].filter((item) => item.enabled),
     [
@@ -420,7 +393,7 @@ export default function BirthdayTemplateView({
       hasHosts,
       hasRsvpSection,
       hasWishlistSection,
-    ]
+    ],
   );
 
   // Navigation active state tracking
@@ -506,24 +479,14 @@ export default function BirthdayTemplateView({
   const isDarkPalette = isPaletteDark(themePalette);
   const headingColor = isDarkPalette ? "#ffffff" : "#0f172a";
   const accentColor = isDarkPalette ? "#e2e8f0" : "#475569";
-  const textShadowStyle = isDarkPalette
-    ? { textShadow: "0 1px 3px rgba(0,0,0,0.5)" }
-    : undefined;
+  const textShadowStyle = isDarkPalette ? { textShadow: "0 1px 3px rgba(0,0,0,0.5)" } : undefined;
   const headingFontFamily =
-    (eventData?.theme?.fontFamily as string) ||
-    variation.titleFontFamily ||
-    "var(--font-playfair)";
-  const bodyFontFamily =
-    (eventData?.theme?.bodyFontFamily as string) ||
-    "var(--font-montserrat)";
+    (eventData?.theme?.fontFamily as string) || variation.titleFontFamily || "var(--font-playfair)";
+  const bodyFontFamily = (eventData?.theme?.bodyFontFamily as string) || "var(--font-montserrat)";
 
   const viewContent = (
     <section className="mx-auto w-full max-w-7xl">
-      <article
-        className={styles.templateCard}
-        style={paletteStyle}
-        data-birthday-modern="true"
-      >
+      <article className={styles.templateCard} style={paletteStyle} data-birthday-modern="true">
         <div className={styles.cardBody}>
           {/* Home section - the header */}
           <div id="home" className="scroll-mt-20">
@@ -542,28 +505,20 @@ export default function BirthdayTemplateView({
                       variation.titleWeight === "bold"
                         ? 700
                         : variation.titleWeight === "semibold"
-                        ? 600
-                        : 400,
+                          ? 600
+                          : 400,
                     ...(textShadowStyle || {}),
                   }}
                 >
                   {birthdayName}'s Birthday
                 </p>
-                <p
-                  className={styles.previewMeta}
-                  style={{ color: headingColor }}
-                >
+                <p className={styles.previewMeta} style={{ color: headingColor }}>
                   {previewDateLabel}
                   {previewTime ? ` • ${previewTime}` : ""}
                 </p>
                 {(city || state || venue || location) && (
-                  <p
-                    className={styles.previewMeta}
-                    style={{ color: headingColor }}
-                  >
-                    {[city, state].filter(Boolean).join(", ") ||
-                      venue ||
-                      location}
+                  <p className={styles.previewMeta} style={{ color: headingColor }}>
+                    {[city, state].filter(Boolean).join(", ") || venue || location}
                     {address ? (
                       <>
                         <br />
@@ -572,10 +527,7 @@ export default function BirthdayTemplateView({
                     ) : null}
                   </p>
                 )}
-                <div
-                  className={styles.previewNav}
-                  style={{ color: variation.titleColor }}
-                >
+                <div className={styles.previewNav} style={{ color: variation.titleColor }}>
                   {navItems.map((item) => {
                     const hashId = item.id;
                     const isActive = activeSection === hashId;
@@ -612,11 +564,7 @@ export default function BirthdayTemplateView({
                     <div className="flex items-center gap-2 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 py-1.5 shadow">
                       {canEdit && (
                         <Link
-                          href={resolveEditHref(
-                            eventId,
-                            eventData,
-                            eventTitle
-                          )}
+                          href={resolveEditHref(eventId, eventData, eventTitle)}
                           className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
                           title="Edit event"
                         >
@@ -636,12 +584,7 @@ export default function BirthdayTemplateView({
                           <span className="hidden sm:inline">Edit</span>
                         </Link>
                       )}
-                      {isOwner && (
-                        <EventDeleteModal
-                          eventId={eventId}
-                          eventTitle={eventTitle}
-                        />
-                      )}
+                      {isOwner && <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />}
                       <EventActions
                         shareUrl={shareUrl}
                         event={eventData}
@@ -695,9 +638,7 @@ export default function BirthdayTemplateView({
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
                         When
                       </p>
-                      <p className="text-base font-semibold text-stone-900">
-                        {whenLabel}
-                      </p>
+                      <p className="text-base font-semibold text-stone-900">{whenLabel}</p>
                     </div>
                   )}
                   {(venue || location || address || city) && (
@@ -706,14 +647,10 @@ export default function BirthdayTemplateView({
                         Location
                       </p>
                       <div className="space-y-1 text-stone-800">
-                        {venue && (
-                          <p className="text-base font-semibold">{venue}</p>
-                        )}
+                        {venue && <p className="text-base font-semibold">{venue}</p>}
                         {(address || city || state || location) && (
                           <p className="text-sm text-stone-600">
-                            {[address, city, state]
-                              .filter(Boolean)
-                              .join(", ") || location}
+                            {[address, city, state].filter(Boolean).join(", ") || location}
                           </p>
                         )}
                       </div>
@@ -726,9 +663,7 @@ export default function BirthdayTemplateView({
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-1">
                         Guests Expected
                       </p>
-                      <p className="text-base font-semibold text-stone-900">
-                        {numberOfGuests}
-                      </p>
+                      <p className="text-base font-semibold text-stone-900">{numberOfGuests}</p>
                     </div>
                   )}
                   {(partyDetails?.notes || description) && (
@@ -765,12 +700,8 @@ export default function BirthdayTemplateView({
                       key={host.id || idx}
                       className="rounded-lg border border-stone-200 bg-white px-3 py-3"
                     >
-                      <p className="font-semibold text-stone-900">
-                        {host.name || "Host"}
-                      </p>
-                      {host.role && (
-                        <p className="text-sm text-stone-600">{host.role}</p>
-                      )}
+                      <p className="font-semibold text-stone-900">{host.name || "Host"}</p>
+                      {host.role && <p className="text-sm text-stone-600">{host.role}</p>}
                     </div>
                   ))}
                 </div>
@@ -825,14 +756,10 @@ export default function BirthdayTemplateView({
                   Party Details
                 </h2>
                 {partyTheme && (
-                  <p className="text-sm font-semibold text-stone-700 mb-2">
-                    Theme: {partyTheme}
-                  </p>
+                  <p className="text-sm font-semibold text-stone-700 mb-2">Theme: {partyTheme}</p>
                 )}
                 {activities && (
-                  <p className="text-sm text-stone-700 mb-2">
-                    Activities: {activities}
-                  </p>
+                  <p className="text-sm text-stone-700 mb-2">Activities: {activities}</p>
                 )}
                 {(partyDetails?.notes || description) && (
                   <p className="text-base leading-relaxed text-stone-800 whitespace-pre-wrap">
@@ -886,7 +813,7 @@ export default function BirthdayTemplateView({
                   className="text-xl font-semibold mb-4"
                   style={{ color: headingColor, fontFamily: headingFontFamily }}
                 >
-                  Registry
+                  {registryCopy.sectionLabel}
                 </h2>
                 <div className="space-y-2">
                   {registryLinks.map((reg: any, idx: number) => (
@@ -897,7 +824,7 @@ export default function BirthdayTemplateView({
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        {reg.label || "Registry link"}
+                        {reg.label || registryCopy.itemFallbackLabel}
                       </a>
                     </div>
                   ))}
@@ -934,9 +861,7 @@ export default function BirthdayTemplateView({
                   </button>
                 </div>
                 {hasRsvpContact && (
-                  <p className="text-xs text-stone-500 mt-4">
-                    Or contact: {rsvpContactSource}
-                  </p>
+                  <p className="text-xs text-stone-500 mt-4">Or contact: {rsvpContactSource}</p>
                 )}
               </div>
             </div>
@@ -996,9 +921,7 @@ export default function BirthdayTemplateView({
 
   const pageContent =
     templateLayout?.id === "candy-dreams" && templateLayout.palette ? (
-      <CandyDreamsLayout palette={templateLayout.palette}>
-        {viewContent}
-      </CandyDreamsLayout>
+      <CandyDreamsLayout palette={templateLayout.palette}>{viewContent}</CandyDreamsLayout>
     ) : (
       viewContent
     );
@@ -1010,10 +933,7 @@ export default function BirthdayTemplateView({
 
         {showHostDashboard && eventId && (
           <div className="mx-auto mt-12 w-full max-w-7xl">
-            <EventRsvpDashboard
-              eventId={eventId}
-              initialNumberOfGuests={numberOfGuests}
-            />
+            <EventRsvpDashboard eventId={eventId} initialNumberOfGuests={numberOfGuests} />
           </div>
         )}
       </div>
@@ -1037,9 +957,7 @@ export default function BirthdayTemplateView({
                 Edit
               </Link>
             )}
-            {isOwner && (
-              <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
-            )}
+            {isOwner && <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />}
             <div className="min-w-0 flex-1">
               <EventActions
                 shareUrl={shareUrl}

@@ -1,9 +1,7 @@
 "use client";
 
 import React from "react";
-import RegistryLinksEditor, {
-  type RegistryFormEntry,
-} from "@/components/RegistryLinksEditor";
+import RegistryLinksEditor, { type RegistryFormEntry } from "@/components/RegistryLinksEditor";
 import Toggle from "@/components/Toggle";
 
 export type EditorBindings = {
@@ -39,11 +37,7 @@ export type EditorBindings = {
   registryLinks: RegistryFormEntry[];
   addRegistryLink: () => void;
   removeRegistryLink: (key: string) => void;
-  handleRegistryFieldChange: (
-    key: string,
-    field: "label" | "url",
-    value: string
-  ) => void;
+  handleRegistryFieldChange: (key: string, field: "label" | "url", value: string) => void;
   MAX_REGISTRY_LINKS: number;
   registryEditorTitle?: string;
   registryEmptyState?: string;
@@ -69,22 +63,18 @@ export type EditorBindings = {
   connectedCalendars: { google: boolean; microsoft: boolean; apple: boolean };
   selectedCalendars: { google: boolean; microsoft: boolean; apple: boolean };
   setSelectedCalendars: (
-    updater: (prev: {
+    updater: (prev: { google: boolean; microsoft: boolean; apple: boolean }) => {
       google: boolean;
       microsoft: boolean;
       apple: boolean;
-    }) => { google: boolean; microsoft: boolean; apple: boolean }
+    },
   ) => void;
 
   // Theme/background for card
   cardBackgroundImage: string | undefined;
 };
 
-export default function EventTemplateBase({
-  editor,
-}: {
-  editor: EditorBindings;
-}) {
+export default function EventTemplateBase({ editor }: { editor: EditorBindings }) {
   const e = editor;
   return (
     <section
@@ -97,14 +87,10 @@ export default function EventTemplateBase({
     >
       <div className="grid grid-cols-1 gap-6">
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-            When
-          </dt>
+          <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">When</dt>
           <dd className="mt-1 text-base font-semibold">
             {e.summary.time && <div>{e.summary.time}</div>}
-            {e.summary.date && (
-              <div className="text-sm mt-1 opacity-80">{e.summary.date}</div>
-            )}
+            {e.summary.date && <div className="text-sm mt-1 opacity-80">{e.summary.date}</div>}
           </dd>
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="flex items-center justify-between sm:col-span-1">
@@ -186,26 +172,20 @@ export default function EventTemplateBase({
         </div>
 
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-            Guests
-          </dt>
+          <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">Guests</dt>
           <input
             type="number"
             min={1}
             required
             value={e.numberOfGuests || ""}
-            onChange={(ev) =>
-              e.setNumberOfGuests(Number.parseInt(ev.target.value, 10) || 0)
-            }
+            onChange={(ev) => e.setNumberOfGuests(Number.parseInt(ev.target.value, 10) || 0)}
             placeholder="Enter number of guests"
             className="mt-2 w-full px-3 py-2 rounded-md border border-border bg-background"
           />
         </div>
 
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-            Description
-          </dt>
+          <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">Description</dt>
           <textarea
             ref={e.descriptionRef}
             value={e.description}
@@ -218,9 +198,7 @@ export default function EventTemplateBase({
 
         {e.showRsvpField && (
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">
-              RSVP
-            </dt>
+            <dt className="text-xs font-semibold uppercase tracking-wide opacity-70">RSVP</dt>
             <textarea
               value={e.rsvp}
               onChange={(ev) => e.setRsvp(ev.target.value)}
@@ -272,9 +250,7 @@ export default function EventTemplateBase({
             onChange={e.handleAttachmentOnlyChange}
             className="hidden"
           />
-          {e.attachmentError && (
-            <p className="mt-2 text-xs text-red-600">{e.attachmentError}</p>
-          )}
+          {e.attachmentError && <p className="mt-2 text-xs text-red-600">{e.attachmentError}</p>}
           {e.attachment && (
             <div className="mt-2 flex items-center gap-3 text-xs text-foreground/80">
               {e.attachmentPreviewUrl ? (
@@ -294,9 +270,7 @@ export default function EventTemplateBase({
             </div>
           )}
           {!e.attachment && !e.attachmentError && (
-            <p className="mt-2 text-xs text-foreground/60">
-              Images or PDFs up to 5 MB.
-            </p>
+            <p className="mt-2 text-xs text-foreground/60">Images or PDFs up to 5 MB.</p>
           )}
         </div>
 
@@ -328,11 +302,7 @@ export default function EventTemplateBase({
                             : "border-border bg-background text-foreground"
                         }`}
                       >
-                        {key === "weekly"
-                          ? "Week"
-                          : key === "monthly"
-                          ? "Month"
-                          : "Year"}
+                        {key === "weekly" ? "Week" : key === "monthly" ? "Month" : "Year"}
                       </button>
                     );
                   })}
@@ -340,9 +310,7 @@ export default function EventTemplateBase({
               </div>
               {e.repeatFrequency === "weekly" && (
                 <div>
-                  <div className="text-xs text-foreground/70 mb-1">
-                    Repeat on
-                  </div>
+                  <div className="text-xs text-foreground/70 mb-1">Repeat on</div>
                   <div className="grid grid-cols-7 gap-2">
                     {[
                       { code: "SU", label: "Sun" },
@@ -360,9 +328,7 @@ export default function EventTemplateBase({
                           type="button"
                           onClick={() =>
                             e.setRepeatDays((prev) =>
-                              active
-                                ? prev.filter((c) => c !== d.code)
-                                : [...prev, d.code]
+                              active ? prev.filter((c) => c !== d.code) : [...prev, d.code],
                             )
                           }
                           className={`h-8 rounded-md border text-xs font-medium transition ${

@@ -2,9 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import RegistryLinksEditor, {
-  type RegistryFormEntry,
-} from "@/components/RegistryLinksEditor";
+import RegistryLinksEditor, { type RegistryFormEntry } from "@/components/RegistryLinksEditor";
 import Toggle from "@/components/Toggle";
 import type { NormalizedEvent } from "@/lib/mappers";
 import {
@@ -104,16 +102,10 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const todayMin = useMemo(() => toLocalDateValue(new Date()), []);
   const [title, setTitle] = useState("");
-  const [whenDate, setWhenDate] = useState<string>(
-    toLocalDateValue(new Date(initialStart))
-  );
+  const [whenDate, setWhenDate] = useState<string>(toLocalDateValue(new Date(initialStart)));
   const [fullDay, setFullDay] = useState<boolean>(true);
-  const [startTime, setStartTime] = useState<string>(
-    toLocalTimeValue(initialStart)
-  );
-  const [endDate, setEndDate] = useState<string>(
-    toLocalDateValue(new Date(initialEnd))
-  );
+  const [startTime, setStartTime] = useState<string>(toLocalTimeValue(initialStart));
+  const [endDate, setEndDate] = useState<string>(toLocalDateValue(new Date(initialEnd)));
   const [endTime, setEndTime] = useState<string>(toLocalTimeValue(initialEnd));
   const [location, setLocation] = useState("");
   const [venue, setVenue] = useState("");
@@ -131,9 +123,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     dataUrl: string;
   } | null>(null);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
-    string | null
-  >(null);
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
@@ -145,12 +135,11 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   const headerInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [connectedCalendars, setConnectedCalendars] =
-    useState<ConnectedCalendars>({
-      google: false,
-      microsoft: false,
-      apple: false,
-    });
+  const [connectedCalendars, setConnectedCalendars] = useState<ConnectedCalendars>({
+    google: false,
+    microsoft: false,
+    apple: false,
+  });
   const [selectedCalendars, setSelectedCalendars] = useState<{
     google: boolean;
     microsoft: boolean;
@@ -178,11 +167,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     setRegistryLinks((prev) => prev.filter((entry) => entry.key !== key));
   };
 
-  const handleRegistryFieldChange = (
-    key: string,
-    field: "label" | "url",
-    value: string
-  ) => {
+  const handleRegistryFieldChange = (key: string, field: "label" | "url", value: string) => {
     const trimmed = field === "label" ? value.slice(0, 60) : value;
     setRegistryLinks((prev) =>
       prev.map((entry) => {
@@ -199,14 +184,8 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
             const validation = validateRegistryUrl(trimmed);
             next.error = validation.ok ? null : validation.error || null;
             next.detectedLabel =
-              validation.ok && validation.brand
-                ? validation.brand.defaultLabel
-                : null;
-            if (
-              validation.ok &&
-              validation.brand &&
-              (!entry.label || !entry.label.trim())
-            ) {
+              validation.ok && validation.brand ? validation.brand.defaultLabel : null;
+            if (validation.ok && validation.brand && (!entry.label || !entry.label.trim())) {
               next.label = validation.brand.defaultLabel;
             }
           }
@@ -215,7 +194,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           next.label = "";
         }
         return next;
-      })
+      }),
     );
   };
 
@@ -238,9 +217,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     if (headerInputRef.current) headerInputRef.current.value = "";
   };
 
-  const handleHeaderChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleHeaderChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
       clearHeader();
@@ -274,9 +251,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     }
   };
 
-  const handleFlyerChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFlyerChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
       clearFlyer();
@@ -303,9 +278,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
   };
 
   const [repeat, setRepeat] = useState<boolean>(false);
-  const [repeatFrequency, setRepeatFrequency] = useState<
-    "weekly" | "monthly" | "yearly"
-  >("weekly");
+  const [repeatFrequency, setRepeatFrequency] = useState<"weekly" | "monthly" | "yearly">("weekly");
   const [repeatDays, setRepeatDays] = useState<string[]>([]);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -342,12 +315,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
 
   // Clear RSVP field if category not in the allowed set
   useEffect(() => {
-    if (
-      category === "Birthdays" ||
-      category === "Weddings" ||
-      category === "Baby Showers"
-    )
-      return;
+    if (category === "Birthdays" || category === "Weddings" || category === "Baby Showers") return;
     if (rsvp) setRsvp("");
   }, [category]);
 
@@ -376,15 +344,13 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           const validation = validateRegistryUrl(trimmedUrl);
           return {
             ...entry,
-            error: validation.ok
-              ? null
-              : validation.error || "Enter a valid https:// link",
+            error: validation.ok ? null : validation.error || "Enter a valid https:// link",
             detectedLabel:
               validation.ok && validation.brand
                 ? validation.brand.defaultLabel
                 : entry.detectedLabel,
           };
-        })
+        }),
       );
       alert(registryCopy.invalidLinksAlert);
       return;
@@ -402,14 +368,15 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     }
 
     const normalizedCategoryForSubmit = (category || "").toLowerCase();
-    const allowsRegistriesForSubmit =
-      getRegistrySectionCopyForCategory(normalizedCategoryForSubmit).allowsLinks;
+    const allowsRegistriesForSubmit = getRegistrySectionCopyForCategory(
+      normalizedCategoryForSubmit,
+    ).allowsLinks;
     const sanitizedRegistries = allowsRegistriesForSubmit
       ? normalizeRegistryLinks(
           registryLinks.map((entry) => ({
             label: entry.label,
             url: entry.url,
-          }))
+          })),
         )
       : [];
     const activeSignupForm = null;
@@ -440,11 +407,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         if (fullDay) {
           const start = new Date(`${whenDate}T00:00:00`);
           const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           if (start < todayStart) {
             throw new Error("Start date cannot be in the past");
           }
@@ -457,11 +420,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           const endBase = endDate || whenDate;
           const end = new Date(`${endBase}T${endTime || "10:00"}:00`);
           const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           if (start < todayStart) {
             throw new Error("Start date cannot be in the past");
           }
@@ -490,15 +449,14 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
       const recurrenceSourceIso = startISO
         ? startISO
         : whenDate
-        ? new Date(`${whenDate}T00:00:00`).toISOString()
-        : null;
+          ? new Date(`${whenDate}T00:00:00`).toISOString()
+          : null;
 
       let recurrenceRule: string | null = null;
       if (repeat) {
         if (repeatFrequency === "weekly") {
           const days = deriveWeeklyDays();
-          if (days.length)
-            recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${days.join(",")}`;
+          if (days.length) recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${days.join(",")}`;
           else recurrenceRule = "RRULE:FREQ=WEEKLY";
         } else if (repeatFrequency === "monthly") {
           if (recurrenceSourceIso) {
@@ -539,8 +497,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           recurrence: recurrenceRule || undefined,
           ...mediaPatch,
           imageColors: imageColors || undefined,
-          registries:
-            sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
+          registries: sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
           signupForm: undefined,
           accessControl: {
             mode: "access-code",
@@ -561,8 +518,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
       const j = await r.json().catch(() => ({}));
       const id = (j as any)?.id as string | undefined;
 
-      const timezone =
-        Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const normalizedDescription = trimmedRsvp
         ? [description, trimmedRsvp].filter(Boolean).join("\n\n")
         : description;
@@ -593,7 +549,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           }).catch((err) => {
             console.error("Failed to add to Google Calendar:", err);
             return { ok: false };
-          })
+          }),
         );
       }
       if (selectedCalendars.microsoft) {
@@ -606,7 +562,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           }).catch((err) => {
             console.error("Failed to add to Microsoft Calendar:", err);
             return { ok: false };
-          })
+          }),
         );
       }
       if (selectedCalendars.apple) {
@@ -619,9 +575,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
       try {
         if (id && typeof window !== "undefined") {
           const serverData =
-            (j as any)?.data && typeof (j as any)?.data === "object"
-              ? (j as any).data
-              : null;
+            (j as any)?.data && typeof (j as any)?.data === "object" ? (j as any).data : null;
           const mergedData = { ...payload.data, ...(serverData || {}) };
           if (mergedData && typeof mergedData === "object" && mergedData.accessControl) {
             const sanitizedAccessControl: Record<string, any> = {
@@ -645,15 +599,14 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
                 category: (mergedData as any).category || null,
                 data: mergedData,
               },
-            })
+            }),
           );
         }
       } catch {}
 
       if (id) {
         const eventTitle =
-          (typeof (j as any)?.title === "string" && (j as any).title) ||
-          payload.title;
+          (typeof (j as any)?.title === "string" && (j as any).title) || payload.title;
         router.push(buildEventPath(id, eventTitle, { created: true }));
       }
       if (onCancel) onCancel();
@@ -792,9 +745,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           min="1"
           required
           value={numberOfGuests || ""}
-          onChange={(e) =>
-            setNumberOfGuests(Number.parseInt(e.target.value, 10) || 0)
-          }
+          onChange={(e) => setNumberOfGuests(Number.parseInt(e.target.value, 10) || 0)}
           className="w-full px-3 py-2 rounded-md border border-border bg-background"
           placeholder="Enter number of guests"
         />
@@ -909,8 +860,8 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
             Best option: Private Link + Access Code (Password)
           </p>
           <p className="mt-1 text-sm text-foreground/70">
-            This keeps your invite unlisted. Only families with the link plus this
-            code can view it, no Envitefy account or email list required.
+            This keeps your invite unlisted. Only families with the link plus this code can view it,
+            no Envitefy account or email list required.
           </p>
         </div>
         <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/80">
@@ -920,9 +871,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           <li>Parents do not need an Envitefy account.</li>
         </ul>
         <div className="rounded-xl border border-border/60 bg-surface/80 p-3 text-sm text-foreground/80 space-y-1">
-          <p className="font-semibold text-foreground/90">
-            Why teams love it
-          </p>
+          <p className="font-semibold text-foreground/90">Why teams love it</p>
           <p>- One message to the whole team in Remind, iMessage, WhatsApp, or TeamSnap.</p>
           <p>- Zero admin overhead (no manual approvals).</p>
           <p>- No "everyone with an Envitefy account can see it."</p>
@@ -934,15 +883,15 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm text-foreground/80">
             <li>They open the private link.</li>
             <li>They see a lock screen.</li>
-            <li>
-              They enter the access code you set ("Cardinals2025", "BeamTeam!",
-              etc.).
-            </li>
+            <li>They enter the access code you set ("Cardinals2025", "BeamTeam!", etc.).</li>
             <li>They instantly see the full event.</li>
           </ol>
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1" htmlFor="evt-access-code">
+          <label
+            className="block text-sm font-medium text-foreground mb-1"
+            htmlFor="evt-access-code"
+          >
             Access code
           </label>
           <div className="flex gap-2">
@@ -968,7 +917,10 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           </p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1" htmlFor="evt-access-hint">
+          <label
+            className="block text-sm font-medium text-foreground mb-1"
+            htmlFor="evt-access-hint"
+          >
             Optional hint
           </label>
           <input
@@ -985,9 +937,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
         </div>
       </div>
 
-      {(connectedCalendars.google ||
-        connectedCalendars.microsoft ||
-        connectedCalendars.apple) && (
+      {(connectedCalendars.google || connectedCalendars.microsoft || connectedCalendars.apple) && (
         <div>
           <label className="block text-sm mb-2">Add to Calendar</label>
           <div className="space-y-2">
@@ -1092,9 +1042,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
                       type="button"
                       onClick={() => {
                         setRepeatDays((prev) =>
-                          active
-                            ? prev.filter((c) => c !== d.code)
-                            : [...prev, d.code]
+                          active ? prev.filter((c) => c !== d.code) : [...prev, d.code],
                         );
                       }}
                       className={`h-8 rounded-md border text-xs font-medium transition ${
@@ -1210,9 +1158,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           onChange={handleFlyerChange}
           className="hidden"
         />
-        {attachmentError && (
-          <p className="mt-2 text-xs text-red-600">{attachmentError}</p>
-        )}
+        {attachmentError && <p className="mt-2 text-xs text-red-600">{attachmentError}</p>}
         {attachment && (
           <div className="mt-2 flex items-center gap-3 text-xs text-foreground/80">
             {attachmentPreviewUrl ? (
@@ -1232,9 +1178,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           </div>
         )}
         {!attachment && !attachmentError && (
-          <p className="mt-2 text-xs text-foreground/60">
-            Images up to 10 MB. PDFs up to 25 MB.
-          </p>
+          <p className="mt-2 text-xs text-foreground/60">Images up to 10 MB. PDFs up to 25 MB.</p>
         )}
       </div>
 

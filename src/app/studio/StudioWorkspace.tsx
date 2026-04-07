@@ -200,6 +200,26 @@ type Preset = {
   description: string;
   icon: LucideIcon;
   thumbnail: string;
+  birthdayAgeGroup?: BirthdayPresetAgeGroup;
+  birthdayAudience?: BirthdayPresetAudience;
+};
+
+type BirthdayPresetAudience = "female" | "male";
+type BirthdayPresetAgeGroup =
+  | "little-kids"
+  | "kids"
+  | "teens"
+  | "young-adults"
+  | "adults"
+  | "milestones";
+
+type BirthdayPresetSeed = {
+  id: string;
+  name: string;
+  description: string;
+  icon: LucideIcon;
+  from: string;
+  to: string;
 };
 
 const STORAGE_KEY = "envitefy_media";
@@ -537,80 +557,530 @@ function svgThumbnail(label: string, from: string, to: string) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-const PRESETS: Preset[] = [
+const BIRTHDAY_PRESET_LIBRARY: Record<
+  BirthdayPresetAgeGroup,
   {
-    id: "birthday-red-carpet",
-    category: "Birthday",
-    name: "Red Carpet Cats",
-    description: "Premiere-night glamour with velvet reds, marquee gold, and playful cat magic.",
-    icon: Sparkles,
-    thumbnail: svgThumbnail("Red Carpet Cats", "#7400ff", "#ff00b8"),
+    label: string;
+    female: BirthdayPresetSeed[];
+    male: BirthdayPresetSeed[];
+  }
+> = {
+  kids: {
+    label: "Kids",
+    female: [
+      {
+        id: "kids-princess-castle",
+        name: "Princess Castle",
+        description: "Royal pinks, crowns, and storybook sparkle.",
+        icon: Sparkles,
+        from: "#ff8cc6",
+        to: "#ffcadf",
+      },
+      {
+        id: "kids-unicorn-rainbow",
+        name: "Unicorn Rainbow",
+        description: "Pastel rainbows, clouds, and candy-color shine.",
+        icon: PartyPopper,
+        from: "#a855f7",
+        to: "#f9a8d4",
+      },
+      {
+        id: "kids-mermaid-lagoon",
+        name: "Mermaid Lagoon",
+        description: "Ocean sparkle, shells, and aqua birthday magic.",
+        icon: Heart,
+        from: "#06b6d4",
+        to: "#67e8f9",
+      },
+      {
+        id: "kids-fairy-garden",
+        name: "Fairy Garden",
+        description: "Butterflies, florals, and enchanted meadow charm.",
+        icon: WandSparkles,
+        from: "#22c55e",
+        to: "#f9a8d4",
+      },
+      {
+        id: "kids-kawaii-kitty",
+        name: "Kawaii Kitty",
+        description: "Cute bows, sweet pinks, and playful kitten vibes.",
+        icon: Gift,
+        from: "#fb7185",
+        to: "#fbcfe8",
+      },
+      {
+        id: "kids-ballet-sparkle",
+        name: "Ballet Sparkle",
+        description: "Soft blush tones with tutus and stage lights.",
+        icon: Cake,
+        from: "#f9a8d4",
+        to: "#fde68a",
+      },
+    ],
+    male: [
+      {
+        id: "kids-superhero-city",
+        name: "Superhero City",
+        description: "Comic-book energy with bold primaries and action bursts.",
+        icon: Sparkles,
+        from: "#2563eb",
+        to: "#ef4444",
+      },
+      {
+        id: "kids-dino-adventure",
+        name: "Dino Adventure",
+        description: "Jurassic greens, fossils, and roaring fun.",
+        icon: PartyPopper,
+        from: "#16a34a",
+        to: "#84cc16",
+      },
+      {
+        id: "kids-space-explorer",
+        name: "Space Explorer",
+        description: "Planets, rockets, and galaxy glow.",
+        icon: WandSparkles,
+        from: "#0f172a",
+        to: "#3b82f6",
+      },
+      {
+        id: "kids-monster-trucks",
+        name: "Monster Trucks",
+        description: "Mud splashes, ramps, and loud party energy.",
+        icon: Gift,
+        from: "#f97316",
+        to: "#ef4444",
+      },
+      {
+        id: "kids-soccer-stars",
+        name: "Soccer Stars",
+        description: "Stadium green, trophies, and all-star party action.",
+        icon: Cake,
+        from: "#16a34a",
+        to: "#22c55e",
+      },
+      {
+        id: "kids-construction-zone",
+        name: "Construction Zone",
+        description: "Bulldozers, caution stripes, and build-it fun.",
+        icon: Heart,
+        from: "#facc15",
+        to: "#f97316",
+      },
+    ],
   },
-  {
-    id: "birthday-disco",
-    category: "Birthday",
-    name: "Birthday Glow",
-    description: "Luminous party gradients and polished confetti lighting.",
-    icon: PartyPopper,
-    thumbnail: svgThumbnail("Birthday Glow", "#ff6a00", "#ff2eb8"),
+  teens: {
+    label: "Teen",
+    female: [
+      {
+        id: "teens-coquette-pink",
+        name: "Coquette Pink",
+        description: "Bows, glossy pinks, and soft glam details.",
+        icon: Sparkles,
+        from: "#ec4899",
+        to: "#fbcfe8",
+      },
+      {
+        id: "teens-disco-cowgirl",
+        name: "Disco Cowgirl",
+        description: "Chrome sparkle, western flair, and party shine.",
+        icon: PartyPopper,
+        from: "#f59e0b",
+        to: "#f472b6",
+      },
+      {
+        id: "teens-pop-star-night",
+        name: "Pop Star Night",
+        description: "Stage lights, glam posters, and concert energy.",
+        icon: WandSparkles,
+        from: "#7c3aed",
+        to: "#ec4899",
+      },
+      {
+        id: "teens-spa-sleepover",
+        name: "Spa Sleepover",
+        description: "Silk robes, beauty bar details, and chill luxury.",
+        icon: Gift,
+        from: "#f9a8d4",
+        to: "#c4b5fd",
+      },
+      {
+        id: "teens-cherry-y2k",
+        name: "Cherry Y2K",
+        description: "Retro gloss, cherries, and throwback internet cool.",
+        icon: Cake,
+        from: "#ef4444",
+        to: "#fb7185",
+      },
+      {
+        id: "teens-beach-club",
+        name: "Beach Club Glow",
+        description: "Sunset tones, palm energy, and coastal sparkle.",
+        icon: Heart,
+        from: "#fb7185",
+        to: "#f59e0b",
+      },
+    ],
+    male: [
+      {
+        id: "teens-gaming-arena",
+        name: "Gaming Arena",
+        description: "Neon glow, leaderboard graphics, and tournament hype.",
+        icon: Sparkles,
+        from: "#111827",
+        to: "#22c55e",
+      },
+      {
+        id: "teens-sneaker-drop",
+        name: "Sneaker Drop",
+        description: "Streetwear styling with clean hype-release energy.",
+        icon: PartyPopper,
+        from: "#111827",
+        to: "#e5e7eb",
+      },
+      {
+        id: "teens-streetball-night",
+        name: "Streetball Night",
+        description: "Court lights, bold type, and all-star edge.",
+        icon: WandSparkles,
+        from: "#ea580c",
+        to: "#1d4ed8",
+      },
+      {
+        id: "teens-anime-battle",
+        name: "Anime Battle",
+        description: "High-contrast action panels with epic energy.",
+        icon: Gift,
+        from: "#7c3aed",
+        to: "#2563eb",
+      },
+      {
+        id: "teens-racing-league",
+        name: "Racing League",
+        description: "Checkered flags, speed lines, and track-night style.",
+        icon: Cake,
+        from: "#ef4444",
+        to: "#111827",
+      },
+      {
+        id: "teens-soccer-finals",
+        name: "Soccer Finals",
+        description: "Championship graphics with match-day intensity.",
+        icon: Heart,
+        from: "#16a34a",
+        to: "#0f172a",
+      },
+    ],
   },
-  {
-    id: "field-trip-modern",
-    category: "Field Trip/Day",
-    name: "Modern Adventure",
-    description: "Clean layout with editorial badges and upbeat school-trip energy.",
-    icon: MapPin,
-    thumbnail: svgThumbnail("Modern Adventure", "#1f6feb", "#54d2ff"),
+  "young-adults": {
+    label: "Young Adult",
+    female: [
+      {
+        id: "young-disco-glam",
+        name: "Disco Glam",
+        description: "Mirror-ball sparkle with late-night party energy.",
+        icon: Sparkles,
+        from: "#7c3aed",
+        to: "#f472b6",
+      },
+      {
+        id: "young-coastal-brunch",
+        name: "Coastal Brunch",
+        description: "Soft blue skies, citrus notes, and chic daylight vibes.",
+        icon: PartyPopper,
+        from: "#38bdf8",
+        to: "#fde68a",
+      },
+      {
+        id: "young-satin-champagne",
+        name: "Satin Champagne",
+        description: "Glossy neutrals, candlelight, and elevated dinner-party style.",
+        icon: WandSparkles,
+        from: "#e7cfa3",
+        to: "#f8e7c8",
+      },
+      {
+        id: "young-western-disco",
+        name: "Western Disco",
+        description: "Boots, shimmer, and polished rodeo-night glamour.",
+        icon: Gift,
+        from: "#f59e0b",
+        to: "#ec4899",
+      },
+      {
+        id: "young-garden-soiree",
+        name: "Garden Soiree",
+        description: "Florals, string lights, and romantic outdoor hosting.",
+        icon: Cake,
+        from: "#22c55e",
+        to: "#f9a8d4",
+      },
+      {
+        id: "young-sunset-rooftop",
+        name: "Sunset Rooftop",
+        description: "Skyline tones with stylish after-work birthday energy.",
+        icon: Heart,
+        from: "#fb7185",
+        to: "#7c3aed",
+      },
+    ],
+    male: [
+      {
+        id: "young-rooftop-neon",
+        name: "Rooftop Neon",
+        description: "City-night glow with modern lounge styling.",
+        icon: Sparkles,
+        from: "#111827",
+        to: "#3b82f6",
+      },
+      {
+        id: "young-retro-arcade",
+        name: "Retro Arcade",
+        description: "Pixel graphics, neon cabinets, and playful nostalgia.",
+        icon: PartyPopper,
+        from: "#0f172a",
+        to: "#a855f7",
+      },
+      {
+        id: "young-casino-royale",
+        name: "Casino Royale",
+        description: "Black, red, and gold with sleek nightlife appeal.",
+        icon: WandSparkles,
+        from: "#111827",
+        to: "#dc2626",
+      },
+      {
+        id: "young-formula-night",
+        name: "Formula Night",
+        description: "Fast-track styling with premium racing cues.",
+        icon: Gift,
+        from: "#dc2626",
+        to: "#111827",
+      },
+      {
+        id: "young-all-white-party",
+        name: "All-White Party",
+        description: "Minimal luxe with crisp monochrome celebration energy.",
+        icon: Cake,
+        from: "#d1d5db",
+        to: "#ffffff",
+      },
+      {
+        id: "young-yacht-club",
+        name: "Yacht Club",
+        description: "Navy, cream, and polished resort-party vibes.",
+        icon: Heart,
+        from: "#1d4ed8",
+        to: "#f8fafc",
+      },
+    ],
   },
-  {
-    id: "bridal-soft",
-    category: "Bridal Shower",
-    name: "Soft Petals",
-    description: "Romantic florals, airy whites, and gentle champagne tones.",
-    icon: Gift,
-    thumbnail: svgThumbnail("Soft Petals", "#f4c7d7", "#fff4e8"),
+  adults: {
+    label: "Adult",
+    female: [
+      {
+        id: "adults-amalfi-citrus",
+        name: "Amalfi Citrus",
+        description: "Lemon tones, Mediterranean polish, and summer dinner charm.",
+        icon: Sparkles,
+        from: "#facc15",
+        to: "#60a5fa",
+      },
+      {
+        id: "adults-rose-gold-dinner",
+        name: "Rose Gold Dinner",
+        description: "Warm metallics with elegant tablescape energy.",
+        icon: PartyPopper,
+        from: "#fda4af",
+        to: "#f5d0fe",
+      },
+      {
+        id: "adults-black-tie-glam",
+        name: "Black Tie Glam",
+        description: "Sharp evening styling with a luxe editorial edge.",
+        icon: WandSparkles,
+        from: "#111827",
+        to: "#f59e0b",
+      },
+      {
+        id: "adults-boho-sunset",
+        name: "Boho Sunset",
+        description: "Terracotta tones, pampas details, and warm celebration light.",
+        icon: Gift,
+        from: "#ea580c",
+        to: "#f59e0b",
+      },
+      {
+        id: "adults-garden-party",
+        name: "Garden Party",
+        description: "Fresh florals, greenery, and polished outdoor hosting.",
+        icon: Cake,
+        from: "#22c55e",
+        to: "#e9d5ff",
+      },
+      {
+        id: "adults-tropical-luxe",
+        name: "Tropical Luxe",
+        description: "Palm leaves, resort details, and bold celebratory color.",
+        icon: Heart,
+        from: "#0f766e",
+        to: "#f97316",
+      },
+    ],
+    male: [
+      {
+        id: "adults-whiskey-lounge",
+        name: "Whiskey Lounge",
+        description: "Moody amber lighting with classic lounge depth.",
+        icon: Sparkles,
+        from: "#7c2d12",
+        to: "#111827",
+      },
+      {
+        id: "adults-cigar-cards",
+        name: "Cigar & Cards",
+        description: "Dark wood, card-table styling, and old-school cool.",
+        icon: PartyPopper,
+        from: "#1f2937",
+        to: "#7c2d12",
+      },
+      {
+        id: "adults-backyard-bbq",
+        name: "Backyard BBQ",
+        description: "Relaxed cookout energy with bold Americana flavor.",
+        icon: WandSparkles,
+        from: "#dc2626",
+        to: "#f59e0b",
+      },
+      {
+        id: "adults-golf-classic",
+        name: "Golf Classic",
+        description: "Country-club greens with refined daytime polish.",
+        icon: Gift,
+        from: "#166534",
+        to: "#65a30d",
+      },
+      {
+        id: "adults-black-tie-club",
+        name: "Black Tie Club",
+        description: "Formal monochrome styling with understated luxury.",
+        icon: Cake,
+        from: "#111827",
+        to: "#4b5563",
+      },
+      {
+        id: "adults-vintage-vinyl",
+        name: "Vintage Vinyl",
+        description: "Record-bar warmth with retro music-night personality.",
+        icon: Heart,
+        from: "#7c3aed",
+        to: "#f97316",
+      },
+    ],
   },
-  {
-    id: "wedding-vogue",
-    category: "Wedding",
-    name: "Vogue Romance",
-    description: "Editorial serif styling with elegant monochrome framing.",
-    icon: Heart,
-    thumbnail: svgThumbnail("Vogue Romance", "#0f172a", "#475569"),
+  milestones: {
+    label: "Milestone",
+    female: [
+      {
+        id: "milestones-golden-gala",
+        name: "Golden Gala",
+        description: "Big-night glamour designed for a statement birthday.",
+        icon: Sparkles,
+        from: "#ca8a04",
+        to: "#fef08a",
+      },
+      {
+        id: "milestones-diamond-dinner",
+        name: "Diamond Dinner",
+        description: "Crystal shine, candlelight, and luxe celebration polish.",
+        icon: PartyPopper,
+        from: "#cbd5e1",
+        to: "#f8fafc",
+      },
+      {
+        id: "milestones-parisian-chic",
+        name: "Parisian Chic",
+        description: "Soft black-and-cream styling with fashion-week elegance.",
+        icon: WandSparkles,
+        from: "#111827",
+        to: "#f5e6c8",
+      },
+      {
+        id: "milestones-bloom-brunch",
+        name: "Bloom Brunch",
+        description: "Fresh florals and champagne daylight celebration energy.",
+        icon: Gift,
+        from: "#f9a8d4",
+        to: "#fde68a",
+      },
+      {
+        id: "milestones-palm-springs",
+        name: "Palm Springs Luxe",
+        description: "Resort color, playful elegance, and modern celebration cool.",
+        icon: Cake,
+        from: "#fb7185",
+        to: "#38bdf8",
+      },
+      {
+        id: "milestones-pearl-soiree",
+        name: "Pearl Soiree",
+        description: "Soft ivory layers with timeless milestone sophistication.",
+        icon: Heart,
+        from: "#f8fafc",
+        to: "#d4d4d8",
+      },
+    ],
+    male: [
+      {
+        id: "milestones-great-gatsby",
+        name: "Great Gatsby",
+        description: "Art deco gold, black lacquer, and major-birthday drama.",
+        icon: Sparkles,
+        from: "#111827",
+        to: "#ca8a04",
+      },
+      {
+        id: "milestones-bourbon-reserve",
+        name: "Bourbon Reserve",
+        description: "Warm barrel tones with elevated speakeasy mood.",
+        icon: PartyPopper,
+        from: "#7c2d12",
+        to: "#f59e0b",
+      },
+      {
+        id: "milestones-casino-black-gold",
+        name: "Casino Black Gold",
+        description: "High-contrast luxury with celebratory nightlife edge.",
+        icon: WandSparkles,
+        from: "#111827",
+        to: "#facc15",
+      },
+      {
+        id: "milestones-yacht-dinner",
+        name: "Yacht Dinner",
+        description: "Navy-and-ivory styling with polished waterfront appeal.",
+        icon: Gift,
+        from: "#1d4ed8",
+        to: "#f8fafc",
+      },
+      {
+        id: "milestones-golf-scotch",
+        name: "Golf & Scotch",
+        description: "Classic club styling for a relaxed upscale milestone.",
+        icon: Cake,
+        from: "#166534",
+        to: "#92400e",
+      },
+      {
+        id: "milestones-havana-night",
+        name: "Havana Night",
+        description: "Rich tropical tones with smooth evening energy.",
+        icon: Heart,
+        from: "#b45309",
+        to: "#0f766e",
+      },
+    ],
   },
-  {
-    id: "housewarming-sunlit",
-    category: "Housewarming",
-    name: "Sunlit Welcome",
-    description: "Warm neutrals and a crisp, friendly open-house feel.",
-    icon: Home,
-    thumbnail: svgThumbnail("Sunlit Welcome", "#ffcf96", "#f7f3ea"),
-  },
-  {
-    id: "baby-cloud",
-    category: "Baby Shower",
-    name: "Cloud Parade",
-    description: "Soft pastel balloons, dreamy spacing, and sweet baby details.",
-    icon: PartyPopper,
-    thumbnail: svgThumbnail("Cloud Parade", "#d7ecff", "#ffd9ec"),
-  },
-  {
-    id: "anniversary-gold",
-    category: "Anniversary",
-    name: "Golden Toast",
-    description: "Formal celebration styling with champagne gold accents.",
-    icon: Calendar,
-    thumbnail: svgThumbnail("Golden Toast", "#7c5a00", "#f3cf65"),
-  },
-  {
-    id: "custom-electric",
-    category: "Custom Invite",
-    name: "Electric Poster",
-    description: "Bold layout for any custom moment that needs a campaign look.",
-    icon: WandSparkles,
-    thumbnail: svgThumbnail("Electric Poster", "#111827", "#7c3aed"),
-  },
-];
+};
 
 const EMPTY_POSITIONS = {
   rsvp: { x: 0, y: 0 },
@@ -1011,12 +1481,68 @@ function getRegistryText(details: EventDetails) {
   );
 }
 
-function getFallbackThumbnail(details: EventDetails) {
-  const preset = PRESETS.find(
-    (item) => item.category === details.category && item.name === details.theme,
+function hasRegistryContent(details: EventDetails) {
+  return Boolean(
+    clean(details.registryLink) ||
+      clean(details.giftPreferenceNote) ||
+      clean(details.giftNote) ||
+      clean(details.bringABookNote),
   );
+}
+
+function getFallbackThumbnail(details: EventDetails) {
+  const preset = getPresetsForDetails(details).find((item) => item.name === details.theme);
   if (preset) return preset.thumbnail;
   return svgThumbnail(getDisplayTitle(details), "#111827", "#7c3aed");
+}
+
+function parseAgeValue(ageValue: string): number | null {
+  const match = readString(ageValue).match(/\d{1,3}/);
+  if (!match) return null;
+  const parsed = Number.parseInt(match[0], 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getBirthdayPresetAgeGroup(ageValue: string): BirthdayPresetAgeGroup {
+  const age = parseAgeValue(ageValue);
+  if (age == null) return "kids";
+  if (age <= 12) return "kids";
+  if (age <= 17) return "teens";
+  if (age <= 29) return "young-adults";
+  if (age <= 49) return "adults";
+  return "milestones";
+}
+
+function buildBirthdayPresets(ageValue: string): {
+  label: string;
+  female: Preset[];
+  male: Preset[];
+} {
+  const ageGroup = getBirthdayPresetAgeGroup(ageValue);
+  const library = BIRTHDAY_PRESET_LIBRARY[ageGroup];
+  const buildPresets = (audience: BirthdayPresetAudience, items: BirthdayPresetSeed[]): Preset[] =>
+    items.map((item) => ({
+      id: `birthday-${ageGroup}-${audience}-${item.id}`,
+      category: "Birthday",
+      name: item.name,
+      description: item.description,
+      icon: item.icon,
+      thumbnail: svgThumbnail(item.name, item.from, item.to),
+    }));
+
+  return {
+    label: library.label,
+    female: buildPresets("female", library.female),
+    male: buildPresets("male", library.male),
+  };
+}
+
+function getPresetsForDetails(details: EventDetails): Preset[] {
+  if (details.category === "Birthday") {
+    const birthdayPresets = buildBirthdayPresets(details.age);
+    return [...birthdayPresets.female, ...birthdayPresets.male];
+  }
+  return PRESETS.filter((preset) => preset.category === details.category);
 }
 
 function getThemeColors(details: EventDetails) {
@@ -1118,10 +1644,51 @@ function buildLinks(details: EventDetails) {
   ].filter((value): value is { label: string; url: string } => Boolean(value));
 }
 
+function buildStudioVisualDirection(details: EventDetails) {
+  const customIdea = clean(details.theme);
+  const extraPreferences = clean(details.visualPreferences);
+  const combinedDirection = [customIdea, extraPreferences].filter(Boolean).join(". ");
+  const instructions: string[] = [];
+
+  if (combinedDirection) {
+    instructions.push(
+      `Highest-priority visual direction from the user: ${combinedDirection}. Follow this literally and let it override generic preset, category, or celebration styling.`,
+    );
+  }
+
+  if (
+    /\b(realistic|photorealistic|photo[- ]?realistic|lifelike|naturalistic|real life)\b/i.test(
+      combinedDirection,
+    )
+  ) {
+    instructions.push(
+      "Render subjects realistically with natural anatomy, realistic fur or skin texture, believable lighting, and real-world proportions.",
+    );
+    instructions.push(
+      "Do not turn realistic subjects into cartoons, mascots, plush characters, anime, or anthropomorphic figures unless the user explicitly asks for that.",
+    );
+  }
+
+  if (/\bcats?\b/i.test(combinedDirection)) {
+    instructions.push(
+      "If cats appear, they should look like real cats unless the user explicitly requests a stylized or cartoon treatment.",
+    );
+  }
+
+  return instructions.join(" ");
+}
+
 function buildStudioRequest(
   details: EventDetails,
   mode: StudioGenerateMode,
+  editPrompt?: string,
+  sourceImageDataUrl?: string,
 ): StudioGenerateRequest {
+  const refinement = clean(editPrompt);
+  const baseDescription = buildDescription(details);
+  const visualDirection = buildStudioVisualDirection(details);
+  const studioGuardrails =
+    "Preserve exact spelling from the event details. Double-check visible words. Keep the lower button area visually clear and avoid placing important copy near the bottom of the card.";
   return {
     mode,
     event: {
@@ -1131,7 +1698,10 @@ function buildStudioRequest(
         pickFirst(details.rsvpName, details.hostedBy, details.teacherName, details.mainPerson) ||
         null,
       honoreeName: getHonoreeName(details) || null,
-      description: buildDescription(details) || null,
+      description:
+        [baseDescription, refinement ? `Edit request: ${refinement}` : ""]
+          .filter(Boolean)
+          .join(" ") || null,
       date: clean(details.eventDate) || null,
       startTime: clean(details.startTime) || null,
       endTime: clean(details.endTime) || null,
@@ -1154,19 +1724,27 @@ function buildStudioRequest(
           details.style,
           details.category === "Birthday" ? "Playful and polished" : "Warm and elevated",
         ) || null,
-      style: pickFirst(details.theme, details.visualPreferences, details.colors) || null,
+      style: [visualDirection, refinement, studioGuardrails].filter(Boolean).join(". ") || null,
       audience: pickFirst(details.invitedWho, details.audience, "Guests") || null,
       colorPalette: clean(details.colors) || null,
       includeEmoji: true,
     },
+    imageEdit: clean(sourceImageDataUrl)
+      ? { sourceImageDataUrl: clean(sourceImageDataUrl) }
+      : undefined,
   };
 }
 
-async function requestStudioGeneration(details: EventDetails, mode: StudioGenerateMode) {
+async function requestStudioGeneration(
+  details: EventDetails,
+  mode: StudioGenerateMode,
+  editPrompt?: string,
+  sourceImageDataUrl?: string,
+) {
   const response = await fetch("/api/studio/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildStudioRequest(details, mode)),
+    body: JSON.stringify(buildStudioRequest(details, mode, editPrompt, sourceImageDataUrl)),
   });
 
   let rawData: unknown = null;
@@ -1403,6 +1981,9 @@ export default function StudioWorkspace() {
   const [isDesignMode, setIsDesignMode] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [editPrompt, setEditPrompt] = useState("");
+  const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
+  const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
 
   const activePageRecord = useMemo(
     () => mediaList.find((item) => item.id === activePage?.id) ?? activePage,
@@ -1433,6 +2014,11 @@ export default function StudioWorkspace() {
     }
   }, [mediaList]);
 
+  useEffect(() => {
+    setEditPrompt("");
+    setIsEditPanelOpen(false);
+  }, [selectedImage?.id, activePageRecord?.id]);
+
   function isFormValid() {
     const missingShared = SHARED_BASICS.filter(
       (field) => field.required && !clean(String(inputValue(details[field.key]))),
@@ -1460,20 +2046,6 @@ export default function StudioWorkspace() {
     if (selectedImage?.id === id) {
       setSelectedImage(null);
     }
-  }
-
-  function clearLibrary() {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm("Are you sure you want to clear your entire library?")
-    ) {
-      return;
-    }
-    setMediaList([]);
-    setActivePage(null);
-    setSelectedImage(null);
-    setActiveTab("none");
-    localStorage.removeItem(STORAGE_KEY);
   }
 
   function downloadMedia(item: MediaItem) {
@@ -1688,7 +2260,117 @@ export default function StudioWorkspace() {
     }
   }
 
-  const currentPresets = PRESETS.filter((preset) => preset.category === details.category);
+  async function applyImageEdit(item: MediaItem) {
+    const prompt = clean(editPrompt);
+    if (!prompt) {
+      if (typeof window !== "undefined") {
+        window.alert("Add an edit prompt first.");
+      }
+      return;
+    }
+
+    const sourceImageDataUrl = clean(item.url);
+    if (!sourceImageDataUrl) {
+      if (typeof window !== "undefined") {
+        window.alert("The current image is not available to edit.");
+      }
+      return;
+    }
+
+    try {
+      setApplyingEditId(item.id);
+      const response = await requestStudioGeneration(
+        item.details,
+        "image",
+        prompt,
+        sourceImageDataUrl,
+      );
+
+      patchMediaItem(item.id, {
+        url: response.imageDataUrl || item.url,
+        status: "ready",
+        errorMessage: undefined,
+        sharePath: undefined,
+      });
+      setEditPrompt("");
+      setIsEditPanelOpen(false);
+    } catch (error) {
+      console.error("[studio] image edit failed", error);
+      if (typeof window !== "undefined") {
+        const message =
+          error instanceof Error && error.message.trim()
+            ? error.message.trim()
+            : "Unable to apply that edit right now.";
+        window.alert(message);
+      }
+    } finally {
+      setApplyingEditId((current) => (current === item.id ? null : current));
+    }
+  }
+
+  function renderEditImagePanel(item: MediaItem, description: string) {
+    return (
+      <div className="pointer-events-auto flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setIsEditPanelOpen((prev) => !prev)}
+          aria-expanded={isEditPanelOpen}
+          className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-left backdrop-blur-md transition-colors hover:bg-white/15"
+        >
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-white/15 p-2 text-white">
+              <WandSparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                Edit Image
+              </p>
+              <p className="text-sm font-semibold text-white">
+                {isEditPanelOpen ? "Prompt editor is open" : "Open image edit prompt"}
+              </p>
+            </div>
+          </div>
+          <ChevronRight
+            className={`h-5 w-5 text-white/70 transition-transform ${isEditPanelOpen ? "rotate-90" : ""}`}
+          />
+        </button>
+
+        {isEditPanelOpen ? (
+          <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
+            <p className="text-sm text-white/90">{description}</p>
+            <textarea
+              value={editPrompt}
+              onChange={(event) => setEditPrompt(event.target.value)}
+              placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
+              className="mt-3 min-h-[104px] w-full rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/40"
+            />
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-white/55">
+                Applies your prompt directly to the current image instead of creating a brand-new
+                composition.
+              </p>
+              <button
+                onClick={() => applyImageEdit(item)}
+                disabled={applyingEditId === item.id}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-wait disabled:opacity-70"
+              >
+                {applyingEditId === item.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <WandSparkles className="h-4 w-4" />
+                )}
+                Edit Image
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  const birthdayPresets =
+    details.category === "Birthday" ? buildBirthdayPresets(details.age) : null;
+  const currentPresets = getPresetsForDetails(details);
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 selection:bg-purple-200">
@@ -2108,7 +2790,7 @@ export default function StudioWorkspace() {
                             <input
                               type="text"
                               placeholder="e.g. Red and gold"
-                              className="w-full rounded-xl border border-neutral-200 bg-neutral-900 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                               value={details.colors}
                               onChange={(event) =>
                                 setDetails((prev) => ({ ...prev, colors: event.target.value }))
@@ -2122,7 +2804,7 @@ export default function StudioWorkspace() {
                             </label>
                             <textarea
                               placeholder="e.g. Editorial premiere poster with red carpet lighting..."
-                              className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-neutral-900 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                              className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                               value={details.visualPreferences}
                               onChange={(event) =>
                                 setDetails((prev) => ({
@@ -2170,24 +2852,16 @@ export default function StudioWorkspace() {
                   </h2>
                   <p className="text-neutral-500">Manage and edit your created invitations.</p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={clearLibrary}
-                    className="text-xs font-bold uppercase tracking-widest text-red-500 transition-colors hover:text-red-600"
-                  >
-                    Clear Library
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingId(null);
-                      setStep("form");
-                    }}
-                    className="flex items-center gap-2 rounded-full bg-purple-600 px-6 py-3 font-bold text-white shadow-lg shadow-purple-500/20 transition-all hover:bg-purple-700"
-                  >
-                    <Plus className="h-5 w-5" />
-                    Create New
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setEditingId(null);
+                    setStep("form");
+                  }}
+                  className="flex items-center gap-2 rounded-full bg-purple-600 px-6 py-3 font-bold text-white shadow-lg shadow-purple-500/20 transition-all hover:bg-purple-700"
+                >
+                  <Plus className="h-5 w-5" />
+                  Create New
+                </button>
               </div>
 
               {mediaList.length === 0 ? (
@@ -2318,65 +2992,117 @@ export default function StudioWorkspace() {
                     Select a Preset
                   </h2>
                   <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-lg bg-purple-600/10 p-2 text-purple-600">
-                        <Sparkles className="h-4 w-4" />
+                    {details.category !== "Birthday" ? (
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-lg bg-purple-600/10 p-2 text-purple-600">
+                          <Sparkles className="h-4 w-4" />
+                        </div>
+                        <span className="text-sm font-bold text-neutral-900">
+                          {details.category} Presets
+                        </span>
                       </div>
-                      <span className="text-sm font-bold text-neutral-900">
-                        {details.category} Presets
-                      </span>
-                    </div>
+                    ) : null}
 
-                    <div className="grid max-h-[450px] grid-cols-2 gap-3 overflow-y-auto pr-2">
-                      {currentPresets.map((preset) => {
-                        const Icon = preset.icon;
-                        const active = details.theme === preset.name;
-                        return (
-                          <button
-                            key={preset.id}
-                            onClick={() => setDetails((prev) => ({ ...prev, theme: preset.name }))}
-                            className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border text-left transition-all ${
-                              active
-                                ? "border-purple-500 ring-2 ring-purple-500/20"
-                                : "border-neutral-200 hover:border-neutral-300"
-                            }`}
-                          >
-                            <img
-                              src={preset.thumbnail}
-                              alt={preset.name}
-                              className="absolute inset-0 h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-80"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-white/90 via-white/20 to-transparent p-3">
-                              <div className="mb-1 flex items-center gap-1.5">
-                                <div className="rounded-md border border-neutral-200 bg-white/80 p-1 backdrop-blur-sm">
-                                  <Icon className="h-3 w-3 text-purple-600" />
+                    {details.category === "Birthday" && birthdayPresets ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          {([{ key: "female" }, { key: "male" }] as const).map((column) => (
+                            <div key={column.key} className="space-y-2">
+                              {(column.key === "female"
+                                ? birthdayPresets.female
+                                : birthdayPresets.male
+                              ).map((preset) => {
+                                const Icon = preset.icon;
+                                const active = details.theme === preset.name;
+                                return (
+                                  <button
+                                    key={preset.id}
+                                    onClick={() =>
+                                      setDetails((prev) => ({ ...prev, theme: preset.name }))
+                                    }
+                                    className={`w-full rounded-2xl border p-3 text-left transition-all ${
+                                      active
+                                        ? "border-purple-500 bg-purple-50 ring-2 ring-purple-500/20"
+                                        : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50"
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div
+                                        className={`mt-0.5 rounded-lg p-2 ${
+                                          active
+                                            ? "bg-purple-600 text-white"
+                                            : "bg-neutral-100 text-purple-600"
+                                        }`}
+                                      >
+                                        <Icon className="h-3.5 w-3.5" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-bold text-neutral-900">
+                                          {preset.name}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid max-h-[450px] grid-cols-2 gap-3 overflow-y-auto pr-2">
+                        {currentPresets.map((preset) => {
+                          const Icon = preset.icon;
+                          const active = details.theme === preset.name;
+                          return (
+                            <button
+                              key={preset.id}
+                              onClick={() =>
+                                setDetails((prev) => ({ ...prev, theme: preset.name }))
+                              }
+                              className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border text-left transition-all ${
+                                active
+                                  ? "border-purple-500 ring-2 ring-purple-500/20"
+                                  : "border-neutral-200 hover:border-neutral-300"
+                              }`}
+                            >
+                              <img
+                                src={preset.thumbnail}
+                                alt={preset.name}
+                                className="absolute inset-0 h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-80"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-white/90 via-white/20 to-transparent p-3">
+                                <div className="mb-1 flex items-center gap-1.5">
+                                  <div className="rounded-md border border-neutral-200 bg-white/80 p-1 backdrop-blur-sm">
+                                    <Icon className="h-3 w-3 text-purple-600" />
+                                  </div>
+                                  <span className="line-clamp-2 text-[10px] font-bold leading-tight text-neutral-900">
+                                    {preset.name}
+                                  </span>
                                 </div>
-                                <span className="line-clamp-2 text-[10px] font-bold leading-tight text-neutral-900">
-                                  {preset.name}
+                                <span className="line-clamp-2 text-[8px] leading-tight text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100">
+                                  {preset.description}
                                 </span>
                               </div>
-                              <span className="line-clamp-2 text-[8px] leading-tight text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100">
-                                {preset.description}
-                              </span>
-                            </div>
-                            {active ? (
-                              <div className="absolute right-2 top-2 rounded-full bg-purple-500 p-1 shadow-lg">
-                                <CheckCircle2 className="h-3 w-3 text-white" />
-                              </div>
-                            ) : null}
-                          </button>
-                        );
-                      })}
+                              {active ? (
+                                <div className="absolute right-2 top-2 rounded-full bg-purple-500 p-1 shadow-lg">
+                                  <CheckCircle2 className="h-3 w-3 text-white" />
+                                </div>
+                              ) : null}
+                            </button>
+                          );
+                        })}
 
-                      {currentPresets.length === 0 ? (
-                        <div className="col-span-2 py-8 text-center">
-                          <p className="text-[10px] italic text-neutral-600">
-                            No presets for this category yet. Use a custom idea below.
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
+                        {currentPresets.length === 0 ? (
+                          <div className="col-span-2 py-8 text-center">
+                            <p className="text-[10px] italic text-neutral-600">
+                              No presets for this category yet. Use a custom idea below.
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
 
                     <div className="border-t border-neutral-100 pt-2">
                       <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
@@ -2610,10 +3336,17 @@ export default function StudioWorkspace() {
             >
               <button
                 onClick={() => setSelectedImage(null)}
-                className="absolute -top-12 right-0 p-2 text-white/70 transition-colors hover:text-white"
+                className="absolute right-0 top-0 z-20 rounded-full bg-white/10 p-2 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
               >
                 <X className="h-8 w-8" />
               </button>
+
+              <div className="absolute right-0 top-16 z-10 flex w-[min(22rem,calc(100vw-1.5rem))] flex-col gap-3">
+                {renderEditImagePanel(
+                  selectedImage,
+                  "Describe the change you want. This edits the current image instead of generating a different one.",
+                )}
+              </div>
 
               <div className="group relative flex w-full justify-center">
                 <img
@@ -2662,19 +3395,41 @@ export default function StudioWorkspace() {
               <X className="h-6 w-6" />
             </button>
 
-            <div className="absolute left-8 top-8 z-[110] flex items-center gap-3 rounded-full border border-white/10 bg-white/10 p-2 backdrop-blur-md">
-              <span className="pl-2 text-[10px] font-bold uppercase tracking-widest text-white">
-                Design Mode
-              </span>
-              <button
-                onClick={() => setIsDesignMode((prev) => !prev)}
-                className={`relative h-6 w-12 rounded-full transition-all ${isDesignMode ? "bg-purple-500" : "bg-neutral-700"}`}
-              >
-                <motion.div
-                  animate={{ x: isDesignMode ? 24 : 4 }}
-                  className="absolute top-1 h-4 w-4 rounded-full bg-white shadow-lg"
-                />
-              </button>
+            <div className="absolute right-4 top-20 z-[110] flex w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 md:right-8 md:top-24">
+              {renderEditImagePanel(
+                activePageRecord,
+                "Describe the change you want. This edits the current live-card artwork and keeps your existing card details and button placement.",
+              )}
+
+              <div className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                    Design Mode
+                  </p>
+                  <p className="text-sm font-semibold text-white">
+                    {isDesignMode ? "Button editing is on" : "Adjust card button placement"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-pressed={isDesignMode}
+                  aria-label={isDesignMode ? "Turn off design mode" : "Turn on design mode"}
+                  onClick={() => setIsDesignMode((prev) => !prev)}
+                  className={`relative h-7 w-14 rounded-full transition-all ${isDesignMode ? "bg-purple-500" : "bg-neutral-700"}`}
+                >
+                  <motion.div
+                    animate={{ x: isDesignMode ? 28 : 4 }}
+                    className="absolute top-1 h-5 w-5 rounded-full bg-white shadow-lg"
+                  />
+                </button>
+              </div>
+
+              {isDesignMode ? (
+                <div className="pointer-events-auto rounded-2xl border border-purple-300/30 bg-black/35 px-4 py-3 text-sm text-white/90 backdrop-blur-md">
+                  Drag the RSVP, Details, Location, Calendar, Share, and Registry buttons to move
+                  them around the card. Turn Design Mode off when you're done.
+                </div>
+              ) : null}
             </div>
 
             <motion.div
@@ -2912,9 +3667,11 @@ export default function StudioWorkspace() {
                           {activeTab === "registry" ? (
                             <>
                               <p className="text-sm font-medium text-neutral-900">Gift Registry</p>
-                              <p className="text-xs text-neutral-500">
-                                {getRegistryText(activePageRecord.data.eventDetails)}
-                              </p>
+                              {hasRegistryContent(activePageRecord.data.eventDetails) ? (
+                                <p className="text-xs text-neutral-500">
+                                  {getRegistryText(activePageRecord.data.eventDetails)}
+                                </p>
+                              ) : null}
                               <p className="text-xs text-neutral-500">
                                 {activePageRecord.data.interactiveMetadata.shareNote}
                               </p>
@@ -2996,10 +3753,7 @@ export default function StudioWorkspace() {
                           key: "registry",
                           label: "Registry",
                           icon: Sparkles,
-                          visible: Boolean(
-                            activePageRecord.data.eventDetails.registryLink ||
-                              getRegistryText(activePageRecord.data.eventDetails),
-                          ),
+                          visible: hasRegistryContent(activePageRecord.data.eventDetails),
                           onClick: () =>
                             setActiveTab(activeTab === "registry" ? "none" : "registry"),
                         },

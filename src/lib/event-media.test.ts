@@ -57,6 +57,23 @@ test("findInlineEventMedia reports inline paths and setValueAtPath updates them"
   assert.equal(data.images.hero, "https://blob.example.com/event-media/hero.webp");
 });
 
+test("findTransientEventMedia and collectAppOwnedBlobUrls include sponsor logos", () => {
+  const data = {
+    sponsors: [
+      { logo: "blob:http://localhost/sponsor-logo" },
+      { logo: "https://example.public.blob.vercel-storage.com/event-media/1/header/display.webp" },
+    ],
+  };
+
+  const issues = findTransientEventMedia(data).map((issue) => issue.fieldPath);
+  assert.deepEqual(issues, ["sponsors[0].logo"]);
+
+  const blobUrls = collectAppOwnedBlobUrls(data);
+  assert.deepEqual(blobUrls, [
+    "https://example.public.blob.vercel-storage.com/event-media/1/header/display.webp",
+  ]);
+});
+
 test("collectAppOwnedBlobUrls normalizes app blob proxy urls to blob pathnames", () => {
   const data = {
     attachment: {

@@ -9,9 +9,7 @@ import type { EditorBindings } from "@/components/event-templates/EventTemplateB
 import BirthdaysTemplate from "@/components/event-templates/BirthdaysTemplate";
 import WeddingsTemplate from "@/components/event-templates/WeddingsTemplate";
 import BabyShowersTemplate from "@/components/event-templates/BabyShowersTemplate";
-import {
-  type RegistryFormEntry,
-} from "@/components/RegistryLinksEditor";
+import { type RegistryFormEntry } from "@/components/RegistryLinksEditor";
 import {
   getRegistrySectionCopyForCategory,
   MAX_REGISTRY_LINKS,
@@ -44,13 +42,10 @@ type Props = {
   initialCategoryKey?: string;
 };
 
-const TEMPLATE_LABELS = EVENT_CATEGORIES.reduce<Record<string, string>>(
-  (acc, category) => {
-    acc[category.key] = category.label;
-    return acc;
-  },
-  {}
-);
+const TEMPLATE_LABELS = EVENT_CATEGORIES.reduce<Record<string, string>>((acc, category) => {
+  acc[category.key] = category.label;
+  return acc;
+}, {});
 
 const createRegistryEntry = (): RegistryFormEntry => ({
   key: `registry-${Math.random().toString(36).slice(2, 10)}`,
@@ -88,7 +83,7 @@ function toLocalTimeValue(d: Date | null): string {
 function formatWhenSummary(
   startIso: string | null,
   endIso: string | null,
-  allDay: boolean
+  allDay: boolean,
 ): { time: string | null; date: string | null } {
   if (!startIso) return { time: null, date: null };
   try {
@@ -151,10 +146,7 @@ function formatWhenSummary(
   }
 }
 
-export default function EventCreateWysiwyg({
-  defaultDate,
-  initialCategoryKey,
-}: Props) {
+export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }: Props) {
   const router = useRouter();
   const { visibleTemplateKeys } = useFeatureVisibility();
 
@@ -185,15 +177,13 @@ export default function EventCreateWysiwyg({
       id: "trusty-blue",
       name: "Trusty Blue + Orange",
       bgColor: "#143A66",
-      bgCss:
-        "linear-gradient(120deg, rgba(20,58,102,0.95) 0%, rgba(17,92,150,0.85) 100%)",
+      bgCss: "linear-gradient(120deg, rgba(20,58,102,0.95) 0%, rgba(17,92,150,0.85) 100%)",
     },
     {
       id: "mint-fresh",
       name: "Mint Fresh",
       bgColor: "#D1F1E0",
-      bgCss:
-        "linear-gradient(135deg, rgba(59,201,159,0.25), rgba(255,255,255,0.6))",
+      bgCss: "linear-gradient(135deg, rgba(59,201,159,0.25), rgba(255,255,255,0.6))",
     },
     {
       id: "night-sky",
@@ -211,22 +201,19 @@ export default function EventCreateWysiwyg({
       id: "ocean-wave",
       name: "Ocean Wave",
       bgColor: "#0EA5E9",
-      bgCss:
-        "linear-gradient(120deg, rgba(14,165,233,0.95) 0%, rgba(59,130,246,0.85) 100%)",
+      bgCss: "linear-gradient(120deg, rgba(14,165,233,0.95) 0%, rgba(59,130,246,0.85) 100%)",
     },
     {
       id: "forest-mist",
       name: "Forest Mist",
       bgColor: "#166534",
-      bgCss:
-        "linear-gradient(135deg, rgba(22,101,52,0.95), rgba(15,118,110,0.85))",
+      bgCss: "linear-gradient(135deg, rgba(22,101,52,0.95), rgba(15,118,110,0.85))",
     },
     {
       id: "royal-plum",
       name: "Royal Plum",
       bgColor: "#6D28D9",
-      bgCss:
-        "linear-gradient(135deg, rgba(109,40,217,0.95), rgba(147,51,234,0.85))",
+      bgCss: "linear-gradient(135deg, rgba(109,40,217,0.95), rgba(147,51,234,0.85))",
     },
     {
       id: "citrus-light",
@@ -247,19 +234,11 @@ export default function EventCreateWysiwyg({
       bgCss: "linear-gradient(135deg, #93C5FD 0%, #A7F3D0 100%)",
     },
   ];
-  const [categoryKey, setCategoryKey] = useState<string>(
-    initialCategoryKey || ""
-  );
-  const [whenDate, setWhenDate] = useState<string>(
-    toLocalDateValue(new Date(initialStart))
-  );
+  const [categoryKey, setCategoryKey] = useState<string>(initialCategoryKey || "");
+  const [whenDate, setWhenDate] = useState<string>(toLocalDateValue(new Date(initialStart)));
   const [fullDay, setFullDay] = useState<boolean>(true);
-  const [startTime, setStartTime] = useState<string>(
-    toLocalTimeValue(initialStart)
-  );
-  const [endDate, setEndDate] = useState<string>(
-    toLocalDateValue(new Date(initialEnd))
-  );
+  const [startTime, setStartTime] = useState<string>(toLocalTimeValue(initialStart));
+  const [endDate, setEndDate] = useState<string>(toLocalDateValue(new Date(initialEnd)));
   const [endTime, setEndTime] = useState<string>(toLocalTimeValue(initialEnd));
   const [venue, setVenue] = useState("");
   const [location, setLocation] = useState("");
@@ -274,9 +253,7 @@ export default function EventCreateWysiwyg({
     dataUrl: string;
   } | null>(null);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
-    string | null
-  >(null);
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
@@ -287,15 +264,11 @@ export default function EventCreateWysiwyg({
     type: string;
     dataUrl: string;
   } | null>(null);
-  const [profilePreviewUrl, setProfilePreviewUrl] = useState<string | null>(
-    null
-  );
+  const [profilePreviewUrl, setProfilePreviewUrl] = useState<string | null>(null);
   const profileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [repeat, setRepeat] = useState<boolean>(false);
-  const [repeatFrequency, setRepeatFrequency] = useState<
-    "weekly" | "monthly" | "yearly"
-  >("weekly");
+  const [repeatFrequency, setRepeatFrequency] = useState<"weekly" | "monthly" | "yearly">("weekly");
   const [repeatDays, setRepeatDays] = useState<string[]>([]);
 
   // Header background selection (matches signup preview behavior)
@@ -303,12 +276,11 @@ export default function EventCreateWysiwyg({
   const [headerBgColor, setHeaderBgColor] = useState<string | null>(null);
   const [headerBgCss, setHeaderBgCss] = useState<string | null>(null);
 
-  const [connectedCalendars, setConnectedCalendars] =
-    useState<ConnectedCalendars>({
-      google: false,
-      microsoft: false,
-      apple: false,
-    });
+  const [connectedCalendars, setConnectedCalendars] = useState<ConnectedCalendars>({
+    google: false,
+    microsoft: false,
+    apple: false,
+  });
   const [selectedCalendars, setSelectedCalendars] = useState<{
     google: boolean;
     microsoft: boolean;
@@ -359,11 +331,7 @@ export default function EventCreateWysiwyg({
   const removeRegistryLink = (key: string) => {
     setRegistryLinks((prev) => prev.filter((entry) => entry.key !== key));
   };
-  const handleRegistryFieldChange = (
-    key: string,
-    field: "label" | "url",
-    value: string
-  ) => {
+  const handleRegistryFieldChange = (key: string, field: "label" | "url", value: string) => {
     const trimmed = field === "label" ? value.slice(0, 60) : value;
     setRegistryLinks((prev) =>
       prev.map((entry) => {
@@ -380,14 +348,8 @@ export default function EventCreateWysiwyg({
             const validation = validateRegistryUrl(trimmed);
             next.error = validation.ok ? null : validation.error || null;
             next.detectedLabel =
-              validation.ok && validation.brand
-                ? validation.brand.defaultLabel
-                : null;
-            if (
-              validation.ok &&
-              validation.brand &&
-              (!entry.label || !entry.label.trim())
-            ) {
+              validation.ok && validation.brand ? validation.brand.defaultLabel : null;
+            if (validation.ok && validation.brand && (!entry.label || !entry.label.trim())) {
               next.label = validation.brand.defaultLabel;
             }
           }
@@ -396,7 +358,7 @@ export default function EventCreateWysiwyg({
           next.label = "";
         }
         return next;
-      })
+      }),
     );
   };
 
@@ -410,9 +372,7 @@ export default function EventCreateWysiwyg({
     if (flyerInputRef.current) flyerInputRef.current.value = "";
     if (attachmentInputRef.current) attachmentInputRef.current.value = "";
   };
-  const handleFlyerChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFlyerChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
       clearFlyer();
@@ -453,9 +413,7 @@ export default function EventCreateWysiwyg({
     setProfilePreviewUrl(null);
     if (profileInputRef.current) profileInputRef.current.value = "";
   };
-  const handleProfileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleProfileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
       clearProfile();
@@ -467,8 +425,7 @@ export default function EventCreateWysiwyg({
     }
     try {
       const dataUrl = await readFileAsDataUrl(file);
-      const previewUrl =
-        (await createThumbnailDataUrl(file, 600, 0.9)) || dataUrl;
+      const previewUrl = (await createThumbnailDataUrl(file, 600, 0.9)) || dataUrl;
       setProfileImage({ name: file.name, type: file.type, dataUrl });
       setProfilePreviewUrl(previewUrl);
     } catch {
@@ -487,10 +444,8 @@ export default function EventCreateWysiwyg({
         backgroundSize: "cover",
         backgroundPosition: "center",
       } as React.CSSProperties;
-    if (headerBgCss)
-      return { backgroundImage: headerBgCss } as React.CSSProperties;
-    if (headerBgColor)
-      return { backgroundColor: headerBgColor } as React.CSSProperties;
+    if (headerBgCss) return { backgroundImage: headerBgCss } as React.CSSProperties;
+    if (headerBgColor) return { backgroundColor: headerBgColor } as React.CSSProperties;
     return {
       backgroundImage: imageColors?.headerLight || eventTheme.headerLight,
     } as React.CSSProperties;
@@ -499,12 +454,7 @@ export default function EventCreateWysiwyg({
   // Repeat helpers
   useEffect(() => {
     try {
-      if (
-        repeat &&
-        repeatFrequency === "weekly" &&
-        repeatDays.length === 0 &&
-        whenDate
-      ) {
+      if (repeat && repeatFrequency === "weekly" && repeatDays.length === 0 && whenDate) {
         const d = new Date(`${whenDate}T00:00:00`);
         const codes = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
         setRepeatDays([codes[d.getDay()]]);
@@ -532,19 +482,15 @@ export default function EventCreateWysiwyg({
           const validation = validateRegistryUrl(trimmedUrl);
           return {
             ...entry,
-            error: validation.ok
-              ? null
-              : validation.error || "Enter a valid https:// link",
+            error: validation.ok ? null : validation.error || "Enter a valid https:// link",
             detectedLabel:
               validation.ok && validation.brand
                 ? validation.brand.defaultLabel
                 : entry.detectedLabel,
           };
-        })
+        }),
       );
-      alert(
-        getRegistrySectionCopyForCategory(categoryLabel || "").invalidLinksAlert
-      );
+      alert(getRegistrySectionCopyForCategory(categoryLabel || "").invalidLinksAlert);
       return;
     }
 
@@ -563,13 +509,8 @@ export default function EventCreateWysiwyg({
         if (fullDay) {
           const start = new Date(`${whenDate}T00:00:00`);
           const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
-          if (start < todayStart)
-            throw new Error("Start date cannot be in the past");
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          if (start < todayStart) throw new Error("Start date cannot be in the past");
           const end = new Date(start);
           end.setDate(end.getDate() + 1);
           startISO = start.toISOString();
@@ -579,13 +520,8 @@ export default function EventCreateWysiwyg({
           const endBase = endDate || whenDate;
           const end = new Date(`${endBase}T${endTime || "10:00"}:00`);
           const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
-          if (start < todayStart)
-            throw new Error("Start date cannot be in the past");
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          if (start < todayStart) throw new Error("Start date cannot be in the past");
           if (end < start) {
             endISO = new Date(start.getTime() + 60 * 60 * 1000).toISOString();
             startISO = start.toISOString();
@@ -597,14 +533,15 @@ export default function EventCreateWysiwyg({
       }
 
       const normalizedCategoryForSubmit = (categoryLabel || "").toLowerCase();
-      const allowsRegistriesForSubmit =
-        getRegistrySectionCopyForCategory(normalizedCategoryForSubmit).allowsLinks;
+      const allowsRegistriesForSubmit = getRegistrySectionCopyForCategory(
+        normalizedCategoryForSubmit,
+      ).allowsLinks;
       const sanitizedRegistries = allowsRegistriesForSubmit
         ? normalizeRegistryLinks(
             registryLinks.map((entry) => ({
               label: entry.label,
               url: entry.url,
-            }))
+            })),
           )
         : [];
 
@@ -622,8 +559,8 @@ export default function EventCreateWysiwyg({
       const recurrenceSourceIso = startISO
         ? startISO
         : whenDate
-        ? new Date(`${whenDate}T00:00:00`).toISOString()
-        : null;
+          ? new Date(`${whenDate}T00:00:00`).toISOString()
+          : null;
       let recurrenceRule: string | null = null;
       if (repeat) {
         if (repeatFrequency === "weekly") {
@@ -635,8 +572,7 @@ export default function EventCreateWysiwyg({
           if (recurrenceSourceIso) {
             const d = new Date(recurrenceSourceIso);
             const day = d.getUTCDate();
-            if (!Number.isNaN(day))
-              recurrenceRule = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${day}`;
+            if (!Number.isNaN(day)) recurrenceRule = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${day}`;
           }
         } else if (repeatFrequency === "yearly") {
           if (recurrenceSourceIso) {
@@ -678,8 +614,7 @@ export default function EventCreateWysiwyg({
           recurrence: recurrenceRule || undefined,
           ...mediaPatch,
           imageColors: imageColors || undefined,
-          registries:
-            sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
+          registries: sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
           signupForm: undefined,
         },
       };
@@ -693,8 +628,7 @@ export default function EventCreateWysiwyg({
       const j = await r.json().catch(() => ({}));
       const id = (j as any)?.id as string | undefined;
 
-      const timezone =
-        Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const normalizedDescription = (rsvp || "").trim()
         ? [description, (rsvp || "").trim()].filter(Boolean).join("\n\n")
         : description;
@@ -725,7 +659,7 @@ export default function EventCreateWysiwyg({
           }).catch((err) => {
             console.error("Failed to add to Google Calendar:", err);
             return { ok: false };
-          })
+          }),
         );
       }
       if (selectedCalendars.microsoft) {
@@ -738,21 +672,18 @@ export default function EventCreateWysiwyg({
           }).catch((err) => {
             console.error("Failed to add to Microsoft Calendar:", err);
             return { ok: false };
-          })
+          }),
         );
       }
       if (selectedCalendars.apple) {
         console.log("Apple Calendar integration not yet implemented");
       }
-      if (calendarPromises.length > 0)
-        await Promise.allSettled(calendarPromises);
+      if (calendarPromises.length > 0) await Promise.allSettled(calendarPromises);
 
       try {
         if (id && typeof window !== "undefined") {
           const serverData =
-            (j as any)?.data && typeof (j as any)?.data === "object"
-              ? (j as any).data
-              : null;
+            (j as any)?.data && typeof (j as any)?.data === "object" ? (j as any).data : null;
           const mergedData = { ...payload.data, ...(serverData || {}) };
           window.dispatchEvent(
             new CustomEvent("history:created", {
@@ -767,7 +698,7 @@ export default function EventCreateWysiwyg({
                 category: (mergedData as any).category || null,
                 data: mergedData,
               },
-            })
+            }),
           );
         }
       } catch {}
@@ -776,8 +707,7 @@ export default function EventCreateWysiwyg({
 
       if (id) {
         const eventTitle =
-          (typeof (j as any)?.title === "string" && (j as any).title) ||
-          payload.title;
+          (typeof (j as any)?.title === "string" && (j as any).title) || payload.title;
         router.push(buildEventPath(id, eventTitle, { created: true }));
       }
     } catch (err: any) {
@@ -819,7 +749,7 @@ export default function EventCreateWysiwyg({
         const key = mapEventCategoryKeyToTemplateKey(c.key);
         return key ? visibleTemplateKeys.includes(key) : true;
       }),
-    [visibleTemplateKeys]
+    [visibleTemplateKeys],
   );
   // Inline category selector (no modal)
   const handleSelectTemplate = (key: string) => {
@@ -837,10 +767,7 @@ export default function EventCreateWysiwyg({
         general: "general",
       };
       const slug = slugMap[key] || key;
-      if (
-        typeof window !== "undefined" &&
-        window.location.pathname === "/event/new"
-      ) {
+      if (typeof window !== "undefined" && window.location.pathname === "/event/new") {
         router.push(`/event/${slug}`);
         return;
       }
@@ -861,9 +788,7 @@ export default function EventCreateWysiwyg({
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#5D4736]">
                   Event templates
                 </p>
-                <h1 className="text-3xl font-semibold text-[#2C1F19]">
-                  Create an Event
-                </h1>
+                <h1 className="text-3xl font-semibold text-[#2C1F19]">Create an Event</h1>
                 <p className="text-sm text-[#63534A]">
                   Pick a template to get the right fields and styling.
                 </p>
@@ -962,9 +887,7 @@ export default function EventCreateWysiwyg({
                           </span>
                           <div className={styles.cardText}>
                             <h3 className={styles.cardTitle}>{c.label}</h3>
-                            {c.hint && (
-                              <span className={styles.hint}>{c.hint}</span>
-                            )}
+                            {c.hint && <span className={styles.hint}>{c.hint}</span>}
                           </div>
                         </div>
                         <button
@@ -1042,9 +965,7 @@ export default function EventCreateWysiwyg({
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Event title"
                   className={`w-full bg-transparent focus:outline-none text-2xl sm:text-3xl font-semibold ${
-                    attachmentPreviewUrl
-                      ? "text-white placeholder-white/70"
-                      : "text-foreground"
+                    attachmentPreviewUrl ? "text-white placeholder-white/70" : "text-foreground"
                   }`}
                 />
                 {/* Header image controls (signup preview style) */}
@@ -1058,9 +979,7 @@ export default function EventCreateWysiwyg({
                         : "bg-background text-foreground hover:bg-surface"
                     }`}
                   >
-                    {attachmentPreviewUrl
-                      ? "Replace header image"
-                      : "Upload header image"}
+                    {attachmentPreviewUrl ? "Replace header image" : "Upload header image"}
                   </button>
                   <button
                     type="button"
@@ -1071,9 +990,7 @@ export default function EventCreateWysiwyg({
                         : "bg-background text-foreground hover:bg-surface"
                     }`}
                   >
-                    {profilePreviewUrl
-                      ? "Replace profile image"
-                      : "Add profile image"}
+                    {profilePreviewUrl ? "Replace profile image" : "Add profile image"}
                   </button>
                   {attachmentPreviewUrl && (
                     <button
@@ -1114,9 +1031,7 @@ export default function EventCreateWysiwyg({
                       setHeaderBgCss(p.bgCss || null);
                     }}
                     className={`relative w-full rounded-lg border ${
-                      headerThemeId === p.id
-                        ? "border-foreground"
-                        : "border-border"
+                      headerThemeId === p.id ? "border-foreground" : "border-border"
                     }`}
                     title={p.name}
                   >
@@ -1128,9 +1043,7 @@ export default function EventCreateWysiwyg({
                       }}
                     />
                     <div className="px-2 py-1 text-left">
-                      <div className="text-[11px] font-semibold truncate">
-                        {p.name}
-                      </div>
+                      <div className="text-[11px] font-semibold truncate">{p.name}</div>
                     </div>
                   </button>
                 ))}
@@ -1148,9 +1061,7 @@ export default function EventCreateWysiwyg({
                 >
                   <div className="h-12 rounded-t-lg bg-surface" />
                   <div className="px-2 py-1 text-left">
-                    <div className="text-[11px] font-semibold truncate">
-                      Default
-                    </div>
+                    <div className="text-[11px] font-semibold truncate">Default</div>
                   </div>
                 </button>
               </div>
@@ -1208,20 +1119,17 @@ export default function EventCreateWysiwyg({
                 connectedCalendars,
                 selectedCalendars,
                 setSelectedCalendars,
-                cardBackgroundImage: (imageColors?.cardLight ||
-                  eventTheme.cardLight) as string | undefined,
+                cardBackgroundImage: (imageColors?.cardLight || eventTheme.cardLight) as
+                  | string
+                  | undefined,
               };
               const cat = (categoryLabel || "Birthdays").toLowerCase();
-              if (cat === "birthdays")
-                return <BirthdaysTemplate editor={editor} />;
-              if (cat === "weddings")
-                return <WeddingsTemplate editor={editor} />;
-              if (cat === "baby showers")
-                return <BabyShowersTemplate editor={editor} />;
+              if (cat === "birthdays") return <BirthdaysTemplate editor={editor} />;
+              if (cat === "weddings") return <WeddingsTemplate editor={editor} />;
+              if (cat === "baby showers") return <BabyShowersTemplate editor={editor} />;
               if (cat === "appointments" || cat === "doctor appointments")
                 return <EventTemplateBase editor={editor} />;
-              if (cat === "sport events")
-                return <EventTemplateBase editor={editor} />;
+              if (cat === "sport events") return <EventTemplateBase editor={editor} />;
               return <EventTemplateBase editor={editor} />;
             })()}
 

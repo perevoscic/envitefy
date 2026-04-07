@@ -2,9 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  RegistryFormEntry,
-} from "@/components/RegistryLinksEditor";
+import { RegistryFormEntry } from "@/components/RegistryLinksEditor";
 import type { NormalizedEvent } from "@/lib/mappers";
 import {
   getRegistrySectionCopyForCategory,
@@ -82,11 +80,7 @@ function toLocalTimeValue(d: Date | null): string {
   }
 }
 
-export default function EventCreateModal({
-  open,
-  onClose,
-  defaultDate,
-}: Props) {
+export default function EventCreateModal({ open, onClose, defaultDate }: Props) {
   const router = useRouter();
   const DOW = [
     { code: "SU", label: "Sun" },
@@ -121,16 +115,10 @@ export default function EventCreateModal({
   const _todayMin = useMemo(() => toLocalDateValue(new Date()), []);
   const [title, setTitle] = useState("");
   // Date/time inputs
-  const [whenDate, setWhenDate] = useState<string>(
-    toLocalDateValue(new Date(initialStart))
-  );
+  const [whenDate, setWhenDate] = useState<string>(toLocalDateValue(new Date(initialStart)));
   const [fullDay, setFullDay] = useState<boolean>(true);
-  const [startTime, setStartTime] = useState<string>(
-    toLocalTimeValue(initialStart)
-  );
-  const [endDate, setEndDate] = useState<string>(
-    toLocalDateValue(new Date(initialEnd))
-  );
+  const [startTime, setStartTime] = useState<string>(toLocalTimeValue(initialStart));
+  const [endDate, setEndDate] = useState<string>(toLocalDateValue(new Date(initialEnd)));
   const [endTime, setEndTime] = useState<string>(toLocalTimeValue(initialEnd));
   const [location, setLocation] = useState("");
   const [venue, setVenue] = useState("");
@@ -147,21 +135,18 @@ export default function EventCreateModal({
     dataUrl: string;
   } | null>(null);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [_attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
-    string | null
-  >(null);
+  const [_attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<string | null>(null);
   const [_attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
   // Smart sign-up configuration moved to its own modal
 
   // Connected calendars state
-  const [_connectedCalendars, setConnectedCalendars] =
-    useState<ConnectedCalendars>({
-      google: false,
-      microsoft: false,
-      apple: false,
-    });
+  const [_connectedCalendars, setConnectedCalendars] = useState<ConnectedCalendars>({
+    google: false,
+    microsoft: false,
+    apple: false,
+  });
   const [selectedCalendars, setSelectedCalendars] = useState<{
     google: boolean;
     microsoft: boolean;
@@ -183,11 +168,7 @@ export default function EventCreateModal({
     setRegistryLinks((prev) => prev.filter((entry) => entry.key !== key));
   };
 
-  const _handleRegistryFieldChange = (
-    key: string,
-    field: "label" | "url",
-    value: string
-  ) => {
+  const _handleRegistryFieldChange = (key: string, field: "label" | "url", value: string) => {
     const trimmed = field === "label" ? value.slice(0, 60) : value;
     setRegistryLinks((prev) =>
       prev.map((entry) => {
@@ -204,14 +185,8 @@ export default function EventCreateModal({
             const validation = validateRegistryUrl(trimmed);
             next.error = validation.ok ? null : validation.error || null;
             next.detectedLabel =
-              validation.ok && validation.brand
-                ? validation.brand.defaultLabel
-                : null;
-            if (
-              validation.ok &&
-              validation.brand &&
-              (!entry.label || !entry.label.trim())
-            ) {
+              validation.ok && validation.brand ? validation.brand.defaultLabel : null;
+            if (validation.ok && validation.brand && (!entry.label || !entry.label.trim())) {
               next.label = validation.brand.defaultLabel;
             }
           }
@@ -220,12 +195,10 @@ export default function EventCreateModal({
           next.label = "";
         }
         return next;
-      })
+      }),
     );
   };
-  const _handleFlyerChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const _handleFlyerChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
       setAttachment(null);
@@ -276,9 +249,7 @@ export default function EventCreateModal({
     if (flyerInputRef.current) flyerInputRef.current.value = "";
   };
   const [repeat, setRepeat] = useState<boolean>(false);
-  const [repeatFrequency, setRepeatFrequency] = useState<
-    "weekly" | "monthly" | "yearly"
-  >("weekly");
+  const [repeatFrequency, setRepeatFrequency] = useState<"weekly" | "monthly" | "yearly">("weekly");
   const [repeatDays, setRepeatDays] = useState<string[]>([]);
 
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
@@ -342,24 +313,14 @@ export default function EventCreateModal({
     if (flyerInputRef.current) flyerInputRef.current.value = "";
   }, [open, initialStart, initialEnd]);
   useEffect(() => {
-    if (
-      category === "Birthdays" ||
-      category === "Weddings" ||
-      category === "Baby Showers"
-    )
-      return;
+    if (category === "Birthdays" || category === "Weddings" || category === "Baby Showers") return;
     if (rsvp) setRsvp("");
   }, [category]);
 
   // When enabling repeat with no selected days, preselect the chosen date's weekday
   useEffect(() => {
     try {
-      if (
-        repeat &&
-        repeatFrequency === "weekly" &&
-        repeatDays.length === 0 &&
-        whenDate
-      ) {
+      if (repeat && repeatFrequency === "weekly" && repeatDays.length === 0 && whenDate) {
         const d = new Date(`${whenDate}T00:00:00`);
         const code = DOW[d.getDay()].code;
         setRepeatDays([code]);
@@ -397,29 +358,28 @@ export default function EventCreateModal({
           const validation = validateRegistryUrl(trimmedUrl);
           return {
             ...entry,
-            error: validation.ok
-              ? null
-              : validation.error || "Enter a valid https:// link",
+            error: validation.ok ? null : validation.error || "Enter a valid https:// link",
             detectedLabel:
               validation.ok && validation.brand
                 ? validation.brand.defaultLabel
                 : entry.detectedLabel,
           };
-        })
+        }),
       );
       alert(getRegistrySectionCopyForCategory(category || "").invalidLinksAlert);
       return;
     }
 
     const normalizedCategoryForSubmit = (category || "").toLowerCase();
-    const allowsRegistriesForSubmit =
-      getRegistrySectionCopyForCategory(normalizedCategoryForSubmit).allowsLinks;
+    const allowsRegistriesForSubmit = getRegistrySectionCopyForCategory(
+      normalizedCategoryForSubmit,
+    ).allowsLinks;
     const sanitizedRegistries = allowsRegistriesForSubmit
       ? normalizeRegistryLinks(
           registryLinks.map((entry) => ({
             label: entry.label,
             url: entry.url,
-          }))
+          })),
         )
       : [];
     const activeSignupForm = null;
@@ -432,11 +392,7 @@ export default function EventCreateModal({
         if (fullDay) {
           const start = new Date(`${whenDate}T00:00:00`);
           const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           if (start < todayStart) {
             throw new Error("Start date cannot be in the past");
           }
@@ -450,11 +406,7 @@ export default function EventCreateModal({
           const end = new Date(`${endBase}T${endTime || "10:00"}:00`);
           // Enforce non-past start and end >= start
           const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           if (start < todayStart) {
             throw new Error("Start date cannot be in the past");
           }
@@ -485,15 +437,14 @@ export default function EventCreateModal({
       const recurrenceSourceIso = startISO
         ? startISO
         : whenDate
-        ? new Date(`${whenDate}T00:00:00`).toISOString()
-        : null;
+          ? new Date(`${whenDate}T00:00:00`).toISOString()
+          : null;
 
       let recurrenceRule: string | null = null;
       if (repeat) {
         if (repeatFrequency === "weekly") {
           const days = deriveWeeklyDays();
-          if (days.length)
-            recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${days.join(",")}`;
+          if (days.length) recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${days.join(",")}`;
           else recurrenceRule = "RRULE:FREQ=WEEKLY";
         } else if (repeatFrequency === "monthly") {
           if (recurrenceSourceIso) {
@@ -544,8 +495,7 @@ export default function EventCreateModal({
           recurrence: recurrenceRule || undefined,
           ...mediaPatch,
           imageColors: imageColors || undefined,
-          registries:
-            sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
+          registries: sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
           signupForm: undefined,
         },
       };
@@ -559,8 +509,7 @@ export default function EventCreateModal({
       const id = (j as any)?.id as string | undefined;
 
       // Add to selected calendars
-      const timezone =
-        Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const normalizedDescription = trimmedRsvp
         ? [description, trimmedRsvp].filter(Boolean).join("\n\n")
         : description;
@@ -592,7 +541,7 @@ export default function EventCreateModal({
           }).catch((err) => {
             console.error("Failed to add to Google Calendar:", err);
             return { ok: false };
-          })
+          }),
         );
       }
 
@@ -606,7 +555,7 @@ export default function EventCreateModal({
           }).catch((err) => {
             console.error("Failed to add to Microsoft Calendar:", err);
             return { ok: false };
-          })
+          }),
         );
       }
 
@@ -624,9 +573,7 @@ export default function EventCreateModal({
       try {
         if (id && typeof window !== "undefined") {
           const serverData =
-            (j as any)?.data && typeof (j as any)?.data === "object"
-              ? (j as any).data
-              : null;
+            (j as any)?.data && typeof (j as any)?.data === "object" ? (j as any).data : null;
           const mergedData = {
             ...payload.data,
             ...(serverData || {}),
@@ -637,21 +584,17 @@ export default function EventCreateModal({
                 id,
                 title: (j as any)?.title || payload.title,
                 created_at: (j as any)?.created_at || new Date().toISOString(),
-                start:
-                  (serverData?.start) ||
-                  (serverData?.startISO) ||
-                  startISO,
+                start: serverData?.start || serverData?.startISO || startISO,
                 category: mergedData.category || null,
                 data: mergedData,
               },
-            })
+            }),
           );
         }
       } catch {}
       if (id) {
         const eventTitle =
-          (typeof (j as any)?.title === "string" && (j as any).title) ||
-          payload.title;
+          (typeof (j as any)?.title === "string" && (j as any).title) || payload.title;
         router.push(buildEventPath(id, eventTitle, { created: true }));
       }
       onClose();
@@ -665,8 +608,7 @@ export default function EventCreateModal({
 
   const trimmedRsvp = rsvp.trim();
   const normalizedCategory = (category || "").toLowerCase();
-  const _allowsRegistrySection =
-    getRegistrySectionCopyForCategory(normalizedCategory).allowsLinks;
+  const _allowsRegistrySection = getRegistrySectionCopyForCategory(normalizedCategory).allowsLinks;
   // RSVP field should ALWAYS show - users may want to add RSVP for any event type
   const _showRsvpField = true;
 

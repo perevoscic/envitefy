@@ -38,7 +38,7 @@ export default function RegistryLinksEditor({
           onClick={onAdd}
           disabled={entries.length >= maxLinks}
           className="inline-flex items-center justify-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:text-foreground hover:bg-surface hover:border-foreground/20 disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ color: 'var(--foreground)' }}
+          style={{ color: "var(--foreground)" }}
         >
           Add link
         </button>
@@ -48,12 +48,15 @@ export default function RegistryLinksEditor({
       ) : (
         <div className="mt-3 space-y-3">
           {entries.map((entry) => (
-            <div key={entry.key} className="relative rounded-md border border-border bg-background/80 p-3">
+            <div
+              key={entry.key}
+              className="relative rounded-md border border-border bg-background/80 p-3"
+            >
               <button
                 type="button"
                 onClick={() => onRemove(entry.key)}
                 className="absolute right-2 top-2 text-xs font-medium text-foreground transition-colors hover:text-foreground/80"
-                style={{ color: 'var(--foreground)' }}
+                style={{ color: "var(--foreground)" }}
               >
                 Remove
               </button>

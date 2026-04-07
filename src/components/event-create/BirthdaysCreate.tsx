@@ -67,7 +67,7 @@ function toLocalTimeValue(d: Date | null): string {
 function formatWhenSummary(
   startIso: string | null,
   endIso: string | null,
-  allDay: boolean
+  allDay: boolean,
 ): { time: string | null; date: string | null } {
   if (!startIso) return { time: null, date: null };
   try {
@@ -141,16 +141,10 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
   }, [initialStart]);
 
   const [title, setTitle] = useState("");
-  const [whenDate, setWhenDate] = useState<string>(
-    toLocalDateValue(new Date(initialStart))
-  );
+  const [whenDate, setWhenDate] = useState<string>(toLocalDateValue(new Date(initialStart)));
   const [fullDay, setFullDay] = useState<boolean>(true);
-  const [startTime, setStartTime] = useState<string>(
-    toLocalTimeValue(initialStart)
-  );
-  const [endDate, setEndDate] = useState<string>(
-    toLocalDateValue(new Date(initialEnd))
-  );
+  const [startTime, setStartTime] = useState<string>(toLocalTimeValue(initialStart));
+  const [endDate, setEndDate] = useState<string>(toLocalDateValue(new Date(initialEnd)));
   const [endTime, setEndTime] = useState<string>(toLocalTimeValue(initialEnd));
   const [venue, setVenue] = useState("");
   const [location, setLocation] = useState("");
@@ -165,9 +159,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
     dataUrl: string;
   } | null>(null);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<
-    string | null
-  >(null);
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<string | null>(null);
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [imageColors, setImageColors] = useState<ImageColors | null>(null);
@@ -180,15 +172,11 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
     type: string;
     dataUrl: string;
   } | null>(null);
-  const [profilePreviewUrl, setProfilePreviewUrl] = useState<string | null>(
-    null
-  );
+  const [profilePreviewUrl, setProfilePreviewUrl] = useState<string | null>(null);
   const profileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [repeat, setRepeat] = useState<boolean>(false);
-  const [repeatFrequency, setRepeatFrequency] = useState<
-    "weekly" | "monthly" | "yearly"
-  >("weekly");
+  const [repeatFrequency, setRepeatFrequency] = useState<"weekly" | "monthly" | "yearly">("weekly");
   const [repeatDays, setRepeatDays] = useState<string[]>([]);
 
   const [connectedCalendars, setConnectedCalendars] = useState({
@@ -234,13 +222,9 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         } catch {}
         setVenue(typeof data.venue === "string" ? data.venue : "");
         setLocation(typeof data.location === "string" ? data.location : "");
-        setDescription(
-          typeof data.description === "string" ? data.description : ""
-        );
+        setDescription(typeof data.description === "string" ? data.description : "");
         setRsvp(typeof data.rsvp === "string" ? data.rsvp : "");
-        setNumberOfGuests(
-          typeof data.numberOfGuests === "number" ? data.numberOfGuests : 0
-        );
+        setNumberOfGuests(typeof data.numberOfGuests === "number" ? data.numberOfGuests : 0);
         // Header customizations
         setHeaderThemeId((data as any).headerThemeId || null);
         setHeaderBgColor((data as any).headerBgColor || null);
@@ -255,11 +239,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
           if (typeof ts.size === "number") setTitleSize(ts.size);
         }
         const profile = (data as any).profileImage;
-        if (
-          profile &&
-          typeof profile === "object" &&
-          typeof profile.dataUrl === "string"
-        ) {
+        if (profile && typeof profile === "object" && typeof profile.dataUrl === "string") {
           setProfileImage({
             name: profile.name || "profile",
             type: profile.type || "image/png",
@@ -268,11 +248,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
           setProfilePreviewUrl(profile.dataUrl);
         }
         const attach = (data as any).attachment;
-        if (
-          attach &&
-          typeof attach === "object" &&
-          typeof attach.dataUrl === "string"
-        ) {
+        if (attach && typeof attach === "object" && typeof attach.dataUrl === "string") {
           setAttachment({
             name: attach.name || "file",
             type: attach.type || "application/octet-stream",
@@ -282,7 +258,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
             getAttachmentPreviewForEditor({
               attachment: attach,
               thumbnail: typeof data.thumbnail === "string" ? data.thumbnail : null,
-            })
+            }),
           );
         }
         const colors = (data as any).imageColors;
@@ -295,7 +271,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
               url: typeof link?.url === "string" ? link.url : "",
               error: null,
               detectedLabel: null,
-            }))
+            })),
           );
         }
       } catch {}
@@ -338,17 +314,11 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
   // Registry helpers
   const addRegistryLink = () =>
     setRegistryLinks((prev) =>
-      prev.length >= MAX_REGISTRY_LINKS
-        ? prev
-        : [...prev, createRegistryEntry()]
+      prev.length >= MAX_REGISTRY_LINKS ? prev : [...prev, createRegistryEntry()],
     );
   const removeRegistryLink = (key: string) =>
     setRegistryLinks((prev) => prev.filter((e: any) => e.key !== key));
-  const handleRegistryFieldChange = (
-    key: string,
-    field: "label" | "url",
-    value: string
-  ) => {
+  const handleRegistryFieldChange = (key: string, field: "label" | "url", value: string) => {
     const trimmed = field === "label" ? value.slice(0, 60) : value;
     setRegistryLinks((prev: any[]) =>
       prev.map((entry: any) => {
@@ -362,21 +332,14 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
             const validation = validateRegistryUrl(trimmed);
             next.error = validation.ok ? null : validation.error || null;
             next.detectedLabel =
-              validation.ok && validation.brand
-                ? validation.brand.defaultLabel
-                : null;
-            if (
-              validation.ok &&
-              validation.brand &&
-              (!entry.label || !entry.label.trim())
-            )
+              validation.ok && validation.brand ? validation.brand.defaultLabel : null;
+            if (validation.ok && validation.brand && (!entry.label || !entry.label.trim()))
               next.label = validation.brand.defaultLabel;
           }
         }
-        if (field === "label" && !trimmed.trim() && entry.detectedLabel)
-          next.label = "";
+        if (field === "label" && !trimmed.trim() && entry.detectedLabel) next.label = "";
         return next;
-      })
+      }),
     );
   };
 
@@ -388,9 +351,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
     setAttachmentError(null);
     if (flyerInputRef.current) flyerInputRef.current.value = "";
   };
-  const handleFlyerChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFlyerChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
       clearHeader();
@@ -427,9 +388,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
   };
 
   // Attachment-only (flyer/invite) upload – does not affect header background/colors
-  const handleAttachmentOnlyChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleAttachmentOnlyChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
       setAttachment(null);
@@ -460,9 +419,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
     setProfilePreviewUrl(null);
     if (profileInputRef.current) profileInputRef.current.value = "";
   };
-  const handleProfileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleProfileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
     if (!file) {
       clearProfile();
@@ -478,8 +435,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
     }
     try {
       const dataUrl = await readFileAsDataUrl(file);
-      const previewUrl =
-        (await createThumbnailDataUrl(file, 600, 0.9)) || dataUrl;
+      const previewUrl = (await createThumbnailDataUrl(file, 600, 0.9)) || dataUrl;
       setProfileImage({ name: file.name, type: file.type, dataUrl });
       setProfilePreviewUrl(previewUrl);
     } catch {
@@ -507,15 +463,9 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
     | "playfair"
     | "dancing"
   >("auto");
-  const [titleWeight, setTitleWeight] = useState<
-    "normal" | "semibold" | "bold"
-  >("semibold");
-  const [titleHAlign, setTitleHAlign] = useState<"left" | "center" | "right">(
-    "center"
-  );
-  const [titleVAlign, setTitleVAlign] = useState<"top" | "middle" | "bottom">(
-    "middle"
-  );
+  const [titleWeight, setTitleWeight] = useState<"normal" | "semibold" | "bold">("semibold");
+  const [titleHAlign, setTitleHAlign] = useState<"left" | "center" | "right">("center");
+  const [titleVAlign, setTitleVAlign] = useState<"top" | "middle" | "bottom">("middle");
   const [titleSize, setTitleSize] = useState<number>(28);
 
   const BG_PRESETS = [
@@ -584,8 +534,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
       id: "rainbow-sherbet",
       name: "Rainbow Sherbet",
       bgColor: "#FED7AA",
-      bgCss:
-        "linear-gradient(135deg, #FDBA74 0%, #FB7185 40%, #F472B6 70%, #FDE68A 100%)",
+      bgCss: "linear-gradient(135deg, #FDBA74 0%, #FB7185 40%, #F472B6 70%, #FDE68A 100%)",
     },
     {
       id: "confetti-citrus",
@@ -622,10 +571,8 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         backgroundPosition: "center",
       } as React.CSSProperties;
     // Otherwise use selected gradient/color or category default
-    if (headerBgCss)
-      return { backgroundImage: headerBgCss } as React.CSSProperties;
-    if (headerBgColor)
-      return { backgroundColor: headerBgColor } as React.CSSProperties;
+    if (headerBgCss) return { backgroundImage: headerBgCss } as React.CSSProperties;
+    if (headerBgColor) return { backgroundColor: headerBgColor } as React.CSSProperties;
     return { backgroundImage: eventTheme.headerLight } as React.CSSProperties;
   })();
 
@@ -682,9 +629,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
       const root = document.documentElement;
       if (!root) return;
       if (prevHeroRef.current === null) {
-        prevHeroRef.current = root.style.getPropertyValue(
-          "--theme-hero-gradient"
-        );
+        prevHeroRef.current = root.style.getPropertyValue("--theme-hero-gradient");
       }
       // Reflect the chosen header background across the page:
       // 1) explicit gradient preset (headerBgCss) or solid color
@@ -694,8 +639,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         (headerBgCss as string | null) ||
         (headerBgColor
           ? `linear-gradient(0deg, ${headerBgColor}, ${headerBgColor})`
-          : (imageColors?.headerLight as string | null) ||
-            (eventTheme.headerLight as string));
+          : (imageColors?.headerLight as string | null) || (eventTheme.headerLight as string));
       root.style.setProperty("--theme-hero-gradient", chosen);
       return () => {
         if (prevHeroRef.current !== null) {
@@ -708,12 +652,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
   // Repeat helpers
   useEffect(() => {
     try {
-      if (
-        repeat &&
-        repeatFrequency === "weekly" &&
-        repeatDays.length === 0 &&
-        whenDate
-      ) {
+      if (repeat && repeatFrequency === "weekly" && repeatDays.length === 0 && whenDate) {
         const d = new Date(`${whenDate}T00:00:00`);
         const codes = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
         setRepeatDays([codes[d.getDay()]]);
@@ -741,15 +680,13 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
           const validation = validateRegistryUrl(trimmedUrl);
           return {
             ...entry,
-            error: validation.ok
-              ? null
-              : validation.error || "Enter a valid https:// link",
+            error: validation.ok ? null : validation.error || "Enter a valid https:// link",
             detectedLabel:
               validation.ok && validation.brand
                 ? validation.brand.defaultLabel
                 : entry.detectedLabel,
           };
-        })
+        }),
       );
       alert(registryCopy.invalidLinksAlert);
       return;
@@ -763,13 +700,8 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         if (fullDay) {
           const start = new Date(`${whenDate}T00:00:00`);
           const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
-          if (start < todayStart)
-            throw new Error("Start date cannot be in the past");
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          if (start < todayStart) throw new Error("Start date cannot be in the past");
           const end = new Date(start);
           end.setDate(end.getDate() + 1);
           startISO = start.toISOString();
@@ -779,13 +711,8 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
           const endBase = endDate || whenDate;
           const end = new Date(`${endBase}T${endTime || "10:00"}:00`);
           const now = new Date();
-          const todayStart = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-          );
-          if (start < todayStart)
-            throw new Error("Start date cannot be in the past");
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          if (start < todayStart) throw new Error("Start date cannot be in the past");
           if (end < start) {
             endISO = new Date(start.getTime() + 60 * 60 * 1000).toISOString();
             startISO = start.toISOString();
@@ -800,7 +727,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         registryLinks.map((entry: any) => ({
           label: entry.label,
           url: entry.url,
-        }))
+        })),
       );
 
       const deriveWeeklyDays = (): string[] => {
@@ -817,8 +744,8 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
       const recurrenceSourceIso = startISO
         ? startISO
         : whenDate
-        ? new Date(`${whenDate}T00:00:00`).toISOString()
-        : null;
+          ? new Date(`${whenDate}T00:00:00`).toISOString()
+          : null;
       let recurrenceRule: string | null = null;
       if (repeat) {
         if (repeatFrequency === "weekly") {
@@ -830,8 +757,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
           if (recurrenceSourceIso) {
             const d = new Date(recurrenceSourceIso);
             const day = d.getUTCDate();
-            if (!Number.isNaN(day))
-              recurrenceRule = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${day}`;
+            if (!Number.isNaN(day)) recurrenceRule = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${day}`;
           }
         } else if (repeatFrequency === "yearly") {
           if (recurrenceSourceIso) {
@@ -916,13 +842,12 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
             : undefined,
           ...mediaPatch,
           imageColors: imageColors || undefined,
-          registries:
-            sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
+          registries: sanitizedRegistries.length > 0 ? sanitizedRegistries : undefined,
           signupForm: undefined,
         },
       };
 
-      let id: string | undefined ;
+      let id: string | undefined;
       let j: any = null;
       if (editEventId) {
         // Update existing event: merge data and title
@@ -948,7 +873,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
           window.dispatchEvent(
             new CustomEvent("history:updated", {
               detail: { id },
-            })
+            }),
           );
         }
       } else {
@@ -962,8 +887,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
         id = (j as any)?.id as string | undefined;
       }
 
-      const timezone =
-        Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const normalizedDescription = (rsvp || "").trim()
         ? [description, (rsvp || "").trim()].filter(Boolean).join("\n\n")
         : description;
@@ -991,7 +915,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify(normalizedEvent),
-          }).catch(() => ({ ok: false }))
+          }).catch(() => ({ ok: false })),
         );
       }
       if (selectedCalendars.microsoft) {
@@ -1001,18 +925,15 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify(normalizedEvent),
-          }).catch(() => ({ ok: false }))
+          }).catch(() => ({ ok: false })),
         );
       }
-      if (calendarPromises.length > 0)
-        await Promise.allSettled(calendarPromises);
+      if (calendarPromises.length > 0) await Promise.allSettled(calendarPromises);
 
       try {
         if (id && typeof window !== "undefined") {
           const serverData =
-            (j as any)?.data && typeof (j as any)?.data === "object"
-              ? (j as any).data
-              : null;
+            (j as any)?.data && typeof (j as any)?.data === "object" ? (j as any).data : null;
           const mergedData = { ...payload.data, ...(serverData || {}) };
           window.dispatchEvent(
             new CustomEvent("history:created", {
@@ -1027,7 +948,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                 category: (mergedData as any).category || null,
                 data: mergedData,
               },
-            })
+            }),
           );
         }
       } catch {}
@@ -1077,12 +998,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
             style={headerBackground as React.CSSProperties}
             onClick={(e) => {
               const target = e.target as HTMLElement;
-              if (
-                target.closest(
-                  "button, input, textarea, select, a, [data-stop-upload]"
-                )
-              )
-                return;
+              if (target.closest("button, input, textarea, select, a, [data-stop-upload]")) return;
               flyerInputRef.current?.click();
             }}
           >
@@ -1120,8 +1036,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                       e.stopPropagation();
                       clearHeader();
                       try {
-                        if (flyerInputRef.current)
-                          flyerInputRef.current.value = "";
+                        if (flyerInputRef.current) flyerInputRef.current.value = "";
                       } catch {}
                     }}
                     className="p-2 bg-white/90 rounded-full shadow hover:bg-red-100"
@@ -1190,11 +1105,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                 }}
                 role="button"
                 tabIndex={0}
-                aria-label={
-                  profilePreviewUrl
-                    ? "Replace profile image"
-                    : "Add profile image"
-                }
+                aria-label={profilePreviewUrl ? "Replace profile image" : "Add profile image"}
               >
                 {profilePreviewUrl ? (
                   <img
@@ -1254,8 +1165,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                           setProfileImage(null);
                           setProfilePreviewUrl(null);
                           try {
-                            if (profileInputRef.current)
-                              profileInputRef.current.value = "";
+                            if (profileInputRef.current) profileInputRef.current.value = "";
                           } catch {}
                         }}
                         className="p-1.5 bg-white rounded-full shadow hover:bg-red-100"
@@ -1286,14 +1196,14 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                 titleVAlign === "top"
                   ? "items-start"
                   : titleVAlign === "middle"
-                  ? "items-center"
-                  : "items-end"
+                    ? "items-center"
+                    : "items-end"
               } ${
                 titleHAlign === "left"
                   ? "justify-start"
                   : titleHAlign === "center"
-                  ? "justify-center"
-                  : "justify-end"
+                    ? "justify-center"
+                    : "justify-end"
               }`}
             >
               <input
@@ -1305,20 +1215,20 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                   titleWeight === "bold"
                     ? "font-bold"
                     : titleWeight === "semibold"
-                    ? "font-semibold"
-                    : "font-normal"
+                      ? "font-semibold"
+                      : "font-normal"
                 } ${
                   titleHAlign === "center"
                     ? "text-center"
                     : titleHAlign === "right"
-                    ? "text-right"
-                    : "text-left"
+                      ? "text-right"
+                      : "text-left"
                 } ${
                   titleColor
                     ? ""
                     : attachmentPreviewUrl
-                    ? "text-white placeholder-white/70"
-                    : "text-foreground"
+                      ? "text-white placeholder-white/70"
+                      : "text-foreground"
                 }`}
                 data-stop-upload
                 style={{
@@ -1327,27 +1237,26 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                     titleFont === "pacifico"
                       ? "var(--font-pacifico)"
                       : titleFont === "montserrat"
-                      ? "var(--font-montserrat)"
-                      : titleFont === "geist"
-                      ? "var(--font-geist-sans)"
-                      : titleFont === "mono"
-                      ? "var(--font-geist-mono)"
-                      : titleFont === "poppins"
-                      ? "var(--font-poppins)"
-                      : titleFont === "raleway"
-                      ? "var(--font-raleway)"
-                      : titleFont === "playfair"
-                      ? "var(--font-playfair)"
-                      : titleFont === "dancing"
-                      ? "var(--font-dancing)"
-                      : titleFont === "serif"
-                      ? 'Georgia, Cambria, "Times New Roman", Times, serif'
-                      : titleFont === "system"
-                      ? 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"'
-                      : undefined,
+                        ? "var(--font-montserrat)"
+                        : titleFont === "geist"
+                          ? "var(--font-geist-sans)"
+                          : titleFont === "mono"
+                            ? "var(--font-geist-mono)"
+                            : titleFont === "poppins"
+                              ? "var(--font-poppins)"
+                              : titleFont === "raleway"
+                                ? "var(--font-raleway)"
+                                : titleFont === "playfair"
+                                  ? "var(--font-playfair)"
+                                  : titleFont === "dancing"
+                                    ? "var(--font-dancing)"
+                                    : titleFont === "serif"
+                                      ? 'Georgia, Cambria, "Times New Roman", Times, serif'
+                                      : titleFont === "system"
+                                        ? 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"'
+                                        : undefined,
                   fontSize: titleSize ? `${titleSize}px` : undefined,
-                  transform:
-                    titleVAlign === "middle" ? "translateY(-24px)" : undefined,
+                  transform: titleVAlign === "middle" ? "translateY(-24px)" : undefined,
                 }}
               />
             </div>
@@ -1413,9 +1322,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                   <span className="text-sm text-[#7A6A5A]">Size</span>
                   <select
                     value={String(titleSize)}
-                    onChange={(e) =>
-                      setTitleSize(parseInt(e.target.value || "28", 10))
-                    }
+                    onChange={(e) => setTitleSize(parseInt(e.target.value || "28", 10))}
                     className="rounded-lg border border-[#E4CDB9] bg-[#FFF9F6] px-3 py-2 text-sm focus:outline-none"
                   >
                     <option value="20">20 px</option>
@@ -1477,9 +1384,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                     setHeaderBgCss(p.bgCss || null);
                   }}
                   className={`relative w-full rounded-lg border ${
-                    headerThemeId === p.id
-                      ? "border-foreground"
-                      : "border-border"
+                    headerThemeId === p.id ? "border-foreground" : "border-border"
                   }`}
                   title={p.name}
                 >
@@ -1491,9 +1396,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
                     }}
                   />
                   <div className="px-2 py-1 text-left">
-                    <div className="text-[11px] font-semibold truncate">
-                      {p.name}
-                    </div>
+                    <div className="text-[11px] font-semibold truncate">{p.name}</div>
                   </div>
                 </button>
               ))}
@@ -1511,9 +1414,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
               >
                 <div className="h-12 rounded-t-lg bg-surface" />
                 <div className="px-2 py-1 text-left">
-                  <div className="text-[11px] font-semibold truncate">
-                    Default
-                  </div>
+                  <div className="text-[11px] font-semibold truncate">Default</div>
                 </div>
               </button>
             </div>
@@ -1569,8 +1470,9 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
               connectedCalendars,
               selectedCalendars,
               setSelectedCalendars,
-              cardBackgroundImage: (imageColors?.cardLight ||
-                eventTheme.cardLight) as string | undefined,
+              cardBackgroundImage: (imageColors?.cardLight || eventTheme.cardLight) as
+                | string
+                | undefined,
             };
             return <BirthdaysTemplate editor={editor} />;
           })()}
@@ -1588,11 +1490,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
               disabled={submitting}
               className="px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting
-                ? "Saving…"
-                : editEventId
-                ? "Save changes"
-                : "Create event"}
+              {submitting ? "Saving…" : editEventId ? "Save changes" : "Create event"}
             </button>
           </div>
         </form>

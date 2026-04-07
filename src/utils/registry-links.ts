@@ -14,12 +14,7 @@ export type RegistrySectionCopy = {
   publicNote: string;
 };
 
-type RegistryBrandId =
-  | "amazon"
-  | "target"
-  | "walmart"
-  | "babylist"
-  | "myregistry";
+type RegistryBrandId = "amazon" | "target" | "walmart" | "babylist" | "myregistry";
 
 type RegistryBrandMetadata = {
   id: RegistryBrandId;
@@ -74,13 +69,20 @@ const HTTPS_PROTOCOL = "https:";
 export const MAX_REGISTRY_LINKS = 3;
 
 const normalizeCategoryKey = (category: string): string =>
-  category
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  category.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
 const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
+  birthday: {
+    allowsLinks: true,
+    sectionLabel: "Gift List",
+    sectionHeading: "Gift List",
+    linksLabel: "Gift list links",
+    itemFallbackLabel: "Gift list link",
+    invalidLinksAlert: "Fix the highlighted gift list links before saving.",
+    emptyState: `No gift list links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
+  },
   birthdays: {
     allowsLinks: true,
     sectionLabel: "Gift List",
@@ -91,6 +93,17 @@ const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
     emptyState: `No gift list links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
     publicNote:
       "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
+  },
+  wedding: {
+    allowsLinks: true,
+    sectionLabel: "Registry",
+    sectionHeading: "Registries",
+    linksLabel: "Registry links",
+    itemFallbackLabel: "Registry link",
+    invalidLinksAlert: "Fix the highlighted registry links before saving.",
+    emptyState: `No registry links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
   },
   weddings: {
     allowsLinks: true,
@@ -103,7 +116,40 @@ const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
     publicNote:
       "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
   },
+  "baby shower": {
+    allowsLinks: true,
+    sectionLabel: "Registry",
+    sectionHeading: "Registries",
+    linksLabel: "Registry links",
+    itemFallbackLabel: "Registry link",
+    invalidLinksAlert: "Fix the highlighted registry links before saving.",
+    emptyState: `No registry links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
+  },
   "baby showers": {
+    allowsLinks: true,
+    sectionLabel: "Registry",
+    sectionHeading: "Registries",
+    linksLabel: "Registry links",
+    itemFallbackLabel: "Registry link",
+    invalidLinksAlert: "Fix the highlighted registry links before saving.",
+    emptyState: `No registry links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
+  },
+  "bridal shower": {
+    allowsLinks: true,
+    sectionLabel: "Registry",
+    sectionHeading: "Registries",
+    linksLabel: "Registry links",
+    itemFallbackLabel: "Registry link",
+    invalidLinksAlert: "Fix the highlighted registry links before saving.",
+    emptyState: `No registry links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
+  },
+  "bridal showers": {
     allowsLinks: true,
     sectionLabel: "Registry",
     sectionHeading: "Registries",
@@ -130,10 +176,7 @@ const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
 const registryHostMatches = (host: string, suffix: string): boolean => {
   const normalizedHost = host.toLowerCase();
   const normalizedSuffix = suffix.toLowerCase();
-  return (
-    normalizedHost === normalizedSuffix ||
-    normalizedHost.endsWith(`.${normalizedSuffix}`)
-  );
+  return normalizedHost === normalizedSuffix || normalizedHost.endsWith(`.${normalizedSuffix}`);
 };
 
 const normalizeUrl = (rawUrl: string): URL | null => {
@@ -186,7 +229,7 @@ export function validateRegistryUrl(rawUrl: string): RegistryValidationResult {
   }
   const host = parsed.hostname.toLowerCase();
   const brand = REGISTRY_BRANDS.find((entry) =>
-    entry.hostSuffixes.some((suffix) => registryHostMatches(host, suffix))
+    entry.hostSuffixes.some((suffix) => registryHostMatches(host, suffix)),
   );
   if (!brand) {
     return {
@@ -207,7 +250,7 @@ export function validateRegistryUrl(rawUrl: string): RegistryValidationResult {
 
 export function normalizeRegistryLinks(
   rawEntries: ReadonlyArray<Partial<EventRegistryLink>>,
-  max: number = MAX_REGISTRY_LINKS
+  max: number = MAX_REGISTRY_LINKS,
 ): EventRegistryLink[] {
   if (!Array.isArray(rawEntries) || rawEntries.length === 0) return [];
   const dedupe = new Set<string>();
@@ -219,8 +262,7 @@ export function normalizeRegistryLinks(
     const normalizedUrl = validation.normalizedUrl;
     if (dedupe.has(normalizedUrl)) continue;
     const rawLabel = (entry.label || "").trim();
-    const fallbackLabel = validation.brand?.defaultLabel ||
-      new URL(normalizedUrl).hostname;
+    const fallbackLabel = validation.brand?.defaultLabel || new URL(normalizedUrl).hostname;
     const label = (rawLabel || fallbackLabel).slice(0, MAX_LABEL_LENGTH);
     results.push({ label, url: normalizedUrl });
     dedupe.add(normalizedUrl);
@@ -235,11 +277,10 @@ export function getRegistryBrandByUrl(url: string): RegistryBrandMetadata | null
     const host = parsed.hostname.toLowerCase();
     return (
       REGISTRY_BRANDS.find((entry) =>
-        entry.hostSuffixes.some((suffix) => registryHostMatches(host, suffix))
+        entry.hostSuffixes.some((suffix) => registryHostMatches(host, suffix)),
       ) || null
     );
   } catch {
     return null;
   }
 }
-

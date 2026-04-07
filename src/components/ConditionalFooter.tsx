@@ -51,10 +51,15 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
     return null;
   }
 
+  const isStudioPath =
+    pathname === "/studio" || (pathname?.startsWith("/studio/") ?? false);
+  if (isStudioPath) {
+    return null;
+  }
+
   const isMarketingRoot = pathname === "/" && hasNoSession;
   const isMarketingRoute =
     isMarketingRoot ||
-    pathname === "/studio" ||
     pathname === "/landing" ||
     pathname === "/snap" ||
     pathname === "/gymnastics";

@@ -5,20 +5,17 @@ import { Calendar, Clock, MapPin, Navigation, Share2 } from "lucide-react";
 import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
 import EventMap from "../EventMap";
 import AppleCalendarLink from "../AppleCalendarLink";
+import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
 
-import {
-  CalendarIconApple,
-  CalendarIconGoogle,
-  CalendarIconOutlook,
-} from "../CalendarIcons";
+import { CalendarIconApple, CalendarIconGoogle, CalendarIconOutlook } from "../CalendarIcons";
 
 const UserRsvpContext = createContext<string | null>(null);
+const registryCopy = getRegistrySectionCopyForCategory("birthdays");
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return "";
   // Check if it's already in MM-DD-YYYY format or contains text
-  if (dateStr.includes("-") && dateStr.split("-")[0].length === 2)
-    return dateStr;
+  if (dateStr.includes("-") && dateStr.split("-")[0].length === 2) return dateStr;
 
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return dateStr;
@@ -160,9 +157,7 @@ export default function BirthdayRenderer({
 }: Props) {
   const { layout } = template;
   const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
-  const [selectedResponse, setSelectedResponse] = useState<RsvpIntent | null>(
-    null
-  );
+  const [selectedResponse, setSelectedResponse] = useState<RsvpIntent | null>(null);
   const [userRsvpResponse, setUserRsvpResponse] = useState<string | null>(null);
 
   useEffect(() => {
@@ -218,11 +213,7 @@ export default function BirthdayRenderer({
           backgroundColor: theme.colors.primary,
         }}
       >
-        {actions && (
-          <div className="hidden md:flex justify-center py-3">
-            {actions}
-          </div>
-        )}
+        {actions && <div className="hidden md:flex justify-center py-3">{actions}</div>}
         {renderLayout(
           layout,
           theme,
@@ -241,14 +232,12 @@ export default function BirthdayRenderer({
             venueText,
             locationText,
             userRsvpResponse,
-          }
+          },
         )}
 
         {actions && (
           <div className="event-modern-mobile-bar md:hidden">
-            <div className="mx-auto flex max-w-3xl items-center gap-2">
-              {actions}
-            </div>
+            <div className="mx-auto flex max-w-3xl items-center gap-2">{actions}</div>
           </div>
         )}
         {actions && <div className="event-modern-mobile-spacer md:hidden" />}
@@ -287,7 +276,7 @@ function renderLayout(
   event: EventData,
   actions?: React.ReactNode,
   onRsvpClick?: (response?: RsvpIntent) => void,
-  chrome?: BirthdayRendererChrome
+  chrome?: BirthdayRendererChrome,
 ) {
   switch (layout) {
     case "confetti-splash":
@@ -319,12 +308,7 @@ function renderLayout(
       );
     case "neon-night":
       return (
-        <NeonNightLayout
-          theme={theme}
-          event={event}
-          actions={actions}
-          onRsvpClick={onRsvpClick}
-        />
+        <NeonNightLayout theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} />
       );
     case "tropical-vibe":
       return (
@@ -496,23 +480,13 @@ function ConfettiSplashLayout({
         className="relative w-full min-h-[600px] py-12 flex items-center justify-center overflow-hidden"
         style={{ backgroundColor: theme.colors.primary }}
       >
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {/* Animated Confetti Background */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-10 left-[10%] text-2xl animate-bounce">
-            🎊
-          </div>
-          <div className="absolute top-20 right-[15%] text-2xl animate-bounce delay-75">
-            🎉
-          </div>
-          <div className="absolute bottom-20 left-[20%] text-2xl animate-bounce delay-150">
-            ✨
-          </div>
-          <div className="absolute bottom-10 right-[25%] text-2xl animate-bounce delay-200">
-            🎂
-          </div>
+          <div className="absolute top-10 left-[10%] text-2xl animate-bounce">🎊</div>
+          <div className="absolute top-20 right-[15%] text-2xl animate-bounce delay-75">🎉</div>
+          <div className="absolute bottom-20 left-[20%] text-2xl animate-bounce delay-150">✨</div>
+          <div className="absolute bottom-10 right-[25%] text-2xl animate-bounce delay-200">🎂</div>
         </div>
 
         <div className="max-w-4xl mx-auto px-6 relative z-10 flex flex-col items-center">
@@ -535,17 +509,13 @@ function ConfettiSplashLayout({
                 <p className="text-sm uppercase tracking-widest font-bold text-slate-400 mb-1">
                   When
                 </p>
-                <p className="text-xl font-black text-slate-800">
-                  {formatDate(event.date)}
-                </p>
+                <p className="text-xl font-black text-slate-800">{formatDate(event.date)}</p>
               </div>
               <div className="text-left pl-4">
                 <p className="text-sm uppercase tracking-widest font-bold text-slate-400 mb-1">
                   Where
                 </p>
-                <p className="text-xl font-black text-slate-800">
-                  {event.location}
-                </p>
+                <p className="text-xl font-black text-slate-800">{event.location}</p>
               </div>
             </div>
           </div>
@@ -591,9 +561,7 @@ function BalloonArchLayout({
         className="relative w-full py-16 flex flex-col items-center justify-center overflow-hidden"
         style={{ backgroundColor: theme.colors.primary }}
       >
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {/* Balloon Strings Decoration */}
         <div className="absolute top-0 left-1/4 w-px h-32 bg-slate-300 opacity-30"></div>
         <div className="absolute top-0 right-1/4 w-px h-48 bg-slate-300 opacity-20"></div>
@@ -602,11 +570,7 @@ function BalloonArchLayout({
 
         {theme.decorations?.heroImage && (
           <div className="w-full max-w-sm h-72 md:h-96 rounded-full overflow-hidden mb-8 shadow-2xl border-8 border-white relative z-10 transition-transform hover:scale-105 duration-500">
-            <img
-              src={theme.decorations.heroImage}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            <img src={theme.decorations.heroImage} alt="" className="w-full h-full object-cover" />
           </div>
         )}
 
@@ -628,16 +592,12 @@ function BalloonArchLayout({
 
           <div className="inline-flex items-center gap-6 text-slate-700 bg-white/40 backdrop-blur-sm px-8 py-3 rounded-full border border-white/50">
             <div className="text-center">
-              <p className="text-xs uppercase tracking-widest font-bold opacity-50">
-                When
-              </p>
+              <p className="text-xs uppercase tracking-widest font-bold opacity-50">When</p>
               <p className="font-bold">{formatDate(event.date)}</p>
             </div>
             <div className="w-px h-8 bg-slate-300"></div>
             <div className="text-center">
-              <p className="text-xs uppercase tracking-widest font-bold opacity-50">
-                Where
-              </p>
+              <p className="text-xs uppercase tracking-widest font-bold opacity-50">Where</p>
               <p className="font-bold">{event.location}</p>
             </div>
           </div>
@@ -663,9 +623,7 @@ function GlamorousSparkleLayout({
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <header className="relative w-full h-[600px] flex items-center justify-center overflow-hidden">
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {/* Glitter/Sparkle Particles */}
         <div
           className="absolute inset-0 bg-[#fff5f8]"
@@ -697,9 +655,7 @@ function GlamorousSparkleLayout({
                 color: theme.colors.secondary,
               }}
             >
-              {event.headlineTitle ||
-                theme.defaultHeadline ||
-                "Sparkle & Shine"}
+              {event.headlineTitle || theme.defaultHeadline || "Sparkle & Shine"}
             </h1>
             <div className="flex flex-col gap-4 text-xl">
               <div className="flex items-center gap-4 border-b border-slate-200 pb-4">
@@ -764,8 +720,7 @@ function WhimsicalMagicLayout({
       className="min-h-screen relative overflow-hidden flex flex-col"
       style={{
         backgroundColor: theme.colors.primary,
-        backgroundImage:
-          "radial-gradient(circle at 50% 50%, white, transparent)",
+        backgroundImage: "radial-gradient(circle at 50% 50%, white, transparent)",
       }}
     >
       {/* Soft Clouds/Shapes */}
@@ -773,9 +728,7 @@ function WhimsicalMagicLayout({
       <div className="absolute top-40 right-10 w-72 h-40 bg-white rounded-full blur-3xl opacity-50"></div>
 
       <section className="relative z-10 pt-20 pb-12 px-6 flex flex-col items-center">
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         <div className="mb-12 text-center">
           <div className="text-4xl mb-4 drop-shadow-md">✨🦄✨</div>
           <h1
@@ -795,10 +748,7 @@ function WhimsicalMagicLayout({
               <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-slate-400">
                 Join the Magic
               </h2>
-              <p
-                className="text-4xl font-light italic"
-                style={{ color: theme.colors.secondary }}
-              >
+              <p className="text-4xl font-light italic" style={{ color: theme.colors.secondary }}>
                 {formatDate(event.date)}
               </p>
             </div>
@@ -861,13 +811,8 @@ function NeonNightLayout({
         className="relative w-full h-[500px] flex items-center justify-center overflow-hidden bg-slate-900 text-white"
         style={{ backgroundColor: theme.colors.primary }}
       >
-        <div
-          className="absolute inset-0"
-          style={{ background: bgGradient }}
-        ></div>
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        <div className="absolute inset-0" style={{ background: bgGradient }}></div>
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
 
         {/* Dynamic Neon Glows */}
         <div
@@ -952,9 +897,7 @@ function MagicalSparkleLayout({
         className="relative w-full h-[400px] flex items-center justify-center"
         style={{ backgroundColor: theme.colors.primary }}
       >
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {theme.decorations?.heroImage && (
           <img
             src={theme.decorations.heroImage}
@@ -965,10 +908,7 @@ function MagicalSparkleLayout({
         <div className="absolute inset-0 bg-gradient-to-t from-white/90 to-transparent"></div>
 
         <div className="relative z-10 text-center max-w-2xl px-6">
-          <div
-            className="mb-4 text-2xl"
-            style={{ color: theme.colors.secondary }}
-          >
+          <div className="mb-4 text-2xl" style={{ color: theme.colors.secondary }}>
             {isWinter ? "❄️" : "✨"}
           </div>
           <h1
@@ -1023,9 +963,7 @@ function TropicalVibeLayout({
         className="relative w-full py-20 flex flex-col items-center"
         style={{ backgroundColor: theme.colors.primary }}
       >
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         <div className="w-full max-w-4xl mx-auto grid md:grid-cols-2 gap-8 items-center px-6">
           <div className="order-2 md:order-1 text-center md:text-left">
             <span
@@ -1056,16 +994,8 @@ function TropicalVibeLayout({
           </div>
         </div>
       </section>
-      <BirthdayContentSections
-        theme={theme}
-        event={event}
-        backgroundColor={theme.colors.primary}
-      />
-      <Footer
-        theme={theme}
-        event={event}
-        backgroundColor={theme.colors.primary}
-      />
+      <BirthdayContentSections theme={theme} event={event} backgroundColor={theme.colors.primary} />
+      <Footer theme={theme} event={event} backgroundColor={theme.colors.primary} />
     </>
   );
 }
@@ -1092,9 +1022,7 @@ function PixelArcadeLayout({
           backgroundColor: theme.colors.primary,
         }}
       >
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
 
         <div
           className="absolute inset-0 opacity-10"
@@ -1288,12 +1216,7 @@ function CosmicAdventureLayout({
         darkMode={true}
         backgroundColor="transparent"
       />
-      <Footer
-        theme={theme}
-        event={event}
-        darkMode={true}
-        backgroundColor="transparent"
-      />
+      <Footer theme={theme} event={event} darkMode={true} backgroundColor="transparent" />
     </div>
   );
 }
@@ -1357,25 +1280,19 @@ function AnimalPartyLayout({
                 alt=""
               />
             )}
-            <div className="text-center font-medium italic text-slate-500">
-              Party Time!
-            </div>
+            <div className="text-center font-medium italic text-slate-500">Party Time!</div>
           </div>
           <div className="hidden md:block bg-white p-3 shadow-xl rotate-2 transform transition hover:rotate-0 mt-8">
             <div className="w-full h-72 bg-slate-50 flex items-center justify-center text-4xl">
               🦁
             </div>
-            <div className="text-center mt-4 font-medium italic text-slate-500">
-              Roar!
-            </div>
+            <div className="text-center mt-4 font-medium italic text-slate-500">Roar!</div>
           </div>
         </div>
 
         <div className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-white/50">
           <div className="text-center mb-12">
-            <p className="text-2xl font-semibold mb-2">
-              {formatDate(event.date)}
-            </p>
+            <p className="text-2xl font-semibold mb-2">{formatDate(event.date)}</p>
             <p className="text-slate-600 uppercase tracking-widest font-bold text-sm">
               {event.location}
             </p>
@@ -1420,9 +1337,7 @@ function DinoExplorerLayout({
             className="bg-[#6b8c42] text-white p-12 md:p-20 shadow-lg relative rounded-sm"
             style={{ backgroundColor: theme.colors.secondary }}
           >
-            {actions && (
-              <div className="absolute top-4 right-4 z-50">{actions}</div>
-            )}
+            {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
             <div className="absolute top-0 left-0 w-full h-4 overflow-hidden -mt-2">
               <div className="w-full h-8 bg-white rotate-1 origin-top-left"></div>
             </div>
@@ -1518,13 +1433,10 @@ function UnderwaterAdventureLayout({
                 color: theme.colors.secondary,
               }}
             >
-              {event.headlineTitle ||
-                theme.defaultHeadline ||
-                "Ocean Adventure"}
+              {event.headlineTitle || theme.defaultHeadline || "Ocean Adventure"}
             </h1>
             <p className="text-2xl font-light text-sky-800 tracking-wide">
-              {formatDate(event.date)}{" "}
-              <span className="mx-2 opacity-30">|</span> {event.location}
+              {formatDate(event.date)} <span className="mx-2 opacity-30">|</span> {event.location}
             </p>
           </div>
 
@@ -1652,9 +1564,7 @@ function BirthdayContentSections({
   // Extract explicit birthday details
   const childName =
     event.birthdayName ||
-    (event.headlineTitle?.includes("'s")
-      ? event.headlineTitle.split("'s")[0]
-      : null);
+    (event.headlineTitle?.includes("'s") ? event.headlineTitle.split("'s")[0] : null);
   const age = event.age;
   const partyTheme = event.party?.theme || event.partyDetails?.theme;
   const time = formatTime(event.date);
@@ -1676,10 +1586,7 @@ function BirthdayContentSections({
               <p className="text-[10px] uppercase tracking-widest font-black opacity-40 mb-2">
                 Guest of Honor
               </p>
-              <p
-                className="font-bold text-lg leading-tight"
-                style={{ color: headingColor }}
-              >
+              <p className="font-bold text-lg leading-tight" style={{ color: headingColor }}>
                 {childName}
               </p>
             </div>
@@ -1730,10 +1637,7 @@ function BirthdayContentSections({
               <p className="text-[10px] uppercase tracking-widest font-black opacity-40 mb-2">
                 Party Theme
               </p>
-              <p
-                className="font-bold text-lg leading-tight"
-                style={{ color: headingColor }}
-              >
+              <p className="font-bold text-lg leading-tight" style={{ color: headingColor }}>
                 {partyTheme}
               </p>
             </div>
@@ -1784,9 +1688,7 @@ function BirthdayContentSections({
                 Good to Know
               </h2>
             </div>
-            <p className="leading-relaxed opacity-90 text-lg">
-              {event.thingsToDo}
-            </p>
+            <p className="leading-relaxed opacity-90 text-lg">{event.thingsToDo}</p>
           </section>
         )}
       </div>
@@ -1825,9 +1727,7 @@ function BirthdayContentSections({
                     </span>
                   )}
                 </div>
-                {item.location && (
-                  <p className="text-sm opacity-60">📍 {item.location}</p>
-                )}
+                {item.location && <p className="text-sm opacity-60">📍 {item.location}</p>}
               </div>
             ))}
           </div>
@@ -1882,10 +1782,7 @@ function BirthdayContentSections({
                   darkMode ? "border-white/10" : "border-white/50"
                 } flex flex-col items-center shadow-lg`}
               >
-                <p
-                  className="font-black text-xl italic"
-                  style={{ color: headingColor }}
-                >
+                <p className="font-black text-xl italic" style={{ color: headingColor }}>
                   {host.name}
                 </p>
                 {(host.email || host.phone) && (
@@ -1903,7 +1800,7 @@ function BirthdayContentSections({
       {/* Registry list */}
       {registryList.length > 0 && (
         <section className="text-center pt-8 border-t border-slate-200/20">
-          <h2 className="text-lg font-bold mb-6 opacity-40">Gift Registries</h2>
+          <h2 className="text-lg font-bold mb-6 opacity-40">{registryCopy.sectionLabel}</h2>
           <div className="flex flex-wrap justify-center gap-3">
             {registryList.map((r, idx) => (
               <a
@@ -1917,7 +1814,7 @@ function BirthdayContentSections({
                     : "bg-white hover:bg-slate-50 shadow-md border border-slate-100"
                 } `}
               >
-                🎁 {r.label || "Registry"}
+                🎁 {r.label || registryCopy.itemFallbackLabel}
               </a>
             ))}
           </div>
@@ -1938,18 +1835,15 @@ function BirthdayContentSections({
                 {userRsvpResponse === "yes"
                   ? "\u2705"
                   : userRsvpResponse === "no"
-                  ? "\u274C"
-                  : "\u{1F914}"}
+                    ? "\u274C"
+                    : "\u{1F914}"}
               </span>
-              <span
-                className="text-lg font-black"
-                style={{ color: theme.colors.secondary }}
-              >
+              <span className="text-lg font-black" style={{ color: theme.colors.secondary }}>
                 {userRsvpResponse === "yes"
                   ? "You're going!"
                   : userRsvpResponse === "no"
-                  ? "You've declined"
-                  : "You responded Maybe"}
+                    ? "You've declined"
+                    : "You responded Maybe"}
               </span>
             </div>
             <p className="mt-3 text-xs font-bold uppercase tracking-widest opacity-40">
@@ -1995,7 +1889,7 @@ function EditorialFeatureLayout({
   const locationText = chrome?.locationText || event.location || "";
   const directionsHref = locationText
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        [venueText, locationText].filter(Boolean).join(", ")
+        [venueText, locationText].filter(Boolean).join(", "),
       )}`
     : null;
   const summary =
@@ -2011,8 +1905,7 @@ function EditorialFeatureLayout({
     event.partyDetails?.notes ||
     "Bring your party spirit and check the flyer for any extra host notes.";
   const rsvpEnabled = Boolean(event.rsvpEnabled && onRsvpClick);
-  const heroImage =
-    chrome?.heroImageUrl || theme.decorations?.heroImage || theme.heroImage;
+  const heroImage = chrome?.heroImageUrl || theme.decorations?.heroImage || theme.heroImage;
   const useUploadedFlyerHero = Boolean(chrome?.heroImageUrl);
 
   return (
@@ -2039,13 +1932,9 @@ function EditorialFeatureLayout({
               className="text-4xl font-black leading-tight md:text-6xl"
               style={{ fontFamily: theme.fonts.headline }}
             >
-              {event.headlineTitle ||
-                theme.defaultHeadline ||
-                "Birthday Celebration"}
+              {event.headlineTitle || theme.defaultHeadline || "Birthday Celebration"}
             </h1>
-            <p className="max-w-xl text-base leading-7 text-slate-600 md:text-lg">
-              {summary}
-            </p>
+            <p className="max-w-xl text-base leading-7 text-slate-600 md:text-lg">{summary}</p>
             <div className="md:hidden">{actions}</div>
           </div>
 
@@ -2063,25 +1952,17 @@ function EditorialFeatureLayout({
                   theme.id === "editorial_blue_allstar"
                     ? "linear-gradient(135deg, rgba(11,99,206,0.22), rgba(65,196,255,0.12))"
                     : theme.id === "editorial_ballerina_bloom"
-                    ? "linear-gradient(135deg, rgba(185,25,100,0.16), rgba(80,225,249,0.12))"
-                    : "linear-gradient(135deg, rgba(209,77,47,0.12), rgba(255,206,96,0.12))",
+                      ? "linear-gradient(135deg, rgba(185,25,100,0.16), rgba(80,225,249,0.12))"
+                      : "linear-gradient(135deg, rgba(209,77,47,0.12), rgba(255,206,96,0.12))",
               }}
             />
             {heroImage ? (
               useUploadedFlyerHero ? (
                 <div className="relative z-10 mx-auto aspect-square w-full max-w-[440px] overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_70px_rgba(120,110,160,0.2)] ring-1 ring-white/70">
-                  <img
-                    src={heroImage}
-                    alt={theme.name}
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={heroImage} alt={theme.name} className="h-full w-full object-cover" />
                 </div>
               ) : (
-                <img
-                  src={heroImage}
-                  alt={theme.name}
-                  className="h-full w-full object-cover"
-                />
+                <img src={heroImage} alt={theme.name} className="h-full w-full object-cover" />
               )
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400">
@@ -2126,8 +2007,8 @@ function EditorialFeatureLayout({
                     {chrome.userRsvpResponse === "yes"
                       ? "\u2705"
                       : chrome.userRsvpResponse === "no"
-                      ? "\u274C"
-                      : "\u{1F914}"}
+                        ? "\u274C"
+                        : "\u{1F914}"}
                   </span>
                   <div>
                     <h2
@@ -2137,8 +2018,8 @@ function EditorialFeatureLayout({
                       {chrome.userRsvpResponse === "yes"
                         ? "You're going!"
                         : chrome.userRsvpResponse === "no"
-                        ? "You've declined"
-                        : "You responded Maybe"}
+                          ? "You've declined"
+                          : "You responded Maybe"}
                     </h2>
                     <p className="mt-1 text-sm font-medium text-slate-500">
                       The host has been notified of your RSVP.
@@ -2161,9 +2042,7 @@ function EditorialFeatureLayout({
                 <p className="mt-2 text-sm font-medium text-slate-500">
                   {rsvpEnabled
                     ? `Tap a response below to RSVP${
-                        event.rsvpDeadline
-                          ? ` by ${formatDate(event.rsvpDeadline)}`
-                          : ""
+                        event.rsvpDeadline ? ` by ${formatDate(event.rsvpDeadline)}` : ""
                       }.`
                     : "RSVP details will be shared by the host."}
                 </p>
@@ -2176,11 +2055,7 @@ function EditorialFeatureLayout({
                     <button
                       key={option.label}
                       type="button"
-                      onClick={
-                        rsvpEnabled
-                          ? () => onRsvpClick?.(option.response)
-                          : undefined
-                      }
+                      onClick={rsvpEnabled ? () => onRsvpClick?.(option.response) : undefined}
                       disabled={!rsvpEnabled}
                       className={`min-w-[140px] flex-1 rounded-full border-2 px-5 py-4 text-sm font-black transition ${
                         rsvpEnabled
@@ -2263,10 +2138,7 @@ function EditorialFeatureLayout({
                 )}
               </div>
               <div className="space-y-4 p-7">
-                <h3
-                  className="text-xl font-black"
-                  style={{ fontFamily: theme.fonts.headline }}
-                >
+                <h3 className="text-xl font-black" style={{ fontFamily: theme.fonts.headline }}>
                   {venueText || "Party Location"}
                 </h3>
                 <p className="text-sm leading-6 text-slate-600">
@@ -2294,8 +2166,8 @@ function EditorialFeatureLayout({
                   theme.id === "editorial_blue_allstar"
                     ? "linear-gradient(135deg, #0b63ce, #41c4ff)"
                     : theme.id === "editorial_ballerina_bloom"
-                    ? "linear-gradient(135deg, #b91964, #50e1f9)"
-                    : "linear-gradient(135deg, #d14d2f, #ffce60)",
+                      ? "linear-gradient(135deg, #b91964, #50e1f9)"
+                      : "linear-gradient(135deg, #d14d2f, #ffce60)",
               }}
             >
               <div className="mb-3 text-sm font-black uppercase tracking-[0.22em] opacity-80">
@@ -2356,15 +2228,11 @@ function Footer({
   darkMode?: boolean;
 }) {
   const bg =
-    backgroundColor ||
-    (darkMode ? "#020617" : theme.colors.background || theme.colors.primary);
+    backgroundColor || (darkMode ? "#020617" : theme.colors.background || theme.colors.primary);
   const textColor = darkMode ? "#94a3b8" : "#64748b";
 
   return (
-    <footer
-      className="text-center py-12 mt-auto"
-      style={{ backgroundColor: bg, color: textColor }}
-    >
+    <footer className="text-center py-12 mt-auto" style={{ backgroundColor: bg, color: textColor }}>
       <div className="flex flex-wrap gap-4 justify-center mb-8">
         <button
           className={`px-4 py-2 rounded-md text-sm font-medium ${
@@ -2405,9 +2273,7 @@ function SportsStadiumLayout({
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <section className="relative w-full h-[500px] overflow-hidden bg-green-700 flex flex-col items-center justify-center">
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {/* Grass texture pattern */}
         <div
           className="absolute inset-0 opacity-20"
@@ -2439,11 +2305,7 @@ function SportsStadiumLayout({
 
         <div className="absolute -bottom-12 z-20 w-48 h-48 md:w-64 md:h-64 rounded-2xl overflow-hidden border-[12px] border-white shadow-2xl rotate-3">
           {theme.decorations?.heroImage && (
-            <img
-              src={theme.decorations.heroImage}
-              className="w-full h-full object-cover"
-              alt=""
-            />
+            <img src={theme.decorations.heroImage} className="w-full h-full object-cover" alt="" />
           )}
         </div>
       </section>
@@ -2455,9 +2317,7 @@ function SportsStadiumLayout({
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                 Kickoff Time
               </span>
-              <p className="text-2xl font-black italic text-slate-800">
-                {formatDate(event.date)}
-              </p>
+              <p className="text-2xl font-black italic text-slate-800">{formatDate(event.date)}</p>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-md border-b-4 border-slate-200">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
@@ -2502,9 +2362,7 @@ function LuxuryRoyalLayout({
       style={{ backgroundColor: theme.colors.primary }}
     >
       <section className="relative h-[80vh] flex flex-col items-center justify-center p-6 border-b border-[#e0c097]/10">
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {/* Elegant Pattern */}
         <div
           className="absolute inset-0 opacity-5"
@@ -2565,12 +2423,7 @@ function LuxuryRoyalLayout({
         />
       </main>
 
-      <Footer
-        theme={theme}
-        event={event}
-        backgroundColor="transparent"
-        darkMode={true}
-      />
+      <Footer theme={theme} event={event} backgroundColor="transparent" darkMode={true} />
     </div>
   );
 }
@@ -2587,14 +2440,9 @@ function IslandParadiseLayout({
   onRsvpClick?: () => void;
 }) {
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: theme.colors.primary }}
-    >
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: theme.colors.primary }}>
       <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {/* Sun and Waves */}
         <div className="absolute top-10 right-10 w-32 h-32 rounded-full bg-yellow-200 blur-2xl opacity-40"></div>
         <div className="absolute bottom-0 left-0 w-full h-24 bg-sky-200/20 backdrop-blur-sm"></div>
@@ -2611,9 +2459,7 @@ function IslandParadiseLayout({
             {event.headlineTitle || theme.defaultHeadline || "Aloha!"}
           </h1>
           <div className="mt-8 inline-block bg-white/60 backdrop-blur-md px-10 py-4 rounded-full border-2 border-white">
-            <p className="text-2xl font-bold text-slate-800">
-              {formatDate(event.date)}
-            </p>
+            <p className="text-2xl font-bold text-slate-800">{formatDate(event.date)}</p>
             <p className="text-sm uppercase tracking-[0.3em] font-black opacity-40">
               {event.location}
             </p>
@@ -2622,11 +2468,7 @@ function IslandParadiseLayout({
 
         <div className="absolute top-0 left-0 w-full h-full -z-10 opacity-40">
           {theme.decorations?.heroImage && (
-            <img
-              src={theme.decorations.heroImage}
-              className="w-full h-full object-cover"
-              alt=""
-            />
+            <img src={theme.decorations.heroImage} className="w-full h-full object-cover" alt="" />
           )}
         </div>
       </section>
@@ -2664,9 +2506,7 @@ function SafariAdventureLayout({
       style={{ backgroundColor: theme.colors.primary }}
     >
       <section className="relative pt-24 pb-12 px-6 flex flex-col items-center">
-        {actions && (
-          <div className="absolute top-4 right-4 z-50">{actions}</div>
-        )}
+        {actions && <div className="absolute top-4 right-4 z-50">{actions}</div>}
         {/* Wood Texture Effect */}
         <div className="max-w-4xl w-full bg-[#f4e7d3] p-12 md:p-20 border-[16px] border-[#5d4037] relative shadow-2xl overflow-hidden">
           <div
@@ -2703,21 +2543,13 @@ function SafariAdventureLayout({
 
         <div className="mt-[-40px] relative z-20 w-64 h-64 md:w-80 md:h-80 rounded-full border-[12px] border-[#5d4037] overflow-hidden shadow-2xl bg-white">
           {theme.decorations?.heroImage && (
-            <img
-              src={theme.decorations.heroImage}
-              className="w-full h-full object-cover"
-              alt=""
-            />
+            <img src={theme.decorations.heroImage} className="w-full h-full object-cover" alt="" />
           )}
         </div>
       </section>
 
       <main className="flex-1">
-        <BirthdayContentSections
-          theme={theme}
-          event={event}
-          backgroundColor="transparent"
-        />
+        <BirthdayContentSections theme={theme} event={event} backgroundColor="transparent" />
       </main>
 
       <Footer theme={theme} event={event} backgroundColor="transparent" />

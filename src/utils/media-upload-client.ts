@@ -102,6 +102,10 @@ async function fileFromMediaValue(value: string, fileName: string): Promise<File
   }
 }
 
+function isLegacyLocalUploadPath(value: string): boolean {
+  return /^\/uploads\//i.test(value);
+}
+
 export async function persistImageMediaValue(params: {
   value?: string | null;
   eventId?: string | null;
@@ -111,10 +115,21 @@ export async function persistImageMediaValue(params: {
 }): Promise<string | null> {
   const value = typeof params.value === "string" ? params.value.trim() : "";
   if (!value) return params.fallbackValue || null;
-  if (/^https?:\/\//i.test(value) || value.startsWith("/")) {
+  if (/^https?:\/\//i.test(value) || (value.startsWith("/") && !isLegacyLocalUploadPath(value))) {
     return value;
   }
   if (!value.startsWith("blob:") && !value.startsWith("data:")) {
+    if (isLegacyLocalUploadPath(value)) {
+      const file = await fileFromMediaValue(value, params.fileName || "event-image.png");
+      if (!file) return params.fallbackValue || null;
+      const upload = await uploadMediaFile({
+        file,
+        usage: "header",
+        eventId: params.eventId,
+        uploadToken: params.uploadToken,
+      });
+      return upload.stored.display?.url || upload.eventMedia.thumbnail || params.fallbackValue || null;
+    }
     return params.fallbackValue || null;
   }
 

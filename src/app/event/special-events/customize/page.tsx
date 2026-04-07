@@ -32,6 +32,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 // Google Fonts URL for all special event fonts
 const SPECIAL_EVENTS_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Anton&family=Oswald:wght@400;600;700&family=League+Spartan:wght@600;700&family=Inter+Tight:wght@500;600;700&family=Archivo+Black&family=Alfa+Slab+One&family=Bungee+Shade&family=Patua+One&family=Rubik+Mono+One&family=Exo+2:wght@500;600;700&family=Archivo:wght@500;600;700&family=Teko:wght@500;700&family=Barlow+Condensed:wght@500;600;700&family=Maven+Pro:wght@500;600;700&family=Righteous&family=Black+Ops+One&family=Press+Start+2P&family=Ultra&family=Comfortaa:wght@500;600;700&family=Varela+Round&family=Saira+Semi+Condensed:wght@500;600;700&family=Fjalla+One&family=Changa+One&family=Jomhuria&family=Russo+One&family=Titillium+Web:wght@600;700&family=Staatliches&family=Lilita+One&family=Amatic+SC:wght@700&display=swap`;
@@ -1044,6 +1045,24 @@ export default function SpecialEventsCustomizePage() {
         endISO = end.toISOString();
       }
 
+      const heroImageToSave =
+        (await persistImageMediaValue({
+          value: data.hero,
+          eventId: editEventId || undefined,
+          fileName: "special-event-hero.png",
+        })) || "/templates/hero-images/father-daughter-hero.jpeg";
+      const sponsorsToSave = await Promise.all(
+        (data.sponsors || []).map(async (sponsor: any) => ({
+          ...sponsor,
+          logo:
+            (await persistImageMediaValue({
+              value: sponsor?.logo || "",
+              eventId: editEventId || undefined,
+              fileName: `special-event-sponsor-${sponsor?.id || "logo"}.png`,
+            })) || sponsor?.logo || "",
+        })),
+      );
+
       const payload: any = {
         title: data.title || "Special Event",
         data: {
@@ -1060,9 +1079,8 @@ export default function SpecialEventsCustomizePage() {
           numberOfGuests: 0,
           templateId: "special-event",
           customFields: data.extra,
-          sponsors: data.sponsors || [],
-          heroImage:
-            data.hero || "/templates/hero-images/father-daughter-hero.jpeg",
+          sponsors: sponsorsToSave,
+          heroImage: heroImageToSave,
           theme: data.theme,
         },
       };
@@ -1070,7 +1088,7 @@ export default function SpecialEventsCustomizePage() {
       let id: string | undefined;
 
       if (editEventId) {
-        await fetch(`/api/history/${editEventId}`, {
+        const response = await fetch(`/api/history/${editEventId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -1079,6 +1097,14 @@ export default function SpecialEventsCustomizePage() {
             data: payload.data,
           }),
         });
+        if (!response.ok) {
+          const error = await response.json().catch(() => null);
+          throw new Error(
+            typeof error?.error === "string" && error.error.trim()
+              ? error.error.trim()
+              : "Failed to update event",
+          );
+        }
         id = editEventId;
       } else {
         const res = await fetch("/api/history", {
@@ -1087,6 +1113,14 @@ export default function SpecialEventsCustomizePage() {
           credentials: "include",
           body: JSON.stringify(payload),
         });
+        if (!res.ok) {
+          const error = await res.json().catch(() => null);
+          throw new Error(
+            typeof error?.error === "string" && error.error.trim()
+              ? error.error.trim()
+              : "Failed to create event",
+          );
+        }
         const json = await res.json().catch(() => ({}));
         id = (json as any)?.id as string | undefined;
       }
