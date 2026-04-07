@@ -1,152 +1,135 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,600;0,700;0,800;1,600;1,700;1,800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&family=Outfit:wght@500;600;700;800&display=swap");
 
 .root {
   font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 .headline {
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Outfit", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
-.glassNav {
-  background: transparent;
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 143, 107, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.58)),
+    rgba(255, 255, 255, 0.65);
+  padding: 0.7rem 1rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #8c6149;
+  box-shadow:
+    0 18px 36px rgba(43, 27, 22, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
-.sectionShell {
+.heroGradient {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 245, 230, 0.95) 0%, transparent 42%),
+    radial-gradient(circle at 100% 0%, rgba(255, 209, 179, 0.9) 0%, transparent 38%),
+    radial-gradient(circle at 52% 44%, rgba(255, 153, 102, 0.75) 0%, transparent 48%),
+    radial-gradient(circle at 0% 100%, rgba(255, 126, 95, 0.65) 0%, transparent 44%),
+    radial-gradient(circle at 100% 100%, rgba(30, 58, 138, 0.88) 0%, transparent 46%),
+    linear-gradient(135deg, #2f214b 0%, #1d1534 44%, #140f27 100%);
+}
+
+.surfacePanel {
   position: relative;
   overflow: hidden;
-  isolation: isolate;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow:
-    0 10px 30px rgba(80, 60, 140, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(201, 143, 107, 0.1);
 }
 
-.sectionShell::before {
+.surfacePanel::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 0;
   pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.22) 0%,
-    rgba(255, 255, 255, 0.08) 45%,
-    rgba(255, 255, 255, 0.14) 100%
-  );
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18));
+  opacity: 0.9;
 }
 
-.sectionShell > * {
+.surfacePanel > * {
   position: relative;
   z-index: 1;
 }
 
-.sectionShellOverflowVisible {
-  overflow: visible;
+.glassCard {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+    rgba(18, 12, 31, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(20px);
 }
 
-.sectionInner {
-  contain: layout paint;
+.glassDarkCard {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(18, 12, 31, 0.64);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: white;
+  backdrop-filter: blur(18px);
 }
 
-.glassPill {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(28px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow:
-    0 18px 60px rgba(67, 43, 153, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+.paperTexture {
+  background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+  background-repeat: repeat;
 }
 
-.bloomEffect {
-  background: radial-gradient(
-    circle at top center,
-    rgba(124, 58, 237, 0.08) 0%,
-    rgba(255, 255, 255, 0) 70%
-  );
+.textGradient {
+  background-image: linear-gradient(135deg, #c98f6b 0%, #ff7e5f 48%, #6b4c3f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ctaPanel {
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.15), transparent 28%),
+    radial-gradient(circle at 80% 30%, rgba(201, 143, 107, 0.38), transparent 30%),
+    linear-gradient(135deg, #201939 0%, #17112e 42%, #100c23 100%);
 }
 
 .btnRolling {
   position: relative;
   overflow: hidden;
   transition:
-    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow:
-    0 -2px 10px rgba(0, 0, 0, 0.02),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.1),
-    0 25px 50px -12px rgba(124, 58, 237, 0.5);
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .btnRolling:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .btnRolling:active {
-  transform: scale(0.95);
+  transform: scale(0.98);
 }
 
-.cardGroup {
-  display: block;
+.rsvpBubble {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(43, 27, 22, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 1rem 1.25rem;
+  color: #2b1b16;
+  box-shadow: 0 24px 60px rgba(43, 27, 22, 0.12);
 }
 
-.heroRevealReady {
-  opacity: 1;
-  transform: translateY(var(--hero-reveal-idle-offset, 6px));
-  will-change: transform;
-}
-
-.heroRevealPrimary,
-.heroRevealCenter,
-.heroRevealSecondary {
-  animation-name: heroSoftReveal;
-  animation-duration: 0.7s;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  animation-fill-mode: both;
-}
-
-.heroRevealPrimary {
-  animation-delay: 0.08s;
-}
-
-.heroRevealCenter {
-  animation-delay: 0.2s;
-}
-
-.heroRevealSecondary {
-  animation-delay: 0.34s;
-}
-
-.weddingRevealPrimary {
-  --hero-reveal-offset: 24px;
-}
-
-.weddingRevealCenter {
-  --hero-reveal-offset: 20px;
-}
-
-.weddingRevealSecondary {
-  --hero-reveal-offset: 16px;
-}
-
-.cardGroup:hover .heroSnapCard,
-.cardGroup:hover .heroLiveCard {
-  transform: rotate(0deg);
-}
-
-.heroSnapCard {
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
-    linear-gradient(135deg, rgba(124, 58, 237, 0.28), rgba(34, 211, 238, 0.18));
-  transform: rotate(-6deg);
-  transition: transform 0.5s ease;
-}
-
-.heroLiveCard {
+.rsvpHalo {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background:
     linear-gradient(160deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1)),
     linear-gradient(135deg, rgba(20, 10, 39, 0.12), rgba(124, 58, 237, 0.2));
@@ -299,41 +282,15 @@
 }
 
 .floatUp {
-  animation: floatUp 4s ease-in-out infinite;
+  animation: floatUp 4.2s ease-in-out infinite;
 }
 
 .floatDown {
-  animation: floatDown 5s ease-in-out infinite;
+  animation: floatDown 5.1s ease-in-out infinite;
 }
 
 .floatLift {
-  animation: floatLift 6s ease-in-out infinite;
-}
-
-.halo {
-  background: rgba(124, 58, 237, 0.08);
-  filter: blur(72px);
-}
-
-@keyframes heroSoftReveal {
-  0% {
-    transform: translateY(var(--hero-reveal-offset, 18px));
-  }
-
-  100% {
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulseScale {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.08);
-  }
+  animation: floatLift 5.8s ease-in-out infinite;
 }
 
 @keyframes floatUp {
@@ -886,31 +843,9 @@
   }
 }
 
-@media (min-width: 768px) {
-  .weddingPhoneShell,
-  .weddingPhoneFrame {
-    border-radius: 2.15rem;
-  }
-
-  .weddingStack {
-    display: block;
-    width: min(100%, 23rem);
-    min-height: 21rem;
-  }
-
-  .weddingInviteLayer {
-    position: absolute;
-    left: 0;
-    bottom: 0.35rem;
-    width: min(13.75rem, 68%);
-  }
-
-  .weddingPhoneLayer {
-    position: absolute;
-    top: 0;
-    right: 0.15rem;
-    width: min(11.4rem, 58%);
-    margin-top: 0;
+@media (max-width: 767px) {
+  .eyebrow {
+    letter-spacing: 0.2em;
   }
 
   .weddingStackConnector {
@@ -966,28 +901,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .heroRevealPrimary,
-  .heroRevealCenter,
-  .heroRevealSecondary {
-    opacity: 1;
-    transform: none;
+  .btnRolling {
+    transition: none;
+  }
+
+  .floatUp,
+  .floatDown,
+  .floatLift {
     animation: none;
-  }
-
-  .weddingPhoneShell {
-    transition: none;
-  }
-
-  .weddingStack:hover .weddingPhoneShell {
-    transform: none;
-  }
-
-  .gymnasticsPhoneShell {
-    transition: none;
-  }
-
-  .gymnasticsVisualStage:hover .gymnasticsPhoneShell {
-    transform: none;
   }
 
   .gymnasticsSportsScanBeam,

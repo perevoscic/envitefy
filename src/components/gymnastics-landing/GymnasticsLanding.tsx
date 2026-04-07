@@ -321,6 +321,7 @@ export default function GymnasticsLanding() {
       <ScenicBackground scene={activeScene} scenes={GYMNASTICS_SCENES} />
       <HeroTopNav
         navLinks={[
+          { label: "Studio", href: "/studio" },
           { label: "Features", href: "#features" },
           { label: "How it works", href: "#how-it-works" },
           { label: "Preview", href: "#preview" },

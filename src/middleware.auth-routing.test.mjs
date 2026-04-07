@@ -26,3 +26,17 @@ test("middleware redirects signed-in marketing page visits to root", () => {
   assert.match(middleware, /url\.pathname = "\/"/);
   assert.match(middleware, /return redirectWithMarker\(url, 302\);/);
 });
+
+test("middleware keeps Studio public without treating it as a marketing redirect", () => {
+  const middleware = readSource("src/middleware.ts");
+  const appShell = readSource("src/app/AppShell.tsx");
+
+  assert.match(
+    middleware,
+    /const PUBLIC_UNAUTH_PATHS = new Set\(\[[\s\S]*"\/studio"/s
+  );
+  assert.doesNotMatch(
+    appShell,
+    /const MARKETING_PATHS = new Set\(\[[\s\S]*"\/studio"/s
+  );
+});

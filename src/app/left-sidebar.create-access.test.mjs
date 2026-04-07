@@ -42,3 +42,23 @@ test("left sidebar view still gates both root and compact create entries behind 
     /viewModel\.hasCreateEventAccess\s*\?\s*\{\s*id: "create" as const,\s*icon: Plus,\s*label: "Create event",\s*onClick: viewModel\.openCreateEventPage,\s*\}\s*:\s*null/s
   );
 });
+
+test("left sidebar exposes Studio below Home in both full and compact navigation", () => {
+  const source = readSource("src/app/left-sidebar.tsx");
+  const controllerSource = readSource("src/app/left-sidebar.controller.ts");
+  const modelSource = readSource("src/app/left-sidebar.model.ts");
+
+  assert.match(
+    source,
+    /<span className="truncate">Home<\/span>\s*<\/Link>\s*<Link\s+href="\/studio"[\s\S]*?<span className="truncate">Studio<\/span>/s
+  );
+  assert.match(
+    source,
+    /\{\s*id: "studio" as const,\s*icon: Sparkles,\s*label: "Studio",\s*href: "\/studio",\s*onClick: viewModel\.goStudioFromSidebar,\s*\}/s
+  );
+  assert.match(
+    controllerSource,
+    /case "studio":\s*return pathname === "\/studio" && sidebarPage === "root";/s
+  );
+  assert.match(modelSource, /\|\s*"studio"/);
+});

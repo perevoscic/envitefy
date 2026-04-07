@@ -389,6 +389,7 @@ function RootNavigationPanel({
   createdEventsCount,
   invitedEventsCount,
   onHome,
+  onStudio,
   onSnap,
   onCreate,
   onMyEvents,
@@ -404,12 +405,14 @@ function RootNavigationPanel({
   createdEventsCount: number;
   invitedEventsCount: number;
   onHome: () => void;
+  onStudio: () => void;
   onSnap: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
   onInvitedEvents: () => void;
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
+  const isStudioActive = pathname === "/studio" && sidebarPage === "root";
   const isSnapActive = pathname === "/event" && sidebarPage === "root";
   const isMyEventsActive =
     sidebarPage === "myEvents" ||
@@ -450,6 +453,25 @@ function RootNavigationPanel({
             <Home size={18} />
           </span>
           <span className="truncate">Home</span>
+        </Link>
+
+        <Link
+          href="/studio"
+          onClick={onStudio}
+          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
+            isStudioActive ? activeRowClass : inactiveRowClass
+          } py-3 pl-3 pr-4`}
+        >
+          <span
+            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+              isStudioActive
+                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
+                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+            }`}
+          >
+            <Sparkles size={18} />
+          </span>
+          <span className="truncate">Studio</span>
         </Link>
 
         {!useGymnasticsDirectCreate ? (
@@ -1032,6 +1054,13 @@ export default function LeftSidebar() {
       href: "/",
       onClick: viewModel.goHomeFromSidebar,
     },
+    {
+      id: "studio" as const,
+      icon: Sparkles,
+      label: "Studio",
+      href: "/studio",
+      onClick: viewModel.goStudioFromSidebar,
+    },
     !viewModel.useGymnasticsDirectCreate
       ? {
           id: "snap" as const,
@@ -1238,6 +1267,7 @@ export default function LeftSidebar() {
                       createdEventsCount={viewModel.createdEventsCount}
                       invitedEventsCount={viewModel.invitedEventsCount}
                       onHome={viewModel.goHomeFromSidebar}
+                      onStudio={viewModel.goStudioFromSidebar}
                       onSnap={viewModel.handleRootSnapNavigate}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}

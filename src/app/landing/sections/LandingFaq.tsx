@@ -4,12 +4,6 @@ import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import styles from "../LandingExperience.module.css";
 
-const glassSectionClass =
-  "theme-glass-surface relative isolate overflow-hidden rounded-[2rem] border border-white/14 shadow-[0_32px_90px_rgba(4,1,14,0.42)]";
-
-const sectionBubbleClass =
-  "mb-5 inline-flex rounded-full border border-white/28 bg-[rgba(32,18,58,0.62)] px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-white shadow-[0_12px_28px_rgba(6,2,16,0.22)]";
-
 const items = [
   {
     q: "What does Snap do on Envitefy?",
@@ -46,20 +40,19 @@ export default function LandingFaq() {
       className="hash-anchor-below-fixed-nav px-4 py-6 sm:px-6 lg:px-8"
       aria-labelledby="landing-faq-heading"
     >
-      <div
-        className={`mx-auto max-w-5xl ${glassSectionClass} px-7 py-8 md:px-12 md:py-10`}
-      >
-        <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(129,140,248,0.08),transparent_40%,rgba(124,58,237,0.06))]" />
-        <div className="relative">
+      <div className="mx-auto max-w-5xl">
+        <div
+          className={`${styles.surfacePanel} overflow-hidden rounded-[2.75rem] bg-white px-7 py-8 shadow-[0_28px_90px_rgba(43,27,22,0.08)] md:px-12 md:py-10`}
+        >
           <div className="mx-auto w-full max-w-3xl text-center lg:text-left">
-            <span className={sectionBubbleClass}>FAQ</span>
+            <span className={styles.eyebrow}>FAQ</span>
             <h2
               id="landing-faq-heading"
-              className={`${styles.headline} w-full text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl`}
+              className={`${styles.headline} mt-6 w-full text-3xl font-bold tracking-tight text-[#2b1b16] sm:text-4xl lg:text-5xl`}
             >
               Questions before you try it
             </h2>
-            <p className="mt-4 max-w-none text-lg leading-relaxed text-white/85">
+            <p className="mt-4 max-w-none text-lg leading-relaxed text-[#6a5549]">
               Quick answers about Snap, gymnastics meet pages, sharing, and
               RSVPs.
             </p>
@@ -68,7 +61,7 @@ export default function LandingFaq() {
               {items.map((item, idx) => (
                 <div
                   key={item.q}
-                  className="overflow-hidden rounded-2xl border border-white/12 bg-white/[0.06]"
+                  className="overflow-hidden rounded-[1.6rem] border border-[#efe4db] bg-[#fbf7f2] shadow-[0_16px_40px_rgba(43,27,22,0.05)]"
                 >
                   <button
                     type="button"
@@ -76,10 +69,10 @@ export default function LandingFaq() {
                     onClick={() => setOpen(open === idx ? null : idx)}
                     aria-expanded={open === idx}
                   >
-                    <span className="text-base font-semibold leading-snug text-white sm:text-lg">
+                    <span className="text-base font-semibold leading-snug text-[#2b1b16] sm:text-lg">
                       {item.q}
                     </span>
-                    <span className="flex shrink-0 rounded-full border border-white/16 bg-white/10 p-2 text-white">
+                    <span className="flex shrink-0 rounded-full border border-[#e7d8ce] bg-white p-2 text-[#c98f6b]">
                       {open === idx ? <Minus size={18} /> : <Plus size={18} />}
                     </span>
                   </button>
@@ -89,7 +82,7 @@ export default function LandingFaq() {
                     }`}
                   >
                     <div className="min-h-0 overflow-hidden">
-                      <p className="px-4 pb-5 leading-7 text-white/80 sm:px-5 sm:pb-6">
+                      <p className="px-4 pb-5 leading-7 text-[#6a5549] sm:px-5 sm:pb-6">
                         {item.a}
                       </p>
                     </div>
