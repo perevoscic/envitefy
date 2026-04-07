@@ -48,9 +48,7 @@ export default function AuthModal({
     // Subsequent updates: dispatch only on actual transitions
     if (open !== openRef.current) {
       try {
-        window.dispatchEvent(
-          new Event(open ? "smd-auth-modal-open" : "smd-auth-modal-close")
-        );
+        window.dispatchEvent(new Event(open ? "smd-auth-modal-open" : "smd-auth-modal-close"));
       } catch {}
       openRef.current = open;
     }
@@ -75,9 +73,7 @@ export default function AuthModal({
         const shouldCollapseForAuth =
           typeof window !== "undefined" &&
           typeof window.matchMedia === "function" &&
-          window.matchMedia(
-            "(max-width: 1023px), (hover: none), (pointer: coarse)",
-          ).matches;
+          window.matchMedia("(max-width: 1023px), (hover: none), (pointer: coarse)").matches;
         if (shouldCollapseForAuth) {
           setIsCollapsed(true);
         }
@@ -111,9 +107,8 @@ export default function AuthModal({
           {isLogin ? (
             <LoginForm
               onSuccess={onClose}
-              onSwitchMode={
-                allowSignupSwitch ? () => onModeChange?.("signup") : undefined
-              }
+              successRedirectUrl={successRedirectUrl}
+              onSwitchMode={allowSignupSwitch ? () => onModeChange?.("signup") : undefined}
             />
           ) : (
             <SignupForm

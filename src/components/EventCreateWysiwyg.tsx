@@ -13,6 +13,7 @@ import {
   type RegistryFormEntry,
 } from "@/components/RegistryLinksEditor";
 import {
+  getRegistrySectionCopyForCategory,
   MAX_REGISTRY_LINKS,
   normalizeRegistryLinks,
   validateRegistryUrl,
@@ -42,13 +43,6 @@ type Props = {
   defaultDate?: Date;
   initialCategoryKey?: string;
 };
-
-const REGISTRY_CATEGORY_KEYS = new Set([
-  "birthdays",
-  "weddings",
-  "baby showers",
-  "gender reveal",
-]);
 
 const TEMPLATE_LABELS = EVENT_CATEGORIES.reduce<Record<string, string>>(
   (acc, category) => {
@@ -548,7 +542,9 @@ export default function EventCreateWysiwyg({
           };
         })
       );
-      alert("Fix the highlighted registry links before saving.");
+      alert(
+        getRegistrySectionCopyForCategory(categoryLabel || "").invalidLinksAlert
+      );
       return;
     }
 
@@ -601,9 +597,8 @@ export default function EventCreateWysiwyg({
       }
 
       const normalizedCategoryForSubmit = (categoryLabel || "").toLowerCase();
-      const allowsRegistriesForSubmit = REGISTRY_CATEGORY_KEYS.has(
-        normalizedCategoryForSubmit
-      );
+      const allowsRegistriesForSubmit =
+        getRegistrySectionCopyForCategory(normalizedCategoryForSubmit).allowsLinks;
       const sanitizedRegistries = allowsRegistriesForSubmit
         ? normalizeRegistryLinks(
             registryLinks.map((entry) => ({
@@ -815,7 +810,8 @@ export default function EventCreateWysiwyg({
   }, [whenDate, fullDay, startTime, endDate, endTime]);
 
   const normalizedCategory = (categoryLabel || "").toLowerCase();
-  const allowsRegistrySection = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
+  const registryCopy = getRegistrySectionCopyForCategory(normalizedCategory);
+  const allowsRegistrySection = registryCopy.allowsLinks;
   const showRsvpField = true;
   const visibleCategories = useMemo(
     () =>
@@ -1193,6 +1189,8 @@ export default function EventCreateWysiwyg({
                 removeRegistryLink,
                 handleRegistryFieldChange,
                 MAX_REGISTRY_LINKS,
+                registryEditorTitle: registryCopy.linksLabel,
+                registryEmptyState: registryCopy.emptyState,
                 attachment,
                 attachmentPreviewUrl,
                 attachmentError,

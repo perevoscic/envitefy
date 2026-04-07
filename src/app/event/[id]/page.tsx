@@ -55,7 +55,11 @@ import { buildEditLink, resolveEditHref } from "@/utils/event-edit-route";
 import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
 import type { ImageColors } from "@/utils/image-colors";
 import { extractFirstPhoneNumber } from "@/utils/phone";
-import { getRegistryBrandByUrl, normalizeRegistryLinks } from "@/utils/registry-links";
+import {
+  getRegistryBrandByUrl,
+  getRegistrySectionCopyForCategory,
+  normalizeRegistryLinks,
+} from "@/utils/registry-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { sanitizeSignupForm } from "@/utils/signup";
 import { resolveFootballSeasonTemplateChrome } from "../football-season/customize/footballSeasonTemplateTheme";
@@ -838,10 +842,8 @@ export default async function EventPage({
   const hasMapLocation = Boolean(venueText?.trim() || locationText?.trim());
   const categoryRaw = typeof data?.category === "string" ? data.category : "";
   const categoryNormalized = categoryRaw.toLowerCase();
-  const registriesAllowed =
-    categoryNormalized === "birthdays" ||
-    categoryNormalized === "weddings" ||
-    categoryNormalized === "baby showers";
+  const registryCopy = getRegistrySectionCopyForCategory(categoryRaw);
+  const registriesAllowed = registryCopy.allowsLinks;
   const registryLinksRaw = Array.isArray(data?.registries) ? (data.registries as any[]) : [];
   const registryLinks = registriesAllowed
     ? normalizeRegistryLinks(
@@ -1820,7 +1822,9 @@ export default async function EventPage({
           )}
           {registriesAllowed && registryCards.length > 0 && (
             <div className="mt-6 border-t border-[#e7defb] pt-4 text-sm leading-relaxed">
-              <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Registries</p>
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                {registryCopy.sectionHeading}
+              </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {registryCards.map((link) => {
                   const decorated = decorateAmazonUrl(link.url, {
@@ -1874,10 +1878,7 @@ export default async function EventPage({
                 })}
               </div>
               {!isReadOnly && (
-                <p className="mt-3 text-xs text-foreground/60">
-                  These links open in a new tab. Registries must stay public or shareable so guests
-                  can view them.
-                </p>
+                <p className="mt-3 text-xs text-foreground/60">{registryCopy.publicNote}</p>
               )}
             </div>
           )}

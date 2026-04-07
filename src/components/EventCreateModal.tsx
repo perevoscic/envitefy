@@ -7,6 +7,7 @@ import {
 } from "@/components/RegistryLinksEditor";
 import type { NormalizedEvent } from "@/lib/mappers";
 import {
+  getRegistrySectionCopyForCategory,
   MAX_REGISTRY_LINKS,
   normalizeRegistryLinks,
   validateRegistryUrl,
@@ -32,12 +33,6 @@ type ConnectedCalendars = {
   microsoft: boolean;
   apple: boolean;
 };
-
-const REGISTRY_CATEGORY_KEYS = new Set([
-  "birthdays",
-  "weddings",
-  "baby showers",
-]);
 
 const createRegistryEntry = (): RegistryFormEntry => ({
   key: `registry-${Math.random().toString(36).slice(2, 10)}`,
@@ -412,14 +407,13 @@ export default function EventCreateModal({
           };
         })
       );
-      alert("Fix the highlighted registry links before saving.");
+      alert(getRegistrySectionCopyForCategory(category || "").invalidLinksAlert);
       return;
     }
 
     const normalizedCategoryForSubmit = (category || "").toLowerCase();
-    const allowsRegistriesForSubmit = REGISTRY_CATEGORY_KEYS.has(
-      normalizedCategoryForSubmit
-    );
+    const allowsRegistriesForSubmit =
+      getRegistrySectionCopyForCategory(normalizedCategoryForSubmit).allowsLinks;
     const sanitizedRegistries = allowsRegistriesForSubmit
       ? normalizeRegistryLinks(
           registryLinks.map((entry) => ({
@@ -671,8 +665,8 @@ export default function EventCreateModal({
 
   const trimmedRsvp = rsvp.trim();
   const normalizedCategory = (category || "").toLowerCase();
-  const isRegistryCategory = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
-  const _allowsRegistrySection = isRegistryCategory;
+  const _allowsRegistrySection =
+    getRegistrySectionCopyForCategory(normalizedCategory).allowsLinks;
   // RSVP field should ALWAYS show - users may want to add RSVP for any event type
   const _showRsvpField = true;
 

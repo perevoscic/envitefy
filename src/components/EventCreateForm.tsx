@@ -8,6 +8,7 @@ import RegistryLinksEditor, {
 import Toggle from "@/components/Toggle";
 import type { NormalizedEvent } from "@/lib/mappers";
 import {
+  getRegistrySectionCopyForCategory,
   MAX_REGISTRY_LINKS,
   normalizeRegistryLinks,
   validateRegistryUrl,
@@ -33,12 +34,6 @@ type ConnectedCalendars = {
   microsoft: boolean;
   apple: boolean;
 };
-
-const REGISTRY_CATEGORY_KEYS = new Set([
-  "birthdays",
-  "weddings",
-  "baby showers",
-]);
 
 const createRegistryEntry = (): RegistryFormEntry => ({
   key: `registry-${Math.random().toString(36).slice(2, 10)}`,
@@ -358,8 +353,8 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
 
   const trimmedRsvp = rsvp.trim();
   const normalizedCategory = (category || "").toLowerCase();
-  const isRegistryCategory = REGISTRY_CATEGORY_KEYS.has(normalizedCategory);
-  const allowsRegistrySection = isRegistryCategory;
+  const registryCopy = getRegistrySectionCopyForCategory(normalizedCategory);
+  const allowsRegistrySection = registryCopy.allowsLinks;
   const showRsvpField = true;
 
   const submit = async (e: React.FormEvent) => {
@@ -391,7 +386,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           };
         })
       );
-      alert("Fix the highlighted registry links before saving.");
+      alert(registryCopy.invalidLinksAlert);
       return;
     }
 
@@ -407,9 +402,8 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
     }
 
     const normalizedCategoryForSubmit = (category || "").toLowerCase();
-    const allowsRegistriesForSubmit = REGISTRY_CATEGORY_KEYS.has(
-      normalizedCategoryForSubmit
-    );
+    const allowsRegistriesForSubmit =
+      getRegistrySectionCopyForCategory(normalizedCategoryForSubmit).allowsLinks;
     const sanitizedRegistries = allowsRegistriesForSubmit
       ? normalizeRegistryLinks(
           registryLinks.map((entry) => ({
@@ -888,6 +882,8 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
           onRemove={removeRegistryLink}
           onChange={handleRegistryFieldChange}
           maxLinks={MAX_REGISTRY_LINKS}
+          title={registryCopy.linksLabel}
+          emptyState={registryCopy.emptyState}
         />
       )}
 

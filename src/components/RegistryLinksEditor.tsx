@@ -16,6 +16,8 @@ type Props = {
   onRemove: (key: string) => void;
   onChange: (key: string, field: "label" | "url", value: string) => void;
   maxLinks?: number;
+  title?: string;
+  emptyState?: string;
 };
 
 export default function RegistryLinksEditor({
@@ -24,11 +26,13 @@ export default function RegistryLinksEditor({
   onRemove,
   onChange,
   maxLinks = MAX_REGISTRY_LINKS,
+  title = "Registry links",
+  emptyState = `No registry links yet. Use "Add link" to include up to ${maxLinks} retailers.`,
 }: Props) {
   return (
     <div className="rounded-md border border-dashed border-border/60 bg-background/60 p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <p className="text-sm font-medium text-foreground">Registry links</p>
+        <p className="text-sm font-medium text-foreground">{title}</p>
         <button
           type="button"
           onClick={onAdd}
@@ -40,9 +44,7 @@ export default function RegistryLinksEditor({
         </button>
       </div>
       {entries.length === 0 ? (
-        <p className="mt-3 text-xs text-foreground/60">
-          No registry links yet. Use "Add link" to include up to {maxLinks} retailers.
-        </p>
+        <p className="mt-3 text-xs text-foreground/60">{emptyState}</p>
       ) : (
         <div className="mt-3 space-y-3">
           {entries.map((entry) => (

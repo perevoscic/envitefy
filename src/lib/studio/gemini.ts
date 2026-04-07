@@ -11,7 +11,12 @@ type GeminiLiveCardResult =
   | { ok: false; error: StudioGenerationError; warnings: string[] };
 
 type GeminiTextResult =
-  | { ok: true; invitation: StudioInvitationText; liveCard: StudioLiveCardMetadata; warnings: string[] }
+  | {
+      ok: true;
+      invitation: StudioInvitationText;
+      liveCard: StudioLiveCardMetadata;
+      warnings: string[];
+    }
   | { ok: false; error: StudioGenerationError; warnings: string[] };
 
 type GeminiImageResult =
@@ -101,23 +106,60 @@ function buildError(
 }
 
 function getGeminiApiKey(): string {
-  return process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
+  return (
+    process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_API_KEY || ""
+  );
 }
 
 function resolveTextModel(): string {
-  return process.env.STUDIO_GEMINI_TEXT_MODEL || process.env.GEMINI_MODEL || "gemini-3-flash-preview";
+  return (
+    process.env.STUDIO_GEMINI_TEXT_MODEL || process.env.GEMINI_MODEL || "gemini-3-flash-preview"
+  );
 }
 
 function resolveImageModel(): string {
   return process.env.STUDIO_GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
 }
 
+function resolveVertexProject(): string {
+  return (
+    process.env.STUDIO_GOOGLE_VERTEX_PROJECT ||
+    process.env.GOOGLE_VERTEX_PROJECT ||
+    process.env.NANA_GOOGLE_VERTEX_PROJECT ||
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    ""
+  );
+}
+
+function resolveVertexLocation(): string {
+  return (
+    process.env.STUDIO_GOOGLE_VERTEX_LOCATION ||
+    process.env.GOOGLE_VERTEX_LOCATION ||
+    process.env.NANA_GOOGLE_VERTEX_LOCATION ||
+    process.env.GOOGLE_CLOUD_LOCATION ||
+    ""
+  );
+}
+
 function getGeminiClient(): GoogleGenAI {
   const apiKey = getGeminiApiKey();
-  if (!apiKey) {
-    throw new Error("Gemini API key is not configured.");
+  if (apiKey) {
+    return new GoogleGenAI({ apiKey });
   }
-  return new GoogleGenAI({ apiKey });
+
+  const project = resolveVertexProject();
+  const location = resolveVertexLocation();
+  if (project && location) {
+    return new GoogleGenAI({
+      vertexai: true,
+      project,
+      location,
+    });
+  }
+
+  throw new Error(
+    "Gemini is not configured. Set GEMINI_API_KEY/GOOGLE_API_KEY or Vertex project and location env vars.",
+  );
 }
 
 function extractTextFromGeminiResponse(response: any): string {
@@ -160,13 +202,15 @@ function extractJsonObject(text: string): unknown | null {
 }
 
 function extractImageDataUrlFromGeminiResponse(response: any): string | null {
-  const candidates = Array.isArray(response?.generatedImages) ? response.generatedImages : [];
+  const candidates = Array.isArray(response?.candidates) ? response.candidates : [];
   for (const candidate of candidates) {
-    const image = candidate?.image;
-    const mimeType = safeString(image?.mimeType) || "image/png";
-    const data = safeString(image?.imageBytes);
-    if (!data) continue;
-    return `data:${mimeType};base64,${data}`;
+    const parts = Array.isArray(candidate?.content?.parts) ? candidate.content.parts : [];
+    for (const part of parts) {
+      const mimeType = safeString(part?.inlineData?.mimeType) || "image/png";
+      const data = safeString(part?.inlineData?.data);
+      if (!data) continue;
+      return `data:${mimeType};base64,${data}`;
+    }
   }
   return null;
 }
@@ -196,7 +240,11 @@ async function postStructuredGeminiContent(
     const message = error instanceof Error ? error.message : "Gemini request failed";
     return {
       ok: false,
-      error: buildError("provider_error", message, { retryable: true }),
+      error: buildError(
+        message.includes("not configured") ? "missing_api_key" : "provider_error",
+        message,
+        { retryable: !message.includes("not configured") },
+      ),
       warnings: [],
     };
   }
@@ -211,14 +259,15 @@ async function postGeminiImage(
 > {
   try {
     const client = getGeminiClient();
-    const response = await client.models.generateImages({
+    const response = await client.models.generateContent({
       model,
-      prompt,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
-        numberOfImages: 1,
-        imageSize: "1K",
-        aspectRatio: "9:16",
-        enhancePrompt: true,
+        responseModalities: ["TEXT", "IMAGE"],
+        imageConfig: {
+          aspectRatio: "9:16",
+          imageSize: "1K",
+        },
       },
     });
     return { ok: true, response, warnings: [] };
@@ -226,13 +275,19 @@ async function postGeminiImage(
     const message = error instanceof Error ? error.message : "Gemini request failed";
     return {
       ok: false,
-      error: buildError("provider_error", message, { retryable: true }),
+      error: buildError(
+        message.includes("not configured") ? "missing_api_key" : "provider_error",
+        message,
+        { retryable: !message.includes("not configured") },
+      ),
       warnings: [],
     };
   }
 }
 
-export async function generateStudioLiveCardWithGemini(prompt: string): Promise<GeminiLiveCardResult> {
+export async function generateStudioLiveCardWithGemini(
+  prompt: string,
+): Promise<GeminiLiveCardResult> {
   const result = await postStructuredGeminiContent(resolveTextModel(), prompt);
   if (!result.ok) return result;
 

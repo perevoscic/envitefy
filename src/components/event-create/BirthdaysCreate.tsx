@@ -7,6 +7,7 @@ import { getEventTheme } from "@/lib/event-theme";
 import type { EditorBindings } from "@/components/event-templates/EventTemplateBase";
 import BirthdaysTemplate from "@/components/event-templates/BirthdaysTemplate";
 import {
+  getRegistrySectionCopyForCategory,
   MAX_REGISTRY_LINKS,
   normalizeRegistryLinks,
   validateRegistryUrl,
@@ -27,6 +28,8 @@ type Props = {
   defaultDate?: Date;
   editEventId?: string;
 };
+
+const registryCopy = getRegistrySectionCopyForCategory("birthdays");
 
 const createRegistryEntry = () => ({
   key: `registry-${Math.random().toString(36).slice(2, 10)}`,
@@ -748,7 +751,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
           };
         })
       );
-      alert("Fix the highlighted registry links before saving.");
+      alert(registryCopy.invalidLinksAlert);
       return;
     }
 
@@ -1547,6 +1550,8 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
               removeRegistryLink,
               handleRegistryFieldChange,
               MAX_REGISTRY_LINKS,
+              registryEditorTitle: registryCopy.linksLabel,
+              registryEmptyState: registryCopy.emptyState,
               attachment,
               attachmentPreviewUrl,
               attachmentError,

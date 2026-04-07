@@ -32,11 +32,14 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import {
   normalizeInvitationText,
+  normalizeLiveCardMetadata,
   type StudioGenerateApiResponse,
   type StudioGenerateMode,
   type StudioGenerateRequest,
   type StudioGenerationError,
 } from "@/lib/studio/types";
+import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 type StudioStep = "category" | "form" | "studio" | "library";
 type MediaType = "image" | "page";
@@ -133,7 +136,15 @@ type InvitationData = {
   socialCaption: string;
   theme: {
     primaryColor: string;
+    secondaryColor: string;
     accentColor: string;
+    themeStyle: string;
+  };
+  interactiveMetadata: {
+    rsvpMessage: string;
+    funFacts: string[];
+    ctaLabel: string;
+    shareNote: string;
   };
   eventDetails: EventDetails;
 };
@@ -143,6 +154,9 @@ type MediaItem = {
   type: MediaType;
   url?: string;
   data?: InvitationData;
+  errorMessage?: string;
+  publishedEventId?: string;
+  sharePath?: string;
   theme: string;
   status: "ready" | "loading" | "error";
   details: EventDetails;
@@ -766,6 +780,9 @@ function sanitizeInvitationData(
   if (!isRecord(value)) return undefined;
 
   const theme = isRecord(value.theme) ? value.theme : null;
+  const interactiveMetadata = isRecord(value.interactiveMetadata)
+    ? value.interactiveMetadata
+    : null;
   const eventDetails = sanitizeEventDetails(value.eventDetails);
   const defaultTheme = getThemeColors(fallbackDetails);
 
@@ -792,7 +809,25 @@ function sanitizeInvitationData(
       buildDescription(fallbackDetails),
     theme: {
       primaryColor: readString(theme?.primaryColor) || defaultTheme.primaryColor,
+      secondaryColor: readString(theme?.secondaryColor) || defaultTheme.primaryColor,
       accentColor: readString(theme?.accentColor) || defaultTheme.accentColor,
+      themeStyle: readString(theme?.themeStyle) || "editorial gradient",
+    },
+    interactiveMetadata: {
+      rsvpMessage:
+        readString(interactiveMetadata?.rsvpMessage) || "Reply to let the host know you're coming.",
+      funFacts: Array.isArray(interactiveMetadata?.funFacts)
+        ? interactiveMetadata.funFacts.map(readString).filter(Boolean).slice(0, 5)
+        : [],
+      ctaLabel:
+        readString(interactiveMetadata?.ctaLabel) ||
+        readString(value.callToAction) ||
+        "Tap for details and RSVP.",
+      shareNote:
+        readString(interactiveMetadata?.shareNote) ||
+        readString(value.socialCaption) ||
+        readString(value.description) ||
+        "Share this live card with your guests.",
     },
     eventDetails,
   };
@@ -811,6 +846,9 @@ function sanitizeMediaItem(value: unknown): MediaItem | null {
     type,
     url: readNullableString(value.url) || undefined,
     data: sanitizeInvitationData(value.data, details),
+    errorMessage: readNullableString(value.errorMessage) || undefined,
+    publishedEventId: readNullableString(value.publishedEventId) || undefined,
+    sharePath: readNullableString(value.sharePath) || undefined,
     theme: readString(value.theme) || getDisplayTitle(details),
     status:
       value.status === "ready" || value.status === "loading" || value.status === "error"
@@ -835,6 +873,7 @@ function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateApiRespon
 
   const mode =
     value.mode === "text" || value.mode === "image" || value.mode === "both" ? value.mode : "both";
+  const liveCard = normalizeLiveCardMetadata(value.liveCard);
   const invitation = normalizeInvitationText(value.invitation);
   const imageDataUrl =
     typeof value.imageDataUrl === "string" && value.imageDataUrl.startsWith("data:image/")
@@ -860,6 +899,7 @@ function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateApiRespon
     return {
       ok: false,
       mode,
+      liveCard: null,
       invitation: null,
       imageDataUrl: null,
       warnings,
@@ -867,12 +907,13 @@ function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateApiRespon
     };
   }
 
-  if (!invitation && !imageDataUrl) return null;
+  if (!liveCard && !invitation && !imageDataUrl) return null;
 
   return {
     ok: true,
     mode,
-    invitation: invitation || null,
+    liveCard,
+    invitation: invitation || liveCard?.invitation || null,
     imageDataUrl,
     warnings,
     errors,
@@ -1153,8 +1194,10 @@ function buildInvitationData(
   details: EventDetails,
   response: StudioGenerateApiResponse,
 ): InvitationData {
-  const invitation = response.invitation;
-  const title = invitation?.title || getDisplayTitle(details);
+  const liveCard = response.liveCard;
+  const invitation = liveCard?.invitation || response.invitation;
+  const fallbackTheme = getThemeColors(details);
+  const title = liveCard?.title || invitation?.title || getDisplayTitle(details);
   const subtitle =
     invitation?.subtitle || buildDescription(details) || pickFirst(details.theme, details.category);
   const scheduleLine =
@@ -1163,8 +1206,11 @@ function buildInvitationData(
   const locationLine =
     invitation?.locationLine || pickFirst(details.venueName, details.location, "Location TBD");
   const callToAction =
-    invitation?.callToAction || pickFirst(details.calloutText, "Tap for details and RSVP.");
+    liveCard?.interactiveMetadata.ctaLabel ||
+    invitation?.callToAction ||
+    pickFirst(details.calloutText, "Tap for details and RSVP.");
   const description =
+    liveCard?.description ||
     invitation?.openingLine ||
     buildDescription(details) ||
     "Celebrate together with a beautifully designed invitation.";
@@ -1176,9 +1222,166 @@ function buildInvitationData(
     scheduleLine,
     locationLine,
     callToAction,
-    socialCaption: invitation?.socialCaption || description,
-    theme: getThemeColors(details),
+    socialCaption:
+      liveCard?.interactiveMetadata.shareNote || invitation?.socialCaption || description,
+    theme: {
+      primaryColor: liveCard?.palette.primary || fallbackTheme.primaryColor,
+      secondaryColor: liveCard?.palette.secondary || fallbackTheme.primaryColor,
+      accentColor: liveCard?.palette.accent || fallbackTheme.accentColor,
+      themeStyle: liveCard?.themeStyle || "editorial gradient",
+    },
+    interactiveMetadata: {
+      rsvpMessage:
+        liveCard?.interactiveMetadata.rsvpMessage || "Reply to let the host know you're coming.",
+      funFacts: liveCard?.interactiveMetadata.funFacts || [],
+      ctaLabel: liveCard?.interactiveMetadata.ctaLabel || callToAction,
+      shareNote:
+        liveCard?.interactiveMetadata.shareNote || invitation?.socialCaption || description,
+    },
     eventDetails: details,
+  };
+}
+
+function normalizeStudioEventCategory(category: InviteCategory): string {
+  switch (category) {
+    case "Birthday":
+      return "birthdays";
+    case "Wedding":
+      return "weddings";
+    case "Baby Shower":
+      return "baby showers";
+    case "Bridal Shower":
+    case "Housewarming":
+    case "Anniversary":
+      return "party";
+    default:
+      return "special events";
+  }
+}
+
+function toIsoFromLocalDateTime(dateValue: string, timeValue?: string): string | undefined {
+  const date = readString(dateValue);
+  if (!date) return undefined;
+
+  const normalizedTime = readString(timeValue);
+  if (!normalizedTime) return date;
+  if (!/^\d{2}:\d{2}(:\d{2})?$/.test(normalizedTime)) return undefined;
+  return `${date}T${normalizedTime.length === 5 ? `${normalizedTime}:00` : normalizedTime}`;
+}
+
+function getStudioEventDate(details: EventDetails): string {
+  return readString(details.eventDate) || readString(details.ceremonyDate);
+}
+
+function getStudioEventStartTime(details: EventDetails): string {
+  return readString(details.startTime) || readString(details.ceremonyTime);
+}
+
+function getStudioEventEndTime(details: EventDetails): string {
+  return readString(details.endTime) || readString(details.receptionTime);
+}
+
+function normalizeStudioExternalUrl(value: string): string {
+  const trimmed = readString(value);
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed.replace(/^\/+/, "")}`;
+}
+
+function buildStudioRsvpLine(details: EventDetails): string | undefined {
+  const hostName = readString(details.rsvpName);
+  const hostContact = readString(details.rsvpContact);
+  const deadline = formatDate(details.rsvpDeadline);
+  const contactLine = [hostName, hostContact].filter(Boolean).join(" - ");
+  if (!contactLine && !deadline) return undefined;
+  if (deadline && contactLine) {
+    return `RSVP by ${deadline}: ${contactLine}`;
+  }
+  return deadline ? `RSVP by ${deadline}` : `RSVP: ${contactLine}`;
+}
+
+function getStudioShareTitle(item: MediaItem): string {
+  return item.data?.title || getDisplayTitle(item.details);
+}
+
+function buildStudioPublishPayload(item: MediaItem, imageUrl: string | null) {
+  const details = item.details;
+  const title = getStudioShareTitle(item);
+  const startISO = toIsoFromLocalDateTime(
+    getStudioEventDate(details),
+    getStudioEventStartTime(details),
+  );
+  const endISO = toIsoFromLocalDateTime(
+    getStudioEventDate(details),
+    getStudioEventEndTime(details),
+  );
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const category = normalizeStudioEventCategory(details.category);
+  const descriptionParts = [
+    item.data?.description,
+    readString(details.message),
+    readString(details.specialInstructions),
+    readString(details.optionalLink)
+      ? `More info: ${normalizeStudioExternalUrl(details.optionalLink)}`
+      : "",
+    readString(details.weddingWebsite)
+      ? `Wedding website: ${normalizeStudioExternalUrl(details.weddingWebsite)}`
+      : "",
+  ].filter(Boolean);
+  const registries = [
+    readString(details.registryLink)
+      ? { label: "Registry", url: normalizeStudioExternalUrl(details.registryLink) }
+      : null,
+    readString(details.weddingWebsite)
+      ? { label: "Wedding Website", url: normalizeStudioExternalUrl(details.weddingWebsite) }
+      : null,
+    readString(details.optionalLink)
+      ? { label: "More Info", url: normalizeStudioExternalUrl(details.optionalLink) }
+      : null,
+  ]
+    .filter(Boolean)
+    .map((entry) => entry as { label: string; url: string });
+  const rsvpLine = buildStudioRsvpLine(details);
+  const venue =
+    readString(details.venueName) ||
+    readString(details.ceremonyVenue) ||
+    readString(details.receptionVenue);
+  const location = readString(details.location) || venue || undefined;
+
+  return {
+    title,
+    data: {
+      title,
+      description:
+        descriptionParts.join("\n\n") || "Celebrate together with a beautifully designed invite.",
+      startISO,
+      startAt: startISO,
+      start: startISO,
+      endISO,
+      endAt: endISO,
+      end: endISO,
+      timezone,
+      category,
+      status: "published",
+      ownership: "created",
+      createdVia: "studio",
+      venue: venue || undefined,
+      location,
+      rsvp: rsvpLine,
+      rsvpEnabled: Boolean(rsvpLine),
+      rsvpDeadline: readString(details.rsvpDeadline) || undefined,
+      thumbnail: imageUrl || undefined,
+      heroImage: imageUrl || undefined,
+      customHeroImage: imageUrl || undefined,
+      registries: registries.length > 0 ? registries : undefined,
+      themeStyle: item.data?.theme.themeStyle || undefined,
+      studioCard: {
+        mediaType: item.type,
+        imageUrl: imageUrl || undefined,
+        invitationData: item.data || undefined,
+        positions: item.positions || { ...EMPTY_POSITIONS },
+      },
+    },
   };
 }
 
@@ -1199,6 +1402,7 @@ export default function StudioWorkspace() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("none");
   const [isDesignMode, setIsDesignMode] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [sharingId, setSharingId] = useState<string | null>(null);
 
   const activePageRecord = useMemo(
     () => mediaList.find((item) => item.id === activePage?.id) ?? activePage,
@@ -1282,24 +1486,109 @@ export default function StudioWorkspace() {
     document.body.removeChild(link);
   }
 
-  async function shareMedia(item: MediaItem) {
-    const shareData = {
-      title: item.data?.title || getDisplayTitle(item.details),
-      text: item.data?.description || "Check out this invitation!",
-      url: typeof window !== "undefined" ? window.location.href : "",
-    };
+  function patchMediaItem(id: string, patch: Partial<MediaItem>) {
+    setMediaList((prev) =>
+      sanitizeMediaItems(prev.map((item) => (item.id === id ? { ...item, ...patch } : item))),
+    );
+    if (activePage?.id === id) {
+      setActivePage((prev) => (prev ? { ...prev, ...patch } : prev));
+    }
+    if (selectedImage?.id === id) {
+      setSelectedImage((prev) => (prev ? { ...prev, ...patch } : prev));
+    }
+  }
 
+  function getAbsoluteShareUrl(sharePath: string): string {
+    if (typeof window === "undefined") return sharePath;
+    return new URL(sharePath, window.location.origin).toString();
+  }
+
+  async function ensurePublicSharePath(item: MediaItem): Promise<string> {
+    if (item.sharePath?.startsWith("/card/")) {
+      return item.sharePath;
+    }
+    if (item.status !== "ready") {
+      throw new Error("This invite must finish generating before it can be shared.");
+    }
+
+    const persistedImageUrl = await persistImageMediaValue({
+      value: item.url,
+      fileName: `${buildEventSlug(getStudioShareTitle(item)) || "studio-invite"}.png`,
+    });
+    const payload = buildStudioPublishPayload(item, persistedImageUrl);
+
+    const response = item.publishedEventId
+      ? await fetch(`/api/history/${encodeURIComponent(item.publishedEventId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            title: payload.title,
+            data: payload.data,
+          }),
+        })
+      : await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+    const json = await response.json().catch(() => null);
+
+    if (!response.ok || !json || typeof json.id !== "string" || !json.id.trim()) {
+      const errorMessage =
+        isRecord(json) && typeof json.error === "string" && json.error.trim()
+          ? json.error.trim()
+          : "Failed to publish this invite for sharing.";
+      throw new Error(errorMessage);
+    }
+
+    const sharePath = buildStudioCardPath(json.id, payload.title);
+    patchMediaItem(item.id, {
+      publishedEventId: json.id,
+      sharePath,
+    });
+    return sharePath;
+  }
+
+  async function shareMedia(item: MediaItem) {
     try {
+      setSharingId(item.id);
+      const sharePath = await ensurePublicSharePath(item);
+      const shareUrl = getAbsoluteShareUrl(sharePath);
+      const shareData = {
+        title: getStudioShareTitle(item),
+        text:
+          item.data?.interactiveMetadata.shareNote ||
+          item.data?.socialCaption ||
+          item.data?.description ||
+          "Check out this invitation!",
+        url: shareUrl,
+      };
+
       if (typeof navigator !== "undefined" && navigator.share) {
         await navigator.share(shareData);
       } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareData.url);
+        await navigator.clipboard.writeText(shareUrl);
+      } else if (typeof window !== "undefined") {
+        window.prompt("Copy your share link:", shareUrl);
       }
       setCopySuccess(true);
       window.setTimeout(() => setCopySuccess(false), 1800);
-    } catch {
-      setCopySuccess(true);
-      window.setTimeout(() => setCopySuccess(false), 1800);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+      console.error("[studio] share failed", error);
+      if (typeof window !== "undefined") {
+        const message =
+          error instanceof Error && error.message.trim()
+            ? error.message.trim()
+            : "Unable to create a public share link right now.";
+        window.alert(message);
+      }
+    } finally {
+      setSharingId((current) => (current === item.id ? null : current));
     }
   }
 
@@ -1366,6 +1655,7 @@ export default function StudioWorkspace() {
         status: "ready",
         url: response.imageDataUrl || getFallbackThumbnail(currentDetails),
         data: type === "page" ? buildInvitationData(currentDetails, response) : undefined,
+        errorMessage: undefined,
       };
 
       setMediaList((prev) =>
@@ -1373,12 +1663,22 @@ export default function StudioWorkspace() {
       );
       setEditingId(null);
       setStep("studio");
-    } catch {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error && error.message.trim()
+          ? error.message.trim()
+          : "Studio generation failed.";
+      console.error("Studio generation failed", error);
       setMediaList((prev) =>
         sanitizeMediaItems(
           prev.map((item) =>
             item.id === targetId
-              ? { ...item, status: "error", url: getFallbackThumbnail(currentDetails) }
+              ? {
+                  ...item,
+                  status: "error",
+                  url: getFallbackThumbnail(currentDetails),
+                  errorMessage,
+                }
               : item,
           ),
         ),
@@ -1972,6 +2272,14 @@ export default function StudioWorkspace() {
                             {item.type === "page" ? "Live Card" : "Image"}
                           </span>
                         </div>
+                        <button
+                          onClick={() => deleteMedia(item.id)}
+                          className="absolute right-4 top-4 rounded-full border border-neutral-200 bg-white/90 p-2 text-red-500 shadow-sm transition-colors hover:bg-white hover:text-red-600"
+                          title="Delete from library"
+                          aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                       <div className="p-6">
                         <h3 className="truncate text-lg font-bold text-neutral-900">
@@ -2153,6 +2461,11 @@ export default function StudioWorkspace() {
                           ) : item.status === "error" ? (
                             <div className="p-6 text-center">
                               <p className="mb-2 font-bold text-red-500">Generation Failed</p>
+                              {item.errorMessage ? (
+                                <p className="mb-3 text-[11px] leading-5 text-neutral-500">
+                                  {item.errorMessage}
+                                </p>
+                              ) : null}
                               <button
                                 onClick={() => generateMedia(item.type)}
                                 className="text-xs text-neutral-500 underline hover:text-neutral-900"
@@ -2201,10 +2514,13 @@ export default function StudioWorkspace() {
                                 </button>
                                 <button
                                   onClick={() => shareMedia(item)}
+                                  disabled={sharingId === item.id}
                                   className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-900 shadow-lg transition-transform hover:scale-110"
-                                  title="Share"
+                                  title={sharingId === item.id ? "Creating share link" : "Share"}
                                 >
-                                  {copySuccess ? (
+                                  {sharingId === item.id ? (
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                  ) : copySuccess ? (
                                     <CheckCircle2 className="h-6 w-6 text-green-600" />
                                   ) : (
                                     <Share2 className="h-6 w-6" />
@@ -2234,13 +2550,23 @@ export default function StudioWorkspace() {
                               </>
                             )}
                           </div>
+                          <button
+                            onClick={() => deleteMedia(item.id)}
+                            className="absolute right-4 top-4 rounded-full border border-neutral-200 bg-white/90 p-2 text-red-500 shadow-sm transition-colors hover:bg-white hover:text-red-600"
+                            title="Delete from library"
+                            aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
 
                         <div className="space-y-1 p-6">
                           <h3 className="truncate text-lg font-bold text-neutral-900">
-                            {item.theme}
+                            {getStudioShareTitle(item)}
                           </h3>
-                          <p className="text-xs text-neutral-500">Created just now • Interactive</p>
+                          <p className="text-xs uppercase tracking-widest text-neutral-500">
+                            {item.theme}
+                          </p>
                         </div>
                       </motion.div>
                     ))}
@@ -2405,6 +2731,9 @@ export default function StudioWorkspace() {
                               <p className="text-sm font-bold uppercase tracking-widest text-green-600">
                                 RSVP Details
                               </p>
+                              <p className="text-sm leading-6 text-neutral-700">
+                                {activePageRecord.data.interactiveMetadata.rsvpMessage}
+                              </p>
                               <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
                                 <div>
                                   <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
@@ -2437,7 +2766,7 @@ export default function StudioWorkspace() {
                               </div>
                               <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 py-3 text-xs font-bold text-white">
                                 <CheckCircle2 className="h-3 w-3" />
-                                Confirm RSVP Now
+                                {activePageRecord.data.interactiveMetadata.ctaLabel}
                               </button>
                             </div>
                           ) : null}
@@ -2447,6 +2776,28 @@ export default function StudioWorkspace() {
                               <p className="text-sm font-bold uppercase tracking-widest text-purple-600">
                                 {activePageRecord.data.eventDetails.category} Information
                               </p>
+                              <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                  Theme Style
+                                </p>
+                                <p className="mt-1 text-sm font-medium text-neutral-900">
+                                  {activePageRecord.data.theme.themeStyle}
+                                </p>
+                              </div>
+                              {activePageRecord.data.interactiveMetadata.funFacts.length > 0 ? (
+                                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
+                                    Fun Facts
+                                  </p>
+                                  <ul className="mt-3 space-y-2 text-sm text-amber-950">
+                                    {activePageRecord.data.interactiveMetadata.funFacts.map(
+                                      (fact) => (
+                                        <li key={fact}>{fact}</li>
+                                      ),
+                                    )}
+                                  </ul>
+                                </div>
+                              ) : null}
                               <div className="grid grid-cols-1 gap-3">
                                 {Object.entries(activePageRecord.data.eventDetails)
                                   .filter(([key, value]) => {
@@ -2564,6 +2915,9 @@ export default function StudioWorkspace() {
                               <p className="text-xs text-neutral-500">
                                 {getRegistryText(activePageRecord.data.eventDetails)}
                               </p>
+                              <p className="text-xs text-neutral-500">
+                                {activePageRecord.data.interactiveMetadata.shareNote}
+                              </p>
                               {activePageRecord.data.eventDetails.registryLink ? (
                                 <button
                                   onClick={() =>
@@ -2623,8 +2977,18 @@ export default function StudioWorkspace() {
                         },
                         {
                           key: "share",
-                          label: copySuccess ? "Copied!" : "Share",
-                          icon: copySuccess ? CheckCircle2 : Share2,
+                          label:
+                            sharingId === activePageRecord.id
+                              ? "Sharing..."
+                              : copySuccess
+                                ? "Copied!"
+                                : "Share",
+                          icon:
+                            sharingId === activePageRecord.id
+                              ? Loader2
+                              : copySuccess
+                                ? CheckCircle2
+                                : Share2,
                           visible: true,
                           onClick: () => shareMedia(activePageRecord),
                         },
@@ -2664,6 +3028,7 @@ export default function StudioWorkspace() {
                               onClick={() => {
                                 if (!isDesignMode) button.onClick();
                               }}
+                              disabled={button.key === "share" && sharingId === activePageRecord.id}
                               className={`group flex flex-col items-center gap-2 ${isDesignMode ? "cursor-move" : ""}`}
                             >
                               <div
@@ -2680,7 +3045,13 @@ export default function StudioWorkspace() {
                                 }`}
                               >
                                 <Icon
-                                  className={`h-5 w-5 ${button.key === "share" && copySuccess ? "text-green-400" : "text-white"}`}
+                                  className={`h-5 w-5 ${
+                                    button.key === "share" && sharingId === activePageRecord.id
+                                      ? "animate-spin text-white"
+                                      : button.key === "share" && copySuccess
+                                        ? "text-green-400"
+                                        : "text-white"
+                                  }`}
                                 />
                               </div>
                               <span className="text-[9px] font-bold uppercase tracking-widest text-white drop-shadow-md">

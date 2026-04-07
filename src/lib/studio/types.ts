@@ -268,13 +268,14 @@ export function normalizeLiveCardMetadata(value: unknown): StudioLiveCardMetadat
   const paletteValue = (value as any).palette;
   const interactiveValue = (value as any).interactiveMetadata;
   const invitation = normalizeInvitationText((value as any).invitation);
-  const palette = paletteValue && typeof paletteValue === "object"
-    ? {
-        primary: normalizeHexColor((paletteValue as any).primary) || "#1F2937",
-        secondary: normalizeHexColor((paletteValue as any).secondary) || "#4F46E5",
-        accent: normalizeHexColor((paletteValue as any).accent) || "#F59E0B",
-      }
-    : null;
+  const palette =
+    paletteValue && typeof paletteValue === "object"
+      ? {
+          primary: normalizeHexColor((paletteValue as any).primary) || "#1F2937",
+          secondary: normalizeHexColor((paletteValue as any).secondary) || "#4F46E5",
+          accent: normalizeHexColor((paletteValue as any).accent) || "#F59E0B",
+        }
+      : null;
   const interactiveMetadata =
     interactiveValue && typeof interactiveValue === "object"
       ? {
@@ -289,7 +290,11 @@ export function normalizeLiveCardMetadata(value: unknown): StudioLiveCardMetadat
     return null;
   }
 
-  if (!interactiveMetadata.rsvpMessage || !interactiveMetadata.ctaLabel || !interactiveMetadata.shareNote) {
+  if (
+    !interactiveMetadata.rsvpMessage ||
+    !interactiveMetadata.ctaLabel ||
+    !interactiveMetadata.shareNote
+  ) {
     return null;
   }
 

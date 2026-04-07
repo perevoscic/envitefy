@@ -1,0 +1,15 @@
+
+> envitefy@0.1.0 dev
+> node scripts/dev-single.js
+
+   ▲ Next.js 15.5.9
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.10.245:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 2s
+ ✓ Compiled /middleware in 275ms (214 modules)
+ ○ Compiling /studio ...
+ ✓ Compiled /studio in 4.8s (2089 modules)
+ GET /studio 200 in 6141ms

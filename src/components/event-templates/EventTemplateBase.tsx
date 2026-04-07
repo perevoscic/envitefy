@@ -45,6 +45,8 @@ export type EditorBindings = {
     value: string
   ) => void;
   MAX_REGISTRY_LINKS: number;
+  registryEditorTitle?: string;
+  registryEmptyState?: string;
 
   attachment: { name: string; type: string; dataUrl: string } | null;
   attachmentPreviewUrl: string | null;
@@ -236,6 +238,8 @@ export default function EventTemplateBase({
             onRemove={e.removeRegistryLink}
             onChange={e.handleRegistryFieldChange}
             maxLinks={e.MAX_REGISTRY_LINKS}
+            title={e.registryEditorTitle}
+            emptyState={e.registryEmptyState}
           />
         )}
 

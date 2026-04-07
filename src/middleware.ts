@@ -1,6 +1,6 @@
 // src/middleware.ts
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { hasProductScope } from "@/lib/product-scopes";
 
@@ -41,11 +41,7 @@ const isEventSharePath = (pathname: string) => {
   const normalized = stripTrailingSlash(pathname);
   if (!normalized.startsWith("/event/")) return false;
   const segments = normalized.split("/").filter(Boolean);
-  return (
-    segments.length === 2 &&
-    segments[0] === "event" &&
-    !RESERVED_EVENT_PATHS.has(segments[1])
-  );
+  return segments.length === 2 && segments[0] === "event" && !RESERVED_EVENT_PATHS.has(segments[1]);
 };
 
 const isSmartSignupSharePath = (pathname: string) => {
@@ -53,11 +49,17 @@ const isSmartSignupSharePath = (pathname: string) => {
   return /^\/smart-signup-form\/[^/]+$/.test(normalized);
 };
 
+const isStudioCardSharePath = (pathname: string) => {
+  const normalized = stripTrailingSlash(pathname);
+  return /^\/card\/[^/]+$/.test(normalized);
+};
+
 const isAllowedForUnauth = (pathname: string) => {
   const normalized = stripTrailingSlash(pathname);
   if (PUBLIC_UNAUTH_PATHS.has(normalized)) return true;
   if (isEventSharePath(normalized)) return true;
   if (isSmartSignupSharePath(normalized)) return true;
+  if (isStudioCardSharePath(normalized)) return true;
   return false;
 };
 
@@ -66,10 +68,7 @@ const getSessionCookie = (req: NextRequest) =>
   req.cookies.get("__Host-next-auth.session-token") ??
   req.cookies.get("next-auth.session-token");
 
-const attachSignupSourceCookie = (
-  res: NextResponse,
-  source: "snap" | "gymnastics",
-) => {
+const attachSignupSourceCookie = (res: NextResponse, source: "snap" | "gymnastics") => {
   res.cookies.set("envitefy_signup_source", source, {
     httpOnly: true,
     maxAge: 60 * 10,
@@ -87,7 +86,7 @@ export async function middleware(req: NextRequest) {
   // helper to return with a marker header
   const ok = () => {
     const res = NextResponse.next();
-    res.headers.set("x-mw-version", "v2");  // <<< marker
+    res.headers.set("x-mw-version", "v2"); // <<< marker
     return res;
   };
   const redirectWithMarker = (url: URL, status = 302) => {
@@ -106,26 +105,18 @@ export async function middleware(req: NextRequest) {
   // }
 
   // NEW 10/29/25 Redirect legacy www.envitefy.com to envitefy.com
-  const rawHost =
-    req.headers.get("x-forwarded-host") ??
-    req.headers.get("host") ??
-    "";
+  const rawHost = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
   const cleanHost = rawHost.split(":")[0];
   const forwardedProto =
-    req.headers.get("x-forwarded-proto") ??
-    req.nextUrl.protocol.replace(/:$/, "");
+    req.headers.get("x-forwarded-proto") ?? req.nextUrl.protocol.replace(/:$/, "");
 
   if (cleanHost === "www.envitefy.com") {
-    const target = new URL(
-      `https://envitefy.com${req.nextUrl.pathname}${req.nextUrl.search}`,
-    );
+    const target = new URL(`https://envitefy.com${req.nextUrl.pathname}${req.nextUrl.search}`);
     return redirectWithMarker(target, 301);
   }
 
   if (forwardedProto === "http" && cleanHost === "envitefy.com") {
-    const target = new URL(
-      `https://envitefy.com${req.nextUrl.pathname}${req.nextUrl.search}`,
-    );
+    const target = new URL(`https://envitefy.com${req.nextUrl.pathname}${req.nextUrl.search}`);
     return redirectWithMarker(target, 301);
   }
 
@@ -191,9 +182,7 @@ export async function middleware(req: NextRequest) {
     const secret =
       process.env.AUTH_SECRET ??
       process.env.NEXTAUTH_SECRET ??
-      (process.env.NODE_ENV === "production"
-        ? undefined
-        : "dev-build-secret");
+      (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
 
     try {
       const token = await getToken({ req, secret });
@@ -282,4 +271,8 @@ export async function middleware(req: NextRequest) {
   return ok();
 }
 
-export const config = { matcher: ["/((?!_next|api|public|icons|videos|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map|webmanifest|mp4|webm)).*)"] };
+export const config = {
+  matcher: [
+    "/((?!_next|api|public|icons|videos|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map|webmanifest|mp4|webm)).*)",
+  ],
+};

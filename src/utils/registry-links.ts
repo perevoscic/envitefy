@@ -3,6 +3,17 @@ export type EventRegistryLink = {
   url: string;
 };
 
+export type RegistrySectionCopy = {
+  allowsLinks: boolean;
+  sectionLabel: string;
+  sectionHeading: string;
+  linksLabel: string;
+  itemFallbackLabel: string;
+  invalidLinksAlert: string;
+  emptyState: string;
+  publicNote: string;
+};
+
 type RegistryBrandId =
   | "amazon"
   | "target"
@@ -60,6 +71,62 @@ const MAX_LABEL_LENGTH = 60;
 
 const HTTPS_PROTOCOL = "https:";
 
+export const MAX_REGISTRY_LINKS = 3;
+
+const normalizeCategoryKey = (category: string): string =>
+  category
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
+  birthdays: {
+    allowsLinks: true,
+    sectionLabel: "Gift List",
+    sectionHeading: "Gift List",
+    linksLabel: "Gift list links",
+    itemFallbackLabel: "Gift list link",
+    invalidLinksAlert: "Fix the highlighted gift list links before saving.",
+    emptyState: `No gift list links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
+  },
+  weddings: {
+    allowsLinks: true,
+    sectionLabel: "Registry",
+    sectionHeading: "Registries",
+    linksLabel: "Registry links",
+    itemFallbackLabel: "Registry link",
+    invalidLinksAlert: "Fix the highlighted registry links before saving.",
+    emptyState: `No registry links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
+  },
+  "baby showers": {
+    allowsLinks: true,
+    sectionLabel: "Registry",
+    sectionHeading: "Registries",
+    linksLabel: "Registry links",
+    itemFallbackLabel: "Registry link",
+    invalidLinksAlert: "Fix the highlighted registry links before saving.",
+    emptyState: `No registry links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
+  },
+  "gender reveal": {
+    allowsLinks: true,
+    sectionLabel: "Registry",
+    sectionHeading: "Registries",
+    linksLabel: "Registry links",
+    itemFallbackLabel: "Registry link",
+    invalidLinksAlert: "Fix the highlighted registry links before saving.",
+    emptyState: `No registry links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
+  },
+};
+
 const registryHostMatches = (host: string, suffix: string): boolean => {
   const normalizedHost = host.toLowerCase();
   const normalizedSuffix = suffix.toLowerCase();
@@ -86,14 +153,28 @@ const normalizeUrl = (rawUrl: string): URL | null => {
   return parsed;
 };
 
-export const MAX_REGISTRY_LINKS = 3;
-
 export type RegistryValidationResult = {
   ok: boolean;
   error?: string;
   brand?: RegistryBrandMetadata;
   normalizedUrl?: string;
 };
+
+export function getRegistrySectionCopyForCategory(category: string): RegistrySectionCopy {
+  return (
+    REGISTRY_SECTION_COPY_BY_CATEGORY[normalizeCategoryKey(category)] || {
+      allowsLinks: false,
+      sectionLabel: "Registry",
+      sectionHeading: "Registries",
+      linksLabel: "Registry links",
+      itemFallbackLabel: "Registry link",
+      invalidLinksAlert: "Fix the highlighted registry links before saving.",
+      emptyState: `No registry links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+      publicNote:
+        "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
+    }
+  );
+}
 
 export function validateRegistryUrl(rawUrl: string): RegistryValidationResult {
   const parsed = normalizeUrl(rawUrl || "");
