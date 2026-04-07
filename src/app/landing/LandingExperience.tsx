@@ -24,6 +24,8 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -356,6 +358,13 @@ function PhoneShell({ children, className }: { children: ReactNode; className?: 
 export default function LandingExperience() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const reduceMotion = useReducedMotion();
+  const activeScene = useActiveScene(LANDING_SCENE_ORDER, "snap");
+  const { ref: gymnasticsHighlightRef, visible: gymnasticsHighlightVisible } =
+    useRevealOnce();
+  const { ref: birthdayHeroRef, visible: birthdayHeroVisible } =
+    useRevealOnce();
+  const { ref: weddingHeroRef, visible: weddingHeroVisible } = useRevealOnce();
 
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
@@ -629,22 +638,148 @@ export default function LandingExperience() {
             viewport={{ once: true, amount: 0.2 }}
             className="mx-auto max-w-7xl"
           >
-            <div className={cx(styles.surfacePanel, "rounded-[2.75rem] bg-[#f9f6ff] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
-              <SectionIntro
-                eyebrow="Meet Director Approved"
-                title={
-                  <>
-                    Built for the
-                    <br />
-                    <span className="text-[#7c5cdb]">Gymnastics Grind.</span>
-                  </>
-                }
-                description="The meet hub keeps schedules, hotels, maps, parking, live links, and updates in one place for the whole team."
-                align="center"
-              />
+            <div className="absolute inset-0 bg-[linear-gradient(140deg,rgba(14,165,233,0.08),rgba(124,58,237,0.03)_45%,transparent)]" />
+            <div className="relative grid gap-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center">
+              <div
+                ref={gymnasticsHighlightRef}
+                className={`${styles.gymnasticsSportsVisual} relative order-2 flex flex-row flex-nowrap items-start justify-center gap-4 sm:items-center sm:gap-6 lg:order-1 lg:justify-start`}
+              >
+                <div
+                  aria-hidden="true"
+                  className={styles.gymnasticsSportsGlow}
+                />
 
-              <div className="mt-14 grid gap-6 md:grid-cols-3">
-                {gymnasticsFeatures.map((feature) => (
+                <motion.div
+                  initial={false}
+                  animate={
+                    reduceMotion
+                      ? { opacity: 1, x: 0, y: 0, rotate: -8, scale: 1 }
+                      : gymnasticsHighlightVisible
+                        ? {
+                            opacity: 1,
+                            x: 0,
+                            y: 0,
+                            rotate: -8,
+                            scale: 1,
+                            transition: {
+                              duration: 0.82,
+                              delay: 0.08,
+                              ease: [0.22, 1, 0.36, 1],
+                            },
+                          }
+                        : { opacity: 0, x: -52, y: 22, rotate: -15, scale: 0.94 }
+                  }
+                  className={`${styles.gymnasticsSportsPdfWrap} group relative`}
+                >
+                  <div className={`${cardBubbleClass} -top-5 text-[#0EA5E9]`}>
+                    Meet PDF
+                  </div>
+                  <motion.div
+                    animate={
+                      reduceMotion || !gymnasticsHighlightVisible
+                        ? undefined
+                        : {
+                            y: [0, -8, 0],
+                            rotate: [-8, -10, -8],
+                            transition: {
+                              duration: 5.4,
+                              repeat: Number.POSITIVE_INFINITY,
+                              repeatType: "mirror",
+                              ease: "easeInOut",
+                            },
+                          }
+                    }
+                    whileHover={
+                      reduceMotion
+                        ? undefined
+                        : {
+                            y: -4,
+                            rotate: -5,
+                            transition: { duration: 0.26, ease: "easeOut" },
+                          }
+                    }
+                    className={`${styles.gymnasticsSportsPdfCard} w-[7.8rem] overflow-hidden rounded-[1.45rem] shadow-[0_26px_58px_rgba(3,0,12,0.3)] sm:w-52`}
+                  >
+                    <div className={styles.gymnasticsSportsScanBeam} />
+                    <Image
+                      alt="Gymnastics meet flyer preview"
+                      className="block h-auto w-full scale-[1.08] rounded-[1.45rem]"
+                      height={1024}
+                      loading="eager"
+                      sizes="(min-width: 640px) 13rem, 7.8rem"
+                      src={IMAGES.gymnasticsFlyer}
+                      width={768}
+                    />
+                  </motion.div>
+                </motion.div>
+
+                <motion.div
+                  initial={false}
+                  animate={
+                    reduceMotion
+                      ? { opacity: 1, y: 0, scale: 1 }
+                      : gymnasticsHighlightVisible
+                        ? {
+                            opacity: 1,
+                            y: 0,
+                            scale: 1,
+                            transition: {
+                              duration: 0.7,
+                              delay: 0.2,
+                              ease: [0.22, 1, 0.36, 1],
+                            },
+                          }
+                        : { opacity: 0, y: 20, scale: 0.92 }
+                  }
+                  className={`${styles.gymnasticsSportsConnector} hidden sm:flex`}
+                >
+                  <motion.div
+                    animate={
+                      reduceMotion || !gymnasticsHighlightVisible
+                        ? undefined
+                        : {
+                            scale: [1, 1.08, 1],
+                            opacity: [0.92, 1, 0.92],
+                            transition: {
+                              duration: 2.2,
+                              repeat: Number.POSITIVE_INFINITY,
+                              ease: "easeInOut",
+                            },
+                          }
+                    }
+                    className={styles.gymnasticsSportsConnectorNode}
+                  >
+                    <span className={styles.gymnasticsSportsConnectorPulse} />
+                    <Sparkles size={18} />
+                  </motion.div>
+                  <div className={styles.gymnasticsSportsConnectorLine} />
+                  <span className={styles.gymnasticsSportsConnectorLabel}>
+                    Processing
+                  </span>
+                </motion.div>
+
+                <motion.div
+                  initial={false}
+                  animate={
+                    reduceMotion
+                      ? { opacity: 1, x: 0, y: 0, rotate: 5, scale: 1 }
+                      : gymnasticsHighlightVisible
+                        ? {
+                            opacity: 1,
+                            x: 0,
+                            y: 0,
+                            rotate: 5,
+                            scale: 1,
+                            transition: {
+                              duration: 0.88,
+                              delay: 0.16,
+                              ease: [0.22, 1, 0.36, 1],
+                            },
+                          }
+                        : { opacity: 0, x: 54, y: 26, rotate: 11, scale: 0.94 }
+                  }
+                  className={`${styles.gymnasticsSportsPhoneWrap} group relative mt-5 sm:mt-0`}
+                >
                   <div
                     key={feature.title}
                     className="rounded-[2rem] border border-[#e9e0fb] bg-white p-8 shadow-[0_18px_45px_rgba(43,27,22,0.05)]"
@@ -664,32 +799,46 @@ export default function LandingExperience() {
                       {feature.desc}
                     </p>
                   </div>
-                ))}
+                  <motion.div
+                    animate={
+                      reduceMotion || !gymnasticsHighlightVisible
+                        ? undefined
+                        : {
+                            y: [0, -12, 0],
+                            rotate: [5, 3, 5],
+                            transition: {
+                              duration: 5.8,
+                              repeat: Number.POSITIVE_INFINITY,
+                              repeatType: "mirror",
+                              ease: "easeInOut",
+                            },
+                          }
+                    }
+                    whileHover={
+                      reduceMotion
+                        ? undefined
+                        : {
+                            y: -6,
+                            rotate: 3,
+                            transition: { duration: 0.26, ease: "easeOut" },
+                          }
+                    }
+                    className={`${styles.gymnasticsSportsPhoneShell} w-[8.8rem] overflow-hidden rounded-[1.9rem] shadow-[0_30px_64px_rgba(3,0,12,0.34)] sm:w-56 sm:rounded-[2.4rem]`}
+                  >
+                    <div className={styles.gymnasticsSportsPhoneFrame}>
+                      <Image
+                        alt="Gymnastics event page preview"
+                        className="h-auto w-full rounded-[1.55rem] sm:rounded-[2rem]"
+                        height={1600}
+                        loading="eager"
+                        sizes="(min-width: 640px) 14rem, 8.8rem"
+                        src={IMAGES.gymnasticsEvent}
+                        width={900}
+                      />
+                    </div>
+                  </motion.div>
+                </motion.div>
               </div>
-
-              <div className="mt-14 overflow-hidden rounded-[2.8rem] bg-[linear-gradient(135deg,#2563eb_0%,#1e3a8a_100%)] px-6 py-10 text-white shadow-[0_40px_100px_-24px_rgba(37,99,235,0.46)] sm:px-8 lg:px-10 lg:py-12">
-                <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
-                  <div>
-                    <h3
-                      className={cx(
-                        styles.headline,
-                        "text-4xl font-extrabold leading-tight sm:text-5xl",
-                      )}
-                    >
-                      Ready for the next meet?
-                    </h3>
-                    <p className="mt-6 max-w-2xl text-lg leading-8 text-blue-100">
-                      Join clubs using Envitefy to keep every weekend clearer for
-                      coaches, parents, and athletes.
-                    </p>
-                    <PrimaryAction
-                      href="/gymnastics"
-                      label="See Gymnastics Example"
-                      light
-                      icon={ArrowRight}
-                      className="mt-8 border-0 bg-white text-[#1e3a8a] hover:bg-[#eef5ff]"
-                    />
-                  </div>
 
                   <div className="hidden lg:block">
                     <PhoneShell className="mx-auto aspect-[9/19.5] max-w-[280px] border-white/10 bg-black">

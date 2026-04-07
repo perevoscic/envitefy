@@ -131,9 +131,154 @@
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(circle, rgba(201, 143, 107, 0.16) 0%, rgba(201, 143, 107, 0.02) 48%, transparent 72%);
-  filter: blur(42px);
-  transform: scale(1.1);
+    linear-gradient(160deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1)),
+    linear-gradient(135deg, rgba(20, 10, 39, 0.12), rgba(124, 58, 237, 0.2));
+  transform: rotate(4deg);
+  transition: transform 0.5s ease;
+}
+
+.gymnasticsSportsVisual {
+  isolation: isolate;
+  width: min(100%, 30rem);
+  margin-inline: auto;
+}
+
+.gymnasticsSportsGlow {
+  position: absolute;
+  inset: 12% 6% 4%;
+  z-index: 0;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 28% 50%, rgba(14, 165, 233, 0.3), transparent 38%),
+    radial-gradient(circle at 74% 42%, rgba(124, 58, 237, 0.28), transparent 42%);
+  filter: blur(54px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.gymnasticsSportsPdfCard,
+.gymnasticsSportsPhoneShell {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+}
+
+.gymnasticsSportsPdfWrap,
+.gymnasticsSportsPhoneWrap {
+  position: relative;
+  z-index: 1;
+}
+
+.gymnasticsSportsPdfCard {
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background:
+    linear-gradient(168deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+    linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(124, 58, 237, 0.18));
+  box-shadow:
+    0 28px 64px rgba(3, 0, 12, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+}
+
+.gymnasticsSportsScanBeam {
+  position: absolute;
+  left: -18%;
+  right: -18%;
+  top: -22%;
+  z-index: 2;
+  height: 24%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0),
+    rgba(125, 211, 252, 0.1) 34%,
+    rgba(96, 165, 250, 0.32) 52%,
+    rgba(125, 211, 252, 0.08) 72%,
+    rgba(255, 255, 255, 0)
+  );
+  filter: blur(3px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: gymnasticsScanSweep 4.4s linear infinite;
+}
+
+.gymnasticsSportsConnector {
+  position: relative;
+  z-index: 1;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.gymnasticsSportsConnectorNode {
+  position: relative;
+  display: flex;
+  height: 3rem;
+  width: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: white;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  box-shadow:
+    0 16px 34px rgba(6, 8, 32, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.gymnasticsSportsConnectorPulse {
+  position: absolute;
+  inset: -0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  opacity: 0.5;
+  animation: gymnasticsConnectorPulse 2.2s ease-in-out infinite;
+}
+
+.gymnasticsSportsConnectorLine {
+  height: 3.6rem;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0));
+}
+
+.gymnasticsSportsConnectorLabel {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.gymnasticsSportsPhoneShell {
+  padding: 0.32rem;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 242, 251, 0.92)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(124, 58, 237, 0.16));
+  box-shadow:
+    0 30px 64px rgba(3, 0, 12, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(42, 23, 84, 0.12);
+}
+
+.gymnasticsSportsPhoneShell::before {
+  content: "";
+  position: absolute;
+  top: 0.42rem;
+  left: 50%;
+  z-index: 2;
+  width: 32%;
+  height: 0.24rem;
+  border-radius: 999px;
+  background: rgba(20, 10, 39, 0.12);
+  transform: translateX(-50%);
+}
+
+.gymnasticsSportsPhoneFrame {
+  overflow: hidden;
+  border-radius: 1.55rem;
+  background: #fff;
+}
+
+.processingPulse {
+  animation: pulseScale 2s ease-in-out infinite;
 }
 
 .floatUp {
@@ -177,7 +322,524 @@
   }
 
   50% {
-    transform: translateY(-14px);
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes gymnasticsScanSweep {
+  0% {
+    transform: translateY(-150%);
+  }
+
+  50% {
+    transform: translateY(210%);
+  }
+
+  100% {
+    transform: translateY(210%);
+  }
+}
+
+@keyframes gymnasticsConnectorPulse {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.24;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 0.56;
+  }
+}
+
+.weddingStack {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 0.8rem;
+  width: min(100%, 18.75rem);
+  min-height: auto;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.weddingInviteLayer,
+.weddingPhoneLayer,
+.weddingStackConnector {
+  position: static;
+}
+
+.weddingInviteLayer {
+  z-index: 1;
+  width: min(7.8rem, 42%);
+  flex: 0 0 auto;
+  transform-origin: center bottom;
+}
+
+.weddingInviteCard {
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.12)),
+    linear-gradient(145deg, rgba(244, 114, 182, 0.18), rgba(251, 191, 36, 0.14));
+  box-shadow:
+    0 26px 54px rgba(31, 22, 53, 0.16),
+    0 12px 26px rgba(31, 22, 53, 0.08);
+  transform: rotate(-2.4deg);
+}
+
+.weddingInviteImage {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.weddingPhoneLayer {
+  z-index: 3;
+  width: min(9rem, 48%);
+  flex: 0 0 auto;
+  margin-top: 2rem;
+  transform-origin: center center;
+}
+
+.weddingPhoneShell {
+  position: relative;
+  border-radius: 1.75rem;
+  padding: 0;
+  background: transparent;
+  transform: rotate(3.8deg);
+  box-shadow:
+    0 24px 46px rgba(31, 22, 53, 0.12),
+    0 12px 24px rgba(31, 22, 53, 0.08);
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.weddingPhoneShell::before {
+  display: none;
+}
+
+.weddingPhoneFrame {
+  overflow: hidden;
+  border-radius: 1.75rem;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(247, 243, 251, 0.82)),
+    linear-gradient(145deg, rgba(124, 58, 237, 0.12), rgba(244, 114, 182, 0.1));
+}
+
+.weddingPhoneImage {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.weddingStack:hover .weddingPhoneShell {
+  transform: rotate(3.8deg) translateY(-4px);
+  box-shadow:
+    0 28px 58px rgba(31, 22, 53, 0.15),
+    0 16px 28px rgba(31, 22, 53, 0.1);
+}
+
+.weddingStackConnector {
+  display: none;
+}
+
+.weddingStackConnector::before,
+.weddingStackConnector::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+}
+
+.weddingStackConnector::before {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(247, 243, 255, 0.72) 38%,
+    rgba(124, 58, 237, 0) 72%
+  );
+  filter: blur(4px);
+}
+
+.weddingStackConnector::after {
+  inset: 0.75rem;
+  background: radial-gradient(
+    circle,
+    rgba(124, 58, 237, 0.22) 0%,
+    rgba(124, 58, 237, 0.1) 42%,
+    rgba(124, 58, 237, 0) 78%
+  );
+  filter: blur(10px);
+}
+
+.weddingSparkle {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 238, 252, 0.9));
+  color: #7c3aed;
+  box-shadow:
+    0 10px 24px rgba(124, 58, 237, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.weddingSparkle::before {
+  content: "";
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  height: 0.3rem;
+  width: 0.3rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.gymnasticsShell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(31, 22, 53, 0.05);
+  border-radius: 2.5rem;
+  background:
+    radial-gradient(circle at top left, rgba(124, 58, 237, 0.1), transparent 32%),
+    linear-gradient(180deg, rgba(251, 248, 255, 0.88), rgba(255, 255, 255, 0.98));
+  box-shadow:
+    0 30px 80px rgba(31, 22, 53, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.gymnasticsLayout {
+  display: grid;
+  gap: 3rem;
+  align-items: center;
+  padding: 1.75rem;
+}
+
+.gymnasticsVisualColumn {
+  position: relative;
+}
+
+.gymnasticsVisualStage {
+  position: relative;
+  min-height: 28rem;
+  border-radius: 2.1rem;
+  background:
+    radial-gradient(circle at top left, rgba(124, 58, 237, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(124, 58, 237, 0.07), rgba(255, 255, 255, 0.94));
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.gymnasticsFlyerLayer,
+.gymnasticsPhoneLayer,
+.gymnasticsConnectorLayer,
+.gymnasticsInfoCard {
+  position: absolute;
+}
+
+.gymnasticsFlyerLayer {
+  left: 1.15rem;
+  top: 3.2rem;
+  z-index: 1;
+  width: min(15.5rem, 47%);
+  transform-origin: center bottom;
+}
+
+.gymnasticsFlyerCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.7rem;
+  background: #fff;
+  transform: rotate(-7deg);
+  box-shadow:
+    0 28px 62px rgba(31, 22, 53, 0.16),
+    0 14px 28px rgba(31, 22, 53, 0.08);
+}
+
+.gymnasticsVisualBadge,
+.gymnasticsPhoneBadge {
+  position: absolute;
+  left: 1rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  height: 2rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gymnasticsVisualBadge {
+  top: 1rem;
+  color: #7c3aed;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(124, 58, 237, 0.12);
+  box-shadow: 0 10px 24px rgba(31, 22, 53, 0.08);
+}
+
+.gymnasticsFlyerImage {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.gymnasticsConnectorLayer {
+  top: calc(48% - 2.25rem);
+  left: calc(50% - 2.25rem);
+  z-index: 2;
+  display: flex;
+  height: 4.5rem;
+  width: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.gymnasticsConnectorLayer::before,
+.gymnasticsConnectorLayer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+}
+
+.gymnasticsConnectorLayer::before {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(247, 243, 255, 0.8) 42%,
+    rgba(124, 58, 237, 0) 74%
+  );
+  filter: blur(4px);
+}
+
+.gymnasticsConnectorLayer::after {
+  inset: 0.7rem;
+  background: radial-gradient(
+    circle,
+    rgba(124, 58, 237, 0.24) 0%,
+    rgba(124, 58, 237, 0.12) 46%,
+    rgba(124, 58, 237, 0) 82%
+  );
+  filter: blur(10px);
+}
+
+.gymnasticsConnectorSparkle {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #7c3aed;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 238, 252, 0.92));
+  box-shadow:
+    0 10px 24px rgba(124, 58, 237, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.gymnasticsPhoneLayer {
+  right: 1.2rem;
+  top: 1.75rem;
+  z-index: 3;
+  width: min(13rem, 41%);
+  transform-origin: center center;
+}
+
+.gymnasticsPhoneShell {
+  position: relative;
+  border-radius: 2.25rem;
+  padding: 0.42rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f2edf8 100%);
+  transform: rotate(6deg);
+  box-shadow:
+    0 28px 54px rgba(31, 22, 53, 0.12),
+    0 14px 28px rgba(31, 22, 53, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(31, 22, 53, 0.06);
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gymnasticsPhoneShell::before {
+  content: "";
+  position: absolute;
+  top: 0.55rem;
+  left: 50%;
+  width: 28%;
+  height: 0.24rem;
+  border-radius: 999px;
+  background: rgba(31, 22, 53, 0.12);
+  transform: translateX(-50%);
+}
+
+.gymnasticsPhoneBadge {
+  top: 0.95rem;
+  color: #fff;
+  background: rgba(124, 58, 237, 0.96);
+  box-shadow: 0 12px 28px rgba(124, 58, 237, 0.24);
+}
+
+.gymnasticsPhoneFrame {
+  overflow: hidden;
+  border-radius: 1.9rem;
+  background: #f7f3fb;
+}
+
+.gymnasticsPhoneImage {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.gymnasticsInfoCard {
+  left: 1.2rem;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(124, 58, 237, 0.08);
+  border-radius: 1.3rem;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 18px 38px rgba(31, 22, 53, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.gymnasticsInfoLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7c3aed;
+}
+
+.gymnasticsInfoRows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.gymnasticsInfoRows span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.08);
+  color: #433865;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.gymnasticsVisualStage:hover .gymnasticsPhoneShell {
+  transform: rotate(6deg) translateY(-4px);
+  box-shadow:
+    0 30px 62px rgba(31, 22, 53, 0.14),
+    0 16px 30px rgba(31, 22, 53, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(31, 22, 53, 0.06);
+}
+
+.gymnasticsCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+}
+
+.gymnasticsEyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 2.15rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  color: #7c3aed;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.gymnasticsBulletGrid {
+  display: grid;
+  gap: 1rem;
+}
+
+.gymnasticsBulletCard {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.1rem;
+  border: 1px solid rgba(31, 22, 53, 0.06);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 24px rgba(31, 22, 53, 0.04);
+}
+
+.gymnasticsBulletIcon {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  height: 2.7rem;
+  width: 2.7rem;
+  border-radius: 1rem;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.09);
+}
+
+@media (min-width: 640px) {
+  .gymnasticsLayout {
+    padding: 2rem;
+  }
+
+  .gymnasticsVisualStage {
+    min-height: 31rem;
+  }
+
+  .gymnasticsFlyerLayer {
+    left: 1.8rem;
+    top: 2.7rem;
+    width: min(17rem, 48%);
+  }
+
+  .gymnasticsPhoneLayer {
+    right: 1.8rem;
+    top: 1.4rem;
+    width: min(14rem, 40%);
+  }
+
+  .gymnasticsInfoCard {
+    left: 1.8rem;
+    right: 1.8rem;
+    bottom: 1.5rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .gymnasticsBulletGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -186,9 +848,55 @@
     letter-spacing: 0.2em;
   }
 
-  .rsvpBubble {
-    gap: 0.75rem;
-    padding: 0.85rem 1rem;
+  .weddingStackConnector {
+    position: absolute;
+    top: calc(47% - 2.25rem);
+    left: calc(52% - 2.25rem);
+    z-index: 2;
+    display: flex;
+    height: 4.5rem;
+    width: 4.5rem;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gymnasticsSportsVisual {
+    width: min(100%, 29rem);
+    min-height: 23rem;
+    justify-content: space-between;
+    justify-self: start;
+    padding-right: 1rem;
+  }
+
+  .gymnasticsSportsGlow {
+    inset: 12% 10% 6% 4%;
+  }
+
+  .gymnasticsSportsConnector {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+  }
+
+  .gymnasticsSportsPdfWrap {
+    align-self: flex-end;
+  }
+
+  .gymnasticsSportsPhoneWrap {
+    margin-top: 0;
+    margin-right: 0.35rem;
+    align-self: flex-start;
+  }
+
+  .gymnasticsLayout {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 4rem;
+    padding: 2.6rem;
   }
 }
 
@@ -200,6 +908,11 @@
   .floatUp,
   .floatDown,
   .floatLift {
+    animation: none;
+  }
+
+  .gymnasticsSportsScanBeam,
+  .gymnasticsSportsConnectorPulse {
     animation: none;
   }
 }
