@@ -1,3 +1,5 @@
+// Session resolution matches other authenticated routes (e.g. src/app/api/user/profile/route.ts):
+// getServerSession(authOptions) reads the same NextAuth cookies as the rest of the app.
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { sanitizeMediaItems } from "@/app/studio/studio-workspace-sanitize";

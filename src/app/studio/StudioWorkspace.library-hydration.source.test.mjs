@@ -10,11 +10,15 @@ function readSource(relPath) {
 test("library hydration restores persisted loading items instead of leaving them spinning forever", () => {
   const sanitize = readSource("src/app/studio/studio-workspace-sanitize.ts");
   const hook = readSource("src/app/studio/workspace/useStudioMediaLibrary.ts");
+  const remote = readSource("src/app/studio/workspace/studio-library-remote.ts");
 
   assert.match(sanitize, /export function restoreHydratedMediaItems\(items: MediaItem\[\]\)/);
   assert.match(hook, /readLocalStorageItems/);
   assert.match(hook, /\/api\/studio\/library/);
   assert.match(hook, /mergeStudioLibraries/);
+  assert.match(hook, /putStudioLibraryRemote/);
+  assert.match(hook, /canonicalizeLibraryPayloadForCompare/);
+  assert.match(remote, /prepareStudioLibraryItemsForRemote/);
   assert.match(
     sanitize,
     /if \(item\.status !== "loading" && item\.status !== "error"\) return item;/,

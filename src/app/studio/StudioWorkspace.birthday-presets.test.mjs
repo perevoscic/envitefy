@@ -35,8 +35,11 @@ test("birthday form reads gender from the name field and falls back to a neutral
   const birthdaySection = birthdaySectionMatch[1];
 
   assert.doesNotMatch(birthdaySection, /label: "Boy \/ Girl \/ Neutral"/);
-  assert.match(combined, /Showing 12/);
-  assert.match(combined, /birthdayPresetAudience === "female" \? "girl" : "boy"/);
+  assert.match(studioUi, /details\.category === "Birthday" \? buildBirthdayPresets/);
+  assert.match(
+    readSource("src/app/studio/studio-workspace-builders.ts"),
+    /function getBirthdayPresetAudience\(details: EventDetails\)/,
+  );
   assert.match(
     readSource("src/app/studio/studio-workspace-builders.ts"),
     /return audience\s*\?[\s\S]*:\s*\[\.\.\.birthdayPresets\.female, \.\.\.birthdayPresets\.male\];/,

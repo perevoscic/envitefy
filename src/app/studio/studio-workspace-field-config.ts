@@ -1,12 +1,12 @@
 import {
+  Baby,
+  Bus,
   Cake,
-  Calendar,
-  Gift,
+  CalendarHeart,
   Heart,
   Home,
-  MapPin,
-  PartyPopper,
-  WandSparkles,
+  Sparkles,
+  Wine,
 } from "lucide-react";
 import { STUDIO_LIBRARY_STORAGE_KEY } from "./studio-constants";
 import type {
@@ -323,25 +323,14 @@ export const RSVP_FIELDS: Array<{
 
 export const CATEGORIES: CategoryCard[] = [
   { name: "Birthday", icon: Cake },
-  { name: "Field Trip/Day", icon: MapPin },
-  { name: "Bridal Shower", icon: Gift },
+  { name: "Field Trip/Day", icon: Bus },
+  { name: "Bridal Shower", icon: Wine },
   { name: "Wedding", icon: Heart },
   { name: "Housewarming", icon: Home },
-  { name: "Baby Shower", icon: PartyPopper },
-  { name: "Anniversary", icon: Calendar },
-  { name: "Custom Invite", icon: WandSparkles },
+  { name: "Baby Shower", icon: Baby },
+  { name: "Anniversary", icon: CalendarHeart },
+  { name: "Custom Invite", icon: Sparkles },
 ];
-
-export const CATEGORY_DESCRIPTIONS: Record<InviteCategory, string> = {
-  Birthday: "Birthdays, milestones, and personal celebrations.",
-  "Field Trip/Day": "Class trips, group days, and shared outings.",
-  "Bridal Shower": "Showers, tea parties, and pre-wedding gatherings.",
-  Wedding: "Ceremonies, receptions, and wedding weekend moments.",
-  Housewarming: "Open houses, move-in parties, and new-home invites.",
-  "Baby Shower": "Showers, sip-and-sees, and welcoming celebrations.",
-  Anniversary: "Anniversaries, vow renewals, and elegant dinners.",
-  "Custom Invite": "A flexible format for any celebration or gathering.",
-};
 export const EMPTY_POSITIONS = {
   rsvp: { x: 0, y: 0 },
   location: { x: 0, y: 0 },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { clean } from "../studio-workspace-builders";
 import { STORAGE_KEY } from "../studio-workspace-field-config";
 import {
@@ -13,6 +13,10 @@ import {
   sanitizeMediaItems,
 } from "../studio-workspace-sanitize";
 import type { MediaItem } from "../studio-workspace-types";
+import {
+  canonicalizeLibraryPayloadForCompare,
+  putStudioLibraryRemote,
+} from "./studio-library-remote";
 
 function readLocalStorageItems(): MediaItem[] {
   if (typeof window === "undefined") return [];
@@ -46,8 +50,14 @@ export function useStudioMediaLibrary() {
   const { data: session, status } = useSession();
   const [mediaList, setMediaList] = useState<MediaItem[]>(() => readLocalStorageItems());
   const [remoteHydrated, setRemoteHydrated] = useState(false);
+  const [librarySyncError, setLibrarySyncError] = useState<string | null>(null);
+  const [syncRetryTick, setSyncRetryTick] = useState(0);
   const studioHistorySyncAttemptedRef = useRef(new Set<string>());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const retryLibrarySync = useCallback(() => {
+    setSyncRetryTick((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     if (status === "loading") {
@@ -61,6 +71,7 @@ export function useStudioMediaLibrary() {
 
       if (status !== "authenticated") {
         setMediaList(local);
+        setLibrarySyncError(null);
         setRemoteHydrated(true);
         return;
       }
@@ -68,18 +79,22 @@ export function useStudioMediaLibrary() {
       setRemoteHydrated(false);
 
       let server: MediaItem[] = [];
+      let getOk = false;
       try {
         const res = await fetch("/api/studio/library", { credentials: "include" });
         if (res.ok) {
+          getOk = true;
           const data: unknown = await res.json();
           const rawItems =
             data != null && typeof data === "object" && !Array.isArray(data) && "items" in data
               ? (data as { items: unknown }).items
               : [];
           server = restoreHydratedMediaItems(sanitizeMediaItems(rawItems));
+        } else {
+          console.warn("[studio-library] GET failed", res.status);
         }
-      } catch {
-        // keep local-only
+      } catch (err) {
+        console.warn("[studio-library] GET network error", err);
       }
 
       if (cancelled) return;
@@ -87,16 +102,23 @@ export function useStudioMediaLibrary() {
       const merged = mergeStudioLibraries(local, server);
       setMediaList(merged);
 
-      if (server.length === 0 && local.length > 0 && merged.length > 0) {
-        try {
-          await fetch("/api/studio/library", {
-            method: "PUT",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ items: merged }),
-          });
-        } catch {
-          // migration best-effort
+      if (!getOk) {
+        setLibrarySyncError("Could not load your library from the server. Check your connection.");
+      } else if (
+        canonicalizeLibraryPayloadForCompare(merged) === canonicalizeLibraryPayloadForCompare(server)
+      ) {
+        setLibrarySyncError(null);
+      } else {
+        const { ok, status: putStatus } = await putStudioLibraryRemote(merged);
+        if (cancelled) return;
+        if (ok) {
+          setLibrarySyncError(null);
+        } else {
+          setLibrarySyncError(
+            putStatus === 413
+              ? "Library is too large to sync. Try publishing cards or removing heavy images."
+              : "Could not save your library to the server. Your items stay in this browser.",
+          );
         }
       }
 
@@ -110,7 +132,22 @@ export function useStudioMediaLibrary() {
     return () => {
       cancelled = true;
     };
-  }, [status, session?.user?.email]);
+  }, [status, session?.user?.email, syncRetryTick]);
+
+  const lastFocusRetryAtRef = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (status !== "authenticated" || !librarySyncError) return;
+    const onFocus = () => {
+      const now = Date.now();
+      if (now - lastFocusRetryAtRef.current < 10_000) return;
+      lastFocusRetryAtRef.current = now;
+      setSyncRetryTick((n) => n + 1);
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [status, librarySyncError]);
 
   useEffect(() => {
     if (!remoteHydrated) return;
@@ -141,13 +178,18 @@ export function useStudioMediaLibrary() {
 
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
-      const sanitized = sanitizeMediaItems(mediaList);
-      void fetch("/api/studio/library", {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: sanitized }),
-      }).catch(() => {});
+      void putStudioLibraryRemote(mediaList).then(({ ok, status: putStatus }) => {
+        if (ok) {
+          setLibrarySyncError(null);
+        } else {
+          console.warn("[studio-library] debounced PUT failed", putStatus);
+          setLibrarySyncError(
+            putStatus === 413
+              ? "Library is too large to sync. Try publishing cards or removing heavy images."
+              : "Could not save your library to the server. Your items stay in this browser.",
+          );
+        }
+      });
     }, REMOTE_SAVE_DEBOUNCE_MS);
 
     return () => {
@@ -233,5 +275,5 @@ export function useStudioMediaLibrary() {
     };
   }, [mediaList]);
 
-  return { mediaList, setMediaList };
+  return { mediaList, setMediaList, librarySyncError, retryLibrarySync };
 }

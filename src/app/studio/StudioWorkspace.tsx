@@ -41,7 +41,6 @@ import {
   createId,
   formatDate,
   getAbsoluteShareUrl,
-  getBirthdayPresetAudience,
   getFallbackThumbnail,
   getPresetsForDetails,
   getRegistryText,
@@ -82,7 +81,7 @@ export default function StudioWorkspace() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isOptionalCollapsed, setIsOptionalCollapsed] = useState(true);
   const [details, setDetails] = useState<EventDetails>(createInitialDetails);
-  const { mediaList, setMediaList } = useStudioMediaLibrary();
+  const { mediaList, setMediaList, librarySyncError, retryLibrarySync } = useStudioMediaLibrary();
   const [isGenerating, setIsGenerating] = useState(false);
   const [activePage, setActivePage] = useState<MediaItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<MediaItem | null>(null);
@@ -505,8 +504,6 @@ export default function StudioWorkspace() {
 
   const birthdayPresets =
     details.category === "Birthday" ? buildBirthdayPresets(details.age) : null;
-  const birthdayPresetAudience =
-    details.category === "Birthday" ? getBirthdayPresetAudience(details) : null;
   const currentPresets = getPresetsForDetails(details);
   const isDetailsTabActive = step === "category" || step === "form";
   const shellClass = studioWorkspaceShellClass;
@@ -518,43 +515,85 @@ export default function StudioWorkspace() {
     <div className="min-h-screen bg-[#faf7ff] text-neutral-900 selection:bg-purple-200">
       <header className="sticky top-0 z-40 border-b border-[#efe7f8] bg-white/72 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-center px-5 sm:h-[72px] sm:px-6 lg:px-8">
-          <div className="flex w-full max-w-md items-center justify-center rounded-full border border-white/70 bg-white/75 p-1.5 shadow-[0_12px_40px_rgba(84,61,140,0.08)] backdrop-blur-xl">
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            className="flex w-full max-w-md items-center justify-center rounded-full border border-[#d4c2f5] bg-white/85 p-1.5 shadow-[0_4px_24px_rgba(91,33,182,0.1),0_12px_48px_-8px_rgba(109,40,217,0.22),inset_0_1px_0_rgba(255,255,255,0.95)] ring-2 ring-[#c4b0f0]/35 backdrop-blur-xl"
+          >
             <button
+              type="button"
               onClick={() => setStep("form")}
-              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-all ${
+              className={`relative flex-1 rounded-full px-4 py-2.5 text-sm transition-colors duration-200 ${
                 isDetailsTabActive
-                  ? "bg-[#f6f0ff] text-neutral-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_22px_rgba(84,61,140,0.12)]"
-                  : "text-neutral-500 hover:bg-[#f7f3fd] hover:text-neutral-900"
+                  ? "font-bold text-[#5b21b6]"
+                  : "font-medium text-neutral-500 hover:text-[#6d28d9]"
               }`}
             >
-              Details
+              {isDetailsTabActive ? (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-3 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#6d28d9] to-[#7c3aed] opacity-95"
+                />
+              ) : null}
+              <span className="relative">Details</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 if (isFormValid()) setStep("studio");
               }}
               disabled={!isFormValid()}
-              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-all disabled:cursor-not-allowed ${
+              className={`relative flex-1 rounded-full px-4 py-2.5 text-sm transition-colors duration-200 disabled:cursor-not-allowed ${
                 step === "studio"
-                  ? "bg-[#f6f0ff] text-neutral-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_22px_rgba(84,61,140,0.12)]"
-                  : "text-neutral-500 hover:bg-[#f7f3fd] hover:text-neutral-900 disabled:text-neutral-400"
+                  ? "font-bold text-[#5b21b6]"
+                  : "font-medium text-neutral-500 hover:text-[#6d28d9] disabled:text-neutral-400 disabled:hover:text-neutral-400"
               }`}
             >
-              Studio
+              {step === "studio" ? (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-3 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#6d28d9] to-[#7c3aed] opacity-95"
+                />
+              ) : null}
+              <span className="relative">Studio</span>
             </button>
             <button
+              type="button"
               onClick={() => setStep("library")}
-              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-all ${
+              className={`relative flex-1 rounded-full px-4 py-2.5 text-sm transition-colors duration-200 ${
                 step === "library"
-                  ? "bg-[#f6f0ff] text-neutral-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_22px_rgba(84,61,140,0.12)]"
-                  : "text-neutral-500 hover:bg-[#f7f3fd] hover:text-neutral-900"
+                  ? "font-bold text-[#5b21b6]"
+                  : "font-medium text-neutral-500 hover:text-[#6d28d9]"
               }`}
             >
-              Library
+              {step === "library" ? (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-3 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#6d28d9] to-[#7c3aed] opacity-95"
+                />
+              ) : null}
+              <span className="relative">Library</span>
             </button>
-          </div>
+          </motion.div>
         </div>
       </header>
+
+      {sessionStatus === "authenticated" && librarySyncError ? (
+        <div
+          role="status"
+          className="border-b border-amber-200 bg-amber-50 px-5 py-2.5 text-center text-sm text-amber-950 sm:px-6"
+        >
+          <span>{librarySyncError}</span>
+          <button
+            type="button"
+            onClick={retryLibrarySync}
+            className="ml-2 font-semibold text-amber-900 underline decoration-amber-600/60 underline-offset-2 hover:text-amber-950"
+          >
+            Retry sync
+          </button>
+        </div>
+      ) : null}
 
       <main className="mx-auto px-5 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <AnimatePresence mode="wait">
@@ -613,9 +652,6 @@ export default function StudioWorkspace() {
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                         Presets
                       </p>
-                      <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
-                        Choose a direction
-                      </h2>
                     </div>
                     {details.category !== "Birthday" ? (
                       <div className="flex items-center gap-3 rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] px-4 py-3">
@@ -630,14 +666,6 @@ export default function StudioWorkspace() {
 
                     {details.category === "Birthday" && birthdayPresets ? (
                       <div className="space-y-4">
-                        {birthdayPresetAudience ? (
-                            <div className="rounded-[22px] border border-[#ece4f7] bg-[#faf7ff] px-3 py-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                              Showing 12 {birthdayPresetAudience === "female" ? "girl" : "boy"}{" "}
-                              presets
-                            </p>
-                          </div>
-                        ) : null}
                         <div className="grid max-h-[480px] grid-cols-2 gap-3 overflow-y-auto pr-2">
                           {currentPresets.map((preset) => {
                             const Icon = preset.icon;
