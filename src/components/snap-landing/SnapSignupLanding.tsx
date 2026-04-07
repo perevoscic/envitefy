@@ -364,6 +364,7 @@ export default function SnapSignupLanding() {
     <main className="min-h-screen w-full overflow-x-clip bg-[#fcfbff] text-[#17132b] selection:bg-[#ddd1ff] selection:text-[#241a52]">
       <HeroTopNav
         navLinks={[
+          { label: "Studio", href: "/studio" },
           { label: "Gymnastics", href: "/gymnastics" },
           { label: "Features", href: "#features" },
           { label: "FAQ", href: "#faq" },

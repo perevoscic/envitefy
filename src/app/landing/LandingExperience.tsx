@@ -1,499 +1,361 @@
 "use client";
 
 import {
-  Baby,
-  Cake,
-  CalendarCheck,
-  CalendarPlus,
+  motion,
+  type Transition,
+  type Variants,
+} from "framer-motion";
+import {
+  ArrowRight,
+  Calendar,
   Camera,
   CheckCircle2,
+  ChevronRight,
   Clock,
-  Copy,
-  Edit3,
-  FileEdit,
-  Heart,
-  type LucideIcon,
+  FileText,
+  Hotel,
+  Image as ImageIcon,
+  Layout,
   MapPin,
+  MessageSquare,
   Share2,
   Sparkles,
-  TowerControl,
-  Trophy,
   Users,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
-import ScenicBackground, {
-  type ScenicScene,
-  useActiveScene,
-} from "@/components/marketing/ScenicBackground";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import styles from "./LandingExperience.module.css";
 import LandingFaq from "./sections/LandingFaq";
 
-const IMAGES = {
-  heroFlyer: "/images/hero-1-landing.png",
-  heroEvent: "/images/hero-2-landing.png",
-  birthdayFlyer: "/images/birthday-1-landing.png",
-  birthdayEvent: "/images/birthday-2-landing.png",
-  gymnasticsFlyer: "/images/gymanstic-1-landing.png",
-  gymnasticsEvent: "/images/gymanstic-2-landing.png",
-  weddingFlyer: "/images/wedding-1-landing.png",
-  weddingEvent: "/images/wedding-2-landing.png",
-};
-
 const landingSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";
 
-const LANDING_SCENE_ORDER = [
-  "snap",
-  "gymnastics",
-  "what-you-can-snap",
-  "how-it-works",
-  "use-cases",
-  "rsvp-calendar",
-  "faq",
-] as const;
-
-const LANDING_SCENES: Record<string, ScenicScene> = {
-  snap: {
-    veilClassName:
-      "bg-[radial-gradient(circle_at_top,rgba(167,139,250,0.18),transparent_35%),linear-gradient(180deg,rgba(64,32,121,0.24),transparent_72%)]",
-    shapes: [
-      {
-        className:
-          "absolute left-[-10rem] top-[-8rem] h-[30rem] w-[30rem] rounded-full bg-[#7C3AED]/28 blur-[150px]",
-      },
-      {
-        className:
-          "absolute right-[-8rem] top-[12%] h-[28rem] w-[28rem] rounded-[40%_60%_59%_41%/49%_38%_62%_51%] bg-[#4F46E5]/24 blur-[150px]",
-      },
-      {
-        className:
-          "absolute bottom-[-10rem] left-[18%] h-[26rem] w-[26rem] rounded-[62%_38%_44%_56%/45%_58%_42%_55%] bg-[#EC4899]/14 blur-[140px]",
-      },
-      {
-        className:
-          "absolute right-[18%] top-[34%] h-[14rem] w-[14rem] rounded-[2.6rem] border border-white/10 bg-white/[0.05] rotate-12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]",
-      },
-    ],
-  },
-  gymnastics: {
-    veilClassName:
-      "bg-[radial-gradient(circle_at_25%_28%,rgba(45,212,191,0.2),transparent_30%),linear-gradient(180deg,rgba(56,189,248,0.1),transparent_68%)]",
-    shapes: [
-      {
-        className:
-          "absolute left-[4%] top-[18%] h-[24rem] w-[24rem] rounded-[42%_58%_53%_47%/41%_41%_59%_59%] bg-[#0EA5E9]/20 blur-[145px]",
-      },
-      {
-        className:
-          "absolute right-[2%] top-[10%] h-[26rem] w-[26rem] rounded-full bg-[#14B8A6]/16 blur-[150px]",
-      },
-      {
-        className:
-          "absolute bottom-[-8rem] right-[18%] h-[24rem] w-[24rem] rounded-[56%_44%_66%_34%/44%_60%_40%_56%] bg-[#7C3AED]/18 blur-[140px]",
-      },
-      {
-        className:
-          "absolute left-[16%] bottom-[12%] h-[10rem] w-[22rem] rounded-full border border-white/8 bg-white/[0.04] blur-[1px]",
-      },
-    ],
-  },
-  "what-you-can-snap": {
-    veilClassName:
-      "bg-[radial-gradient(circle_at_70%_18%,rgba(251,191,36,0.12),transparent_24%),linear-gradient(180deg,rgba(124,58,237,0.08),transparent_70%)]",
-    shapes: [
-      {
-        className:
-          "absolute left-[-6rem] top-[22%] h-[22rem] w-[22rem] rounded-[44%_56%_61%_39%/42%_40%_60%_58%] bg-[#FB7185]/14 blur-[145px]",
-      },
-      {
-        className:
-          "absolute right-[-6rem] top-[20%] h-[24rem] w-[24rem] rounded-full bg-[#7C3AED]/18 blur-[150px]",
-      },
-      {
-        className:
-          "absolute bottom-[-10rem] left-[30%] h-[28rem] w-[28rem] rounded-[66%_34%_49%_51%/45%_55%_45%_55%] bg-[#8B5CF6]/18 blur-[150px]",
-      },
-      {
-        className:
-          "theme-glass-ornament absolute right-[16%] bottom-[16%] h-[11rem] w-[11rem] rounded-full border border-white/10",
-      },
-    ],
-  },
-  "how-it-works": {
-    veilClassName:
-      "bg-[radial-gradient(circle_at_25%_18%,rgba(99,102,241,0.18),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_62%)]",
-    shapes: [
-      {
-        className:
-          "absolute left-[8%] top-[12%] h-[22rem] w-[22rem] rounded-full bg-[#6366F1]/22 blur-[145px]",
-      },
-      {
-        className:
-          "absolute right-[8%] top-[34%] h-[26rem] w-[26rem] rounded-[48%_52%_37%_63%/46%_46%_54%_54%] bg-[#7C3AED]/18 blur-[150px]",
-      },
-      {
-        className:
-          "theme-glass-ornament absolute bottom-[-8rem] left-[30%] h-[20rem] w-[20rem] rounded-[2.8rem] border border-white/10 rotate-6",
-      },
-    ],
-  },
-  "use-cases": {
-    veilClassName:
-      "bg-[radial-gradient(circle_at_50%_0%,rgba(232,121,249,0.16),transparent_26%),linear-gradient(180deg,rgba(91,33,182,0.16),transparent_70%)]",
-    shapes: [
-      {
-        className:
-          "absolute left-[12%] top-[14%] h-[26rem] w-[26rem] rounded-full bg-[#A855F7]/18 blur-[155px]",
-      },
-      {
-        className:
-          "absolute right-[6%] top-[16%] h-[22rem] w-[22rem] rounded-[61%_39%_43%_57%/42%_58%_42%_58%] bg-[#EC4899]/14 blur-[145px]",
-      },
-      {
-        className:
-          "absolute bottom-[-6rem] right-[26%] h-[24rem] w-[24rem] rounded-[42%_58%_56%_44%/56%_42%_58%_44%] bg-[#7C3AED]/18 blur-[150px]",
-      },
-      {
-        className:
-          "theme-glass-ornament absolute left-[18%] bottom-[12%] h-[12rem] w-[12rem] rounded-full border border-white/10",
-      },
-    ],
-  },
-  "rsvp-calendar": {
-    veilClassName:
-      "bg-[radial-gradient(circle_at_20%_12%,rgba(244,114,182,0.14),transparent_24%),linear-gradient(180deg,rgba(124,58,237,0.12),transparent_70%)]",
-    shapes: [
-      {
-        className:
-          "absolute left-[-5rem] top-[18%] h-[24rem] w-[24rem] rounded-full bg-[#F472B6]/14 blur-[150px]",
-      },
-      {
-        className:
-          "absolute right-[0%] top-[8%] h-[30rem] w-[30rem] rounded-[39%_61%_56%_44%/42%_47%_53%_58%] bg-[#7C3AED]/20 blur-[160px]",
-      },
-      {
-        className:
-          "absolute bottom-[-8rem] left-[26%] h-[22rem] w-[22rem] rounded-[60%_40%_40%_60%/40%_53%_47%_60%] bg-[#818CF8]/18 blur-[150px]",
-      },
-      {
-        className:
-          "theme-glass-ornament absolute right-[18%] bottom-[12%] h-[10rem] w-[20rem] rounded-full border border-white/10",
-      },
-    ],
-  },
-  faq: {
-    veilClassName:
-      "bg-[radial-gradient(circle_at_70%_20%,rgba(165,180,252,0.16),transparent_30%),linear-gradient(180deg,rgba(124,58,237,0.1),transparent_68%)]",
-    shapes: [
-      {
-        className:
-          "absolute left-[8%] top-[16%] h-[22rem] w-[22rem] rounded-full bg-[#818CF8]/18 blur-[150px]",
-      },
-      {
-        className:
-          "absolute right-[4%] top-[22%] h-[26rem] w-[26rem] rounded-[52%_48%_48%_52%/42%_58%_42%_58%] bg-[#7C3AED]/16 blur-[155px]",
-      },
-      {
-        className:
-          "absolute bottom-[-8rem] left-[28%] h-[24rem] w-[24rem] rounded-full bg-[#C4B5FD]/12 blur-[145px]",
-      },
-      {
-        className:
-          "theme-glass-ornament absolute right-[20%] bottom-[14%] h-[11rem] w-[11rem] rounded-2xl border border-white/10",
-      },
-    ],
+const sectionReveal: Variants = {
+  hidden: { opacity: 0, y: 28 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
-const useCases = [
+const floatTransition: Transition = {
+  duration: 5,
+  repeat: Number.POSITIVE_INFINITY,
+  ease: "easeInOut",
+};
+
+const comparisonCards = [
   {
-    icon: Baby,
-    title: "Baby Showers",
-    desc: "Organize dates, addresses, and details from social media flyers instantly.",
+    eyebrow: "The Artistic Keepsake",
+    title: "Timeless Design",
+    description:
+      "Create print-friendly art for the fridge, the group text, and the family scrapbook.",
+    image: "https://picsum.photos/seed/keepsake/800/1000",
+    tags: ["300 DPI Print", "Custom Art"],
+    surfaceClassName: "bg-[#f3e3d6] text-[#4d352c]",
+    bodyClassName: "text-[#6c5448]",
+    accentClassName: "bg-white text-[#4d352c]",
+    imageFrameClassName: "rotate-[-2deg]",
   },
   {
-    icon: Trophy,
-    title: "Sports Schedules",
-    desc: "Upload whole team calendars and turn them into polished, mobile-friendly event pages.",
-  },
-  {
-    icon: Users,
-    title: "Community Events",
-    desc: "Markets, town halls, or block parties get one clean link for updates, maps, and RSVPs.",
+    eyebrow: "The Interactive Hub",
+    title: "Live Command Center",
+    description:
+      "Turn the same design into a hosted page with RSVPs, maps, links, and real-time updates.",
+    image: "https://picsum.photos/seed/live-hub/800/1400",
+    tags: ["RSVP Tracking", "Live Maps"],
+    surfaceClassName: "bg-[#1f1838] text-white",
+    bodyClassName: "text-white/72",
+    accentClassName: "bg-[#c98f6b] text-white",
+    imageFrameClassName: "",
   },
 ] as const;
 
-const benefits = [
+const studioFeatures = [
   {
-    icon: Zap,
-    title: "Skip Manual Setup",
-    desc: "Dates, addresses, and event details are pulled into a structure you can review instead of retyping from scratch.",
+    icon: Layout,
+    title: "Flexible Layouts",
+    desc: "Start with a polished structure, then tailor the event story without fighting the layout.",
   },
   {
-    icon: TowerControl,
-    title: "Printed to Digital",
-    desc: "Paper flyers, screenshots, and PDFs become a clear mobile-first destination instead of a blurry attachment.",
+    icon: Zap,
+    title: "Action Buttons",
+    desc: "Drop in RSVP, maps, calendar, registry, and update links without another tool chain.",
   },
   {
     icon: Share2,
-    title: "Easy Sharing",
-    desc: "One polished link replaces photo dumps, copy-pasted notes, and repeated questions in the group chat.",
+    title: "Instant Publishing",
+    desc: "Ship a hosted page that looks intentional on mobile, not like a screenshot rescue mission.",
+  },
+] as const;
+
+const snapCards = [
+  {
+    icon: ImageIcon,
+    title: "Screenshots",
+    desc: "Turn social posts, flyers, and text invites into a cleaner page in seconds.",
   },
   {
-    icon: CalendarCheck,
-    title: "Collect RSVPs",
-    desc: "Let guests respond instantly and keep the guest list in one place without another tool.",
+    icon: FileText,
+    title: "PDF Packets",
+    desc: "Pull schedules, hotel details, and venue notes out of long meet documents.",
+  },
+] as const;
+
+const gymnasticsFeatures = [
+  {
+    icon: Sparkles,
+    title: "Live Results",
+    desc: "Point families to live score destinations without burying the link in a team thread.",
   },
   {
-    icon: CalendarPlus,
-    title: "Instant Save-the-Date",
-    desc: "Guests can add the event to their calendar in one tap from the live page.",
+    icon: MapPin,
+    title: "Venue & Parking",
+    desc: "Keep entrance notes, parking guidance, and venue context on one page.",
   },
   {
-    icon: FileEdit,
+    icon: Hotel,
+    title: "Hotel Blocks",
+    desc: "Attach booking links, codes, and hotel notes where everyone can actually find them.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Coach Notes",
+    desc: "Publish quick reminders for warmups, arrival windows, attire, and meet-day changes.",
+  },
+  {
+    icon: Zap,
     title: "Live Updates",
-    desc: "If plans change, update the page once and the latest details stay in front of everyone.",
+    desc: "Shift times, awards, or locations once and let the hosted page carry the latest version.",
+  },
+  {
+    icon: Users,
+    title: "Team Tracking",
+    desc: "Use the same event hub to coordinate families, volunteers, and attendance questions.",
+  },
+] as const;
+
+const useCases = [
+  {
+    title: "Gymnastics Meet",
+    subtitle: "Live Event Hub",
+    image: "https://picsum.photos/seed/gym1/600/800",
+    large: true,
+  },
+  {
+    title: "Birthday Party",
+    subtitle: "Live Event Hub",
+    image: "https://picsum.photos/seed/bday/600/800",
+    large: false,
+  },
+  {
+    title: "Wedding Weekend",
+    subtitle: "Live Event Hub",
+    image: "https://picsum.photos/seed/wedding/600/800",
+    large: false,
+  },
+  {
+    title: "School Event",
+    subtitle: "Live Event Hub",
+    image: "https://picsum.photos/seed/school/600/800",
+    large: false,
+  },
+  {
+    title: "Community Meetup",
+    subtitle: "Live Event Hub",
+    image: "https://picsum.photos/seed/community/600/800",
+    large: true,
+  },
+  {
+    title: "Sports Schedule",
+    subtitle: "Live Event Hub",
+    image: "https://picsum.photos/seed/sports/600/800",
+    large: false,
+  },
+] as const;
+
+const howItWorksPaths = [
+  {
+    tone: "light" as const,
+    icon: Layout,
+    title: "Create in Studio",
+    steps: [
+      {
+        title: "Design",
+        desc: "Start with a polished live card or adapt a layout to the event you are hosting.",
+      },
+      {
+        title: "Enhance",
+        desc: "Add your content, structure, action buttons, and the details guests actually need.",
+      },
+      {
+        title: "Publish",
+        desc: "Share one hosted link instead of a stack of screenshots and follow-up texts.",
+      },
+    ],
+  },
+  {
+    tone: "dark" as const,
+    icon: Camera,
+    title: "Snap & Upload",
+    steps: [
+      {
+        title: "Upload",
+        desc: "Take a photo, upload a screenshot, or drop in a meet PDF from the files you already have.",
+      },
+      {
+        title: "Extract",
+        desc: "Envitefy pulls dates, times, locations, and structured event details into a usable draft.",
+      },
+      {
+        title: "Go Live",
+        desc: "Publish the draft into a shareable event page with RSVP, maps, and updates built in.",
+      },
+    ],
   },
 ] as const;
 
 const rsvpHighlights = [
   "One-tap RSVP from mobile",
-  "Auto-fill calendar invites",
-  "Smart maps and directions",
+  "Calendar save without extra apps",
+  "Maps and directions attached to the same event page",
 ] as const;
 
-const gymnasticsHighlights = [
-  {
-    icon: CalendarCheck,
-    title: "Meet Details",
-    desc: "Keep schedules, notes, and meet-day updates on one page that families can actually follow.",
-  },
-  {
-    icon: Trophy,
-    title: "Hotels",
-    desc: "Attach hotel blocks, booking links, and stay info right next to the event details.",
-  },
-  {
-    icon: MapPin,
-    title: "Venue and Parking Info",
-    desc: "Share maps, entrances, and parking guidance without burying them in texts.",
-  },
-  {
-    icon: Users,
-    title: "Attendance Tracking",
-    desc: "Track coaches, volunteers, and family attendance with the same polished page.",
-  },
-] as const;
-
-/** Single backdrop-filter per glass section; inner panels use opaque tints only. */
-const glassSectionClass =
-  "theme-glass-surface relative isolate overflow-hidden rounded-[2rem] border border-white/14 shadow-[0_32px_90px_rgba(4,1,14,0.42)]";
-
-const sectionBubbleClass =
-  "mb-5 inline-flex rounded-full border border-white/28 bg-[rgba(32,18,58,0.62)] px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-white shadow-[0_12px_28px_rgba(6,2,16,0.22)]";
-
-const cardBubbleClass =
-  "absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/30 bg-white px-4 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-[#140a27] shadow-[0_14px_34px_rgba(5,1,16,0.28)]";
-
-const floatingBubbleClass =
-  "flex items-center gap-2 rounded-full border border-white/22 bg-[rgba(19,11,38,0.85)] px-4 py-3 shadow-[0_24px_50px_rgba(3,0,12,0.28)] sm:gap-4 sm:px-8 sm:py-5";
-
-interface Step {
-  id: number;
-  title: string;
-  description: string;
-  icon: ReactNode;
-  visual: ReactNode;
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
 }
 
-const steps: Step[] = [
-  {
-    id: 1,
-    title: "Snap or Upload",
-    description:
-      "Take a photo, drag in a PDF, or upload a flyer from your camera roll and let the first pass happen automatically.",
-    icon: <Camera className="h-6 w-6" />,
-    visual: (
-      <div className="relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/15 bg-white/[0.08] p-6 shadow-[0_20px_40px_rgba(5,1,16,0.28)]">
-        <div className="absolute left-5 top-4 text-[10px] font-bold tracking-[0.28em] text-white uppercase">
-          Camera Mode
-        </div>
-        <div className="absolute right-5 top-4">
-          <Camera className="h-4 w-4 text-white" />
-        </div>
-        <div className="mt-4 flex h-full w-full flex-col items-center justify-center rounded-[1.4rem] border border-dashed border-white/20 bg-[#7C3AED]/15">
-          <div className="mb-3 rounded-2xl bg-white/[0.14] p-4 shadow-sm">
-            <Camera className="h-8 w-8 text-white" />
-          </div>
-          <p className="text-xs font-medium text-white">
-            Drop your invite here
-          </p>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: 2,
-    title: "Review and Edit",
-    description:
-      "Envitefy pulls dates, times, addresses, and links into a cleaner structure so you can make fast edits before sharing.",
-    icon: <Edit3 className="h-6 w-6" />,
-    visual: (
-      <div className="relative flex aspect-[4/3] w-full flex-col gap-4 overflow-hidden rounded-[1.75rem] border border-white/15 bg-white/[0.08] p-6 shadow-[0_20px_40px_rgba(5,1,16,0.28)]">
-        <div className="mb-2 flex gap-2">
-          <div className="h-3 w-12 rounded-full bg-white/30" />
-          <div className="h-3 w-20 rounded-full bg-white/15" />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-white/12 bg-black/10 p-3">
-            <div className="mb-1 text-[8px] font-bold text-white uppercase">
-              Date
-            </div>
-            <div className="text-xs font-semibold text-white">Sat, Oct 12</div>
-          </div>
-          <div className="rounded-xl border border-white/12 bg-black/10 p-3">
-            <div className="mb-1 text-[8px] font-bold text-white uppercase">
-              Time
-            </div>
-            <div className="text-xs font-semibold text-white">7:00 PM</div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-white/12 bg-black/10 p-3">
-          <div className="mb-1 text-[8px] font-bold text-white uppercase">
-            Location
-          </div>
-          <div className="text-xs font-semibold text-white">
-            Sunset Garden, 123 Maple St.
-          </div>
-        </div>
-        <div className="mt-auto h-2 w-full overflow-hidden rounded-full bg-white/10">
-          <div className="h-full w-2/3 bg-white/85" />
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: 3,
-    title: "Save and Share",
-    description:
-      "Publish the live page, collect RSVPs, and give guests one place for maps, timing, and calendar adds.",
-    icon: <Share2 className="h-6 w-6" />,
-    visual: (
-      <div className="relative flex aspect-[4/3] w-full flex-col items-center justify-center gap-6 overflow-hidden rounded-[1.75rem] border border-white/15 bg-white/[0.08] p-8 shadow-[0_20px_40px_rgba(5,1,16,0.28)]">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-400/15">
-          <CheckCircle2 className="h-6 w-6 text-emerald-200" />
-        </div>
-        <h4 className={`${styles.headline} text-sm font-bold text-white`}>
-          Event is Live
-        </h4>
-        <div className="w-full space-y-2">
-          <button
-            type="button"
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/12 bg-black/20 py-3 text-[10px] font-bold tracking-wider text-white uppercase transition-colors hover:bg-black/30"
-          >
-            <Copy className="h-3 w-3" /> Copy Link
-          </button>
-          <button
-            type="button"
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white py-3 text-[10px] font-bold tracking-wider text-[#140a27] uppercase transition-colors hover:bg-[#f2eaff]"
-          >
-            <Share2 className="h-3 w-3" /> Share
-          </button>
-        </div>
-      </div>
-    ),
-  },
-];
-
-function PrimaryCta({
-  href,
-  children,
-  className = "",
+function SectionIntro({
+  eyebrow,
+  title,
+  description,
+  align = "left",
+  className,
 }: {
-  href: string;
-  children: ReactNode;
+  eyebrow: string;
+  title: ReactNode;
+  description: string;
+  align?: "left" | "center";
   className?: string;
 }) {
   return (
-    <Link
-      href={href}
-      className={`${styles.btnRolling} cta-shell flex h-[3.85rem] items-center justify-center rounded-full bg-white px-10 text-lg font-bold text-[#140a27] shadow-[0_18px_40px_rgba(255,255,255,0.16)] hover:bg-[#f4ecff] ${className}`}
-    >
-      {typeof children === "string" ? (
-        <AnimatedButtonLabel label={children} />
-      ) : (
-        children
+    <div
+      className={cx(
+        "max-w-3xl",
+        align === "center" && "mx-auto text-center",
+        className,
       )}
-    </Link>
-  );
-}
-
-function BenefitCard({
-  icon: Icon,
-  title,
-  desc,
-}: {
-  icon: LucideIcon;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="space-y-6 rounded-[1.65rem] border border-white/12 bg-white/[0.06] p-7">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white">
-        <Icon size={26} />
-      </div>
-      <h3
-        className={`${styles.headline} text-2xl font-bold tracking-tight text-white`}
+    >
+      <div className={styles.eyebrow}>{eyebrow}</div>
+      <h2
+        className={cx(
+          styles.headline,
+          "mt-6 text-4xl font-extrabold tracking-tight text-[#2b1b16] sm:text-5xl lg:text-6xl",
+        )}
       >
         {title}
-      </h3>
-      <p className="text-base leading-relaxed text-white">{desc}</p>
+      </h2>
+      <p className="mt-6 text-lg leading-8 text-[#6a5549] sm:text-xl">
+        {description}
+      </p>
     </div>
   );
 }
 
-function useRevealOnce() {
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
+function LinkOrButton({
+  href,
+  onClick,
+  className,
+  children,
+}: {
+  href?: string;
+  onClick?: () => void;
+  className: string;
+  children: ReactNode;
+}) {
+  if (href) {
+    if (href.startsWith("#")) {
+      return (
+        <a href={href} className={className}>
+          {children}
+        </a>
+      );
+    }
 
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || visible || typeof window === "undefined") return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
-        setVisible(true);
-        observer.disconnect();
-      },
-      {
-        threshold: 0.14,
-        rootMargin: "0px 0px 18% 0px",
-      },
+    return (
+      <Link href={href} className={className}>
+        {children}
+      </Link>
     );
+  }
 
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [visible]);
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {children}
+    </button>
+  );
+}
 
-  return { ref, visible };
+function PrimaryAction({
+  href,
+  onClick,
+  label,
+  light = false,
+  icon = ArrowRight,
+  className,
+}: {
+  href?: string;
+  onClick?: () => void;
+  label: string;
+  light?: boolean;
+  icon?: LucideIcon;
+  className?: string;
+}) {
+  return (
+    <LinkOrButton
+      href={href}
+      onClick={onClick}
+      className={cx(
+        styles.btnRolling,
+        "cta-shell inline-flex h-14 items-center justify-center rounded-2xl px-8 text-base font-bold transition-transform hover:scale-[1.02] sm:h-16 sm:px-10 sm:text-lg",
+        light
+          ? "border border-white/12 bg-white/[0.08] text-white shadow-[0_20px_45px_rgba(14,7,26,0.18)] hover:bg-white/[0.12]"
+          : "bg-[#c98f6b] text-white shadow-[0_24px_60px_rgba(201,143,107,0.35)] hover:bg-[#bc825f]",
+        className,
+      )}
+    >
+      <AnimatedButtonLabel
+        label={label}
+        icon={icon}
+        iconClassName="h-5 w-5"
+        className="gap-3"
+      />
+    </LinkOrButton>
+  );
+}
+
+function PhoneShell({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cx(
+        "relative rounded-[3.5rem] border-[4px] border-[#18181b] bg-black p-1 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)]",
+        className,
+      )}
+    >
+      <div className="absolute left-1/2 top-3 z-30 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />
+      <div className="overflow-hidden rounded-[3.2rem] bg-white">{children}</div>
+    </div>
+  );
 }
 
 export default function LandingExperience() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const activeScene = useActiveScene(LANDING_SCENE_ORDER, "snap");
-  const { ref: gymnasticsHighlightRef, visible: gymnasticsHighlightVisible } =
-    useRevealOnce();
-  const { ref: birthdayHeroRef, visible: birthdayHeroVisible } =
-    useRevealOnce();
-  const { ref: weddingHeroRef, visible: weddingHeroVisible } = useRevealOnce();
 
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
@@ -503,12 +365,11 @@ export default function LandingExperience() {
   return (
     <>
       <div
-        className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-hidden bg-transparent text-white selection:bg-white/20 selection:text-white`}
+        className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-hidden bg-[#f8f5ff] text-[#2b1b16] selection:bg-[#c98f6b]/30 selection:text-[#2b1b16]`}
       >
-        <ScenicBackground scene={activeScene} scenes={LANDING_SCENES} />
-
         <HeroTopNav
           navLinks={[
+            { label: "Studio", href: "/studio" },
             { label: "Snap", href: "/snap" },
             { label: "Gymnastics", href: "#gymnastics" },
             { label: "Features", href: "#what-you-can-snap" },
@@ -525,422 +386,565 @@ export default function LandingExperience() {
 
         <section
           id="snap"
-          className={`hash-anchor-below-fixed-nav px-4 pb-6 pt-32 sm:px-6 lg:px-8 lg:pt-40`}
+          className="hash-anchor-below-fixed-nav px-4 pb-6 pt-32 sm:px-6 lg:px-8 lg:pt-40"
         >
-          <header
+          <motion.header
             id="landing-hero"
-            className="mx-auto min-w-0 w-full max-w-[min(90vw,100%)]"
+            variants={sectionReveal}
+            initial="hidden"
+            animate="visible"
+            className="mx-auto w-full max-w-7xl"
           >
-            <div className="theme-glass-surface relative isolate overflow-hidden rounded-[2.4rem] border border-white/14 px-7 py-8 shadow-[0_38px_90px_rgba(4,1,14,0.34)] md:px-10 md:py-12 lg:px-14 lg:py-16">
-              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(255,255,255,0.04)_38%,rgba(89,28,135,0.07)_100%)]" />
-              <div className="absolute -left-24 bottom-[-5rem] h-72 w-72 rounded-full bg-[#22D3EE]/20 blur-[140px]" />
-              <div className="absolute right-[-6rem] top-[-3rem] h-72 w-72 rounded-full bg-[#8B5CF6]/22 blur-[150px]" />
+            <div className={cx(styles.heroGradient, "relative overflow-hidden rounded-[2.75rem] px-6 py-10 text-white shadow-[0_44px_120px_-32px_rgba(24,16,51,0.45)] sm:px-10 lg:px-14 lg:py-16")}>
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,8,29,0.08),rgba(15,8,29,0.2)_55%,rgba(15,8,29,0.42)_100%)]" />
+              <div className="absolute left-[-5%] top-[-12%] h-64 w-64 rounded-full bg-white/12 blur-3xl" />
+              <div className="absolute bottom-[-18%] right-[-8%] h-80 w-80 rounded-full bg-[#c98f6b]/30 blur-3xl" />
 
-              <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:items-center">
+              <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(320px,430px)] lg:items-center">
                 <div className="max-w-3xl">
-                  <div
-                    className={`${sectionBubbleClass} mb-8 items-center tracking-[0.3em]`}
-                  >
-                    Design Collective 2026
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-4 py-2 text-[0.7rem] font-bold uppercase tracking-[0.3em] text-white/90 shadow-[0_12px_28px_rgba(8,4,18,0.2)]">
+                    <Sparkles className="h-4 w-4" />
+                    The Future of Invitations
                   </div>
 
                   <h1
-                    className={`${styles.headline} mb-8 text-6xl font-light leading-[0.92] tracking-tight text-white [text-shadow:0_0_28px_rgba(255,255,255,0.18)] sm:text-7xl lg:text-[6.75rem]`}
+                    className={cx(
+                      styles.headline,
+                      "mt-8 text-5xl font-extrabold leading-[0.9] tracking-tight sm:text-6xl lg:text-[5.25rem]",
+                    )}
                   >
-                    Snap Any
+                    Create. Snap.
                     <br />
-                    <span className="mt-4 block font-serif text-4xl font-light italic leading-tight text-white [text-shadow:0_0_30px_rgba(255,255,255,0.2)] sm:mt-5 sm:text-5xl lg:mt-6 lg:text-[4.65rem]">
-                      Invite Into
-                      <br /> <span className="block">an Event Page</span>
-                    </span>
+                    <span className={styles.textGradient}>Host Like a Pro.</span>
                   </h1>
 
-                  <p className="mb-12 max-w-xl text-lg leading-relaxed text-white md:text-[1.65rem] md:leading-[1.45]">
-                    Upload birthdays, wedding invites, or baby shower flyers.
-                    Envitefy uses AI to turn static images into polished digital
-                    event pages with RSVPs built in.{" "}
+                  <p className="mt-8 max-w-2xl text-lg leading-8 text-white/74 sm:text-xl">
+                    Turn any design into a high-performance event hub. RSVP,
+                    maps, updates, and polished mobile sharing all live behind
+                    one beautiful link.
                   </p>
 
-                  <div className="flex flex-wrap gap-4 max-sm:flex-nowrap max-sm:gap-2">
-                    <PrimaryCta
+                  <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+                    <PrimaryAction href="/snap" label="Try Snap Upload" />
+                    <PrimaryAction
+                      onClick={() => openAuth("signup")}
+                      label="Open Studio"
+                      light
+                      icon={Layout}
+                    />
+                  </div>
+
+                  <div className="mt-10 flex flex-wrap gap-4">
+                    <Link
                       href="/snap"
-                      className="max-sm:h-auto max-sm:min-h-[3.35rem] max-sm:min-w-0 max-sm:basis-0 max-sm:grow max-sm:px-2.5 max-sm:text-center max-sm:text-xs max-sm:leading-snug"
+                      className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-black/15 px-5 py-3 text-sm font-semibold text-white/88 transition hover:bg-black/20"
                     >
-                      Try Snap Upload
-                    </PrimaryCta>
-                    <a
-                      href="#how-it-works"
-                      className={`${styles.btnRolling} cta-shell flex h-[3.85rem] max-sm:h-auto max-sm:min-h-[3.35rem] max-sm:min-w-0 max-sm:basis-0 max-sm:grow max-sm:px-2.5 max-sm:text-center max-sm:text-xs max-sm:leading-snug items-center justify-center rounded-full border border-white/16 bg-white/[0.08] px-10 text-lg font-bold text-white transition-colors hover:bg-white/[0.12]`}
+                      <Camera className="h-4 w-4" />
+                      Scan flyers, screenshots, and PDFs
+                    </Link>
+                    <Link
+                      href="/gymnastics"
+                      className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-black/15 px-5 py-3 text-sm font-semibold text-white/88 transition hover:bg-black/20"
                     >
-                      <AnimatedButtonLabel label="See How It Works" />
-                    </a>
+                      <Zap className="h-4 w-4" />
+                      Explore gymnastics meet pages
+                    </Link>
+                  </div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7, duration: 0.6 }}
+                    className={cx(
+                      styles.glassCard,
+                      "mt-10 flex max-w-md items-center gap-5 rounded-[2rem] px-5 py-5",
+                    )}
+                  >
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#c98f6b]/18 text-[#ffd2b6]">
+                      <Zap className="h-7 w-7" />
+                    </div>
+                    <div>
+                      <p className="text-[0.68rem] font-bold uppercase tracking-[0.3em] text-white/70">
+                        Live Demo
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-white/84">
+                        See how a <span className="font-bold">gymnastics meet</span>{" "}
+                        hub handles schedules, venue notes, and updates in one
+                        place.
+                      </p>
+                    </div>
+                  </motion.div>
+
+                  <div className="mt-12 flex flex-col gap-8">
+                    <div className="flex items-center gap-5">
+                      <div className="flex -space-x-3">
+                        {[1, 2, 3, 4].map((index) => (
+                          <img
+                            key={index}
+                            src={`https://picsum.photos/seed/user${index}/100/100`}
+                            alt="Envitefy host"
+                            className="h-11 w-11 rounded-full border-4 border-white/85 object-cover shadow-lg"
+                            referrerPolicy="no-referrer"
+                          />
+                        ))}
+                      </div>
+                      <p className="text-sm font-medium text-white/74">
+                        Trusted by <span className="font-bold text-white">2,500+</span>{" "}
+                        hosts, coaches, and gymnastics parents
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="relative flex items-start justify-center gap-4 sm:gap-6 lg:justify-end">
-                  <div
-                    className={`${styles.cardGroup} ${styles.heroRevealPrimary} group relative`}
-                  >
-                    <div
-                      className={`${cardBubbleClass} -top-4 px-3 text-[#7C3AED]`}
-                    >
-                      Snap
-                    </div>
-                    <div
-                      className={`${styles.heroSnapCard} w-[10.25rem] overflow-hidden rounded-[1.45rem] shadow-[0_24px_52px_rgba(0,0,0,0.24)] sm:w-56 lg:w-64`}
-                    >
-                      <Image
-                        alt="Original flyer"
-                        className="h-auto w-full rounded-[1.45rem] grayscale-[0.1]"
-                        height={1024}
-                        priority
-                        sizes="(min-width: 1024px) 16rem, (min-width: 640px) 14rem, 10.25rem"
-                        src={IMAGES.heroFlyer}
-                        width={768}
-                      />
-                    </div>
-                  </div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
+                  className="relative"
+                >
+                  <PhoneShell className="mx-auto aspect-[9/19.5] max-w-[320px]">
+                    <div className="relative flex h-full flex-col">
+                      <div className="relative h-64 overflow-hidden bg-[#c98f6b]">
+                        <img
+                          src="https://picsum.photos/seed/birthday-party/600/1000"
+                          alt="Birthday event preview"
+                          className="h-full w-full object-cover opacity-90"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                        <div className="absolute bottom-7 left-6 text-white">
+                          <div className="mb-3 flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-green-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/80">
+                              Live Now
+                            </span>
+                          </div>
+                          <h3 className={cx(styles.headline, "text-3xl font-extrabold")}>
+                            Leo&apos;s 5th Birthday
+                          </h3>
+                          <p className="mt-1 text-sm text-white/72">
+                            Superhero Adventure Party
+                          </p>
+                        </div>
+                      </div>
 
-                  <div
-                    className={`${styles.heroRevealCenter} hidden flex-col items-center gap-2 sm:flex`}
-                  >
-                    <div
-                      className={`${styles.processingPulse} flex h-12 w-12 items-center justify-center rounded-full bg-white/12 text-white shadow-inner`}
-                    >
-                      <Sparkles size={20} />
-                    </div>
-                    <div className="h-16 w-px bg-gradient-to-b from-white/40 to-transparent" />
-                    <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white">
-                      Processing
-                    </span>
-                  </div>
+                      <div className="flex-1 space-y-7 p-7">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c98f6b]/12 text-[#c98f6b]">
+                            <Calendar className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#9f8f85]">
+                              Date & Time
+                            </p>
+                            <p className="mt-1 text-base font-bold text-[#2b1b16]">
+                              Saturday, Dec 12 @ 2:00 PM
+                            </p>
+                          </div>
+                        </div>
 
-                  <div
-                    className={`${styles.cardGroup} ${styles.heroRevealSecondary} group relative mt-5 sm:mt-0`}
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c98f6b]/12 text-[#c98f6b]">
+                            <MapPin className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#9f8f85]">
+                              Location
+                            </p>
+                            <p className="mt-1 text-base font-bold text-[#2b1b16]">
+                              The Adventure Park, Hall B
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                          <button
+                            type="button"
+                            className="w-full rounded-2xl bg-[#c98f6b] py-4 text-sm font-bold text-white shadow-[0_22px_50px_rgba(201,143,107,0.28)]"
+                          >
+                            RSVP Now
+                          </button>
+                          <button
+                            type="button"
+                            className="w-full rounded-2xl border border-[#f0e4dc] bg-[#faf7f2] py-4 text-sm font-bold text-[#6b4c3f]"
+                          >
+                            Get Directions
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </PhoneShell>
+
+                  <motion.div
+                    animate={{ y: [0, -14, 0] }}
+                    transition={floatTransition}
+                    className={cx(
+                      styles.glassCard,
+                      "absolute -right-2 top-12 z-20 hidden items-center gap-4 rounded-[1.8rem] px-5 py-4 text-white shadow-[0_32px_60px_rgba(12,8,24,0.26)] lg:flex",
+                    )}
                   >
-                    <div
-                      className={`${cardBubbleClass} -top-4 border-white/24 px-3 text-[#140a27]`}
-                    >
-                      Live Page
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-500 text-white">
+                      <Users className="h-6 w-6" />
                     </div>
-                    <div
-                      className={`${styles.heroLiveCard} w-[11rem] overflow-hidden rounded-[1.8rem] shadow-[0_28px_64px_rgba(0,0,0,0.28)] sm:w-60 sm:rounded-[2.4rem] lg:w-72`}
-                    >
-                      <Image
-                        alt="Live event preview"
-                        className="h-auto w-full rounded-[1.8rem] sm:rounded-[2.4rem]"
-                        height={1600}
-                        priority
-                        sizes="(min-width: 1024px) 18rem, (min-width: 640px) 15rem, 11rem"
-                        src={IMAGES.heroEvent}
-                        width={900}
-                      />
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/68">
+                        Live RSVPs
+                      </p>
+                      <p className="mt-1 text-xl font-bold text-white">42 Guests</p>
                     </div>
-                  </div>
-                </div>
+                  </motion.div>
+
+                  <motion.div
+                    animate={{ y: [0, 12, 0] }}
+                    transition={{ ...floatTransition, delay: 0.8, duration: 5.8 }}
+                    className={cx(
+                      styles.glassCard,
+                      "absolute -left-2 bottom-16 z-20 hidden items-center gap-4 rounded-[1.8rem] px-5 py-4 text-white shadow-[0_32px_60px_rgba(12,8,24,0.26)] lg:flex",
+                    )}
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c98f6b] text-white">
+                      <Zap className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/68">
+                        Status
+                      </p>
+                      <p className="mt-1 text-xl font-bold text-white">Live Updates</p>
+                    </div>
+                  </motion.div>
+                </motion.div>
               </div>
             </div>
-          </header>
+          </motion.header>
         </section>
 
         <section
           id="gymnastics"
           className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
         >
-          <div
-            className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
+          <motion.div
+            variants={sectionReveal}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="mx-auto max-w-7xl"
           >
-            <div className="absolute inset-0 bg-[linear-gradient(140deg,rgba(14,165,233,0.08),rgba(124,58,237,0.03)_45%,transparent)]" />
-            <div className="relative grid gap-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center">
-              <div
-                ref={gymnasticsHighlightRef}
-                className="relative order-2 flex flex-row flex-nowrap items-start justify-center gap-4 sm:items-center sm:gap-6 lg:order-1 lg:justify-start"
-              >
-                <div
-                  className={`${styles.cardGroup} ${styles.heroRevealReady} ${
-                    gymnasticsHighlightVisible ? styles.heroRevealPrimary : ""
-                  } group relative`}
-                >
-                  <div className={`${cardBubbleClass} -top-5 text-[#0EA5E9]`}>
-                    Meet PDF
-                  </div>
-                  <div
-                    className={`${styles.heroSnapCard} w-[7.8rem] overflow-hidden rounded-[1.35rem] shadow-[0_26px_58px_rgba(3,0,12,0.3)] sm:w-52`}
-                  >
-                    <Image
-                      alt="Gymnastics meet flyer preview"
-                      className="block h-auto w-full scale-[1.08] rounded-[1.35rem]"
-                      height={1024}
-                      loading="eager"
-                      sizes="(min-width: 640px) 13rem, 7.8rem"
-                      src={IMAGES.gymnasticsFlyer}
-                      width={768}
-                    />
-                  </div>
-                </div>
+            <div className={cx(styles.surfacePanel, "rounded-[2.75rem] bg-[#f9f6ff] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
+              <SectionIntro
+                eyebrow="Meet Director Approved"
+                title={
+                  <>
+                    Built for the
+                    <br />
+                    <span className="text-[#7c5cdb]">Gymnastics Grind.</span>
+                  </>
+                }
+                description="The meet hub keeps schedules, hotels, maps, parking, live links, and updates in one place for the whole team."
+                align="center"
+              />
 
-                <div
-                  className={`${styles.heroRevealReady} ${
-                    gymnasticsHighlightVisible ? styles.heroRevealCenter : ""
-                  } hidden flex-col items-center gap-2 sm:flex`}
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white shadow-inner">
-                    <Sparkles size={18} />
-                  </div>
-                  <div className="h-14 w-px bg-gradient-to-b from-white/40 to-transparent" />
-                  <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white">
-                    Processing
-                  </span>
-                </div>
-
-                <div
-                  className={`${styles.cardGroup} ${styles.heroRevealReady} ${
-                    gymnasticsHighlightVisible ? styles.heroRevealSecondary : ""
-                  } group relative mt-5 sm:mt-0`}
-                >
+              <div className="mt-14 grid gap-6 md:grid-cols-3">
+                {gymnasticsFeatures.map((feature) => (
                   <div
-                    className={`${cardBubbleClass} -top-5 border-white/24 text-[#140a27]`}
+                    key={feature.title}
+                    className="rounded-[2rem] border border-[#e9e0fb] bg-white p-8 shadow-[0_18px_45px_rgba(43,27,22,0.05)]"
                   >
-                    Live Meet
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f0eaff] text-[#7c5cdb]">
+                      <feature.icon className="h-7 w-7" />
+                    </div>
+                    <h3
+                      className={cx(
+                        styles.headline,
+                        "mt-6 text-2xl font-bold text-[#2b1b16]",
+                      )}
+                    >
+                      {feature.title}
+                    </h3>
+                    <p className="mt-4 text-base leading-7 text-[#6a5549]">
+                      {feature.desc}
+                    </p>
                   </div>
-                  <div
-                    className={`${styles.heroLiveCard} w-[8.8rem] overflow-hidden rounded-[1.75rem] shadow-[0_30px_64px_rgba(3,0,12,0.34)] sm:w-56 sm:rounded-[2.4rem]`}
-                  >
-                    <Image
-                      alt="Gymnastics event page preview"
-                      className="h-auto w-full rounded-[1.75rem] sm:rounded-[2.4rem]"
-                      height={1600}
-                      loading="eager"
-                      sizes="(min-width: 640px) 14rem, 8.8rem"
-                      src={IMAGES.gymnasticsEvent}
-                      width={900}
-                    />
-                  </div>
-                </div>
+                ))}
               </div>
 
-              <div className="z-10 order-1 text-center lg:order-2 lg:text-left">
-                <span className={sectionBubbleClass}>Sports Edition</span>
-                <h2
-                  className={`${styles.headline} text-4xl font-bold tracking-tight text-white lg:text-5xl`}
-                >
-                  Perfect for gymnastics meets and competition weekends
-                </h2>
-                <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white lg:text-xl">
-                  Upload a competition flyer and keep venue maps, scoring links,
-                  hotel blocks, and meet-day updates on one polished page.
-                </p>
-
-                <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                  {gymnasticsHighlights.map((item) => (
-                    <div
-                      key={item.title}
-                      className="rounded-[1.5rem] border border-white/12 bg-white/[0.06] p-5"
+              <div className="mt-14 overflow-hidden rounded-[2.8rem] bg-[linear-gradient(135deg,#2563eb_0%,#1e3a8a_100%)] px-6 py-10 text-white shadow-[0_40px_100px_-24px_rgba(37,99,235,0.46)] sm:px-8 lg:px-10 lg:py-12">
+                <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
+                  <div>
+                    <h3
+                      className={cx(
+                        styles.headline,
+                        "text-4xl font-extrabold leading-tight sm:text-5xl",
+                      )}
                     >
-                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white">
-                        <item.icon size={19} />
-                      </div>
-                      <h3
-                        className={`${styles.headline} text-xl font-bold text-white`}
-                      >
-                        {item.title}
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-white">
-                        {item.desc}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                      Ready for the next meet?
+                    </h3>
+                    <p className="mt-6 max-w-2xl text-lg leading-8 text-blue-100">
+                      Join clubs using Envitefy to keep every weekend clearer for
+                      coaches, parents, and athletes.
+                    </p>
+                    <PrimaryAction
+                      href="/gymnastics"
+                      label="See Gymnastics Example"
+                      light
+                      icon={ArrowRight}
+                      className="mt-8 border-0 bg-white text-[#1e3a8a] hover:bg-[#eef5ff]"
+                    />
+                  </div>
 
-                <PrimaryCta
-                  href="/gymnastics"
-                  className="mt-8 w-full sm:w-auto"
-                >
-                  Explore Gymnastics
-                </PrimaryCta>
+                  <div className="hidden lg:block">
+                    <PhoneShell className="mx-auto aspect-[9/19.5] max-w-[280px] border-white/10 bg-black">
+                      <div className="h-full bg-[#131b3d] p-6 text-white">
+                        <div className="mb-8 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
+                              <Layout className="h-4 w-4 text-blue-100" />
+                            </div>
+                            <span className="text-sm font-bold">Meet Hub</span>
+                          </div>
+                          <div className="rounded-full bg-green-400 px-3 py-1 text-[8px] font-bold uppercase tracking-[0.28em] text-black">
+                            Live
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          {[
+                            {
+                              icon: Clock,
+                              label: "Session",
+                              value: "Level 7 @ 8:00 AM",
+                            },
+                            {
+                              icon: MapPin,
+                              label: "Entrance",
+                              value: "Main Arena - C",
+                            },
+                            {
+                              icon: Hotel,
+                              label: "Hotel",
+                              value: "Marriott (GYM26)",
+                            },
+                          ].map((item) => (
+                            <div
+                              key={item.label}
+                              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/6 p-4"
+                            >
+                              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3346a8] text-[#dbe6ff]">
+                                <item.icon className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="text-[8px] font-bold uppercase tracking-[0.24em] text-blue-200/60">
+                                  {item.label}
+                                </p>
+                                <p className="mt-1 text-xs font-bold text-white">
+                                  {item.value}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </PhoneShell>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
         <section
           id="what-you-can-snap"
           className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
         >
-          <div
-            className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
+          <motion.div
+            variants={sectionReveal}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="mx-auto max-w-7xl"
           >
-            <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(251,113,133,0.06),transparent_36%,rgba(124,58,237,0.08))]" />
-            <div className="relative">
-              <div className="mb-12 max-w-3xl">
-                <span className={sectionBubbleClass}>What You Can Snap</span>
-                <h2
-                  className={`${styles.headline} text-4xl font-bold tracking-tight text-white lg:text-5xl`}
-                >
-                  Anything you upload becomes a cleaner digital surface
-                </h2>
-                <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white">
-                  Birthdays, wedding invites, school flyers, and community
-                  events all benefit from the same live page, glass treatment,
-                  and share-ready workflow.
-                </p>
+            <div className={cx(styles.surfacePanel, "rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
+              <SectionIntro
+                eyebrow="One Studio. Infinite Ways to Host."
+                title={
+                  <>
+                    One Studio.
+                    <br />
+                    <span className={styles.textGradient}>Infinite Ways to Host.</span>
+                  </>
+                }
+                description="Whether you need a keepsake design or a high-performance event page, Envitefy covers both surfaces."
+                align="center"
+              />
+
+              <div className="mt-14 grid gap-8 lg:grid-cols-2">
+                {comparisonCards.map((card, index) => (
+                  <motion.div
+                    key={card.title}
+                    whileHover={{ y: -8 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className={cx(
+                      "relative overflow-hidden rounded-[2.75rem] border border-black/5 p-8 shadow-[0_26px_80px_rgba(43,27,22,0.08)]",
+                      card.surfaceClassName,
+                    )}
+                  >
+                    {index === 0 ? (
+                      <div
+                        className={cx(
+                          styles.paperTexture,
+                          "pointer-events-none absolute inset-0 opacity-[0.06]",
+                        )}
+                      />
+                    ) : null}
+                    <div className="relative flex h-full flex-col">
+                      <div>
+                        <div className="inline-flex rounded-full border border-current/10 bg-white/40 px-4 py-2 text-[0.66rem] font-bold uppercase tracking-[0.28em]">
+                          {card.eyebrow}
+                        </div>
+                        <h3
+                          className={cx(
+                            styles.headline,
+                            "mt-6 text-4xl font-extrabold leading-tight",
+                          )}
+                        >
+                          {card.title}
+                        </h3>
+                        <p className={cx("mt-5 max-w-xl text-lg leading-8", card.bodyClassName)}>
+                          {card.description}
+                        </p>
+                      </div>
+
+                      <div className="relative mt-10">
+                        <div
+                          className={cx(
+                            "mx-auto aspect-[4/5] max-w-[360px] overflow-hidden rounded-[2rem] border-[10px] border-white shadow-[0_30px_70px_rgba(43,27,22,0.16)]",
+                            card.imageFrameClassName,
+                          )}
+                        >
+                          <img
+                            src={card.image}
+                            alt={card.title}
+                            className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className="mt-6 flex flex-wrap justify-center gap-3">
+                          {card.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className={cx(
+                                "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold shadow-[0_18px_40px_rgba(43,27,22,0.12)]",
+                                card.accentClassName,
+                              )}
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
 
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div className="rounded-[1.9rem] border border-white/12 bg-white/[0.06] p-6 lg:col-span-2">
-                  <div className="mb-6 flex items-start justify-between gap-4">
-                    <div>
-                      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white">
-                        <Cake size={28} />
-                      </div>
-                      <h3
-                        className={`${styles.headline} text-3xl font-bold text-white`}
-                      >
-                        Birthday Invitations
-                      </h3>
-                      <p className="mt-3 max-w-md text-lg leading-relaxed text-white">
-                        Turn a screenshot flyer into a beautiful page where
-                        guests can RSVP, check the registry, and save the date.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div
-                    ref={birthdayHeroRef}
-                    className="relative flex w-full max-w-[44rem] flex-row flex-nowrap items-start justify-center gap-3 sm:items-center sm:gap-8"
-                  >
-                    <div
-                      className={`${styles.cardGroup} ${styles.heroRevealReady} ${
-                        birthdayHeroVisible ? styles.heroRevealPrimary : ""
-                      } group relative`}
-                    >
-                      <div
-                        className={`${cardBubbleClass} -top-5 text-[#7C3AED]`}
-                      >
-                        Upload
-                      </div>
-                      <div
-                        className={`${styles.heroSnapCard} w-[7.5rem] overflow-hidden rounded-[1.35rem] shadow-[0_24px_52px_rgba(3,0,12,0.28)] sm:w-48`}
-                      >
-                        <Image
-                          alt="Birthday invitation flyer"
-                          className="block h-auto w-full scale-[1.08] rounded-[1.35rem]"
-                          height={1024}
-                          loading="eager"
-                          sizes="(min-width: 640px) 12rem, 7.5rem"
-                          src={IMAGES.birthdayFlyer}
-                          width={768}
-                        />
-                      </div>
-                    </div>
-
-                    <div
-                      className={`${styles.heroRevealReady} ${
-                        birthdayHeroVisible ? styles.heroRevealCenter : ""
-                      } hidden flex-col items-center gap-2 sm:flex`}
-                    >
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white shadow-inner">
-                        <Sparkles size={18} />
-                      </div>
-                      <div className="h-14 w-px bg-gradient-to-b from-white/40 to-transparent" />
-                      <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white">
-                        Processing
-                      </span>
-                    </div>
-
-                    <div
-                      className={`${styles.cardGroup} ${styles.heroRevealReady} ${
-                        birthdayHeroVisible ? styles.heroRevealSecondary : ""
-                      } group relative mt-5 sm:mt-0`}
-                    >
-                      <div
-                        className={`${cardBubbleClass} -top-5 border-white/24 text-[#140a27]`}
-                      >
-                        Event Page
-                      </div>
-                      <div
-                        className={`${styles.heroLiveCard} w-[8.75rem] overflow-hidden rounded-[1.75rem] shadow-[0_30px_64px_rgba(3,0,12,0.34)] sm:w-56 sm:rounded-[2.4rem]`}
-                      >
-                        <Image
-                          alt="Birthday event page preview"
-                          className="h-auto w-full rounded-[1.75rem] sm:rounded-[2.4rem]"
-                          height={1600}
-                          loading="eager"
-                          sizes="(min-width: 640px) 14rem, 8.75rem"
-                          src={IMAGES.birthdayEvent}
-                          width={900}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-[1.9rem] border border-white/12 bg-white/[0.06] p-6">
-                  <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white">
-                    <Heart size={28} />
-                  </div>
-                  <h3
-                    className={`${styles.headline} text-3xl font-bold text-white`}
-                  >
-                    Wedding Invites
-                  </h3>
-                  <p className="mt-3 text-lg leading-relaxed text-white">
-                    Convert an elegant paper invite into a mobile-first wedding
-                    site with a refined presentation.
-                  </p>
-                  <div className="mt-8 flex min-h-[18rem] items-center justify-center px-1 pb-1 pt-2 sm:min-h-[20rem] sm:px-2">
-                    <div ref={weddingHeroRef} className={styles.weddingStack}>
-                      <div
-                        className={`${styles.heroRevealReady} ${
-                          styles.weddingRevealPrimary
-                        } ${weddingHeroVisible ? styles.heroRevealPrimary : ""} ${
-                          styles.weddingInviteLayer
-                        }`}
-                      >
-                        <div className={styles.weddingInviteCard}>
-                          <Image
-                            alt="Wedding invitation design"
-                            className={styles.weddingInviteImage}
-                            height={1180}
-                            loading="eager"
-                            sizes="(min-width: 640px) 7.8rem, 42vw"
-                            src={IMAGES.weddingFlyer}
-                            width={860}
-                          />
+              <div className="mt-16 grid gap-12 lg:grid-cols-[minmax(320px,540px)_minmax(0,1fr)] lg:items-center">
+                <div className="order-2 lg:order-1">
+                  <div className="relative overflow-hidden rounded-[2.75rem] bg-[#1f1838] p-3 shadow-[0_36px_100px_-28px_rgba(24,16,51,0.5)]">
+                    <div className="rounded-[2.25rem] bg-white p-6">
+                      <div className="mb-8 flex items-center justify-between border-b border-[#efe4db] pb-5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c98f6b] text-white">
+                            <Layout className="h-5 w-5" />
+                          </div>
+                          <span className={cx(styles.headline, "text-lg font-bold text-[#2b1b16]")}>
+                            Studio Editor
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="h-3 w-3 rounded-full bg-[#efe4db]" />
+                          <div className="h-3 w-3 rounded-full bg-[#efe4db]" />
+                          <div className="h-3 w-3 rounded-full bg-[#efe4db]" />
                         </div>
                       </div>
 
-                      <div
-                        aria-hidden="true"
-                        className={`${styles.heroRevealReady} ${
-                          styles.weddingRevealCenter
-                        } ${weddingHeroVisible ? styles.heroRevealCenter : ""} ${
-                          styles.weddingStackConnector
-                        }`}
-                      >
-                        <span className={styles.weddingSparkle}>
-                          <Sparkles size={16} />
-                        </span>
-                      </div>
+                      <div className="flex gap-6">
+                        <div className="hidden w-1/3 space-y-4 md:block">
+                          <div className="space-y-2">
+                            <div className="h-2 w-1/2 rounded bg-[#f1e7de]" />
+                            <div className="h-10 rounded-xl border border-[#efe4db] bg-[#faf6f2]" />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="h-2 w-1/3 rounded bg-[#f1e7de]" />
+                            <div className="h-24 rounded-xl border border-[#efe4db] bg-[#faf6f2]" />
+                          </div>
+                          <div className="space-y-3 pt-4">
+                            <div className="h-2 w-2/3 rounded bg-[#f1e7de]" />
+                            <div className="flex gap-3">
+                              <div className="h-10 w-10 rounded-xl border border-[#d9b7a1] bg-[#ead1c1]" />
+                              <div className="h-10 w-10 rounded-xl border border-[#efe4db] bg-[#faf6f2]" />
+                              <div className="h-10 w-10 rounded-xl border border-[#efe4db] bg-[#faf6f2]" />
+                            </div>
+                          </div>
+                        </div>
 
-                      <div
-                        className={`${styles.heroRevealReady} ${
-                          styles.weddingRevealSecondary
-                        } ${weddingHeroVisible ? styles.heroRevealSecondary : ""} ${
-                          styles.weddingPhoneLayer
-                        }`}
-                      >
-                        <div className={styles.weddingPhoneShell}>
-                          <div className={styles.weddingPhoneFrame}>
-                            <Image
-                              alt="Wedding event page preview"
-                              className={styles.weddingPhoneImage}
-                              height={1600}
-                              loading="eager"
-                              sizes="(min-width: 640px) 9rem, 48vw"
-                              src={IMAGES.weddingEvent}
-                              width={900}
-                            />
+                        <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-[2rem] border border-[#efe4db] bg-[#fbf7f2] p-6">
+                          <motion.div
+                            animate={{ y: [0, -10, 0] }}
+                            transition={{ ...floatTransition, duration: 4.6 }}
+                            className="w-full max-w-[18rem] overflow-hidden rounded-[1.75rem] border border-[#e7d8ce] bg-white shadow-[0_24px_50px_rgba(43,27,22,0.12)]"
+                          >
+                            <div className="h-24 bg-[linear-gradient(135deg,#f3d8c4_0%,#f6eee8_100%)] p-4">
+                              <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[#8c6149] shadow-sm">
+                                <Sparkles className="h-3.5 w-3.5" />
+                                Live Event Page
+                              </div>
+                              <div className="mt-7">
+                                <div className="h-3 w-24 rounded-full bg-white/70" />
+                                <div className="mt-3 h-4 w-36 rounded-full bg-white" />
+                              </div>
+                            </div>
+                            <div className="space-y-4 p-4">
+                              <div className="rounded-2xl border border-[#efe4db] bg-[#fbf7f2] p-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3e1d4] text-[#c98f6b]">
+                                    <Calendar className="h-5 w-5" />
+                                  </div>
+                                  <div>
+                                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9b877b]">
+                                      Date & Time
+                                    </div>
+                                    <div className="mt-1 text-sm font-bold text-[#2b1b16]">
+                                      Saturday, Dec 12 at 2 PM
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="rounded-2xl border border-[#efe4db] bg-[#fbf7f2] p-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3e1d4] text-[#c98f6b]">
+                                    <MapPin className="h-5 w-5" />
+                                  </div>
+                                  <div>
+                                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9b877b]">
+                                      Location
+                                    </div>
+                                    <div className="mt-1 text-sm font-bold text-[#2b1b16]">
+                                      The Glass House Venue
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 rounded-2xl bg-[#c98f6b] px-4 py-3 text-sm font-bold text-white shadow-[0_18px_32px_rgba(201,143,107,0.24)]">
+                                <Users className="h-4 w-4" />
+                                RSVP Enabled
+                              </div>
+                            </div>
+                          </motion.div>
+
+                          <div className="absolute bottom-5 right-5 flex gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c98f6b] text-white shadow-lg shadow-[#c98f6b]/30">
+                              <Share2 className="h-5 w-5" />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -948,183 +952,463 @@ export default function LandingExperience() {
                   </div>
                 </div>
 
-                {useCases.map((item) => (
-                  <div
-                    key={item.title}
-                    className="rounded-[1.65rem] border border-white/12 bg-white/[0.06] p-6"
-                  >
-                    <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white">
-                      <item.icon size={22} />
-                    </div>
-                    <h4
-                      className={`${styles.headline} text-2xl font-bold text-white`}
-                    >
-                      {item.title}
-                    </h4>
-                    <p className="mt-3 text-base leading-relaxed text-white">
-                      {item.desc}
-                    </p>
+                <div className="order-1 lg:order-2">
+                  <SectionIntro
+                    eyebrow="Design with Purpose"
+                    title={
+                      <>
+                        The Studio:
+                        <br />
+                        <span className={styles.textGradient}>
+                          Where Events Come Alive.
+                        </span>
+                      </>
+                    }
+                    description="Ditch the static PDF. Build a polished event hub that handles sharing, RSVPs, directions, and updates automatically."
+                  />
+
+                  <div className="mt-10 space-y-6">
+                    {studioFeatures.map((feature) => (
+                      <div key={feature.title} className="flex gap-5">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#efe4db] bg-white shadow-lg">
+                          <feature.icon className="h-6 w-6 text-[#c98f6b]" />
+                        </div>
+                        <div>
+                          <h3
+                            className={cx(
+                              styles.headline,
+                              "text-xl font-bold text-[#2b1b16]",
+                            )}
+                          >
+                            {feature.title}
+                          </h3>
+                          <p className="mt-2 text-base leading-7 text-[#6a5549]">
+                            {feature.desc}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+
+                  <PrimaryAction
+                    onClick={() => openAuth("signup")}
+                    label="Start Creating"
+                    className="mt-10"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-16 overflow-hidden rounded-[2.75rem] bg-[#211936] px-6 py-10 text-white shadow-[0_36px_100px_-28px_rgba(24,16,51,0.46)] sm:px-8 lg:px-10 lg:py-12">
+                <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-[#f3dccd]">
+                      <Camera className="h-4 w-4" />
+                      <span className="text-[#fff3ea]">Snap. Extract. Go Live.</span>
+                    </div>
+                    <h3
+                      className={cx(
+                        styles.headline,
+                        "mt-6 text-4xl font-extrabold leading-tight text-[#fff8f2] sm:text-5xl",
+                      )}
+                    >
+                      <span className="[text-shadow:0_6px_24px_rgba(255,226,210,0.16)] text-[#fffaf5]">
+                        Already have a flyer?
+                      </span>
+                      <br />
+                      <span className="bg-[linear-gradient(135deg,#ffe2d2_0%,#ffb697_100%)] bg-clip-text text-transparent">
+                        Let AI Build It.
+                      </span>
+                    </h3>
+                    <p className="mt-6 max-w-2xl text-lg leading-8 text-white/68">
+                      Envitefy turns paper invites, screenshots, and meet PDFs
+                      into live pages without making you retype the whole event.
+                    </p>
+
+                    <div className="mt-10 grid gap-5 sm:grid-cols-2">
+                      {snapCards.map((card) => (
+                        <div
+                          key={card.title}
+                          className="rounded-[2rem] border border-white/10 bg-white/6 p-6"
+                        >
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#c98f6b]/18 text-[#f4d4c0]">
+                            <card.icon className="h-7 w-7" />
+                          </div>
+                          <h4
+                            className={cx(
+                              styles.headline,
+                              "mt-6 text-2xl font-bold text-[#fff4ec]",
+                            )}
+                          >
+                            <span className="[text-shadow:0_4px_18px_rgba(255,226,210,0.14)] text-[#fffaf5]">
+                              {card.title}
+                            </span>
+                          </h4>
+                          <p className="mt-3 text-sm leading-7 text-white/66">
+                            {card.desc}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <PrimaryAction
+                      href="/snap"
+                      label="Try Snap Upload"
+                      className="mt-10"
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <PhoneShell className="mx-auto aspect-[9/19.5] max-w-[320px] border-white/10">
+                      <div className="relative h-full overflow-hidden bg-[#0f142b] text-white">
+                        <img
+                          src="https://picsum.photos/seed/scan-flyer/1000/1800"
+                          alt="Flyer scan preview"
+                          className="h-full w-full object-cover opacity-30 grayscale"
+                          referrerPolicy="no-referrer"
+                        />
+                        <motion.div
+                          animate={{ top: ["0%", "100%", "0%"] }}
+                          transition={{
+                            duration: 4,
+                            repeat: Number.POSITIVE_INFINITY,
+                            ease: "linear",
+                          }}
+                          className="absolute left-0 right-0 h-1.5 bg-[#c98f6b] shadow-[0_0_30px_rgba(201,143,107,0.95)]"
+                        />
+
+                        <motion.div
+                          initial={{ opacity: 0, x: 20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.2, duration: 0.45 }}
+                          className={cx(
+                            styles.glassDarkCard,
+                            "absolute right-4 top-[18%] flex items-center gap-2 rounded-xl px-3 py-3 text-[10px] font-bold",
+                          )}
+                        >
+                          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#c98f6b] text-white">
+                            <Calendar className="h-3 w-3" />
+                          </div>
+                          Dec 12, 2026
+                        </motion.div>
+
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.4, duration: 0.45 }}
+                          className={cx(
+                            styles.glassDarkCard,
+                            "absolute left-4 top-[44%] flex items-center gap-2 rounded-xl px-3 py-3 text-[10px] font-bold",
+                          )}
+                        >
+                          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#c98f6b] text-white">
+                            <MapPin className="h-3 w-3" />
+                          </div>
+                          The Adventure Park
+                        </motion.div>
+
+                        <motion.div
+                          initial={{ opacity: 0, y: 18 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.55, duration: 0.45 }}
+                          className={cx(
+                            styles.glassDarkCard,
+                            "absolute bottom-[20%] left-1/2 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-3 text-[10px] font-bold",
+                          )}
+                        >
+                          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#c98f6b] text-white">
+                            <Users className="h-3 w-3" />
+                          </div>
+                          RSVP Required
+                        </motion.div>
+                      </div>
+                    </PhoneShell>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
         <section
           id="how-it-works"
           className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
         >
-          <div
-            className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
+          <motion.div
+            variants={sectionReveal}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="mx-auto max-w-7xl"
           >
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent_30%,rgba(124,58,237,0.06))]" />
-            <div className="relative">
-              <div className="mb-12 max-w-3xl">
-                <span className={sectionBubbleClass}>How It Works</span>
-                <h2
-                  className={`${styles.headline} text-4xl font-bold tracking-tight text-white lg:text-5xl`}
-                >
-                  The magic behind the snap is still simple
-                </h2>
-              </div>
+            <div className={cx(styles.surfacePanel, "rounded-[2.75rem] bg-white px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
+              <SectionIntro
+                eyebrow="Two paths to event perfection"
+                title={
+                  <>
+                    Two paths to
+                    <br />
+                    <span className={styles.textGradient}>event perfection.</span>
+                  </>
+                }
+                description="Start from scratch in Studio or bring your existing invite into Snap. Both routes end with a shareable event page."
+                align="center"
+              />
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                {steps.map((step) => (
-                  <div
-                    key={step.id}
-                    className="group flex flex-col rounded-[1.75rem] border border-white/12 bg-white/[0.06] p-6 shadow-[0_18px_42px_rgba(3,0,12,0.24)] transition-transform duration-300 hover:-translate-y-1"
+              <div className="mt-14 grid gap-8 md:grid-cols-2">
+                {howItWorksPaths.map((path, pathIndex) => (
+                  <motion.div
+                    key={path.title}
+                    whileHover={{ y: -8 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className={cx(
+                      "relative overflow-hidden rounded-[2.75rem] p-8 shadow-[0_26px_80px_rgba(43,27,22,0.08)]",
+                      path.tone === "dark"
+                        ? "bg-[#201939] text-white"
+                        : "border border-[#efe4db] bg-[#fbf7f2] text-[#2b1b16]",
+                    )}
                   >
-                    <div className="mb-7">{step.visual}</div>
-                    <div className="mt-auto space-y-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/12 font-bold text-white">
-                        {step.id}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-white">{step.icon}</div>
-                        <h3
-                          className={`${styles.headline} text-xl font-bold text-white`}
-                        >
-                          {step.title}
-                        </h3>
-                      </div>
-                      <p className="text-sm leading-relaxed text-white">
-                        {step.description}
-                      </p>
+                    <div className="absolute right-8 top-8 text-7xl font-black text-black/4">
+                      0{pathIndex + 1}
                     </div>
-                  </div>
+                    <div className="relative">
+                      <div
+                        className={cx(
+                          "flex h-16 w-16 items-center justify-center rounded-2xl",
+                          path.tone === "dark"
+                            ? "bg-[#e5c2a7] text-[#201939]"
+                            : "bg-[#ead7cc] text-[#c98f6b]",
+                        )}
+                      >
+                        <path.icon className="h-8 w-8" />
+                      </div>
+                      <h3
+                        className={cx(
+                          styles.headline,
+                          "mt-8 text-3xl font-bold",
+                          path.tone === "dark" && "text-[#fff4ec]",
+                        )}
+                      >
+                        {path.tone === "dark" ? (
+                          <span className="[text-shadow:0_5px_20px_rgba(255,226,210,0.14)] text-[#fffaf5]">
+                            {path.title}
+                          </span>
+                        ) : (
+                          path.title
+                        )}
+                      </h3>
+
+                      <div className="mt-10 space-y-8">
+                        {path.steps.map((step, stepIndex) => (
+                          <div key={step.title} className="flex gap-5">
+                            <div
+                              className={cx(
+                                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold",
+                                path.tone === "dark"
+                                  ? "bg-[#e5c2a7] text-[#201939]"
+                                  : "bg-[#c98f6b] text-white",
+                              )}
+                            >
+                              {stepIndex + 1}
+                            </div>
+                            <div>
+                              <h4
+                                className={cx(
+                                  "text-lg font-bold",
+                                  path.tone === "dark" && "text-[#fff0e6]",
+                                )}
+                              >
+                                {path.tone === "dark" ? (
+                                  <span className="[text-shadow:0_4px_18px_rgba(255,226,210,0.12)] text-[#fff7f0]">
+                                    {step.title}
+                                  </span>
+                                ) : (
+                                  step.title
+                                )}
+                              </h4>
+                              <p
+                                className={cx(
+                                  "mt-2 text-base leading-7",
+                                  path.tone === "dark"
+                                    ? "text-white/68"
+                                    : "text-[#6a5549]",
+                                )}
+                              >
+                                {step.desc}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
         <section
           id="use-cases"
           className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
         >
-          <div
-            className={`mx-auto max-w-7xl ${glassSectionClass} px-7 py-8 md:px-10 md:py-10`}
+          <motion.div
+            variants={sectionReveal}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="mx-auto max-w-7xl"
           >
-            <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(236,72,153,0.06),transparent_36%,rgba(124,58,237,0.08))]" />
-            <div className="relative">
-              <div className="mb-12 max-w-3xl">
-                <span className={sectionBubbleClass}>Why It Works</span>
-                <h2
-                  className={`${styles.headline} text-4xl font-bold tracking-tight text-white lg:text-5xl`}
-                >
-                  Built for modern invites, updates, and group coordination
-                </h2>
-              </div>
+            <div className={cx(styles.surfacePanel, "rounded-[2.75rem] bg-[#f8f5ff] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
+              <SectionIntro
+                eyebrow="Why it works"
+                title={
+                  <>
+                    The Power to
+                    <br />
+                    <span className={styles.textGradient}>Host Anything.</span>
+                  </>
+                }
+                description="From competition weekends to intimate celebrations, Envitefy scales from a single invite to a full live event surface."
+                align="center"
+              />
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {benefits.map((benefit) => (
-                  <BenefitCard key={benefit.title} {...benefit} />
+              <div className="mt-14 grid grid-cols-2 gap-5 md:grid-cols-4">
+                {useCases.map((item) => (
+                  <motion.div
+                    key={item.title}
+                    whileHover={{ y: -8 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className={cx(
+                      "group relative overflow-hidden rounded-[2.25rem] shadow-[0_22px_70px_rgba(43,27,22,0.08)]",
+                      item.large ? "md:col-span-2 aspect-video" : "aspect-[3/4]",
+                    )}
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/20 to-transparent" />
+                    <div className="absolute inset-x-6 bottom-6 flex items-end justify-between gap-4">
+                      <div>
+                        <h3
+                          className={cx(
+                            styles.headline,
+                            "text-2xl font-bold text-white",
+                          )}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="mt-1 text-sm text-white/64">{item.subtitle}</p>
+                      </div>
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/18 bg-white/10 text-white opacity-0 transition group-hover:opacity-100">
+                        <ArrowRight className="h-5 w-5" />
+                      </div>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
         <section
           id="rsvp-calendar"
           className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
         >
-          <div
-            className={`mx-auto max-w-7xl ${glassSectionClass} overflow-visible px-7 py-8 md:px-10 md:py-10`}
+          <motion.div
+            variants={sectionReveal}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="mx-auto max-w-7xl"
           >
-            <div className="absolute inset-0 bg-[linear-gradient(150deg,rgba(244,114,182,0.06),transparent_32%,rgba(129,140,248,0.08))]" />
-            <div className="relative flex flex-col items-center gap-16 lg:flex-row">
-              <div className="relative h-[420px] w-full flex-1">
-                <div
-                  className={`${styles.floatUp} ${floatingBubbleClass} absolute left-2 top-8 max-w-[calc(100%-4rem)] sm:left-0 sm:max-w-none`}
-                >
-                  <CalendarCheck className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-                  <span className="text-sm font-bold text-white sm:text-lg">
-                    Oct 24, 2026
-                  </span>
-                </div>
+            <div className={cx(styles.surfacePanel, "overflow-visible rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
+              <div className="grid gap-12 lg:grid-cols-[minmax(300px,420px)_minmax(0,1fr)] lg:items-center">
+                <div className="relative order-2 h-[420px] lg:order-1">
+                  <div
+                    className={cx(
+                      styles.rsvpBubble,
+                      styles.floatUp,
+                      "absolute left-0 top-4 max-w-[calc(100%-4rem)]",
+                    )}
+                  >
+                    <Calendar className="h-5 w-5" />
+                    <span className="text-sm font-bold sm:text-lg">Oct 24, 2026</span>
+                  </div>
 
-                <div
-                  className={`${styles.floatDown} ${floatingBubbleClass} absolute right-2 top-[43%] max-w-[calc(100%-1rem)] sm:right-0 sm:top-[46%] sm:max-w-none`}
-                >
-                  <Clock className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-                  <span className="text-sm font-bold text-white sm:text-lg">
-                    6:30 PM - 10:00 PM
-                  </span>
-                </div>
-
-                <div
-                  className={`${styles.floatLift} ${floatingBubbleClass} absolute bottom-8 left-4 max-w-[calc(100%-5rem)] sm:bottom-10 sm:left-12 sm:max-w-none`}
-                >
-                  <MapPin className="h-5 w-5 text-white sm:h-6 sm:w-6" />
-                  <span className="text-sm font-bold text-white sm:text-lg">
-                    The Glass House Venue
-                  </span>
-                </div>
-
-                <div className="absolute left-1/2 -top-8 z-10 w-max max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full bg-white px-5 py-3 text-[#140a27] shadow-[0_24px_60px_rgba(255,255,255,0.18)] transition-transform hover:scale-105 sm:top-auto sm:bottom-24 sm:left-auto sm:right-12 sm:max-w-none sm:translate-x-0 sm:px-10 sm:py-6">
-                  <div className="flex items-center gap-2 sm:gap-4">
-                    <CheckCircle2 className="h-5 w-5 sm:h-8 sm:w-8" />
-                    <span className="text-sm font-extrabold sm:text-xl">
-                      I&apos;m Attending
+                  <div
+                    className={cx(
+                      styles.rsvpBubble,
+                      styles.floatDown,
+                      "absolute right-0 top-[40%] max-w-[calc(100%-2rem)]",
+                    )}
+                  >
+                    <Clock className="h-5 w-5" />
+                    <span className="text-sm font-bold sm:text-lg">
+                      6:30 PM - 10:00 PM
                     </span>
                   </div>
+
+                  <div
+                    className={cx(
+                      styles.rsvpBubble,
+                      styles.floatLift,
+                      "absolute bottom-6 left-6 max-w-[calc(100%-5rem)]",
+                    )}
+                  >
+                    <MapPin className="h-5 w-5" />
+                    <span className="text-sm font-bold sm:text-lg">
+                      The Glass House Venue
+                    </span>
+                  </div>
+
+                  <div className="absolute left-1/2 top-14 w-max max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full bg-white px-5 py-4 text-[#2b1b16] shadow-[0_28px_70px_rgba(43,27,22,0.12)] sm:px-8">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="h-6 w-6 text-[#c98f6b]" />
+                      <span className="text-sm font-extrabold sm:text-xl">
+                        I&apos;m Attending
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.rsvpHalo} />
                 </div>
 
-                <div
-                  className={`${styles.halo} absolute inset-0 -z-10 scale-125 rounded-full`}
-                />
-              </div>
+                <div className="order-1 lg:order-2">
+                  <SectionIntro
+                    eyebrow="RSVP flow"
+                    title={
+                      <>
+                        Designed to get a
+                        <br />
+                        <span className={styles.textGradient}>yes.</span>
+                      </>
+                    }
+                    description="The RSVP surface stays light and mobile-friendly so guests can respond, save the date, and find the venue without extra friction."
+                  />
 
-              <div className="flex-1">
-                <span className={sectionBubbleClass}>RSVP Flow</span>
-                <h2
-                  className={`${styles.headline} mb-6 text-4xl font-bold tracking-tight text-white lg:text-5xl`}
-                >
-                  Designed to get a &apos;yes&apos;
-                </h2>
-                <p className="mb-10 text-lg leading-relaxed text-white md:text-xl">
-                  The RSVP flow stays light, fast, and mobile-friendly, so your
-                  guests can respond, save the date, and find the venue without
-                  downloading anything new.
-                </p>
-                <ul className="space-y-5">
-                  {rsvpHighlights.map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-center gap-4 text-base font-semibold text-white sm:text-lg"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white">
-                        <CheckCircle2 size={18} />
-                      </div>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+                  <ul className="mt-10 space-y-5">
+                    {rsvpHighlights.map((item) => (
+                      <li
+                        key={item}
+                        className="flex items-center gap-4 text-base font-semibold text-[#2b1b16] sm:text-lg"
+                      >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f0e2d7] text-[#c98f6b]">
+                          <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
         <LandingFaq />
@@ -1133,35 +1417,52 @@ export default function LandingExperience() {
           id="cta"
           className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
         >
-          <div
-            className={`mx-auto max-w-5xl ${glassSectionClass} px-7 py-10 text-center md:px-12 md:py-14`}
+          <motion.div
+            variants={sectionReveal}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="mx-auto max-w-5xl"
           >
-            <div className="absolute -right-10 -top-10 p-12 text-white opacity-[0.05]">
-              <Sparkles size={240} />
+            <div className={cx(styles.ctaPanel, "relative overflow-hidden rounded-[2.75rem] px-6 py-12 text-center text-white shadow-[0_40px_110px_-26px_rgba(24,16,51,0.48)] sm:px-8 lg:px-12 lg:py-16")}>
+              <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
+              <div className="relative z-10">
+                <h2
+                  className={cx(
+                    styles.headline,
+                    "mx-auto max-w-4xl text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl",
+                  )}
+                >
+                  <span className="text-[#fffaf5] [text-shadow:0_6px_24px_rgba(255,226,210,0.16)]">
+                    Ready to host
+                  </span>
+                  <br />
+                  <span className={styles.textGradient}>like a pro?</span>
+                </h2>
+                <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/72 sm:text-xl">
+                  Join the creators, coaches, and hosts who have moved beyond
+                  static flyers into live event hubs.
+                </p>
+
+                <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                  <PrimaryAction href="/snap" label="Get Started for Free" />
+                  <PrimaryAction
+                    href="#landing-hero"
+                    label="View Demo"
+                    light
+                    icon={ChevronRight}
+                  />
+                </div>
+
+                <div className="mt-14 flex flex-wrap items-center justify-center gap-8 text-xl font-black tracking-tight text-white/34">
+                  <span>ENVITEFY</span>
+                  <span>STUDIO</span>
+                  <span>SNAP</span>
+                  <span>MEET</span>
+                </div>
+              </div>
             </div>
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_45%,rgba(124,58,237,0.1))]" />
-            <div className="relative z-10">
-              <h2
-                className={`${styles.headline} mx-auto mb-6 max-w-3xl text-[2rem] font-extrabold leading-[1.08] tracking-tight text-white sm:text-4xl lg:text-6xl`}
-              >
-                Turn your next invite into a
-                <span className="font-serif italic text-white">
-                  {" "}
-                  shareable event
-                </span>
-              </h2>
-              <p className="mx-auto mb-10 max-w-2xl text-lg text-white md:text-xl">
-                Snap it, edit it, and send out a live page that feels more
-                considered than a screenshot ever could.
-              </p>
-              <PrimaryCta
-                href="/snap"
-                className="mx-auto h-[5.25rem] px-14 text-2xl"
-              >
-                Try Snap Upload
-              </PrimaryCta>
-            </div>
-          </div>
+          </motion.div>
         </section>
       </div>
 

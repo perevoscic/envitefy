@@ -132,6 +132,7 @@ export type LeftSidebarControllerViewModel = {
   openSidebarFromTrigger: (viaTouch: boolean) => void;
   closeSidebarFromBackdrop: () => void;
   goHomeFromSidebar: () => void;
+  goStudioFromSidebar: () => void;
   handleRootSnapNavigate: () => void;
   openCreateEventPage: () => void;
   openMyEventsPage: () => void;
@@ -800,17 +801,23 @@ export function useLeftSidebarController({
     [collapseSidebarOnTouch, openSnapFromSidebar]
   );
 
-  const goHomeFromSidebar = useCallback(() => {
+  const resetSidebarToRoot = useCallback(() => {
     clearEventContext();
     setSidebarPage("root");
     collapseSidebarOnTouch();
   }, [clearEventContext, collapseSidebarOnTouch]);
 
+  const goHomeFromSidebar = useCallback(() => {
+    resetSidebarToRoot();
+  }, [resetSidebarToRoot]);
+
+  const goStudioFromSidebar = useCallback(() => {
+    resetSidebarToRoot();
+  }, [resetSidebarToRoot]);
+
   const handleRootSnapNavigate = useCallback(() => {
-    clearEventContext();
-    setSidebarPage("root");
-    collapseSidebarOnTouch();
-  }, [clearEventContext, collapseSidebarOnTouch]);
+    resetSidebarToRoot();
+  }, [resetSidebarToRoot]);
 
   const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
   const visibleTemplateLinks = useMemo(
@@ -957,6 +964,8 @@ export function useLeftSidebarController({
       switch (id) {
         case "home":
           return pathname === "/" && sidebarPage === "root";
+        case "studio":
+          return pathname === "/studio" && sidebarPage === "root";
         case "snap":
           return pathname === "/event" && sidebarPage === "root";
         case "create":
@@ -1345,6 +1354,7 @@ export function useLeftSidebarController({
     openSidebarFromTrigger,
     closeSidebarFromBackdrop,
     goHomeFromSidebar,
+    goStudioFromSidebar,
     handleRootSnapNavigate,
     openCreateEventPage,
     openMyEventsPage,

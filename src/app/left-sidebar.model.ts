@@ -14,6 +14,7 @@ export type EventListPage = "myEvents" | "invitedEvents";
 
 export type CompactNavItemId =
   | "home"
+  | "studio"
   | "snap"
   | "create"
   | "myEvents"

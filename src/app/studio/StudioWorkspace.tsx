@@ -1,0 +1,1972 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Cake,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Download,
+  ExternalLink,
+  Gift,
+  Heart,
+  Home,
+  Image as ImageIcon,
+  Info,
+  Layout,
+  Loader2,
+  MapPin,
+  PartyPopper,
+  Plus,
+  RefreshCw,
+  Share2,
+  Sparkles,
+  Trash2,
+  User,
+  WandSparkles,
+  X,
+} from "lucide-react";
+import type { StudioGenerateApiResponse, StudioGenerateMode, StudioGenerateRequest } from "@/lib/studio/types";
+
+type StudioStep = "category" | "form" | "studio" | "library";
+type MediaType = "image" | "page";
+type InviteCategory =
+  | "Birthday"
+  | "Field Trip/Day"
+  | "Bridal Shower"
+  | "Wedding"
+  | "Housewarming"
+  | "Baby Shower"
+  | "Anniversary"
+  | "Custom Invite";
+
+type ActiveTab = "none" | "location" | "calendar" | "registry" | "share" | "details" | "rsvp";
+
+type EventDetails = {
+  category: InviteCategory;
+  eventTitle: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  venueName: string;
+  location: string;
+  rsvpName: string;
+  rsvpContact: string;
+  rsvpDeadline: string;
+  message: string;
+  specialInstructions: string;
+  orientation: "portrait" | "landscape";
+  colors: string;
+  style: string;
+  visualPreferences: string;
+  name: string;
+  age: string;
+  theme: string;
+  invitedWho: string;
+  dressCode: string;
+  giftNote: string;
+  isSurprise: boolean;
+  isMilestone: boolean;
+  activityNote: string;
+  coupleNames: string;
+  ceremonyDate: string;
+  ceremonyTime: string;
+  receptionTime: string;
+  ceremonyVenue: string;
+  receptionVenue: string;
+  registryLink: string;
+  weddingWebsite: string;
+  adultsOnly: boolean;
+  accommodationInfo: string;
+  plusOnePolicy: string;
+  transportationInfo: string;
+  honoreeNames: string;
+  babyName: string;
+  gender: "Boy" | "Girl" | "Neutral";
+  hostedBy: string;
+  diaperRaffle: boolean;
+  bookInsteadOfCard: boolean;
+  bringABookNote: string;
+  giftPreferenceNote: string;
+  gradeLevel: string;
+  teacherName: string;
+  chaperonesNeeded: boolean;
+  costPerStudent: string;
+  permissionSlipRequired: boolean;
+  lunchInfo: string;
+  transportationType: string;
+  emergencyContact: string;
+  whatToBring: string;
+  mainPerson: string;
+  occasion: string;
+  audience: string;
+  calloutText: string;
+  optionalLink: string;
+  customLabel1: string;
+  customValue1: string;
+  customLabel2: string;
+  customValue2: string;
+};
+
+type ButtonPosition = {
+  x: number;
+  y: number;
+};
+
+type InvitationData = {
+  title: string;
+  subtitle: string;
+  description: string;
+  scheduleLine: string;
+  locationLine: string;
+  callToAction: string;
+  socialCaption: string;
+  theme: {
+    primaryColor: string;
+    accentColor: string;
+  };
+  eventDetails: EventDetails;
+};
+
+type MediaItem = {
+  id: string;
+  type: MediaType;
+  url?: string;
+  data?: InvitationData;
+  theme: string;
+  status: "ready" | "loading" | "error";
+  details: EventDetails;
+  createdAt: string;
+  positions?: {
+    rsvp: ButtonPosition;
+    location: ButtonPosition;
+    share: ButtonPosition;
+    calendar: ButtonPosition;
+    registry: ButtonPosition;
+    details: ButtonPosition;
+  };
+};
+
+type FieldConfig = {
+  label: string;
+  key: keyof EventDetails;
+  type: "text" | "number" | "date" | "time" | "checkbox" | "textarea" | "select";
+  options?: string[];
+  placeholder?: string;
+  required?: boolean;
+};
+
+type SharedFieldConfig = {
+  label: string;
+  key: keyof EventDetails;
+  type: "text" | "date" | "time";
+  placeholder?: string;
+  required?: boolean;
+};
+
+type CategoryCard = {
+  name: InviteCategory;
+  icon: LucideIcon;
+};
+
+type Preset = {
+  id: string;
+  category: InviteCategory;
+  name: string;
+  description: string;
+  icon: LucideIcon;
+  thumbnail: string;
+};
+
+const STORAGE_KEY = "envitefy_media";
+
+const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
+  Birthday: [
+    { label: "Birthday Person's Name", key: "name", type: "text", placeholder: "e.g. Lara", required: true },
+    { label: "Age Turning", key: "age", type: "text", placeholder: "e.g. 7", required: true },
+    { label: "Birthday Theme", key: "theme", type: "text", placeholder: "e.g. Movie Cats" },
+    { label: "Who Is Invited", key: "invitedWho", type: "text", placeholder: "e.g. Family and friends" },
+    { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Sparkly casual" },
+    { label: "Gift Note", key: "giftNote", type: "text", placeholder: "e.g. No gifts please" },
+    { label: "Surprise Party?", key: "isSurprise", type: "checkbox" },
+    { label: "Milestone Birthday?", key: "isMilestone", type: "checkbox" },
+    { label: "Preferred Cake / Activity", key: "activityNote", type: "textarea", placeholder: "e.g. Popcorn bar and cat ears" },
+  ],
+  Wedding: [
+    { label: "Couple Names", key: "coupleNames", type: "text", placeholder: "e.g. Sarah & James", required: true },
+    { label: "Event Title", key: "eventTitle", type: "text", placeholder: "e.g. Our Big Day" },
+    { label: "Ceremony Date", key: "ceremonyDate", type: "date" },
+    { label: "Ceremony Time", key: "ceremonyTime", type: "time" },
+    { label: "Reception Time", key: "receptionTime", type: "time" },
+    { label: "Ceremony Venue", key: "ceremonyVenue", type: "text", placeholder: "e.g. St. Mary's Church" },
+    { label: "Reception Venue", key: "receptionVenue", type: "text", placeholder: "e.g. The Grand Ballroom" },
+    { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Black Tie" },
+    { label: "Registry Link", key: "registryLink", type: "text", placeholder: "e.g. Zola link" },
+    { label: "Wedding Website", key: "weddingWebsite", type: "text", placeholder: "e.g. www.sarahandjames.com" },
+    { label: "Adults Only?", key: "adultsOnly", type: "checkbox" },
+    { label: "Accommodation Info", key: "accommodationInfo", type: "textarea", placeholder: "e.g. Hotel block at Hilton" },
+    { label: "Plus-One Policy", key: "plusOnePolicy", type: "text", placeholder: "e.g. Invite only" },
+    { label: "Transportation Info", key: "transportationInfo", type: "text", placeholder: "e.g. Shuttle provided" },
+  ],
+  "Baby Shower": [
+    { label: "Honoree / Parent Name(s)", key: "honoreeNames", type: "text", placeholder: "e.g. Emily", required: true },
+    { label: 'Baby Name or "Baby of"', key: "babyName", type: "text", placeholder: "e.g. Baby Smith" },
+    { label: "Shower Theme", key: "theme", type: "text", placeholder: "e.g. Jungle" },
+    { label: "Boy / Girl / Neutral", key: "gender", type: "select", options: ["Boy", "Girl", "Neutral"] },
+    { label: "Hosted By", key: "hostedBy", type: "text", placeholder: "e.g. Grandma Jane" },
+    { label: "Registry Link", key: "registryLink", type: "text", placeholder: "e.g. Buy Buy Baby link" },
+    { label: "Diaper Raffle?", key: "diaperRaffle", type: "checkbox" },
+    { label: "Book Instead of Card?", key: "bookInsteadOfCard", type: "checkbox" },
+    { label: "Bring-a-Book Note", key: "bringABookNote", type: "text", placeholder: "e.g. Please bring a book" },
+    { label: "Gift Preference Note", key: "giftPreferenceNote", type: "text", placeholder: "e.g. Gift cards preferred" },
+  ],
+  Anniversary: [
+    { label: "Couple Names", key: "coupleNames", type: "text", placeholder: "e.g. Sarah & James", required: true },
+    { label: "Years Celebrating", key: "age", type: "text", placeholder: "e.g. 25" },
+    { label: "Event Title", key: "eventTitle", type: "text", placeholder: "e.g. Silver Anniversary" },
+    { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Semi-Formal" },
+    { label: "Gift Preference", key: "giftPreferenceNote", type: "text", placeholder: "e.g. Your presence is our gift" },
+  ],
+  "Bridal Shower": [
+    { label: "Bride's Name", key: "honoreeNames", type: "text", placeholder: "e.g. Sarah", required: true },
+    { label: "Shower Theme", key: "theme", type: "text", placeholder: "e.g. Garden Party" },
+    { label: "Hosted By", key: "hostedBy", type: "text", placeholder: "e.g. Maid of Honor" },
+    { label: "Registry Link", key: "registryLink", type: "text", placeholder: "e.g. Registry link" },
+    { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Floral dresses" },
+  ],
+  Housewarming: [
+    { label: "Host Name(s)", key: "honoreeNames", type: "text", placeholder: "e.g. The Smiths", required: true },
+    { label: "New Address Note", key: "message", type: "textarea", placeholder: "e.g. We can't wait to show you our new home!" },
+    { label: "Registry / Gift Note", key: "giftPreferenceNote", type: "text", placeholder: "e.g. No gifts needed" },
+  ],
+  "Field Trip/Day": [
+    { label: "Event Title", key: "eventTitle", type: "text", placeholder: "e.g. Museum Visit", required: true },
+    { label: "Grade / Class Level", key: "gradeLevel", type: "text", placeholder: "e.g. 3rd Grade" },
+    { label: "Teacher Name", key: "teacherName", type: "text", placeholder: "e.g. Mrs. Smith" },
+    { label: "Chaperones Needed?", key: "chaperonesNeeded", type: "checkbox" },
+    { label: "Cost per Student", key: "costPerStudent", type: "text", placeholder: "e.g. $15" },
+    { label: "Permission Slip Required?", key: "permissionSlipRequired", type: "checkbox" },
+    { label: "Lunch Info", key: "lunchInfo", type: "text", placeholder: "e.g. Bring sack lunch" },
+    { label: "Transportation", key: "transportationType", type: "text", placeholder: "e.g. School Bus" },
+    { label: "Emergency Contact", key: "emergencyContact", type: "text", placeholder: "e.g. School Office" },
+    { label: "What to Bring", key: "whatToBring", type: "textarea", placeholder: "e.g. Water bottle and comfortable shoes" },
+  ],
+  "Custom Invite": [
+    { label: "Event Title", key: "eventTitle", type: "text", placeholder: "e.g. Special Celebration", required: true },
+    { label: "Main Person / Host / Honoree", key: "mainPerson", type: "text", placeholder: "e.g. The Smith Family" },
+    { label: "Occasion", key: "occasion", type: "text", placeholder: "e.g. Retirement" },
+    { label: "Audience", key: "audience", type: "text", placeholder: "e.g. Colleagues" },
+    { label: "Theme", key: "theme", type: "text", placeholder: "e.g. Nautical" },
+    { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Casual" },
+    { label: "Callout Text", key: "calloutText", type: "text", placeholder: "e.g. Join us for a night to remember" },
+    { label: "Optional Link", key: "optionalLink", type: "text", placeholder: "e.g. www.event-link.com" },
+    { label: "Custom Label 1", key: "customLabel1", type: "text", placeholder: "e.g. Favorite Color" },
+    { label: "Custom Value 1", key: "customValue1", type: "text", placeholder: "e.g. Blue" },
+    { label: "Custom Label 2", key: "customLabel2", type: "text", placeholder: "e.g. Favorite Food" },
+    { label: "Custom Value 2", key: "customValue2", type: "text", placeholder: "e.g. Pizza" },
+  ],
+};
+
+const SHARED_BASICS: SharedFieldConfig[] = [
+  { label: "Event Date", key: "eventDate", type: "date", required: true },
+  { label: "Start Time", key: "startTime", type: "time", required: true },
+  { label: "End Time", key: "endTime", type: "time" },
+  { label: "Venue Name", key: "venueName", type: "text", placeholder: "e.g. AMC Theater" },
+  { label: "Location / Address", key: "location", type: "text", placeholder: "e.g. 123 Event St, City", required: true },
+];
+
+const RSVP_FIELDS: Array<{ label: string; key: keyof EventDetails; type: "text" | "date"; placeholder?: string; required?: boolean }> = [
+  { label: "Host Name", key: "rsvpName", type: "text", placeholder: "e.g. Sarah", required: true },
+  { label: "Host Contact", key: "rsvpContact", type: "text", placeholder: "Phone or Email", required: true },
+  { label: "RSVP Deadline", key: "rsvpDeadline", type: "date" },
+];
+
+const CATEGORIES: CategoryCard[] = [
+  { name: "Birthday", icon: Cake },
+  { name: "Field Trip/Day", icon: MapPin },
+  { name: "Bridal Shower", icon: Gift },
+  { name: "Wedding", icon: Heart },
+  { name: "Housewarming", icon: Home },
+  { name: "Baby Shower", icon: PartyPopper },
+  { name: "Anniversary", icon: Calendar },
+  { name: "Custom Invite", icon: WandSparkles },
+];
+
+function svgThumbnail(label: string, from: string, to: string) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${from}" />
+          <stop offset="100%" stop-color="${to}" />
+        </linearGradient>
+      </defs>
+      <rect width="720" height="960" rx="56" fill="url(#g)" />
+      <circle cx="610" cy="120" r="96" fill="rgba(255,255,255,0.18)" />
+      <circle cx="120" cy="810" r="120" fill="rgba(255,255,255,0.12)" />
+      <rect x="76" y="92" width="568" height="776" rx="44" fill="rgba(255,255,255,0.16)" stroke="rgba(255,255,255,0.35)" />
+      <text x="92" y="640" fill="white" font-size="70" font-family="Arial, sans-serif" font-weight="700">${label}</text>
+      <text x="92" y="718" fill="rgba(255,255,255,0.82)" font-size="26" font-family="Arial, sans-serif">Envitefy Studio preset</text>
+    </svg>
+  `;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+const PRESETS: Preset[] = [
+  {
+    id: "birthday-red-carpet",
+    category: "Birthday",
+    name: "Red Carpet Cats",
+    description: "Premiere-night glamour with velvet reds, marquee gold, and playful cat magic.",
+    icon: Sparkles,
+    thumbnail: svgThumbnail("Red Carpet Cats", "#7400ff", "#ff00b8"),
+  },
+  {
+    id: "birthday-disco",
+    category: "Birthday",
+    name: "Birthday Glow",
+    description: "Luminous party gradients and polished confetti lighting.",
+    icon: PartyPopper,
+    thumbnail: svgThumbnail("Birthday Glow", "#ff6a00", "#ff2eb8"),
+  },
+  {
+    id: "field-trip-modern",
+    category: "Field Trip/Day",
+    name: "Modern Adventure",
+    description: "Clean layout with editorial badges and upbeat school-trip energy.",
+    icon: MapPin,
+    thumbnail: svgThumbnail("Modern Adventure", "#1f6feb", "#54d2ff"),
+  },
+  {
+    id: "bridal-soft",
+    category: "Bridal Shower",
+    name: "Soft Petals",
+    description: "Romantic florals, airy whites, and gentle champagne tones.",
+    icon: Gift,
+    thumbnail: svgThumbnail("Soft Petals", "#f4c7d7", "#fff4e8"),
+  },
+  {
+    id: "wedding-vogue",
+    category: "Wedding",
+    name: "Vogue Romance",
+    description: "Editorial serif styling with elegant monochrome framing.",
+    icon: Heart,
+    thumbnail: svgThumbnail("Vogue Romance", "#0f172a", "#475569"),
+  },
+  {
+    id: "housewarming-sunlit",
+    category: "Housewarming",
+    name: "Sunlit Welcome",
+    description: "Warm neutrals and a crisp, friendly open-house feel.",
+    icon: Home,
+    thumbnail: svgThumbnail("Sunlit Welcome", "#ffcf96", "#f7f3ea"),
+  },
+  {
+    id: "baby-cloud",
+    category: "Baby Shower",
+    name: "Cloud Parade",
+    description: "Soft pastel balloons, dreamy spacing, and sweet baby details.",
+    icon: PartyPopper,
+    thumbnail: svgThumbnail("Cloud Parade", "#d7ecff", "#ffd9ec"),
+  },
+  {
+    id: "anniversary-gold",
+    category: "Anniversary",
+    name: "Golden Toast",
+    description: "Formal celebration styling with champagne gold accents.",
+    icon: Calendar,
+    thumbnail: svgThumbnail("Golden Toast", "#7c5a00", "#f3cf65"),
+  },
+  {
+    id: "custom-electric",
+    category: "Custom Invite",
+    name: "Electric Poster",
+    description: "Bold layout for any custom moment that needs a campaign look.",
+    icon: WandSparkles,
+    thumbnail: svgThumbnail("Electric Poster", "#111827", "#7c3aed"),
+  },
+];
+
+const EMPTY_POSITIONS = {
+  rsvp: { x: 0, y: 0 },
+  location: { x: 0, y: 0 },
+  share: { x: 0, y: 0 },
+  calendar: { x: 0, y: 0 },
+  registry: { x: 0, y: 0 },
+  details: { x: 0, y: 0 },
+};
+
+function createId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2, 11);
+}
+
+function formatDate(dateStr: string) {
+  if (!dateStr || !dateStr.includes("-")) return dateStr;
+  const [year, month, day] = dateStr.split("-");
+  return `${month}.${day}.${year}`;
+}
+
+function clean(value: string | null | undefined) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function pickFirst(...values: Array<string | null | undefined>) {
+  for (const value of values) {
+    const trimmed = clean(value);
+    if (trimmed) return trimmed;
+  }
+  return "";
+}
+
+function getDisplayTitle(details: EventDetails) {
+  if (details.category === "Birthday") {
+    return pickFirst(details.eventTitle, details.name ? `${details.name}'s Birthday` : "", "Birthday Celebration");
+  }
+  if (details.category === "Wedding") {
+    return pickFirst(details.eventTitle, details.coupleNames ? `${details.coupleNames} Wedding` : "", "Wedding Celebration");
+  }
+  if (details.category === "Baby Shower") {
+    return pickFirst(details.eventTitle, details.honoreeNames ? `${details.honoreeNames} Baby Shower` : "", "Baby Shower");
+  }
+  if (details.category === "Anniversary") {
+    return pickFirst(details.eventTitle, details.coupleNames ? `${details.coupleNames} Anniversary` : "", "Anniversary Celebration");
+  }
+  if (details.category === "Bridal Shower") {
+    return pickFirst(details.eventTitle, details.honoreeNames ? `${details.honoreeNames} Bridal Shower` : "", "Bridal Shower");
+  }
+  if (details.category === "Housewarming") {
+    return pickFirst(details.eventTitle, details.honoreeNames ? `${details.honoreeNames} Housewarming` : "", "Housewarming");
+  }
+  return pickFirst(details.eventTitle, details.occasion, `${details.category} Event`);
+}
+
+function getHonoreeName(details: EventDetails) {
+  return pickFirst(
+    details.name,
+    details.coupleNames,
+    details.honoreeNames,
+    details.mainPerson,
+    details.eventTitle,
+  );
+}
+
+function getRegistryText(details: EventDetails) {
+  return pickFirst(
+    details.giftPreferenceNote,
+    details.giftNote,
+    details.bringABookNote,
+    details.registryLink ? "Registry available for guests." : "",
+    "Your presence is the best gift.",
+  );
+}
+
+function getFallbackThumbnail(details: EventDetails) {
+  const preset = PRESETS.find((item) => item.category === details.category && item.name === details.theme);
+  if (preset) return preset.thumbnail;
+  return svgThumbnail(getDisplayTitle(details), "#111827", "#7c3aed");
+}
+
+function getThemeColors(details: EventDetails) {
+  if (details.category === "Birthday") {
+    return { primaryColor: "#9333ea", accentColor: "#ec4899" };
+  }
+  if (details.category === "Wedding") {
+    return { primaryColor: "#111827", accentColor: "#f59e0b" };
+  }
+  if (details.category === "Baby Shower") {
+    return { primaryColor: "#60a5fa", accentColor: "#f472b6" };
+  }
+  return { primaryColor: "#111827", accentColor: "#7c3aed" };
+}
+
+function createInitialDetails(): EventDetails {
+  return {
+    category: "Birthday",
+    eventTitle: "",
+    eventDate: "",
+    startTime: "",
+    endTime: "",
+    venueName: "",
+    location: "",
+    rsvpName: "",
+    rsvpContact: "",
+    rsvpDeadline: "",
+    message: "",
+    specialInstructions: "",
+    orientation: "portrait",
+    colors: "",
+    style: "",
+    visualPreferences: "",
+    name: "",
+    age: "",
+    theme: "",
+    invitedWho: "",
+    dressCode: "",
+    giftNote: "",
+    isSurprise: false,
+    isMilestone: false,
+    activityNote: "",
+    coupleNames: "",
+    ceremonyDate: "",
+    ceremonyTime: "",
+    receptionTime: "",
+    ceremonyVenue: "",
+    receptionVenue: "",
+    registryLink: "",
+    weddingWebsite: "",
+    adultsOnly: false,
+    accommodationInfo: "",
+    plusOnePolicy: "",
+    transportationInfo: "",
+    honoreeNames: "",
+    babyName: "",
+    gender: "Neutral",
+    hostedBy: "",
+    diaperRaffle: false,
+    bookInsteadOfCard: false,
+    bringABookNote: "",
+    giftPreferenceNote: "",
+    gradeLevel: "",
+    teacherName: "",
+    chaperonesNeeded: false,
+    costPerStudent: "",
+    permissionSlipRequired: false,
+    lunchInfo: "",
+    transportationType: "",
+    emergencyContact: "",
+    whatToBring: "",
+    mainPerson: "",
+    occasion: "",
+    audience: "",
+    calloutText: "",
+    optionalLink: "",
+    customLabel1: "",
+    customValue1: "",
+    customLabel2: "",
+    customValue2: "",
+  };
+}
+
+function buildDescription(details: EventDetails) {
+  const parts = [
+    clean(details.message),
+    clean(details.specialInstructions),
+    clean(details.activityNote),
+    clean(details.calloutText),
+  ].filter(Boolean);
+  return parts.join(" ").trim();
+}
+
+function buildLinks(details: EventDetails) {
+  return [
+    details.registryLink ? { label: "Registry", url: details.registryLink } : null,
+    details.weddingWebsite ? { label: "Website", url: details.weddingWebsite } : null,
+    details.optionalLink ? { label: "Event Link", url: details.optionalLink } : null,
+  ].filter((value): value is { label: string; url: string } => Boolean(value));
+}
+
+function buildStudioRequest(details: EventDetails, mode: StudioGenerateMode): StudioGenerateRequest {
+  return {
+    mode,
+    event: {
+      title: getDisplayTitle(details),
+      occasion: pickFirst(details.occasion, details.category),
+      hostName: pickFirst(details.rsvpName, details.hostedBy, details.teacherName, details.mainPerson) || null,
+      honoreeName: getHonoreeName(details) || null,
+      description: buildDescription(details) || null,
+      date: clean(details.eventDate) || null,
+      startTime: clean(details.startTime) || null,
+      endTime: clean(details.endTime) || null,
+      timezone:
+        typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago" : "America/Chicago",
+      venueName: pickFirst(details.venueName, details.ceremonyVenue, details.receptionVenue) || null,
+      venueAddress: clean(details.location) || null,
+      dressCode: clean(details.dressCode) || null,
+      rsvpBy: clean(details.rsvpDeadline) || null,
+      rsvpContact: clean(details.rsvpContact) || null,
+      registryNote: getRegistryText(details) || null,
+      links: buildLinks(details),
+    },
+    guidance: {
+      tone: pickFirst(details.style, details.category === "Birthday" ? "Playful and polished" : "Warm and elevated") || null,
+      style: pickFirst(details.theme, details.visualPreferences, details.colors) || null,
+      audience: pickFirst(details.invitedWho, details.audience, "Guests") || null,
+      colorPalette: clean(details.colors) || null,
+      includeEmoji: true,
+    },
+  };
+}
+
+async function requestStudioGeneration(details: EventDetails, mode: StudioGenerateMode) {
+  const response = await fetch("/api/studio/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(buildStudioRequest(details, mode)),
+  });
+
+  let data: StudioGenerateApiResponse | null = null;
+  try {
+    data = (await response.json()) as StudioGenerateApiResponse;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok || !data) {
+    const errorMessage =
+      data?.errors?.image?.message ||
+      data?.errors?.text?.message ||
+      `Studio generation failed with status ${response.status}.`;
+    throw new Error(errorMessage);
+  }
+
+  return data;
+}
+
+function buildInvitationData(details: EventDetails, response: StudioGenerateApiResponse): InvitationData {
+  const invitation = response.invitation;
+  const title = invitation?.title || getDisplayTitle(details);
+  const subtitle =
+    invitation?.subtitle ||
+    buildDescription(details) ||
+    pickFirst(details.theme, details.category);
+  const scheduleLine =
+    invitation?.scheduleLine ||
+    `${formatDate(details.eventDate)}${details.startTime ? ` at ${details.startTime}` : ""}`;
+  const locationLine = invitation?.locationLine || pickFirst(details.venueName, details.location, "Location TBD");
+  const callToAction = invitation?.callToAction || pickFirst(details.calloutText, "Tap for details and RSVP.");
+  const description =
+    invitation?.openingLine ||
+    buildDescription(details) ||
+    "Celebrate together with a beautifully designed invitation.";
+
+  return {
+    title,
+    subtitle,
+    description,
+    scheduleLine,
+    locationLine,
+    callToAction,
+    socialCaption: invitation?.socialCaption || description,
+    theme: getThemeColors(details),
+    eventDetails: details,
+  };
+}
+
+function inputValue(value: EventDetails[keyof EventDetails]) {
+  if (typeof value === "boolean") return value;
+  return value ?? "";
+}
+
+export default function StudioWorkspace() {
+  const [step, setStep] = useState<StudioStep>("category");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isOptionalCollapsed, setIsOptionalCollapsed] = useState(true);
+  const [details, setDetails] = useState<EventDetails>(createInitialDetails);
+  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [activePage, setActivePage] = useState<MediaItem | null>(null);
+  const [selectedImage, setSelectedImage] = useState<MediaItem | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>("none");
+  const [isDesignMode, setIsDesignMode] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const activePageRecord = useMemo(
+    () => mediaList.find((item) => item.id === activePage?.id) ?? activePage,
+    [activePage, mediaList],
+  );
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return;
+      const restored = parsed.filter((item) => item && typeof item.id === "string");
+      setMediaList(restored);
+    } catch {
+      setMediaList([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (mediaList.length === 0) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mediaList.slice(0, 10)));
+    } catch {
+      // Ignore storage quota issues in the studio shell.
+    }
+  }, [mediaList]);
+
+  function isFormValid() {
+    const missingShared = SHARED_BASICS.filter((field) => field.required && !clean(String(inputValue(details[field.key]))));
+    if (missingShared.length > 0) return false;
+
+    const missingCategory = (CATEGORY_FIELDS[details.category] || []).filter(
+      (field) => field.required && !clean(String(inputValue(details[field.key]))),
+    );
+    if (missingCategory.length > 0) return false;
+
+    const missingRsvp = RSVP_FIELDS.filter((field) => field.required && !clean(String(inputValue(details[field.key]))));
+    return missingRsvp.length === 0;
+  }
+
+  function deleteMedia(id: string) {
+    setMediaList((prev) => prev.filter((item) => item.id !== id));
+    if (activePage?.id === id) {
+      setActivePage(null);
+      setActiveTab("none");
+      setIsDesignMode(false);
+    }
+    if (selectedImage?.id === id) {
+      setSelectedImage(null);
+    }
+  }
+
+  function clearLibrary() {
+    if (typeof window !== "undefined" && !window.confirm("Are you sure you want to clear your entire library?")) {
+      return;
+    }
+    setMediaList([]);
+    setActivePage(null);
+    setSelectedImage(null);
+    setActiveTab("none");
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  function downloadMedia(item: MediaItem) {
+    if (!item.url || typeof document === "undefined") return;
+    const link = document.createElement("a");
+    link.href = item.url;
+    link.download = `envitefy-${item.type}-${item.id}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  async function shareMedia(item: MediaItem) {
+    const shareData = {
+      title: item.data?.title || getDisplayTitle(item.details),
+      text: item.data?.description || "Check out this invitation!",
+      url: typeof window !== "undefined" ? window.location.href : "",
+    };
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share(shareData);
+      } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareData.url);
+      }
+      setCopySuccess(true);
+      window.setTimeout(() => setCopySuccess(false), 1800);
+    } catch {
+      setCopySuccess(true);
+      window.setTimeout(() => setCopySuccess(false), 1800);
+    }
+  }
+
+  function updatePosition(id: string, buttonKey: keyof typeof EMPTY_POSITIONS, point: ButtonPosition) {
+    setMediaList((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const updated = {
+          ...item,
+          positions: {
+            ...EMPTY_POSITIONS,
+            ...item.positions,
+            [buttonKey]: point,
+          },
+        };
+        if (activePage?.id === id) {
+          setActivePage(updated);
+        }
+        return updated;
+      }),
+    );
+  }
+
+  async function generateMedia(type: MediaType) {
+    const currentDetails = { ...details };
+    const targetId = editingId ?? createId();
+    const loadingItem: MediaItem = {
+      id: targetId,
+      type,
+      theme: pickFirst(currentDetails.theme, `${currentDetails.category} Event`),
+      status: "loading",
+      details: currentDetails,
+      createdAt: new Date().toISOString(),
+      positions: { ...EMPTY_POSITIONS },
+    };
+
+    setIsGenerating(true);
+    setActiveTab("none");
+
+    setMediaList((prev) => {
+      if (editingId) {
+        return prev.map((item) => (item.id === editingId ? { ...loadingItem, createdAt: item.createdAt } : item));
+      }
+      return [loadingItem, ...prev];
+    });
+
+    try {
+      const response = await requestStudioGeneration(currentDetails, type === "page" ? "both" : "image");
+      const nextItem: MediaItem = {
+        ...loadingItem,
+        status: "ready",
+        url: response.imageDataUrl || getFallbackThumbnail(currentDetails),
+        data: type === "page" ? buildInvitationData(currentDetails, response) : undefined,
+      };
+
+      setMediaList((prev) => prev.map((item) => (item.id === targetId ? nextItem : item)));
+      setEditingId(null);
+      setStep("studio");
+    } catch {
+      setMediaList((prev) =>
+        prev.map((item) => (item.id === targetId ? { ...item, status: "error", url: getFallbackThumbnail(currentDetails) } : item)),
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  const currentPresets = PRESETS.filter((preset) => preset.category === details.category);
+
+  return (
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 selection:bg-purple-200">
+      <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-center px-6">
+          <div className="hidden items-center gap-6 text-sm font-medium text-neutral-500 md:flex">
+            <button
+              onClick={() => setStep("form")}
+              className={`transition-colors hover:text-purple-600 ${step === "form" ? "text-purple-600" : ""}`}
+            >
+              Details
+            </button>
+            <button
+              onClick={() => {
+                if (isFormValid()) setStep("studio");
+              }}
+              disabled={!isFormValid()}
+              className={`transition-colors hover:text-purple-600 disabled:cursor-not-allowed disabled:opacity-30 ${step === "studio" ? "text-purple-600" : ""}`}
+            >
+              Studio
+            </button>
+            <button
+              onClick={() => setStep("library")}
+              className={`transition-colors hover:text-purple-600 ${step === "library" ? "text-purple-600" : ""}`}
+            >
+              Library
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-6 py-12">
+        <AnimatePresence mode="wait">
+          {step === "category" ? (
+            <motion.div
+              key="category"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mx-auto max-w-4xl space-y-12"
+            >
+              <div className="space-y-4 text-center">
+                <h2 className="text-4xl font-bold tracking-tight text-neutral-900">What are we celebrating?</h2>
+                <p className="text-neutral-500">Select a category to start your invitation journey.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {CATEGORIES.map((category) => {
+                  const Icon = category.icon;
+                  const active = details.category === category.name;
+                  return (
+                    <motion.button
+                      key={category.name}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        setDetails((prev) => ({ ...prev, category: category.name }));
+                        setStep("form");
+                      }}
+                      className={`flex flex-col items-center gap-4 rounded-[2rem] border p-8 transition-all ${
+                        active
+                          ? "border-purple-500 bg-purple-600 text-white shadow-2xl shadow-purple-500/20"
+                          : "border-neutral-200 bg-white text-neutral-900 shadow-sm hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className={`rounded-2xl p-4 ${active ? "bg-white/20" : "bg-neutral-100"}`}>
+                        <Icon className="h-8 w-8" />
+                      </div>
+                      <span className="text-sm font-bold tracking-tight">{category.name}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ) : null}
+
+          {step === "form" ? (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="mx-auto max-w-6xl space-y-12"
+            >
+              <div className="mb-8 flex items-center gap-4">
+                <button
+                  onClick={() => setStep("category")}
+                  className="rounded-full border border-neutral-200 bg-white p-2 transition-colors hover:bg-neutral-100"
+                >
+                  <ArrowLeft className="h-5 w-5 text-neutral-900" />
+                </button>
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight text-neutral-900">{details.category} Details</h2>
+                  <p className="text-neutral-500">Fill in the event info for your {details.category.toLowerCase()}.</p>
+                </div>
+              </div>
+
+              <div className="space-y-12">
+                <div className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-xl shadow-purple-500/5">
+                  <div className="mb-2 flex items-center gap-3">
+                    <div className="rounded-lg bg-purple-600/10 p-2 text-purple-600">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                    <h3 className="text-xl font-bold text-neutral-900">Required Information</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {(CATEGORY_FIELDS[details.category] || [])
+                      .filter((field) => field.required)
+                      .map((field) => (
+                        <div key={field.key} className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}>
+                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                            {field.label} <span className="text-red-500">*</span>
+                          </label>
+                          {field.type === "textarea" ? (
+                            <textarea
+                              placeholder={field.placeholder}
+                              className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              value={String(inputValue(details[field.key]))}
+                              onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                            />
+                          ) : field.type === "select" ? (
+                            <select
+                              className="w-full appearance-none rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              value={String(inputValue(details[field.key]))}
+                              onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value as EventDetails[typeof field.key] }))}
+                            >
+                              {field.options?.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type={field.type}
+                              placeholder={field.placeholder}
+                              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              value={String(inputValue(details[field.key]))}
+                              onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                            />
+                          )}
+                        </div>
+                      ))}
+
+                    {SHARED_BASICS.filter((field) => field.required).map((field) => (
+                      <div key={field.key} className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                          {field.label} <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          {field.key === "startTime" ? (
+                            <Clock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                          ) : null}
+                          {field.key === "location" ? (
+                            <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                          ) : null}
+                          <input
+                            type={field.type}
+                            placeholder={field.placeholder}
+                            className={`w-full rounded-xl border border-neutral-200 bg-white py-3 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 ${
+                              field.key === "startTime" || field.key === "location" ? "pl-12" : "px-4"
+                            }`}
+                            value={String(inputValue(details[field.key]))}
+                            onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    {RSVP_FIELDS.filter((field) => field.required).map((field) => (
+                      <div key={field.key} className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                          {field.label} <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type={field.type}
+                          placeholder={field.placeholder}
+                          className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                          value={String(inputValue(details[field.key]))}
+                          onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+                  <button onClick={() => setIsOptionalCollapsed((prev) => !prev)} className="group flex w-full items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-neutral-100 p-2 text-neutral-500 transition-colors group-hover:bg-neutral-200">
+                        <Plus className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-xl font-bold text-neutral-900">Optional Details</h3>
+                    </div>
+                    <div className={`transition-transform duration-300 ${isOptionalCollapsed ? "" : "rotate-90"}`}>
+                      <ChevronRight className="h-6 w-6 text-neutral-400 group-hover:text-neutral-600" />
+                    </div>
+                  </button>
+
+                  {!isOptionalCollapsed ? (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="space-y-12 border-t border-neutral-100 pt-6"
+                    >
+                      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                        {(CATEGORY_FIELDS[details.category] || [])
+                          .filter((field) => !field.required)
+                          .map((field) => (
+                            <div key={field.key} className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}>
+                              <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">{field.label}</label>
+                              {field.type === "textarea" ? (
+                                <textarea
+                                  placeholder={field.placeholder}
+                                  className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                                  value={String(inputValue(details[field.key]))}
+                                  onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                                />
+                              ) : field.type === "checkbox" ? (
+                                <div className="flex items-center gap-3 py-2">
+                                  <input
+                                    type="checkbox"
+                                    className="h-5 w-5 rounded border-neutral-200 bg-white text-purple-600 focus:ring-purple-500/20"
+                                    checked={Boolean(details[field.key])}
+                                    onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.checked }))}
+                                  />
+                                  <span className="text-sm text-neutral-500">{field.label}</span>
+                                </div>
+                              ) : (
+                                <input
+                                  type={field.type}
+                                  placeholder={field.placeholder}
+                                  className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                                  value={String(inputValue(details[field.key]))}
+                                  onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                                />
+                              )}
+                            </div>
+                          ))}
+
+                        {SHARED_BASICS.filter((field) => !field.required).map((field) => (
+                          <div key={field.key} className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">{field.label}</label>
+                            <div className="relative">
+                              {field.key === "endTime" ? (
+                                <Clock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                              ) : null}
+                              <input
+                                type={field.type}
+                                placeholder={field.placeholder}
+                                className={`w-full rounded-xl border border-neutral-200 bg-white py-3 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 ${
+                                  field.key === "endTime" ? "pl-12" : "px-4"
+                                }`}
+                                value={String(inputValue(details[field.key]))}
+                                onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                              />
+                            </div>
+                          </div>
+                        ))}
+
+                        {RSVP_FIELDS.filter((field) => !field.required).map((field) => (
+                          <div key={field.key} className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">{field.label}</label>
+                            <input
+                              type={field.type}
+                              placeholder={field.placeholder}
+                              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              value={String(inputValue(details[field.key]))}
+                              onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                            />
+                          </div>
+                        ))}
+
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Personal Message</label>
+                          <textarea
+                            placeholder="e.g. We can't wait to see you there!"
+                            className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                            value={details.message}
+                            onChange={(event) => setDetails((prev) => ({ ...prev, message: event.target.value }))}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Special Instructions</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Parking info, entrance code"
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                            value={details.specialInstructions}
+                            onChange={(event) => setDetails((prev) => ({ ...prev, specialInstructions: event.target.value }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="border-t border-neutral-100 pt-8">
+                        <div className="mb-6 flex items-center gap-3">
+                          <div className="rounded-lg bg-pink-600/10 p-2 text-pink-600">
+                            <Sparkles className="h-5 w-5" />
+                          </div>
+                          <h4 className="text-lg font-bold text-neutral-900">Design Preferences</h4>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Orientation</label>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setDetails((prev) => ({ ...prev, orientation: "portrait" }))}
+                                className={`flex-1 rounded-xl border py-3 text-xs font-bold transition-all ${
+                                  details.orientation === "portrait"
+                                    ? "border-purple-500 bg-purple-600 text-white"
+                                    : "border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50"
+                                }`}
+                              >
+                                Portrait
+                              </button>
+                              <button
+                                onClick={() => setDetails((prev) => ({ ...prev, orientation: "landscape" }))}
+                                className={`flex-1 rounded-xl border py-3 text-xs font-bold transition-all ${
+                                  details.orientation === "landscape"
+                                    ? "border-purple-500 bg-purple-600 text-white"
+                                    : "border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50"
+                                }`}
+                              >
+                                Landscape
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Preferred Colors</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Red and gold"
+                              className="w-full rounded-xl border border-neutral-200 bg-neutral-900 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                              value={details.colors}
+                              onChange={(event) => setDetails((prev) => ({ ...prev, colors: event.target.value }))}
+                            />
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2 lg:col-span-1">
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Visual Style Idea</label>
+                            <textarea
+                              placeholder="e.g. Editorial premiere poster with red carpet lighting..."
+                              className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-neutral-900 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                              value={details.visualPreferences}
+                              onChange={(event) => setDetails((prev) => ({ ...prev, visualPreferences: event.target.value }))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-4 pt-8">
+                <p className="text-[10px] uppercase tracking-widest text-neutral-600">
+                  <span className="mr-1 text-red-500">*</span> Required fields
+                </p>
+                <button
+                  onClick={() => setStep("studio")}
+                  disabled={!isFormValid()}
+                  className="flex items-center gap-3 rounded-2xl bg-neutral-900 px-12 py-5 text-lg font-bold text-white shadow-2xl shadow-neutral-200 transition-all hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {editingId ? "Update Invitation" : "Enter Studio"}
+                  <ChevronRight className="h-6 w-6 text-white" />
+                </button>
+              </div>
+            </motion.div>
+          ) : null}
+
+          {step === "library" ? (
+            <motion.div
+              key="library"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-8"
+            >
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight text-neutral-900">Your Library</h2>
+                  <p className="text-neutral-500">Manage and edit your created invitations.</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={clearLibrary}
+                    className="text-xs font-bold uppercase tracking-widest text-red-500 transition-colors hover:text-red-600"
+                  >
+                    Clear Library
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingId(null);
+                      setStep("form");
+                    }}
+                    className="flex items-center gap-2 rounded-full bg-purple-600 px-6 py-3 font-bold text-white shadow-lg shadow-purple-500/20 transition-all hover:bg-purple-700"
+                  >
+                    <Plus className="h-5 w-5" />
+                    Create New
+                  </button>
+                </div>
+              </div>
+
+              {mediaList.length === 0 ? (
+                <div className="rounded-[2rem] border border-dashed border-neutral-200 bg-white py-20 text-center">
+                  <div className="mx-auto mb-4 w-fit rounded-full bg-neutral-50 p-4">
+                    <ImageIcon className="h-8 w-8 text-neutral-400" />
+                  </div>
+                  <p className="text-neutral-500">No invitations created yet.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {mediaList.map((item) => (
+                    <motion.div
+                      key={item.id}
+                      layoutId={item.id}
+                      className="group overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-sm transition-all hover:border-purple-500/50 hover:shadow-xl"
+                    >
+                      <div className="relative aspect-[9/16] overflow-hidden">
+                        {item.status === "loading" ? (
+                          <div className="absolute inset-0 flex items-center justify-center bg-neutral-50">
+                            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                          </div>
+                        ) : (
+                          <>
+                            <img
+                              src={item.url}
+                              alt={item.theme}
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-white/60 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                              {item.type === "page" ? (
+                                <button
+                                  onClick={() => setActivePage(item)}
+                                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-8 py-4 text-lg font-bold text-white transition-transform hover:scale-105"
+                                >
+                                  <Layout className="h-5 w-5" />
+                                  Open Live Card
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setSelectedImage(item)}
+                                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-8 py-4 text-lg font-bold text-white transition-transform hover:scale-105"
+                                >
+                                  <ImageIcon className="h-5 w-5" />
+                                  View Full Image
+                                </button>
+                              )}
+                              <div className="flex items-center gap-4">
+                                <button
+                                  onClick={() => {
+                                    setDetails(item.details);
+                                    setEditingId(item.id);
+                                    setIsOptionalCollapsed(false);
+                                    setStep("form");
+                                  }}
+                                  className="rounded-full bg-purple-600 p-4 text-white shadow-lg transition-transform hover:scale-110"
+                                  title="Edit"
+                                >
+                                  <RefreshCw className="h-6 w-6" />
+                                </button>
+                                <button
+                                  onClick={() => downloadMedia(item)}
+                                  className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-900 shadow-lg transition-transform hover:scale-110"
+                                  title="Download"
+                                >
+                                  <Download className="h-6 w-6" />
+                                </button>
+                                <button
+                                  onClick={() => deleteMedia(item.id)}
+                                  className="rounded-full border border-neutral-200 bg-white p-4 text-red-500 shadow-lg transition-transform hover:scale-110"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-6 w-6" />
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        <div className="absolute left-4 top-4 flex gap-2">
+                          <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-neutral-900 backdrop-blur-md">
+                            {item.type === "page" ? "Live Card" : "Image"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <h3 className="truncate text-lg font-bold text-neutral-900">{getDisplayTitle(item.details)}</h3>
+                        <p className="text-xs uppercase tracking-widest text-neutral-500">{item.theme}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          ) : null}
+
+          {step === "studio" ? (
+            <motion.div
+              key="studio"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="grid gap-12 lg:grid-cols-[350px_1fr]"
+            >
+              <aside className="space-y-8">
+                <button
+                  onClick={() => setStep("form")}
+                  className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-purple-600"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Details
+                </button>
+
+                <div className="space-y-4">
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500">Select a Preset</h2>
+                  <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-purple-600/10 p-2 text-purple-600">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-bold text-neutral-900">{details.category} Presets</span>
+                    </div>
+
+                    <div className="grid max-h-[450px] grid-cols-2 gap-3 overflow-y-auto pr-2">
+                      {currentPresets.map((preset) => {
+                        const Icon = preset.icon;
+                        const active = details.theme === preset.name;
+                        return (
+                          <button
+                            key={preset.id}
+                            onClick={() => setDetails((prev) => ({ ...prev, theme: preset.name }))}
+                            className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border text-left transition-all ${
+                              active ? "border-purple-500 ring-2 ring-purple-500/20" : "border-neutral-200 hover:border-neutral-300"
+                            }`}
+                          >
+                            <img
+                              src={preset.thumbnail}
+                              alt={preset.name}
+                              className="absolute inset-0 h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-80"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-white/90 via-white/20 to-transparent p-3">
+                              <div className="mb-1 flex items-center gap-1.5">
+                                <div className="rounded-md border border-neutral-200 bg-white/80 p-1 backdrop-blur-sm">
+                                  <Icon className="h-3 w-3 text-purple-600" />
+                                </div>
+                                <span className="line-clamp-2 text-[10px] font-bold leading-tight text-neutral-900">{preset.name}</span>
+                              </div>
+                              <span className="line-clamp-2 text-[8px] leading-tight text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100">
+                                {preset.description}
+                              </span>
+                            </div>
+                            {active ? (
+                              <div className="absolute right-2 top-2 rounded-full bg-purple-500 p-1 shadow-lg">
+                                <CheckCircle2 className="h-3 w-3 text-white" />
+                              </div>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+
+                      {currentPresets.length === 0 ? (
+                        <div className="col-span-2 py-8 text-center">
+                          <p className="text-[10px] italic text-neutral-600">
+                            No presets for this category yet. Use a custom idea below.
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="border-t border-neutral-100 pt-2">
+                      <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                        Custom Visual Idea
+                      </label>
+                      <textarea
+                        placeholder="e.g. A minimalist gold and white theme with marble textures..."
+                        className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                        value={details.theme}
+                        onChange={(event) => setDetails((prev) => ({ ...prev, theme: event.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500">Generate Media</h2>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => generateMedia("page")}
+                      disabled={isGenerating}
+                      className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-neutral-900 py-4 font-bold text-white shadow-xl shadow-neutral-200 transition-all hover:bg-neutral-800 disabled:opacity-50"
+                    >
+                      <Layout className="h-5 w-5" />
+                      Create Live Card
+                      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
+                    </button>
+
+                    <button
+                      onClick={() => generateMedia("image")}
+                      disabled={isGenerating}
+                      className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-neutral-200 bg-white py-4 font-bold text-neutral-900 shadow-sm transition-all hover:bg-neutral-50 disabled:opacity-50"
+                    >
+                      <ImageIcon className="h-5 w-5" />
+                      Generate Image
+                      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
+                    </button>
+                  </div>
+                  <p className="text-center text-[10px] uppercase tracking-widest text-neutral-500">
+                    Powered by Gemini 3 &amp; Veo 3.1
+                  </p>
+                </div>
+              </aside>
+
+              <section className="space-y-8">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <h2 className="text-3xl font-bold text-neutral-900">Your Studio</h2>
+                  <div className="flex items-center gap-2 text-sm text-neutral-500">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span>Saved to local library</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
+                  <AnimatePresence>
+                    {mediaList.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="group relative flex flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition-all hover:shadow-xl"
+                      >
+                        <div
+                          className={`relative flex items-center justify-center overflow-hidden bg-neutral-100 ${
+                            item.details.orientation === "portrait" ? "aspect-[9/16]" : "aspect-[16/9]"
+                          }`}
+                        >
+                          {item.status === "loading" ? (
+                            <div className="flex flex-col items-center gap-4">
+                              <Loader2 className="h-10 w-10 animate-spin text-purple-600" />
+                              <span className="animate-pulse text-xs font-bold uppercase tracking-widest text-neutral-400">
+                                Processing {item.type}...
+                              </span>
+                            </div>
+                          ) : item.status === "error" ? (
+                            <div className="p-6 text-center">
+                              <p className="mb-2 font-bold text-red-500">Generation Failed</p>
+                              <button onClick={() => generateMedia(item.type)} className="text-xs text-neutral-500 underline hover:text-neutral-900">
+                                Try Again
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="relative h-full w-full">
+                              <img
+                                src={item.url}
+                                alt={item.theme}
+                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                          )}
+
+                          {item.status === "ready" ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-white/60 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                              {item.type === "page" ? (
+                                <button
+                                  onClick={() => setActivePage(item)}
+                                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-8 py-4 text-lg font-bold text-white shadow-lg transition-transform hover:scale-105"
+                                >
+                                  <Layout className="h-5 w-5" />
+                                  Open Live Card
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setSelectedImage(item)}
+                                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-8 py-4 text-lg font-bold text-white shadow-lg transition-transform hover:scale-105"
+                                >
+                                  <ImageIcon className="h-5 w-5" />
+                                  View Full Image
+                                </button>
+                              )}
+
+                              <div className="flex items-center gap-4">
+                                <button
+                                  onClick={() => downloadMedia(item)}
+                                  className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-900 shadow-lg transition-transform hover:scale-110"
+                                  title="Download"
+                                >
+                                  <Download className="h-6 w-6" />
+                                </button>
+                                <button
+                                  onClick={() => shareMedia(item)}
+                                  className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-900 shadow-lg transition-transform hover:scale-110"
+                                  title="Share"
+                                >
+                                  {copySuccess ? <CheckCircle2 className="h-6 w-6 text-green-600" /> : <Share2 className="h-6 w-6" />}
+                                </button>
+                                <button
+                                  onClick={() => deleteMedia(item.id)}
+                                  className="rounded-full border border-neutral-200 bg-white p-4 text-red-500 shadow-lg transition-transform hover:scale-110"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-6 w-6" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+
+                          <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-900 backdrop-blur-md">
+                            {item.type === "page" ? (
+                              <>
+                                <Layout className="h-3 w-3 text-green-600" />
+                                Live Card
+                              </>
+                            ) : (
+                              <>
+                                <ImageIcon className="h-3 w-3 text-blue-600" />
+                                Image
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 p-6">
+                          <h3 className="truncate text-lg font-bold text-neutral-900">{item.theme}</h3>
+                          <p className="text-xs text-neutral-500">Created just now • Interactive</p>
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {mediaList.length === 0 ? (
+                      <div className="col-span-full rounded-3xl border-2 border-dashed border-neutral-200 bg-white py-32 text-center">
+                        <div className="mb-6 inline-flex rounded-full bg-neutral-50 p-6">
+                          <Sparkles className="h-12 w-12 text-neutral-300" />
+                        </div>
+                        <h3 className="mb-2 text-xl font-bold text-neutral-900">No media generated yet</h3>
+                        <p className="mx-auto max-w-xs text-neutral-500">
+                          Select a theme and choose a media type to start your creative journey.
+                        </p>
+                      </div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+              </section>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </main>
+
+      <AnimatePresence>
+        {selectedImage ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-6 backdrop-blur-xl"
+            onClick={() => setSelectedImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative flex max-h-full w-full max-w-5xl flex-col items-center gap-6"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button onClick={() => setSelectedImage(null)} className="absolute -top-12 right-0 p-2 text-white/70 transition-colors hover:text-white">
+                <X className="h-8 w-8" />
+              </button>
+
+              <div className="group relative flex w-full justify-center">
+                <img
+                  src={selectedImage.url}
+                  alt={selectedImage.theme}
+                  className="max-h-[80vh] max-w-full rounded-2xl border border-white/20 object-contain shadow-2xl"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute bottom-6 right-6 flex gap-3 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    onClick={() => downloadMedia(selectedImage)}
+                    className="rounded-full bg-white p-4 text-neutral-900 shadow-xl transition-transform hover:scale-110"
+                  >
+                    <Download className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-center">
+                <h3 className="text-2xl font-bold text-white">{selectedImage.theme}</h3>
+                <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+                  {selectedImage.details.category} • {selectedImage.details.eventDate}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activePageRecord?.data ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl md:p-12"
+          >
+            <button
+              onClick={() => {
+                setActivePage(null);
+                setActiveTab("none");
+                setIsDesignMode(false);
+              }}
+              className="absolute right-8 top-8 z-[110] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <div className="absolute left-8 top-8 z-[110] flex items-center gap-3 rounded-full border border-white/10 bg-white/10 p-2 backdrop-blur-md">
+              <span className="pl-2 text-[10px] font-bold uppercase tracking-widest text-white">Design Mode</span>
+              <button
+                onClick={() => setIsDesignMode((prev) => !prev)}
+                className={`relative h-6 w-12 rounded-full transition-all ${isDesignMode ? "bg-purple-500" : "bg-neutral-700"}`}
+              >
+                <motion.div animate={{ x: isDesignMode ? 24 : 4 }} className="absolute top-1 h-4 w-4 rounded-full bg-white shadow-lg" />
+              </button>
+            </div>
+
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-purple-500/20 aspect-[9/16]"
+            >
+              <img
+                src={activePageRecord.url}
+                alt={activePageRecord.theme}
+                className="absolute inset-0 h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+
+              <div className="absolute inset-0 flex flex-col p-8 pointer-events-none">
+                <div className="flex h-full flex-col justify-end">
+                  <AnimatePresence>
+                    {activeTab !== "none" && activeTab !== "share" ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                        className="pointer-events-auto absolute bottom-32 left-6 right-6 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl"
+                      >
+                        <div className="mb-4 flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
+                              {activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
+                              {activeTab === "calendar" ? <Calendar className="h-5 w-5" /> : null}
+                              {activeTab === "registry" ? <Sparkles className="h-5 w-5" /> : null}
+                              {activeTab === "rsvp" ? <User className="h-5 w-5" /> : null}
+                              {activeTab === "details" ? <Info className="h-5 w-5" /> : null}
+                            </div>
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
+                              {activeTab === "location" ? "Event Location" : null}
+                              {activeTab === "calendar" ? "Add to Calendar" : null}
+                              {activeTab === "registry" ? "Gift Registry" : null}
+                              {activeTab === "rsvp" ? "RSVP Info" : null}
+                              {activeTab === "details" ? "Event Details" : null}
+                            </h4>
+                          </div>
+                          <button onClick={() => setActiveTab("none")} className="rounded-full p-1 text-neutral-500 hover:bg-neutral-100">
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {activeTab === "rsvp" ? (
+                            <div className="space-y-4">
+                              <p className="text-sm font-bold uppercase tracking-widest text-green-600">RSVP Details</p>
+                              <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                                <div>
+                                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Host / RSVP Contact</p>
+                                  <p className="text-sm font-medium text-neutral-900">{activePageRecord.data.eventDetails.rsvpName || "Host"}</p>
+                                </div>
+                                {activePageRecord.data.eventDetails.rsvpContact ? (
+                                  <div>
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Contact Info</p>
+                                    <p className="text-sm text-neutral-700">{activePageRecord.data.eventDetails.rsvpContact}</p>
+                                  </div>
+                                ) : null}
+                                {activePageRecord.data.eventDetails.rsvpDeadline ? (
+                                  <div>
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">RSVP Deadline</p>
+                                    <p className="text-sm text-red-600">{formatDate(activePageRecord.data.eventDetails.rsvpDeadline)}</p>
+                                  </div>
+                                ) : null}
+                              </div>
+                              <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 py-3 text-xs font-bold text-white">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Confirm RSVP Now
+                              </button>
+                            </div>
+                          ) : null}
+
+                          {activeTab === "details" ? (
+                            <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
+                              <p className="text-sm font-bold uppercase tracking-widest text-purple-600">
+                                {activePageRecord.data.eventDetails.category} Information
+                              </p>
+                              <div className="grid grid-cols-1 gap-3">
+                                {Object.entries(activePageRecord.data.eventDetails)
+                                  .filter(([key, value]) => {
+                                    if (!value || typeof value === "boolean") return false;
+                                    return ![
+                                      "category",
+                                      "eventDate",
+                                      "startTime",
+                                      "endTime",
+                                      "location",
+                                      "venueName",
+                                      "rsvpName",
+                                      "rsvpContact",
+                                      "rsvpDeadline",
+                                      "message",
+                                      "specialInstructions",
+                                      "orientation",
+                                      "colors",
+                                      "style",
+                                      "visualPreferences",
+                                      "theme",
+                                    ].includes(key);
+                                  })
+                                  .map(([key, value]) => (
+                                    <div key={key} className="rounded-xl border border-neutral-100 bg-neutral-50 p-3">
+                                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                        {key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase())}
+                                      </p>
+                                      <p className="text-sm text-neutral-900">{String(value)}</p>
+                                    </div>
+                                  ))}
+                                {activePageRecord.data.eventDetails.message ? (
+                                  <div className="rounded-xl border border-purple-100 bg-purple-50 p-4 italic">
+                                    <p className="text-xs text-purple-600">"{activePageRecord.data.eventDetails.message}"</p>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {activeTab === "location" ? (
+                            <>
+                              <p className="text-sm font-medium text-neutral-900">
+                                {activePageRecord.data.eventDetails.venueName || activePageRecord.data.eventDetails.location}
+                              </p>
+                              <p className="text-xs text-neutral-500">{activePageRecord.data.eventDetails.location}</p>
+                              <p className="mt-2 text-xs text-neutral-500">
+                                {formatDate(activePageRecord.data.eventDetails.eventDate)} @ {activePageRecord.data.eventDetails.startTime}
+                              </p>
+                              <button
+                                onClick={() =>
+                                  window.open(
+                                    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activePageRecord.data?.eventDetails.location || "")}`,
+                                    "_blank",
+                                  )
+                                }
+                                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 py-2 text-xs font-bold text-white"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Open in Maps
+                              </button>
+                            </>
+                          ) : null}
+
+                          {activeTab === "calendar" ? (
+                            <>
+                              <p className="text-sm font-medium text-neutral-900">Save the Date</p>
+                              <p className="text-xs text-neutral-500">
+                                {activePageRecord.data.eventDetails.eventDate
+                                  ? formatDate(activePageRecord.data.eventDetails.eventDate)
+                                  : "Date TBD"}
+                                {activePageRecord.data.eventDetails.startTime ? ` at ${activePageRecord.data.eventDetails.startTime}` : ""}
+                              </p>
+                              <button
+                                onClick={() => {
+                                  const title = encodeURIComponent(activePageRecord.data?.title || "Event");
+                                  const detailsText = encodeURIComponent(activePageRecord.data?.description || "");
+                                  const location = encodeURIComponent(activePageRecord.data?.eventDetails.location || "");
+                                  const date = (activePageRecord.data?.eventDetails.eventDate || "").replace(/-/g, "");
+                                  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${detailsText}&location=${location}&dates=${date}/${date}`;
+                                  window.open(url, "_blank");
+                                }}
+                                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white"
+                              >
+                                <Calendar className="h-3 w-3" />
+                                Add to Google Calendar
+                              </button>
+                            </>
+                          ) : null}
+
+                          {activeTab === "registry" ? (
+                            <>
+                              <p className="text-sm font-medium text-neutral-900">Gift Registry</p>
+                              <p className="text-xs text-neutral-500">{getRegistryText(activePageRecord.data.eventDetails)}</p>
+                              {activePageRecord.data.eventDetails.registryLink ? (
+                                <button
+                                  onClick={() => window.open(activePageRecord.data?.eventDetails.registryLink, "_blank")}
+                                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-pink-600 py-2 text-xs font-bold text-white"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  Visit Registry
+                                </button>
+                              ) : null}
+                            </>
+                          ) : null}
+                        </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+
+                  <div className="pointer-events-none flex items-end justify-center gap-4 px-4 pb-8">
+                    {([
+                      {
+                        key: "rsvp",
+                        label: "RSVP",
+                        icon: User,
+                        visible: Boolean(activePageRecord.data.eventDetails.rsvpName || activePageRecord.data.eventDetails.rsvpContact),
+                        onClick: () => setActiveTab(activeTab === "rsvp" ? "none" : "rsvp"),
+                      },
+                      {
+                        key: "details",
+                        label: "Details",
+                        icon: Info,
+                        visible: true,
+                        onClick: () => setActiveTab(activeTab === "details" ? "none" : "details"),
+                      },
+                      {
+                        key: "location",
+                        label: "Location",
+                        icon: MapPin,
+                        visible: true,
+                        onClick: () => setActiveTab(activeTab === "location" ? "none" : "location"),
+                      },
+                      {
+                        key: "calendar",
+                        label: "Calendar",
+                        icon: Calendar,
+                        visible: true,
+                        onClick: () => setActiveTab(activeTab === "calendar" ? "none" : "calendar"),
+                      },
+                      {
+                        key: "share",
+                        label: copySuccess ? "Copied!" : "Share",
+                        icon: copySuccess ? CheckCircle2 : Share2,
+                        visible: true,
+                        onClick: () => shareMedia(activePageRecord),
+                      },
+                      {
+                        key: "registry",
+                        label: "Registry",
+                        icon: Sparkles,
+                        visible: Boolean(activePageRecord.data.eventDetails.registryLink || getRegistryText(activePageRecord.data.eventDetails)),
+                        onClick: () => setActiveTab(activeTab === "registry" ? "none" : "registry"),
+                      },
+                    ] as const)
+                      .filter((button) => button.visible)
+                      .map((button) => {
+                        const Icon = button.icon;
+                        const position = activePageRecord.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+                        return (
+                          <motion.div
+                            key={button.key}
+                            drag={isDesignMode}
+                            dragMomentum={false}
+                            onDragEnd={(_, info) =>
+                              updatePosition(activePageRecord.id, button.key, {
+                                x: position.x + info.offset.x,
+                                y: position.y + info.offset.y,
+                              })
+                            }
+                            style={{ x: position.x, y: position.y }}
+                            className="pointer-events-auto"
+                          >
+                            <button
+                              onClick={() => {
+                                if (!isDesignMode) button.onClick();
+                              }}
+                              className={`group flex flex-col items-center gap-2 ${isDesignMode ? "cursor-move" : ""}`}
+                            >
+                              <div
+                                className={`rounded-full border border-white/30 bg-white/20 p-3 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 ${
+                                  isDesignMode ? "ring-2 ring-purple-400" : ""
+                                } ${
+                                  (button.key === "rsvp" && activeTab === "rsvp") ||
+                                  (button.key === "details" && activeTab === "details") ||
+                                  (button.key === "location" && activeTab === "location") ||
+                                  (button.key === "calendar" && activeTab === "calendar") ||
+                                  (button.key === "registry" && activeTab === "registry")
+                                    ? "border-white/50 bg-white/40"
+                                    : ""
+                                }`}
+                              >
+                                <Icon className={`h-5 w-5 ${button.key === "share" && copySuccess ? "text-green-400" : "text-white"}`} />
+                              </div>
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-white drop-shadow-md">
+                                {button.label}
+                              </span>
+                            </button>
+                          </motion.div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute left-0 right-0 top-0 flex h-8 items-center justify-between px-8 text-[10px] font-bold text-white/50">
+                <span>9:41</span>
+                <div className="flex gap-1">
+                  <div className="h-3 w-3 rounded-full bg-white/20" />
+                  <div className="h-3 w-3 rounded-full bg-white/20" />
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <div className="pointer-events-none fixed left-1/2 top-0 -z-10 h-[600px] w-[1000px] -translate-x-1/2 bg-purple-600/5 blur-[120px]" />
+    </div>
+  );
+}

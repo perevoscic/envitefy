@@ -6,6 +6,7 @@ import { hasProductScope } from "@/lib/product-scopes";
 
 const PUBLIC_UNAUTH_PATHS = new Set([
   "/",
+  "/studio",
   "/landing",
   "/gymnastics",
   "/open",
