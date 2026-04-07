@@ -28,11 +28,16 @@ test("live card updates reuse the current image in the studio generation request
   );
 });
 
-test("live card modal exposes one combined edit action and the form-level current-image prompt", () => {
+test("live card modal uses in-context image prompt panel; studio step still offers form-level image edit copy", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
 
-  assert.match(source, /<p className="text-sm font-semibold text-white">Edit live card<\/p>/);
-  assert.match(source, /Update details and current artwork/);
+  assert.match(source, /function openLiveCardImageEdit\(item: MediaItem\)/);
+  assert.match(
+    source,
+    /renderEditImagePanel\(\s*activePageRecord,[\s\S]*Only the image updates/,
+  );
+  assert.doesNotMatch(source, /openLiveCardEditor\(activePageRecord\)/);
+  assert.match(source, /openLiveCardImageEdit=\{openLiveCardImageEdit\}/);
   assert.match(source, /Edit current image/);
   assert.match(
     source,

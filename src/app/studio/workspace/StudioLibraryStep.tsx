@@ -28,6 +28,7 @@ export type StudioLibraryStepProps = {
   setActivePage: Dispatch<SetStateAction<MediaItem | null>>;
   setSelectedImage: Dispatch<SetStateAction<MediaItem | null>>;
   openLiveCardEditor: (item: MediaItem) => void;
+  openLiveCardImageEdit: (item: MediaItem) => void;
   downloadMedia: (item: MediaItem) => void;
   deleteMedia: (id: string) => void;
 };
@@ -39,6 +40,7 @@ export function StudioLibraryStep({
   setActivePage,
   setSelectedImage,
   openLiveCardEditor,
+  openLiveCardImageEdit,
   downloadMedia,
   deleteMedia,
 }: StudioLibraryStepProps) {
@@ -156,9 +158,13 @@ export function StudioLibraryStep({
                               )}
                               <div className="flex items-center gap-3">
                                 <button
-                                  onClick={() => openLiveCardEditor(item)}
+                                  onClick={() =>
+                                    item.type === "page"
+                                      ? openLiveCardImageEdit(item)
+                                      : openLiveCardEditor(item)
+                                  }
                                   className="rounded-full bg-white p-3 text-neutral-900 shadow-[0_12px_24px_rgba(25,20,40,0.14)] transition-transform hover:scale-105"
-                                  title="Edit"
+                                  title={item.type === "page" ? "Edit card image" : "Edit"}
                                 >
                                   <RefreshCw className="h-5 w-5" />
                                 </button>

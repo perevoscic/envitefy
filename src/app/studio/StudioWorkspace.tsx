@@ -199,6 +199,14 @@ export default function StudioWorkspace() {
     setStep("form");
   }
 
+  function openLiveCardImageEdit(item: MediaItem) {
+    setActivePage(item);
+    setEditPrompt("");
+    setIsEditPanelOpen(true);
+    setActiveTab("none");
+    setIsDesignMode(false);
+  }
+
   async function ensurePublicSharePath(item: MediaItem): Promise<string> {
     if (item.sharePath?.startsWith("/card/")) {
       return item.sharePath;
@@ -627,6 +635,7 @@ export default function StudioWorkspace() {
               setActivePage={setActivePage}
               setSelectedImage={setSelectedImage}
               openLiveCardEditor={openLiveCardEditor}
+              openLiveCardImageEdit={openLiveCardImageEdit}
               downloadMedia={downloadMedia}
               deleteMedia={deleteMedia}
             />
@@ -1089,25 +1098,10 @@ export default function StudioWorkspace() {
             </button>
 
             <div className="absolute right-4 top-20 z-[110] flex w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 md:right-8 md:top-24">
-              <button
-                type="button"
-                onClick={() => openLiveCardEditor(activePageRecord)}
-                className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-left backdrop-blur-md transition-colors hover:bg-white/15"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-white/15 p-2 text-white">
-                    <WandSparkles className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-                      Edit
-                    </p>
-                    <p className="text-sm font-semibold text-white">Edit live card</p>
-                    <p className="text-xs text-white/55">Update details and current artwork</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-white/70" />
-              </button>
+              {renderEditImagePanel(
+                activePageRecord,
+                "Describe how you want the card artwork to change. Only the image updates; event text, RSVP, and button placement stay the same unless you change them elsewhere.",
+              )}
 
               <div className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
                 <div>
