@@ -18,8 +18,8 @@ import {
   MousePointer2,
   Share2,
   Smartphone,
-  Sparkles,
   Ticket,
+  WandSparkles,
   Upload,
   Users,
   Zap,
@@ -367,7 +367,7 @@ export default function StudioMarketingPage() {
                     Upload or start from scratch
                   </span>
                   <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 shadow-sm">
-                    <Sparkles className="h-4 w-4 text-[#7c3aed]" />
+                    <WandSparkles className="h-4 w-4 text-[#7c3aed]" />
                     Publish a share-ready live card
                   </span>
                 </div>
@@ -762,7 +762,7 @@ export default function StudioMarketingPage() {
 
                 <div className="order-1 lg:order-2">
                   <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[#e9d5ff]">
-                    <Sparkles className="h-3 w-3" />
+                    <WandSparkles className="h-3 w-3" />
                     Wedding Experience
                   </div>
                   <h2 className="mt-6 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">

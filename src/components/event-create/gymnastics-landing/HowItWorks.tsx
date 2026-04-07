@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarRange, Sparkles, Upload } from "lucide-react";
+import { ArrowRight, CalendarRange, Upload, WandSparkles } from "lucide-react";
 import styles from "./gymnastics-landing.module.css";
 
 const steps = [
@@ -9,7 +9,7 @@ const steps = [
     copy: "Bring in your meet packet, session schedule, venue details, hotel sheet, and supporting documents.",
   },
   {
-    icon: Sparkles,
+    icon: WandSparkles,
     eyebrow: "Step 2",
     title: "Envitefy Organizes It",
     copy: "We structure the information into the pieces gymnastics families actually need: sessions, locations, travel, documents, and updates.",

@@ -15,8 +15,8 @@ import {
   MapPin,
   MessageSquare,
   Share2,
-  Sparkles,
   Users,
+  WandSparkles,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -105,7 +105,7 @@ const snapCards = [
 
 const gymnasticsFeatures = [
   {
-    icon: Sparkles,
+    icon: WandSparkles,
     title: "Live Results",
     desc: "Point families to live score destinations without burying the link in a team thread.",
   },
@@ -398,7 +398,7 @@ export default function LandingExperience() {
               <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(320px,430px)] lg:items-center">
                 <div className="max-w-3xl">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-4 py-2 text-[0.7rem] font-bold uppercase tracking-[0.3em] text-white/90 shadow-[0_12px_28px_rgba(8,4,18,0.2)]">
-                    <Sparkles className="h-4 w-4" />
+                    <WandSparkles className="h-4 w-4" />
                     The Future of Invitations
                   </div>
 
@@ -907,7 +907,7 @@ export default function LandingExperience() {
                           >
                             <div className="h-24 bg-[linear-gradient(135deg,#f3d8c4_0%,#f6eee8_100%)] p-4">
                               <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[#8c6149] shadow-sm">
-                                <Sparkles className="h-3.5 w-3.5" />
+                                <WandSparkles className="h-3.5 w-3.5" />
                                 Live Event Page
                               </div>
                               <div className="mt-7">

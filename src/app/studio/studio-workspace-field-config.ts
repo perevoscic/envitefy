@@ -5,7 +5,7 @@ import {
   CalendarHeart,
   Heart,
   Home,
-  Sparkles,
+  WandSparkles,
   Wine,
 } from "lucide-react";
 import { STUDIO_LIBRARY_STORAGE_KEY } from "./studio-constants";
@@ -329,7 +329,7 @@ export const CATEGORIES: CategoryCard[] = [
   { name: "Housewarming", icon: Home },
   { name: "Baby Shower", icon: Baby },
   { name: "Anniversary", icon: CalendarHeart },
-  { name: "Custom Invite", icon: Sparkles },
+  { name: "Custom Invite", icon: WandSparkles },
 ];
 export const EMPTY_POSITIONS = {
   rsvp: { x: 0, y: 0 },

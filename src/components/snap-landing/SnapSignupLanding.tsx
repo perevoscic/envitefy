@@ -11,8 +11,8 @@ import {
   PartyPopper,
   PencilLine,
   Share2,
-  Sparkles,
   Users,
+  WandSparkles,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -86,7 +86,7 @@ const benefitCards = [
   {
     title: "Stay useful after the first share",
     body: "If the details change, update the page once instead of sending another screenshot and hoping everyone sees it.",
-    icon: Sparkles,
+    icon: WandSparkles,
   },
   {
     title: "Built for the phone in your hand",
@@ -312,7 +312,7 @@ function ProcessVisual({ step }: { step: 1 | 2 | 3 }) {
     <div className="rounded-[2.4rem] bg-[#f4f0ff] p-6 shadow-[0_28px_80px_rgba(104,78,191,0.1)]">
       <div className="rounded-[1.9rem] border border-white bg-white p-8 text-center shadow-[0_18px_42px_rgba(61,37,133,0.08)]">
         <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#ebfff1] text-[#2bbf6a]">
-          <Sparkles className="h-7 w-7" />
+          <WandSparkles className="h-7 w-7" />
         </div>
         <h3 className="mt-5 text-2xl font-semibold text-[#1f1635]">Ready to share</h3>
         <div className="mt-8 space-y-3">
@@ -387,7 +387,7 @@ export default function SnapSignupLanding() {
         <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1fr_1.02fr] lg:gap-20">
           <div className="max-w-2xl">
             <p className="inline-flex items-center gap-2 rounded-full border border-[#e9defe] bg-white/90 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-[#7b5de4] shadow-[0_10px_24px_rgba(124,58,237,0.08)]">
-              <Sparkles className="h-4 w-4" />
+              <WandSparkles className="h-4 w-4" />
               AI Snap Upload
             </p>
 
@@ -450,7 +450,7 @@ export default function SnapSignupLanding() {
                     <p className="text-[0.62rem] font-bold uppercase tracking-[0.24em] text-[#8f74eb]">
                       Structured details
                     </p>
-                    <Sparkles className="h-4 w-4 text-[#8f74eb]" />
+                    <WandSparkles className="h-4 w-4 text-[#8f74eb]" />
                   </div>
 
                   <div className="mt-5 grid gap-3 text-sm font-semibold text-[#22183f]">

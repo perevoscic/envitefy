@@ -60,8 +60,10 @@ import { createInitialDetails, sanitizeMediaItems } from "./studio-workspace-san
 import type { StudioStep } from "./studio-types";
 import type {
   ActiveTab,
+  ButtonPosition,
   EventDetails,
   MediaItem,
+  MediaType,
 } from "./studio-workspace-types";
 import { isRecord } from "./studio-workspace-utils";
 import {
@@ -656,7 +658,7 @@ export default function StudioWorkspace() {
                     {details.category !== "Birthday" ? (
                       <div className="flex items-center gap-3 rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] px-4 py-3">
                         <div className="rounded-2xl bg-[#f4edff] p-2.5 text-[#8a6fdb]">
-                          <Sparkles className="h-4 w-4" />
+                          <WandSparkles className="h-4 w-4" />
                         </div>
                         <span className="text-sm font-semibold text-neutral-900">
                           {details.category} Presets
@@ -990,7 +992,7 @@ export default function StudioWorkspace() {
                     {mediaList.length === 0 ? (
                       <div className="col-span-full rounded-[32px] border border-dashed border-[#e5dbf6] bg-white/88 py-28 text-center shadow-[0_20px_55px_rgba(84,61,140,0.06)]">
                         <div className="mb-6 inline-flex rounded-full bg-[#f7f1ff] p-6 shadow-[0_10px_24px_rgba(84,61,140,0.08)]">
-                          <Sparkles className="h-12 w-12 text-[#9b82e7]" />
+                          <WandSparkles className="h-12 w-12 text-[#9b82e7]" />
                         </div>
                         <h3 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
                           No media generated yet
@@ -1151,15 +1153,15 @@ export default function StudioWorkspace() {
                 referrerPolicy="no-referrer"
               />
 
-              <div className="absolute inset-0 flex flex-col p-8 pointer-events-none">
-                <div className="flex h-full flex-col justify-end">
+              <div className="pointer-events-none absolute inset-0 flex flex-col pt-8 pb-1 px-3 max-md:px-1 max-md:pt-6 max-md:pb-0.5 sm:px-4 md:p-8 md:pb-2">
+                <div className="flex h-full min-h-0 flex-col justify-end">
                   <AnimatePresence>
                     {activeTab !== "none" && activeTab !== "share" ? (
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                        className="pointer-events-auto absolute bottom-32 left-6 right-6 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl"
+                        className="pointer-events-auto absolute bottom-32 left-4 right-4 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl max-md:left-2 max-md:right-2 md:left-6 md:right-6"
                       >
                         <div className="mb-4 flex items-start justify-between">
                           <div className="flex items-center gap-3">
@@ -1194,7 +1196,7 @@ export default function StudioWorkspace() {
                                 {LIVE_CARD_RSVP_CHOICES.map((choice) => {
                                   const href = buildLiveCardRsvpOutboundHref({
                                     rsvpContact: activePageRsvpContact,
-                                    eventTitle: activePageRecord.data.title || "Event",
+                                    eventTitle: activePageRecord.data?.title || "Event",
                                     responseLabel: choice.label,
                                     shareUrl: studioPreviewShareUrl,
                                   });
@@ -1441,7 +1443,12 @@ export default function StudioWorkspace() {
                     ) : null}
                   </AnimatePresence>
 
-                  <div className="pointer-events-none flex items-end justify-center gap-4 px-4 pb-8">
+                  <div
+                    className="pointer-events-none max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] shrink-0 md:min-h-[min(8svh,2.5rem)]"
+                    aria-hidden
+                  />
+
+                  <div className="pointer-events-none z-20 flex w-full min-w-0 flex-nowrap items-end justify-center gap-2 overflow-x-auto pb-8 [scrollbar-width:none] [-ms-overflow-style:none] max-sm:justify-between max-sm:gap-0.5 max-sm:px-0 max-md:pb-6 px-1 md:gap-4 md:px-2 [&::-webkit-scrollbar]:hidden">
                     {(
                       [
                         {
@@ -1521,17 +1528,17 @@ export default function StudioWorkspace() {
                               })
                             }
                             style={{ x: position.x, y: position.y }}
-                            className="pointer-events-auto"
+                            className="pointer-events-auto max-sm:min-w-0 max-sm:flex-1 max-sm:max-w-[20%] sm:flex-none sm:max-w-none"
                           >
                             <button
                               onClick={() => {
                                 if (!isDesignMode) button.onClick();
                               }}
                               disabled={button.key === "share" && sharingId === activePageRecord.id}
-                              className={`group flex flex-col items-center gap-2 ${isDesignMode ? "cursor-move" : ""}`}
+                              className={`group flex w-full flex-col items-center gap-1 md:gap-2 ${isDesignMode ? "cursor-move" : ""}`}
                             >
                               <div
-                                className={`rounded-full border border-white/30 bg-white/20 p-3 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 ${
+                                className={`rounded-full border border-white/30 bg-white/20 p-2 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 md:p-3 ${
                                   isDesignMode ? "ring-2 ring-purple-400" : ""
                                 } ${
                                   (button.key === "rsvp" && activeTab === "rsvp") ||
@@ -1544,7 +1551,7 @@ export default function StudioWorkspace() {
                                 }`}
                               >
                                 <Icon
-                                  className={`h-5 w-5 ${
+                                  className={`h-4 w-4 md:h-5 md:w-5 ${
                                     button.key === "share" && sharingId === activePageRecord.id
                                       ? "animate-spin text-white"
                                       : button.key === "share" && copySuccess
@@ -1553,7 +1560,7 @@ export default function StudioWorkspace() {
                                   }`}
                                 />
                               </div>
-                              <span className="text-[9px] font-bold uppercase tracking-widest text-white drop-shadow-md">
+                              <span className="max-w-full truncate text-center text-[7px] font-bold uppercase tracking-tight text-white drop-shadow-md sm:text-[8px] sm:tracking-wider md:text-[9px] md:tracking-widest">
                                 {button.label}
                               </span>
                             </button>

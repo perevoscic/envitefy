@@ -25,7 +25,7 @@ import {
   Trash2,
   Check,
   X as XIcon,
-  Sparkles,
+  WandSparkles,
   Share2,
 } from "lucide-react";
 import {
@@ -928,7 +928,7 @@ export default function GenderRevealTemplateCustomizePage() {
         />
         <MenuCard
           title="Event Details"
-          icon={<Sparkles size={18} />}
+          icon={<WandSparkles size={18} />}
           desc="Expecting date, notes about the reveal."
           onClick={() => setActiveView("eventDetails")}
         />

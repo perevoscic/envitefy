@@ -54,7 +54,7 @@ test("left sidebar exposes Studio below Home in both full and compact navigation
   );
   assert.match(
     source,
-    /\{\s*id: "studio" as const,\s*icon: Sparkles,\s*label: "Studio",\s*href: "\/studio",\s*onClick: viewModel\.goStudioFromSidebar,\s*\}/s
+    /\{\s*id: "studio" as const,\s*icon: WandSparkles,\s*label: "Studio",\s*href: "\/studio",\s*onClick: viewModel\.goStudioFromSidebar,\s*\}/s
   );
   assert.match(
     controllerSource,

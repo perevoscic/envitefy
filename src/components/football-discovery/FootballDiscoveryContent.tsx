@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronRight, Shield, Sparkles } from "lucide-react";
+import { CalendarDays, ChevronRight, Shield, WandSparkles } from "lucide-react";
 import Link from "next/link";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
@@ -201,7 +201,7 @@ export default function FootballDiscoveryContent({
               <div className="relative z-10 px-5 py-8 sm:px-8 sm:py-10">
                 <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em]">
                   <span className={templateChrome.heroBadgeClass}>
-                    <Sparkles size={12} />
+                    <WandSparkles size={12} />
                     Football discovery
                   </span>
                   {model.attendance.visible ? (
@@ -509,7 +509,7 @@ export default function FootballDiscoveryContent({
           <div className="border-b border-white/10 px-5 py-5 sm:px-7 sm:py-7">
             <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/65">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1">
-                <Sparkles size={12} /> Football discovery
+                <WandSparkles size={12} /> Football discovery
               </span>
               {model.attendance.visible ? (
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/12 px-3 py-1 text-emerald-100">

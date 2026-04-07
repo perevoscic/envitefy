@@ -10,8 +10,8 @@ import {
   ChevronDown,
   MessageSquare,
   Smartphone,
-  Sparkles,
   Users,
+  WandSparkles,
   Zap,
 } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -278,7 +278,7 @@ function SnapProcessMedia() {
 
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,10,38,0.05),rgba(18,10,38,0.7))]" />
       <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/16 bg-black/20 px-3 py-2 text-[0.65rem] font-bold uppercase tracking-[0.24em] text-white/75 backdrop-blur-xl">
-        <Sparkles className="h-3.5 w-3.5" /> Snap Demo
+        <WandSparkles className="h-3.5 w-3.5" /> Snap Demo
       </div>
     </div>
   );

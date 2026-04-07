@@ -8,6 +8,7 @@ import {
   Clock,
   MapPin,
   Plus,
+  WandSparkles,
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { inputValue } from "../studio-workspace-builders";
@@ -359,7 +360,7 @@ export function StudioFormStep({
                       <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:p-8">
                         <div className="mb-6 flex items-center gap-3">
                           <div className="rounded-2xl bg-[#f6efff] p-3 text-[#8a6fdb]">
-                            <Sparkles className="h-5 w-5" />
+                            <WandSparkles className="h-5 w-5" />
                           </div>
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">

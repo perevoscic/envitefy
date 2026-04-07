@@ -11,8 +11,8 @@ import {
   Share2,
   Shield,
   Smartphone,
-  Sparkles,
   Trophy,
+  WandSparkles,
   Upload,
   Users,
 } from "lucide-react";
@@ -190,7 +190,7 @@ const steps = [
   },
   {
     step: "02",
-    icon: Sparkles,
+    icon: WandSparkles,
     title: "Envitefy structures the weekend",
     copy: "We turn the packet into sections families actually use: sessions, venue, travel, documents, and updates.",
   },
@@ -419,7 +419,7 @@ export default function GymnasticsLanding() {
                   )}
                 >
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white shadow-inner">
-                    <Sparkles className="h-4 w-4" />
+                    <WandSparkles className="h-4 w-4" />
                   </div>
                   <div className="h-14 w-px bg-gradient-to-b from-white/40 to-transparent" />
                   <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white">
@@ -660,7 +660,7 @@ export default function GymnasticsLanding() {
           className={`mx-auto max-w-7xl ${glassSectionClass} ${styles.sectionShell} px-7 py-10 text-center md:px-12 md:py-14`}
         >
           <div className="absolute -right-10 -top-10 p-12 text-white opacity-[0.05]">
-            <Sparkles size={240} />
+            <WandSparkles size={240} />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_45%,rgba(124,58,237,0.1))]" />
           <div className="relative z-10">

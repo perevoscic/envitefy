@@ -1,5 +1,5 @@
 "use client";
-import { Calendar, Clock, MapPin, Sparkles, Upload, User, X } from "lucide-react";
+import { Calendar, Clock, MapPin, Upload, User, WandSparkles, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 export type SnapProcessingStatus = "idle" | "uploading" | "scanning";
@@ -123,7 +123,7 @@ export function SnapProcessingCard({
               <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[#685691]">
                 {status === "scanning" ? (
                   <>
-                    <Sparkles className="h-4 w-4 animate-pulse text-[#7f64d4]" />
+                    <WandSparkles className="h-4 w-4 animate-pulse text-[#7f64d4]" />
                     Analysing
                   </>
                 ) : (

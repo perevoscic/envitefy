@@ -9,8 +9,8 @@ import {
   MapPinned,
   Route,
   Share2,
-  Sparkles,
   Users,
+  WandSparkles,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -405,7 +405,7 @@ export default function FootballLanding() {
           <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-12">
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#73809e] shadow-[0_14px_30px_rgba(113,126,161,0.08)]">
-                <Sparkles className="h-3.5 w-3.5 text-[#c76b1e]" />
+                <WandSparkles className="h-3.5 w-3.5 text-[#c76b1e]" />
                 Premium football season pages for teams and families
               </div>
 

@@ -206,13 +206,18 @@ export function useStudioMediaLibrary() {
     async function syncFromPublishedHistory() {
       for (const item of mediaList) {
         if (!active) return;
-        if (item.status !== "error" && item.status !== "loading") continue;
         const pubId = item.publishedEventId?.trim();
         if (!pubId) continue;
 
         const nonFallbackImage = isNonFallbackStudioThumbnailUrl(item.url, item.details);
-        const needsImage = !nonFallbackImage || !clean(item.url);
+        const hasRealImage = nonFallbackImage && Boolean(clean(item.url));
         const needsPageData = item.type === "page" && !item.data;
+        const stuckWhileGenerating = item.status === "error" || item.status === "loading";
+        const readyMissingSyncedAsset =
+          item.status === "ready" && (!hasRealImage || needsPageData);
+        if (!stuckWhileGenerating && !readyMissingSyncedAsset) continue;
+
+        const needsImage = !hasRealImage;
         if (!needsImage && !needsPageData) continue;
 
         const syncKey = `${item.id}:${pubId}`;
@@ -242,22 +247,28 @@ export function useStudioMediaLibrary() {
             continue;
           }
 
-          const invitationFromHistory =
-            item.type === "page"
-              ? extractHistoryStudioInvitationData(row, item.details) ||
-                sanitizeInvitationData({}, item.details)
-              : undefined;
-
           setMediaList((prev) =>
             sanitizeMediaItems(
               prev.map((entry) => {
                 if (entry.id !== item.id) return entry;
-                if (entry.status !== "error" && entry.status !== "loading") return entry;
+                const fromErrorOrLoading =
+                  entry.status === "error" || entry.status === "loading";
+                const nextStatus = fromErrorOrLoading ? "ready" : entry.status;
+
+                let dataPatch: Pick<MediaItem, "data"> | Record<string, never> = {};
+                if (item.type === "page" && (!entry.data || fromErrorOrLoading)) {
+                  dataPatch = {
+                    data:
+                      extractHistoryStudioInvitationData(row, entry.details) ||
+                      sanitizeInvitationData({}, entry.details),
+                  };
+                }
+
                 return {
                   ...entry,
-                  status: "ready",
+                  status: nextStatus,
                   url: imageUrl,
-                  ...(invitationFromHistory ? { data: invitationFromHistory } : {}),
+                  ...dataPatch,
                   errorMessage: undefined,
                 };
               }),

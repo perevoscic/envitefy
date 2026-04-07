@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw, Sparkles } from "lucide-react";
+import { RefreshCw, WandSparkles } from "lucide-react";
 
 export default function StudioError({
   error,
@@ -15,7 +15,7 @@ export default function StudioError({
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#7c3aed] via-[#f59e0b] to-[#ef4444]" />
         <div className="flex items-start gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f3e8ff] text-[#7c3aed]">
-            <Sparkles className="h-7 w-7" />
+            <WandSparkles className="h-7 w-7" />
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7c3aed]">

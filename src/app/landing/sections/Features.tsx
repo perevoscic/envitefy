@@ -7,15 +7,15 @@ import {
   Route,
   ScanText,
   Smartphone,
-  Sparkles,
   Trophy,
+  WandSparkles,
 } from "lucide-react";
 import GymnasticsMeetPreview from "@/components/landing/GymnasticsMeetPreview";
 import SnapEventPreview from "@/components/landing/SnapEventPreview";
 
 const featureCards = [
   {
-    icon: Sparkles,
+    icon: WandSparkles,
     title: "AI-powered detail extraction",
     copy: "Start from a source file and pull the event basics into a structured draft instead of copying them manually.",
   },

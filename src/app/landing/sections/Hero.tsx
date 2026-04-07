@@ -1,4 +1,4 @@
-import { ArrowRight, FileText, Sparkles, WandSparkles } from "lucide-react";
+import { ArrowRight, FileText, WandSparkles } from "lucide-react";
 import Link from "next/link";
 import GymnasticsMeetPreview from "@/components/landing/GymnasticsMeetPreview";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
@@ -19,7 +19,7 @@ export default function Hero() {
         <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:gap-16">
           <div className="max-w-3xl lg:pr-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#e7ddff] bg-white/86 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#6f57c8] shadow-[0_12px_28px_rgba(118,87,205,0.08)] backdrop-blur-sm">
-              <Sparkles className="h-4 w-4" />
+              <WandSparkles className="h-4 w-4" />
               AI event digitization
             </div>
 

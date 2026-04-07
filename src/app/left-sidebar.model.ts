@@ -212,7 +212,7 @@ export function createSidebarIconLookup(icons: Record<string, any>) {
     "General Event": icons.CalendarDays,
     "Gymnastics Schedule": icons.SidebarGymnasticsMenuIcon,
     Gymnastics: icons.SidebarGymnasticsMenuIcon,
-    Cheerleading: icons.Sparkles,
+    Cheerleading: icons.WandSparkles,
     "Dance / Ballet": icons.Footprints,
     Soccer: icons.Trophy,
     "Sport Events": icons.Trophy,

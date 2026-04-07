@@ -7,12 +7,12 @@ import {
   MessageSquare,
   Share2,
   Smartphone,
-  Sparkles,
+  WandSparkles,
 } from "lucide-react";
 
 const FEATURE_ROWS = [
   {
-    icon: Sparkles,
+    icon: WandSparkles,
     title: "Modern invite canvas",
     copy: "Upload a flyer or choose gradients—your details stay legible across desktop and mobile.",
   },

@@ -6,7 +6,6 @@ import {
   Home,
   MapPin,
   PartyPopper,
-  Sparkles,
   WandSparkles,
 } from "lucide-react";
 
@@ -35,14 +34,14 @@ function preset(
 export const STUDIO_WORKSPACE_PRESETS: Preset[] = [
   ...[
     preset("wedding-classic-romance", "Wedding", "Classic Romance", "Ivory, gold, and soft rose editorial.", Heart, "#fdf2f8", "#f59e0b"),
-    preset("wedding-modern-minimal", "Wedding", "Modern Minimal", "Clean monochrome with a single accent.", Sparkles, "#f8fafc", "#111827"),
+    preset("wedding-modern-minimal", "Wedding", "Modern Minimal", "Clean monochrome with a single accent.", WandSparkles, "#f8fafc", "#111827"),
     preset("wedding-garden-airy", "Wedding", "Garden Airy", "Greenery, linen, and daylight elegance.", Gift, "#dcfce7", "#f9a8d4"),
     preset("wedding-coastal-blue", "Wedding", "Coastal Blue", "Ocean blues with breezy resort polish.", PartyPopper, "#38bdf8", "#f8fafc"),
     preset("wedding-art-deco", "Wedding", "Art Deco Night", "Black, gold, and geometric glamour.", WandSparkles, "#111827", "#ca8a04"),
     preset("wedding-rustic-barn", "Wedding", "Rustic Barn", "Warm wood tones and wildflower charm.", Cake, "#92400e", "#fde68a"),
   ],
   ...[
-    preset("baby-soft-cloud", "Baby Shower", "Soft Cloud", "Powder blue, cream, and gentle balloons.", Sparkles, "#e0f2fe", "#fce7f3"),
+    preset("baby-soft-cloud", "Baby Shower", "Soft Cloud", "Powder blue, cream, and gentle balloons.", WandSparkles, "#e0f2fe", "#fce7f3"),
     preset("baby-botanical", "Baby Shower", "Botanical Neutral", "Sage greens with modern nursery calm.", Gift, "#bbf7d0", "#fef3c7"),
     preset("baby-storybook", "Baby Shower", "Storybook Pastel", "Watercolor storybook softness.", Heart, "#ddd6fe", "#fbcfe8"),
     preset("baby-teddy-classic", "Baby Shower", "Teddy Classic", "Warm browns with cozy plush cues.", PartyPopper, "#78350f", "#fde68a"),
@@ -51,7 +50,7 @@ export const STUDIO_WORKSPACE_PRESETS: Preset[] = [
   ],
   ...[
     preset("bridal-tea-rose", "Bridal Shower", "Tea Rose", "Blush florals and porcelain tea service.", Heart, "#fce7f3", "#fda4af"),
-    preset("bridal-champagne-brunch", "Bridal Shower", "Champagne Brunch", "Bubbly golds and brunch daylight.", Sparkles, "#fef9c3", "#f5d0fe"),
+    preset("bridal-champagne-brunch", "Bridal Shower", "Champagne Brunch", "Bubbly golds and brunch daylight.", WandSparkles, "#fef9c3", "#f5d0fe"),
     preset("bridal-garden-party", "Bridal Shower", "Garden Party", "Florals, trellis, and spring air.", Gift, "#86efac", "#f9a8d4"),
     preset("bridal-modern-muse", "Bridal Shower", "Modern Muse", "Sleek neutrals with a fashion edge.", PartyPopper, "#f4f4f5", "#a855f7"),
     preset("bridal-coastal-shower", "Bridal Shower", "Coastal Shower", "Sea glass tones with relaxed polish.", WandSparkles, "#99f6e4", "#e0e7ff"),
@@ -59,14 +58,14 @@ export const STUDIO_WORKSPACE_PRESETS: Preset[] = [
   ],
   ...[
     preset("house-open-door", "Housewarming", "Open Door", "Warm neutrals with welcoming light.", Home, "#fef3c7", "#fb923c"),
-    preset("house-urban-loft", "Housewarming", "Urban Loft", "Concrete-soft tones with modern plants.", Sparkles, "#e5e7eb", "#22c55e"),
+    preset("house-urban-loft", "Housewarming", "Urban Loft", "Concrete-soft tones with modern plants.", WandSparkles, "#e5e7eb", "#22c55e"),
     preset("house-backyard-bbq", "Housewarming", "Backyard BBQ", "Casual cookout reds and sunny yellows.", PartyPopper, "#dc2626", "#facc15"),
     preset("house-midnight-martini", "Housewarming", "Midnight Martini", "Deep blues with cocktail-lounge mood.", WandSparkles, "#1e3a8a", "#c4b5fd"),
     preset("house-scandi-calm", "Housewarming", "Scandi Calm", "Pale woods, soft gray, and hygge.", Gift, "#f5f5f4", "#d6d3d1"),
     preset("house-tropical-welcome", "Housewarming", "Tropical Welcome", "Palm greens with sunset warmth.", Heart, "#0f766e", "#fb923c"),
   ],
   ...[
-    preset("anni-silver-gala", "Anniversary", "Silver Gala", "Cool metallics with timeless polish.", Sparkles, "#e2e8f0", "#94a3b8"),
+    preset("anni-silver-gala", "Anniversary", "Silver Gala", "Cool metallics with timeless polish.", WandSparkles, "#e2e8f0", "#94a3b8"),
     preset("anni-golden-hour", "Anniversary", "Golden Hour", "Warm sunset golds for milestone nights.", Heart, "#fbbf24", "#fb7185"),
     preset("anni-vineyard-dinner", "Anniversary", "Vineyard Dinner", "Burgundy, cream, and candlelit tables.", Gift, "#7f1d1d", "#fef3c7"),
     preset("anni-jazz-night", "Anniversary", "Jazz Night", "Moody blues with brass highlights.", PartyPopper, "#1e3a8a", "#f59e0b"),
@@ -75,7 +74,7 @@ export const STUDIO_WORKSPACE_PRESETS: Preset[] = [
   ],
   ...[
     preset("field-museum-day", "Field Trip/Day", "Museum Day", "Curious blues with exhibit energy.", MapPin, "#2563eb", "#fde047"),
-    preset("field-nature-trail", "Field Trip/Day", "Nature Trail", "Forest greens with trail-day fun.", Sparkles, "#166534", "#84cc16"),
+    preset("field-nature-trail", "Field Trip/Day", "Nature Trail", "Forest greens with trail-day fun.", WandSparkles, "#166534", "#84cc16"),
     preset("field-aquarium-glow", "Field Trip/Day", "Aquarium Glow", "Teal depths with playful bubbles.", PartyPopper, "#0e7490", "#67e8f9"),
     preset("field-science-lab", "Field Trip/Day", "Science Lab", "Bright primaries with STEM spark.", Gift, "#7c3aed", "#22c55e"),
     preset("field-zoo-adventure", "Field Trip/Day", "Zoo Adventure", "Safari tones with friendly energy.", Heart, "#ca8a04", "#16a34a"),
@@ -83,7 +82,7 @@ export const STUDIO_WORKSPACE_PRESETS: Preset[] = [
   ],
   ...[
     preset("custom-editorial-mono", "Custom Invite", "Editorial Mono", "High-contrast monochrome editorial.", WandSparkles, "#fafafa", "#171717"),
-    preset("custom-neon-night", "Custom Invite", "Neon Night", "Electric gradients for after-dark events.", Sparkles, "#4c1d95", "#ec4899"),
+    preset("custom-neon-night", "Custom Invite", "Neon Night", "Electric gradients for after-dark events.", WandSparkles, "#4c1d95", "#ec4899"),
     preset("custom-paper-craft", "Custom Invite", "Paper Craft", "Craft textures with friendly color.", Gift, "#fef9c3", "#fb923c"),
     preset("custom-watercolor-wash", "Custom Invite", "Watercolor Wash", "Soft washes with hand-painted feel.", Heart, "#e0f2fe", "#fce7f3"),
     preset("custom-bold-poster", "Custom Invite", "Bold Poster", "Poster typography with punchy blocks.", PartyPopper, "#ef4444", "#111827"),

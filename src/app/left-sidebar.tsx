@@ -35,8 +35,8 @@ import {
   PartyPopper,
   Plus,
   ShieldCheck,
-  Sparkles,
   Stethoscope,
+  WandSparkles,
   Trophy,
   Upload,
   User,
@@ -235,8 +235,8 @@ const sidebarIconLookup = createSidebarIconLookup({
   PartyPopper,
   SidebarFootballMenuIcon,
   SidebarGymnasticsMenuIcon,
-  Sparkles,
   Stethoscope,
+  WandSparkles,
   Trophy,
   Upload,
 });
@@ -469,7 +469,7 @@ function RootNavigationPanel({
                 : SIDEBAR_ICON_CHIP_ACCENT_CLASS
             }`}
           >
-            <Sparkles size={18} />
+            <WandSparkles size={18} />
           </span>
           <span className="truncate">Studio</span>
         </Link>
@@ -575,7 +575,7 @@ function CreateMenuButton({
   onSelect: (label: string, href?: string) => void;
 }) {
   const Icon =
-    (sidebarIconLookup[item.label] as ComponentType<any>) || Sparkles;
+    (sidebarIconLookup[item.label] as ComponentType<any>) || WandSparkles;
   const colorClass = CREATE_SECTION_COLORS[index % CREATE_SECTION_COLORS.length];
   const activeAccent = getCreateMenuActiveAccent(item.label);
 
@@ -1056,7 +1056,7 @@ export default function LeftSidebar() {
     },
     {
       id: "studio" as const,
-      icon: Sparkles,
+      icon: WandSparkles,
       label: "Studio",
       href: "/studio",
       onClick: viewModel.goStudioFromSidebar,

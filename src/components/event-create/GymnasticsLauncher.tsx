@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Globe, Sparkles, Upload } from "lucide-react";
+import { ArrowRight, CheckCircle2, Globe, Upload, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -698,7 +698,7 @@ export default function GymnasticsLauncher({
             }`}
           >
             <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef0f5] text-[#8c94a8]">
-              <Sparkles className="h-5 w-5" />
+              <WandSparkles className="h-5 w-5" />
             </div>
             {selectedPath === "scratch" ? (
               <div className="-mt-16 mb-10 flex justify-end">
