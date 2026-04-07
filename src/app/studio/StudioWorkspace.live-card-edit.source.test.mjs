@@ -24,8 +24,9 @@ test("live card updates reuse the current image in the studio generation request
   );
   assert.match(
     source,
-    /url: response\.imageDataUrl \|\| existingItem\?\.url \|\| getFallbackThumbnail\(currentDetails\),/,
+    /response\.imageDataUrl \|\| existingItem\?\.url \|\| getFallbackThumbnail\(currentDetails\)/,
   );
+  assert.match(source, /persistStudioLibraryImageUrl/);
 });
 
 test("live card modal uses in-context image prompt panel; studio step still offers form-level image edit copy", () => {
@@ -35,9 +36,10 @@ test("live card modal uses in-context image prompt panel; studio step still offe
   assert.match(source, /function openLiveCardTextEdit\(item: MediaItem\)/);
   assert.match(
     source,
-    /renderEditImagePanel\(\s*activePageRecord,[\s\S]*Only the image updates/,
+    /renderEditImagePanel\(\s*page,[\s\S]*Only the image updates/,
   );
-  assert.match(source, /renderEditTextPanel\(activePageRecord\)/);
+  assert.match(source, /renderLiveCardPreviewTools\(activePageRecord\)/);
+  assert.match(source, /renderEditTextPanel\(page\)/);
   assert.match(source, />\s*Edit Text\s*</);
   assert.doesNotMatch(source, /openLiveCardEditor\(activePageRecord\)/);
   assert.match(source, /openLiveCardImageEdit=\{openLiveCardImageEdit\}/);
@@ -45,7 +47,7 @@ test("live card modal uses in-context image prompt panel; studio step still offe
   assert.match(source, /Edit current image/);
   assert.match(
     source,
-    /Update this live card by editing the current artwork in place while\s*applying your detail changes\./,
+    /Update this live card by editing the current artwork in place while applying[\s\S]*?your detail changes\./,
   );
   assert.match(
     source,

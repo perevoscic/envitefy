@@ -42,6 +42,20 @@ async function normalizeSharedCardImageUrl(value: unknown): Promise<string> {
   return raw;
 }
 
+function readGuestImageUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const entry of value) {
+    const s = readString(entry);
+    if (!s || seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+
 function buildFallbackInvitationData(data: Record<string, unknown>) {
   const eventDetailsRaw = isRecord(data.eventDetails) ? data.eventDetails : null;
   return {
@@ -67,6 +81,7 @@ function buildFallbackInvitationData(data: Record<string, unknown>) {
       rsvpContact: readString(eventDetailsRaw?.rsvpContact ?? data.rsvp),
       rsvpDeadline: readString(eventDetailsRaw?.rsvpDeadline ?? data.rsvpDeadline),
       detailsDescription: readString(eventDetailsRaw?.detailsDescription),
+      guestImageUrls: readGuestImageUrls(eventDetailsRaw?.guestImageUrls),
       message: readString(eventDetailsRaw?.message),
       registryLink:
         Array.isArray(data.registries) && data.registries[0] && isRecord(data.registries[0])

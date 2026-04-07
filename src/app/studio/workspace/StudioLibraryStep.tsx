@@ -109,7 +109,7 @@ export function StudioLibraryStep({
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-7 md:grid-cols-2 2xl:grid-cols-5">
+                <div className="grid grid-cols-2 gap-3 md:gap-7 md:grid-cols-2 2xl:grid-cols-5">
                   {mediaList.map((item) => (
                     <motion.div key={item.id} layoutId={item.id} className={mediaCardClass}>
                       <div className="relative aspect-[9/16] overflow-hidden">
@@ -236,7 +236,7 @@ export function StudioLibraryStep({
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                      <div className="space-y-1 px-6 py-5">
+                      <div className="space-y-1 px-6 py-5 max-md:px-3 max-md:py-4">
                         <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-neutral-900">
                           {getDisplayTitle(item.details)}
                         </h3>

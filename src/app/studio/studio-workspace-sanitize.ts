@@ -4,13 +4,6 @@ import {
   type StudioGenerateApiResponse,
   type StudioGenerationError,
 } from "@/lib/studio/types";
-import { EMPTY_POSITIONS, STUDIO_LIBRARY_LIMIT } from "./studio-workspace-field-config";
-import type {
-  EventDetails,
-  InvitationData,
-  InviteCategory,
-  MediaItem,
-} from "./studio-workspace-types";
 import {
   buildDescription,
   formatDate,
@@ -19,7 +12,21 @@ import {
   getThemeColors,
   pickFirst,
 } from "./studio-workspace-builders";
-import { isRecord, readNullableString, readString } from "./studio-workspace-utils";
+import { EMPTY_POSITIONS, STUDIO_LIBRARY_LIMIT } from "./studio-workspace-field-config";
+import type {
+  EventDetails,
+  InvitationData,
+  InviteCategory,
+  MediaItem,
+} from "./studio-workspace-types";
+import {
+  isRecord,
+  readNullableString,
+  readString,
+  sanitizeGuestImageUrls,
+} from "./studio-workspace-utils";
+
+export { STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
 
 export function createInitialDetails(): EventDetails {
   return {
@@ -34,6 +41,7 @@ export function createInitialDetails(): EventDetails {
     rsvpContact: "",
     rsvpDeadline: "",
     detailsDescription: "",
+    guestImageUrls: [],
     message: "",
     specialInstructions: "",
     orientation: "portrait",
@@ -213,6 +221,8 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
     typeof value.permissionSlipRequired === "boolean"
       ? value.permissionSlipRequired
       : details.permissionSlipRequired;
+
+  details.guestImageUrls = sanitizeGuestImageUrls(value.guestImageUrls);
 
   return details;
 }
@@ -403,7 +413,6 @@ export function restoreHydratedMediaItems(items: MediaItem[]): MediaItem[] {
     return item;
   });
 }
-
 
 export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateApiResponse | null {
   if (!isRecord(value)) return null;

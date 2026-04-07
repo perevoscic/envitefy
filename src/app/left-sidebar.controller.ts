@@ -813,7 +813,12 @@ export function useLeftSidebarController({
 
   const goStudioFromSidebar = useCallback(() => {
     resetSidebarToRoot();
-  }, [resetSidebarToRoot]);
+    try {
+      if (pathname !== "/studio") {
+        router.push("/studio");
+      }
+    } catch {}
+  }, [pathname, resetSidebarToRoot, router]);
 
   const handleRootSnapNavigate = useCallback(() => {
     resetSidebarToRoot();

@@ -10,3 +10,20 @@ export function readNullableString(value: unknown): string | null {
   const next = readString(value);
   return next || null;
 }
+
+/** Max guest-facing photos per live card (sanitize + UI). */
+export const STUDIO_GUEST_IMAGE_URL_MAX = 6;
+
+export function sanitizeGuestImageUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const entry of value) {
+    const s = readString(entry);
+    if (!s || seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+    if (out.length >= STUDIO_GUEST_IMAGE_URL_MAX) break;
+  }
+  return out;
+}

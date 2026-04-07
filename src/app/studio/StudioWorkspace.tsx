@@ -16,6 +16,7 @@ import {
   Mail,
   MapPin,
   MessageSquare,
+  PanelLeft,
   Phone,
   Share2,
   Trash2,
@@ -34,6 +35,7 @@ import {
 } from "@/lib/live-card-rsvp";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
+import type { StudioStep } from "./studio-types";
 import { requestStudioGeneration } from "./studio-workspace-api";
 import {
   accentClassForStudioRsvpChoice,
@@ -60,7 +62,6 @@ import {
   SHARED_BASICS,
 } from "./studio-workspace-field-config";
 import { createInitialDetails, sanitizeMediaItems } from "./studio-workspace-sanitize";
-import type { StudioStep } from "./studio-types";
 import type {
   ActiveTab,
   ButtonPosition,
@@ -68,17 +69,54 @@ import type {
   MediaItem,
   MediaType,
 } from "./studio-workspace-types";
-import { isRecord } from "./studio-workspace-utils";
 import {
   studioWorkspaceGhostIconButtonClass,
   studioWorkspaceMediaBadgeClass,
   studioWorkspaceMediaCardClass,
   studioWorkspaceShellClass,
 } from "./studio-workspace-ui-classes";
+import { isRecord, STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
 import { StudioCategoryStep } from "./workspace/StudioCategoryStep";
 import { StudioFormStep } from "./workspace/StudioFormStep";
 import { StudioLibraryStep } from "./workspace/StudioLibraryStep";
 import { useStudioMediaLibrary } from "./workspace/useStudioMediaLibrary";
+
+async function persistGuestImageUrlsForPublish(details: EventDetails): Promise<EventDetails> {
+  const urls = details.guestImageUrls;
+  if (!urls.length) return details;
+  const next: string[] = [];
+  for (let i = 0; i < urls.length; i++) {
+    const raw = clean(urls[i]);
+    if (!raw) continue;
+    const persisted = await persistImageMediaValue({
+      value: raw,
+      fileName: `studio-guest-${i + 1}.png`,
+      fallbackValue: raw,
+    });
+    next.push(persisted || raw);
+  }
+  return { ...details, guestImageUrls: next.slice(0, STUDIO_GUEST_IMAGE_URL_MAX) };
+}
+
+/** Upload data/blob URLs so library sync stays under remote payload limits and thumbnails work across devices. */
+async function persistStudioLibraryImageUrl(
+  item: MediaItem,
+  url: string | undefined,
+): Promise<string | undefined> {
+  const u = clean(url);
+  if (!u) return undefined;
+  try {
+    const persisted = await persistImageMediaValue({
+      value: u,
+      fileName: `${buildEventSlug(getStudioShareTitle(item)) || "studio-asset"}.png`,
+      fallbackValue: u,
+    });
+    return persisted || u;
+  } catch {
+    console.warn("[studio] failed to persist library image for sync");
+    return u;
+  }
+}
 
 export default function StudioWorkspace() {
   const { status: sessionStatus } = useSession();
@@ -97,9 +135,10 @@ export default function StudioWorkspace() {
   const [editPrompt, setEditPrompt] = useState("");
   const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
+  const [isLiveCardToolsDrawerOpen, setIsLiveCardToolsDrawerOpen] = useState(false);
 
   const editingMediaItem = useMemo(
-    () => (editingId ? mediaList.find((item) => item.id === editingId) ?? null : null),
+    () => (editingId ? (mediaList.find((item) => item.id === editingId) ?? null) : null),
     [editingId, mediaList],
   );
 
@@ -134,10 +173,28 @@ export default function StudioWorkspace() {
     [activePageRecord?.data?.eventDetails, activePageRecord?.data?.title],
   );
 
+  const studioGuestImageUrls = useMemo(() => {
+    const raw = activePageRecord?.data?.eventDetails?.guestImageUrls;
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter((u): u is string => typeof u === "string")
+      .map((u) => clean(u))
+      .filter(Boolean);
+  }, [activePageRecord?.data?.eventDetails?.guestImageUrls]);
+
   useEffect(() => {
     setEditPrompt("");
     setIsEditPanelOpen(false);
   }, [selectedImage?.id, activePageRecord?.id, editingMediaItem?.id]);
+
+  useEffect(() => {
+    if (!activePageRecord?.data) {
+      setIsLiveCardToolsDrawerOpen(false);
+      return;
+    }
+    if (typeof window === "undefined") return;
+    setIsLiveCardToolsDrawerOpen(window.matchMedia("(min-width: 768px)").matches);
+  }, [activePageRecord?.id, activePageRecord?.data]);
 
   useEffect(() => {
     if (details.category !== "Birthday") return;
@@ -241,7 +298,17 @@ export default function StudioWorkspace() {
       value: item.url,
       fileName: `${buildEventSlug(getStudioShareTitle(item)) || "studio-invite"}.png`,
     });
-    const payload = buildStudioPublishPayload(item, persistedImageUrl);
+
+    let publishItem = item;
+    if (item.data?.eventDetails) {
+      const eventDetails = await persistGuestImageUrlsForPublish(item.data.eventDetails);
+      publishItem = {
+        ...item,
+        data: { ...item.data, eventDetails },
+      };
+    }
+
+    const payload = buildStudioPublishPayload(publishItem, persistedImageUrl);
 
     const response = item.publishedEventId
       ? await fetch(`/api/history/${encodeURIComponent(item.publishedEventId)}`, {
@@ -273,6 +340,7 @@ export default function StudioWorkspace() {
     patchMediaItem(item.id, {
       publishedEventId: json.id,
       sharePath,
+      ...(publishItem.data ? { data: publishItem.data } : {}),
     });
     return sharePath;
   }
@@ -348,7 +416,7 @@ export default function StudioWorkspace() {
     const currentDetails = { ...details };
     const targetId = editingId ?? createId();
     const existingItem = editingId
-      ? mediaList.find((item) => item.id === editingId) ?? null
+      ? (mediaList.find((item) => item.id === editingId) ?? null)
       : null;
     const sourceImageDataUrl =
       type === "page" && existingItem?.type === "page" ? clean(existingItem.url) : "";
@@ -387,10 +455,16 @@ export default function StudioWorkspace() {
         sourceImageDataUrl ? editPrompt : undefined,
         sourceImageDataUrl || undefined,
       );
+      const rawUrl =
+        response.imageDataUrl || existingItem?.url || getFallbackThumbnail(currentDetails);
+      const persistedUrl = await persistStudioLibraryImageUrl(
+        { ...loadingItem, status: "ready", url: rawUrl },
+        rawUrl,
+      );
       const nextItem: MediaItem = {
         ...loadingItem,
         status: "ready",
-        url: response.imageDataUrl || existingItem?.url || getFallbackThumbnail(currentDetails),
+        url: persistedUrl || rawUrl,
         data: type === "page" ? buildInvitationData(currentDetails, response) : undefined,
         errorMessage: undefined,
       };
@@ -452,8 +526,13 @@ export default function StudioWorkspace() {
         sourceImageDataUrl,
       );
 
+      const rawEditUrl = response.imageDataUrl || item.url;
+      const persistedEditUrl = await persistStudioLibraryImageUrl(
+        { ...item, url: rawEditUrl },
+        rawEditUrl,
+      );
       patchMediaItem(item.id, {
-        url: response.imageDataUrl || item.url,
+        url: persistedEditUrl || rawEditUrl,
         status: "ready",
         errorMessage: undefined,
         sharePath: undefined,
@@ -562,6 +641,49 @@ export default function StudioWorkspace() {
           still need Edit Image, or refresh when you run Update Invitation.
         </p>
       </div>
+    );
+  }
+
+  function renderLiveCardPreviewTools(page: MediaItem) {
+    return (
+      <>
+        {renderEditImagePanel(
+          page,
+          "Describe how you want the card artwork to change. Only the image updates; event text, RSVP, and button placement stay the same unless you change them elsewhere.",
+        )}
+
+        {renderEditTextPanel(page)}
+
+        <div className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+              Design Mode
+            </p>
+            <p className="text-sm font-semibold text-white">
+              {isDesignMode ? "Button editing is on" : "Adjust card button placement"}
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-pressed={isDesignMode}
+            aria-label={isDesignMode ? "Turn off design mode" : "Turn on design mode"}
+            onClick={() => setIsDesignMode((prev) => !prev)}
+            className={`relative h-7 w-14 rounded-full transition-all ${isDesignMode ? "bg-purple-500" : "bg-neutral-700"}`}
+          >
+            <motion.div
+              animate={{ x: isDesignMode ? 28 : 4 }}
+              className="absolute top-1 h-5 w-5 rounded-full bg-white shadow-lg"
+            />
+          </button>
+        </div>
+
+        {isDesignMode ? (
+          <div className="pointer-events-auto rounded-2xl border border-purple-300/30 bg-black/35 px-4 py-3 text-sm text-white/90 backdrop-blur-md">
+            Drag the RSVP, Details, Location, Calendar, Share, and Registry buttons to move them
+            around the card. Turn Design Mode off when you're done.
+          </div>
+        ) : null}
+      </>
     );
   }
 
@@ -855,8 +977,8 @@ export default function StudioWorkspace() {
                         Edit current image
                       </label>
                       <p className="mb-3 text-sm leading-6 text-neutral-600">
-                        Update this live card by editing the current artwork in place while
-                        applying your detail changes.
+                        Update this live card by editing the current artwork in place while applying
+                        your detail changes.
                       </p>
                       <textarea
                         placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
@@ -918,7 +1040,7 @@ export default function StudioWorkspace() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-7 md:grid-cols-2 2xl:grid-cols-5">
+                <div className="grid grid-cols-2 gap-3 md:gap-7 md:grid-cols-2 2xl:grid-cols-5">
                   <AnimatePresence>
                     {mediaList.map((item) => (
                       <motion.div
@@ -1044,8 +1166,8 @@ export default function StudioWorkspace() {
                           </button>
                         </div>
 
-                        <div className="space-y-1 px-6 py-5">
-                          <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-neutral-900">
+                        <div className="space-y-1 px-6 py-5 max-md:px-3 max-md:py-4">
+                          <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-neutral-900 max-md:text-base">
                             {getStudioShareTitle(item)}
                           </h3>
                           <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
@@ -1148,50 +1270,71 @@ export default function StudioWorkspace() {
                 setActivePage(null);
                 setActiveTab("none");
                 setIsDesignMode(false);
+                setIsLiveCardToolsDrawerOpen(false);
               }}
-              className="absolute right-8 top-8 z-[110] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30"
+              className="absolute right-4 top-4 z-[110] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30 md:right-8 md:top-8"
             >
               <X className="h-6 w-6" />
             </button>
 
-            <div className="absolute right-4 top-20 z-[110] flex w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 md:right-8 md:top-24">
-              {renderEditImagePanel(
-                activePageRecord,
-                "Describe how you want the card artwork to change. Only the image updates; event text, RSVP, and button placement stay the same unless you change them elsewhere.",
-              )}
+            {!isLiveCardToolsDrawerOpen ? (
+              <button
+                type="button"
+                aria-label="Open studio tools"
+                onClick={() => setIsLiveCardToolsDrawerOpen(true)}
+                className="fixed left-3 top-20 z-[115] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-white/25 md:hidden"
+              >
+                <PanelLeft className="h-6 w-6" />
+              </button>
+            ) : null}
 
-              {renderEditTextPanel(activePageRecord)}
-
-              <div className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-                    Design Mode
-                  </p>
-                  <p className="text-sm font-semibold text-white">
-                    {isDesignMode ? "Button editing is on" : "Adjust card button placement"}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  aria-pressed={isDesignMode}
-                  aria-label={isDesignMode ? "Turn off design mode" : "Turn on design mode"}
-                  onClick={() => setIsDesignMode((prev) => !prev)}
-                  className={`relative h-7 w-14 rounded-full transition-all ${isDesignMode ? "bg-purple-500" : "bg-neutral-700"}`}
-                >
-                  <motion.div
-                    animate={{ x: isDesignMode ? 28 : 4 }}
-                    className="absolute top-1 h-5 w-5 rounded-full bg-white shadow-lg"
-                  />
-                </button>
-              </div>
-
-              {isDesignMode ? (
-                <div className="pointer-events-auto rounded-2xl border border-purple-300/30 bg-black/35 px-4 py-3 text-sm text-white/90 backdrop-blur-md">
-                  Drag the RSVP, Details, Location, Calendar, Share, and Registry buttons to move
-                  them around the card. Turn Design Mode off when you're done.
-                </div>
-              ) : null}
+            <div className="absolute right-4 top-20 z-[110] hidden w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 md:right-8 md:top-24 md:flex">
+              {renderLiveCardPreviewTools(activePageRecord)}
             </div>
+
+            <AnimatePresence>
+              {isLiveCardToolsDrawerOpen ? (
+                <motion.div
+                  key="live-card-tools-drawer"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-[112] md:hidden"
+                >
+                  <button
+                    type="button"
+                    aria-label="Close tools"
+                    className="absolute inset-0 bg-black/45"
+                    onClick={() => setIsLiveCardToolsDrawerOpen(false)}
+                  />
+                  <motion.aside
+                    initial={{ x: "-100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "-100%" }}
+                    transition={{ type: "tween", duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+                    className="absolute bottom-0 left-0 top-0 z-10 flex w-[min(22rem,88vw)] flex-col gap-3 overflow-y-auto border-r border-white/10 bg-neutral-950/97 p-4 pb-8 pt-14 shadow-2xl backdrop-blur-xl"
+                  >
+                    <div className="flex shrink-0 items-center justify-between border-b border-white/10 pb-3">
+                      <p className="text-xs font-bold uppercase tracking-widest text-white/70">
+                        Studio tools
+                      </p>
+                      <button
+                        type="button"
+                        aria-label="Close tools"
+                        onClick={() => setIsLiveCardToolsDrawerOpen(false)}
+                        className="rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    <div className="flex min-h-0 flex-1 flex-col gap-3">
+                      {renderLiveCardPreviewTools(activePageRecord)}
+                    </div>
+                  </motion.aside>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
@@ -1220,10 +1363,14 @@ export default function StudioWorkspace() {
                           <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
                               {activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
-                              {activeTab === "calendar" ? <CalendarDays className="h-5 w-5" /> : null}
+                              {activeTab === "calendar" ? (
+                                <CalendarDays className="h-5 w-5" />
+                              ) : null}
                               {activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
                               {activeTab === "rsvp" ? <MessageSquare className="h-5 w-5" /> : null}
-                              {activeTab === "details" ? <ClipboardList className="h-5 w-5" /> : null}
+                              {activeTab === "details" ? (
+                                <ClipboardList className="h-5 w-5" />
+                              ) : null}
                             </div>
                             <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
                               {activeTab === "location" ? "Event Location" : null}
@@ -1348,15 +1495,35 @@ export default function StudioWorkspace() {
                                   </p>
                                 </div>
                               ) : null}
+                              {studioGuestImageUrls.length > 0 ? (
+                                <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                                    Photos
+                                  </p>
+                                  <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
+                                    {studioGuestImageUrls.map((url) => (
+                                      <img
+                                        key={url}
+                                        src={url}
+                                        alt=""
+                                        className="h-28 w-28 shrink-0 rounded-xl object-cover"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : null}
                               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {Object.entries(activePageRecord.data.eventDetails)
                                   .filter(([key, value]) => {
                                     if (!value || typeof value === "boolean") return false;
+                                    if (Array.isArray(value)) return false;
                                     return ![
                                       "category",
                                       "name",
                                       "age",
                                       "detailsDescription",
+                                      "guestImageUrls",
                                       "eventDate",
                                       "startTime",
                                       "endTime",

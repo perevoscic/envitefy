@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   CalendarDays,
   CheckCircle2,
@@ -14,14 +13,15 @@ import {
   Share2,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardRsvpOutboundHref,
   LIVE_CARD_RSVP_CHOICES,
+  type LiveCardRsvpChoice,
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
-  type LiveCardRsvpChoice,
 } from "@/lib/live-card-rsvp";
 
 type ActiveTab = "none" | "location" | "calendar" | "registry" | "share" | "details" | "rsvp";
@@ -42,6 +42,7 @@ type EventDetails = {
   rsvpContact?: string;
   rsvpDeadline?: string;
   detailsDescription?: string;
+  guestImageUrls?: string[];
   message?: string;
   registryLink?: string;
   [key: string]: unknown;
@@ -123,8 +124,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   const rsvpContact = readString(details?.rsvpContact);
   const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
   const effectiveShareUrl =
-    readString(props.shareUrl) ||
-    (typeof window !== "undefined" ? window.location.href : "");
+    readString(props.shareUrl) || (typeof window !== "undefined" ? window.location.href : "");
   const buttonConfigs = useMemo(
     () =>
       [
@@ -211,6 +211,15 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
     [details, props.title],
   );
 
+  const displayGuestImageUrls = useMemo(() => {
+    const raw = details?.guestImageUrls;
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter((u): u is string => typeof u === "string")
+      .map((u) => readString(u))
+      .filter(Boolean);
+  }, [details?.guestImageUrls]);
+
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
@@ -236,268 +245,290 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
 
             <div className="pointer-events-none absolute inset-0 flex flex-col pt-8 pb-1 px-3 max-md:px-1 max-md:pt-6 max-md:pb-0 sm:px-4 md:p-8 md:pb-2">
               <div className="flex h-full min-h-0 flex-col justify-end">
-              {activeTab !== "none" && activeTab !== "share" ? (
-                <div className="pointer-events-auto absolute bottom-32 left-3 right-3 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl max-sm:left-2 max-sm:right-2 sm:left-5 sm:right-5 md:left-6 md:right-6">
-                  <div className="mb-4 flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
-                        {activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
-                        {activeTab === "calendar" ? <CalendarDays className="h-5 w-5" /> : null}
-                        {activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
-                        {activeTab === "rsvp" ? <MessageSquare className="h-5 w-5" /> : null}
-                        {activeTab === "details" ? <ClipboardList className="h-5 w-5" /> : null}
-                      </div>
-                      <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
-                        {activeTab === "location" ? "Event Location" : null}
-                        {activeTab === "calendar" ? "Add to Calendar" : null}
-                        {activeTab === "registry" ? "Gift Registry" : null}
-                        {activeTab === "rsvp" ? "RSVP" : null}
-                        {activeTab === "details" ? "Event Details" : null}
-                      </h4>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab("none")}
-                      className="rounded-full p-1 text-neutral-500 hover:bg-neutral-100"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {activeTab === "rsvp" ? (
-                      <div className="flex flex-col space-y-4">
-                        <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                          <p className="text-sm font-medium text-neutral-900">
-                            {readString(details?.rsvpName) || "Host"}
-                          </p>
-                          {readString(details?.rsvpContact) ? (
-                            <div>
-                              <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                RSVP contact
-                              </p>
-                              <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
-                                {rsvpParsed.kind === "email" ? (
-                                  <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
-                                ) : rsvpParsed.kind === "sms" ? (
-                                  <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
-                                ) : null}
-                                {readString(details?.rsvpContact)}
-                              </p>
-                            </div>
-                          ) : null}
-                          {readString(details?.rsvpDeadline) ? (
-                            <div>
-                              <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                RSVP deadline
-                              </p>
-                              <p className="text-sm text-red-600">
-                                {formatDate(readString(details?.rsvpDeadline))}
-                              </p>
-                            </div>
-                          ) : null}
+                {activeTab !== "none" && activeTab !== "share" ? (
+                  <div className="pointer-events-auto absolute bottom-32 left-3 right-3 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl max-sm:left-2 max-sm:right-2 sm:left-5 sm:right-5 md:left-6 md:right-6">
+                    <div className="mb-4 flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
+                          {activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
+                          {activeTab === "calendar" ? <CalendarDays className="h-5 w-5" /> : null}
+                          {activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
+                          {activeTab === "rsvp" ? <MessageSquare className="h-5 w-5" /> : null}
+                          {activeTab === "details" ? <ClipboardList className="h-5 w-5" /> : null}
                         </div>
-                        <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
-                          {LIVE_CARD_RSVP_CHOICES.map((choice) => {
-                            const href = buildLiveCardRsvpOutboundHref({
-                              rsvpContact,
-                              eventTitle: props.title,
-                              responseLabel: choice.label,
-                              shareUrl: effectiveShareUrl,
-                            });
-                            const accent = accentClassForRsvpChoice(choice.key);
-                            if (!href) {
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
+                          {activeTab === "location" ? "Event Location" : null}
+                          {activeTab === "calendar" ? "Add to Calendar" : null}
+                          {activeTab === "registry" ? "Gift Registry" : null}
+                          {activeTab === "rsvp" ? "RSVP" : null}
+                          {activeTab === "details" ? "Event Details" : null}
+                        </h4>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("none")}
+                        className="rounded-full p-1 text-neutral-500 hover:bg-neutral-100"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {activeTab === "rsvp" ? (
+                        <div className="flex flex-col space-y-4">
+                          <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                            <p className="text-sm font-medium text-neutral-900">
+                              {readString(details?.rsvpName) || "Host"}
+                            </p>
+                            {readString(details?.rsvpContact) ? (
+                              <div>
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                  RSVP contact
+                                </p>
+                                <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
+                                  {rsvpParsed.kind === "email" ? (
+                                    <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
+                                  ) : rsvpParsed.kind === "sms" ? (
+                                    <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
+                                  ) : null}
+                                  {readString(details?.rsvpContact)}
+                                </p>
+                              </div>
+                            ) : null}
+                            {readString(details?.rsvpDeadline) ? (
+                              <div>
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                  RSVP deadline
+                                </p>
+                                <p className="text-sm text-red-600">
+                                  {formatDate(readString(details?.rsvpDeadline))}
+                                </p>
+                              </div>
+                            ) : null}
+                          </div>
+                          <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
+                            {LIVE_CARD_RSVP_CHOICES.map((choice) => {
+                              const href = buildLiveCardRsvpOutboundHref({
+                                rsvpContact,
+                                eventTitle: props.title,
+                                responseLabel: choice.label,
+                                shareUrl: effectiveShareUrl,
+                              });
+                              const accent = accentClassForRsvpChoice(choice.key);
+                              if (!href) {
+                                return (
+                                  <button
+                                    key={choice.key}
+                                    type="button"
+                                    disabled
+                                    aria-disabled="true"
+                                    title={rsvpOutboundHint}
+                                    className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
+                                  >
+                                    {choice.label}
+                                  </button>
+                                );
+                              }
                               return (
-                                <button
+                                <a
                                   key={choice.key}
-                                  type="button"
-                                  disabled
-                                  aria-disabled="true"
-                                  title={rsvpOutboundHint}
-                                  className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
+                                  href={href}
+                                  className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
                                 >
                                   {choice.label}
-                                </button>
+                                </a>
                               );
-                            }
-                            return (
-                              <a
-                                key={choice.key}
-                                href={href}
-                                className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
-                              >
-                                {choice.label}
-                              </a>
-                            );
-                          })}
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ) : null}
+                      ) : null}
 
-                    {activeTab === "details" ? (
-                      <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
-                        {detailsWelcome ? (
-                          <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50 to-white p-4 shadow-sm">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-purple-700">
-                              Welcome
-                            </p>
-                            <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-900">
-                              {detailsWelcome}
-                            </p>
-                          </div>
-                        ) : null}
-                        {readString(details?.detailsDescription) ? (
-                          <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                              Event details
-                            </p>
-                            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
-                              {readString(details?.detailsDescription)}
-                            </p>
-                          </div>
-                        ) : null}
-                        {shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
-                        (readString(invitationData?.description) ||
-                          readString(details?.message)) ? (
-                          <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                              Description
-                            </p>
-                            <p className="mt-1 text-sm text-neutral-900">
-                              {readString(invitationData?.description) ||
-                                readString(details?.message)}
-                            </p>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
+                      {activeTab === "details" ? (
+                        <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
+                          {detailsWelcome ? (
+                            <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50 to-white p-4 shadow-sm">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-purple-700">
+                                Welcome
+                              </p>
+                              <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-900">
+                                {detailsWelcome}
+                              </p>
+                            </div>
+                          ) : null}
+                          {readString(details?.detailsDescription) ? (
+                            <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                                Event details
+                              </p>
+                              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
+                                {readString(details?.detailsDescription)}
+                              </p>
+                            </div>
+                          ) : null}
+                          {shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
+                          (readString(invitationData?.description) ||
+                            readString(details?.message)) ? (
+                            <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                Description
+                              </p>
+                              <p className="mt-1 text-sm text-neutral-900">
+                                {readString(invitationData?.description) ||
+                                  readString(details?.message)}
+                              </p>
+                            </div>
+                          ) : null}
+                          {displayGuestImageUrls.length > 0 ? (
+                            <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                                Photos
+                              </p>
+                              <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
+                                {displayGuestImageUrls.map((url) => (
+                                  <img
+                                    key={url}
+                                    src={url}
+                                    alt=""
+                                    className="h-28 w-28 shrink-0 rounded-xl object-cover"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
 
-                    {activeTab === "location" ? (
-                      <>
-                        <p className="text-sm font-medium text-neutral-900">
-                          {readString(details?.venueName) || readString(details?.location)}
-                        </p>
-                        <p className="text-xs text-neutral-500">{readString(details?.location)}</p>
-                        <p className="mt-2 text-xs text-neutral-500">
-                          {readString(details?.eventDate)
-                            ? formatDate(readString(details?.eventDate))
-                            : "Date TBD"}
-                          {readString(details?.startTime)
-                            ? ` at ${readString(details?.startTime)}`
-                            : ""}
-                        </p>
-                        {readString(details?.location) ? (
-                          <button
-                            onClick={() =>
-                              window.open(
-                                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(readString(details?.location))}`,
-                                "_blank",
-                              )
-                            }
-                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 py-2 text-xs font-bold text-white"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Open in Maps
-                          </button>
-                        ) : null}
-                      </>
-                    ) : null}
+                      {activeTab === "location" ? (
+                        <>
+                          <p className="text-sm font-medium text-neutral-900">
+                            {readString(details?.venueName) || readString(details?.location)}
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            {readString(details?.location)}
+                          </p>
+                          <p className="mt-2 text-xs text-neutral-500">
+                            {readString(details?.eventDate)
+                              ? formatDate(readString(details?.eventDate))
+                              : "Date TBD"}
+                            {readString(details?.startTime)
+                              ? ` at ${readString(details?.startTime)}`
+                              : ""}
+                          </p>
+                          {readString(details?.location) ? (
+                            <button
+                              onClick={() =>
+                                window.open(
+                                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(readString(details?.location))}`,
+                                  "_blank",
+                                )
+                              }
+                              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 py-2 text-xs font-bold text-white"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              Open in Maps
+                            </button>
+                          ) : null}
+                        </>
+                      ) : null}
 
-                    {activeTab === "calendar" ? (
-                      <>
-                        <p className="text-sm font-medium text-neutral-900">Save the Date</p>
-                        <p className="text-xs text-neutral-500">
-                          {readString(details?.eventDate)
-                            ? formatDate(readString(details?.eventDate))
-                            : "Date TBD"}
-                          {readString(details?.startTime)
-                            ? ` at ${readString(details?.startTime)}`
-                            : ""}
-                        </p>
-                        {buildGoogleCalendarUrl(props.title, invitationData) ? (
-                          <button
-                            onClick={() =>
-                              window.open(
-                                buildGoogleCalendarUrl(props.title, invitationData),
-                                "_blank",
-                              )
-                            }
-                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white"
-                          >
-                            <CalendarDays className="h-3 w-3" />
-                            Add to Google Calendar
-                          </button>
-                        ) : null}
-                      </>
-                    ) : null}
+                      {activeTab === "calendar" ? (
+                        <>
+                          <p className="text-sm font-medium text-neutral-900">Save the Date</p>
+                          <p className="text-xs text-neutral-500">
+                            {readString(details?.eventDate)
+                              ? formatDate(readString(details?.eventDate))
+                              : "Date TBD"}
+                            {readString(details?.startTime)
+                              ? ` at ${readString(details?.startTime)}`
+                              : ""}
+                          </p>
+                          {buildGoogleCalendarUrl(props.title, invitationData) ? (
+                            <button
+                              onClick={() =>
+                                window.open(
+                                  buildGoogleCalendarUrl(props.title, invitationData),
+                                  "_blank",
+                                )
+                              }
+                              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white"
+                            >
+                              <CalendarDays className="h-3 w-3" />
+                              Add to Google Calendar
+                            </button>
+                          ) : null}
+                        </>
+                      ) : null}
 
-                    {activeTab === "registry" ? (
-                      <>
-                        <p className="text-sm font-medium text-neutral-900">Gift Registry</p>
-                        <p className="text-xs text-neutral-500">{getRegistryText(details)}</p>
-                        {readString(details?.registryLink) ? (
-                          <button
-                            onClick={() => window.open(readString(details?.registryLink), "_blank")}
-                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-pink-600 py-2 text-xs font-bold text-white"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Visit Registry
-                          </button>
-                        ) : null}
-                      </>
-                    ) : null}
+                      {activeTab === "registry" ? (
+                        <>
+                          <p className="text-sm font-medium text-neutral-900">Gift Registry</p>
+                          <p className="text-xs text-neutral-500">{getRegistryText(details)}</p>
+                          {readString(details?.registryLink) ? (
+                            <button
+                              onClick={() =>
+                                window.open(readString(details?.registryLink), "_blank")
+                              }
+                              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-pink-600 py-2 text-xs font-bold text-white"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              Visit Registry
+                            </button>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
 
-              {/* Push controls toward the bottom edge so they clear typical caption / RSVP copy in the artwork */}
-              <div
-                className="pointer-events-none max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] shrink-0 md:min-h-[min(8svh,2.5rem)]"
-                aria-hidden
-              />
+                {/* Push controls toward the bottom edge so they clear typical caption / RSVP copy in the artwork */}
+                <div
+                  className="pointer-events-none max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] shrink-0 md:min-h-[min(8svh,2.5rem)]"
+                  aria-hidden
+                />
 
-              <div className="pointer-events-none z-20 flex w-full min-w-0 flex-nowrap items-end justify-center gap-2 overflow-x-auto pb-[max(0.35rem,calc(env(safe-area-inset-bottom)+0.15rem))] [scrollbar-width:none] [-ms-overflow-style:none] max-sm:justify-between max-sm:gap-0.5 max-sm:px-0 px-1 md:gap-4 md:px-2 [&::-webkit-scrollbar]:hidden">
-                {buttonConfigs
-                  .filter((button) => button.visible)
-                  .map((button) => {
-                    const Icon = button.icon;
-                    const position = props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
-                    return (
-                      <div
-                        key={button.key}
-                        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
-                        className="pointer-events-auto max-sm:min-w-0 max-sm:flex-1 max-sm:max-w-[20%] sm:flex-none sm:max-w-none"
-                      >
-                        <button
-                          onClick={button.onClick}
-                          className="group flex w-full flex-col items-center gap-1 md:gap-2"
+                <div className="pointer-events-none z-20 flex w-full min-w-0 flex-nowrap items-end justify-center gap-2 overflow-x-auto pb-[max(0.35rem,calc(env(safe-area-inset-bottom)+0.15rem))] [scrollbar-width:none] [-ms-overflow-style:none] max-sm:justify-between max-sm:gap-0.5 max-sm:px-0 px-1 md:gap-4 md:px-2 [&::-webkit-scrollbar]:hidden">
+                  {buttonConfigs
+                    .filter((button) => button.visible)
+                    .map((button) => {
+                      const Icon = button.icon;
+                      const position = props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+                      return (
+                        <div
+                          key={button.key}
+                          style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+                          className="pointer-events-auto max-sm:min-w-0 max-sm:flex-1 max-sm:max-w-[20%] sm:flex-none sm:max-w-none"
                         >
-                          <div
-                            className={`rounded-full border border-white/30 bg-white/20 p-2 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 md:p-3 ${
-                              (button.key === "rsvp" && activeTab === "rsvp") ||
-                              (button.key === "details" && activeTab === "details") ||
-                              (button.key === "location" && activeTab === "location") ||
-                              (button.key === "calendar" && activeTab === "calendar") ||
-                              (button.key === "registry" && activeTab === "registry")
-                                ? "border-white/50 bg-white/40"
-                                : ""
-                            }`}
+                          <button
+                            onClick={button.onClick}
+                            className="group flex w-full flex-col items-center gap-1 md:gap-2"
                           >
-                            <Icon
-                              className={`h-4 w-4 md:h-5 md:w-5 ${
-                                button.key === "share" && copySuccess
-                                  ? "text-green-400"
-                                  : "text-white"
+                            <div
+                              className={`rounded-full border border-white/30 bg-white/20 p-2 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 md:p-3 ${
+                                (button.key === "rsvp" && activeTab === "rsvp") ||
+                                (button.key === "details" && activeTab === "details") ||
+                                (button.key === "location" && activeTab === "location") ||
+                                (button.key === "calendar" && activeTab === "calendar") ||
+                                (button.key === "registry" && activeTab === "registry")
+                                  ? "border-white/50 bg-white/40"
+                                  : ""
                               }`}
-                            />
-                          </div>
-                          <span className="max-w-full truncate text-center text-[7px] font-bold uppercase tracking-tight text-white drop-shadow-md sm:text-[8px] sm:tracking-wider md:text-[9px] md:tracking-widest">
-                            {button.label}
-                          </span>
-                        </button>
-                      </div>
-                    );
-                  })}
-              </div>
+                            >
+                              <Icon
+                                className={`h-4 w-4 md:h-5 md:w-5 ${
+                                  button.key === "share" && copySuccess
+                                    ? "text-green-400"
+                                    : "text-white"
+                                }`}
+                              />
+                            </div>
+                            <span className="max-w-full truncate text-center text-[7px] font-bold uppercase tracking-tight text-white drop-shadow-md sm:text-[8px] sm:tracking-wider md:text-[9px] md:tracking-widest">
+                              {button.label}
+                            </span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
             </div>
           </div>

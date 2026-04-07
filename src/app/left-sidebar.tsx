@@ -856,6 +856,7 @@ function FooterProfileMenu({
   creditsAreKnown,
   creditsValue,
   footerMenuItems,
+  isCompact,
 }: {
   isOpen: boolean;
   menuOpen: boolean;
@@ -874,9 +875,14 @@ function FooterProfileMenu({
     colorClass: string;
     bgClass: string;
   }>;
+  isCompact: boolean;
 }) {
   return (
-    <div className="border-t border-slate-200 bg-[#f8f9fb] px-5 py-4">
+    <div
+      className={`border-t border-slate-200 bg-[#f8f9fb] px-5 py-4 ${
+        isCompact ? "pointer-events-none" : ""
+      }`}
+    >
       <div className="relative z-[900]">
         <button
           ref={buttonRef}
@@ -1039,10 +1045,14 @@ export default function LeftSidebar() {
     viewModel.sidebarPage === "eventContext"
       ? "translateX(0%)"
       : "translateX(100%)";
-  const panelStyle = (transform: string, isActive: boolean): CSSProperties => ({
+  const panelStyle = (
+    transform: string,
+    isActive: boolean,
+    isCompact: boolean
+  ): CSSProperties => ({
     ...panelTransitionStyle,
     transform,
-    pointerEvents: isActive ? "auto" : "none",
+    pointerEvents: isCompact ? "none" : isActive ? "auto" : "none",
     opacity: isActive ? 1 : 0,
   });
 
@@ -1210,7 +1220,11 @@ export default function LeftSidebar() {
         >
           <div className="relative h-full w-full overflow-hidden">
             <div className="absolute inset-0 z-[1] flex h-full flex-col bg-[#f8f9fb]">
-              <div className="relative z-10 flex-shrink-0 px-5 pb-3 pt-5">
+              <div
+                className={`relative z-10 flex-shrink-0 px-5 pb-3 pt-5 ${
+                  viewModel.isCompact ? "pointer-events-none" : ""
+                }`}
+              >
                 <div className={`relative ${SIDEBAR_CARD_CLASS} px-5 py-4`}>
                   <button
                     type="button"
@@ -1245,12 +1259,17 @@ export default function LeftSidebar() {
                   <div className={SIDEBAR_DIVIDER_CLASS} />
                 </div>
 
-                <div className="relative mt-1 min-h-0 flex-1 overflow-hidden">
+                <div
+                  className={`relative mt-1 min-h-0 flex-1 overflow-hidden ${
+                    viewModel.isCompact ? "pointer-events-none" : ""
+                  }`}
+                >
                   <div
                     className={`${SIDEBAR_PANEL_CLASS} z-[5]`}
                     style={panelStyle(
                       rootPanelTransform,
-                      viewModel.sidebarPage === "root"
+                      viewModel.sidebarPage === "root",
+                      viewModel.isCompact
                     )}
                     aria-hidden={viewModel.sidebarPage !== "root"}
                   >
@@ -1279,7 +1298,8 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[10]`}
                     style={panelStyle(
                       createEventPanelTransform,
-                      viewModel.sidebarPage === "createEvent"
+                      viewModel.sidebarPage === "createEvent",
+                      viewModel.isCompact
                     )}
                     aria-hidden={viewModel.sidebarPage !== "createEvent"}
                   >
@@ -1299,7 +1319,8 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[12]`}
                     style={panelStyle(
                       createEventOtherPanelTransform,
-                      viewModel.sidebarPage === "createEventOther"
+                      viewModel.sidebarPage === "createEventOther",
+                      viewModel.isCompact
                     )}
                     aria-hidden={viewModel.sidebarPage !== "createEventOther"}
                   >
@@ -1319,7 +1340,8 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[15]`}
                     style={panelStyle(
                       myEventsPanelTransform,
-                      viewModel.sidebarPage === "myEvents"
+                      viewModel.sidebarPage === "myEvents",
+                      viewModel.isCompact
                     )}
                     aria-hidden={viewModel.sidebarPage !== "myEvents"}
                   >
@@ -1342,7 +1364,8 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
-                      viewModel.sidebarPage === "invitedEvents"
+                      viewModel.sidebarPage === "invitedEvents",
+                      viewModel.isCompact
                     )}
                     aria-hidden={viewModel.sidebarPage !== "invitedEvents"}
                   >
@@ -1365,7 +1388,8 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_EVENT_PANEL_CLASS} z-[30]`}
                     style={panelStyle(
                       eventPanelTransform,
-                      viewModel.sidebarPage === "eventContext"
+                      viewModel.sidebarPage === "eventContext",
+                      viewModel.isCompact
                     )}
                     aria-hidden={viewModel.sidebarPage !== "eventContext"}
                   >
@@ -1398,6 +1422,7 @@ export default function LeftSidebar() {
                 creditsAreKnown={viewModel.creditsAreKnown}
                 creditsValue={viewModel.creditsValue}
                 footerMenuItems={viewModel.footerMenuItems}
+                isCompact={viewModel.isCompact}
               />
             </div>
           </div>
