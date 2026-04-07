@@ -8,16 +8,16 @@ function readSource(relPath) {
 }
 
 test("library hydration restores persisted loading items instead of leaving them spinning forever", () => {
-  const source = readSource("src/app/studio/StudioWorkspace.tsx");
+  const sanitize = readSource("src/app/studio/studio-workspace-sanitize.ts");
+  const hook = readSource("src/app/studio/workspace/useStudioMediaLibrary.ts");
 
-  assert.match(source, /function restoreHydratedMediaItems\(items: MediaItem\[\]\)/);
+  assert.match(sanitize, /export function restoreHydratedMediaItems\(items: MediaItem\[\]\)/);
+  assert.match(hook, /readLocalStorageItems/);
+  assert.match(hook, /\/api\/studio\/library/);
+  assert.match(hook, /mergeStudioLibraries/);
   assert.match(
-    source,
-    /setMediaList\(restoreHydratedMediaItems\(sanitizeMediaItems\(parsed\)\)\);/,
-  );
-  assert.match(
-    source,
+    sanitize,
     /if \(item\.status !== "loading" && item\.status !== "error"\) return item;/,
   );
-  assert.match(source, /status: "error",[\s\S]*Open it in the editor to generate it again\./);
+  assert.match(sanitize, /status: "error",[\s\S]*Open it in the editor to generate it again\./);
 });

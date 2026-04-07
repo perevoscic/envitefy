@@ -21,6 +21,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS ever_paid boolean;
 ALTER TABLE users ALTER COLUMN ever_paid SET DEFAULT false;
 -- Add credits column to store purchased/earned credits
 ALTER TABLE users ADD COLUMN IF NOT EXISTS credits integer;
+-- Studio workspace library (JSON); also ensured at runtime via db.ensureOnce
+ALTER TABLE users ADD COLUMN IF NOT EXISTS studio_library jsonb;
 -- Remove legacy scans_remaining column if present
 ALTER TABLE users DROP COLUMN IF EXISTS scans_remaining;
 

@@ -731,6 +731,51 @@ export async function updateFeatureVisibilityByEmail(params: {
   );
 }
 
+async function ensureUsersHasStudioLibraryColumn(): Promise<void> {
+  await ensureOnce("users_studio_library_column", async () => {
+    await query(`
+      alter table users add column if not exists studio_library jsonb;
+    `);
+  });
+}
+
+/** Versioned JSON stored in users.studio_library (items are client MediaItem-shaped JSON). */
+export type StudioLibraryPersistV1 = {
+  v: 1;
+  items: unknown[];
+};
+
+export async function getStudioLibraryByEmail(email: string): Promise<StudioLibraryPersistV1 | null> {
+  await ensureUsersHasStudioLibraryColumn();
+  const lower = email.toLowerCase();
+  const res = await query<{ studio_library: unknown }>(
+    `select studio_library
+       from users
+      where email = $1
+      limit 1`,
+    [lower],
+  );
+  const raw = res.rows[0]?.studio_library;
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const obj = raw as Record<string, unknown>;
+  if (obj.v !== 1 || !Array.isArray(obj.items)) return null;
+  return { v: 1, items: obj.items };
+}
+
+export async function updateStudioLibraryByEmail(params: {
+  email: string;
+  payload: StudioLibraryPersistV1;
+}): Promise<void> {
+  await ensureUsersHasStudioLibraryColumn();
+  const lower = params.email.toLowerCase();
+  await query(
+    `update users
+        set studio_library = $2::jsonb
+      where email = $1`,
+    [lower, JSON.stringify(params.payload)],
+  );
+}
+
 export async function createUserWithEmailPassword(params: {
   email: string;
   firstName?: string;

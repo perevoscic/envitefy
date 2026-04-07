@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import type { StudioCategoryDefinition, StudioStep } from "./studio-types";
 
-export const STUDIO_LIBRARY_STORAGE_KEY = "envitefy:studio:library:v1";
+/** Browser local cache for Studio library (same key historically used by the workspace). */
+export const STUDIO_LIBRARY_STORAGE_KEY = "envitefy_media";
 
 export const STUDIO_STEPS: Array<{ id: StudioStep; label: string }> = [
   { id: "category", label: "Category" },

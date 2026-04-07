@@ -8,34 +8,38 @@ function readSource(relPath) {
 }
 
 test("birthday presets resolve a single audience from birthday details", () => {
-  const source = readSource("src/app/studio/StudioWorkspace.tsx");
+  const builders = readSource("src/app/studio/studio-workspace-builders.ts");
+  const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
 
-  assert.match(source, /function inferBirthdayGenderFromName\(nameValue: string\)/);
-  assert.match(source, /function getBirthdayPresetAudience\(details: EventDetails\)/);
-  assert.match(source, /function buildBirthdayAudiencePresets\(/);
-  assert.match(source, /inferBirthdayGenderFromName\(details\.name\)/);
-  assert.match(source, /buildBirthdayAudiencePresets\(details\.age, audience, 12\)/);
-  assert.match(source, /return presets\.slice\(0, limit\);/);
-  assert.match(source, /const nextGender = inferBirthdayGenderFromName\(details\.name\) \|\| "Neutral";/);
+  assert.match(builders, /function inferBirthdayGenderFromName\(nameValue: string\)/);
+  assert.match(builders, /function getBirthdayPresetAudience\(details: EventDetails\)/);
+  assert.match(builders, /function buildBirthdayAudiencePresets\(/);
+  assert.match(builders, /buildBirthdayAudiencePresets\(details\.age, audience, 12\)/);
+  assert.match(builders, /return presets\.slice\(0, limit\);/);
+  assert.match(workspace, /const nextGender = inferBirthdayGenderFromName\(details\.name\) \|\| "Neutral";/);
   assert.match(
-    source,
-    /return audience\s*\?\s*buildBirthdayAudiencePresets\(details\.age, audience, 12\)\s*:\s*\[\.\.\.birthdayPresets\.female, \.\.\.birthdayPresets\.male\];/,
+    builders,
+    /return audience\s*\?[\s\S]*buildBirthdayAudiencePresets\(details\.age, audience, 12\)[\s\S]*:\s*\[\.\.\.birthdayPresets\.female, \.\.\.birthdayPresets\.male\];/,
   );
 });
 
 test("birthday form reads gender from the name field and falls back to a neutral split", () => {
-  const source = readSource("src/app/studio/StudioWorkspace.tsx");
-  const birthdaySectionMatch = source.match(/Birthday:\s*\[([\s\S]*?)\],\s*Wedding:/);
+  const fieldConfig = readSource("src/app/studio/studio-workspace-field-config.ts");
+  const studioUi = readSource("src/app/studio/StudioWorkspace.tsx");
+  const formStep = readSource("src/app/studio/workspace/StudioFormStep.tsx");
+  const combined = `${studioUi}\n${formStep}`;
+
+  const birthdaySectionMatch = fieldConfig.match(/Birthday:\s*\[([\s\S]*?)\],\s*Wedding:/);
 
   assert.ok(birthdaySectionMatch, "Expected to find the Birthday field configuration block.");
   const birthdaySection = birthdaySectionMatch[1];
 
   assert.doesNotMatch(birthdaySection, /label: "Boy \/ Girl \/ Neutral"/);
-  assert.match(source, /Showing 12/);
-  assert.match(source, /birthdayPresetAudience === "female" \? "girl" : "boy"/);
+  assert.match(combined, /Showing 12/);
+  assert.match(combined, /birthdayPresetAudience === "female" \? "girl" : "boy"/);
   assert.match(
-    source,
-    /return audience[\s\S]*:\s*\[\.\.\.birthdayPresets\.female, \.\.\.birthdayPresets\.male\];/,
+    readSource("src/app/studio/studio-workspace-builders.ts"),
+    /return audience\s*\?[\s\S]*:\s*\[\.\.\.birthdayPresets\.female, \.\.\.birthdayPresets\.male\];/,
   );
-  assert.doesNotMatch(source, /\(\[\{ key: "female" \}, \{ key: "male" \}\] as const\)\.map/);
+  assert.doesNotMatch(combined, /\(\[\{ key: "female" \}, \{ key: "male" \}\] as const\)\.map/);
 });
