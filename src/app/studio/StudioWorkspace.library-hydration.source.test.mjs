@@ -15,6 +15,9 @@ test("library hydration restores persisted loading items instead of leaving them
     source,
     /setMediaList\(restoreHydratedMediaItems\(sanitizeMediaItems\(parsed\)\)\);/,
   );
-  assert.match(source, /if \(item\.status !== "loading"\) return item;/);
+  assert.match(
+    source,
+    /if \(item\.status !== "loading" && item\.status !== "error"\) return item;/,
+  );
   assert.match(source, /status: "error",[\s\S]*Open it in the editor to generate it again\./);
 });

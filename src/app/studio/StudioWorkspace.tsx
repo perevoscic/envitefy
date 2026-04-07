@@ -32,7 +32,7 @@ import {
   WandSparkles,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   normalizeInvitationText,
   normalizeLiveCardMetadata,
@@ -41,6 +41,12 @@ import {
   type StudioGenerateRequest,
   type StudioGenerationError,
 } from "@/lib/studio/types";
+import {
+  buildLiveCardRsvpOutboundHref,
+  LIVE_CARD_RSVP_CHOICES,
+  parseLiveCardRsvpContact,
+  type LiveCardRsvpChoice,
+} from "@/lib/live-card-rsvp";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 
@@ -1352,30 +1358,84 @@ function sanitizeMediaItems(value: unknown): MediaItem[] {
     .slice(0, STUDIO_LIBRARY_LIMIT);
 }
 
+/** True when url is a real asset, not the synthetic theme/SVG fallback used for empty previews. */
+function isNonFallbackStudioThumbnailUrl(
+  url: string | undefined,
+  details: EventDetails,
+): boolean {
+  const u = readNullableString(url);
+  if (!u) return false;
+  return u !== getFallbackThumbnail(details);
+}
+
+function extractHistoryStudioImageUrl(row: unknown): string | null {
+  if (!isRecord(row)) return null;
+  const data = isRecord(row.data) ? row.data : null;
+  if (!data) return null;
+  const studioCard = isRecord(data.studioCard) ? data.studioCard : null;
+  const candidates = [
+    readString(data.coverImageUrl),
+    studioCard ? readString(studioCard.imageUrl) : "",
+    readString(data.customHeroImage),
+    readString(data.heroImage),
+    readString(data.thumbnail),
+  ];
+  for (const c of candidates) {
+    if (c) return c;
+  }
+  return null;
+}
+
+function extractHistoryStudioInvitationData(
+  row: unknown,
+  fallbackDetails: EventDetails,
+): InvitationData | undefined {
+  if (!isRecord(row)) return undefined;
+  const data = isRecord(row.data) ? row.data : null;
+  const studioCard = data && isRecord(data.studioCard) ? data.studioCard : null;
+  const raw = studioCard?.invitationData;
+  if (!raw || !isRecord(raw)) return undefined;
+  return sanitizeInvitationData(raw, fallbackDetails);
+}
+
 function restoreHydratedMediaItems(items: MediaItem[]): MediaItem[] {
   return items.map((item) => {
-    if (item.status !== "loading") return item;
+    if (item.status !== "loading" && item.status !== "error") return item;
 
     const fallbackUrl = item.url || getFallbackThumbnail(item.details);
+    const nonFallbackImage = isNonFallbackStudioThumbnailUrl(item.url, item.details);
+
     const canRecoverReadyState =
-      (item.type === "image" && Boolean(item.url)) || (item.type === "page" && Boolean(item.data));
+      (item.type === "image" && Boolean(item.url)) ||
+      (item.type === "page" && Boolean(item.data)) ||
+      (item.type === "page" && nonFallbackImage);
 
     if (canRecoverReadyState) {
+      const nextData =
+        item.type === "page" && !item.data && nonFallbackImage
+          ? sanitizeInvitationData({}, item.details)
+          : item.data;
+
       return {
         ...item,
         status: "ready",
-        url: fallbackUrl,
+        url: item.url || getFallbackThumbnail(item.details),
+        ...(item.type === "page" && nextData !== undefined ? { data: nextData } : {}),
         errorMessage: undefined,
       };
     }
 
-    return {
-      ...item,
-      status: "error",
-      url: fallbackUrl,
-      errorMessage:
-        "This item was still generating when Studio closed. Open it in the editor to generate it again.",
-    };
+    if (item.status === "loading") {
+      return {
+        ...item,
+        status: "error",
+        url: fallbackUrl,
+        errorMessage:
+          "This item was still generating when Studio closed. Open it in the editor to generate it again.",
+      };
+    }
+
+    return item;
   });
 }
 
@@ -1531,68 +1591,15 @@ function hasRegistryContent(details: EventDetails) {
   );
 }
 
-const RSVP_ACTION_OPTIONS = [
-  { label: "Yes", accentClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-  { label: "No", accentClassName: "border-rose-200 bg-rose-50 text-rose-700" },
-  { label: "Maybe", accentClassName: "border-amber-200 bg-amber-50 text-amber-700" },
-] as const;
-
-function extractEmail(value: string) {
-  return value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+function accentClassForStudioRsvpChoice(choice: LiveCardRsvpChoice["key"]) {
+  if (choice === "yes") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (choice === "no") return "border-rose-200 bg-rose-50 text-rose-700";
+  return "border-amber-200 bg-amber-50 text-amber-700";
 }
 
-function extractPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length < 7 || digits.length > 15) return "";
-  return `${value.trim().startsWith("+") ? "+" : ""}${digits}`;
-}
-
-function getRsvpContactMetadata(contact: string) {
-  const email = extractEmail(contact);
-  if (email) {
-    return {
-      kind: "email" as const,
-      icon: Mail,
-      actionLabel: "Opens email",
-      directHref: `mailto:${email}`,
-      value: email,
-    };
-  }
-
-  const phone = extractPhone(contact);
-  if (phone) {
-    return {
-      kind: "sms" as const,
-      icon: Phone,
-      actionLabel: "Opens text messages",
-      directHref: `sms:${phone}`,
-      value: phone,
-    };
-  }
-
-  return {
-    kind: "none" as const,
-    icon: null,
-    actionLabel: "",
-    directHref: "",
-    value: contact,
-  };
-}
-
-function buildRsvpResponseHref(contact: string, eventTitle: string, responseLabel: string) {
-  const metadata = getRsvpContactMetadata(contact);
-  const subject = encodeURIComponent(`RSVP for ${eventTitle}`);
-  const body = encodeURIComponent(`Hi! My RSVP for ${eventTitle}: ${responseLabel}.`);
-
-  if (metadata.kind === "email") {
-    return `mailto:${metadata.value}?subject=${subject}&body=${body}`;
-  }
-
-  if (metadata.kind === "sms") {
-    return `sms:${metadata.value}?body=${body}`;
-  }
-
-  return "";
+function getAbsoluteShareUrl(sharePath: string): string {
+  if (typeof window === "undefined") return sharePath;
+  return new URL(sharePath, window.location.origin).toString();
 }
 
 function getFallbackThumbnail(details: EventDetails) {
@@ -2251,6 +2258,8 @@ export default function StudioWorkspace() {
   const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
 
+  const studioHistorySyncAttemptedRef = useRef(new Set<string>());
+
   const editingMediaItem = useMemo(
     () => (editingId ? mediaList.find((item) => item.id === editingId) ?? null : null),
     [editingId, mediaList],
@@ -2264,7 +2273,17 @@ export default function StudioWorkspace() {
     [activePage, mediaList],
   );
   const activePageRsvpContact = clean(activePageRecord?.data?.eventDetails.rsvpContact);
-  const activePageRsvpContactMetadata = getRsvpContactMetadata(activePageRsvpContact);
+  const activePageRsvpParsed = parseLiveCardRsvpContact(activePageRsvpContact);
+  const studioPreviewShareUrl = useMemo(() => {
+    const path = activePageRecord?.sharePath;
+    return path?.startsWith("/card/") ? getAbsoluteShareUrl(path) : "";
+  }, [activePageRecord?.sharePath]);
+  const studioRsvpOutboundHint =
+    activePageRsvpParsed.kind === "email"
+      ? "Tap a response to open your email with a draft message."
+      : activePageRsvpParsed.kind === "sms"
+        ? "Tap a response to open your messages app with a draft text."
+        : "Add a phone number or email as the RSVP contact to send a reply from here.";
 
   useEffect(() => {
     try {
@@ -2357,6 +2376,81 @@ export default function StudioWorkspace() {
     }
   }
 
+  useEffect(() => {
+    let active = true;
+
+    async function syncFromPublishedHistory() {
+      for (const item of mediaList) {
+        if (!active) return;
+        if (item.status !== "error" && item.status !== "loading") continue;
+        const pubId = item.publishedEventId?.trim();
+        if (!pubId) continue;
+
+        const nonFallbackImage = isNonFallbackStudioThumbnailUrl(item.url, item.details);
+        const needsImage = !nonFallbackImage || !clean(item.url);
+        const needsPageData = item.type === "page" && !item.data;
+        if (!needsImage && !needsPageData) continue;
+
+        const syncKey = `${item.id}:${pubId}`;
+        if (studioHistorySyncAttemptedRef.current.has(syncKey)) continue;
+        studioHistorySyncAttemptedRef.current.add(syncKey);
+
+        try {
+          const res = await fetch(`/api/history/${encodeURIComponent(pubId)}`, {
+            credentials: "include",
+          });
+          if (!active) {
+            studioHistorySyncAttemptedRef.current.delete(syncKey);
+            return;
+          }
+          if (!res.ok) {
+            studioHistorySyncAttemptedRef.current.delete(syncKey);
+            continue;
+          }
+          const row: unknown = await res.json();
+          const imageUrl = extractHistoryStudioImageUrl(row);
+          if (!active) {
+            studioHistorySyncAttemptedRef.current.delete(syncKey);
+            return;
+          }
+          if (!imageUrl) {
+            studioHistorySyncAttemptedRef.current.delete(syncKey);
+            continue;
+          }
+
+          const invitationFromHistory =
+            item.type === "page"
+              ? extractHistoryStudioInvitationData(row, item.details) ||
+                sanitizeInvitationData({}, item.details)
+              : undefined;
+
+          setMediaList((prev) =>
+            sanitizeMediaItems(
+              prev.map((entry) => {
+                if (entry.id !== item.id) return entry;
+                if (entry.status !== "error" && entry.status !== "loading") return entry;
+                return {
+                  ...entry,
+                  status: "ready",
+                  url: imageUrl,
+                  ...(invitationFromHistory ? { data: invitationFromHistory } : {}),
+                  errorMessage: undefined,
+                };
+              }),
+            ),
+          );
+        } catch {
+          if (active) studioHistorySyncAttemptedRef.current.delete(syncKey);
+        }
+      }
+    }
+
+    void syncFromPublishedHistory();
+    return () => {
+      active = false;
+    };
+  }, [mediaList]);
+
   function openLiveCardEditor(item: MediaItem) {
     setDetails(item.details);
     setEditingId(item.id);
@@ -2367,11 +2461,6 @@ export default function StudioWorkspace() {
     setIsDesignMode(false);
     setActivePage(null);
     setStep("form");
-  }
-
-  function getAbsoluteShareUrl(sharePath: string): string {
-    if (typeof window === "undefined") return sharePath;
-    return new URL(sharePath, window.location.origin).toString();
   }
 
   async function ensurePublicSharePath(item: MediaItem): Promise<string> {
@@ -3935,7 +4024,7 @@ export default function StudioWorkspace() {
                               {activeTab === "location" ? "Event Location" : null}
                               {activeTab === "calendar" ? "Add to Calendar" : null}
                               {activeTab === "registry" ? "Gift Registry" : null}
-                              {activeTab === "rsvp" ? "RSVP Info" : null}
+                              {activeTab === "rsvp" ? "RSVP" : null}
                               {activeTab === "details" ? "Event Details" : null}
                             </h4>
                           </div>
@@ -3950,82 +4039,85 @@ export default function StudioWorkspace() {
                         <div className="space-y-3">
                           {activeTab === "rsvp" ? (
                             <div className="space-y-4">
-                              <p className="text-sm font-bold uppercase tracking-widest text-green-600">
-                                RSVP Details
-                              </p>
-                              <p className="text-sm leading-6 text-neutral-700">
-                                {activePageRecord.data.interactiveMetadata.rsvpMessage ||
-                                  "Reply to let the host know you're coming."}
-                              </p>
-                              <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                                <div>
-                                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                    Host / RSVP Contact
-                                  </p>
-                                  <p className="text-sm font-medium text-neutral-900">
-                                    {activePageRecord.data.eventDetails.rsvpName || "Host"}
-                                  </p>
-                                </div>
-                                {activePageRecord.data.eventDetails.rsvpContact ? (
+                              <p className="text-sm leading-6 text-neutral-700">{studioRsvpOutboundHint}</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {LIVE_CARD_RSVP_CHOICES.map((choice) => {
+                                  const href = buildLiveCardRsvpOutboundHref({
+                                    rsvpContact: activePageRsvpContact,
+                                    eventTitle: activePageRecord.data.title || "Event",
+                                    responseLabel: choice.label,
+                                    shareUrl: studioPreviewShareUrl,
+                                  });
+                                  const accent = accentClassForStudioRsvpChoice(choice.key);
+                                  if (!href) {
+                                    return (
+                                      <button
+                                        key={choice.key}
+                                        type="button"
+                                        disabled
+                                        aria-disabled="true"
+                                        title={studioRsvpOutboundHint}
+                                        className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
+                                      >
+                                        {choice.label}
+                                      </button>
+                                    );
+                                  }
+                                  return (
+                                    <a
+                                      key={choice.key}
+                                      href={href}
+                                      className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
+                                    >
+                                      {choice.label}
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                              <div className="space-y-3 border-t border-neutral-100 pt-4">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                  Host &amp; RSVP details
+                                </p>
+                                <p className="text-sm leading-6 text-neutral-600">
+                                  {activePageRecord.data.interactiveMetadata.rsvpMessage ||
+                                    "Reply to let the host know you're coming."}
+                                </p>
+                                <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
                                   <div>
                                     <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                      Contact Info
+                                      Host / RSVP contact name
                                     </p>
-                                    {activePageRsvpContactMetadata.directHref ? (
-                                      <a
-                                        href={activePageRsvpContactMetadata.directHref}
-                                        className="inline-flex items-center gap-2 text-sm font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-4 transition hover:text-neutral-700"
-                                      >
-                                        {activePageRsvpContactMetadata.icon ? (
-                                          <activePageRsvpContactMetadata.icon className="h-4 w-4 text-neutral-500" />
+                                    <p className="text-sm font-medium text-neutral-900">
+                                      {activePageRecord.data.eventDetails.rsvpName || "Host"}
+                                    </p>
+                                  </div>
+                                  {activePageRecord.data.eventDetails.rsvpContact ? (
+                                    <div>
+                                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                        RSVP contact
+                                      </p>
+                                      <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
+                                        {activePageRsvpParsed.kind === "email" ? (
+                                          <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
+                                        ) : activePageRsvpParsed.kind === "sms" ? (
+                                          <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
                                         ) : null}
                                         {activePageRecord.data.eventDetails.rsvpContact}
-                                      </a>
-                                    ) : (
-                                      <p className="text-sm text-neutral-700">
-                                        {activePageRecord.data.eventDetails.rsvpContact}
                                       </p>
-                                    )}
-                                    {activePageRsvpContactMetadata.actionLabel ? (
-                                      <p className="mt-2 text-[11px] font-medium text-neutral-500">
-                                        {activePageRsvpContactMetadata.actionLabel}
+                                    </div>
+                                  ) : null}
+                                  {activePageRecord.data.eventDetails.rsvpDeadline ? (
+                                    <div>
+                                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                        RSVP deadline
                                       </p>
-                                    ) : null}
-                                  </div>
-                                ) : null}
-                                {activePageRecord.data.eventDetails.rsvpDeadline ? (
-                                  <div>
-                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                      RSVP Deadline
-                                    </p>
-                                    <p className="text-sm text-red-600">
-                                      {formatDate(activePageRecord.data.eventDetails.rsvpDeadline)}
-                                    </p>
-                                  </div>
-                                ) : null}
-                              </div>
-                              {activePageRsvpContactMetadata.kind !== "none" ? (
-                                <div className="space-y-2">
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                    Quick Reply
-                                  </p>
-                                  <div className="grid grid-cols-3 gap-2">
-                                    {RSVP_ACTION_OPTIONS.map((option) => (
-                                      <a
-                                        key={option.label}
-                                        href={buildRsvpResponseHref(
-                                          activePageRsvpContact,
-                                          activePageRecord.data.title || "Event",
-                                          option.label,
-                                        )}
-                                        className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${option.accentClassName}`}
-                                      >
-                                        {option.label}
-                                      </a>
-                                    ))}
-                                  </div>
+                                      <p className="text-sm text-red-600">
+                                        {formatDate(activePageRecord.data.eventDetails.rsvpDeadline)}
+                                      </p>
+                                    </div>
+                                  ) : null}
                                 </div>
-                              ) : null}
+                              </div>
                             </div>
                           ) : null}
 

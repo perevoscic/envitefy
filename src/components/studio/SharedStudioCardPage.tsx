@@ -15,6 +15,12 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+  buildLiveCardRsvpOutboundHref,
+  LIVE_CARD_RSVP_CHOICES,
+  parseLiveCardRsvpContact,
+  type LiveCardRsvpChoice,
+} from "@/lib/live-card-rsvp";
 
 type ActiveTab = "none" | "location" | "calendar" | "registry" | "share" | "details" | "rsvp";
 
@@ -101,68 +107,10 @@ function buildGoogleCalendarUrl(title: string, invitationData?: InvitationData |
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&details=${description}&location=${location}&dates=${eventDate}/${eventDate}`;
 }
 
-const RSVP_ACTION_OPTIONS = [
-  { label: "Yes", accentClassName: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-  { label: "No", accentClassName: "border-rose-200 bg-rose-50 text-rose-700" },
-  { label: "Maybe", accentClassName: "border-amber-200 bg-amber-50 text-amber-700" },
-] as const;
-
-function extractEmail(value: string) {
-  return value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
-}
-
-function extractPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length < 7 || digits.length > 15) return "";
-  return `${value.trim().startsWith("+") ? "+" : ""}${digits}`;
-}
-
-function getRsvpContactMetadata(contact: string) {
-  const email = extractEmail(contact);
-  if (email) {
-    return {
-      kind: "email" as const,
-      icon: Mail,
-      actionLabel: "Opens email",
-      directHref: `mailto:${email}`,
-      value: email,
-    };
-  }
-
-  const phone = extractPhone(contact);
-  if (phone) {
-    return {
-      kind: "sms" as const,
-      icon: Phone,
-      actionLabel: "Opens text messages",
-      directHref: `sms:${phone}`,
-      value: phone,
-    };
-  }
-
-  return {
-    kind: "none" as const,
-    icon: null,
-    actionLabel: "",
-    directHref: "",
-    value: contact,
-  };
-}
-
-function buildRsvpResponseHref(contact: string, eventTitle: string, responseLabel: string) {
-  const metadata = getRsvpContactMetadata(contact);
-  const subject = encodeURIComponent(`RSVP for ${eventTitle}`);
-  const body = encodeURIComponent(`Hi! My RSVP for ${eventTitle}: ${responseLabel}.`);
-
-  if (metadata.kind === "email") {
-    return `mailto:${metadata.value}?subject=${subject}&body=${body}`;
-  }
-
-  if (metadata.kind === "sms") {
-    return `sms:${metadata.value}?body=${body}`;
-  }
-
-  return "";
+function accentClassForRsvpChoice(choice: LiveCardRsvpChoice["key"]) {
+  if (choice === "yes") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (choice === "no") return "border-rose-200 bg-rose-50 text-rose-700";
+  return "border-amber-200 bg-amber-50 text-amber-700";
 }
 
 export default function SharedStudioCardPage(props: SharedStudioCardProps) {
@@ -170,17 +118,11 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   const [copySuccess, setCopySuccess] = useState(false);
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
-  const safeAreaStyle = {
-    paddingTop: "env(safe-area-inset-top)",
-    paddingRight: "max(env(safe-area-inset-right), 1rem)",
-    paddingBottom: "max(env(safe-area-inset-bottom), 1rem)",
-    paddingLeft: "max(env(safe-area-inset-left), 1rem)",
-  };
-  const buttonRailStyle = {
-    paddingBottom: "calc(env(safe-area-inset-bottom) + 1.35rem)",
-  };
   const rsvpContact = readString(details?.rsvpContact);
-  const rsvpContactMetadata = getRsvpContactMetadata(rsvpContact);
+  const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
+  const effectiveShareUrl =
+    readString(props.shareUrl) ||
+    (typeof window !== "undefined" ? window.location.href : "");
   const buttonConfigs = useMemo(
     () =>
       [
@@ -255,10 +197,16 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
     [activeTab, copySuccess, details, invitationData, props.shareUrl, props.title],
   );
 
+  const rsvpOutboundHint =
+    rsvpParsed.kind === "email"
+      ? "Tap a response to open your email with a draft message."
+      : rsvpParsed.kind === "sms"
+        ? "Tap a response to open your messages app with a draft text."
+        : "Add a phone number or email as the RSVP contact to send a reply from here.";
+
   return (
-    <div className="min-h-screen min-h-[100svh] min-h-[100dvh] w-full bg-neutral-950">
-      <main className="relative h-screen h-[100svh] h-[100dvh] w-full overflow-hidden bg-neutral-950">
-      <div className="absolute inset-0">
+    <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
         <img
           src={props.imageUrl}
           alt=""
@@ -269,21 +217,20 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_rgba(10,10,10,0.24)_30%,_rgba(10,10,10,0.82)_100%)]" />
       </div>
 
-      <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
-        <div className="relative h-full w-full overflow-hidden bg-neutral-900 shadow-2xl shadow-black/30">
-          <img
-            src={props.imageUrl}
-            alt={props.title}
-            className="absolute inset-0 h-full w-full object-contain"
-            referrerPolicy="no-referrer"
-          />
+      <main className="relative z-0 flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-2 max-md:justify-start max-md:pt-[max(0.25rem,env(safe-area-inset-top))] md:py-6">
+          <div className="relative mx-auto w-full max-w-md max-h-[calc(100dvh-5.5rem)] aspect-[9/16] overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-purple-500/20">
+            <img
+              src={props.imageUrl}
+              alt={props.title}
+              className="absolute inset-0 h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
 
-          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
-
-          <div className="absolute inset-0 flex flex-col pointer-events-none" style={safeAreaStyle}>
-            <div className="flex h-full flex-col justify-end">
+            <div className="pointer-events-none absolute inset-0 flex flex-col p-8">
+              <div className="flex h-full min-h-0 flex-col justify-end">
               {activeTab !== "none" && activeTab !== "share" ? (
-                <div className="pointer-events-auto absolute bottom-28 left-4 right-4 z-50 rounded-3xl border border-neutral-200 bg-white/92 p-6 shadow-2xl backdrop-blur-2xl sm:bottom-32 sm:left-8 sm:right-8 lg:left-1/2 lg:right-auto lg:w-[min(42rem,calc(100%-4rem))] lg:-translate-x-1/2">
+                <div className="pointer-events-auto absolute bottom-32 left-6 right-6 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl">
                   <div className="mb-4 flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
@@ -297,7 +244,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                         {activeTab === "location" ? "Event Location" : null}
                         {activeTab === "calendar" ? "Add to Calendar" : null}
                         {activeTab === "registry" ? "Gift Registry" : null}
-                        {activeTab === "rsvp" ? "RSVP Info" : null}
+                        {activeTab === "rsvp" ? "RSVP" : null}
                         {activeTab === "details" ? "Event Details" : null}
                       </h4>
                     </div>
@@ -312,78 +259,85 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                   <div className="space-y-3">
                     {activeTab === "rsvp" ? (
                       <div className="space-y-4">
-                        <p className="text-sm font-bold uppercase tracking-widest text-green-600">
-                          RSVP Details
-                        </p>
-                        <p className="text-sm leading-6 text-neutral-700">
-                          {readString(invitationData?.interactiveMetadata?.rsvpMessage) ||
-                            "Reply to let the host know you're coming."}
-                        </p>
-                        <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                          <div>
-                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                              Host / RSVP Contact
-                            </p>
-                            <p className="text-sm font-medium text-neutral-900">
-                              {readString(details?.rsvpName) || "Host"}
-                            </p>
-                          </div>
-                          {readString(details?.rsvpContact) ? (
+                        <p className="text-sm leading-6 text-neutral-700">{rsvpOutboundHint}</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {LIVE_CARD_RSVP_CHOICES.map((choice) => {
+                            const href = buildLiveCardRsvpOutboundHref({
+                              rsvpContact,
+                              eventTitle: props.title,
+                              responseLabel: choice.label,
+                              shareUrl: effectiveShareUrl,
+                            });
+                            const accent = accentClassForRsvpChoice(choice.key);
+                            if (!href) {
+                              return (
+                                <button
+                                  key={choice.key}
+                                  type="button"
+                                  disabled
+                                  aria-disabled="true"
+                                  title={rsvpOutboundHint}
+                                  className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
+                                >
+                                  {choice.label}
+                                </button>
+                              );
+                            }
+                            return (
+                              <a
+                                key={choice.key}
+                                href={href}
+                                className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
+                              >
+                                {choice.label}
+                              </a>
+                            );
+                          })}
+                        </div>
+                        <div className="space-y-3 border-t border-neutral-100 pt-4">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                            Host &amp; RSVP details
+                          </p>
+                          <p className="text-sm leading-6 text-neutral-600">
+                            {readString(invitationData?.interactiveMetadata?.rsvpMessage) ||
+                              "Reply to let the host know you're coming."}
+                          </p>
+                          <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
                             <div>
                               <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                Contact Info
+                                Host / RSVP contact name
                               </p>
-                              {rsvpContactMetadata.directHref ? (
-                                <a
-                                  href={rsvpContactMetadata.directHref}
-                                  className="inline-flex items-center gap-2 text-sm font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-4 transition hover:text-neutral-700"
-                                >
-                                  {rsvpContactMetadata.icon ? (
-                                    <rsvpContactMetadata.icon className="h-4 w-4 text-neutral-500" />
+                              <p className="text-sm font-medium text-neutral-900">
+                                {readString(details?.rsvpName) || "Host"}
+                              </p>
+                            </div>
+                            {readString(details?.rsvpContact) ? (
+                              <div>
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                  RSVP contact
+                                </p>
+                                <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
+                                  {rsvpParsed.kind === "email" ? (
+                                    <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
+                                  ) : rsvpParsed.kind === "sms" ? (
+                                    <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
                                   ) : null}
                                   {readString(details?.rsvpContact)}
-                                </a>
-                              ) : (
-                                <p className="text-sm text-neutral-700">
-                                  {readString(details?.rsvpContact)}
                                 </p>
-                              )}
-                              {rsvpContactMetadata.actionLabel ? (
-                                <p className="mt-2 text-[11px] font-medium text-neutral-500">
-                                  {rsvpContactMetadata.actionLabel}
+                              </div>
+                            ) : null}
+                            {readString(details?.rsvpDeadline) ? (
+                              <div>
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                  RSVP deadline
                                 </p>
-                              ) : null}
-                            </div>
-                          ) : null}
-                          {readString(details?.rsvpDeadline) ? (
-                            <div>
-                              <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                RSVP Deadline
-                              </p>
-                              <p className="text-sm text-red-600">
-                                {formatDate(readString(details?.rsvpDeadline))}
-                              </p>
-                            </div>
-                          ) : null}
-                        </div>
-                        {rsvpContactMetadata.kind !== "none" ? (
-                          <div className="space-y-2">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                              Quick Reply
-                            </p>
-                            <div className="grid grid-cols-3 gap-2">
-                              {RSVP_ACTION_OPTIONS.map((option) => (
-                                <a
-                                  key={option.label}
-                                  href={buildRsvpResponseHref(rsvpContact, props.title, option.label)}
-                                  className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${option.accentClassName}`}
-                                >
-                                  {option.label}
-                                </a>
-                              ))}
-                            </div>
+                                <p className="text-sm text-red-600">
+                                  {formatDate(readString(details?.rsvpDeadline))}
+                                </p>
+                              </div>
+                            ) : null}
                           </div>
-                        ) : null}
+                        </div>
                       </div>
                     ) : null}
 
@@ -506,10 +460,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                 </div>
               ) : null}
 
-              <div
-                className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-center gap-3 px-2 pt-16 sm:gap-4 sm:px-4"
-                style={buttonRailStyle}
-              >
+              <div className="pointer-events-none z-20 flex flex-nowrap items-end justify-center gap-4 overflow-x-auto px-4 pb-[max(2rem,env(safe-area-inset-bottom))] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 {buttonConfigs
                   .filter((button) => button.visible)
                   .map((button) => {
@@ -526,7 +477,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                           className="group flex flex-col items-center gap-2"
                         >
                           <div
-                            className={`rounded-full border border-white/30 bg-white/20 p-2.5 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 sm:p-3 ${
+                            className={`rounded-full border border-white/30 bg-white/20 p-3 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 ${
                               (button.key === "rsvp" && activeTab === "rsvp") ||
                               (button.key === "details" && activeTab === "details") ||
                               (button.key === "location" && activeTab === "location") ||
@@ -537,36 +488,35 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                             }`}
                           >
                             <Icon
-                              className={`h-4.5 w-4.5 sm:h-5 sm:w-5 ${
+                              className={`h-5 w-5 ${
                                 button.key === "share" && copySuccess
                                   ? "text-green-400"
                                   : "text-white"
                               }`}
                             />
                           </div>
-                          <span className="text-[8px] font-bold uppercase tracking-widest text-white drop-shadow-md sm:text-[9px]">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-white drop-shadow-md">
                             {button.label}
                           </span>
                         </button>
                       </div>
                     );
-                })}
+                  })}
               </div>
-
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </main>
 
-      <div className="border-t border-white/10 bg-neutral-950 px-4 py-3 text-center">
+      <footer className="shrink-0 border-t border-white/10 bg-neutral-950 px-4 py-3 text-center">
         <Link
           href="/studio"
           className="text-[10px] font-medium uppercase tracking-[0.24em] text-white/55 transition hover:text-white/80"
         >
           Created by Envitefy Studio
         </Link>
-      </div>
+      </footer>
     </div>
   );
 }

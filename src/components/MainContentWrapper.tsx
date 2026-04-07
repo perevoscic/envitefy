@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useSidebar } from "@/app/sidebar-context";
 import { useEffect, useState } from "react";
 
@@ -22,8 +23,13 @@ export function MainContentWrapper({
   reserveSidebarSpace?: boolean;
   className?: string;
 }) {
+  const pathname = usePathname();
   const { isCollapsed } = useSidebar();
   const [isDesktop, setIsDesktop] = useState(false);
+
+  const normalizedPath = (pathname || "").replace(/\/+$/, "");
+  const pathSegments = normalizedPath.split("/").filter(Boolean);
+  const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -41,16 +47,21 @@ export function MainContentWrapper({
         : SIDEBAR_WIDTH_REM
       : "0";
 
-  const paddingTop =
-    !isDesktop && isAuthenticated
+  const paddingTop = isStudioCardShare
+    ? "0px"
+    : !isDesktop && isAuthenticated
       ? MOBILE_TOPBAR_PT
       : "max(0px, env(safe-area-inset-top))";
 
+  const shellBgClass = isStudioCardShare
+    ? "bg-neutral-950"
+    : isAuthenticated
+      ? "bg-[#F8F5FF]"
+      : "bg-[#F8F5FF] landing-dark-gradient";
+
   return (
     <div
-      className={`min-h-[100dvh] text-foreground flex flex-col ${
-        isAuthenticated ? "bg-[#F8F5FF]" : "bg-[#F8F5FF] landing-dark-gradient"
-      } ${className}`}
+      className={`min-h-[100dvh] text-foreground flex flex-col ${shellBgClass} ${className}`}
       style={{
         minHeight: "100dvh",
         paddingTop,
