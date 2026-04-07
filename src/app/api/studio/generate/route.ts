@@ -17,6 +17,7 @@ function buildFailureResponse(
     {
       ok: false,
       mode: "both",
+      liveCard: null,
       invitation: null,
       imageDataUrl: null,
       warnings: [],

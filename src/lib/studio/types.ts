@@ -27,6 +27,19 @@ export type StudioGenerationGuidance = {
   includeEmoji?: boolean | null;
 };
 
+export type StudioLiveCardPalette = {
+  primary: string;
+  secondary: string;
+  accent: string;
+};
+
+export type StudioLiveCardInteractiveMetadata = {
+  rsvpMessage: string;
+  funFacts: string[];
+  ctaLabel: string;
+  shareNote: string;
+};
+
 export type StudioGenerateRequest = {
   mode?: StudioGenerateMode;
   event: StudioEventDetails;
@@ -45,6 +58,15 @@ export type StudioInvitationText = {
   hashtags: string[];
 };
 
+export type StudioLiveCardMetadata = {
+  title: string;
+  description: string;
+  palette: StudioLiveCardPalette;
+  themeStyle: string;
+  interactiveMetadata: StudioLiveCardInteractiveMetadata;
+  invitation: StudioInvitationText;
+};
+
 export type StudioGenerationError = {
   code: string;
   message: string;
@@ -56,6 +78,7 @@ export type StudioGenerationError = {
 export type StudioGenerateResponse = {
   ok: boolean;
   mode: StudioGenerateMode;
+  liveCard: StudioLiveCardMetadata | null;
   invitation: StudioInvitationText | null;
   imageDataUrl: string | null;
   warnings: string[];
@@ -68,6 +91,7 @@ export type StudioGenerateResponse = {
 export type StudioGenerateFailureResponse = {
   ok: false;
   mode: StudioGenerateMode;
+  liveCard: null;
   invitation: null;
   imageDataUrl: null;
   warnings: string[];
@@ -168,7 +192,7 @@ function maybeStringField(value: unknown): string {
   return safeString(value);
 }
 
-export function normalizeInvitationText(value: unknown): StudioInvitationText | null {
+function normalizeInvitationTextObject(value: unknown): StudioInvitationText | null {
   if (!value || typeof value !== "object") return null;
   const title = maybeStringField((value as any).title);
   const subtitle = maybeStringField((value as any).subtitle);
@@ -209,5 +233,77 @@ export function normalizeInvitationText(value: unknown): StudioInvitationText | 
     callToAction,
     socialCaption,
     hashtags,
+  };
+}
+
+function normalizeHexColor(value: unknown): string | null {
+  const color = safeString(value).toUpperCase();
+  if (!/^#[0-9A-F]{6}$/.test(color)) return null;
+  return color;
+}
+
+function normalizeStringList(value: unknown, limit: number): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => safeString(item))
+    .filter((item) => item.length > 0)
+    .slice(0, limit);
+}
+
+export function normalizeInvitationText(value: unknown): StudioInvitationText | null {
+  if (!value || typeof value !== "object") return null;
+  const nestedInvitation = (value as any).invitation;
+  if (nestedInvitation && typeof nestedInvitation === "object") {
+    const parsedNested = normalizeInvitationTextObject(nestedInvitation);
+    if (parsedNested) return parsedNested;
+  }
+  return normalizeInvitationTextObject(value);
+}
+
+export function normalizeLiveCardMetadata(value: unknown): StudioLiveCardMetadata | null {
+  if (!value || typeof value !== "object") return null;
+  const title = maybeStringField((value as any).title);
+  const description = maybeStringField((value as any).description);
+  const themeStyle = maybeStringField((value as any).themeStyle);
+  const paletteValue = (value as any).palette;
+  const interactiveValue = (value as any).interactiveMetadata;
+  const invitation = normalizeInvitationText((value as any).invitation);
+  const palette = paletteValue && typeof paletteValue === "object"
+    ? {
+        primary: normalizeHexColor((paletteValue as any).primary) || "#1F2937",
+        secondary: normalizeHexColor((paletteValue as any).secondary) || "#4F46E5",
+        accent: normalizeHexColor((paletteValue as any).accent) || "#F59E0B",
+      }
+    : null;
+  const interactiveMetadata =
+    interactiveValue && typeof interactiveValue === "object"
+      ? {
+          rsvpMessage: maybeStringField((interactiveValue as any).rsvpMessage),
+          funFacts: normalizeStringList((interactiveValue as any).funFacts, 5),
+          ctaLabel: maybeStringField((interactiveValue as any).ctaLabel),
+          shareNote: maybeStringField((interactiveValue as any).shareNote),
+        }
+      : null;
+
+  if (!title || !description || !themeStyle || !palette || !interactiveMetadata || !invitation) {
+    return null;
+  }
+
+  if (!interactiveMetadata.rsvpMessage || !interactiveMetadata.ctaLabel || !interactiveMetadata.shareNote) {
+    return null;
+  }
+
+  return {
+    title,
+    description,
+    palette,
+    themeStyle,
+    interactiveMetadata: {
+      rsvpMessage: interactiveMetadata.rsvpMessage,
+      funFacts: interactiveMetadata.funFacts,
+      ctaLabel: interactiveMetadata.ctaLabel,
+      shareNote: interactiveMetadata.shareNote,
+    },
+    invitation,
   };
 }

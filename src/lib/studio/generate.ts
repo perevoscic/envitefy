@@ -1,9 +1,13 @@
 import {
   generateInvitationImageWithGemini,
-  generateInvitationTextWithGemini,
+  generateStudioLiveCardWithGemini,
 } from "@/lib/studio/gemini";
-import { buildInvitationImagePrompt, buildInvitationTextPrompt } from "@/lib/studio/prompts";
-import type { StudioGenerateRequest, StudioGenerateResponse } from "@/lib/studio/types";
+import { buildInvitationImagePrompt, buildLiveCardPrompt } from "@/lib/studio/prompts";
+import type {
+  StudioGenerateRequest,
+  StudioGenerateResponse,
+  StudioLiveCardMetadata,
+} from "@/lib/studio/types";
 
 function uniqueWarnings(list: string[]): string[] {
   return Array.from(new Set(list.map((item) => item.trim()).filter(Boolean)));
@@ -14,6 +18,7 @@ export async function generateStudioInvitation(
 ): Promise<StudioGenerateResponse> {
   const mode = request.mode || "both";
   const warnings: string[] = [];
+  let liveCard: StudioLiveCardMetadata | null = null;
   let invitation: StudioGenerateResponse["invitation"] = null;
   let imageDataUrl: string | null = null;
   const errors: NonNullable<StudioGenerateResponse["errors"]> = {};
@@ -22,11 +27,12 @@ export async function generateStudioInvitation(
   const wantsImage = mode === "image" || mode === "both";
 
   if (wantsText) {
-    const textPrompt = buildInvitationTextPrompt(request.event, request.guidance);
-    const textResult = await generateInvitationTextWithGemini(textPrompt);
+    const textPrompt = buildLiveCardPrompt(request.event, request.guidance);
+    const textResult = await generateStudioLiveCardWithGemini(textPrompt);
     warnings.push(...textResult.warnings);
     if (textResult.ok) {
-      invitation = textResult.invitation;
+      liveCard = textResult.liveCard;
+      invitation = textResult.liveCard.invitation;
     } else {
       errors.text = textResult.error;
       warnings.push("Invitation text generation failed.");
@@ -34,7 +40,7 @@ export async function generateStudioInvitation(
   }
 
   if (wantsImage) {
-    const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance);
+    const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard);
     const imageResult = await generateInvitationImageWithGemini(imagePrompt);
     warnings.push(...imageResult.warnings);
     if (imageResult.ok) {
@@ -51,6 +57,7 @@ export async function generateStudioInvitation(
   return {
     ok,
     mode,
+    liveCard,
     invitation,
     imageDataUrl,
     warnings: uniqueWarnings(warnings),

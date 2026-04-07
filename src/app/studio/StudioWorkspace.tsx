@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
-  Calendar,
   Cake,
+  Calendar,
   CheckCircle2,
   ChevronRight,
   Clock,
@@ -30,7 +29,14 @@ import {
   WandSparkles,
   X,
 } from "lucide-react";
-import type { StudioGenerateApiResponse, StudioGenerateMode, StudioGenerateRequest } from "@/lib/studio/types";
+import { useEffect, useMemo, useState } from "react";
+import {
+  normalizeInvitationText,
+  type StudioGenerateApiResponse,
+  type StudioGenerateMode,
+  type StudioGenerateRequest,
+  type StudioGenerationError,
+} from "@/lib/studio/types";
 
 type StudioStep = "category" | "form" | "studio" | "library";
 type MediaType = "image" | "page";
@@ -186,87 +192,270 @@ const STORAGE_KEY = "envitefy_media";
 
 const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
   Birthday: [
-    { label: "Birthday Person's Name", key: "name", type: "text", placeholder: "e.g. Lara", required: true },
+    {
+      label: "Birthday Person's Name",
+      key: "name",
+      type: "text",
+      placeholder: "e.g. Lara",
+      required: true,
+    },
     { label: "Age Turning", key: "age", type: "text", placeholder: "e.g. 7", required: true },
     { label: "Birthday Theme", key: "theme", type: "text", placeholder: "e.g. Movie Cats" },
-    { label: "Who Is Invited", key: "invitedWho", type: "text", placeholder: "e.g. Family and friends" },
+    {
+      label: "Who Is Invited",
+      key: "invitedWho",
+      type: "text",
+      placeholder: "e.g. Family and friends",
+    },
     { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Sparkly casual" },
     { label: "Gift Note", key: "giftNote", type: "text", placeholder: "e.g. No gifts please" },
     { label: "Surprise Party?", key: "isSurprise", type: "checkbox" },
     { label: "Milestone Birthday?", key: "isMilestone", type: "checkbox" },
-    { label: "Preferred Cake / Activity", key: "activityNote", type: "textarea", placeholder: "e.g. Popcorn bar and cat ears" },
+    {
+      label: "Preferred Cake / Activity",
+      key: "activityNote",
+      type: "textarea",
+      placeholder: "e.g. Popcorn bar and cat ears",
+    },
   ],
   Wedding: [
-    { label: "Couple Names", key: "coupleNames", type: "text", placeholder: "e.g. Sarah & James", required: true },
+    {
+      label: "Couple Names",
+      key: "coupleNames",
+      type: "text",
+      placeholder: "e.g. Sarah & James",
+      required: true,
+    },
     { label: "Event Title", key: "eventTitle", type: "text", placeholder: "e.g. Our Big Day" },
     { label: "Ceremony Date", key: "ceremonyDate", type: "date" },
     { label: "Ceremony Time", key: "ceremonyTime", type: "time" },
     { label: "Reception Time", key: "receptionTime", type: "time" },
-    { label: "Ceremony Venue", key: "ceremonyVenue", type: "text", placeholder: "e.g. St. Mary's Church" },
-    { label: "Reception Venue", key: "receptionVenue", type: "text", placeholder: "e.g. The Grand Ballroom" },
+    {
+      label: "Ceremony Venue",
+      key: "ceremonyVenue",
+      type: "text",
+      placeholder: "e.g. St. Mary's Church",
+    },
+    {
+      label: "Reception Venue",
+      key: "receptionVenue",
+      type: "text",
+      placeholder: "e.g. The Grand Ballroom",
+    },
     { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Black Tie" },
     { label: "Registry Link", key: "registryLink", type: "text", placeholder: "e.g. Zola link" },
-    { label: "Wedding Website", key: "weddingWebsite", type: "text", placeholder: "e.g. www.sarahandjames.com" },
+    {
+      label: "Wedding Website",
+      key: "weddingWebsite",
+      type: "text",
+      placeholder: "e.g. www.sarahandjames.com",
+    },
     { label: "Adults Only?", key: "adultsOnly", type: "checkbox" },
-    { label: "Accommodation Info", key: "accommodationInfo", type: "textarea", placeholder: "e.g. Hotel block at Hilton" },
-    { label: "Plus-One Policy", key: "plusOnePolicy", type: "text", placeholder: "e.g. Invite only" },
-    { label: "Transportation Info", key: "transportationInfo", type: "text", placeholder: "e.g. Shuttle provided" },
+    {
+      label: "Accommodation Info",
+      key: "accommodationInfo",
+      type: "textarea",
+      placeholder: "e.g. Hotel block at Hilton",
+    },
+    {
+      label: "Plus-One Policy",
+      key: "plusOnePolicy",
+      type: "text",
+      placeholder: "e.g. Invite only",
+    },
+    {
+      label: "Transportation Info",
+      key: "transportationInfo",
+      type: "text",
+      placeholder: "e.g. Shuttle provided",
+    },
   ],
   "Baby Shower": [
-    { label: "Honoree / Parent Name(s)", key: "honoreeNames", type: "text", placeholder: "e.g. Emily", required: true },
-    { label: 'Baby Name or "Baby of"', key: "babyName", type: "text", placeholder: "e.g. Baby Smith" },
+    {
+      label: "Honoree / Parent Name(s)",
+      key: "honoreeNames",
+      type: "text",
+      placeholder: "e.g. Emily",
+      required: true,
+    },
+    {
+      label: 'Baby Name or "Baby of"',
+      key: "babyName",
+      type: "text",
+      placeholder: "e.g. Baby Smith",
+    },
     { label: "Shower Theme", key: "theme", type: "text", placeholder: "e.g. Jungle" },
-    { label: "Boy / Girl / Neutral", key: "gender", type: "select", options: ["Boy", "Girl", "Neutral"] },
+    {
+      label: "Boy / Girl / Neutral",
+      key: "gender",
+      type: "select",
+      options: ["Boy", "Girl", "Neutral"],
+    },
     { label: "Hosted By", key: "hostedBy", type: "text", placeholder: "e.g. Grandma Jane" },
-    { label: "Registry Link", key: "registryLink", type: "text", placeholder: "e.g. Buy Buy Baby link" },
+    {
+      label: "Registry Link",
+      key: "registryLink",
+      type: "text",
+      placeholder: "e.g. Buy Buy Baby link",
+    },
     { label: "Diaper Raffle?", key: "diaperRaffle", type: "checkbox" },
     { label: "Book Instead of Card?", key: "bookInsteadOfCard", type: "checkbox" },
-    { label: "Bring-a-Book Note", key: "bringABookNote", type: "text", placeholder: "e.g. Please bring a book" },
-    { label: "Gift Preference Note", key: "giftPreferenceNote", type: "text", placeholder: "e.g. Gift cards preferred" },
+    {
+      label: "Bring-a-Book Note",
+      key: "bringABookNote",
+      type: "text",
+      placeholder: "e.g. Please bring a book",
+    },
+    {
+      label: "Gift Preference Note",
+      key: "giftPreferenceNote",
+      type: "text",
+      placeholder: "e.g. Gift cards preferred",
+    },
   ],
   Anniversary: [
-    { label: "Couple Names", key: "coupleNames", type: "text", placeholder: "e.g. Sarah & James", required: true },
+    {
+      label: "Couple Names",
+      key: "coupleNames",
+      type: "text",
+      placeholder: "e.g. Sarah & James",
+      required: true,
+    },
     { label: "Years Celebrating", key: "age", type: "text", placeholder: "e.g. 25" },
-    { label: "Event Title", key: "eventTitle", type: "text", placeholder: "e.g. Silver Anniversary" },
+    {
+      label: "Event Title",
+      key: "eventTitle",
+      type: "text",
+      placeholder: "e.g. Silver Anniversary",
+    },
     { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Semi-Formal" },
-    { label: "Gift Preference", key: "giftPreferenceNote", type: "text", placeholder: "e.g. Your presence is our gift" },
+    {
+      label: "Gift Preference",
+      key: "giftPreferenceNote",
+      type: "text",
+      placeholder: "e.g. Your presence is our gift",
+    },
   ],
   "Bridal Shower": [
-    { label: "Bride's Name", key: "honoreeNames", type: "text", placeholder: "e.g. Sarah", required: true },
+    {
+      label: "Bride's Name",
+      key: "honoreeNames",
+      type: "text",
+      placeholder: "e.g. Sarah",
+      required: true,
+    },
     { label: "Shower Theme", key: "theme", type: "text", placeholder: "e.g. Garden Party" },
     { label: "Hosted By", key: "hostedBy", type: "text", placeholder: "e.g. Maid of Honor" },
-    { label: "Registry Link", key: "registryLink", type: "text", placeholder: "e.g. Registry link" },
+    {
+      label: "Registry Link",
+      key: "registryLink",
+      type: "text",
+      placeholder: "e.g. Registry link",
+    },
     { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Floral dresses" },
   ],
   Housewarming: [
-    { label: "Host Name(s)", key: "honoreeNames", type: "text", placeholder: "e.g. The Smiths", required: true },
-    { label: "New Address Note", key: "message", type: "textarea", placeholder: "e.g. We can't wait to show you our new home!" },
-    { label: "Registry / Gift Note", key: "giftPreferenceNote", type: "text", placeholder: "e.g. No gifts needed" },
+    {
+      label: "Host Name(s)",
+      key: "honoreeNames",
+      type: "text",
+      placeholder: "e.g. The Smiths",
+      required: true,
+    },
+    {
+      label: "New Address Note",
+      key: "message",
+      type: "textarea",
+      placeholder: "e.g. We can't wait to show you our new home!",
+    },
+    {
+      label: "Registry / Gift Note",
+      key: "giftPreferenceNote",
+      type: "text",
+      placeholder: "e.g. No gifts needed",
+    },
   ],
   "Field Trip/Day": [
-    { label: "Event Title", key: "eventTitle", type: "text", placeholder: "e.g. Museum Visit", required: true },
-    { label: "Grade / Class Level", key: "gradeLevel", type: "text", placeholder: "e.g. 3rd Grade" },
+    {
+      label: "Event Title",
+      key: "eventTitle",
+      type: "text",
+      placeholder: "e.g. Museum Visit",
+      required: true,
+    },
+    {
+      label: "Grade / Class Level",
+      key: "gradeLevel",
+      type: "text",
+      placeholder: "e.g. 3rd Grade",
+    },
     { label: "Teacher Name", key: "teacherName", type: "text", placeholder: "e.g. Mrs. Smith" },
     { label: "Chaperones Needed?", key: "chaperonesNeeded", type: "checkbox" },
     { label: "Cost per Student", key: "costPerStudent", type: "text", placeholder: "e.g. $15" },
     { label: "Permission Slip Required?", key: "permissionSlipRequired", type: "checkbox" },
     { label: "Lunch Info", key: "lunchInfo", type: "text", placeholder: "e.g. Bring sack lunch" },
-    { label: "Transportation", key: "transportationType", type: "text", placeholder: "e.g. School Bus" },
-    { label: "Emergency Contact", key: "emergencyContact", type: "text", placeholder: "e.g. School Office" },
-    { label: "What to Bring", key: "whatToBring", type: "textarea", placeholder: "e.g. Water bottle and comfortable shoes" },
+    {
+      label: "Transportation",
+      key: "transportationType",
+      type: "text",
+      placeholder: "e.g. School Bus",
+    },
+    {
+      label: "Emergency Contact",
+      key: "emergencyContact",
+      type: "text",
+      placeholder: "e.g. School Office",
+    },
+    {
+      label: "What to Bring",
+      key: "whatToBring",
+      type: "textarea",
+      placeholder: "e.g. Water bottle and comfortable shoes",
+    },
   ],
   "Custom Invite": [
-    { label: "Event Title", key: "eventTitle", type: "text", placeholder: "e.g. Special Celebration", required: true },
-    { label: "Main Person / Host / Honoree", key: "mainPerson", type: "text", placeholder: "e.g. The Smith Family" },
+    {
+      label: "Event Title",
+      key: "eventTitle",
+      type: "text",
+      placeholder: "e.g. Special Celebration",
+      required: true,
+    },
+    {
+      label: "Main Person / Host / Honoree",
+      key: "mainPerson",
+      type: "text",
+      placeholder: "e.g. The Smith Family",
+    },
     { label: "Occasion", key: "occasion", type: "text", placeholder: "e.g. Retirement" },
     { label: "Audience", key: "audience", type: "text", placeholder: "e.g. Colleagues" },
     { label: "Theme", key: "theme", type: "text", placeholder: "e.g. Nautical" },
     { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Casual" },
-    { label: "Callout Text", key: "calloutText", type: "text", placeholder: "e.g. Join us for a night to remember" },
-    { label: "Optional Link", key: "optionalLink", type: "text", placeholder: "e.g. www.event-link.com" },
-    { label: "Custom Label 1", key: "customLabel1", type: "text", placeholder: "e.g. Favorite Color" },
+    {
+      label: "Callout Text",
+      key: "calloutText",
+      type: "text",
+      placeholder: "e.g. Join us for a night to remember",
+    },
+    {
+      label: "Optional Link",
+      key: "optionalLink",
+      type: "text",
+      placeholder: "e.g. www.event-link.com",
+    },
+    {
+      label: "Custom Label 1",
+      key: "customLabel1",
+      type: "text",
+      placeholder: "e.g. Favorite Color",
+    },
     { label: "Custom Value 1", key: "customValue1", type: "text", placeholder: "e.g. Blue" },
-    { label: "Custom Label 2", key: "customLabel2", type: "text", placeholder: "e.g. Favorite Food" },
+    {
+      label: "Custom Label 2",
+      key: "customLabel2",
+      type: "text",
+      placeholder: "e.g. Favorite Food",
+    },
     { label: "Custom Value 2", key: "customValue2", type: "text", placeholder: "e.g. Pizza" },
   ],
 };
@@ -276,12 +465,30 @@ const SHARED_BASICS: SharedFieldConfig[] = [
   { label: "Start Time", key: "startTime", type: "time", required: true },
   { label: "End Time", key: "endTime", type: "time" },
   { label: "Venue Name", key: "venueName", type: "text", placeholder: "e.g. AMC Theater" },
-  { label: "Location / Address", key: "location", type: "text", placeholder: "e.g. 123 Event St, City", required: true },
+  {
+    label: "Location / Address",
+    key: "location",
+    type: "text",
+    placeholder: "e.g. 123 Event St, City",
+    required: true,
+  },
 ];
 
-const RSVP_FIELDS: Array<{ label: string; key: keyof EventDetails; type: "text" | "date"; placeholder?: string; required?: boolean }> = [
+const RSVP_FIELDS: Array<{
+  label: string;
+  key: keyof EventDetails;
+  type: "text" | "date";
+  placeholder?: string;
+  required?: boolean;
+}> = [
   { label: "Host Name", key: "rsvpName", type: "text", placeholder: "e.g. Sarah", required: true },
-  { label: "Host Contact", key: "rsvpContact", type: "text", placeholder: "Phone or Email", required: true },
+  {
+    label: "Host Contact",
+    key: "rsvpContact",
+    type: "text",
+    placeholder: "Phone or Email",
+    required: true,
+  },
   { label: "RSVP Deadline", key: "rsvpDeadline", type: "date" },
 ];
 
@@ -400,6 +607,278 @@ const EMPTY_POSITIONS = {
   details: { x: 0, y: 0 },
 };
 
+const STUDIO_LIBRARY_LIMIT = 10;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function readString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function readNullableString(value: unknown): string | null {
+  const next = readString(value);
+  return next || null;
+}
+
+function isInviteCategory(value: unknown): value is InviteCategory {
+  return (
+    value === "Birthday" ||
+    value === "Field Trip/Day" ||
+    value === "Bridal Shower" ||
+    value === "Wedding" ||
+    value === "Housewarming" ||
+    value === "Baby Shower" ||
+    value === "Anniversary" ||
+    value === "Custom Invite"
+  );
+}
+
+function sanitizePositions(value: unknown): MediaItem["positions"] {
+  if (!isRecord(value)) return { ...EMPTY_POSITIONS };
+
+  const sanitizePoint = (point: unknown) => {
+    if (!isRecord(point)) return { x: 0, y: 0 };
+    const x = typeof point.x === "number" && Number.isFinite(point.x) ? point.x : 0;
+    const y = typeof point.y === "number" && Number.isFinite(point.y) ? point.y : 0;
+    return { x, y };
+  };
+
+  return {
+    rsvp: sanitizePoint(value.rsvp),
+    location: sanitizePoint(value.location),
+    share: sanitizePoint(value.share),
+    calendar: sanitizePoint(value.calendar),
+    registry: sanitizePoint(value.registry),
+    details: sanitizePoint(value.details),
+  };
+}
+
+function sanitizeEventDetails(value: unknown): EventDetails {
+  const details: any = createInitialDetails();
+  if (!isRecord(value)) return details;
+
+  const stringKeys: Array<keyof EventDetails> = [
+    "eventTitle",
+    "eventDate",
+    "startTime",
+    "endTime",
+    "venueName",
+    "location",
+    "rsvpName",
+    "rsvpContact",
+    "rsvpDeadline",
+    "message",
+    "specialInstructions",
+    "colors",
+    "style",
+    "visualPreferences",
+    "name",
+    "age",
+    "theme",
+    "invitedWho",
+    "dressCode",
+    "giftNote",
+    "activityNote",
+    "coupleNames",
+    "ceremonyDate",
+    "ceremonyTime",
+    "receptionTime",
+    "ceremonyVenue",
+    "receptionVenue",
+    "registryLink",
+    "weddingWebsite",
+    "accommodationInfo",
+    "plusOnePolicy",
+    "transportationInfo",
+    "honoreeNames",
+    "babyName",
+    "hostedBy",
+    "bringABookNote",
+    "giftPreferenceNote",
+    "gradeLevel",
+    "teacherName",
+    "costPerStudent",
+    "lunchInfo",
+    "transportationType",
+    "emergencyContact",
+    "whatToBring",
+    "mainPerson",
+    "occasion",
+    "audience",
+    "calloutText",
+    "optionalLink",
+    "customLabel1",
+    "customValue1",
+    "customLabel2",
+    "customValue2",
+  ];
+
+  for (const key of stringKeys) {
+    details[key] = readString(value[key]);
+  }
+
+  const category = readString(value.category);
+  details.category = isInviteCategory(category) ? category : details.category;
+  details.orientation = value.orientation === "landscape" ? "landscape" : "portrait";
+  details.gender =
+    value.gender === "Boy" || value.gender === "Girl" || value.gender === "Neutral"
+      ? value.gender
+      : "Neutral";
+  details.isSurprise =
+    typeof value.isSurprise === "boolean" ? value.isSurprise : details.isSurprise;
+  details.isMilestone =
+    typeof value.isMilestone === "boolean" ? value.isMilestone : details.isMilestone;
+  details.adultsOnly =
+    typeof value.adultsOnly === "boolean" ? value.adultsOnly : details.adultsOnly;
+  details.diaperRaffle =
+    typeof value.diaperRaffle === "boolean" ? value.diaperRaffle : details.diaperRaffle;
+  details.bookInsteadOfCard =
+    typeof value.bookInsteadOfCard === "boolean"
+      ? value.bookInsteadOfCard
+      : details.bookInsteadOfCard;
+  details.chaperonesNeeded =
+    typeof value.chaperonesNeeded === "boolean" ? value.chaperonesNeeded : details.chaperonesNeeded;
+  details.permissionSlipRequired =
+    typeof value.permissionSlipRequired === "boolean"
+      ? value.permissionSlipRequired
+      : details.permissionSlipRequired;
+
+  return details;
+}
+
+function sanitizeGenerationError(value: unknown): StudioGenerationError | undefined {
+  if (!isRecord(value)) return undefined;
+  return {
+    code: readString(value.code) || "unknown_error",
+    message: readString(value.message) || "Studio generation failed.",
+    retryable: typeof value.retryable === "boolean" ? value.retryable : true,
+    provider: "gemini",
+    status: typeof value.status === "number" ? value.status : undefined,
+  };
+}
+
+function sanitizeInvitationData(
+  value: unknown,
+  fallbackDetails: EventDetails,
+): InvitationData | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const theme = isRecord(value.theme) ? value.theme : null;
+  const eventDetails = sanitizeEventDetails(value.eventDetails);
+  const defaultTheme = getThemeColors(fallbackDetails);
+
+  return {
+    title: readString(value.title) || getDisplayTitle(fallbackDetails),
+    subtitle:
+      readString(value.subtitle) || pickFirst(fallbackDetails.theme, fallbackDetails.category),
+    description:
+      readString(value.description) ||
+      buildDescription(fallbackDetails) ||
+      "Celebrate together with a beautifully designed invitation.",
+    scheduleLine:
+      readString(value.scheduleLine) ||
+      `${formatDate(fallbackDetails.eventDate)}${fallbackDetails.startTime ? ` at ${fallbackDetails.startTime}` : ""}`,
+    locationLine:
+      readString(value.locationLine) ||
+      pickFirst(fallbackDetails.venueName, fallbackDetails.location, "Location TBD"),
+    callToAction:
+      readString(value.callToAction) ||
+      pickFirst(fallbackDetails.calloutText, "Tap for details and RSVP."),
+    socialCaption:
+      readString(value.socialCaption) ||
+      readString(value.description) ||
+      buildDescription(fallbackDetails),
+    theme: {
+      primaryColor: readString(theme?.primaryColor) || defaultTheme.primaryColor,
+      accentColor: readString(theme?.accentColor) || defaultTheme.accentColor,
+    },
+    eventDetails,
+  };
+}
+
+function sanitizeMediaItem(value: unknown): MediaItem | null {
+  if (!isRecord(value)) return null;
+
+  const id = readString(value.id);
+  const type = value.type === "image" || value.type === "page" ? value.type : null;
+  if (!id || !type) return null;
+
+  const details = sanitizeEventDetails(value.details);
+  return {
+    id,
+    type,
+    url: readNullableString(value.url) || undefined,
+    data: sanitizeInvitationData(value.data, details),
+    theme: readString(value.theme) || getDisplayTitle(details),
+    status:
+      value.status === "ready" || value.status === "loading" || value.status === "error"
+        ? value.status
+        : "error",
+    details,
+    createdAt: readString(value.createdAt) || new Date().toISOString(),
+    positions: sanitizePositions(value.positions),
+  };
+}
+
+function sanitizeMediaItems(value: unknown): MediaItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(sanitizeMediaItem)
+    .filter((item): item is MediaItem => Boolean(item))
+    .slice(0, STUDIO_LIBRARY_LIMIT);
+}
+
+function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateApiResponse | null {
+  if (!isRecord(value)) return null;
+
+  const mode =
+    value.mode === "text" || value.mode === "image" || value.mode === "both" ? value.mode : "both";
+  const invitation = normalizeInvitationText(value.invitation);
+  const imageDataUrl =
+    typeof value.imageDataUrl === "string" && value.imageDataUrl.startsWith("data:image/")
+      ? value.imageDataUrl
+      : null;
+  const warnings = Array.isArray(value.warnings)
+    ? value.warnings.map(readString).filter(Boolean).slice(0, 8)
+    : [];
+  const errors = isRecord(value.errors)
+    ? (() => {
+        const nextErrors: NonNullable<StudioGenerateApiResponse["errors"]> = {};
+        const textError = sanitizeGenerationError(value.errors.text);
+        const imageError = sanitizeGenerationError(value.errors.image);
+        if (textError) nextErrors.text = textError;
+        if (imageError) nextErrors.image = imageError;
+        return Object.keys(nextErrors).length > 0 ? nextErrors : undefined;
+      })()
+    : undefined;
+
+  const ok = value.ok === true;
+  if (!ok) {
+    if (!errors) return null;
+    return {
+      ok: false,
+      mode,
+      invitation: null,
+      imageDataUrl: null,
+      warnings,
+      errors,
+    };
+  }
+
+  if (!invitation && !imageDataUrl) return null;
+
+  return {
+    ok: true,
+    mode,
+    invitation: invitation || null,
+    imageDataUrl,
+    warnings,
+    errors,
+  };
+}
+
 function createId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -427,22 +906,46 @@ function pickFirst(...values: Array<string | null | undefined>) {
 
 function getDisplayTitle(details: EventDetails) {
   if (details.category === "Birthday") {
-    return pickFirst(details.eventTitle, details.name ? `${details.name}'s Birthday` : "", "Birthday Celebration");
+    return pickFirst(
+      details.eventTitle,
+      details.name ? `${details.name}'s Birthday` : "",
+      "Birthday Celebration",
+    );
   }
   if (details.category === "Wedding") {
-    return pickFirst(details.eventTitle, details.coupleNames ? `${details.coupleNames} Wedding` : "", "Wedding Celebration");
+    return pickFirst(
+      details.eventTitle,
+      details.coupleNames ? `${details.coupleNames} Wedding` : "",
+      "Wedding Celebration",
+    );
   }
   if (details.category === "Baby Shower") {
-    return pickFirst(details.eventTitle, details.honoreeNames ? `${details.honoreeNames} Baby Shower` : "", "Baby Shower");
+    return pickFirst(
+      details.eventTitle,
+      details.honoreeNames ? `${details.honoreeNames} Baby Shower` : "",
+      "Baby Shower",
+    );
   }
   if (details.category === "Anniversary") {
-    return pickFirst(details.eventTitle, details.coupleNames ? `${details.coupleNames} Anniversary` : "", "Anniversary Celebration");
+    return pickFirst(
+      details.eventTitle,
+      details.coupleNames ? `${details.coupleNames} Anniversary` : "",
+      "Anniversary Celebration",
+    );
   }
   if (details.category === "Bridal Shower") {
-    return pickFirst(details.eventTitle, details.honoreeNames ? `${details.honoreeNames} Bridal Shower` : "", "Bridal Shower");
+    return pickFirst(
+      details.eventTitle,
+      details.honoreeNames ? `${details.honoreeNames} Bridal Shower` : "",
+      "Bridal Shower",
+    );
   }
   if (details.category === "Housewarming") {
-    return pickFirst(details.eventTitle, details.honoreeNames ? `${details.honoreeNames} Housewarming` : "", "Housewarming");
+    return pickFirst(
+      details.eventTitle,
+      details.honoreeNames ? `${details.honoreeNames} Housewarming` : "",
+      "Housewarming",
+    );
   }
   return pickFirst(details.eventTitle, details.occasion, `${details.category} Event`);
 }
@@ -468,7 +971,9 @@ function getRegistryText(details: EventDetails) {
 }
 
 function getFallbackThumbnail(details: EventDetails) {
-  const preset = PRESETS.find((item) => item.category === details.category && item.name === details.theme);
+  const preset = PRESETS.find(
+    (item) => item.category === details.category && item.name === details.theme,
+  );
   if (preset) return preset.thumbnail;
   return svgThumbnail(getDisplayTitle(details), "#111827", "#7c3aed");
 }
@@ -572,21 +1077,29 @@ function buildLinks(details: EventDetails) {
   ].filter((value): value is { label: string; url: string } => Boolean(value));
 }
 
-function buildStudioRequest(details: EventDetails, mode: StudioGenerateMode): StudioGenerateRequest {
+function buildStudioRequest(
+  details: EventDetails,
+  mode: StudioGenerateMode,
+): StudioGenerateRequest {
   return {
     mode,
     event: {
       title: getDisplayTitle(details),
       occasion: pickFirst(details.occasion, details.category),
-      hostName: pickFirst(details.rsvpName, details.hostedBy, details.teacherName, details.mainPerson) || null,
+      hostName:
+        pickFirst(details.rsvpName, details.hostedBy, details.teacherName, details.mainPerson) ||
+        null,
       honoreeName: getHonoreeName(details) || null,
       description: buildDescription(details) || null,
       date: clean(details.eventDate) || null,
       startTime: clean(details.startTime) || null,
       endTime: clean(details.endTime) || null,
       timezone:
-        typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago" : "America/Chicago",
-      venueName: pickFirst(details.venueName, details.ceremonyVenue, details.receptionVenue) || null,
+        typeof Intl !== "undefined"
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago"
+          : "America/Chicago",
+      venueName:
+        pickFirst(details.venueName, details.ceremonyVenue, details.receptionVenue) || null,
       venueAddress: clean(details.location) || null,
       dressCode: clean(details.dressCode) || null,
       rsvpBy: clean(details.rsvpDeadline) || null,
@@ -595,7 +1108,11 @@ function buildStudioRequest(details: EventDetails, mode: StudioGenerateMode): St
       links: buildLinks(details),
     },
     guidance: {
-      tone: pickFirst(details.style, details.category === "Birthday" ? "Playful and polished" : "Warm and elevated") || null,
+      tone:
+        pickFirst(
+          details.style,
+          details.category === "Birthday" ? "Playful and polished" : "Warm and elevated",
+        ) || null,
       style: pickFirst(details.theme, details.visualPreferences, details.colors) || null,
       audience: pickFirst(details.invitedWho, details.audience, "Guests") || null,
       colorPalette: clean(details.colors) || null,
@@ -611,17 +1128,20 @@ async function requestStudioGeneration(details: EventDetails, mode: StudioGenera
     body: JSON.stringify(buildStudioRequest(details, mode)),
   });
 
-  let data: StudioGenerateApiResponse | null = null;
+  let rawData: unknown = null;
   try {
-    data = (await response.json()) as StudioGenerateApiResponse;
+    rawData = await response.json();
   } catch {
-    data = null;
+    rawData = null;
   }
 
-  if (!response.ok || !data) {
+  const data = sanitizeStudioGenerateResponse(rawData);
+
+  if (!response.ok || !data || !data.ok) {
     const errorMessage =
       data?.errors?.image?.message ||
       data?.errors?.text?.message ||
+      (isRecord(rawData) && typeof rawData.message === "string" ? rawData.message : "") ||
       `Studio generation failed with status ${response.status}.`;
     throw new Error(errorMessage);
   }
@@ -629,18 +1149,21 @@ async function requestStudioGeneration(details: EventDetails, mode: StudioGenera
   return data;
 }
 
-function buildInvitationData(details: EventDetails, response: StudioGenerateApiResponse): InvitationData {
+function buildInvitationData(
+  details: EventDetails,
+  response: StudioGenerateApiResponse,
+): InvitationData {
   const invitation = response.invitation;
   const title = invitation?.title || getDisplayTitle(details);
   const subtitle =
-    invitation?.subtitle ||
-    buildDescription(details) ||
-    pickFirst(details.theme, details.category);
+    invitation?.subtitle || buildDescription(details) || pickFirst(details.theme, details.category);
   const scheduleLine =
     invitation?.scheduleLine ||
     `${formatDate(details.eventDate)}${details.startTime ? ` at ${details.startTime}` : ""}`;
-  const locationLine = invitation?.locationLine || pickFirst(details.venueName, details.location, "Location TBD");
-  const callToAction = invitation?.callToAction || pickFirst(details.calloutText, "Tap for details and RSVP.");
+  const locationLine =
+    invitation?.locationLine || pickFirst(details.venueName, details.location, "Location TBD");
+  const callToAction =
+    invitation?.callToAction || pickFirst(details.calloutText, "Tap for details and RSVP.");
   const description =
     invitation?.openingLine ||
     buildDescription(details) ||
@@ -687,9 +1210,7 @@ export default function StudioWorkspace() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return;
       const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return;
-      const restored = parsed.filter((item) => item && typeof item.id === "string");
-      setMediaList(restored);
+      setMediaList(sanitizeMediaItems(parsed));
     } catch {
       setMediaList([]);
     }
@@ -697,18 +1218,21 @@ export default function StudioWorkspace() {
 
   useEffect(() => {
     try {
-      if (mediaList.length === 0) {
+      const sanitized = sanitizeMediaItems(mediaList);
+      if (sanitized.length === 0) {
         localStorage.removeItem(STORAGE_KEY);
         return;
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mediaList.slice(0, 10)));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
     } catch {
       // Ignore storage quota issues in the studio shell.
     }
   }, [mediaList]);
 
   function isFormValid() {
-    const missingShared = SHARED_BASICS.filter((field) => field.required && !clean(String(inputValue(details[field.key]))));
+    const missingShared = SHARED_BASICS.filter(
+      (field) => field.required && !clean(String(inputValue(details[field.key]))),
+    );
     if (missingShared.length > 0) return false;
 
     const missingCategory = (CATEGORY_FIELDS[details.category] || []).filter(
@@ -716,12 +1240,14 @@ export default function StudioWorkspace() {
     );
     if (missingCategory.length > 0) return false;
 
-    const missingRsvp = RSVP_FIELDS.filter((field) => field.required && !clean(String(inputValue(details[field.key]))));
+    const missingRsvp = RSVP_FIELDS.filter(
+      (field) => field.required && !clean(String(inputValue(details[field.key]))),
+    );
     return missingRsvp.length === 0;
   }
 
   function deleteMedia(id: string) {
-    setMediaList((prev) => prev.filter((item) => item.id !== id));
+    setMediaList((prev) => sanitizeMediaItems(prev.filter((item) => item.id !== id)));
     if (activePage?.id === id) {
       setActivePage(null);
       setActiveTab("none");
@@ -733,7 +1259,10 @@ export default function StudioWorkspace() {
   }
 
   function clearLibrary() {
-    if (typeof window !== "undefined" && !window.confirm("Are you sure you want to clear your entire library?")) {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("Are you sure you want to clear your entire library?")
+    ) {
       return;
     }
     setMediaList([]);
@@ -774,23 +1303,29 @@ export default function StudioWorkspace() {
     }
   }
 
-  function updatePosition(id: string, buttonKey: keyof typeof EMPTY_POSITIONS, point: ButtonPosition) {
+  function updatePosition(
+    id: string,
+    buttonKey: keyof typeof EMPTY_POSITIONS,
+    point: ButtonPosition,
+  ) {
     setMediaList((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        const updated = {
-          ...item,
-          positions: {
-            ...EMPTY_POSITIONS,
-            ...item.positions,
-            [buttonKey]: point,
-          },
-        };
-        if (activePage?.id === id) {
-          setActivePage(updated);
-        }
-        return updated;
-      }),
+      sanitizeMediaItems(
+        prev.map((item) => {
+          if (item.id !== id) return item;
+          const updated = {
+            ...item,
+            positions: {
+              ...EMPTY_POSITIONS,
+              ...item.positions,
+              [buttonKey]: point,
+            },
+          };
+          if (activePage?.id === id) {
+            setActivePage(updated);
+          }
+          return updated;
+        }),
+      ),
     );
   }
 
@@ -812,13 +1347,20 @@ export default function StudioWorkspace() {
 
     setMediaList((prev) => {
       if (editingId) {
-        return prev.map((item) => (item.id === editingId ? { ...loadingItem, createdAt: item.createdAt } : item));
+        return sanitizeMediaItems(
+          prev.map((item) =>
+            item.id === editingId ? { ...loadingItem, createdAt: item.createdAt } : item,
+          ),
+        );
       }
-      return [loadingItem, ...prev];
+      return sanitizeMediaItems([loadingItem, ...prev]);
     });
 
     try {
-      const response = await requestStudioGeneration(currentDetails, type === "page" ? "both" : "image");
+      const response = await requestStudioGeneration(
+        currentDetails,
+        type === "page" ? "both" : "image",
+      );
       const nextItem: MediaItem = {
         ...loadingItem,
         status: "ready",
@@ -826,12 +1368,20 @@ export default function StudioWorkspace() {
         data: type === "page" ? buildInvitationData(currentDetails, response) : undefined,
       };
 
-      setMediaList((prev) => prev.map((item) => (item.id === targetId ? nextItem : item)));
+      setMediaList((prev) =>
+        sanitizeMediaItems(prev.map((item) => (item.id === targetId ? nextItem : item))),
+      );
       setEditingId(null);
       setStep("studio");
     } catch {
       setMediaList((prev) =>
-        prev.map((item) => (item.id === targetId ? { ...item, status: "error", url: getFallbackThumbnail(currentDetails) } : item)),
+        sanitizeMediaItems(
+          prev.map((item) =>
+            item.id === targetId
+              ? { ...item, status: "error", url: getFallbackThumbnail(currentDetails) }
+              : item,
+          ),
+        ),
       );
     } finally {
       setIsGenerating(false);
@@ -881,8 +1431,12 @@ export default function StudioWorkspace() {
               className="mx-auto max-w-4xl space-y-12"
             >
               <div className="space-y-4 text-center">
-                <h2 className="text-4xl font-bold tracking-tight text-neutral-900">What are we celebrating?</h2>
-                <p className="text-neutral-500">Select a category to start your invitation journey.</p>
+                <h2 className="text-4xl font-bold tracking-tight text-neutral-900">
+                  What are we celebrating?
+                </h2>
+                <p className="text-neutral-500">
+                  Select a category to start your invitation journey.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -904,7 +1458,9 @@ export default function StudioWorkspace() {
                           : "border-neutral-200 bg-white text-neutral-900 shadow-sm hover:border-neutral-300"
                       }`}
                     >
-                      <div className={`rounded-2xl p-4 ${active ? "bg-white/20" : "bg-neutral-100"}`}>
+                      <div
+                        className={`rounded-2xl p-4 ${active ? "bg-white/20" : "bg-neutral-100"}`}
+                      >
                         <Icon className="h-8 w-8" />
                       </div>
                       <span className="text-sm font-bold tracking-tight">{category.name}</span>
@@ -931,8 +1487,12 @@ export default function StudioWorkspace() {
                   <ArrowLeft className="h-5 w-5 text-neutral-900" />
                 </button>
                 <div>
-                  <h2 className="text-3xl font-bold tracking-tight text-neutral-900">{details.category} Details</h2>
-                  <p className="text-neutral-500">Fill in the event info for your {details.category.toLowerCase()}.</p>
+                  <h2 className="text-3xl font-bold tracking-tight text-neutral-900">
+                    {details.category} Details
+                  </h2>
+                  <p className="text-neutral-500">
+                    Fill in the event info for your {details.category.toLowerCase()}.
+                  </p>
                 </div>
               </div>
 
@@ -949,7 +1509,10 @@ export default function StudioWorkspace() {
                     {(CATEGORY_FIELDS[details.category] || [])
                       .filter((field) => field.required)
                       .map((field) => (
-                        <div key={field.key} className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}>
+                        <div
+                          key={field.key}
+                          className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}
+                        >
                           <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
                             {field.label} <span className="text-red-500">*</span>
                           </label>
@@ -958,13 +1521,20 @@ export default function StudioWorkspace() {
                               placeholder={field.placeholder}
                               className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                               value={String(inputValue(details[field.key]))}
-                              onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                              onChange={(event) =>
+                                setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
+                              }
                             />
                           ) : field.type === "select" ? (
                             <select
                               className="w-full appearance-none rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                               value={String(inputValue(details[field.key]))}
-                              onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value as EventDetails[typeof field.key] }))}
+                              onChange={(event) =>
+                                setDetails((prev) => ({
+                                  ...prev,
+                                  [field.key]: event.target.value as EventDetails[typeof field.key],
+                                }))
+                              }
                             >
                               {field.options?.map((option) => (
                                 <option key={option} value={option}>
@@ -978,7 +1548,9 @@ export default function StudioWorkspace() {
                               placeholder={field.placeholder}
                               className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                               value={String(inputValue(details[field.key]))}
-                              onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                              onChange={(event) =>
+                                setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
+                              }
                             />
                           )}
                         </div>
@@ -1000,10 +1572,14 @@ export default function StudioWorkspace() {
                             type={field.type}
                             placeholder={field.placeholder}
                             className={`w-full rounded-xl border border-neutral-200 bg-white py-3 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 ${
-                              field.key === "startTime" || field.key === "location" ? "pl-12" : "px-4"
+                              field.key === "startTime" || field.key === "location"
+                                ? "pl-12"
+                                : "px-4"
                             }`}
                             value={String(inputValue(details[field.key]))}
-                            onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                            onChange={(event) =>
+                              setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
+                            }
                           />
                         </div>
                       </div>
@@ -1019,7 +1595,9 @@ export default function StudioWorkspace() {
                           placeholder={field.placeholder}
                           className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                           value={String(inputValue(details[field.key]))}
-                          onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                          onChange={(event) =>
+                            setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
+                          }
                         />
                       </div>
                     ))}
@@ -1027,14 +1605,19 @@ export default function StudioWorkspace() {
                 </div>
 
                 <div className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
-                  <button onClick={() => setIsOptionalCollapsed((prev) => !prev)} className="group flex w-full items-center justify-between">
+                  <button
+                    onClick={() => setIsOptionalCollapsed((prev) => !prev)}
+                    className="group flex w-full items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="rounded-lg bg-neutral-100 p-2 text-neutral-500 transition-colors group-hover:bg-neutral-200">
                         <Plus className="h-5 w-5" />
                       </div>
                       <h3 className="text-xl font-bold text-neutral-900">Optional Details</h3>
                     </div>
-                    <div className={`transition-transform duration-300 ${isOptionalCollapsed ? "" : "rotate-90"}`}>
+                    <div
+                      className={`transition-transform duration-300 ${isOptionalCollapsed ? "" : "rotate-90"}`}
+                    >
                       <ChevronRight className="h-6 w-6 text-neutral-400 group-hover:text-neutral-600" />
                     </div>
                   </button>
@@ -1049,14 +1632,24 @@ export default function StudioWorkspace() {
                         {(CATEGORY_FIELDS[details.category] || [])
                           .filter((field) => !field.required)
                           .map((field) => (
-                            <div key={field.key} className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}>
-                              <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">{field.label}</label>
+                            <div
+                              key={field.key}
+                              className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}
+                            >
+                              <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                                {field.label}
+                              </label>
                               {field.type === "textarea" ? (
                                 <textarea
                                   placeholder={field.placeholder}
                                   className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                                   value={String(inputValue(details[field.key]))}
-                                  onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                                  onChange={(event) =>
+                                    setDetails((prev) => ({
+                                      ...prev,
+                                      [field.key]: event.target.value,
+                                    }))
+                                  }
                                 />
                               ) : field.type === "checkbox" ? (
                                 <div className="flex items-center gap-3 py-2">
@@ -1064,7 +1657,12 @@ export default function StudioWorkspace() {
                                     type="checkbox"
                                     className="h-5 w-5 rounded border-neutral-200 bg-white text-purple-600 focus:ring-purple-500/20"
                                     checked={Boolean(details[field.key])}
-                                    onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.checked }))}
+                                    onChange={(event) =>
+                                      setDetails((prev) => ({
+                                        ...prev,
+                                        [field.key]: event.target.checked,
+                                      }))
+                                    }
                                   />
                                   <span className="text-sm text-neutral-500">{field.label}</span>
                                 </div>
@@ -1074,7 +1672,12 @@ export default function StudioWorkspace() {
                                   placeholder={field.placeholder}
                                   className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                                   value={String(inputValue(details[field.key]))}
-                                  onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                                  onChange={(event) =>
+                                    setDetails((prev) => ({
+                                      ...prev,
+                                      [field.key]: event.target.value,
+                                    }))
+                                  }
                                 />
                               )}
                             </div>
@@ -1082,7 +1685,9 @@ export default function StudioWorkspace() {
 
                         {SHARED_BASICS.filter((field) => !field.required).map((field) => (
                           <div key={field.key} className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">{field.label}</label>
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                              {field.label}
+                            </label>
                             <div className="relative">
                               {field.key === "endTime" ? (
                                 <Clock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -1094,7 +1699,12 @@ export default function StudioWorkspace() {
                                   field.key === "endTime" ? "pl-12" : "px-4"
                                 }`}
                                 value={String(inputValue(details[field.key]))}
-                                onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                                onChange={(event) =>
+                                  setDetails((prev) => ({
+                                    ...prev,
+                                    [field.key]: event.target.value,
+                                  }))
+                                }
                               />
                             </div>
                           </div>
@@ -1102,35 +1712,50 @@ export default function StudioWorkspace() {
 
                         {RSVP_FIELDS.filter((field) => !field.required).map((field) => (
                           <div key={field.key} className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">{field.label}</label>
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                              {field.label}
+                            </label>
                             <input
                               type={field.type}
                               placeholder={field.placeholder}
                               className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                               value={String(inputValue(details[field.key]))}
-                              onChange={(event) => setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                              onChange={(event) =>
+                                setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
+                              }
                             />
                           </div>
                         ))}
 
                         <div className="space-y-2 md:col-span-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Personal Message</label>
+                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                            Personal Message
+                          </label>
                           <textarea
                             placeholder="e.g. We can't wait to see you there!"
                             className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                             value={details.message}
-                            onChange={(event) => setDetails((prev) => ({ ...prev, message: event.target.value }))}
+                            onChange={(event) =>
+                              setDetails((prev) => ({ ...prev, message: event.target.value }))
+                            }
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Special Instructions</label>
+                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                            Special Instructions
+                          </label>
                           <input
                             type="text"
                             placeholder="e.g. Parking info, entrance code"
                             className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                             value={details.specialInstructions}
-                            onChange={(event) => setDetails((prev) => ({ ...prev, specialInstructions: event.target.value }))}
+                            onChange={(event) =>
+                              setDetails((prev) => ({
+                                ...prev,
+                                specialInstructions: event.target.value,
+                              }))
+                            }
                           />
                         </div>
                       </div>
@@ -1145,10 +1770,14 @@ export default function StudioWorkspace() {
 
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                           <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Orientation</label>
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                              Orientation
+                            </label>
                             <div className="flex gap-2">
                               <button
-                                onClick={() => setDetails((prev) => ({ ...prev, orientation: "portrait" }))}
+                                onClick={() =>
+                                  setDetails((prev) => ({ ...prev, orientation: "portrait" }))
+                                }
                                 className={`flex-1 rounded-xl border py-3 text-xs font-bold transition-all ${
                                   details.orientation === "portrait"
                                     ? "border-purple-500 bg-purple-600 text-white"
@@ -1158,7 +1787,9 @@ export default function StudioWorkspace() {
                                 Portrait
                               </button>
                               <button
-                                onClick={() => setDetails((prev) => ({ ...prev, orientation: "landscape" }))}
+                                onClick={() =>
+                                  setDetails((prev) => ({ ...prev, orientation: "landscape" }))
+                                }
                                 className={`flex-1 rounded-xl border py-3 text-xs font-bold transition-all ${
                                   details.orientation === "landscape"
                                     ? "border-purple-500 bg-purple-600 text-white"
@@ -1171,23 +1802,34 @@ export default function StudioWorkspace() {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Preferred Colors</label>
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                              Preferred Colors
+                            </label>
                             <input
                               type="text"
                               placeholder="e.g. Red and gold"
                               className="w-full rounded-xl border border-neutral-200 bg-neutral-900 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                               value={details.colors}
-                              onChange={(event) => setDetails((prev) => ({ ...prev, colors: event.target.value }))}
+                              onChange={(event) =>
+                                setDetails((prev) => ({ ...prev, colors: event.target.value }))
+                              }
                             />
                           </div>
 
                           <div className="space-y-2 md:col-span-2 lg:col-span-1">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">Visual Style Idea</label>
+                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+                              Visual Style Idea
+                            </label>
                             <textarea
                               placeholder="e.g. Editorial premiere poster with red carpet lighting..."
                               className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-neutral-900 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                               value={details.visualPreferences}
-                              onChange={(event) => setDetails((prev) => ({ ...prev, visualPreferences: event.target.value }))}
+                              onChange={(event) =>
+                                setDetails((prev) => ({
+                                  ...prev,
+                                  visualPreferences: event.target.value,
+                                }))
+                              }
                             />
                           </div>
                         </div>
@@ -1223,7 +1865,9 @@ export default function StudioWorkspace() {
             >
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h2 className="text-3xl font-bold tracking-tight text-neutral-900">Your Library</h2>
+                  <h2 className="text-3xl font-bold tracking-tight text-neutral-900">
+                    Your Library
+                  </h2>
                   <p className="text-neutral-500">Manage and edit your created invitations.</p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1330,8 +1974,12 @@ export default function StudioWorkspace() {
                         </div>
                       </div>
                       <div className="p-6">
-                        <h3 className="truncate text-lg font-bold text-neutral-900">{getDisplayTitle(item.details)}</h3>
-                        <p className="text-xs uppercase tracking-widest text-neutral-500">{item.theme}</p>
+                        <h3 className="truncate text-lg font-bold text-neutral-900">
+                          {getDisplayTitle(item.details)}
+                        </h3>
+                        <p className="text-xs uppercase tracking-widest text-neutral-500">
+                          {item.theme}
+                        </p>
                       </div>
                     </motion.div>
                   ))}
@@ -1358,13 +2006,17 @@ export default function StudioWorkspace() {
                 </button>
 
                 <div className="space-y-4">
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500">Select a Preset</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500">
+                    Select a Preset
+                  </h2>
                   <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
                     <div className="flex items-center gap-3">
                       <div className="rounded-lg bg-purple-600/10 p-2 text-purple-600">
                         <Sparkles className="h-4 w-4" />
                       </div>
-                      <span className="text-sm font-bold text-neutral-900">{details.category} Presets</span>
+                      <span className="text-sm font-bold text-neutral-900">
+                        {details.category} Presets
+                      </span>
                     </div>
 
                     <div className="grid max-h-[450px] grid-cols-2 gap-3 overflow-y-auto pr-2">
@@ -1376,7 +2028,9 @@ export default function StudioWorkspace() {
                             key={preset.id}
                             onClick={() => setDetails((prev) => ({ ...prev, theme: preset.name }))}
                             className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border text-left transition-all ${
-                              active ? "border-purple-500 ring-2 ring-purple-500/20" : "border-neutral-200 hover:border-neutral-300"
+                              active
+                                ? "border-purple-500 ring-2 ring-purple-500/20"
+                                : "border-neutral-200 hover:border-neutral-300"
                             }`}
                           >
                             <img
@@ -1390,7 +2044,9 @@ export default function StudioWorkspace() {
                                 <div className="rounded-md border border-neutral-200 bg-white/80 p-1 backdrop-blur-sm">
                                   <Icon className="h-3 w-3 text-purple-600" />
                                 </div>
-                                <span className="line-clamp-2 text-[10px] font-bold leading-tight text-neutral-900">{preset.name}</span>
+                                <span className="line-clamp-2 text-[10px] font-bold leading-tight text-neutral-900">
+                                  {preset.name}
+                                </span>
                               </div>
                               <span className="line-clamp-2 text-[8px] leading-tight text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100">
                                 {preset.description}
@@ -1422,14 +2078,18 @@ export default function StudioWorkspace() {
                         placeholder="e.g. A minimalist gold and white theme with marble textures..."
                         className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                         value={details.theme}
-                        onChange={(event) => setDetails((prev) => ({ ...prev, theme: event.target.value }))}
+                        onChange={(event) =>
+                          setDetails((prev) => ({ ...prev, theme: event.target.value }))
+                        }
                       />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500">Generate Media</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500">
+                    Generate Media
+                  </h2>
                   <div className="space-y-3">
                     <button
                       onClick={() => generateMedia("page")}
@@ -1478,7 +2138,9 @@ export default function StudioWorkspace() {
                       >
                         <div
                           className={`relative flex items-center justify-center overflow-hidden bg-neutral-100 ${
-                            item.details.orientation === "portrait" ? "aspect-[9/16]" : "aspect-[16/9]"
+                            item.details.orientation === "portrait"
+                              ? "aspect-[9/16]"
+                              : "aspect-[16/9]"
                           }`}
                         >
                           {item.status === "loading" ? (
@@ -1491,7 +2153,10 @@ export default function StudioWorkspace() {
                           ) : item.status === "error" ? (
                             <div className="p-6 text-center">
                               <p className="mb-2 font-bold text-red-500">Generation Failed</p>
-                              <button onClick={() => generateMedia(item.type)} className="text-xs text-neutral-500 underline hover:text-neutral-900">
+                              <button
+                                onClick={() => generateMedia(item.type)}
+                                className="text-xs text-neutral-500 underline hover:text-neutral-900"
+                              >
                                 Try Again
                               </button>
                             </div>
@@ -1539,7 +2204,11 @@ export default function StudioWorkspace() {
                                   className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-900 shadow-lg transition-transform hover:scale-110"
                                   title="Share"
                                 >
-                                  {copySuccess ? <CheckCircle2 className="h-6 w-6 text-green-600" /> : <Share2 className="h-6 w-6" />}
+                                  {copySuccess ? (
+                                    <CheckCircle2 className="h-6 w-6 text-green-600" />
+                                  ) : (
+                                    <Share2 className="h-6 w-6" />
+                                  )}
                                 </button>
                                 <button
                                   onClick={() => deleteMedia(item.id)}
@@ -1568,7 +2237,9 @@ export default function StudioWorkspace() {
                         </div>
 
                         <div className="space-y-1 p-6">
-                          <h3 className="truncate text-lg font-bold text-neutral-900">{item.theme}</h3>
+                          <h3 className="truncate text-lg font-bold text-neutral-900">
+                            {item.theme}
+                          </h3>
                           <p className="text-xs text-neutral-500">Created just now • Interactive</p>
                         </div>
                       </motion.div>
@@ -1579,7 +2250,9 @@ export default function StudioWorkspace() {
                         <div className="mb-6 inline-flex rounded-full bg-neutral-50 p-6">
                           <Sparkles className="h-12 w-12 text-neutral-300" />
                         </div>
-                        <h3 className="mb-2 text-xl font-bold text-neutral-900">No media generated yet</h3>
+                        <h3 className="mb-2 text-xl font-bold text-neutral-900">
+                          No media generated yet
+                        </h3>
                         <p className="mx-auto max-w-xs text-neutral-500">
                           Select a theme and choose a media type to start your creative journey.
                         </p>
@@ -1609,7 +2282,10 @@ export default function StudioWorkspace() {
               className="relative flex max-h-full w-full max-w-5xl flex-col items-center gap-6"
               onClick={(event) => event.stopPropagation()}
             >
-              <button onClick={() => setSelectedImage(null)} className="absolute -top-12 right-0 p-2 text-white/70 transition-colors hover:text-white">
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute -top-12 right-0 p-2 text-white/70 transition-colors hover:text-white"
+              >
                 <X className="h-8 w-8" />
               </button>
 
@@ -1661,12 +2337,17 @@ export default function StudioWorkspace() {
             </button>
 
             <div className="absolute left-8 top-8 z-[110] flex items-center gap-3 rounded-full border border-white/10 bg-white/10 p-2 backdrop-blur-md">
-              <span className="pl-2 text-[10px] font-bold uppercase tracking-widest text-white">Design Mode</span>
+              <span className="pl-2 text-[10px] font-bold uppercase tracking-widest text-white">
+                Design Mode
+              </span>
               <button
                 onClick={() => setIsDesignMode((prev) => !prev)}
                 className={`relative h-6 w-12 rounded-full transition-all ${isDesignMode ? "bg-purple-500" : "bg-neutral-700"}`}
               >
-                <motion.div animate={{ x: isDesignMode ? 24 : 4 }} className="absolute top-1 h-4 w-4 rounded-full bg-white shadow-lg" />
+                <motion.div
+                  animate={{ x: isDesignMode ? 24 : 4 }}
+                  className="absolute top-1 h-4 w-4 rounded-full bg-white shadow-lg"
+                />
               </button>
             </div>
 
@@ -1710,7 +2391,10 @@ export default function StudioWorkspace() {
                               {activeTab === "details" ? "Event Details" : null}
                             </h4>
                           </div>
-                          <button onClick={() => setActiveTab("none")} className="rounded-full p-1 text-neutral-500 hover:bg-neutral-100">
+                          <button
+                            onClick={() => setActiveTab("none")}
+                            className="rounded-full p-1 text-neutral-500 hover:bg-neutral-100"
+                          >
                             <X className="h-4 w-4" />
                           </button>
                         </div>
@@ -1718,22 +2402,36 @@ export default function StudioWorkspace() {
                         <div className="space-y-3">
                           {activeTab === "rsvp" ? (
                             <div className="space-y-4">
-                              <p className="text-sm font-bold uppercase tracking-widest text-green-600">RSVP Details</p>
+                              <p className="text-sm font-bold uppercase tracking-widest text-green-600">
+                                RSVP Details
+                              </p>
                               <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
                                 <div>
-                                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Host / RSVP Contact</p>
-                                  <p className="text-sm font-medium text-neutral-900">{activePageRecord.data.eventDetails.rsvpName || "Host"}</p>
+                                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                    Host / RSVP Contact
+                                  </p>
+                                  <p className="text-sm font-medium text-neutral-900">
+                                    {activePageRecord.data.eventDetails.rsvpName || "Host"}
+                                  </p>
                                 </div>
                                 {activePageRecord.data.eventDetails.rsvpContact ? (
                                   <div>
-                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Contact Info</p>
-                                    <p className="text-sm text-neutral-700">{activePageRecord.data.eventDetails.rsvpContact}</p>
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                      Contact Info
+                                    </p>
+                                    <p className="text-sm text-neutral-700">
+                                      {activePageRecord.data.eventDetails.rsvpContact}
+                                    </p>
                                   </div>
                                 ) : null}
                                 {activePageRecord.data.eventDetails.rsvpDeadline ? (
                                   <div>
-                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">RSVP Deadline</p>
-                                    <p className="text-sm text-red-600">{formatDate(activePageRecord.data.eventDetails.rsvpDeadline)}</p>
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                      RSVP Deadline
+                                    </p>
+                                    <p className="text-sm text-red-600">
+                                      {formatDate(activePageRecord.data.eventDetails.rsvpDeadline)}
+                                    </p>
                                   </div>
                                 ) : null}
                               </div>
@@ -1773,16 +2471,23 @@ export default function StudioWorkspace() {
                                     ].includes(key);
                                   })
                                   .map(([key, value]) => (
-                                    <div key={key} className="rounded-xl border border-neutral-100 bg-neutral-50 p-3">
+                                    <div
+                                      key={key}
+                                      className="rounded-xl border border-neutral-100 bg-neutral-50 p-3"
+                                    >
                                       <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                        {key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase())}
+                                        {key
+                                          .replace(/([A-Z])/g, " $1")
+                                          .replace(/^./, (char) => char.toUpperCase())}
                                       </p>
                                       <p className="text-sm text-neutral-900">{String(value)}</p>
                                     </div>
                                   ))}
                                 {activePageRecord.data.eventDetails.message ? (
                                   <div className="rounded-xl border border-purple-100 bg-purple-50 p-4 italic">
-                                    <p className="text-xs text-purple-600">"{activePageRecord.data.eventDetails.message}"</p>
+                                    <p className="text-xs text-purple-600">
+                                      "{activePageRecord.data.eventDetails.message}"
+                                    </p>
                                   </div>
                                 ) : null}
                               </div>
@@ -1792,11 +2497,15 @@ export default function StudioWorkspace() {
                           {activeTab === "location" ? (
                             <>
                               <p className="text-sm font-medium text-neutral-900">
-                                {activePageRecord.data.eventDetails.venueName || activePageRecord.data.eventDetails.location}
+                                {activePageRecord.data.eventDetails.venueName ||
+                                  activePageRecord.data.eventDetails.location}
                               </p>
-                              <p className="text-xs text-neutral-500">{activePageRecord.data.eventDetails.location}</p>
+                              <p className="text-xs text-neutral-500">
+                                {activePageRecord.data.eventDetails.location}
+                              </p>
                               <p className="mt-2 text-xs text-neutral-500">
-                                {formatDate(activePageRecord.data.eventDetails.eventDate)} @ {activePageRecord.data.eventDetails.startTime}
+                                {formatDate(activePageRecord.data.eventDetails.eventDate)} @{" "}
+                                {activePageRecord.data.eventDetails.startTime}
                               </p>
                               <button
                                 onClick={() =>
@@ -1820,14 +2529,24 @@ export default function StudioWorkspace() {
                                 {activePageRecord.data.eventDetails.eventDate
                                   ? formatDate(activePageRecord.data.eventDetails.eventDate)
                                   : "Date TBD"}
-                                {activePageRecord.data.eventDetails.startTime ? ` at ${activePageRecord.data.eventDetails.startTime}` : ""}
+                                {activePageRecord.data.eventDetails.startTime
+                                  ? ` at ${activePageRecord.data.eventDetails.startTime}`
+                                  : ""}
                               </p>
                               <button
                                 onClick={() => {
-                                  const title = encodeURIComponent(activePageRecord.data?.title || "Event");
-                                  const detailsText = encodeURIComponent(activePageRecord.data?.description || "");
-                                  const location = encodeURIComponent(activePageRecord.data?.eventDetails.location || "");
-                                  const date = (activePageRecord.data?.eventDetails.eventDate || "").replace(/-/g, "");
+                                  const title = encodeURIComponent(
+                                    activePageRecord.data?.title || "Event",
+                                  );
+                                  const detailsText = encodeURIComponent(
+                                    activePageRecord.data?.description || "",
+                                  );
+                                  const location = encodeURIComponent(
+                                    activePageRecord.data?.eventDetails.location || "",
+                                  );
+                                  const date = (
+                                    activePageRecord.data?.eventDetails.eventDate || ""
+                                  ).replace(/-/g, "");
                                   const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${detailsText}&location=${location}&dates=${date}/${date}`;
                                   window.open(url, "_blank");
                                 }}
@@ -1842,10 +2561,17 @@ export default function StudioWorkspace() {
                           {activeTab === "registry" ? (
                             <>
                               <p className="text-sm font-medium text-neutral-900">Gift Registry</p>
-                              <p className="text-xs text-neutral-500">{getRegistryText(activePageRecord.data.eventDetails)}</p>
+                              <p className="text-xs text-neutral-500">
+                                {getRegistryText(activePageRecord.data.eventDetails)}
+                              </p>
                               {activePageRecord.data.eventDetails.registryLink ? (
                                 <button
-                                  onClick={() => window.open(activePageRecord.data?.eventDetails.registryLink, "_blank")}
+                                  onClick={() =>
+                                    window.open(
+                                      activePageRecord.data?.eventDetails.registryLink,
+                                      "_blank",
+                                    )
+                                  }
                                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-pink-600 py-2 text-xs font-bold text-white"
                                 >
                                   <ExternalLink className="h-3 w-3" />
@@ -1860,54 +2586,66 @@ export default function StudioWorkspace() {
                   </AnimatePresence>
 
                   <div className="pointer-events-none flex items-end justify-center gap-4 px-4 pb-8">
-                    {([
-                      {
-                        key: "rsvp",
-                        label: "RSVP",
-                        icon: User,
-                        visible: Boolean(activePageRecord.data.eventDetails.rsvpName || activePageRecord.data.eventDetails.rsvpContact),
-                        onClick: () => setActiveTab(activeTab === "rsvp" ? "none" : "rsvp"),
-                      },
-                      {
-                        key: "details",
-                        label: "Details",
-                        icon: Info,
-                        visible: true,
-                        onClick: () => setActiveTab(activeTab === "details" ? "none" : "details"),
-                      },
-                      {
-                        key: "location",
-                        label: "Location",
-                        icon: MapPin,
-                        visible: true,
-                        onClick: () => setActiveTab(activeTab === "location" ? "none" : "location"),
-                      },
-                      {
-                        key: "calendar",
-                        label: "Calendar",
-                        icon: Calendar,
-                        visible: true,
-                        onClick: () => setActiveTab(activeTab === "calendar" ? "none" : "calendar"),
-                      },
-                      {
-                        key: "share",
-                        label: copySuccess ? "Copied!" : "Share",
-                        icon: copySuccess ? CheckCircle2 : Share2,
-                        visible: true,
-                        onClick: () => shareMedia(activePageRecord),
-                      },
-                      {
-                        key: "registry",
-                        label: "Registry",
-                        icon: Sparkles,
-                        visible: Boolean(activePageRecord.data.eventDetails.registryLink || getRegistryText(activePageRecord.data.eventDetails)),
-                        onClick: () => setActiveTab(activeTab === "registry" ? "none" : "registry"),
-                      },
-                    ] as const)
+                    {(
+                      [
+                        {
+                          key: "rsvp",
+                          label: "RSVP",
+                          icon: User,
+                          visible: Boolean(
+                            activePageRecord.data.eventDetails.rsvpName ||
+                              activePageRecord.data.eventDetails.rsvpContact,
+                          ),
+                          onClick: () => setActiveTab(activeTab === "rsvp" ? "none" : "rsvp"),
+                        },
+                        {
+                          key: "details",
+                          label: "Details",
+                          icon: Info,
+                          visible: true,
+                          onClick: () => setActiveTab(activeTab === "details" ? "none" : "details"),
+                        },
+                        {
+                          key: "location",
+                          label: "Location",
+                          icon: MapPin,
+                          visible: true,
+                          onClick: () =>
+                            setActiveTab(activeTab === "location" ? "none" : "location"),
+                        },
+                        {
+                          key: "calendar",
+                          label: "Calendar",
+                          icon: Calendar,
+                          visible: true,
+                          onClick: () =>
+                            setActiveTab(activeTab === "calendar" ? "none" : "calendar"),
+                        },
+                        {
+                          key: "share",
+                          label: copySuccess ? "Copied!" : "Share",
+                          icon: copySuccess ? CheckCircle2 : Share2,
+                          visible: true,
+                          onClick: () => shareMedia(activePageRecord),
+                        },
+                        {
+                          key: "registry",
+                          label: "Registry",
+                          icon: Sparkles,
+                          visible: Boolean(
+                            activePageRecord.data.eventDetails.registryLink ||
+                              getRegistryText(activePageRecord.data.eventDetails),
+                          ),
+                          onClick: () =>
+                            setActiveTab(activeTab === "registry" ? "none" : "registry"),
+                        },
+                      ] as const
+                    )
                       .filter((button) => button.visible)
                       .map((button) => {
                         const Icon = button.icon;
-                        const position = activePageRecord.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+                        const position =
+                          activePageRecord.positions?.[button.key] || EMPTY_POSITIONS[button.key];
                         return (
                           <motion.div
                             key={button.key}
@@ -1941,7 +2679,9 @@ export default function StudioWorkspace() {
                                     : ""
                                 }`}
                               >
-                                <Icon className={`h-5 w-5 ${button.key === "share" && copySuccess ? "text-green-400" : "text-white"}`} />
+                                <Icon
+                                  className={`h-5 w-5 ${button.key === "share" && copySuccess ? "text-green-400" : "text-white"}`}
+                                />
                               </div>
                               <span className="text-[9px] font-bold uppercase tracking-widest text-white drop-shadow-md">
                                 {button.label}

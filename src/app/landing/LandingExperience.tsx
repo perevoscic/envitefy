@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  motion,
-  type Transition,
-  type Variants,
-} from "framer-motion";
+import { motion, type Transition, type Variants } from "framer-motion";
 import {
   ArrowRight,
   Calendar,
@@ -24,8 +20,6 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -358,14 +352,6 @@ function PhoneShell({ children, className }: { children: ReactNode; className?: 
 export default function LandingExperience() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const reduceMotion = useReducedMotion();
-  const activeScene = useActiveScene(LANDING_SCENE_ORDER, "snap");
-  const { ref: gymnasticsHighlightRef, visible: gymnasticsHighlightVisible } =
-    useRevealOnce();
-  const { ref: birthdayHeroRef, visible: birthdayHeroVisible } =
-    useRevealOnce();
-  const { ref: weddingHeroRef, visible: weddingHeroVisible } = useRevealOnce();
-
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
@@ -638,261 +624,138 @@ export default function LandingExperience() {
             viewport={{ once: true, amount: 0.2 }}
             className="mx-auto max-w-7xl"
           >
-            <div className="absolute inset-0 bg-[linear-gradient(140deg,rgba(14,165,233,0.08),rgba(124,58,237,0.03)_45%,transparent)]" />
-            <div className="relative grid gap-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center">
+            <div
+              className={cx(
+                styles.gymnasticsShell,
+                "relative isolate overflow-hidden px-5 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-10",
+              )}
+            >
               <div
-                ref={gymnasticsHighlightRef}
-                className={`${styles.gymnasticsSportsVisual} relative order-2 flex flex-row flex-nowrap items-start justify-center gap-4 sm:items-center sm:gap-6 lg:order-1 lg:justify-start`}
-              >
-                <div
-                  aria-hidden="true"
-                  className={styles.gymnasticsSportsGlow}
-                />
+                aria-hidden
+                className="pointer-events-none absolute -right-20 -top-16 h-80 w-80 rounded-full bg-[#8b5cf6]/22 blur-[100px]"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#22d3ee]/18 blur-[90px]"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-1/2 h-[min(100%,28rem)] w-[min(100%,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7c3aed]/[0.06] blur-3xl"
+              />
 
-                <motion.div
-                  initial={false}
-                  animate={
-                    reduceMotion
-                      ? { opacity: 1, x: 0, y: 0, rotate: -8, scale: 1 }
-                      : gymnasticsHighlightVisible
-                        ? {
-                            opacity: 1,
-                            x: 0,
-                            y: 0,
-                            rotate: -8,
-                            scale: 1,
-                            transition: {
-                              duration: 0.82,
-                              delay: 0.08,
-                              ease: [0.22, 1, 0.36, 1],
-                            },
-                          }
-                        : { opacity: 0, x: -52, y: 22, rotate: -15, scale: 0.94 }
-                  }
-                  className={`${styles.gymnasticsSportsPdfWrap} group relative`}
-                >
-                  <div className={`${cardBubbleClass} -top-5 text-[#0EA5E9]`}>
-                    Meet PDF
-                  </div>
-                  <motion.div
-                    animate={
-                      reduceMotion || !gymnasticsHighlightVisible
-                        ? undefined
-                        : {
-                            y: [0, -8, 0],
-                            rotate: [-8, -10, -8],
-                            transition: {
-                              duration: 5.4,
-                              repeat: Number.POSITIVE_INFINITY,
-                              repeatType: "mirror",
-                              ease: "easeInOut",
-                            },
-                          }
-                    }
-                    whileHover={
-                      reduceMotion
-                        ? undefined
-                        : {
-                            y: -4,
-                            rotate: -5,
-                            transition: { duration: 0.26, ease: "easeOut" },
-                          }
-                    }
-                    className={`${styles.gymnasticsSportsPdfCard} w-[7.8rem] overflow-hidden rounded-[1.45rem] shadow-[0_26px_58px_rgba(3,0,12,0.3)] sm:w-52`}
-                  >
-                    <div className={styles.gymnasticsSportsScanBeam} />
-                    <Image
-                      alt="Gymnastics meet flyer preview"
-                      className="block h-auto w-full scale-[1.08] rounded-[1.45rem]"
-                      height={1024}
-                      loading="eager"
-                      sizes="(min-width: 640px) 13rem, 7.8rem"
-                      src={IMAGES.gymnasticsFlyer}
-                      width={768}
-                    />
-                  </motion.div>
-                </motion.div>
+              <div className="relative z-[1] space-y-10">
+                <div className="relative overflow-hidden rounded-[1.75rem] border border-white/12 bg-gradient-to-br from-[#251447] via-[#1a0d2e] to-[#0f081c] px-6 py-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] sm:rounded-[2rem] sm:px-9 sm:py-11">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_15%_-20%,rgba(124,58,237,0.55),transparent_55%)]" />
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_90%_100%,rgba(14,165,233,0.2),transparent_50%)]" />
 
-                <motion.div
-                  initial={false}
-                  animate={
-                    reduceMotion
-                      ? { opacity: 1, y: 0, scale: 1 }
-                      : gymnasticsHighlightVisible
-                        ? {
-                            opacity: 1,
-                            y: 0,
-                            scale: 1,
-                            transition: {
-                              duration: 0.7,
-                              delay: 0.2,
-                              ease: [0.22, 1, 0.36, 1],
-                            },
-                          }
-                        : { opacity: 0, y: 20, scale: 0.92 }
-                  }
-                  className={`${styles.gymnasticsSportsConnector} hidden sm:flex`}
-                >
-                  <motion.div
-                    animate={
-                      reduceMotion || !gymnasticsHighlightVisible
-                        ? undefined
-                        : {
-                            scale: [1, 1.08, 1],
-                            opacity: [0.92, 1, 0.92],
-                            transition: {
-                              duration: 2.2,
-                              repeat: Number.POSITIVE_INFINITY,
-                              ease: "easeInOut",
-                            },
-                          }
-                    }
-                    className={styles.gymnasticsSportsConnectorNode}
-                  >
-                    <span className={styles.gymnasticsSportsConnectorPulse} />
-                    <Sparkles size={18} />
-                  </motion.div>
-                  <div className={styles.gymnasticsSportsConnectorLine} />
-                  <span className={styles.gymnasticsSportsConnectorLabel}>
-                    Processing
-                  </span>
-                </motion.div>
+                  <div className="relative">
+                    <span className="inline-flex items-center rounded-full border border-white/18 bg-white/[0.08] px-4 py-2 text-[0.68rem] font-extrabold uppercase tracking-[0.26em] text-white/88 shadow-[0_12px_32px_rgba(0,0,0,0.2)] backdrop-blur-md">
+                      Gymnastics · Meet pages
+                    </span>
 
-                <motion.div
-                  initial={false}
-                  animate={
-                    reduceMotion
-                      ? { opacity: 1, x: 0, y: 0, rotate: 5, scale: 1 }
-                      : gymnasticsHighlightVisible
-                        ? {
-                            opacity: 1,
-                            x: 0,
-                            y: 0,
-                            rotate: 5,
-                            scale: 1,
-                            transition: {
-                              duration: 0.88,
-                              delay: 0.16,
-                              ease: [0.22, 1, 0.36, 1],
-                            },
-                          }
-                        : { opacity: 0, x: 54, y: 26, rotate: 11, scale: 0.94 }
-                  }
-                  className={`${styles.gymnasticsSportsPhoneWrap} group relative mt-5 sm:mt-0`}
-                >
-                  <div
-                    key={feature.title}
-                    className="rounded-[2rem] border border-[#e9e0fb] bg-white p-8 shadow-[0_18px_45px_rgba(43,27,22,0.05)]"
-                  >
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f0eaff] text-[#7c5cdb]">
-                      <feature.icon className="h-7 w-7" />
+                    <h2
+                      className={cx(
+                        styles.headline,
+                        "mt-7 max-w-[22ch] text-[1.85rem] font-extrabold leading-[1.08] tracking-tight text-white sm:max-w-none sm:text-4xl lg:text-[2.65rem] lg:leading-[1.05]",
+                      )}
+                    >
+                      Weekend logistics,{" "}
+                      <span className="bg-gradient-to-r from-[#c4b5fd] via-[#7dd3fc] to-[#5eead4] bg-clip-text text-transparent">
+                        one calm link
+                      </span>
+                      <span className="text-white/95">.</span>
+                    </h2>
+
+                    <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/72 sm:text-lg sm:leading-8">
+                      Stop re-explaining parking, hotels, and last-minute changes across group
+                      threads. Envitefy turns the packet into a single mobile hub parents actually
+                      open.
+                    </p>
+
+                    <div className="mt-8 flex flex-wrap gap-2.5">
+                      {[
+                        { label: "Packet → polished page", icon: FileText },
+                        { label: "Update once, everyone sees it", icon: Zap },
+                        { label: "Built for gym families", icon: Users },
+                      ].map((chip) => {
+                        const ChipIcon = chip.icon;
+                        return (
+                          <span
+                            key={chip.label}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-3.5 py-2 text-[0.8rem] font-semibold text-white/88 backdrop-blur-sm"
+                          >
+                            <ChipIcon className="h-3.5 w-3.5 shrink-0 text-[#a5b4fc]" />
+                            {chip.label}
+                          </span>
+                        );
+                      })}
                     </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-5 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
                     <h3
                       className={cx(
                         styles.headline,
-                        "mt-6 text-2xl font-bold text-[#2b1b16]",
+                        "text-xl font-bold tracking-tight text-[#1f1533] sm:text-2xl",
                       )}
                     >
-                      {feature.title}
+                      What your meet hub can carry
                     </h3>
-                    <p className="mt-4 text-base leading-7 text-[#6a5549]">
-                      {feature.desc}
+                    <p className="max-w-md text-sm leading-relaxed text-[#5c4d6e] sm:text-right sm:text-[0.9rem]">
+                      Mix and match sections—families get one place to scan before they hit the
+                      venue.
                     </p>
                   </div>
-                  <motion.div
-                    animate={
-                      reduceMotion || !gymnasticsHighlightVisible
-                        ? undefined
-                        : {
-                            y: [0, -12, 0],
-                            rotate: [5, 3, 5],
-                            transition: {
-                              duration: 5.8,
-                              repeat: Number.POSITIVE_INFINITY,
-                              repeatType: "mirror",
-                              ease: "easeInOut",
-                            },
-                          }
-                    }
-                    whileHover={
-                      reduceMotion
-                        ? undefined
-                        : {
-                            y: -6,
-                            rotate: 3,
-                            transition: { duration: 0.26, ease: "easeOut" },
-                          }
-                    }
-                    className={`${styles.gymnasticsSportsPhoneShell} w-[8.8rem] overflow-hidden rounded-[1.9rem] shadow-[0_30px_64px_rgba(3,0,12,0.34)] sm:w-56 sm:rounded-[2.4rem]`}
-                  >
-                    <div className={styles.gymnasticsSportsPhoneFrame}>
-                      <Image
-                        alt="Gymnastics event page preview"
-                        className="h-auto w-full rounded-[1.55rem] sm:rounded-[2rem]"
-                        height={1600}
-                        loading="eager"
-                        sizes="(min-width: 640px) 14rem, 8.8rem"
-                        src={IMAGES.gymnasticsEvent}
-                        width={900}
-                      />
-                    </div>
-                  </motion.div>
-                </motion.div>
-              </div>
 
-                  <div className="hidden lg:block">
-                    <PhoneShell className="mx-auto aspect-[9/19.5] max-w-[280px] border-white/10 bg-black">
-                      <div className="h-full bg-[#131b3d] p-6 text-white">
-                        <div className="mb-8 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-                              <Layout className="h-4 w-4 text-blue-100" />
-                            </div>
-                            <span className="text-sm font-bold">Meet Hub</span>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
+                    {gymnasticsFeatures.map((feature) => {
+                      const FeatureIcon = feature.icon;
+                      return (
+                      <motion.div
+                        key={feature.title}
+                        initial={false}
+                        whileHover={{ y: -5 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        className="group relative overflow-hidden rounded-2xl border border-[#e4daf7] bg-white/95 p-5 shadow-[0_14px_40px_rgba(31,21,51,0.06)] transition-[box-shadow,border-color] duration-300 hover:border-[#c4b5fd]/80 hover:shadow-[0_22px_56px_rgba(124,58,237,0.14)]"
+                      >
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-[#ede9fe] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                        />
+                        <div className="relative flex gap-4">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#7c3aed]/12 to-[#0ea5e9]/10 text-[#5b21b6] shadow-inner ring-1 ring-[#7c3aed]/10">
+                            <FeatureIcon className="h-5 w-5" />
                           </div>
-                          <div className="rounded-full bg-green-400 px-3 py-1 text-[8px] font-bold uppercase tracking-[0.28em] text-black">
-                            Live
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          {[
-                            {
-                              icon: Clock,
-                              label: "Session",
-                              value: "Level 7 @ 8:00 AM",
-                            },
-                            {
-                              icon: MapPin,
-                              label: "Entrance",
-                              value: "Main Arena - C",
-                            },
-                            {
-                              icon: Hotel,
-                              label: "Hotel",
-                              value: "Marriott (GYM26)",
-                            },
-                          ].map((item) => (
-                            <div
-                              key={item.label}
-                              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/6 p-4"
+                          <div className="min-w-0 flex-1">
+                            <h4
+                              className={cx(
+                                styles.headline,
+                                "text-[1.05rem] font-bold text-[#1f1533]",
+                              )}
                             >
-                              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3346a8] text-[#dbe6ff]">
-                                <item.icon className="h-4 w-4" />
-                              </div>
-                              <div>
-                                <p className="text-[8px] font-bold uppercase tracking-[0.24em] text-blue-200/60">
-                                  {item.label}
-                                </p>
-                                <p className="mt-1 text-xs font-bold text-white">
-                                  {item.value}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
+                              {feature.title}
+                            </h4>
+                            <p className="mt-1.5 text-sm leading-relaxed text-[#5c4d6e]">
+                              {feature.desc}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </PhoneShell>
+                      </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-center text-sm font-medium text-[#5c4d6e] sm:text-left">
+                      Ready to ship a page for your next meet?
+                    </p>
+                    <PrimaryAction
+                      href="/gymnastics"
+                      label="Explore gymnastics meet pages"
+                      className="!w-full !bg-[#7c3aed] !shadow-[0_22px_56px_rgba(124,58,237,0.38)] hover:!scale-[1.01] hover:!bg-[#6d28d9] sm:!w-auto"
+                    />
                   </div>
                 </div>
               </div>
