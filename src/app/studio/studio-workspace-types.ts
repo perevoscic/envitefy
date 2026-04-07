@@ -28,6 +28,8 @@ export type EventDetails = {
   rsvpName: string;
   rsvpContact: string;
   rsvpDeadline: string;
+  /** Host-written copy shown on the live card Event Details tab. */
+  detailsDescription: string;
   message: string;
   specialInstructions: string;
   orientation: "portrait" | "landscape";

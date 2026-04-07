@@ -105,44 +105,139 @@ export function StudioFormStep({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-6 gap-y-7 md:grid-cols-2 lg:grid-cols-3">
-                    {(CATEGORY_FIELDS[details.category] || [])
-                      .filter((field) => field.required)
-                      .map((field) => (
-                        <div
-                          key={field.key}
-                          className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}
-                        >
-                          <label className={fieldLabelClass}>
-                            {field.label} <span className="text-[#8a6fdb]">*</span>
-                          </label>
-                          {field.type === "textarea" ? (
-                            <textarea
-                              placeholder={field.placeholder}
-                              className={textAreaClass}
-                              value={String(inputValue(details[field.key]))}
-                              onChange={(event) =>
-                                setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
-                              }
-                            />
-                          ) : field.type === "select" ? (
-                            <select
-                              className={`${inputClass} appearance-none`}
-                              value={String(inputValue(details[field.key]))}
-                              onChange={(event) =>
-                                setDetails((prev) => ({
-                                  ...prev,
-                                  [field.key]: event.target.value as EventDetails[typeof field.key],
-                                }))
-                              }
+                  <div className="space-y-10">
+                    <div className="space-y-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                        {details.category}
+                      </p>
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-7 md:grid-cols-2 lg:grid-cols-3">
+                        {(CATEGORY_FIELDS[details.category] || [])
+                          .filter((field) => field.required)
+                          .map((field) => (
+                            <div
+                              key={field.key}
+                              className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2 lg:col-span-3" : ""}`}
                             >
-                              {field.options?.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
+                              <label className={fieldLabelClass}>
+                                {field.label} <span className="text-[#8a6fdb]">*</span>
+                              </label>
+                              {field.type === "textarea" ? (
+                                <textarea
+                                  placeholder={field.placeholder}
+                                  className={textAreaClass}
+                                  value={String(inputValue(details[field.key]))}
+                                  onChange={(event) =>
+                                    setDetails((prev) => ({
+                                      ...prev,
+                                      [field.key]: event.target.value,
+                                    }))
+                                  }
+                                />
+                              ) : field.type === "select" ? (
+                                <select
+                                  className={`${inputClass} appearance-none`}
+                                  value={String(inputValue(details[field.key]))}
+                                  onChange={(event) =>
+                                    setDetails((prev) => ({
+                                      ...prev,
+                                      [field.key]: event.target.value as EventDetails[typeof field.key],
+                                    }))
+                                  }
+                                >
+                                  {field.options?.map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type={field.type}
+                                  placeholder={field.placeholder}
+                                  className={inputClass}
+                                  value={String(inputValue(details[field.key]))}
+                                  onChange={(event) =>
+                                    setDetails((prev) => ({
+                                      ...prev,
+                                      [field.key]: event.target.value,
+                                    }))
+                                  }
+                                />
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 border-t border-[#ece4f7]/80 pt-8">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                        When &amp; where
+                      </p>
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
+                        {SHARED_BASICS.filter((field) => field.required).map((field) => (
+                          <div key={field.key} className="space-y-2">
+                            <label className={fieldLabelClass}>
+                              {field.label} <span className="text-[#8a6fdb]">*</span>
+                            </label>
+                            <div className="relative">
+                              {field.key === "startTime" ? (
+                                <Clock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                              ) : null}
+                              {field.key === "location" ? (
+                                <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                              ) : null}
+                              <input
+                                type={field.type}
+                                placeholder={field.placeholder}
+                                className={`${iconInputClass} ${
+                                  field.key === "startTime" || field.key === "location"
+                                    ? "pl-12"
+                                    : "px-4"
+                                }`}
+                                value={String(inputValue(details[field.key]))}
+                                onChange={(event) =>
+                                  setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
+                                }
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 border-t border-[#ece4f7]/80 pt-8">
+                      <label className={fieldLabelClass} htmlFor="studio-details-description">
+                        Event details / description
+                      </label>
+                      <p className="text-xs leading-relaxed text-neutral-500">
+                        Guests see this in the Event Details tab—schedule notes, parking, dress code
+                        reminders, what to bring, etc.
+                      </p>
+                      <textarea
+                        id="studio-details-description"
+                        placeholder="e.g. Private screening, popcorn provided, feature starts at noon. Park in the east lot."
+                        className={textAreaClass}
+                        value={details.detailsDescription}
+                        onChange={(event) =>
+                          setDetails((prev) => ({
+                            ...prev,
+                            detailsDescription: event.target.value,
+                          }))
+                        }
+                        rows={4}
+                      />
+                    </div>
+
+                    <div className="space-y-4 border-t border-[#ece4f7]/80 pt-8">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                        RSVP
+                      </p>
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
+                        {RSVP_FIELDS.filter((field) => field.required).map((field) => (
+                          <div key={field.key} className="space-y-2">
+                            <label className={fieldLabelClass}>
+                              {field.label} <span className="text-[#8a6fdb]">*</span>
+                            </label>
                             <input
                               type={field.type}
                               placeholder={field.placeholder}
@@ -152,55 +247,10 @@ export function StudioFormStep({
                                 setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
                               }
                             />
-                          )}
-                        </div>
-                      ))}
-
-                    {SHARED_BASICS.filter((field) => field.required).map((field) => (
-                      <div key={field.key} className="space-y-2">
-                        <label className={fieldLabelClass}>
-                          {field.label} <span className="text-[#8a6fdb]">*</span>
-                        </label>
-                        <div className="relative">
-                          {field.key === "startTime" ? (
-                            <Clock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                          ) : null}
-                          {field.key === "location" ? (
-                            <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                          ) : null}
-                          <input
-                            type={field.type}
-                            placeholder={field.placeholder}
-                            className={`${iconInputClass} ${
-                              field.key === "startTime" || field.key === "location"
-                                ? "pl-12"
-                                : "px-4"
-                            }`}
-                            value={String(inputValue(details[field.key]))}
-                            onChange={(event) =>
-                              setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
-                            }
-                          />
-                        </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-
-                    {RSVP_FIELDS.filter((field) => field.required).map((field) => (
-                      <div key={field.key} className="space-y-2">
-                        <label className={fieldLabelClass}>
-                          {field.label} <span className="text-[#8a6fdb]">*</span>
-                        </label>
-                        <input
-                          type={field.type}
-                          placeholder={field.placeholder}
-                          className={inputClass}
-                          value={String(inputValue(details[field.key]))}
-                          onChange={(event) =>
-                            setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
-                          }
-                        />
-                      </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
 

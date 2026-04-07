@@ -66,6 +66,7 @@ function buildFallbackInvitationData(data: Record<string, unknown>) {
       rsvpName: readString(eventDetailsRaw?.rsvpName),
       rsvpContact: readString(eventDetailsRaw?.rsvpContact ?? data.rsvp),
       rsvpDeadline: readString(eventDetailsRaw?.rsvpDeadline ?? data.rsvpDeadline),
+      detailsDescription: readString(eventDetailsRaw?.detailsDescription),
       message: readString(eventDetailsRaw?.message),
       registryLink:
         Array.isArray(data.registries) && data.registries[0] && isRecord(data.registries[0])

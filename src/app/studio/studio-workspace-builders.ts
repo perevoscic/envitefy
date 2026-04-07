@@ -330,6 +330,7 @@ export function getThemeColors(details: EventDetails) {
 
 export function buildDescription(details: EventDetails) {
   const parts = [
+    clean(details.detailsDescription),
     clean(details.message),
     clean(details.specialInstructions),
     clean(details.activityNote),
@@ -599,6 +600,7 @@ export function buildStudioPublishPayload(item: MediaItem, imageUrl: string | nu
   const category = normalizeStudioEventCategory(details.category);
   const descriptionParts = [
     item.data?.description,
+    readString(details.detailsDescription),
     readString(details.message),
     readString(details.specialInstructions),
     readString(details.optionalLink)

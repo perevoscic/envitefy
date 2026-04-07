@@ -15,9 +15,9 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardRsvpOutboundHref,
-  filterLiveCardFunFactsForDisplay,
   LIVE_CARD_RSVP_CHOICES,
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
@@ -41,6 +41,7 @@ type EventDetails = {
   rsvpName?: string;
   rsvpContact?: string;
   rsvpDeadline?: string;
+  detailsDescription?: string;
   message?: string;
   registryLink?: string;
   [key: string]: unknown;
@@ -54,7 +55,6 @@ type InvitationData = {
   };
   interactiveMetadata?: {
     rsvpMessage?: string;
-    funFacts?: string[];
     ctaLabel?: string;
     shareNote?: string;
   };
@@ -206,9 +206,9 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         ? "Tap a response to open your messages app with a draft text."
         : "Add a phone number or email as the RSVP contact to send a reply from here.";
 
-  const displayFunFacts = useMemo(
-    () => filterLiveCardFunFactsForDisplay(invitationData?.interactiveMetadata?.funFacts ?? []),
-    [invitationData?.interactiveMetadata?.funFacts],
+  const detailsWelcome = useMemo(
+    () => buildLiveCardDetailsWelcomeMessage(details ?? undefined, props.title),
+    [details, props.title],
   );
 
   return (
@@ -267,14 +267,9 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                     {activeTab === "rsvp" ? (
                       <div className="flex flex-col space-y-4">
                         <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                          <div>
-                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                              Host / RSVP contact name
-                            </p>
-                            <p className="text-sm font-medium text-neutral-900">
-                              {readString(details?.rsvpName) || "Host"}
-                            </p>
-                          </div>
+                          <p className="text-sm font-medium text-neutral-900">
+                            {readString(details?.rsvpName) || "Host"}
+                          </p>
                           {readString(details?.rsvpContact) ? (
                             <div>
                               <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
@@ -340,29 +335,24 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
 
                     {activeTab === "details" ? (
                       <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
-                        <p className="text-sm font-bold uppercase tracking-widest text-purple-600">
-                          {readString(details?.category) || "Event"} Information
-                        </p>
-                        {readString(invitationData?.theme?.themeStyle) ? (
-                          <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                              Theme Style
+                        {detailsWelcome ? (
+                          <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50 to-white p-4 shadow-sm">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-purple-700">
+                              Welcome
                             </p>
-                            <p className="mt-1 text-sm font-medium text-neutral-900">
-                              {readString(invitationData?.theme?.themeStyle)}
+                            <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-900">
+                              {detailsWelcome}
                             </p>
                           </div>
                         ) : null}
-                        {displayFunFacts.length > 0 ? (
-                          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
-                              Fun Facts
+                        {readString(details?.detailsDescription) ? (
+                          <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                              Event details
                             </p>
-                            <ul className="mt-3 space-y-2 text-sm text-amber-950">
-                              {displayFunFacts.map((fact) => (
-                                <li key={fact}>{fact}</li>
-                              ))}
-                            </ul>
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
+                              {readString(details?.detailsDescription)}
+                            </p>
                           </div>
                         ) : null}
                         {shouldShowLiveCardDescriptionSection(readString(details?.message)) &&

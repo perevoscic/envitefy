@@ -3,7 +3,6 @@ import test from "node:test";
 
 import {
   buildLiveCardRsvpOutboundHref,
-  filterLiveCardFunFactsForDisplay,
   formatLiveCardRsvpDraftBody,
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
@@ -65,17 +64,6 @@ test("buildLiveCardRsvpOutboundHref returns empty string for unusable contact", 
       shareUrl: "https://example.com/card/z/tbd",
     }),
     "",
-  );
-});
-
-test("filterLiveCardFunFactsForDisplay drops generic gift filler", () => {
-  assert.deepEqual(
-    filterLiveCardFunFactsForDisplay([
-      "Event starts at noon.",
-      "Your presence is the best gift.",
-      "Your presence is the best gift",
-    ]),
-    ["Event starts at noon."],
   );
 });
 

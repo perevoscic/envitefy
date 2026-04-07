@@ -279,7 +279,6 @@ export function buildInvitationImagePrompt(
           line("RSVP Message", liveCard.interactiveMetadata.rsvpMessage),
           line("CTA Label", liveCard.interactiveMetadata.ctaLabel),
           line("Share Note", liveCard.interactiveMetadata.shareNote),
-          line("Fun Facts", liveCard.interactiveMetadata.funFacts.join(" | ")),
         ].join("\n")
       : "",
     "",

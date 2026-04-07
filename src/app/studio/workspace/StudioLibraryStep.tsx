@@ -12,6 +12,7 @@ import {
   Plus,
   Share2,
   Trash2,
+  Type,
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { getDisplayTitle, getFallbackThumbnail } from "../studio-workspace-builders";
@@ -31,6 +32,7 @@ export type StudioLibraryStepProps = {
   setSelectedImage: Dispatch<SetStateAction<MediaItem | null>>;
   openLiveCardEditor: (item: MediaItem) => void;
   openLiveCardImageEdit: (item: MediaItem) => void;
+  openLiveCardTextEdit: (item: MediaItem) => void;
   downloadMedia: (item: MediaItem) => void;
   shareMedia: (item: MediaItem) => void | Promise<void>;
   sharingId: string | null;
@@ -46,6 +48,7 @@ export function StudioLibraryStep({
   setSelectedImage,
   openLiveCardEditor,
   openLiveCardImageEdit,
+  openLiveCardTextEdit,
   downloadMedia,
   shareMedia,
   sharingId,
@@ -176,6 +179,16 @@ export function StudioLibraryStep({
                                 >
                                   <Pencil className="h-5 w-5" />
                                 </button>
+                                {item.type === "page" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openLiveCardTextEdit(item)}
+                                    className="rounded-full bg-white p-3 text-neutral-900 shadow-[0_12px_24px_rgba(25,20,40,0.14)] transition-transform hover:scale-105"
+                                    title="Edit card text and details"
+                                  >
+                                    <Type className="h-5 w-5" />
+                                  </button>
+                                ) : null}
                                 <button
                                   onClick={() => downloadMedia(item)}
                                   className={ghostIconButtonClass}

@@ -19,14 +19,15 @@ import {
   Phone,
   Share2,
   Trash2,
+  Type,
   WandSparkles,
   X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
+import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardRsvpOutboundHref,
-  filterLiveCardFunFactsForDisplay,
   LIVE_CARD_RSVP_CHOICES,
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
@@ -122,12 +123,15 @@ export default function StudioWorkspace() {
         ? "Tap a response to open your messages app with a draft text."
         : "Add a phone number or email as the RSVP contact to send a reply from here.";
 
-  const studioPreviewFunFacts = useMemo(
+  const studioDetailsWelcome = useMemo(
     () =>
-      filterLiveCardFunFactsForDisplay(
-        activePageRecord?.data?.interactiveMetadata?.funFacts ?? [],
-      ),
-    [activePageRecord?.data?.interactiveMetadata?.funFacts],
+      activePageRecord?.data
+        ? buildLiveCardDetailsWelcomeMessage(
+            activePageRecord.data.eventDetails,
+            activePageRecord.data.title,
+          )
+        : null,
+    [activePageRecord?.data?.eventDetails, activePageRecord?.data?.title],
   );
 
   useEffect(() => {
@@ -197,7 +201,7 @@ export default function StudioWorkspace() {
     }
   }
 
-  function openLiveCardEditor(item: MediaItem) {
+  function beginLiveCardDetailEdit(item: MediaItem) {
     setDetails(item.details);
     setEditingId(item.id);
     setEditPrompt("");
@@ -207,6 +211,14 @@ export default function StudioWorkspace() {
     setIsDesignMode(false);
     setActivePage(null);
     setStep("form");
+  }
+
+  function openLiveCardEditor(item: MediaItem) {
+    beginLiveCardDetailEdit(item);
+  }
+
+  function openLiveCardTextEdit(item: MediaItem) {
+    beginLiveCardDetailEdit(item);
   }
 
   function openLiveCardImageEdit(item: MediaItem) {
@@ -522,6 +534,37 @@ export default function StudioWorkspace() {
     );
   }
 
+  function renderEditTextPanel(item: MediaItem) {
+    return (
+      <div className="pointer-events-auto flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => openLiveCardTextEdit(item)}
+          className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-left backdrop-blur-md transition-colors hover:bg-white/15"
+        >
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-white/15 p-2 text-white">
+              <Type className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                Edit Text
+              </p>
+              <p className="text-sm font-semibold text-white">
+                Change RSVP, dates, message, and other card copy
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-white/70" />
+        </button>
+        <p className="px-1 text-xs leading-relaxed text-white/55">
+          Details and buttons update from your event fields. Wording painted into the artwork may
+          still need Edit Image, or refresh when you run Update Invitation.
+        </p>
+      </div>
+    );
+  }
+
   const birthdayPresets =
     details.category === "Birthday" ? buildBirthdayPresets(details.age) : null;
   const currentPresets = getPresetsForDetails(details);
@@ -533,7 +576,7 @@ export default function StudioWorkspace() {
 
   return (
     <div className="min-h-screen bg-[#faf7ff] text-neutral-900 selection:bg-purple-200">
-      <header className="sticky top-0 z-40 border-b border-[#efe7f8] bg-white/72 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-[#efe7f8] bg-[#faf7ff]">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-center px-5 sm:h-[72px] sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: -12 }}
@@ -646,6 +689,7 @@ export default function StudioWorkspace() {
               setSelectedImage={setSelectedImage}
               openLiveCardEditor={openLiveCardEditor}
               openLiveCardImageEdit={openLiveCardImageEdit}
+              openLiveCardTextEdit={openLiveCardTextEdit}
               downloadMedia={downloadMedia}
               shareMedia={shareMedia}
               sharingId={sharingId}
@@ -1116,6 +1160,8 @@ export default function StudioWorkspace() {
                 "Describe how you want the card artwork to change. Only the image updates; event text, RSVP, and button placement stay the same unless you change them elsewhere.",
               )}
 
+              {renderEditTextPanel(activePageRecord)}
+
               <div className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
@@ -1199,14 +1245,9 @@ export default function StudioWorkspace() {
                           {activeTab === "rsvp" ? (
                             <div className="flex flex-col space-y-4">
                               <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                                <div>
-                                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                    Host / RSVP contact name
-                                  </p>
-                                  <p className="text-sm font-medium text-neutral-900">
-                                    {activePageRecord.data.eventDetails.rsvpName || "Host"}
-                                  </p>
-                                </div>
+                                <p className="text-sm font-medium text-neutral-900">
+                                  {activePageRecord.data.eventDetails.rsvpName || "Host"}
+                                </p>
                                 {activePageRecord.data.eventDetails.rsvpContact ? (
                                   <div>
                                     <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
@@ -1272,27 +1313,24 @@ export default function StudioWorkspace() {
 
                           {activeTab === "details" ? (
                             <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
-                              <p className="text-sm font-bold uppercase tracking-widest text-purple-600">
-                                {activePageRecord.data.eventDetails.category} Information
-                              </p>
-                              <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                  Theme Style
-                                </p>
-                                <p className="mt-1 text-sm font-medium text-neutral-900">
-                                  {activePageRecord.data.theme.themeStyle}
-                                </p>
-                              </div>
-                              {studioPreviewFunFacts.length > 0 ? (
-                                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
-                                    Fun Facts
+                              {studioDetailsWelcome ? (
+                                <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50 to-white p-4 shadow-sm">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-purple-700">
+                                    Welcome
                                   </p>
-                                  <ul className="mt-3 space-y-2 text-sm text-amber-950">
-                                    {studioPreviewFunFacts.map((fact) => (
-                                      <li key={fact}>{fact}</li>
-                                    ))}
-                                  </ul>
+                                  <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-900">
+                                    {studioDetailsWelcome}
+                                  </p>
+                                </div>
+                              ) : null}
+                              {clean(activePageRecord.data.eventDetails.detailsDescription) ? (
+                                <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                                    Event details
+                                  </p>
+                                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
+                                    {clean(activePageRecord.data.eventDetails.detailsDescription)}
+                                  </p>
                                 </div>
                               ) : null}
                               {shouldShowLiveCardDescriptionSection(
@@ -1310,12 +1348,15 @@ export default function StudioWorkspace() {
                                   </p>
                                 </div>
                               ) : null}
-                              <div className="grid grid-cols-1 gap-3">
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {Object.entries(activePageRecord.data.eventDetails)
                                   .filter(([key, value]) => {
                                     if (!value || typeof value === "boolean") return false;
                                     return ![
                                       "category",
+                                      "name",
+                                      "age",
+                                      "detailsDescription",
                                       "eventDate",
                                       "startTime",
                                       "endTime",
@@ -1331,6 +1372,7 @@ export default function StudioWorkspace() {
                                       "style",
                                       "visualPreferences",
                                       "theme",
+                                      "gender",
                                     ].includes(key);
                                   })
                                   .map(([key, value]) => (

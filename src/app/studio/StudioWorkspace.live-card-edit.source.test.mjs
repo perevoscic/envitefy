@@ -32,12 +32,16 @@ test("live card modal uses in-context image prompt panel; studio step still offe
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
 
   assert.match(source, /function openLiveCardImageEdit\(item: MediaItem\)/);
+  assert.match(source, /function openLiveCardTextEdit\(item: MediaItem\)/);
   assert.match(
     source,
     /renderEditImagePanel\(\s*activePageRecord,[\s\S]*Only the image updates/,
   );
+  assert.match(source, /renderEditTextPanel\(activePageRecord\)/);
+  assert.match(source, />\s*Edit Text\s*</);
   assert.doesNotMatch(source, /openLiveCardEditor\(activePageRecord\)/);
   assert.match(source, /openLiveCardImageEdit=\{openLiveCardImageEdit\}/);
+  assert.match(source, /openLiveCardTextEdit=\{openLiveCardTextEdit\}/);
   assert.match(source, /Edit current image/);
   assert.match(
     source,
