@@ -13,6 +13,35 @@ function readString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  const normalized = hostname.trim().toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "0.0.0.0" ||
+    normalized === "::1" ||
+    normalized === "[::1]"
+  );
+}
+
+async function normalizeSharedCardImageUrl(value: unknown): Promise<string> {
+  const raw = readString(value);
+  if (!raw) return "";
+  if (raw.startsWith("/")) return absoluteUrl(raw);
+  if (!/^https?:\/\//i.test(raw)) return raw;
+
+  try {
+    const parsed = new URL(raw);
+    if (isLoopbackHostname(parsed.hostname)) {
+      return absoluteUrl(`${parsed.pathname}${parsed.search}`);
+    }
+  } catch {
+    return raw;
+  }
+
+  return raw;
+}
+
 function buildFallbackInvitationData(data: Record<string, unknown>) {
   const eventDetailsRaw = isRecord(data.eventDetails) ? data.eventDetails : null;
   return {
@@ -53,12 +82,13 @@ async function resolveSharedCard(value: string) {
   const data = isRecord(row.data) ? row.data : {};
   const studioCard = isRecord(data.studioCard) ? data.studioCard : null;
   const title = readString(row.title) || readString(data.title) || "Invitation";
-  const imageUrl =
+  const imageUrl = await normalizeSharedCardImageUrl(
     readString(data.coverImageUrl) ||
-    readString(studioCard?.imageUrl) ||
-    readString(data.customHeroImage) ||
-    readString(data.heroImage) ||
-    readString(data.thumbnail);
+      readString(studioCard?.imageUrl) ||
+      readString(data.customHeroImage) ||
+      readString(data.heroImage) ||
+      readString(data.thumbnail),
+  );
 
   if (!imageUrl) return null;
 

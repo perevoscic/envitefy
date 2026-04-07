@@ -11,9 +11,12 @@ test("shared card route prefers the public-safe cover image url", () => {
   const pageSource = readSource("src/app/card/[id]/page.tsx");
   const dbSource = readSource("src/lib/db.ts");
 
+  assert.match(pageSource, /async function normalizeSharedCardImageUrl\(value: unknown\): Promise<string>/);
+  assert.match(pageSource, /if \(raw\.startsWith\("\/"\)\) return absoluteUrl\(raw\);/);
+  assert.match(pageSource, /if \(isLoopbackHostname\(parsed\.hostname\)\) \{\s*return absoluteUrl\(`\$\{parsed\.pathname\}\$\{parsed\.search\}`\);\s*\}/s);
   assert.match(
     pageSource,
-    /const imageUrl =\s*readString\(data\.coverImageUrl\)\s*\|\|\s*readString\(studioCard\?\.imageUrl\)/s,
+    /const imageUrl = await normalizeSharedCardImageUrl\(\s*readString\(data\.coverImageUrl\)\s*\|\|\s*readString\(studioCard\?\.imageUrl\)/s,
   );
   assert.match(
     dbSource,
