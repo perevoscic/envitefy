@@ -537,6 +537,17 @@ const CATEGORIES: CategoryCard[] = [
   { name: "Custom Invite", icon: WandSparkles },
 ];
 
+const CATEGORY_DESCRIPTIONS: Record<InviteCategory, string> = {
+  Birthday: "Birthdays, milestones, and personal celebrations.",
+  "Field Trip/Day": "Class trips, group days, and shared outings.",
+  "Bridal Shower": "Showers, tea parties, and pre-wedding gatherings.",
+  Wedding: "Ceremonies, receptions, and wedding weekend moments.",
+  Housewarming: "Open houses, move-in parties, and new-home invites.",
+  "Baby Shower": "Showers, sip-and-sees, and welcoming celebrations.",
+  Anniversary: "Anniversaries, vow renewals, and elegant dinners.",
+  "Custom Invite": "A flexible format for any celebration or gathering.",
+};
+
 function svgThumbnail(label: string, from: string, to: string) {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
@@ -1503,6 +1514,67 @@ function parseAgeValue(ageValue: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+const COMMON_GIRL_BIRTHDAY_NAMES = new Set([
+  "ava",
+  "bella",
+  "charlotte",
+  "chloe",
+  "ella",
+  "emma",
+  "eva",
+  "grace",
+  "harper",
+  "isabella",
+  "lara",
+  "layla",
+  "lily",
+  "lucy",
+  "mia",
+  "olivia",
+  "sophia",
+  "zoe",
+]);
+
+const COMMON_BOY_BIRTHDAY_NAMES = new Set([
+  "alex",
+  "ben",
+  "charlie",
+  "daniel",
+  "ethan",
+  "henry",
+  "jack",
+  "james",
+  "leo",
+  "liam",
+  "logan",
+  "lucas",
+  "mason",
+  "noah",
+  "oliver",
+  "owen",
+  "theo",
+  "wyatt",
+]);
+
+function normalizeBirthdayFirstName(nameValue: string): string {
+  const [firstName = ""] = readString(nameValue).split(/[\s-]+/);
+  return firstName.replace(/[^a-z]/gi, "").toLowerCase();
+}
+
+function inferBirthdayGenderFromName(nameValue: string): EventDetails["gender"] | null {
+  const normalized = normalizeBirthdayFirstName(nameValue);
+  if (!normalized) return null;
+  if (COMMON_GIRL_BIRTHDAY_NAMES.has(normalized)) return "Girl";
+  if (COMMON_BOY_BIRTHDAY_NAMES.has(normalized)) return "Boy";
+  if (/(ella|emma|enna|ette|ia|ina|isha|la|lina|lyn|lynn|ria|ssa|yah|yn)$/.test(normalized)) {
+    return "Girl";
+  }
+  if (/(son|ton|den|iel|ias|ard|ert|rick|aldo|enzo|ian|ias|o|on)$/.test(normalized)) {
+    return "Boy";
+  }
+  return null;
+}
+
 function getBirthdayPresetAgeGroup(ageValue: string): BirthdayPresetAgeGroup {
   const age = parseAgeValue(ageValue);
   if (age == null) return "kids";
@@ -1537,10 +1609,78 @@ function buildBirthdayPresets(ageValue: string): {
   };
 }
 
+const BIRTHDAY_PRESET_AGE_GROUPS: BirthdayPresetAgeGroup[] = [
+  "kids",
+  "teens",
+  "young-adults",
+  "adults",
+  "milestones",
+];
+
+function getBirthdayPresetAgeGroupPriority(ageGroup: BirthdayPresetAgeGroup) {
+  const activeIndex = BIRTHDAY_PRESET_AGE_GROUPS.indexOf(ageGroup);
+  return [...BIRTHDAY_PRESET_AGE_GROUPS].sort((left, right) => {
+    const leftDistance = Math.abs(BIRTHDAY_PRESET_AGE_GROUPS.indexOf(left) - activeIndex);
+    const rightDistance = Math.abs(BIRTHDAY_PRESET_AGE_GROUPS.indexOf(right) - activeIndex);
+    if (leftDistance !== rightDistance) return leftDistance - rightDistance;
+    return BIRTHDAY_PRESET_AGE_GROUPS.indexOf(left) - BIRTHDAY_PRESET_AGE_GROUPS.indexOf(right);
+  });
+}
+
+function buildBirthdayAudiencePresets(
+  ageValue: string,
+  audience: BirthdayPresetAudience,
+  limit = 12,
+): Preset[] {
+  const ageGroup = getBirthdayPresetAgeGroup(ageValue);
+  const prioritizedAgeGroups = getBirthdayPresetAgeGroupPriority(ageGroup);
+  const presets: Preset[] = [];
+
+  for (const nextAgeGroup of prioritizedAgeGroups) {
+    const groupPresets = buildBirthdayPresetsForAgeGroup(nextAgeGroup)[audience];
+    presets.push(...groupPresets);
+    if (presets.length >= limit) break;
+  }
+
+  return presets.slice(0, limit);
+}
+
+function buildBirthdayPresetsForAgeGroup(ageGroup: BirthdayPresetAgeGroup): {
+  label: string;
+  female: Preset[];
+  male: Preset[];
+} {
+  const library = BIRTHDAY_PRESET_LIBRARY[ageGroup];
+  const buildPresets = (audience: BirthdayPresetAudience, items: BirthdayPresetSeed[]): Preset[] =>
+    items.map((item) => ({
+      id: `birthday-${ageGroup}-${audience}-${item.id}`,
+      category: "Birthday",
+      name: item.name,
+      description: item.description,
+      icon: item.icon,
+      thumbnail: svgThumbnail(item.name, item.from, item.to),
+    }));
+
+  return {
+    label: library.label,
+    female: buildPresets("female", library.female),
+    male: buildPresets("male", library.male),
+  };
+}
+function getBirthdayPresetAudience(details: EventDetails): BirthdayPresetAudience | null {
+  const inferredGender = inferBirthdayGenderFromName(details.name);
+  if (inferredGender === "Girl") return "female";
+  if (inferredGender === "Boy") return "male";
+  return null;
+}
+
 function getPresetsForDetails(details: EventDetails): Preset[] {
   if (details.category === "Birthday") {
     const birthdayPresets = buildBirthdayPresets(details.age);
-    return [...birthdayPresets.female, ...birthdayPresets.male];
+    const audience = getBirthdayPresetAudience(details);
+    return audience
+      ? buildBirthdayAudiencePresets(details.age, audience, 12)
+      : [...birthdayPresets.female, ...birthdayPresets.male];
   }
   return PRESETS.filter((preset) => preset.category === details.category);
 }
@@ -2019,6 +2159,17 @@ export default function StudioWorkspace() {
     setIsEditPanelOpen(false);
   }, [selectedImage?.id, activePageRecord?.id]);
 
+  useEffect(() => {
+    if (details.category !== "Birthday") return;
+    const nextGender = inferBirthdayGenderFromName(details.name) || "Neutral";
+    if (details.gender === nextGender) return;
+    setDetails((prev) =>
+      prev.category === "Birthday" && prev.gender !== nextGender
+        ? { ...prev, gender: nextGender }
+        : prev,
+    );
+  }, [details.category, details.gender, details.name]);
+
   function isFormValid() {
     const missingShared = SHARED_BASICS.filter(
       (field) => field.required && !clean(String(inputValue(details[field.key]))),
@@ -2370,16 +2521,40 @@ export default function StudioWorkspace() {
 
   const birthdayPresets =
     details.category === "Birthday" ? buildBirthdayPresets(details.age) : null;
+  const birthdayPresetAudience =
+    details.category === "Birthday" ? getBirthdayPresetAudience(details) : null;
   const currentPresets = getPresetsForDetails(details);
+  const isDetailsTabActive = step === "category" || step === "form";
+  const shellClass =
+    "rounded-[32px] border border-[#ece4f7] bg-white/88 p-6 shadow-[0_20px_55px_rgba(84,61,140,0.08)] backdrop-blur-xl sm:p-8 lg:p-10";
+  const secondaryShellClass =
+    "rounded-[32px] border border-[#eee8f7] bg-[#fdfaff]/92 p-6 shadow-[0_14px_40px_rgba(84,61,140,0.06)] backdrop-blur-xl sm:p-8 lg:p-10";
+  const fieldLabelClass = "text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500";
+  const inputClass =
+    "h-13 w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] px-4 text-[15px] text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35";
+  const iconInputClass =
+    "h-13 w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] py-3 pr-4 text-[15px] text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35";
+  const textAreaClass =
+    "min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] px-4 py-3 text-[15px] text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35";
+  const mediaCardClass =
+    "group relative flex flex-col overflow-hidden rounded-[28px] border border-[#ece4f7] bg-white/95 shadow-[0_16px_40px_-24px_rgba(25,20,40,0.14)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_-24px_rgba(88,55,140,0.18)]";
+  const mediaBadgeClass =
+    "inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/75 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-800 backdrop-blur-md";
+  const ghostIconButtonClass =
+    "rounded-full border border-white/70 bg-white/82 p-2.5 text-neutral-700 shadow-[0_10px_24px_rgba(25,20,40,0.12)] transition-all hover:scale-105 hover:bg-white";
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 selection:bg-purple-200">
-      <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-center px-6">
-          <div className="hidden items-center gap-6 text-sm font-medium text-neutral-500 md:flex">
+    <div className="min-h-screen bg-[#faf7ff] text-neutral-900 selection:bg-purple-200">
+      <header className="sticky top-0 z-40 border-b border-[#efe7f8] bg-white/72 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-center px-5 sm:h-[72px] sm:px-6 lg:px-8">
+          <div className="flex w-full max-w-md items-center justify-center rounded-full border border-white/70 bg-white/75 p-1.5 shadow-[0_12px_40px_rgba(84,61,140,0.08)] backdrop-blur-xl">
             <button
               onClick={() => setStep("form")}
-              className={`transition-colors hover:text-purple-600 ${step === "form" ? "text-purple-600" : ""}`}
+              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-all ${
+                isDetailsTabActive
+                  ? "bg-[#f6f0ff] text-neutral-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_22px_rgba(84,61,140,0.12)]"
+                  : "text-neutral-500 hover:bg-[#f7f3fd] hover:text-neutral-900"
+              }`}
             >
               Details
             </button>
@@ -2388,13 +2563,21 @@ export default function StudioWorkspace() {
                 if (isFormValid()) setStep("studio");
               }}
               disabled={!isFormValid()}
-              className={`transition-colors hover:text-purple-600 disabled:cursor-not-allowed disabled:opacity-30 ${step === "studio" ? "text-purple-600" : ""}`}
+              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-all disabled:cursor-not-allowed ${
+                step === "studio"
+                  ? "bg-[#f6f0ff] text-neutral-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_22px_rgba(84,61,140,0.12)]"
+                  : "text-neutral-500 hover:bg-[#f7f3fd] hover:text-neutral-900 disabled:text-neutral-400"
+              }`}
             >
               Studio
             </button>
             <button
               onClick={() => setStep("library")}
-              className={`transition-colors hover:text-purple-600 ${step === "library" ? "text-purple-600" : ""}`}
+              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-all ${
+                step === "library"
+                  ? "bg-[#f6f0ff] text-neutral-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_22px_rgba(84,61,140,0.12)]"
+                  : "text-neutral-500 hover:bg-[#f7f3fd] hover:text-neutral-900"
+              }`}
             >
               Library
             </button>
@@ -2402,7 +2585,7 @@ export default function StudioWorkspace() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-12">
+      <main className="mx-auto px-5 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <AnimatePresence mode="wait">
           {step === "category" ? (
             <motion.div
@@ -2410,45 +2593,69 @@ export default function StudioWorkspace() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mx-auto max-w-4xl space-y-12"
+              className="mx-auto max-w-[1120px]"
             >
-              <div className="space-y-4 text-center">
-                <h2 className="text-4xl font-bold tracking-tight text-neutral-900">
-                  What are we celebrating?
-                </h2>
-                <p className="text-neutral-500">
-                  Select a category to start your invitation journey.
-                </p>
-              </div>
+              <div className={`${shellClass} relative overflow-hidden`}>
+                <div className="absolute left-8 top-6 h-32 w-32 rounded-full bg-[#e8ddff]/50 blur-3xl" />
+                <div className="absolute bottom-0 right-10 h-28 w-28 rounded-full bg-[#f3ecff] blur-3xl" />
+                <div className="relative space-y-10">
+                  <div className="mx-auto max-w-2xl space-y-4 text-center">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
+                      Details
+                    </p>
+                    <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-5xl">
+                      What are we celebrating?
+                    </h2>
+                    <p className="text-sm leading-6 text-neutral-600 sm:text-[15px]">
+                      Choose a category to start the exact same Envitefy studio flow with a calmer,
+                      more editorial setup.
+                    </p>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                {CATEGORIES.map((category) => {
-                  const Icon = category.icon;
-                  const active = details.category === category.name;
-                  return (
-                    <motion.button
-                      key={category.name}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        setDetails((prev) => ({ ...prev, category: category.name }));
-                        setStep("form");
-                      }}
-                      className={`flex flex-col items-center gap-4 rounded-[2rem] border p-8 transition-all ${
-                        active
-                          ? "border-purple-500 bg-purple-600 text-white shadow-2xl shadow-purple-500/20"
-                          : "border-neutral-200 bg-white text-neutral-900 shadow-sm hover:border-neutral-300"
-                      }`}
-                    >
-                      <div
-                        className={`rounded-2xl p-4 ${active ? "bg-white/20" : "bg-neutral-100"}`}
-                      >
-                        <Icon className="h-8 w-8" />
-                      </div>
-                      <span className="text-sm font-bold tracking-tight">{category.name}</span>
-                    </motion.button>
-                  );
-                })}
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                    {CATEGORIES.map((category) => {
+                      const Icon = category.icon;
+                      const active = details.category === category.name;
+                      return (
+                        <motion.button
+                          key={category.name}
+                          whileHover={{ scale: 1.01, y: -2 }}
+                          whileTap={{ scale: 0.99 }}
+                          onClick={() => {
+                            setDetails((prev) => ({ ...prev, category: category.name }));
+                            setStep("form");
+                          }}
+                          className={`relative flex min-h-[220px] flex-col items-start justify-between rounded-[28px] border p-7 text-left transition-all ${
+                            active
+                              ? "border-[#d8c7fb] bg-[#f7f1ff] text-neutral-900 shadow-[0_24px_60px_-24px_rgba(88,55,140,0.22)] ring-1 ring-[#ece1ff]"
+                              : "border-[#ece4f7] bg-white/95 text-neutral-900 shadow-[0_16px_40px_-24px_rgba(25,20,40,0.14)] hover:-translate-y-1 hover:border-[#ddd0f6] hover:shadow-[0_24px_60px_-24px_rgba(88,55,140,0.18)]"
+                          }`}
+                        >
+                          {active ? (
+                            <div className="absolute right-5 top-5 rounded-full bg-[#8f6fe8] p-1.5 text-white shadow-lg">
+                              <CheckCircle2 className="h-4 w-4" />
+                            </div>
+                          ) : null}
+                          <div
+                            className={`rounded-[18px] p-4 ${
+                              active ? "bg-white text-[#7d5ed8]" : "bg-[#f7f3fd] text-[#8a6fdb]"
+                            }`}
+                          >
+                            <Icon className="h-7 w-7" />
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-lg font-semibold tracking-[-0.02em] text-neutral-900">
+                              {category.name}
+                            </p>
+                            <p className="text-sm leading-6 text-neutral-600">
+                              {CATEGORY_DESCRIPTIONS[category.name]}
+                            </p>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </motion.div>
           ) : null}
@@ -2459,35 +2666,52 @@ export default function StudioWorkspace() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="mx-auto max-w-6xl space-y-12"
+              className="mx-auto max-w-[1180px] space-y-10"
             >
-              <div className="mb-8 flex items-center gap-4">
+              <div className="flex items-start gap-4">
                 <button
                   onClick={() => setStep("category")}
-                  className="rounded-full border border-neutral-200 bg-white p-2 transition-colors hover:bg-neutral-100"
+                  className="mt-1 rounded-full border border-[#ece4f7] bg-white/90 p-3 text-neutral-700 shadow-[0_12px_24px_rgba(25,20,40,0.08)] transition-all hover:-translate-y-0.5 hover:bg-white"
                 >
                   <ArrowLeft className="h-5 w-5 text-neutral-900" />
                 </button>
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight text-neutral-900">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center rounded-full border border-[#e6ddf3] bg-white/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                    {details.category}
+                  </div>
+                  <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
                     {details.category} Details
                   </h2>
-                  <p className="text-neutral-500">
-                    Fill in the event info for your {details.category.toLowerCase()}.
+                  <p className="max-w-2xl text-sm leading-6 text-neutral-600 sm:text-[15px]">
+                    Fill in the same event information and settings, now arranged with more
+                    breathing room and clearer hierarchy.
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-12">
-                <div className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-xl shadow-purple-500/5">
-                  <div className="mb-2 flex items-center gap-3">
-                    <div className="rounded-lg bg-purple-600/10 p-2 text-purple-600">
-                      <CheckCircle2 className="h-5 w-5" />
+              <div className="space-y-8">
+                <div className={`${shellClass} space-y-8`}>
+                  <div className="space-y-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      Required Information
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-2xl bg-[#f4edff] p-3 text-[#8a6fdb]">
+                        <CheckCircle2 className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
+                          Core event details
+                        </h3>
+                        <p className="mt-1 text-sm leading-6 text-neutral-600">
+                          These fields keep the invitation generation flow unchanged and unlock the
+                          Studio tab.
+                        </p>
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold text-neutral-900">Required Information</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-7 md:grid-cols-2 lg:grid-cols-3">
                     {(CATEGORY_FIELDS[details.category] || [])
                       .filter((field) => field.required)
                       .map((field) => (
@@ -2495,13 +2719,13 @@ export default function StudioWorkspace() {
                           key={field.key}
                           className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}
                         >
-                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                            {field.label} <span className="text-red-500">*</span>
+                          <label className={fieldLabelClass}>
+                            {field.label} <span className="text-[#8a6fdb]">*</span>
                           </label>
                           {field.type === "textarea" ? (
                             <textarea
                               placeholder={field.placeholder}
-                              className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              className={textAreaClass}
                               value={String(inputValue(details[field.key]))}
                               onChange={(event) =>
                                 setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
@@ -2509,7 +2733,7 @@ export default function StudioWorkspace() {
                             />
                           ) : field.type === "select" ? (
                             <select
-                              className="w-full appearance-none rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              className={`${inputClass} appearance-none`}
                               value={String(inputValue(details[field.key]))}
                               onChange={(event) =>
                                 setDetails((prev) => ({
@@ -2528,7 +2752,7 @@ export default function StudioWorkspace() {
                             <input
                               type={field.type}
                               placeholder={field.placeholder}
-                              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              className={inputClass}
                               value={String(inputValue(details[field.key]))}
                               onChange={(event) =>
                                 setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
@@ -2540,8 +2764,8 @@ export default function StudioWorkspace() {
 
                     {SHARED_BASICS.filter((field) => field.required).map((field) => (
                       <div key={field.key} className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                          {field.label} <span className="text-red-500">*</span>
+                        <label className={fieldLabelClass}>
+                          {field.label} <span className="text-[#8a6fdb]">*</span>
                         </label>
                         <div className="relative">
                           {field.key === "startTime" ? (
@@ -2553,7 +2777,7 @@ export default function StudioWorkspace() {
                           <input
                             type={field.type}
                             placeholder={field.placeholder}
-                            className={`w-full rounded-xl border border-neutral-200 bg-white py-3 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 ${
+                            className={`${iconInputClass} ${
                               field.key === "startTime" || field.key === "location"
                                 ? "pl-12"
                                 : "px-4"
@@ -2569,13 +2793,13 @@ export default function StudioWorkspace() {
 
                     {RSVP_FIELDS.filter((field) => field.required).map((field) => (
                       <div key={field.key} className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                          {field.label} <span className="text-red-500">*</span>
+                        <label className={fieldLabelClass}>
+                          {field.label} <span className="text-[#8a6fdb]">*</span>
                         </label>
                         <input
                           type={field.type}
                           placeholder={field.placeholder}
-                          className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                          className={inputClass}
                           value={String(inputValue(details[field.key]))}
                           onChange={(event) =>
                             setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
@@ -2586,16 +2810,23 @@ export default function StudioWorkspace() {
                   </div>
                 </div>
 
-                <div className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+                <div className={`${secondaryShellClass} space-y-6`}>
                   <button
                     onClick={() => setIsOptionalCollapsed((prev) => !prev)}
                     className="group flex w-full items-center justify-between"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-lg bg-neutral-100 p-2 text-neutral-500 transition-colors group-hover:bg-neutral-200">
+                    <div className="flex items-center gap-4">
+                      <div className="rounded-2xl bg-white p-3 text-[#8a6fdb] shadow-[0_10px_24px_rgba(25,20,40,0.08)] transition-colors">
                         <Plus className="h-5 w-5" />
                       </div>
-                      <h3 className="text-xl font-bold text-neutral-900">Optional Details</h3>
+                      <div className="text-left">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                          Optional Details
+                        </p>
+                        <h3 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
+                          Refinements and preferences
+                        </h3>
+                      </div>
                     </div>
                     <div
                       className={`transition-transform duration-300 ${isOptionalCollapsed ? "" : "rotate-90"}`}
@@ -2608,9 +2839,9 @@ export default function StudioWorkspace() {
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      className="space-y-12 border-t border-neutral-100 pt-6"
+                      className="space-y-10 border-t border-white/80 pt-8"
                     >
-                      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
                         {(CATEGORY_FIELDS[details.category] || [])
                           .filter((field) => !field.required)
                           .map((field) => (
@@ -2618,13 +2849,11 @@ export default function StudioWorkspace() {
                               key={field.key}
                               className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}
                             >
-                              <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                                {field.label}
-                              </label>
+                              <label className={fieldLabelClass}>{field.label}</label>
                               {field.type === "textarea" ? (
                                 <textarea
                                   placeholder={field.placeholder}
-                                  className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                                  className={textAreaClass}
                                   value={String(inputValue(details[field.key]))}
                                   onChange={(event) =>
                                     setDetails((prev) => ({
@@ -2634,7 +2863,7 @@ export default function StudioWorkspace() {
                                   }
                                 />
                               ) : field.type === "checkbox" ? (
-                                <div className="flex items-center gap-3 py-2">
+                                <div className="flex min-h-[52px] items-center gap-3 rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
                                   <input
                                     type="checkbox"
                                     className="h-5 w-5 rounded border-neutral-200 bg-white text-purple-600 focus:ring-purple-500/20"
@@ -2652,7 +2881,7 @@ export default function StudioWorkspace() {
                                 <input
                                   type={field.type}
                                   placeholder={field.placeholder}
-                                  className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                                  className={inputClass}
                                   value={String(inputValue(details[field.key]))}
                                   onChange={(event) =>
                                     setDetails((prev) => ({
@@ -2667,9 +2896,7 @@ export default function StudioWorkspace() {
 
                         {SHARED_BASICS.filter((field) => !field.required).map((field) => (
                           <div key={field.key} className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                              {field.label}
-                            </label>
+                            <label className={fieldLabelClass}>{field.label}</label>
                             <div className="relative">
                               {field.key === "endTime" ? (
                                 <Clock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -2677,7 +2904,7 @@ export default function StudioWorkspace() {
                               <input
                                 type={field.type}
                                 placeholder={field.placeholder}
-                                className={`w-full rounded-xl border border-neutral-200 bg-white py-3 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 ${
+                                className={`${iconInputClass} ${
                                   field.key === "endTime" ? "pl-12" : "px-4"
                                 }`}
                                 value={String(inputValue(details[field.key]))}
@@ -2694,13 +2921,11 @@ export default function StudioWorkspace() {
 
                         {RSVP_FIELDS.filter((field) => !field.required).map((field) => (
                           <div key={field.key} className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                              {field.label}
-                            </label>
+                            <label className={fieldLabelClass}>{field.label}</label>
                             <input
                               type={field.type}
                               placeholder={field.placeholder}
-                              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              className={inputClass}
                               value={String(inputValue(details[field.key]))}
                               onChange={(event) =>
                                 setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
@@ -2710,12 +2935,10 @@ export default function StudioWorkspace() {
                         ))}
 
                         <div className="space-y-2 md:col-span-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                            Personal Message
-                          </label>
+                          <label className={fieldLabelClass}>Personal Message</label>
                           <textarea
                             placeholder="e.g. We can't wait to see you there!"
-                            className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                            className={textAreaClass}
                             value={details.message}
                             onChange={(event) =>
                               setDetails((prev) => ({ ...prev, message: event.target.value }))
@@ -2724,13 +2947,11 @@ export default function StudioWorkspace() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                            Special Instructions
-                          </label>
+                          <label className={fieldLabelClass}>Special Instructions</label>
                           <input
                             type="text"
                             placeholder="e.g. Parking info, entrance code"
-                            className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                            className={inputClass}
                             value={details.specialInstructions}
                             onChange={(event) =>
                               setDetails((prev) => ({
@@ -2742,28 +2963,33 @@ export default function StudioWorkspace() {
                         </div>
                       </div>
 
-                      <div className="border-t border-neutral-100 pt-8">
+                      <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:p-8">
                         <div className="mb-6 flex items-center gap-3">
-                          <div className="rounded-lg bg-pink-600/10 p-2 text-pink-600">
+                          <div className="rounded-2xl bg-[#f6efff] p-3 text-[#8a6fdb]">
                             <Sparkles className="h-5 w-5" />
                           </div>
-                          <h4 className="text-lg font-bold text-neutral-900">Design Preferences</h4>
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                              Design Preferences
+                            </p>
+                            <h4 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-neutral-900">
+                              Visual direction
+                            </h4>
+                          </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
                           <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                              Orientation
-                            </label>
+                            <label className={fieldLabelClass}>Orientation</label>
                             <div className="flex gap-2">
                               <button
                                 onClick={() =>
                                   setDetails((prev) => ({ ...prev, orientation: "portrait" }))
                                 }
-                                className={`flex-1 rounded-xl border py-3 text-xs font-bold transition-all ${
+                                className={`h-13 flex-1 rounded-2xl border text-sm font-semibold transition-all ${
                                   details.orientation === "portrait"
-                                    ? "border-purple-500 bg-purple-600 text-white"
-                                    : "border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50"
+                                    ? "border-[#c9b5fb] bg-[#f6efff] text-neutral-900 shadow-[0_10px_24px_rgba(84,61,140,0.10)]"
+                                    : "border-[#e8e0f5] bg-white text-neutral-500 hover:bg-[#faf7ff]"
                                 }`}
                               >
                                 Portrait
@@ -2772,10 +2998,10 @@ export default function StudioWorkspace() {
                                 onClick={() =>
                                   setDetails((prev) => ({ ...prev, orientation: "landscape" }))
                                 }
-                                className={`flex-1 rounded-xl border py-3 text-xs font-bold transition-all ${
+                                className={`h-13 flex-1 rounded-2xl border text-sm font-semibold transition-all ${
                                   details.orientation === "landscape"
-                                    ? "border-purple-500 bg-purple-600 text-white"
-                                    : "border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50"
+                                    ? "border-[#c9b5fb] bg-[#f6efff] text-neutral-900 shadow-[0_10px_24px_rgba(84,61,140,0.10)]"
+                                    : "border-[#e8e0f5] bg-white text-neutral-500 hover:bg-[#faf7ff]"
                                 }`}
                               >
                                 Landscape
@@ -2784,13 +3010,11 @@ export default function StudioWorkspace() {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                              Preferred Colors
-                            </label>
+                            <label className={fieldLabelClass}>Preferred Colors</label>
                             <input
                               type="text"
                               placeholder="e.g. Red and gold"
-                              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              className={inputClass}
                               value={details.colors}
                               onChange={(event) =>
                                 setDetails((prev) => ({ ...prev, colors: event.target.value }))
@@ -2799,12 +3023,10 @@ export default function StudioWorkspace() {
                           </div>
 
                           <div className="space-y-2 md:col-span-2 lg:col-span-1">
-                            <label className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-                              Visual Style Idea
-                            </label>
+                            <label className={fieldLabelClass}>Visual Style Idea</label>
                             <textarea
                               placeholder="e.g. Editorial premiere poster with red carpet lighting..."
-                              className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                              className={textAreaClass}
                               value={details.visualPreferences}
                               onChange={(event) =>
                                 setDetails((prev) => ({
@@ -2821,17 +3043,17 @@ export default function StudioWorkspace() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center gap-4 pt-8">
-                <p className="text-[10px] uppercase tracking-widest text-neutral-600">
-                  <span className="mr-1 text-red-500">*</span> Required fields
+              <div className="flex flex-col items-center gap-4 pt-2">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+                  <span className="mr-1 text-[#8a6fdb]">*</span> Required fields
                 </p>
                 <button
                   onClick={() => setStep("studio")}
                   disabled={!isFormValid()}
-                  className="flex items-center gap-3 rounded-2xl bg-neutral-900 px-12 py-5 text-lg font-bold text-white shadow-2xl shadow-neutral-200 transition-all hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-3 rounded-full bg-neutral-900 px-10 py-4 text-base font-semibold text-white shadow-[0_20px_50px_rgba(25,20,40,0.18)] transition-all hover:-translate-y-0.5 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {editingId ? "Update Invitation" : "Enter Studio"}
-                  <ChevronRight className="h-6 w-6 text-white" />
+                  <ChevronRight className="h-5 w-5 text-white" />
                 </button>
               </div>
             </motion.div>
@@ -2843,21 +3065,27 @@ export default function StudioWorkspace() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-8"
+              className="mx-auto max-w-[1320px] space-y-10"
             >
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight text-neutral-900">
+              <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                <div className="max-w-2xl space-y-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                    Library
+                  </p>
+                  <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
                     Your Library
                   </h2>
-                  <p className="text-neutral-500">Manage and edit your created invitations.</p>
+                  <p className="text-sm leading-6 text-neutral-600 sm:text-[15px]">
+                    Browse the same saved invitations and generated assets in a cleaner, more
+                    gallery-like archive.
+                  </p>
                 </div>
                 <button
                   onClick={() => {
                     setEditingId(null);
                     setStep("form");
                   }}
-                  className="flex items-center gap-2 rounded-full bg-purple-600 px-6 py-3 font-bold text-white shadow-lg shadow-purple-500/20 transition-all hover:bg-purple-700"
+                  className="flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(25,20,40,0.18)] transition-all hover:-translate-y-0.5 hover:bg-neutral-800"
                 >
                   <Plus className="h-5 w-5" />
                   Create New
@@ -2865,23 +3093,24 @@ export default function StudioWorkspace() {
               </div>
 
               {mediaList.length === 0 ? (
-                <div className="rounded-[2rem] border border-dashed border-neutral-200 bg-white py-20 text-center">
-                  <div className="mx-auto mb-4 w-fit rounded-full bg-neutral-50 p-4">
-                    <ImageIcon className="h-8 w-8 text-neutral-400" />
+                <div className="rounded-[32px] border border-dashed border-[#e5dbf6] bg-white/88 py-24 text-center shadow-[0_20px_55px_rgba(84,61,140,0.06)]">
+                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f7f1ff] shadow-[0_10px_24px_rgba(84,61,140,0.08)]">
+                    <ImageIcon className="h-8 w-8 text-[#9b82e7]" />
                   </div>
-                  <p className="text-neutral-500">No invitations created yet.</p>
+                  <p className="text-lg font-semibold tracking-[-0.02em] text-neutral-900">
+                    No invitations created yet
+                  </p>
+                  <p className="mt-2 text-sm text-neutral-500">
+                    Your saved live cards and images will appear here.
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-7 md:grid-cols-2 2xl:grid-cols-3">
                   {mediaList.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      layoutId={item.id}
-                      className="group overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-sm transition-all hover:border-purple-500/50 hover:shadow-xl"
-                    >
+                    <motion.div key={item.id} layoutId={item.id} className={mediaCardClass}>
                       <div className="relative aspect-[9/16] overflow-hidden">
                         {item.status === "loading" ? (
-                          <div className="absolute inset-0 flex items-center justify-center bg-neutral-50">
+                          <div className="absolute inset-0 flex items-center justify-center bg-[#faf7ff]">
                             <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
                           </div>
                         ) : (
@@ -2889,14 +3118,14 @@ export default function StudioWorkspace() {
                             <img
                               src={item.url}
                               alt={item.theme}
-                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                               referrerPolicy="no-referrer"
                             />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-white/60 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(18,14,28,0.12),rgba(18,14,28,0.54))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
                               {item.type === "page" ? (
                                 <button
                                   onClick={() => setActivePage(item)}
-                                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-8 py-4 text-lg font-bold text-white transition-transform hover:scale-105"
+                                  className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
                                 >
                                   <Layout className="h-5 w-5" />
                                   Open Live Card
@@ -2904,13 +3133,13 @@ export default function StudioWorkspace() {
                               ) : (
                                 <button
                                   onClick={() => setSelectedImage(item)}
-                                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-8 py-4 text-lg font-bold text-white transition-transform hover:scale-105"
+                                  className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
                                 >
                                   <ImageIcon className="h-5 w-5" />
                                   View Full Image
                                 </button>
                               )}
-                              <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-3">
                                 <button
                                   onClick={() => {
                                     setDetails(item.details);
@@ -2918,48 +3147,53 @@ export default function StudioWorkspace() {
                                     setIsOptionalCollapsed(false);
                                     setStep("form");
                                   }}
-                                  className="rounded-full bg-purple-600 p-4 text-white shadow-lg transition-transform hover:scale-110"
+                                  className="rounded-full bg-white p-3 text-neutral-900 shadow-[0_12px_24px_rgba(25,20,40,0.14)] transition-transform hover:scale-105"
                                   title="Edit"
                                 >
-                                  <RefreshCw className="h-6 w-6" />
+                                  <RefreshCw className="h-5 w-5" />
                                 </button>
                                 <button
                                   onClick={() => downloadMedia(item)}
-                                  className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-900 shadow-lg transition-transform hover:scale-110"
+                                  className={ghostIconButtonClass}
                                   title="Download"
                                 >
-                                  <Download className="h-6 w-6" />
+                                  <Download className="h-5 w-5" />
                                 </button>
                                 <button
                                   onClick={() => deleteMedia(item.id)}
-                                  className="rounded-full border border-neutral-200 bg-white p-4 text-red-500 shadow-lg transition-transform hover:scale-110"
+                                  className={`${ghostIconButtonClass} text-red-500 hover:text-red-600`}
                                   title="Delete"
                                 >
-                                  <Trash2 className="h-6 w-6" />
+                                  <Trash2 className="h-5 w-5" />
                                 </button>
                               </div>
                             </div>
                           </>
                         )}
                         <div className="absolute left-4 top-4 flex gap-2">
-                          <span className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-neutral-900 backdrop-blur-md">
+                          <span className={mediaBadgeClass}>
+                            {item.type === "page" ? (
+                              <Layout className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <ImageIcon className="h-3 w-3 text-sky-600" />
+                            )}
                             {item.type === "page" ? "Live Card" : "Image"}
                           </span>
                         </div>
                         <button
                           onClick={() => deleteMedia(item.id)}
-                          className="absolute right-4 top-4 rounded-full border border-neutral-200 bg-white/90 p-2 text-red-500 shadow-sm transition-colors hover:bg-white hover:text-red-600"
+                          className="absolute right-4 top-4 rounded-full border border-white/70 bg-white/82 p-2.5 text-neutral-500 shadow-[0_10px_24px_rgba(25,20,40,0.12)] transition-all hover:bg-white hover:text-red-500"
                           title="Delete from library"
                           aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                      <div className="p-6">
-                        <h3 className="truncate text-lg font-bold text-neutral-900">
+                      <div className="space-y-1 px-6 py-5">
+                        <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-neutral-900">
                           {getDisplayTitle(item.details)}
                         </h3>
-                        <p className="text-xs uppercase tracking-widest text-neutral-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
                           {item.theme}
                         </p>
                       </div>
@@ -2976,28 +3210,33 @@ export default function StudioWorkspace() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="grid gap-12 lg:grid-cols-[350px_1fr]"
+              className="mx-auto grid max-w-[1440px] gap-8 lg:grid-cols-[380px_minmax(0,1fr)] xl:gap-10"
             >
-              <aside className="space-y-8">
+              <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
                 <button
                   onClick={() => setStep("form")}
-                  className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-neutral-500 transition-colors hover:text-purple-600"
+                  className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500 transition-colors hover:text-[#8a6fdb]"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back to Details
                 </button>
 
-                <div className="space-y-4">
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500">
-                    Select a Preset
-                  </h2>
-                  <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+                <div className={`${shellClass} space-y-8`}>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                        Presets
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
+                        Choose a direction
+                      </h2>
+                    </div>
                     {details.category !== "Birthday" ? (
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-lg bg-purple-600/10 p-2 text-purple-600">
+                      <div className="flex items-center gap-3 rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] px-4 py-3">
+                        <div className="rounded-2xl bg-[#f4edff] p-2.5 text-[#8a6fdb]">
                           <Sparkles className="h-4 w-4" />
                         </div>
-                        <span className="text-sm font-bold text-neutral-900">
+                        <span className="text-sm font-semibold text-neutral-900">
                           {details.category} Presets
                         </span>
                       </div>
@@ -3005,48 +3244,49 @@ export default function StudioWorkspace() {
 
                     {details.category === "Birthday" && birthdayPresets ? (
                       <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          {([{ key: "female" }, { key: "male" }] as const).map((column) => (
-                            <div key={column.key} className="space-y-2">
-                              {(column.key === "female"
-                                ? birthdayPresets.female
-                                : birthdayPresets.male
-                              ).map((preset) => {
-                                const Icon = preset.icon;
-                                const active = details.theme === preset.name;
-                                return (
-                                  <button
-                                    key={preset.id}
-                                    onClick={() =>
-                                      setDetails((prev) => ({ ...prev, theme: preset.name }))
-                                    }
-                                    className={`w-full rounded-2xl border p-3 text-left transition-all ${
+                        {birthdayPresetAudience ? (
+                          <div className="rounded-[22px] border border-[#ece4f7] bg-[#faf7ff] px-4 py-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                              Showing 12 {birthdayPresetAudience === "female" ? "girl" : "boy"}{" "}
+                              presets
+                            </p>
+                          </div>
+                        ) : null}
+                        <div className="grid max-h-[480px] grid-cols-2 gap-3 overflow-y-auto pr-2">
+                          {currentPresets.map((preset) => {
+                            const Icon = preset.icon;
+                            const active = details.theme === preset.name;
+                            return (
+                              <button
+                                key={preset.id}
+                                onClick={() =>
+                                  setDetails((prev) => ({ ...prev, theme: preset.name }))
+                                }
+                                className={`w-full rounded-[24px] border p-4 text-left transition-all ${
+                                  active
+                                    ? "border-[#d8c7fb] bg-[#f7f1ff] shadow-[0_18px_34px_-20px_rgba(88,55,140,0.26)] ring-1 ring-[#ece1ff]"
+                                    : "border-[#ece4f7] bg-white hover:-translate-y-0.5 hover:border-[#ddd0f6] hover:bg-[#fdfaff]"
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div
+                                    className={`mt-0.5 rounded-2xl p-2.5 ${
                                       active
-                                        ? "border-purple-500 bg-purple-50 ring-2 ring-purple-500/20"
-                                        : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50"
+                                        ? "bg-white text-[#7d5ed8]"
+                                        : "bg-[#f7f3fd] text-[#8a6fdb]"
                                     }`}
                                   >
-                                    <div className="flex items-start gap-3">
-                                      <div
-                                        className={`mt-0.5 rounded-lg p-2 ${
-                                          active
-                                            ? "bg-purple-600 text-white"
-                                            : "bg-neutral-100 text-purple-600"
-                                        }`}
-                                      >
-                                        <Icon className="h-3.5 w-3.5" />
-                                      </div>
-                                      <div className="min-w-0">
-                                        <p className="text-xs font-bold text-neutral-900">
-                                          {preset.name}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          ))}
+                                    <Icon className="h-3.5 w-3.5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-neutral-900">
+                                      {preset.name}
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     ) : (
@@ -3060,34 +3300,34 @@ export default function StudioWorkspace() {
                               onClick={() =>
                                 setDetails((prev) => ({ ...prev, theme: preset.name }))
                               }
-                              className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border text-left transition-all ${
+                              className={`group relative aspect-[3/4] overflow-hidden rounded-[24px] border text-left transition-all ${
                                 active
-                                  ? "border-purple-500 ring-2 ring-purple-500/20"
-                                  : "border-neutral-200 hover:border-neutral-300"
+                                  ? "border-[#d8c7fb] shadow-[0_18px_34px_-20px_rgba(88,55,140,0.26)] ring-1 ring-[#ece1ff]"
+                                  : "border-[#ece4f7] hover:-translate-y-0.5 hover:border-[#ddd0f6]"
                               }`}
                             >
                               <img
                                 src={preset.thumbnail}
                                 alt={preset.name}
-                                className="absolute inset-0 h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-80"
+                                className="absolute inset-0 h-full w-full object-cover opacity-70 transition-all duration-500 group-hover:scale-[1.03] group-hover:opacity-90"
                                 referrerPolicy="no-referrer"
                               />
-                              <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-white/90 via-white/20 to-transparent p-3">
+                              <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[rgba(255,255,255,0.96)] via-[rgba(255,255,255,0.18)] to-transparent p-3">
                                 <div className="mb-1 flex items-center gap-1.5">
-                                  <div className="rounded-md border border-neutral-200 bg-white/80 p-1 backdrop-blur-sm">
+                                  <div className="rounded-xl border border-white/70 bg-white/80 p-1.5 backdrop-blur-sm">
                                     <Icon className="h-3 w-3 text-purple-600" />
                                   </div>
-                                  <span className="line-clamp-2 text-[10px] font-bold leading-tight text-neutral-900">
+                                  <span className="line-clamp-2 text-[11px] font-semibold leading-tight text-neutral-900">
                                     {preset.name}
                                   </span>
                                 </div>
-                                <span className="line-clamp-2 text-[8px] leading-tight text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100">
+                                <span className="line-clamp-2 text-[10px] leading-4 text-neutral-600 opacity-0 transition-opacity group-hover:opacity-100">
                                   {preset.description}
                                 </span>
                               </div>
                               {active ? (
-                                <div className="absolute right-2 top-2 rounded-full bg-purple-500 p-1 shadow-lg">
-                                  <CheckCircle2 className="h-3 w-3 text-white" />
+                                <div className="absolute right-3 top-3 rounded-full bg-white p-1.5 text-[#8a6fdb] shadow-[0_10px_24px_rgba(25,20,40,0.16)]">
+                                  <CheckCircle2 className="h-3 w-3 text-[#8a6fdb]" />
                                 </div>
                               ) : null}
                             </button>
@@ -3096,7 +3336,7 @@ export default function StudioWorkspace() {
 
                         {currentPresets.length === 0 ? (
                           <div className="col-span-2 py-8 text-center">
-                            <p className="text-[10px] italic text-neutral-600">
+                            <p className="text-[11px] italic text-neutral-600">
                               No presets for this category yet. Use a custom idea below.
                             </p>
                           </div>
@@ -3104,13 +3344,16 @@ export default function StudioWorkspace() {
                       </div>
                     )}
 
-                    <div className="border-t border-neutral-100 pt-2">
-                      <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                    <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
+                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                         Custom Visual Idea
                       </label>
+                      <p className="mb-3 text-sm leading-6 text-neutral-600">
+                        Keep the same prompt input, but present it like a creative brief.
+                      </p>
                       <textarea
                         placeholder="e.g. A minimalist gold and white theme with marble textures..."
-                        className="min-h-[80px] w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                        className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
                         value={details.theme}
                         onChange={(event) =>
                           setDetails((prev) => ({ ...prev, theme: event.target.value }))
@@ -3120,15 +3363,15 @@ export default function StudioWorkspace() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500">
+                <div className="space-y-4 border-t border-white/80 pt-2">
+                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                     Generate Media
                   </h2>
                   <div className="space-y-3">
                     <button
                       onClick={() => generateMedia("page")}
                       disabled={isGenerating}
-                      className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-neutral-900 py-4 font-bold text-white shadow-xl shadow-neutral-200 transition-all hover:bg-neutral-800 disabled:opacity-50"
+                      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(25,20,40,0.18)] transition-all hover:-translate-y-0.5 hover:bg-neutral-800 disabled:opacity-50"
                     >
                       <Layout className="h-5 w-5" />
                       Create Live Card
@@ -3138,29 +3381,36 @@ export default function StudioWorkspace() {
                     <button
                       onClick={() => generateMedia("image")}
                       disabled={isGenerating}
-                      className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-neutral-200 bg-white py-4 font-bold text-neutral-900 shadow-sm transition-all hover:bg-neutral-50 disabled:opacity-50"
+                      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[#e8e0f5] bg-white text-sm font-semibold text-neutral-900 shadow-[0_12px_30px_rgba(25,20,40,0.08)] transition-all hover:-translate-y-0.5 hover:bg-[#faf7ff] disabled:opacity-50"
                     >
                       <ImageIcon className="h-5 w-5" />
                       Generate Image
                       <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
                     </button>
                   </div>
-                  <p className="text-center text-[10px] uppercase tracking-widest text-neutral-500">
+                  <p className="text-center text-[11px] uppercase tracking-[0.18em] text-neutral-500">
                     Powered by Gemini 3 &amp; Veo 3.1
                   </p>
                 </div>
               </aside>
 
               <section className="space-y-8">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <h2 className="text-3xl font-bold text-neutral-900">Your Studio</h2>
-                  <div className="flex items-center gap-2 text-sm text-neutral-500">
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div className="space-y-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      Studio
+                    </p>
+                    <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
+                      Your Studio
+                    </h2>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50/90 px-4 py-2 text-sm font-medium text-emerald-800">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                     <span>Saved to local library</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-7 md:grid-cols-2 2xl:grid-cols-3">
                   <AnimatePresence>
                     {mediaList.map((item) => (
                       <motion.div
@@ -3168,7 +3418,7 @@ export default function StudioWorkspace() {
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="group relative flex flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition-all hover:shadow-xl"
+                        className={mediaCardClass}
                       >
                         <div
                           className={`relative flex items-center justify-center overflow-hidden bg-neutral-100 ${
@@ -3204,18 +3454,18 @@ export default function StudioWorkspace() {
                               <img
                                 src={item.url}
                                 alt={item.theme}
-                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                                 referrerPolicy="no-referrer"
                               />
                             </div>
                           )}
 
                           {item.status === "ready" ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-white/60 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(18,14,28,0.12),rgba(18,14,28,0.54))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
                               {item.type === "page" ? (
                                 <button
                                   onClick={() => setActivePage(item)}
-                                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-8 py-4 text-lg font-bold text-white shadow-lg transition-transform hover:scale-105"
+                                  className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
                                 >
                                   <Layout className="h-5 w-5" />
                                   Open Live Card
@@ -3223,47 +3473,47 @@ export default function StudioWorkspace() {
                               ) : (
                                 <button
                                   onClick={() => setSelectedImage(item)}
-                                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-8 py-4 text-lg font-bold text-white shadow-lg transition-transform hover:scale-105"
+                                  className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
                                 >
                                   <ImageIcon className="h-5 w-5" />
                                   View Full Image
                                 </button>
                               )}
 
-                              <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-3">
                                 <button
                                   onClick={() => downloadMedia(item)}
-                                  className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-900 shadow-lg transition-transform hover:scale-110"
+                                  className={ghostIconButtonClass}
                                   title="Download"
                                 >
-                                  <Download className="h-6 w-6" />
+                                  <Download className="h-5 w-5" />
                                 </button>
                                 <button
                                   onClick={() => shareMedia(item)}
                                   disabled={sharingId === item.id}
-                                  className="rounded-full border border-neutral-200 bg-white p-4 text-neutral-900 shadow-lg transition-transform hover:scale-110"
+                                  className={ghostIconButtonClass}
                                   title={sharingId === item.id ? "Creating share link" : "Share"}
                                 >
                                   {sharingId === item.id ? (
-                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                    <Loader2 className="h-5 w-5 animate-spin" />
                                   ) : copySuccess ? (
-                                    <CheckCircle2 className="h-6 w-6 text-green-600" />
+                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
                                   ) : (
-                                    <Share2 className="h-6 w-6" />
+                                    <Share2 className="h-5 w-5" />
                                   )}
                                 </button>
                                 <button
                                   onClick={() => deleteMedia(item.id)}
-                                  className="rounded-full border border-neutral-200 bg-white p-4 text-red-500 shadow-lg transition-transform hover:scale-110"
+                                  className={`${ghostIconButtonClass} text-red-500 hover:text-red-600`}
                                   title="Delete"
                                 >
-                                  <Trash2 className="h-6 w-6" />
+                                  <Trash2 className="h-5 w-5" />
                                 </button>
                               </div>
                             </div>
                           ) : null}
 
-                          <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-900 backdrop-blur-md">
+                          <div className={`absolute left-4 top-4 ${mediaBadgeClass}`}>
                             {item.type === "page" ? (
                               <>
                                 <Layout className="h-3 w-3 text-green-600" />
@@ -3278,7 +3528,7 @@ export default function StudioWorkspace() {
                           </div>
                           <button
                             onClick={() => deleteMedia(item.id)}
-                            className="absolute right-4 top-4 rounded-full border border-neutral-200 bg-white/90 p-2 text-red-500 shadow-sm transition-colors hover:bg-white hover:text-red-600"
+                            className="absolute right-4 top-4 rounded-full border border-white/70 bg-white/82 p-2.5 text-neutral-500 shadow-[0_10px_24px_rgba(25,20,40,0.12)] transition-all hover:bg-white hover:text-red-500"
                             title="Delete from library"
                             aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
                           >
@@ -3286,11 +3536,11 @@ export default function StudioWorkspace() {
                           </button>
                         </div>
 
-                        <div className="space-y-1 p-6">
-                          <h3 className="truncate text-lg font-bold text-neutral-900">
+                        <div className="space-y-1 px-6 py-5">
+                          <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-neutral-900">
                             {getStudioShareTitle(item)}
                           </h3>
-                          <p className="text-xs uppercase tracking-widest text-neutral-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
                             {item.theme}
                           </p>
                         </div>
@@ -3298,15 +3548,16 @@ export default function StudioWorkspace() {
                     ))}
 
                     {mediaList.length === 0 ? (
-                      <div className="col-span-full rounded-3xl border-2 border-dashed border-neutral-200 bg-white py-32 text-center">
-                        <div className="mb-6 inline-flex rounded-full bg-neutral-50 p-6">
-                          <Sparkles className="h-12 w-12 text-neutral-300" />
+                      <div className="col-span-full rounded-[32px] border border-dashed border-[#e5dbf6] bg-white/88 py-28 text-center shadow-[0_20px_55px_rgba(84,61,140,0.06)]">
+                        <div className="mb-6 inline-flex rounded-full bg-[#f7f1ff] p-6 shadow-[0_10px_24px_rgba(84,61,140,0.08)]">
+                          <Sparkles className="h-12 w-12 text-[#9b82e7]" />
                         </div>
-                        <h3 className="mb-2 text-xl font-bold text-neutral-900">
+                        <h3 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
                           No media generated yet
                         </h3>
-                        <p className="mx-auto max-w-xs text-neutral-500">
-                          Select a theme and choose a media type to start your creative journey.
+                        <p className="mx-auto max-w-sm text-sm leading-6 text-neutral-500">
+                          Select a preset and generate the same assets in a calmer, more curated
+                          gallery workspace.
                         </p>
                       </div>
                     ) : null}
@@ -3816,14 +4067,6 @@ export default function StudioWorkspace() {
                         );
                       })}
                   </div>
-                </div>
-              </div>
-
-              <div className="absolute left-0 right-0 top-0 flex h-8 items-center justify-between px-8 text-[10px] font-bold text-white/50">
-                <span>9:41</span>
-                <div className="flex gap-1">
-                  <div className="h-3 w-3 rounded-full bg-white/20" />
-                  <div className="h-3 w-3 rounded-full bg-white/20" />
                 </div>
               </div>
             </motion.div>

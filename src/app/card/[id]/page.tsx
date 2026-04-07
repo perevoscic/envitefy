@@ -54,6 +54,7 @@ async function resolveSharedCard(value: string) {
   const studioCard = isRecord(data.studioCard) ? data.studioCard : null;
   const title = readString(row.title) || readString(data.title) || "Invitation";
   const imageUrl =
+    readString(data.coverImageUrl) ||
     readString(studioCard?.imageUrl) ||
     readString(data.customHeroImage) ||
     readString(data.heroImage) ||

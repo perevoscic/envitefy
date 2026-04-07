@@ -2798,7 +2798,7 @@ export async function getEventHistoryById(id: string): Promise<EventHistoryRow |
   return res.rows[0] || null;
 }
 
-function buildEventHistoryPublicDataProjectionSql(dataSql: string): string {
+function buildEventHistoryPublicDataProjectionSql(dataSql: string, idSql: string): string {
   const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText') #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}' #- '{signupForm,header,backgroundImage,dataUrl}')`;
   const withoutThumbnail = `case
     when coalesce(${dataSql}->>'thumbnail', '') like 'data:%' then (${base} - 'thumbnail')
@@ -2808,10 +2808,16 @@ function buildEventHistoryPublicDataProjectionSql(dataSql: string): string {
     when coalesce(${dataSql}->>'heroImage', '') like 'data:%' then (${withoutThumbnail} - 'heroImage')
     else ${withoutThumbnail}
   end`;
-  return `case
+  const sanitized = `case
     when coalesce(${dataSql}->>'customHeroImage', '') like 'data:%' then (${withoutHero} - 'customHeroImage')
     else ${withoutHero}
   end`;
+  return `jsonb_strip_nulls(
+    (${sanitized}) || jsonb_build_object(
+      'coverImageUrl',
+      ${buildDashboardCoverImageUrlSql(dataSql, idSql)}
+    )
+  )`;
 }
 
 type EventHistoryPublicQueryRow = EventHistoryRow & {
@@ -2873,7 +2879,7 @@ export async function getEventHistoryPublicRenderById(
   id: string,
 ): Promise<EventHistoryPublicRow | null> {
   const dataSql = "data";
-  const projection = buildEventHistoryPublicDataProjectionSql(dataSql);
+  const projection = buildEventHistoryPublicDataProjectionSql(dataSql, "id");
   const res = await query<EventHistoryPublicQueryRow>(
     `select
        id,
@@ -3540,7 +3546,10 @@ export async function listSharedEventHistoryByRecipient(
   limit: number = 50,
 ): Promise<EventHistoryRow[]> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
-  const dataSql = buildEventHistoryPublicDataProjectionSql("coalesce(eh.data, '{}'::jsonb)");
+  const dataSql = buildEventHistoryPublicDataProjectionSql(
+    "coalesce(eh.data, '{}'::jsonb)",
+    "eh.id",
+  );
   const res = await query<EventHistoryRow>(
     `select
        eh.id,

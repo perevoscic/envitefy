@@ -103,6 +103,12 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   const [copySuccess, setCopySuccess] = useState(false);
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
+  const safeAreaStyle = {
+    paddingTop: "max(env(safe-area-inset-top), 1rem)",
+    paddingRight: "max(env(safe-area-inset-right), 1rem)",
+    paddingBottom: "max(env(safe-area-inset-bottom), 1rem)",
+    paddingLeft: "max(env(safe-area-inset-left), 1rem)",
+  };
 
   const buttonConfigs = useMemo(
     () =>
@@ -179,20 +185,33 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   );
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.7),_rgba(238,242,255,1)_45%,_rgba(229,231,235,1))] px-4 py-8">
-      <div className="mx-auto flex max-w-5xl items-center justify-center">
-        <div className="relative w-full max-w-md overflow-hidden rounded-[3rem] border border-white/20 bg-neutral-900 shadow-2xl shadow-neutral-900/20 aspect-[9/16]">
+    <main className="relative min-h-screen min-h-[100svh] min-h-[100dvh] w-full overflow-hidden bg-neutral-950">
+      <div className="absolute inset-0">
+        <img
+          src={props.imageUrl}
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full scale-110 object-cover opacity-35 blur-3xl"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_rgba(10,10,10,0.24)_30%,_rgba(10,10,10,0.82)_100%)]" />
+      </div>
+
+      <div className="relative flex h-screen h-[100svh] h-[100dvh] w-full items-center justify-center overflow-hidden">
+        <div className="relative h-full w-full overflow-hidden bg-neutral-900 shadow-2xl shadow-black/30">
           <img
             src={props.imageUrl}
             alt={props.title}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-contain"
             referrerPolicy="no-referrer"
           />
 
-          <div className="absolute inset-0 flex flex-col p-8 pointer-events-none">
+          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
+
+          <div className="absolute inset-0 flex flex-col pointer-events-none" style={safeAreaStyle}>
             <div className="flex h-full flex-col justify-end">
               {activeTab !== "none" && activeTab !== "share" ? (
-                <div className="pointer-events-auto absolute bottom-32 left-6 right-6 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl">
+                <div className="pointer-events-auto absolute bottom-28 left-4 right-4 z-50 rounded-3xl border border-neutral-200 bg-white/92 p-6 shadow-2xl backdrop-blur-2xl sm:bottom-32 sm:left-8 sm:right-8 lg:left-1/2 lg:right-auto lg:w-[min(42rem,calc(100%-4rem))] lg:-translate-x-1/2">
                   <div className="mb-4 flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
@@ -380,7 +399,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                 </div>
               ) : null}
 
-              <div className="pointer-events-none flex items-end justify-center gap-4 px-4 pb-8">
+              <div className="pointer-events-none flex items-end justify-center gap-3 px-2 pb-4 sm:gap-4 sm:px-4 sm:pb-8">
                 {buttonConfigs
                   .filter((button) => button.visible)
                   .map((button) => {
@@ -423,14 +442,6 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                     );
                   })}
               </div>
-            </div>
-          </div>
-
-          <div className="absolute left-0 right-0 top-0 flex h-8 items-center justify-between px-8 text-[10px] font-bold text-white/50">
-            <span>9:41</span>
-            <div className="flex gap-1">
-              <div className="h-3 w-3 rounded-full bg-white/20" />
-              <div className="h-3 w-3 rounded-full bg-white/20" />
             </div>
           </div>
         </div>
