@@ -17,8 +17,10 @@ import {
 import { useMemo, useState } from "react";
 import {
   buildLiveCardRsvpOutboundHref,
+  filterLiveCardFunFactsForDisplay,
   LIVE_CARD_RSVP_CHOICES,
   parseLiveCardRsvpContact,
+  shouldShowLiveCardDescriptionSection,
   type LiveCardRsvpChoice,
 } from "@/lib/live-card-rsvp";
 
@@ -204,6 +206,11 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         ? "Tap a response to open your messages app with a draft text."
         : "Add a phone number or email as the RSVP contact to send a reply from here.";
 
+  const displayFunFacts = useMemo(
+    () => filterLiveCardFunFactsForDisplay(invitationData?.interactiveMetadata?.funFacts ?? []),
+    [invitationData?.interactiveMetadata?.funFacts],
+  );
+
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
@@ -258,9 +265,43 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
 
                   <div className="space-y-3">
                     {activeTab === "rsvp" ? (
-                      <div className="space-y-4">
-                        <p className="text-sm leading-6 text-neutral-700">{rsvpOutboundHint}</p>
-                        <div className="grid grid-cols-3 gap-2">
+                      <div className="flex flex-col space-y-4">
+                        <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                          <div>
+                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                              Host / RSVP contact name
+                            </p>
+                            <p className="text-sm font-medium text-neutral-900">
+                              {readString(details?.rsvpName) || "Host"}
+                            </p>
+                          </div>
+                          {readString(details?.rsvpContact) ? (
+                            <div>
+                              <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                RSVP contact
+                              </p>
+                              <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
+                                {rsvpParsed.kind === "email" ? (
+                                  <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
+                                ) : rsvpParsed.kind === "sms" ? (
+                                  <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
+                                ) : null}
+                                {readString(details?.rsvpContact)}
+                              </p>
+                            </div>
+                          ) : null}
+                          {readString(details?.rsvpDeadline) ? (
+                            <div>
+                              <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                RSVP deadline
+                              </p>
+                              <p className="text-sm text-red-600">
+                                {formatDate(readString(details?.rsvpDeadline))}
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
                           {LIVE_CARD_RSVP_CHOICES.map((choice) => {
                             const href = buildLiveCardRsvpOutboundHref({
                               rsvpContact,
@@ -294,50 +335,6 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                             );
                           })}
                         </div>
-                        <div className="space-y-3 border-t border-neutral-100 pt-4">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                            Host &amp; RSVP details
-                          </p>
-                          <p className="text-sm leading-6 text-neutral-600">
-                            {readString(invitationData?.interactiveMetadata?.rsvpMessage) ||
-                              "Reply to let the host know you're coming."}
-                          </p>
-                          <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                            <div>
-                              <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                Host / RSVP contact name
-                              </p>
-                              <p className="text-sm font-medium text-neutral-900">
-                                {readString(details?.rsvpName) || "Host"}
-                              </p>
-                            </div>
-                            {readString(details?.rsvpContact) ? (
-                              <div>
-                                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                  RSVP contact
-                                </p>
-                                <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
-                                  {rsvpParsed.kind === "email" ? (
-                                    <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
-                                  ) : rsvpParsed.kind === "sms" ? (
-                                    <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
-                                  ) : null}
-                                  {readString(details?.rsvpContact)}
-                                </p>
-                              </div>
-                            ) : null}
-                            {readString(details?.rsvpDeadline) ? (
-                              <div>
-                                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                  RSVP deadline
-                                </p>
-                                <p className="text-sm text-red-600">
-                                  {formatDate(readString(details?.rsvpDeadline))}
-                                </p>
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
                       </div>
                     ) : null}
 
@@ -356,26 +353,28 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                             </p>
                           </div>
                         ) : null}
-                        {Array.isArray(invitationData?.interactiveMetadata?.funFacts) &&
-                        invitationData.interactiveMetadata.funFacts.length > 0 ? (
+                        {displayFunFacts.length > 0 ? (
                           <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
                               Fun Facts
                             </p>
                             <ul className="mt-3 space-y-2 text-sm text-amber-950">
-                              {invitationData.interactiveMetadata.funFacts.map((fact) => (
+                              {displayFunFacts.map((fact) => (
                                 <li key={fact}>{fact}</li>
                               ))}
                             </ul>
                           </div>
                         ) : null}
-                        {readString(invitationData?.description) ? (
+                        {shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
+                        (readString(invitationData?.description) ||
+                          readString(details?.message)) ? (
                           <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                               Description
                             </p>
                             <p className="mt-1 text-sm text-neutral-900">
-                              {readString(invitationData?.description)}
+                              {readString(invitationData?.description) ||
+                                readString(details?.message)}
                             </p>
                           </div>
                         ) : null}

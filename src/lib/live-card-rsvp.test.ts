@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   buildLiveCardRsvpOutboundHref,
+  filterLiveCardFunFactsForDisplay,
   formatLiveCardRsvpDraftBody,
   parseLiveCardRsvpContact,
+  shouldShowLiveCardDescriptionSection,
 } from "./live-card-rsvp.ts";
 
 test("parseLiveCardRsvpContact prefers email when present", () => {
@@ -64,4 +66,21 @@ test("buildLiveCardRsvpOutboundHref returns empty string for unusable contact", 
     }),
     "",
   );
+});
+
+test("filterLiveCardFunFactsForDisplay drops generic gift filler", () => {
+  assert.deepEqual(
+    filterLiveCardFunFactsForDisplay([
+      "Event starts at noon.",
+      "Your presence is the best gift.",
+      "Your presence is the best gift",
+    ]),
+    ["Event starts at noon."],
+  );
+});
+
+test("shouldShowLiveCardDescriptionSection is true only when host message is non-empty", () => {
+  assert.equal(shouldShowLiveCardDescriptionSection(""), false);
+  assert.equal(shouldShowLiveCardDescriptionSection("   "), false);
+  assert.equal(shouldShowLiveCardDescriptionSection("See you there"), true);
 });

@@ -85,3 +85,21 @@ export function buildLiveCardRsvpOutboundHref(params: {
   }
   return "";
 }
+
+/** Guest-facing fun-fact lines we hide (e.g. generic filler models often emit). */
+const OMIT_FUN_FACT_NORMALIZED = "your presence is the best gift";
+
+export function filterLiveCardFunFactsForDisplay(facts: readonly string[]): string[] {
+  return facts
+    .map(readTrimmed)
+    .filter(Boolean)
+    .filter((fact) => {
+      const n = fact.toLowerCase().replace(/\.+$/u, "").trim();
+      return n !== OMIT_FUN_FACT_NORMALIZED;
+    });
+}
+
+/** Show the invitation "Description" block only when the host entered a personal message in studio/event details. */
+export function shouldShowLiveCardDescriptionSection(hostPersonalMessage: string): boolean {
+  return Boolean(readTrimmed(hostPersonalMessage));
+}

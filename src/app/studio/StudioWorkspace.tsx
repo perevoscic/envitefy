@@ -26,8 +26,10 @@ import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import {
   buildLiveCardRsvpOutboundHref,
+  filterLiveCardFunFactsForDisplay,
   LIVE_CARD_RSVP_CHOICES,
   parseLiveCardRsvpContact,
+  shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
@@ -119,6 +121,14 @@ export default function StudioWorkspace() {
       : activePageRsvpParsed.kind === "sms"
         ? "Tap a response to open your messages app with a draft text."
         : "Add a phone number or email as the RSVP contact to send a reply from here.";
+
+  const studioPreviewFunFacts = useMemo(
+    () =>
+      filterLiveCardFunFactsForDisplay(
+        activePageRecord?.data?.interactiveMetadata?.funFacts ?? [],
+      ),
+    [activePageRecord?.data?.interactiveMetadata?.funFacts],
+  );
 
   useEffect(() => {
     setEditPrompt("");
@@ -637,6 +647,9 @@ export default function StudioWorkspace() {
               openLiveCardEditor={openLiveCardEditor}
               openLiveCardImageEdit={openLiveCardImageEdit}
               downloadMedia={downloadMedia}
+              shareMedia={shareMedia}
+              sharingId={sharingId}
+              copySuccess={copySuccess}
               deleteMedia={deleteMedia}
             />
           ) : null}
@@ -861,7 +874,7 @@ export default function StudioWorkspace() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-7 md:grid-cols-2 2xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-7 md:grid-cols-2 2xl:grid-cols-5">
                   <AnimatePresence>
                     {mediaList.map((item) => (
                       <motion.div
@@ -1184,9 +1197,43 @@ export default function StudioWorkspace() {
 
                         <div className="space-y-3">
                           {activeTab === "rsvp" ? (
-                            <div className="space-y-4">
-                              <p className="text-sm leading-6 text-neutral-700">{studioRsvpOutboundHint}</p>
-                              <div className="grid grid-cols-3 gap-2">
+                            <div className="flex flex-col space-y-4">
+                              <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                                <div>
+                                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                    Host / RSVP contact name
+                                  </p>
+                                  <p className="text-sm font-medium text-neutral-900">
+                                    {activePageRecord.data.eventDetails.rsvpName || "Host"}
+                                  </p>
+                                </div>
+                                {activePageRecord.data.eventDetails.rsvpContact ? (
+                                  <div>
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                      RSVP contact
+                                    </p>
+                                    <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
+                                      {activePageRsvpParsed.kind === "email" ? (
+                                        <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
+                                      ) : activePageRsvpParsed.kind === "sms" ? (
+                                        <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
+                                      ) : null}
+                                      {activePageRecord.data.eventDetails.rsvpContact}
+                                    </p>
+                                  </div>
+                                ) : null}
+                                {activePageRecord.data.eventDetails.rsvpDeadline ? (
+                                  <div>
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                      RSVP deadline
+                                    </p>
+                                    <p className="text-sm text-red-600">
+                                      {formatDate(activePageRecord.data.eventDetails.rsvpDeadline)}
+                                    </p>
+                                  </div>
+                                ) : null}
+                              </div>
+                              <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
                                 {LIVE_CARD_RSVP_CHOICES.map((choice) => {
                                   const href = buildLiveCardRsvpOutboundHref({
                                     rsvpContact: activePageRsvpContact,
@@ -1220,50 +1267,6 @@ export default function StudioWorkspace() {
                                   );
                                 })}
                               </div>
-                              <div className="space-y-3 border-t border-neutral-100 pt-4">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                  Host &amp; RSVP details
-                                </p>
-                                <p className="text-sm leading-6 text-neutral-600">
-                                  {activePageRecord.data.interactiveMetadata.rsvpMessage ||
-                                    "Reply to let the host know you're coming."}
-                                </p>
-                                <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                                  <div>
-                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                      Host / RSVP contact name
-                                    </p>
-                                    <p className="text-sm font-medium text-neutral-900">
-                                      {activePageRecord.data.eventDetails.rsvpName || "Host"}
-                                    </p>
-                                  </div>
-                                  {activePageRecord.data.eventDetails.rsvpContact ? (
-                                    <div>
-                                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                        RSVP contact
-                                      </p>
-                                      <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
-                                        {activePageRsvpParsed.kind === "email" ? (
-                                          <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
-                                        ) : activePageRsvpParsed.kind === "sms" ? (
-                                          <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
-                                        ) : null}
-                                        {activePageRecord.data.eventDetails.rsvpContact}
-                                      </p>
-                                    </div>
-                                  ) : null}
-                                  {activePageRecord.data.eventDetails.rsvpDeadline ? (
-                                    <div>
-                                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                        RSVP deadline
-                                      </p>
-                                      <p className="text-sm text-red-600">
-                                        {formatDate(activePageRecord.data.eventDetails.rsvpDeadline)}
-                                      </p>
-                                    </div>
-                                  ) : null}
-                                </div>
-                              </div>
                             </div>
                           ) : null}
 
@@ -1280,18 +1283,31 @@ export default function StudioWorkspace() {
                                   {activePageRecord.data.theme.themeStyle}
                                 </p>
                               </div>
-                              {activePageRecord.data.interactiveMetadata.funFacts.length > 0 ? (
+                              {studioPreviewFunFacts.length > 0 ? (
                                 <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
                                   <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
                                     Fun Facts
                                   </p>
                                   <ul className="mt-3 space-y-2 text-sm text-amber-950">
-                                    {activePageRecord.data.interactiveMetadata.funFacts.map(
-                                      (fact) => (
-                                        <li key={fact}>{fact}</li>
-                                      ),
-                                    )}
+                                    {studioPreviewFunFacts.map((fact) => (
+                                      <li key={fact}>{fact}</li>
+                                    ))}
                                   </ul>
+                                </div>
+                              ) : null}
+                              {shouldShowLiveCardDescriptionSection(
+                                clean(activePageRecord.data.eventDetails.message),
+                              ) &&
+                              (clean(activePageRecord.data.description) ||
+                                clean(activePageRecord.data.eventDetails.message)) ? (
+                                <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                    Description
+                                  </p>
+                                  <p className="mt-1 text-sm text-neutral-900">
+                                    {clean(activePageRecord.data.description) ||
+                                      clean(activePageRecord.data.eventDetails.message)}
+                                  </p>
                                 </div>
                               ) : null}
                               <div className="grid grid-cols-1 gap-3">

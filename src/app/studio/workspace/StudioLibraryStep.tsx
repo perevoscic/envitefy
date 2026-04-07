@@ -3,12 +3,14 @@
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import {
+  CheckCircle2,
   Download,
   Image as ImageIcon,
   Layout,
   Loader2,
+  Pencil,
   Plus,
-  RefreshCw,
+  Share2,
   Trash2,
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
@@ -30,6 +32,9 @@ export type StudioLibraryStepProps = {
   openLiveCardEditor: (item: MediaItem) => void;
   openLiveCardImageEdit: (item: MediaItem) => void;
   downloadMedia: (item: MediaItem) => void;
+  shareMedia: (item: MediaItem) => void | Promise<void>;
+  sharingId: string | null;
+  copySuccess: boolean;
   deleteMedia: (id: string) => void;
 };
 
@@ -42,6 +47,9 @@ export function StudioLibraryStep({
   openLiveCardEditor,
   openLiveCardImageEdit,
   downloadMedia,
+  shareMedia,
+  sharingId,
+  copySuccess,
   deleteMedia,
 }: StudioLibraryStepProps) {
   const { status: sessionStatus } = useSession();
@@ -98,7 +106,7 @@ export function StudioLibraryStep({
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-7 md:grid-cols-2 2xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-7 md:grid-cols-2 2xl:grid-cols-5">
                   {mediaList.map((item) => (
                     <motion.div key={item.id} layoutId={item.id} className={mediaCardClass}>
                       <div className="relative aspect-[9/16] overflow-hidden">
@@ -166,7 +174,7 @@ export function StudioLibraryStep({
                                   className="rounded-full bg-white p-3 text-neutral-900 shadow-[0_12px_24px_rgba(25,20,40,0.14)] transition-transform hover:scale-105"
                                   title={item.type === "page" ? "Edit card image" : "Edit"}
                                 >
-                                  <RefreshCw className="h-5 w-5" />
+                                  <Pencil className="h-5 w-5" />
                                 </button>
                                 <button
                                   onClick={() => downloadMedia(item)}
@@ -176,11 +184,21 @@ export function StudioLibraryStep({
                                   <Download className="h-5 w-5" />
                                 </button>
                                 <button
-                                  onClick={() => deleteMedia(item.id)}
-                                  className={`${ghostIconButtonClass} text-red-500 hover:text-red-600`}
-                                  title="Delete"
+                                  type="button"
+                                  onClick={() => void shareMedia(item)}
+                                  disabled={sharingId === item.id}
+                                  className={ghostIconButtonClass}
+                                  title={
+                                    sharingId === item.id ? "Creating share link" : "Share"
+                                  }
                                 >
-                                  <Trash2 className="h-5 w-5" />
+                                  {sharingId === item.id ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                  ) : copySuccess ? (
+                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                  ) : (
+                                    <Share2 className="h-5 w-5" />
+                                  )}
                                 </button>
                               </div>
                             </div>
