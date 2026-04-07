@@ -2371,6 +2371,7 @@ async function _listOwnedHistoryCandidatesForUser(
     `select id, user_id, title, created_at
      from event_history
      where user_id = $1
+       and ${buildOwnedHistoryStudioVisibilitySql("coalesce(data, '{}'::jsonb)")}
        and created_at is not null
      order by created_at desc, id desc
      limit $2`,
@@ -2386,6 +2387,7 @@ async function _listOwnedHistoryCandidatesForUser(
     `select id, user_id, title, created_at
      from event_history
      where user_id = $1
+       and ${buildOwnedHistoryStudioVisibilitySql("coalesce(data, '{}'::jsonb)")}
        and created_at is null
      order by id desc
      limit $2`,
@@ -2401,6 +2403,10 @@ function buildOwnedHistoryOwnershipTextSql(dataSql: string): string {
     then 'invited'
     else 'owned'
   end`;
+}
+
+function buildOwnedHistoryStudioVisibilitySql(dataSql: string): string {
+  return `lower(coalesce(${dataSql}->>'createdVia', '')) <> 'studio'`;
 }
 
 async function listProjectedDashboardHistoryRowsByIds(
@@ -2651,6 +2657,7 @@ function buildHistoryUnionQuery(view: HistoryView, timeFilter: HistoryTimeFilter
         eh.created_at
       from event_history eh
       where eh.user_id = $1
+        and ${buildOwnedHistoryStudioVisibilitySql(ownDataSql)}
       order by eh.created_at desc nulls last, eh.id desc
       limit ${HISTORY_OWN_ROW_CAP}
     ),
@@ -2717,6 +2724,7 @@ function buildHistoryOwnOnlyQuery(view: HistoryView, timeFilter: HistoryTimeFilt
         eh.created_at
       from event_history eh
       where eh.user_id = $1
+        and ${buildOwnedHistoryStudioVisibilitySql(dataSql)}
       order by eh.created_at desc nulls last, eh.id desc
       limit ${HISTORY_OWN_ROW_CAP}
     ),
@@ -3206,6 +3214,7 @@ export async function listEventHistoryByUser(
     `select id, user_id, title, (data - 'attachment' - 'ocrText') as data, created_at
      from event_history
      where user_id = $1
+       and ${buildOwnedHistoryStudioVisibilitySql("coalesce(data, '{}'::jsonb)")}
      order by created_at desc nulls last, id desc
      limit $2`,
     [userId, Math.max(1, Math.min(HISTORY_OWN_ROW_CAP, limit))],
@@ -3229,6 +3238,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
           eh.created_at
         from event_history eh
         where eh.user_id = $1
+          and ${buildOwnedHistoryStudioVisibilitySql(ownDataSql)}
         order by eh.created_at desc nulls last, eh.id desc
         limit $2
       ),
@@ -3275,6 +3285,7 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         eh.created_at
       from event_history eh
       where eh.user_id = $1
+        and ${buildOwnedHistoryStudioVisibilitySql(ownDataSql)}
       order by eh.created_at desc nulls last, eh.id desc
       limit $2
     ),
@@ -3359,6 +3370,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
           eh.created_at
         from event_history eh
         where eh.user_id = $1
+          and ${buildOwnedHistoryStudioVisibilitySql(ownDataSql)}
         order by eh.created_at desc nulls last, eh.id desc
         limit $2
       ),
@@ -3405,6 +3417,7 @@ function buildSidebarFastHistoryQuery(includeShared: boolean): string {
         eh.created_at
       from event_history eh
       where eh.user_id = $1
+        and ${buildOwnedHistoryStudioVisibilitySql(ownDataSql)}
       order by eh.created_at desc nulls last, eh.id desc
       limit $2
     ),

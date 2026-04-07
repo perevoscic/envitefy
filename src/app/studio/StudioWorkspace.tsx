@@ -2221,6 +2221,16 @@ export default function StudioWorkspace() {
     }
   }
 
+  function openLiveCardEditor(item: MediaItem) {
+    setDetails(item.details);
+    setEditingId(item.id);
+    setIsOptionalCollapsed(false);
+    setActiveTab("none");
+    setIsDesignMode(false);
+    setActivePage(null);
+    setStep("form");
+  }
+
   function getAbsoluteShareUrl(sharePath: string): string {
     if (typeof window === "undefined") return sharePath;
     return new URL(sharePath, window.location.origin).toString();
@@ -2344,14 +2354,19 @@ export default function StudioWorkspace() {
   async function generateMedia(type: MediaType) {
     const currentDetails = { ...details };
     const targetId = editingId ?? createId();
+    const existingItem = editingId
+      ? mediaList.find((item) => item.id === editingId) ?? null
+      : null;
     const loadingItem: MediaItem = {
       id: targetId,
       type,
       theme: pickFirst(currentDetails.theme, `${currentDetails.category} Event`),
       status: "loading",
       details: currentDetails,
-      createdAt: new Date().toISOString(),
-      positions: { ...EMPTY_POSITIONS },
+      createdAt: existingItem?.createdAt || new Date().toISOString(),
+      publishedEventId: existingItem?.publishedEventId,
+      sharePath: existingItem?.publishedEventId ? undefined : existingItem?.sharePath,
+      positions: existingItem?.positions || { ...EMPTY_POSITIONS },
     };
 
     setIsGenerating(true);
@@ -3141,12 +3156,7 @@ export default function StudioWorkspace() {
                               )}
                               <div className="flex items-center gap-3">
                                 <button
-                                  onClick={() => {
-                                    setDetails(item.details);
-                                    setEditingId(item.id);
-                                    setIsOptionalCollapsed(false);
-                                    setStep("form");
-                                  }}
+                                  onClick={() => openLiveCardEditor(item)}
                                   className="rounded-full bg-white p-3 text-neutral-900 shadow-[0_12px_24px_rgba(25,20,40,0.14)] transition-transform hover:scale-105"
                                   title="Edit"
                                 >
@@ -3647,6 +3657,25 @@ export default function StudioWorkspace() {
             </button>
 
             <div className="absolute right-4 top-20 z-[110] flex w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 md:right-8 md:top-24">
+              <button
+                type="button"
+                onClick={() => openLiveCardEditor(activePageRecord)}
+                className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-left backdrop-blur-md transition-colors hover:bg-white/15"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-white/15 p-2 text-white">
+                    <Info className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                      Details
+                    </p>
+                    <p className="text-sm font-semibold text-white">Edit live card details</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-white/70" />
+              </button>
+
               {renderEditImagePanel(
                 activePageRecord,
                 "Describe the change you want. This edits the current live-card artwork and keeps your existing card details and button placement.",

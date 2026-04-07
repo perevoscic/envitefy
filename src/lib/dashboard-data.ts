@@ -77,6 +77,10 @@ function normalizeCreatedVia(createdViaRaw: unknown): string | null {
   return normalized || null;
 }
 
+export function isStudioCreatedVia(createdViaRaw: unknown): boolean {
+  return normalizeCreatedVia(createdViaRaw) === "studio";
+}
+
 export function isScannedInviteCreatedVia(createdViaRaw: unknown): boolean {
   const normalized = normalizeCreatedVia(createdViaRaw);
   return normalized === "ocr" || Boolean(normalized?.startsWith("ocr-"));
@@ -179,6 +183,8 @@ export function getEventEndIso(data: any): string | null {
 
 export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
   const data = row?.data || {};
+  const createdVia = normalizeCreatedVia(data?.createdVia);
+  if (createdVia === "studio") return null;
   const startAt = getEventStartIso(data);
   if (!startAt) return null;
 
@@ -209,7 +215,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     numberOfGuests,
     reminderCount,
     mapsUrl: buildMapsUrl(locationText),
-    createdVia: normalizeCreatedVia(data?.createdVia),
+    createdVia,
     ownership: normalizeDashboardEventOwnership(
       data?.ownership,
       data?.createdVia,

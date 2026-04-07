@@ -59,6 +59,20 @@ test("toDashboardEvent keeps OCR-created rows owned without invite markers", () 
   assert.equal(event?.ownership, "owned");
 });
 
+test("toDashboardEvent excludes studio-only cards from dashboard collections", () => {
+  const event = toDashboardEvent({
+    id: "evt_studio",
+    title: "Studio Card",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-06-02T18:00:00.000Z",
+      createdVia: "studio",
+    },
+  });
+
+  assert.equal(event, null);
+});
+
 test("toDashboardEvent uses image attachment urls as dashboard covers", () => {
   const event = toDashboardEvent({
     id: "evt_3",
