@@ -49,8 +49,10 @@ import {
   pickVenueLabelForSentence,
   splitVenueFromAddress,
   stripJoinUsLanguage,
+  extractGuestReminderFromFlyerText,
 } from "@/lib/ocr/text";
 import { validateUploadFileMeta } from "@/lib/upload-config";
+import { resolveInferredInviteDatetime } from "@/lib/ocr/inferred-invite-date.mjs";
 
 function toLocalNoZ(date: Date | null) {
   if (!date) return null;
@@ -62,6 +64,41 @@ function toLocalNoZ(date: Date | null) {
   const mm = pad(date.getMinutes());
   const ss = pad(date.getSeconds());
   return `${y}-${m}-${day}T${hh}:${mm}:${ss}`;
+}
+
+/** Party headline from title when combined with birthday (e.g. "Name's 9th Birthday — Pool Bash"). */
+function extractBirthdayPartyThemeFromTitle(title: string): string | null {
+  const t = title.trim();
+  if (!t) return null;
+  const dashParts = t
+    .split(/\s*[—–-]\s+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (dashParts.length >= 2) {
+    const left = dashParts[0];
+    const right = dashParts[dashParts.length - 1];
+    const leftBirthday = /birthday/i.test(left);
+    const rightBirthday = /birthday/i.test(right);
+    if (leftBirthday && !rightBirthday && right.length >= 3) return right;
+    if (rightBirthday && !leftBirthday && left.length >= 3) return left;
+  }
+  const openIdx = t.indexOf("(");
+  if (openIdx > 0) {
+    const closeIdx = t.lastIndexOf(")");
+    if (closeIdx > openIdx) {
+      const inner = t.slice(openIdx + 1, closeIdx).trim();
+      const outer = t.slice(0, openIdx).trim();
+      if (/birthday/i.test(inner) && outer.length >= 3) return outer;
+      if (
+        /birthday/i.test(outer) &&
+        inner.length >= 3 &&
+        !/^(party|birthday)$/i.test(inner)
+      ) {
+        return inner;
+      }
+    }
+  }
+  return null;
 }
 
 function buildCleanDescription(
@@ -558,6 +595,8 @@ export async function handleOcrRequest(request: Request) {
     let finalTitle = title;
     let finalStart = start;
     let finalEnd = end;
+    /** True when the vision model returned a non-empty `end` string (even if parsing falls back). */
+    let llmReturnedEndString = false;
     let finalAddress = addressOnly;
     let finalVenue = "";
     let finalDescription = cleanDescription;
@@ -573,6 +612,7 @@ export async function handleOcrRequest(request: Request) {
       finalTitle =
         typeof llmImage.title === "string" && llmImage.title.trim() ? llmImage.title.trim() : title;
       finalStart = safeDate(llmImage.start) || start;
+      llmReturnedEndString = typeof llmImage.end === "string" && llmImage.end.trim().length > 0;
       finalEnd = safeDate(llmImage.end) || end;
       finalAddress =
         typeof llmImage.address === "string" && llmImage.address.trim()
@@ -862,13 +902,19 @@ export async function handleOcrRequest(request: Request) {
           }
         }
         const name = nameMatch ? nameMatch[1] : null;
-        const deterministic = name
-          ? `Join us to celebrate ${name}'s ${age ? `${age} ` : ""}Birthday${venueForSentence ? ` at ${venueForSentence}` : ""}.`
-          : age
-            ? `Join us to celebrate a ${age} Birthday${venueForSentence ? ` at ${venueForSentence}` : ""}.`
-            : venueForSentence
-              ? `Join us to celebrate a Birthday at ${venueForSentence}.`
-              : "Join us to celebrate a Birthday.";
+        const partyTheme = extractBirthdayPartyThemeFromTitle(finalTitle);
+        const deterministic =
+          name && partyTheme
+            ? `Join us for ${partyTheme}${age ? ` — ${name}'s ${age} birthday` : ` — ${name}'s birthday`}${venueForSentence ? ` at ${venueForSentence}` : ""}.`
+            : name
+              ? `Join us to celebrate ${name}'s ${age ? `${age} ` : ""}Birthday${venueForSentence ? ` at ${venueForSentence}` : ""}.`
+              : age
+                ? `Join us to celebrate a ${age} Birthday${venueForSentence ? ` at ${venueForSentence}` : ""}.`
+                : partyTheme
+                  ? `Join us for ${partyTheme}${venueForSentence ? ` at ${venueForSentence}` : ""}.`
+                  : venueForSentence
+                    ? `Join us to celebrate a Birthday at ${venueForSentence}.`
+                    : "Join us to celebrate a Birthday.";
         finalDescription = deterministic;
         descriptionWasGeneratedAsBirthday = true;
 
@@ -984,19 +1030,17 @@ export async function handleOcrRequest(request: Request) {
     }
     if (!containsExplicitYear && finalStart instanceof Date) {
       const now = new Date();
-      const duration = finalEnd instanceof Date ? finalEnd.getTime() - finalStart.getTime() : null;
-      const adjustedStart = new Date(finalStart);
-      let shifts = 0;
-      while (adjustedStart.getTime() < now.getTime() && shifts < 3) {
-        adjustedStart.setFullYear(adjustedStart.getFullYear() + 1);
-        shifts += 1;
-      }
-      if (shifts > 0 && adjustedStart.getTime() > finalStart.getTime()) {
+      const oldStart = finalStart;
+      const adjustedStart = resolveInferredInviteDatetime(now, oldStart);
+      const yearDelta = adjustedStart.getFullYear() - oldStart.getFullYear();
+      if (yearDelta !== 0 || adjustedStart.getTime() !== oldStart.getTime()) {
+        const duration = finalEnd instanceof Date ? finalEnd.getTime() - oldStart.getTime() : null;
         finalStart = adjustedStart;
-        if (duration !== null) finalEnd = new Date(adjustedStart.getTime() + duration);
-        else if (finalEnd instanceof Date) {
+        if (duration !== null && duration > 0) {
+          finalEnd = new Date(adjustedStart.getTime() + duration);
+        } else if (finalEnd instanceof Date) {
           const endAdjusted = new Date(finalEnd);
-          endAdjusted.setFullYear(endAdjusted.getFullYear() + shifts);
+          endAdjusted.setFullYear(endAdjusted.getFullYear() + yearDelta);
           finalEnd = endAdjusted;
         }
       }
@@ -1004,25 +1048,37 @@ export async function handleOcrRequest(request: Request) {
 
     if (finalEnd instanceof Date && finalStart instanceof Date) {
       const durationMs = finalEnd.getTime() - finalStart.getTime();
+      const rangeProbe = `${raw}\n${finalDescription || ""}`;
       const dashRangeRe =
         /\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?\s*[-\u2013\u2014]\s*\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?/i;
       const fromToRangeRe =
         /\bfrom\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?\s+(?:to|until|through|till|til)\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?/i;
-      const hasExplicitRange = dashRangeRe.test(raw) || fromToRangeRe.test(raw);
-      const hasRangeVerb = /(?:\buntil\b|\btill?\b|\bthrough\b)/i.test(raw);
+      const toWordRangeRe =
+        /\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)\s+to\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)?/i;
+      const hasExplicitRange =
+        dashRangeRe.test(rangeProbe) ||
+        fromToRangeRe.test(rangeProbe) ||
+        toWordRangeRe.test(rangeProbe);
+      const hasRangeVerb = /(?:\buntil\b|\btill?\b|\bthrough\b)/i.test(rangeProbe);
+      const hasMultipleIsoTimes = (rangeProbe.match(/T\d{1,2}:\d{2}/g) || []).length >= 2;
       const timeTokenSet = new Set<string>();
-      for (const token of raw.match(/\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)\b/gi) || []) {
+      for (const token of rangeProbe.match(/\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)\b/gi) || []) {
         timeTokenSet.add(token.toLowerCase().replace(/\s+/g, "").replace(/\./g, ""));
       }
-      for (const token of raw.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/g) || []) {
+      for (const token of rangeProbe.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/g) || []) {
         timeTokenSet.add(token.trim());
       }
       const spelledMatches =
-        raw.match(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*o['\u2019]?clock\b/gi) ||
+        rangeProbe.match(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*o['\u2019]?clock\b/gi) ||
         [];
       const totalTimeMentions = timeTokenSet.size + spelledMatches.length;
-      const looksLikeSingleTime = !hasExplicitRange && !hasRangeVerb && totalTimeMentions <= 1;
-      if (durationMs <= 0 || looksLikeSingleTime) finalEnd = null;
+      const looksLikeSingleTime =
+        !hasExplicitRange &&
+        !hasRangeVerb &&
+        !hasMultipleIsoTimes &&
+        totalTimeMentions <= 1;
+      if (durationMs <= 0) finalEnd = null;
+      else if (!llmReturnedEndString && looksLikeSingleTime) finalEnd = null;
     }
 
     if (typeof finalDescription === "string" && finalDescription.trim()) {
@@ -1056,6 +1112,18 @@ export async function handleOcrRequest(request: Request) {
     }
 
     const description = finalDescription || "";
+    let goodToKnowFinal: string | null =
+      ocrSource === "openai" &&
+      typeof llmImage?.goodToKnow === "string" &&
+      llmImage.goodToKnow.trim()
+        ? llmImage.goodToKnow.trim()
+        : null;
+    if (!goodToKnowFinal) {
+      goodToKnowFinal =
+        extractGuestReminderFromFlyerText(raw) ||
+        extractGuestReminderFromFlyerText(description) ||
+        null;
+    }
     const fieldsGuess = {
       title: finalTitle,
       start: toLocalNoZ(finalStart),
@@ -1065,6 +1133,7 @@ export async function handleOcrRequest(request: Request) {
       description,
       timezone: "",
       rsvp: deferredRsvp || null,
+      goodToKnow: goodToKnowFinal,
     };
 
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";

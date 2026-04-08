@@ -17,6 +17,8 @@ export type StudioEventDetails = {
   rsvpContact?: string | null;
   registryNote?: string | null;
   links?: Array<{ label: string; url: string }>;
+  /** HTTPS URLs of user-uploaded honoree/event photos; fed into invitation image generation. */
+  referenceImageUrls?: string[];
 };
 
 export type StudioGenerationGuidance = {
@@ -135,6 +137,22 @@ function normalizeLinks(value: unknown): Array<{ label: string; url: string }> {
     .filter((item): item is { label: string; url: string } => Boolean(item));
 }
 
+const STUDIO_REFERENCE_IMAGES_MAX = 6;
+
+function normalizeReferenceImageUrls(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const entry of value) {
+    const url = safeString(entry);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push(url);
+    if (out.length >= STUDIO_REFERENCE_IMAGES_MAX) break;
+  }
+  return out.length > 0 ? out : undefined;
+}
+
 function normalizeEvent(value: unknown): StudioEventDetails | null {
   if (!value || typeof value !== "object") return null;
   const title = safeString((value as any).title);
@@ -156,6 +174,7 @@ function normalizeEvent(value: unknown): StudioEventDetails | null {
     rsvpContact: safeNullableString((value as any).rsvpContact),
     registryNote: safeNullableString((value as any).registryNote),
     links: normalizeLinks((value as any).links),
+    referenceImageUrls: normalizeReferenceImageUrls((value as any).referenceImageUrls),
   };
 }
 

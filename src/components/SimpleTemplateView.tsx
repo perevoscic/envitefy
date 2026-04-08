@@ -6059,6 +6059,8 @@ export default function SimpleTemplateView({
                   className="w-full justify-center"
                   variant="compact"
                   tone="default"
+                  showCalendar={false}
+                  showEmail={false}
                 />
               </div>
             )}

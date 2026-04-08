@@ -198,14 +198,22 @@ export function buildInvitationImagePrompt(
   event: StudioEventDetails,
   guidance?: StudioGenerationGuidance,
   liveCard?: StudioLiveCardMetadata | null,
-  options?: { editingExistingImage?: boolean },
+  options?: { editingExistingImage?: boolean; referenceImageCount?: number },
 ): string {
   const isEditingExistingImage = options?.editingExistingImage === true;
+  const refCount = Math.max(0, Math.min(6, options?.referenceImageCount ?? 0));
   const realismRequested = hasRealismIntent(event, guidance);
   return [
     isEditingExistingImage
       ? "Edit the provided invitation artwork image."
       : "Create one invitation artwork image.",
+    ...(refCount > 0
+      ? [
+          isEditingExistingImage
+            ? `Reference photos: After the first image (the current invitation artwork), ${refCount} user-provided image(s) follow in order (honoree, couple, family, or other event photos). Use them to guide likeness, mood, palette, or featured subjects while editing. Integrate tastefully—do not paste raw snapshots as the whole card.`
+            : `Reference photos: Before this text prompt, ${refCount} user-provided image(s) appear in order (honoree, couple, family, or other event photos). Use them to guide likeness, mood, palette, or featured subjects in the invitation artwork when appropriate for the celebration. Integrate tastefully into a polished invitation design—do not paste raw snapshots as the whole card. Respect privacy: no misleading or inappropriate contexts.`,
+        ]
+      : []),
     "Style requirements:",
     "- High-quality vertical invitation card composition.",
     "- Legible typography area with decorative visuals.",

@@ -143,7 +143,6 @@ export default function StudioWorkspace() {
   );
 
   const isEditingLiveCard = editingMediaItem?.type === "page";
-  const hasLiveCardSourceImage = Boolean(clean(editingMediaItem?.url));
 
   const activePageRecord = useMemo(
     () => mediaList.find((item) => item.id === activePage?.id) ?? activePage,
@@ -553,7 +552,7 @@ export default function StudioWorkspace() {
     }
   }
 
-  function renderEditImagePanel(item: MediaItem, description: string) {
+  function renderEditImagePanel(item: MediaItem) {
     return (
       <div className="pointer-events-auto flex flex-col gap-3">
         <button
@@ -570,9 +569,6 @@ export default function StudioWorkspace() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
                 Edit Image
               </p>
-              <p className="text-sm font-semibold text-white">
-                {isEditPanelOpen ? "Prompt editor is open" : "Open image edit prompt"}
-              </p>
             </div>
           </div>
           <ChevronRight
@@ -582,18 +578,13 @@ export default function StudioWorkspace() {
 
         {isEditPanelOpen ? (
           <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
-            <p className="text-sm text-white/90">{description}</p>
             <textarea
               value={editPrompt}
               onChange={(event) => setEditPrompt(event.target.value)}
               placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
-              className="mt-3 min-h-[104px] w-full rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/40"
+              className="min-h-[104px] w-full rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/40"
             />
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-white/55">
-                Applies your prompt directly to the current image instead of creating a brand-new
-                composition.
-              </p>
+            <div className="mt-3 flex justify-end">
               <button
                 onClick={() => applyImageEdit(item)}
                 disabled={applyingEditId === item.id}
@@ -629,17 +620,10 @@ export default function StudioWorkspace() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
                 Edit Text
               </p>
-              <p className="text-sm font-semibold text-white">
-                Change RSVP, dates, message, and other card copy
-              </p>
             </div>
           </div>
           <ChevronRight className="h-5 w-5 shrink-0 text-white/70" />
         </button>
-        <p className="px-1 text-xs leading-relaxed text-white/55">
-          Details and buttons update from your event fields. Wording painted into the artwork may
-          still need Edit Image, or refresh when you run Update Invitation.
-        </p>
       </div>
     );
   }
@@ -647,10 +631,7 @@ export default function StudioWorkspace() {
   function renderLiveCardPreviewTools(page: MediaItem) {
     return (
       <>
-        {renderEditImagePanel(
-          page,
-          "Describe how you want the card artwork to change. Only the image updates; event text, RSVP, and button placement stay the same unless you change them elsewhere.",
-        )}
+        {renderEditImagePanel(page)}
 
         {renderEditTextPanel(page)}
 
@@ -658,9 +639,6 @@ export default function StudioWorkspace() {
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
               Design Mode
-            </p>
-            <p className="text-sm font-semibold text-white">
-              {isDesignMode ? "Button editing is on" : "Adjust card button placement"}
             </p>
           </div>
           <button
@@ -677,12 +655,6 @@ export default function StudioWorkspace() {
           </button>
         </div>
 
-        {isDesignMode ? (
-          <div className="pointer-events-auto rounded-2xl border border-purple-300/30 bg-black/35 px-4 py-3 text-sm text-white/90 backdrop-blur-md">
-            Drag the RSVP, Details, Location, Calendar, Share, and Registry buttons to move them
-            around the card. Turn Design Mode off when you're done.
-          </div>
-        ) : null}
       </>
     );
   }
@@ -952,9 +924,6 @@ export default function StudioWorkspace() {
                       <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                         Custom Visual Idea
                       </label>
-                      <p className="mb-3 text-sm leading-6 text-neutral-600">
-                        Keep the same prompt input, but present it like a creative brief.
-                      </p>
                       <textarea
                         placeholder="e.g. A minimalist gold and white theme with marble textures..."
                         className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
@@ -976,21 +945,12 @@ export default function StudioWorkspace() {
                       <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                         Edit current image
                       </label>
-                      <p className="mb-3 text-sm leading-6 text-neutral-600">
-                        Update this live card by editing the current artwork in place while applying
-                        your detail changes.
-                      </p>
                       <textarea
                         placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
                         className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
                         value={editPrompt}
                         onChange={(event) => setEditPrompt(event.target.value)}
                       />
-                      <p className="mt-3 text-xs text-neutral-500">
-                        {hasLiveCardSourceImage
-                          ? "Update Invitation will keep your current card details and button placement while editing the current image."
-                          : "No current live-card image is available, so Update Invitation will regenerate artwork from the latest details."}
-                      </p>
                     </div>
                   ) : null}
                   <div className="space-y-3">
@@ -1185,10 +1145,6 @@ export default function StudioWorkspace() {
                         <h3 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
                           No media generated yet
                         </h3>
-                        <p className="mx-auto max-w-sm text-sm leading-6 text-neutral-500">
-                          Select a preset and generate the same assets in a calmer, more curated
-                          gallery workspace.
-                        </p>
                       </div>
                     ) : null}
                   </AnimatePresence>
@@ -1223,10 +1179,7 @@ export default function StudioWorkspace() {
               </button>
 
               <div className="absolute right-0 top-16 z-10 flex w-[min(22rem,calc(100vw-1.5rem))] flex-col gap-3">
-                {renderEditImagePanel(
-                  selectedImage,
-                  "Describe the change you want. This edits the current image instead of generating a different one.",
-                )}
+                {renderEditImagePanel(selectedImage)}
               </div>
 
               <div className="group relative flex w-full justify-center">
@@ -1498,7 +1451,7 @@ export default function StudioWorkspace() {
                               {studioGuestImageUrls.length > 0 ? (
                                 <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
                                   <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                                    Photos
+                                    Invite photos
                                   </p>
                                   <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
                                     {studioGuestImageUrls.map((url) => (

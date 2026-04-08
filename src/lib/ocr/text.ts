@@ -508,6 +508,37 @@ export function extractRsvpCompact(rawText: string, fallbackText?: string): stri
   }
 }
 
+/**
+ * Guest-facing tips often printed at the bottom of invites (cursive or small type), e.g.
+ * "don't forget a towel and sunscreen!". Used when the vision model omits goodToKnow.
+ */
+export function extractGuestReminderFromFlyerText(text: string | null | undefined): string | null {
+  if (!text || typeof text !== "string") return null;
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return null;
+
+  const patterns: RegExp[] = [
+    /\bdon[''']t forget\b[^.!?\n]{1,220}(?:[.!?]|$)/i,
+    /\bdont forget\b[^.!?\n]{1,220}(?:[.!?]|$)/i,
+    /\bremember to bring\b[^.!?\n]{1,180}(?:[.!?]|$)/i,
+    /\bplease bring\b[^.!?\n]{1,180}(?:[.!?]|$)/i,
+  ];
+
+  for (const re of patterns) {
+    const m = normalized.match(re);
+    if (!m) continue;
+    let s = m[0].trim();
+    if (s.length < 12) continue;
+    s = s
+      .replace(/\brsvp\b.*$/i, "")
+      .replace(/\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b.*$/i, "")
+      .trim();
+    if (s.length < 12) continue;
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  return null;
+}
+
 export function pickTitle(lines: string[], _raw: string): string {
   const cleanedLines = lines
     .map((l) =>

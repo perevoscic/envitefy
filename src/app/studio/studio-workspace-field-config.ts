@@ -289,6 +289,26 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
   ],
 };
 
+/** Guest-facing "Event details / description" textarea placeholder in StudioFormStep, per invite category. */
+export const DETAILS_DESCRIPTION_PLACEHOLDER: Record<InviteCategory, string> = {
+  Birthday:
+    "e.g. Pizza and games first, then cake and presents. Parents welcome to stay. Pool party—bring a towel.",
+  Wedding:
+    "e.g. Ceremony at 4 PM, cocktail hour on the terrace, dinner and dancing to follow. Hotel block under the couple's last name.",
+  "Baby Shower":
+    "e.g. Brunch at 11, games and gifts after. Book instead of a card—see registry. Street parking out front.",
+  Anniversary:
+    "e.g. Cocktail hour at 6, seated dinner at 7, dancing after. Valet at the main entrance; gifts optional.",
+  "Bridal Shower":
+    "e.g. Mimosa bar at 10, brunch and gifts to follow. Casual garden attire. Registry link in the invite email.",
+  Housewarming:
+    "e.g. Drop in between 2 and 6—apps and drinks provided. Park on Oak Street; blue door on the left.",
+  "Field Trip/Day":
+    "e.g. Meet at the gym at 8:15 AM; bus leaves at 8:30. Bring sack lunch and a water bottle. Back by 3 PM for pickup.",
+  "Custom Invite":
+    "e.g. Private screening, popcorn provided, feature starts at noon. Park in the east lot.",
+};
+
 export const SHARED_BASICS: SharedFieldConfig[] = [
   { label: "Event Date", key: "eventDate", type: "date", required: true },
   { label: "Start Time", key: "startTime", type: "time", required: true },

@@ -84,7 +84,6 @@ export default function AppShell({
           <LeftSidebar />
           <MainContentWrapper isAuthenticated={true}>
             <div className="flex-1 min-w-0">{children}</div>
-            <ConditionalFooter />
           </MainContentWrapper>
         </MenuProvider>
       ) : (

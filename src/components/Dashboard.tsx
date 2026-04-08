@@ -30,6 +30,8 @@ type EventFields = {
   numberOfGuests: number;
   reminders?: { minutes: number }[] | null;
   rsvp?: string | null;
+  /** OCR guest tips (flyer footer); maps to event thingsToDo / Good To Know. */
+  thingsToDo?: string | null;
 };
 
 type PendingSnapUpload = {
@@ -922,6 +924,10 @@ export default function Dashboard({
 
         const cleanedRsvp = data?.fieldsGuess?.rsvp ? cleanRsvp(data.fieldsGuess.rsvp) : null;
 
+        const goodToKnowRaw = (data?.fieldsGuess as { goodToKnow?: unknown })?.goodToKnow;
+        const thingsToDoFromScan =
+          typeof goodToKnowRaw === "string" && goodToKnowRaw.trim() ? goodToKnowRaw.trim() : null;
+
         const adjusted: EventFields | null = data?.fieldsGuess
           ? {
               title: String(data.fieldsGuess.title || "Event"),
@@ -933,6 +939,7 @@ export default function Dashboard({
               reminders: [{ minutes: 1440 }],
               numberOfGuests: 0,
               rsvp: cleanedRsvp,
+              thingsToDo: thingsToDoFromScan || undefined,
             }
           : null;
         await finishScanUi();
@@ -1155,6 +1162,14 @@ export default function Dashboard({
               ? normalizedBirthdayTemplateHint.honoreeName || undefined
               : undefined,
             age: isBirthdayOcrEvent ? normalizedBirthdayTemplateHint.age || undefined : undefined,
+            thingsToDo:
+              typeof eventInput.thingsToDo === "string" && eventInput.thingsToDo.trim()
+                ? eventInput.thingsToDo.trim()
+                : undefined,
+            goodToKnow:
+              typeof eventInput.thingsToDo === "string" && eventInput.thingsToDo.trim()
+                ? eventInput.thingsToDo.trim()
+                : undefined,
           },
         };
 

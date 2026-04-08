@@ -17,22 +17,26 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Always include the occasion and honoree(s) when present.
   • Baby Shower: "<FullName> Baby Shower" (prefer this), or "Baby Shower for <FullName>" if needed.
   • Weddings: "<Name A> & <Name B> Wedding".
-  • Birthdays: "<Name>'s <AgeOrdinal> Birthday Party" when age is visible; otherwise "<Name>'s Birthday Party".
+  • Birthdays: When age is visible use "<Name>'s <AgeOrdinal> Birthday" plus any **printed party headline or theme** from the flyer (large colorful title, e.g. "BACKYARD POOL & WATER SLIDE BASH", "Superhero Party", "Unicorn Bash"). Put them together, e.g. "<Name>'s <AgeOrdinal> Birthday — <PartyTheme>" or "<PartyTheme> — <Name>'s <AgeOrdinal> Birthday". Do **not** drop the flyer’s party name in favor of only "Birthday Party" when a distinct theme line exists. If there is no separate theme headline, "<Name>'s <AgeOrdinal> Birthday Party" or "<Name>'s Birthday Party" is fine.
   • Appointments: "<Appointment Type>" optionally "with Dr <Name>" when printed.
   • Generic cases: "<Occasion> — <Name/Group>" or "<Name/Group> <Occasion>".
   • Never reduce to a generic title (e.g., "Baby Shower") if a name is visible.
   
   DESCRIPTION (factual, concise):
-  • One short sentence (two at most) using only facts in the image: date, time, and place. Prefer venue/business names over street addresses; if both appear, use the venue and optionally city/state (omit the street). Do NOT repeat the title or honoree names in the description—make it a standalone sentence. Start the sentence with a capital letter. No RSVP/URLs/prices. No templated phrases like "Please join us" or "You're invited". Do not invent placeholders like "private residence" unless those exact words appear.
+  • One short sentence (two at most) using only facts in the image: date, time, and place. Prefer venue/business names over street addresses; if both appear, use the venue and optionally city/state (omit the street). Do not copy the full title verbatim; you may briefly name the party theme if it is not already obvious from the title. Start the sentence with a capital letter. No RSVP/URLs/prices. No templated phrases like "Please join us" or "You're invited". Do not invent placeholders like "private residence" unless those exact words appear.
   
   ADDRESS:
   • If present, "Venue, Street, City, ST ZIP". Strip labels like "Address:" or "At:".
   
   RSVP:
   • If "RSVP" + phone/email appears, put it in rsvp (e.g., "RSVP: 555-123-4567"). Else null.
+
+  GOOD TO KNOW (guest reminders):
+  • Read the **bottom** of the flyer and any **small or cursive** lines: practical tips for guests (e.g. "don't forget a towel and sunscreen!", "bring a swimsuit", "gifts optional"). Put that wording in **goodToKnow** — preserve meaning; fix obvious OCR typos only (e.g. "twoel" → "towel"). One sentence or short phrase; do **not** put RSVP, phone, address, or date/time here (those go in other fields). If nothing like that appears, goodToKnow is null.
   
   DATE/TIME:
-  • Use the date/time from the flyer. If no year is printed, choose the next occurrence on/after today and set yearVisible=false. Only set end when a clear time range is printed.
+  • Use the date/time from the flyer. If no year is printed, choose the next upcoming calendar date for that month/day (same calendar year when that date is still ahead this year; if that month/day has already passed this year, use next year — e.g. viewing in December for a January party uses the following year). Set yearVisible=false when the flyer does not print a year.
+  • When the flyer shows a time window (e.g. "1PM to 4PM", "1:00 PM – 4:00 PM", "from 1 to 4 pm"), set start to the opening time and end to the closing time on the same calendar date as start (both full ISO datetimes). If only one time is shown, end may be null.
   
   CATEGORIES:
   • One of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.
@@ -41,17 +45,19 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Clinical tone only. Title is the appointment type (e.g., "Dental Cleaning"). Never invitation wording. Never include DOB.
   
   OUTPUT (strict JSON only, no extra text):
-  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null }
+  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null, "goodToKnow": string|null }
   `;
 
   const user = `
-  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge}.
-  If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include it in the title. Do not include dates/times in the title.
+  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge,goodToKnow}.
+  If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include it in the title. If the flyer has a big headline naming the party (pool party, bash, theme), keep it in the title together with the child’s name and age (see TITLE rules). Do not include dates/times in the title.
   For birthdayAudience, use text/theme cues only. Do not infer from a face or from the honoree name alone.
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
   The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
   Keep RSVP only in rsvp (not in description).
   If year is missing, use the next occurrence on/after ${todayIso} and set yearVisible=false.
+  If a start and end time are printed for the party, return both as start and end (same date).
+  Always fill **goodToKnow** when the image has a bottom/footer guest tip (don't forget / bring / remember), including cursive. Keep those tips out of the main description sentence.
   `;
 
   return { system, user };
@@ -89,11 +95,14 @@ export function buildPracticeSchedulePrompt(timezone: string) {
 export function buildBirthdayRewritePrompt(title: string, location: string, description: string) {
   return {
     system:
-      "You rewrite short event notes into one friendly invitation sentence for a calendar description. Output plain text only (no JSON), one sentence, under 160 characters.",
+      "You rewrite short event notes into one friendly invitation sentence for a calendar description. Output plain text only (no JSON), one sentence, under 200 characters.",
     user:
       `TITLE: ${title || ""}\nLOCATION: ${location || ""}\nNOTES: ${description || ""}\n\n` +
-      "Task: If this is a birthday party, write ONE friendly, inviting sentence in this format: 'Join us to celebrate <Name>'s <Age>th Birthday at <Location>'. " +
-      "Rules: Extract the person's name from the TITLE (e.g., if title is 'Gemma's 7th Birthday Party at US Gym', use 'Gemma'). Extract the age ordinal from the TITLE (e.g., '7th', '10th', '5th') and include it as '<Age>th'. Format: 'Join us to celebrate Gemma's 7th Birthday at US Gym'. Prefer a concise venue/business name (e.g., 'US Gym', 'US Gold Gymnastics') over a street address. If LOCATION looks like a street address (has numbers) but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. ALWAYS start with 'Join us to celebrate' for birthday parties. Include the age ordinal if present in the title (e.g., '7th', '10th'). Use proper capitalization and a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.",
+      "Task: If this is a birthday party, write ONE friendly, inviting sentence. " +
+      "Extract the person's name and age ordinal from the TITLE (e.g. Gemma, 7th). " +
+      "If the TITLE also names a party theme or headline after an em dash, parentheses, or as a leading phrase (e.g. 'Backyard Pool & Water Slide Bash', 'Superhero Party'), **include that theme** in the sentence naturally — e.g. 'Join us for Declan's backyard pool and water slide bash — celebrating his 9th birthday at Declan's Backyard' or 'Join us to celebrate Gemma's 7th birthday gymnastics party at US Gym'. " +
+      "If there is no separate theme in the TITLE, use: 'Join us to celebrate <Name>'s <AgeOrdinal> Birthday at <Location>'. " +
+      "Prefer a concise venue/business name over a street address. If LOCATION looks like a street address but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. Use a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.",
   };
 }
 

@@ -28,6 +28,7 @@ import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import Link from "next/link";
 import { resolveEditHref } from "@/utils/event-edit-route";
+import { formatMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 import { CandyDreamsLayout } from "./templates/CandyDreamsLayout";
 
 const registryCopy = getRegistrySectionCopyForCategory("birthdays");
@@ -50,7 +51,6 @@ function formatEventRangeDisplay(
         weekday: "short",
         month: "short",
         day: "numeric",
-        year: "numeric",
         timeZone: tz,
       });
       const sameDay =
@@ -68,7 +68,6 @@ function formatEventRangeDisplay(
     const dateFmt = new Intl.DateTimeFormat(undefined, {
       month: "short",
       day: "numeric",
-      year: "numeric",
       timeZone: tz,
     });
     const timeFmt = new Intl.DateTimeFormat(undefined, {
@@ -90,7 +89,6 @@ function formatEventRangeDisplay(
       const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
         month: "short",
         day: "numeric",
-        year: "numeric",
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
@@ -102,7 +100,6 @@ function formatEventRangeDisplay(
     const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
       month: "short",
       day: "numeric",
-      year: "numeric",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
@@ -115,15 +112,7 @@ function formatEventRangeDisplay(
 }
 
 function formatDateSimple(dateStr?: string) {
-  if (!dateStr) return "";
-  const date = new Date(dateStr);
-  if (Number.isNaN(date.getTime())) return dateStr;
-
-  // Use UTC to prevent shifts for YYYY-MM-DD
-  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(date.getUTCDate()).padStart(2, "0");
-  const yyyy = date.getUTCFullYear();
-  return `${mm}-${dd}-${yyyy}`;
+  return formatMonthDayOrdinalEn(dateStr, { utc: false, includeYearIfNotCurrent: true });
 }
 
 function getTemplateById(id: string): BirthdayTemplateDefinition {
@@ -133,18 +122,8 @@ function getTemplateById(id: string): BirthdayTemplateDefinition {
 }
 
 function formatDateLabel(value?: string) {
-  if (!value) return undefined;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return undefined;
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    }).format(parsed);
-  } catch {
-    return parsed.toDateString();
-  }
+  const s = formatMonthDayOrdinalEn(value, { utc: false });
+  return s || undefined;
 }
 
 function formatTimeLabel(
@@ -276,10 +255,20 @@ export default function BirthdayTemplateView({
   });
 
   const previewDateLabel = formatDateLabel(startISO) || "Date TBD";
-  const previewTime = formatTimeLabel(startISO, {
-    timeZone: eventData?.timezone || undefined,
-    allDay: Boolean(eventData?.allDay),
+  const tzPreview = eventData?.timezone || undefined;
+  const allDayPreview = Boolean(eventData?.allDay);
+  const previewTimeStart = formatTimeLabel(startISO, {
+    timeZone: tzPreview,
+    allDay: allDayPreview,
   });
+  const previewTimeEnd =
+    typeof endISO === "string" && endISO
+      ? formatTimeLabel(endISO, { timeZone: tzPreview, allDay: allDayPreview })
+      : undefined;
+  const previewTime =
+    previewTimeStart && previewTimeEnd
+      ? `${previewTimeStart} – ${previewTimeEnd}`
+      : previewTimeStart;
 
   const heroImageBasePath = "/templates/birthdays/";
   const heroImageSrc =
@@ -879,16 +868,16 @@ export default function BirthdayTemplateView({
               >
                 Add to Calendar
               </h2>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-nowrap gap-1.5 sm:gap-3">
                 {calendarLinks.google && (
                   <a
                     href={calendarLinks.google}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-300"
+                    className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-1.5 py-2.5 text-xs font-semibold text-stone-700 shadow-sm transition hover:border-stone-300 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
                   >
-                    <CalendarIconGoogle className="h-5 w-5" />
-                    Google
+                    <CalendarIconGoogle className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+                    <span className="truncate">Google</span>
                   </a>
                 )}
                 {calendarLinks.outlook && (
@@ -896,19 +885,19 @@ export default function BirthdayTemplateView({
                     href={calendarLinks.outlook}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-300"
+                    className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-1.5 py-2.5 text-xs font-semibold text-stone-700 shadow-sm transition hover:border-stone-300 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
                   >
-                    <CalendarIconOutlook className="h-5 w-5" />
-                    Outlook
+                    <CalendarIconOutlook className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+                    <span className="truncate">Outlook</span>
                   </a>
                 )}
                 {calendarLinks.appleInline && (
                   <AppleCalendarLink
                     href={calendarLinks.appleInline}
-                    className="inline-flex items-center gap-2 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-300"
+                    className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-1.5 py-2.5 text-xs font-semibold text-stone-700 shadow-sm transition hover:border-stone-300 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
                   >
-                    <CalendarIconApple className="h-5 w-5" />
-                    Apple
+                    <CalendarIconApple className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+                    <span className="truncate">Apple</span>
                   </AppleCalendarLink>
                 )}
               </div>
@@ -937,42 +926,6 @@ export default function BirthdayTemplateView({
           </div>
         )}
       </div>
-
-      {!isReadOnly && (
-        <div className="event-modern-mobile-bar md:hidden">
-          <div className="mx-auto flex max-w-3xl items-center gap-2">
-            {hasRsvpSection && (
-              <a
-                href="#rsvp"
-                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-              >
-                RSVP
-              </a>
-            )}
-            {canEdit && (
-              <Link
-                href={resolveEditHref(eventId, eventData, eventTitle)}
-                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-              >
-                Edit
-              </Link>
-            )}
-            {isOwner && <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />}
-            <div className="min-w-0 flex-1">
-              <EventActions
-                shareUrl={shareUrl}
-                event={eventData}
-                calendarTitle={eventTitle}
-                historyId={eventId}
-                className="w-full justify-center"
-                variant="compact"
-                tone="default"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-      {!isReadOnly && <div className="event-modern-mobile-spacer md:hidden" />}
 
       <GuestRsvpModal
         isOpen={isRsvpModalOpen}

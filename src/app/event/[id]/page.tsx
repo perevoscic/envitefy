@@ -1238,6 +1238,12 @@ export default async function EventPage({
             headlineTitle: title || data.headlineTitle,
             date:
               data.startISO || (data.date && data.time ? `${data.date}T${data.time}` : data.date),
+            end: (() => {
+              const endIso = typeof data?.endISO === "string" ? data.endISO.trim() : "";
+              if (endIso) return endIso;
+              const end = typeof data?.end === "string" ? data.end.trim() : "";
+              return end || undefined;
+            })(),
             location:
               data.location ||
               [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
@@ -1249,6 +1255,7 @@ export default async function EventPage({
             birthdayName: data.birthdayName || data.childName || "Birthday Star",
             age: data.age,
             party: data.party || data.partyDetails,
+            goodToKnow: typeof data.goodToKnow === "string" ? data.goodToKnow.trim() : undefined,
             thingsToDo: data.thingsToDo || data.partyDetails?.activities,
             hosts: data.hosts,
             gallery: Array.isArray(data.gallery)
@@ -1266,11 +1273,11 @@ export default async function EventPage({
           actions={
             !isReadOnly &&
             isOwner && (
-              <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium bg-white/90 backdrop-blur rounded-md px-2 sm:px-3 py-1.5 shadow">
+              <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
                 {canManageCreatedEvent && (
                   <Link
                     href={buildEditLink(row.id, data, title)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors rounded-md"
                     title="Edit event"
                   >
                     <svg
@@ -1298,6 +1305,8 @@ export default async function EventPage({
                   className=""
                   variant="compact"
                   tone={"default" as any}
+                  showCalendar={false}
+                  showEmail={false}
                 />
               </div>
             )
@@ -2026,6 +2035,8 @@ export default async function EventPage({
                 className="w-full justify-center"
                 variant="compact"
                 tone={"default" as any}
+                showCalendar={false}
+                showEmail={false}
               />
             </div>
           </div>

@@ -11,6 +11,8 @@ export type EventOcrLlmResult = {
   birthdaySignals?: string[] | null;
   birthdayName?: string | null;
   birthdayAge?: number | string | null;
+  /** Short guest reminder from flyer footer (e.g. "Don't forget a towel and sunscreen!"). */
+  goodToKnow?: string | null;
 };
 
 export type GymnasticsScheduleEvent = {

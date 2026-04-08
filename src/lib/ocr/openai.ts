@@ -23,6 +23,8 @@ export function llmEventToRawText(payload: any): string {
   if (typeof payload?.description === "string" && payload.description.trim())
     parts.push(payload.description.trim());
   if (typeof payload?.rsvp === "string" && payload.rsvp.trim()) parts.push(payload.rsvp.trim());
+  if (typeof payload?.goodToKnow === "string" && payload.goodToKnow.trim())
+    parts.push(payload.goodToKnow.trim());
   return parts.join("\n").trim();
 }
 

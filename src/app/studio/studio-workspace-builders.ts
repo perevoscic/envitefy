@@ -17,7 +17,7 @@ import type {
   MediaItem,
   Preset,
 } from "./studio-workspace-types";
-import { readString } from "./studio-workspace-utils";
+import { readString, sanitizeGuestImageUrls, STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
 
 export function createId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -449,6 +449,10 @@ export function buildStudioRequest(
       rsvpContact: clean(details.rsvpContact) || null,
       registryNote: getRegistryText(details) || null,
       links: buildLinks(details),
+      referenceImageUrls: (() => {
+        const urls = sanitizeGuestImageUrls(details.guestImageUrls);
+        return urls.length > 0 ? urls.slice(0, STUDIO_GUEST_IMAGE_URL_MAX) : undefined;
+      })(),
     },
     guidance: {
       tone:

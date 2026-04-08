@@ -1137,6 +1137,8 @@ export default function WeddingTemplateView({
                 className="w-full justify-center"
                 variant="compact"
                 tone="default"
+                showCalendar={false}
+                showEmail={false}
               />
             </div>
           </div>

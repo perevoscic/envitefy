@@ -4,6 +4,7 @@ import {
   generateStudioLiveCardWithGemini,
 } from "@/lib/studio/gemini";
 import { buildInvitationImagePrompt, buildLiveCardPrompt } from "@/lib/studio/prompts";
+import { resolveStudioReferenceImages } from "@/lib/studio/reference-image-url";
 import type {
   StudioGenerateRequest,
   StudioGenerateResponse,
@@ -41,12 +42,21 @@ export async function generateStudioInvitation(
   }
 
   if (wantsImage) {
+    const referenceImages = await resolveStudioReferenceImages(request.event.referenceImageUrls);
     const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard, {
       editingExistingImage: Boolean(request.imageEdit?.sourceImageDataUrl),
+      referenceImageCount: referenceImages.length,
     });
     const imageResult = request.imageEdit?.sourceImageDataUrl
-      ? await editInvitationImageWithGemini(imagePrompt, request.imageEdit.sourceImageDataUrl)
-      : await generateInvitationImageWithGemini(imagePrompt);
+      ? await editInvitationImageWithGemini(
+          imagePrompt,
+          request.imageEdit.sourceImageDataUrl,
+          referenceImages.length > 0 ? referenceImages : undefined,
+        )
+      : await generateInvitationImageWithGemini(
+          imagePrompt,
+          referenceImages.length > 0 ? referenceImages : undefined,
+        );
     warnings.push(...imageResult.warnings);
     if (imageResult.ok) {
       imageDataUrl = imageResult.imageDataUrl;

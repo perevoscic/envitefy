@@ -752,6 +752,8 @@ export default function BabyShowerTemplateView({
                 className="w-full justify-center"
                 variant="compact"
                 tone={"default" as any}
+                showCalendar={false}
+                showEmail={false}
               />
             </div>
           </div>

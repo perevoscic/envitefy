@@ -21,7 +21,12 @@ import {
 } from "@/utils/media-upload-client";
 import type { StudioStep } from "../studio-types";
 import { inputValue } from "../studio-workspace-builders";
-import { CATEGORY_FIELDS, RSVP_FIELDS, SHARED_BASICS } from "../studio-workspace-field-config";
+import {
+  CATEGORY_FIELDS,
+  DETAILS_DESCRIPTION_PLACEHOLDER,
+  RSVP_FIELDS,
+  SHARED_BASICS,
+} from "../studio-workspace-field-config";
 import type { EventDetails } from "../studio-workspace-types";
 import {
   studioWorkspaceFieldLabelClass,
@@ -110,25 +115,16 @@ export function StudioFormStep({
         >
           <ArrowLeft className="h-5 w-5 text-neutral-900" />
         </button>
-        <div className="space-y-3">
-          <div className="inline-flex items-center rounded-full border border-[#e6ddf3] bg-white/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-            {details.category}
-          </div>
-          <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
-            {details.category} Details
-          </h2>
-          <p className="max-w-2xl text-sm leading-6 text-neutral-600 sm:text-[15px]">
-            Fill in the same event information and settings, now arranged with more breathing room
-            and clearer hierarchy.
-          </p>
-        </div>
+        <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
+          {details.category} Details
+        </h2>
       </div>
 
       <div className="space-y-8">
         <div className={`${shellClass} space-y-8 px-4 sm:px-6 lg:px-7`}>
           <div className="space-y-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-              Required Information
+              Main details
             </p>
             <div className="flex items-center gap-3">
               <div className="rounded-2xl bg-[#f4edff] p-3 text-[#8a6fdb]">
@@ -138,10 +134,6 @@ export function StudioFormStep({
                 <h3 className="text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
                   Core event details
                 </h3>
-                <p className="mt-1 text-sm leading-6 text-neutral-600">
-                  These fields keep the invitation generation flow unchanged and unlock the Studio
-                  tab.
-                </p>
               </div>
             </div>
           </div>
@@ -248,13 +240,9 @@ export function StudioFormStep({
               <label className={fieldLabelClass} htmlFor="studio-details-description">
                 Event details / description
               </label>
-              <p className="text-xs leading-relaxed text-neutral-500">
-                Guests see this in the Event Details tab—schedule notes, parking, dress code
-                reminders, what to bring, etc.
-              </p>
               <textarea
                 id="studio-details-description"
-                placeholder="e.g. Private screening, popcorn provided, feature starts at noon. Park in the east lot."
+                placeholder={DETAILS_DESCRIPTION_PLACEHOLDER[details.category]}
                 className={textAreaClass}
                 value={details.detailsDescription}
                 onChange={(event) =>
@@ -289,6 +277,70 @@ export function StudioFormStep({
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-3 border-t border-[#ece4f7]/80 pt-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                Optional
+              </p>
+              <label className={fieldLabelClass} htmlFor="studio-event-photos-input">
+                Photos for your invite
+              </label>
+              <input
+                ref={guestImageInputRef}
+                id="studio-event-photos-input"
+                type="file"
+                accept={getUploadAcceptAttribute("header")}
+                className="hidden"
+                disabled={guestImageBusy}
+                onChange={(event) => handleGuestImageFiles(event.target.files)}
+              />
+              <div className="flex flex-wrap gap-3">
+                {details.guestImageUrls.map((url) => (
+                  <div
+                    key={url}
+                    className="relative h-24 w-24 overflow-hidden rounded-2xl border border-[#e8e0f5] bg-neutral-100 shadow-sm"
+                  >
+                    <img
+                      src={url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          guestImageUrls: prev.guestImageUrls.filter((u) => u !== url),
+                        }))
+                      }
+                      className="absolute right-1 top-1 rounded-full bg-neutral-900/80 p-1 text-white shadow hover:bg-neutral-900"
+                      aria-label="Remove photo"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                {details.guestImageUrls.length < STUDIO_GUEST_IMAGE_URL_MAX ? (
+                  <button
+                    type="button"
+                    disabled={guestImageBusy}
+                    onClick={() => guestImageInputRef.current?.click()}
+                    className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-[#d4c8ec] bg-white/80 text-[11px] font-semibold text-[#8a6fdb] transition hover:border-[#8a6fdb] hover:bg-[#faf7ff] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {guestImageBusy ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <Images className="h-6 w-6" />
+                    )}
+                    Add photo
+                  </button>
+                ) : null}
+              </div>
+              {guestImageError ? (
+                <p className="text-sm text-red-600">{guestImageError}</p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -443,71 +495,6 @@ export function StudioFormStep({
                       }))
                     }
                   />
-                </div>
-
-                <div className="space-y-3 md:col-span-2 lg:col-span-3">
-                  <label className={fieldLabelClass} htmlFor="studio-guest-images-input">
-                    Photos for guests
-                  </label>
-                  <p className="text-xs leading-relaxed text-neutral-500">
-                    Shown on the live card Event Details tab. Up to {STUDIO_GUEST_IMAGE_URL_MAX}{" "}
-                    images.
-                  </p>
-                  <input
-                    ref={guestImageInputRef}
-                    id="studio-guest-images-input"
-                    type="file"
-                    accept={getUploadAcceptAttribute("header")}
-                    className="hidden"
-                    disabled={guestImageBusy}
-                    onChange={(event) => handleGuestImageFiles(event.target.files)}
-                  />
-                  <div className="flex flex-wrap gap-3">
-                    {details.guestImageUrls.map((url) => (
-                      <div
-                        key={url}
-                        className="relative h-24 w-24 overflow-hidden rounded-2xl border border-[#e8e0f5] bg-neutral-100 shadow-sm"
-                      >
-                        <img
-                          src={url}
-                          alt=""
-                          className="h-full w-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDetails((prev) => ({
-                              ...prev,
-                              guestImageUrls: prev.guestImageUrls.filter((u) => u !== url),
-                            }))
-                          }
-                          className="absolute right-1 top-1 rounded-full bg-neutral-900/80 p-1 text-white shadow hover:bg-neutral-900"
-                          aria-label="Remove photo"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                    {details.guestImageUrls.length < STUDIO_GUEST_IMAGE_URL_MAX ? (
-                      <button
-                        type="button"
-                        disabled={guestImageBusy}
-                        onClick={() => guestImageInputRef.current?.click()}
-                        className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-[#d4c8ec] bg-white/80 text-[11px] font-semibold text-[#8a6fdb] transition hover:border-[#8a6fdb] hover:bg-[#faf7ff] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {guestImageBusy ? (
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                        ) : (
-                          <Images className="h-6 w-6" />
-                        )}
-                        Add photo
-                      </button>
-                    ) : null}
-                  </div>
-                  {guestImageError ? (
-                    <p className="text-sm text-red-600">{guestImageError}</p>
-                  ) : null}
                 </div>
               </div>
 

@@ -1100,10 +1100,8 @@ export function useLeftSidebarController({
   const myEventsGrouped = groupedEventLists.myEvents;
   const invitedEventsGrouped = groupedEventLists.invitedEvents;
   const createdEventsCount = useMemo(
-    () =>
-      countGroupedEventItems(myEventsGrouped.upcoming) +
-      countGroupedEventItems(myEventsGrouped.past),
-    [myEventsGrouped.past, myEventsGrouped.upcoming]
+    () => countGroupedEventItems(myEventsGrouped.upcoming),
+    [myEventsGrouped.upcoming]
   );
   const invitedEventsCount = useMemo(
     () =>

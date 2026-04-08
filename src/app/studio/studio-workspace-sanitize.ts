@@ -1,3 +1,4 @@
+import { resolveCoverImageUrlFromEventData } from "@/lib/upload-config";
 import {
   normalizeInvitationText,
   normalizeLiveCardMetadata,
@@ -343,22 +344,33 @@ export function isNonFallbackStudioThumbnailUrl(
   return u !== getFallbackThumbnail(details);
 }
 
+/**
+ * Blob URLs and dev-machine absolute URLs cannot load on another device after library sync.
+ * Treat them as missing so we re-resolve from published event history when possible.
+ */
+export function isEphemeralOrDevOnlyImageUrl(url: string | undefined): boolean {
+  const u = readNullableString(url);
+  if (!u) return true;
+  if (u.startsWith("blob:")) return true;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)\b/i.test(u)) {
+    if (typeof window === "undefined") return false;
+    const h = window.location.hostname;
+    if (h !== "localhost" && h !== "127.0.0.1") return true;
+  }
+  return false;
+}
+
 export function extractHistoryStudioImageUrl(row: unknown): string | null {
   if (!isRecord(row)) return null;
   const data = isRecord(row.data) ? row.data : null;
   if (!data) return null;
+
+  const fromCover = resolveCoverImageUrlFromEventData(data as Record<string, unknown>);
+  if (fromCover) return fromCover;
+
   const studioCard = isRecord(data.studioCard) ? data.studioCard : null;
-  const candidates = [
-    readString(data.coverImageUrl),
-    studioCard ? readString(studioCard.imageUrl) : "",
-    readString(data.customHeroImage),
-    readString(data.heroImage),
-    readString(data.thumbnail),
-  ];
-  for (const c of candidates) {
-    if (c) return c;
-  }
-  return null;
+  const studioImage = studioCard ? readString(studioCard.imageUrl) : "";
+  return studioImage || null;
 }
 
 export function extractHistoryStudioInvitationData(

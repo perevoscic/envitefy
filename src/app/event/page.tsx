@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
-import { Camera, ChevronLeft } from "lucide-react";
+import { Camera } from "lucide-react";
 import UploadDropCard from "./UploadDropCard";
 import { themeColorPalette } from "@/lib/theme-color";
 
@@ -21,14 +21,26 @@ export default function EventSnapLandingPage() {
       data-theme-color={themeColorPalette.eventFallback}
     >
       <div className="mx-auto w-full max-w-5xl">
-        <Link
-          href="/"
-          className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-indigo-600"
-        >
-          <ChevronLeft className="h-4 w-4" aria-hidden />
-          Back to home
-        </Link>
-
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 pb-10">
+          <Link
+            href="/?action=camera"
+            className="group flex flex-col rounded-[2rem] border-2 border-indigo-200 bg-white p-8 shadow-[0_18px_48px_rgba(99,102,241,0.12)] transition hover:-translate-y-0.5 hover:border-indigo-400 hover:shadow-[0_24px_56px_rgba(99,102,241,0.18)]"
+          >
+            <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 transition group-hover:bg-indigo-100">
+              <Camera className="h-7 w-7" strokeWidth={2} aria-hidden />
+            </span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-500">
+              Camera
+            </span>
+            <span className="mt-2 text-xl font-bold text-[#0f1935]">
+              Snap flyer
+            </span>
+            <span className="mt-2 text-sm text-[#66677f]">
+              Open the camera and capture the invitation in one shot.
+            </span>
+          </Link>
+          <UploadDropCard />
+        </div>
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_60px_rgba(120,110,160,0.12)]">
           <div className="grid gap-8 px-6 py-8 md:grid-cols-[1.15fr_0.85fr] md:px-10 md:py-12">
             <div className="flex flex-col justify-center">
@@ -83,28 +95,6 @@ export default function EventSnapLandingPage() {
             </div>
           </div>
         </section>
-
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
-          <Link
-            href="/?action=camera"
-            className="group flex flex-col rounded-[2rem] border-2 border-indigo-200 bg-white p-8 shadow-[0_18px_48px_rgba(99,102,241,0.12)] transition hover:-translate-y-0.5 hover:border-indigo-400 hover:shadow-[0_24px_56px_rgba(99,102,241,0.18)]"
-          >
-            <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 transition group-hover:bg-indigo-100">
-              <Camera className="h-7 w-7" strokeWidth={2} aria-hidden />
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-500">
-              Camera
-            </span>
-            <span className="mt-2 text-xl font-bold text-[#0f1935]">
-              Snap flyer
-            </span>
-            <span className="mt-2 text-sm text-[#66677f]">
-              Open the camera and capture the invitation in one shot.
-            </span>
-          </Link>
-
-          <UploadDropCard />
-        </div>
       </div>
     </main>
   );

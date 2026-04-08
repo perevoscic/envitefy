@@ -11,7 +11,7 @@ export function readNullableString(value: unknown): string | null {
   return next || null;
 }
 
-/** Max guest-facing photos per live card (sanitize + UI). */
+/** Max optional honoree / event photos on the live card Event Details tab (sanitize + UI). */
 export const STUDIO_GUEST_IMAGE_URL_MAX = 6;
 
 export function sanitizeGuestImageUrls(value: unknown): string[] {

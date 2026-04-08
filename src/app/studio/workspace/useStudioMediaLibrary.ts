@@ -7,6 +7,7 @@ import { STORAGE_KEY } from "../studio-workspace-field-config";
 import {
   extractHistoryStudioImageUrl,
   extractHistoryStudioInvitationData,
+  isEphemeralOrDevOnlyImageUrl,
   isNonFallbackStudioThumbnailUrl,
   restoreHydratedMediaItems,
   sanitizeInvitationData,
@@ -210,7 +211,10 @@ export function useStudioMediaLibrary() {
         if (!pubId) continue;
 
         const nonFallbackImage = isNonFallbackStudioThumbnailUrl(item.url, item.details);
-        const hasRealImage = nonFallbackImage && Boolean(clean(item.url));
+        const hasRealImage =
+          nonFallbackImage &&
+          Boolean(clean(item.url)) &&
+          !isEphemeralOrDevOnlyImageUrl(item.url);
         const needsPageData = item.type === "page" && !item.data;
         const stuckWhileGenerating = item.status === "error" || item.status === "loading";
         const readyMissingSyncedAsset =

@@ -29,15 +29,13 @@ test("live card updates reuse the current image in the studio generation request
   assert.match(source, /persistStudioLibraryImageUrl/);
 });
 
-test("live card modal uses in-context image prompt panel; studio step still offers form-level image edit copy", () => {
+test("live card modal uses in-context image prompt panel; studio step keeps form-level image edit", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
 
   assert.match(source, /function openLiveCardImageEdit\(item: MediaItem\)/);
   assert.match(source, /function openLiveCardTextEdit\(item: MediaItem\)/);
-  assert.match(
-    source,
-    /renderEditImagePanel\(\s*page,[\s\S]*Only the image updates/,
-  );
+  assert.match(source, /function renderEditImagePanel\(item: MediaItem\)/);
+  assert.match(source, /renderEditImagePanel\(page\)/);
   assert.match(source, /renderLiveCardPreviewTools\(activePageRecord\)/);
   assert.match(source, /renderEditTextPanel\(page\)/);
   assert.match(source, />\s*Edit Text\s*</);
@@ -45,13 +43,5 @@ test("live card modal uses in-context image prompt panel; studio step still offe
   assert.match(source, /openLiveCardImageEdit=\{openLiveCardImageEdit\}/);
   assert.match(source, /openLiveCardTextEdit=\{openLiveCardTextEdit\}/);
   assert.match(source, /Edit current image/);
-  assert.match(
-    source,
-    /Update this live card by editing the current artwork in place while applying[\s\S]*?your detail changes\./,
-  );
-  assert.match(
-    source,
-    /Update Invitation will keep your current card details and button placement while editing the current image\./,
-  );
   assert.doesNotMatch(source, /Edit live card details/);
 });

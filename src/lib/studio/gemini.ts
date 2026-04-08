@@ -292,6 +292,7 @@ async function postGeminiImage(
   model: string,
   prompt: string,
   sourceImageDataUrl?: string,
+  referenceImages?: Array<{ mimeType: string; data: string }>,
 ): Promise<
   | { ok: true; response: any; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
@@ -311,6 +312,25 @@ async function postGeminiImage(
     };
   }
 
+  const refParts =
+    referenceImages?.map((img) => ({
+      inlineData: { mimeType: img.mimeType, data: img.data },
+    })) ?? [];
+
+  const parts: Array<
+    { text: string } | { inlineData: { mimeType: string; data: string } }
+  > = [];
+  if (sourceImage) {
+    parts.push({
+      inlineData: {
+        mimeType: sourceImage.mimeType,
+        data: sourceImage.data,
+      },
+    });
+  }
+  parts.push(...refParts);
+  parts.push({ text: prompt });
+
   try {
     const client = getGeminiClient();
     const response = await client.models.generateContent({
@@ -318,19 +338,7 @@ async function postGeminiImage(
       contents: [
         {
           role: "user",
-          parts: [
-            ...(sourceImage
-              ? [
-                  {
-                    inlineData: {
-                      mimeType: sourceImage.mimeType,
-                      data: sourceImage.data,
-                    },
-                  },
-                ]
-              : []),
-            { text: prompt },
-          ],
+          parts,
         },
       ],
       config: sourceImage
@@ -397,8 +405,9 @@ export async function generateInvitationTextWithGemini(prompt: string): Promise<
 
 export async function generateInvitationImageWithGemini(
   prompt: string,
+  referenceImages?: Array<{ mimeType: string; data: string }>,
 ): Promise<GeminiImageResult> {
-  const result = await postGeminiImage(resolveImageModel(), prompt);
+  const result = await postGeminiImage(resolveImageModel(), prompt, undefined, referenceImages);
   if (!result.ok) return result;
 
   const imageDataUrl = extractImageDataUrlFromGeminiResponse(result.response);
@@ -419,8 +428,14 @@ export async function generateInvitationImageWithGemini(
 export async function editInvitationImageWithGemini(
   prompt: string,
   sourceImageDataUrl: string,
+  referenceImages?: Array<{ mimeType: string; data: string }>,
 ): Promise<GeminiImageResult> {
-  const result = await postGeminiImage(resolveImageEditModel(), prompt, sourceImageDataUrl);
+  const result = await postGeminiImage(
+    resolveImageEditModel(),
+    prompt,
+    sourceImageDataUrl,
+    referenceImages,
+  );
   if (!result.ok) return result;
 
   const imageDataUrl = extractImageDataUrlFromGeminiResponse(result.response);

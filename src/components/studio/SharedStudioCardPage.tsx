@@ -380,7 +380,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                           {displayGuestImageUrls.length > 0 ? (
                             <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
                               <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                                Photos
+                                Invite photos
                               </p>
                               <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
                                 {displayGuestImageUrls.map((url) => (

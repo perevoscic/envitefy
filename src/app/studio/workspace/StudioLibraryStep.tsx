@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useSession } from "next-auth/react";
 import {
   CheckCircle2,
   Download,
@@ -55,7 +54,6 @@ export function StudioLibraryStep({
   copySuccess,
   deleteMedia,
 }: StudioLibraryStepProps) {
-  const { status: sessionStatus } = useSession();
   const mediaCardClass = studioWorkspaceMediaCardClass;
   const mediaBadgeClass = studioWorkspaceMediaBadgeClass;
   const ghostIconButtonClass = studioWorkspaceGhostIconButtonClass;
@@ -76,11 +74,6 @@ export function StudioLibraryStep({
                   <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
                     Your Library
                   </h2>
-                  <p className="text-sm leading-6 text-neutral-600 sm:text-[15px]">
-                    {sessionStatus === "authenticated"
-                      ? "A gallery view of your saved invitations and generated assets. When you are signed in, this library syncs to your account across devices, with a local copy in this browser."
-                      : "A gallery view of saved invitations and generated assets on this device. Sign in to sync your library across browsers and phones."}
-                  </p>
                 </div>
                 <button
                   onClick={() => {
@@ -102,17 +95,12 @@ export function StudioLibraryStep({
                   <p className="text-lg font-semibold tracking-[-0.02em] text-neutral-900">
                     No invitations created yet
                   </p>
-                  <p className="mt-2 text-sm text-neutral-500">
-                    {sessionStatus === "authenticated"
-                      ? "Your saved live cards and images will appear here on every device where you use Envitefy while signed in."
-                      : "Your saved live cards and images will appear here. Sign in to keep them in sync everywhere."}
-                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 md:gap-7 md:grid-cols-2 2xl:grid-cols-5">
                   {mediaList.map((item) => (
                     <motion.div key={item.id} layoutId={item.id} className={mediaCardClass}>
-                      <div className="relative aspect-[9/16] overflow-hidden">
+                      <div className="relative aspect-[3/4] overflow-hidden sm:aspect-[4/5] md:aspect-[9/16]">
                         {item.status === "loading" ? (
                           <div className="absolute inset-0 flex items-center justify-center bg-[#faf7ff]">
                             <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
@@ -123,7 +111,6 @@ export function StudioLibraryStep({
                               src={item.url || getFallbackThumbnail(item.details)}
                               alt={item.theme}
                               className="h-full w-full object-cover opacity-35"
-                              referrerPolicy="no-referrer"
                             />
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white/55 px-6 text-center backdrop-blur-[3px]">
                               <p className="text-sm font-semibold text-neutral-900">
@@ -147,7 +134,6 @@ export function StudioLibraryStep({
                               src={item.url}
                               alt={item.theme}
                               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                              referrerPolicy="no-referrer"
                             />
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(18,14,28,0.12),rgba(18,14,28,0.54))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
                               {item.type === "page" ? (

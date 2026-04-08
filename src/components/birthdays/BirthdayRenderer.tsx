@@ -6,6 +6,7 @@ import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
 import EventMap from "../EventMap";
 import AppleCalendarLink from "../AppleCalendarLink";
 import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
+import { formatMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 
 import { CalendarIconApple, CalendarIconGoogle, CalendarIconOutlook } from "../CalendarIcons";
 
@@ -13,18 +14,12 @@ const UserRsvpContext = createContext<string | null>(null);
 const registryCopy = getRegistrySectionCopyForCategory("birthdays");
 
 function formatDate(dateStr?: string) {
-  if (!dateStr) return "";
-  // Check if it's already in MM-DD-YYYY format or contains text
-  if (dateStr.includes("-") && dateStr.split("-")[0].length === 2) return dateStr;
+  return formatMonthDayOrdinalEn(dateStr, { utc: true });
+}
 
-  const date = new Date(dateStr);
-  if (Number.isNaN(date.getTime())) return dateStr;
-
-  // Use UTC values to avoid timezone shifts for YYYY-MM-DD strings
-  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(date.getUTCDate()).padStart(2, "0");
-  const yyyy = date.getUTCFullYear();
-  return `${mm}-${dd}-${yyyy}`;
+/** RSVP deadline: show year only when it falls outside the current calendar year. */
+function formatRsvpDeadlineDate(dateStr?: string) {
+  return formatMonthDayOrdinalEn(dateStr, { utc: true, includeYearIfNotCurrent: true });
 }
 
 function formatTime(dateStr?: string) {
@@ -42,6 +37,13 @@ function formatTime(dateStr?: string) {
     minute: "2-digit",
     hour12: true,
   });
+}
+
+function formatEventTime(startStr?: string, endStr?: string) {
+  const start = formatTime(startStr);
+  const end = formatTime(endStr);
+  if (start && end) return `${start} – ${end}`;
+  return start || end || "";
 }
 
 // Types
@@ -69,6 +71,8 @@ export type ThemeConfig = {
 export type EventData = {
   headlineTitle?: string;
   date?: string;
+  /** Party end instant (ISO); when set with date, Time shows a range. */
+  end?: string;
   location?: string;
   story?: string;
   schedule?: Array<{
@@ -78,6 +82,8 @@ export type EventData = {
   }>;
   travel?: string;
   thingsToDo?: string;
+  /** Flyer footer guest tips (OCR goodToKnow); shown in Good To Know. */
+  goodToKnow?: string;
   photos?: string[];
   rsvpEnabled?: boolean;
   rsvpLink?: string;
@@ -211,9 +217,12 @@ export default function BirthdayRenderer({
         style={{
           fontFamily: theme.fonts.body,
           backgroundColor: theme.colors.primary,
+          ["--event-mobile-bar-bg" as string]: theme.colors.primary,
         }}
       >
-        {actions && <div className="hidden md:flex justify-center py-3">{actions}</div>}
+        {actions && layout !== "editorial-feature" && (
+          <div className="hidden md:flex justify-center py-3">{actions}</div>
+        )}
         {renderLayout(
           layout,
           theme,
@@ -234,13 +243,6 @@ export default function BirthdayRenderer({
             userRsvpResponse,
           },
         )}
-
-        {actions && (
-          <div className="event-modern-mobile-bar md:hidden">
-            <div className="mx-auto flex max-w-3xl items-center gap-2">{actions}</div>
-          </div>
-        )}
-        {actions && <div className="event-modern-mobile-spacer md:hidden" />}
 
         {showHostDashboard && eventId && (
           <div className="max-w-4xl mx-auto w-full px-6 pb-20 mt-12">
@@ -1567,7 +1569,7 @@ function BirthdayContentSections({
     (event.headlineTitle?.includes("'s") ? event.headlineTitle.split("'s")[0] : null);
   const age = event.age;
   const partyTheme = event.party?.theme || event.partyDetails?.theme;
-  const time = formatTime(event.date);
+  const time = formatEventTime(event.date, event.end);
 
   return (
     <main
@@ -1861,7 +1863,7 @@ function BirthdayContentSections({
             </button>
             {event.rsvpDeadline && (
               <p className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">
-                Please RSVP by {formatDate(event.rsvpDeadline)}
+                Please RSVP by {formatRsvpDeadlineDate(event.rsvpDeadline)}
               </p>
             )}
           </section>
@@ -1884,7 +1886,7 @@ function EditorialFeatureLayout({
   chrome?: BirthdayRendererChrome;
 }) {
   const formattedDate = formatDate(event.date);
-  const formattedTime = formatTime(event.date);
+  const formattedTime = formatEventTime(event.date, event.end);
   const venueText = chrome?.venueText || "";
   const locationText = chrome?.locationText || event.location || "";
   const directionsHref = locationText
@@ -1900,6 +1902,7 @@ function EditorialFeatureLayout({
         }${venueText ? ` at ${venueText}` : ""}.`
       : "Celebrate with us for a special birthday gathering.");
   const noteCopy =
+    event.goodToKnow ||
     event.thingsToDo ||
     event.party?.notes ||
     event.partyDetails?.notes ||
@@ -1935,7 +1938,9 @@ function EditorialFeatureLayout({
               {event.headlineTitle || theme.defaultHeadline || "Birthday Celebration"}
             </h1>
             <p className="max-w-xl text-base leading-7 text-slate-600 md:text-lg">{summary}</p>
-            <div className="md:hidden">{actions}</div>
+            {actions ? (
+              <div className="mt-2 flex w-full justify-end md:mt-4">{actions}</div>
+            ) : null}
           </div>
 
           <div
@@ -2042,40 +2047,52 @@ function EditorialFeatureLayout({
                 <p className="mt-2 text-sm font-medium text-slate-500">
                   {rsvpEnabled
                     ? `Tap a response below to RSVP${
-                        event.rsvpDeadline ? ` by ${formatDate(event.rsvpDeadline)}` : ""
+                        event.rsvpDeadline ? ` by ${formatRsvpDeadlineDate(event.rsvpDeadline)}` : ""
                       }.`
                     : "RSVP details will be shared by the host."}
                 </p>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  {[
-                    { label: "Yes, I'm In!", response: "yes" as const },
-                    { label: "Maybe", response: "maybe" as const },
-                    { label: "No", response: "no" as const },
-                  ].map((option) => (
-                    <button
-                      key={option.label}
-                      type="button"
-                      onClick={rsvpEnabled ? () => onRsvpClick?.(option.response) : undefined}
-                      disabled={!rsvpEnabled}
-                      className={`min-w-[140px] flex-1 rounded-full border-2 px-5 py-4 text-sm font-black transition ${
-                        rsvpEnabled
-                          ? "bg-white hover:-translate-y-0.5"
-                          : "cursor-not-allowed bg-slate-50 text-slate-400"
-                      }`}
-                      style={{
-                        borderColor:
-                          option.label === "Yes, I'm In!"
-                            ? theme.colors.secondary
-                            : "rgba(148,163,184,0.35)",
-                        color:
-                          option.label === "Yes, I'm In!" && rsvpEnabled
-                            ? theme.colors.secondary
-                            : undefined,
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                <div className="mt-8 flex flex-col gap-3 md:flex-row md:flex-wrap">
+                  <button
+                    type="button"
+                    onClick={rsvpEnabled ? () => onRsvpClick?.("yes") : undefined}
+                    disabled={!rsvpEnabled}
+                    className={`w-full rounded-full border-2 px-5 py-5 text-base font-black transition md:min-w-[140px] md:flex-1 md:py-4 md:text-sm ${
+                      rsvpEnabled
+                        ? "bg-white hover:-translate-y-0.5"
+                        : "cursor-not-allowed bg-slate-50 text-slate-400"
+                    }`}
+                    style={{
+                      borderColor: theme.colors.secondary,
+                      color: rsvpEnabled ? theme.colors.secondary : undefined,
+                    }}
+                  >
+                    Yes, I&apos;m In!
+                  </button>
+                  <div className="grid grid-cols-2 gap-3 md:contents">
+                    {(
+                      [
+                        { label: "Maybe", response: "maybe" as const },
+                        { label: "No", response: "no" as const },
+                      ] as const
+                    ).map((option) => (
+                      <button
+                        key={option.response}
+                        type="button"
+                        onClick={rsvpEnabled ? () => onRsvpClick?.(option.response) : undefined}
+                        disabled={!rsvpEnabled}
+                        className={`rounded-full border-2 px-5 py-4 text-sm font-black transition md:min-w-[140px] md:flex-1 ${
+                          rsvpEnabled
+                            ? "bg-white hover:-translate-y-0.5"
+                            : "cursor-not-allowed bg-slate-50 text-slate-400"
+                        }`}
+                        style={{
+                          borderColor: "rgba(148,163,184,0.35)",
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -2088,31 +2105,31 @@ function EditorialFeatureLayout({
                 >
                   Save the Date
                 </h3>
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="mt-5 grid grid-cols-3 gap-1.5 sm:gap-3">
                   <AppleCalendarLink
                     href={chrome.calendarLinks.appleInline}
-                    className="flex items-center justify-center gap-3 rounded-2xl bg-white px-4 py-4 font-bold text-slate-700 shadow-sm"
+                    className="flex min-w-0 items-center justify-center gap-1.5 rounded-2xl bg-white px-1.5 py-3 text-xs font-bold text-slate-700 shadow-sm sm:gap-3 sm:px-4 sm:py-4 sm:text-base"
                   >
-                    <CalendarIconApple className="h-5 w-5" />
-                    Apple
+                    <CalendarIconApple className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+                    <span className="truncate">Apple</span>
                   </AppleCalendarLink>
                   <a
                     href={chrome.calendarLinks.google}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 rounded-2xl bg-white px-4 py-4 font-bold text-slate-700 shadow-sm"
+                    className="flex min-w-0 items-center justify-center gap-1.5 rounded-2xl bg-white px-1.5 py-3 text-xs font-bold text-slate-700 shadow-sm sm:gap-3 sm:px-4 sm:py-4 sm:text-base"
                   >
-                    <CalendarIconGoogle className="h-5 w-5" />
-                    Google
+                    <CalendarIconGoogle className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+                    <span className="truncate">Google</span>
                   </a>
                   <a
                     href={chrome.calendarLinks.outlook}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 rounded-2xl bg-white px-4 py-4 font-bold text-slate-700 shadow-sm"
+                    className="flex min-w-0 items-center justify-center gap-1.5 rounded-2xl bg-white px-1.5 py-3 text-xs font-bold text-slate-700 shadow-sm sm:gap-3 sm:px-4 sm:py-4 sm:text-base"
                   >
-                    <CalendarIconOutlook className="h-5 w-5" />
-                    Outlook
+                    <CalendarIconOutlook className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+                    <span className="truncate">Outlook</span>
                   </a>
                 </div>
               </div>
@@ -2179,7 +2196,7 @@ function EditorialFeatureLayout({
         </section>
 
         <footer className="border-t border-white/70 px-1 pt-6 text-center text-sm text-slate-500">
-          <p>Created with Envitefy.</p>
+          <p>Snapped with Envitefy.</p>
         </footer>
       </main>
     </div>
@@ -2254,7 +2271,7 @@ function Footer({
         </button>
       </div>
 
-      <p className="text-sm opacity-60">Created with Envitefy.</p>
+      <p className="text-sm opacity-60">Snapped with Envitefy.</p>
     </footer>
   );
 }

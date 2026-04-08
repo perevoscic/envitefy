@@ -106,6 +106,8 @@ export default function EventActions({
   tone = "default",
   showLabels = false,
   calendarTitle,
+  showCalendar = true,
+  showEmail = true,
 }: {
   shareUrl: string;
   event: EventFields | null;
@@ -116,6 +118,8 @@ export default function EventActions({
   showLabels?: boolean;
   /** When set (e.g. server `event_history.title`), used for calendar links and share/email copy. */
   calendarTitle?: string | null;
+  showCalendar?: boolean;
+  showEmail?: boolean;
 }) {
   const normalizeDateLike = (value: string | null | undefined): string | null => {
     if (typeof value !== "string") return null;
@@ -643,7 +647,7 @@ export default function EventActions({
   return (
     <div className={className}>
       <div className={innerClassName}>
-        {calendarLinks && (
+        {showCalendar && calendarLinks && (
           <button
             type="button"
             onClick={onCalendarPrimaryClick}
@@ -696,23 +700,25 @@ export default function EventActions({
           <span className={labelClassName}>Share</span>
         </button>
 
-        <button type="button" onClick={onEmail} className={buttonClassName}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <rect x="3" y="5" width="18" height="14" rx="2" />
-            <polyline points="22,7 12,13 2,7" />
-          </svg>
-          <span className={labelClassName}>Email</span>
-        </button>
+        {showEmail ? (
+          <button type="button" onClick={onEmail} className={buttonClassName}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+              aria-hidden="true"
+            >
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <polyline points="22,7 12,13 2,7" />
+            </svg>
+            <span className={labelClassName}>Email</span>
+          </button>
+        ) : null}
 
         {/* RSVP button removed from bottom action bar - RSVP is now handled via EventRsvpPrompt component with Yes/No/Maybe buttons */}
         {false && hasRsvpContact && (
