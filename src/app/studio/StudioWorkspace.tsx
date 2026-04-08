@@ -684,7 +684,7 @@ export default function StudioWorkspace() {
                   className="pointer-events-none absolute inset-x-3 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#6d28d9] to-[#7c3aed] opacity-95"
                 />
               ) : null}
-              <span className="relative">Form</span>
+              <span className="relative">Details</span>
             </button>
             <button
               type="button"
@@ -1115,15 +1115,6 @@ export default function StudioWorkspace() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </div>
-
-                        <div className="space-y-1 px-6 py-5 max-md:px-3 max-md:py-4">
-                          <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-neutral-900 max-md:text-base">
-                            {getStudioShareTitle(item)}
-                          </h3>
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-                            {item.theme}
-                          </p>
                         </div>
                       </motion.div>
                     ))}

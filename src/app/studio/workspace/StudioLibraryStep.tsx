@@ -14,7 +14,7 @@ import {
   Type,
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
-import { getDisplayTitle, getFallbackThumbnail } from "../studio-workspace-builders";
+import { getFallbackThumbnail } from "../studio-workspace-builders";
 import type { StudioStep } from "../studio-types";
 import {
   studioWorkspaceGhostIconButtonClass,
@@ -221,14 +221,6 @@ export function StudioLibraryStep({
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
-                      </div>
-                      <div className="space-y-1 px-6 py-5 max-md:px-3 max-md:py-4">
-                        <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-neutral-900">
-                          {getDisplayTitle(item.details)}
-                        </h3>
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-                          {item.theme}
-                        </p>
                       </div>
                     </motion.div>
                   ))}

@@ -16,13 +16,13 @@ export const STUDIO_LIBRARY_STORAGE_KEY = "envitefy_media";
 
 export const STUDIO_STEPS: Array<{ id: StudioStep; label: string }> = [
   { id: "category", label: "Category" },
-  { id: "form", label: "Form" },
+  { id: "form", label: "Details" },
   { id: "studio", label: "Studio" },
   { id: "library", label: "Library" },
 ];
 
 export const STUDIO_CATEGORY_NAV: Array<{ id: "details" | "studio" | "library"; label: string }> = [
-  { id: "details", label: "Form" },
+  { id: "details", label: "Details" },
   { id: "studio", label: "Studio" },
   { id: "library", label: "Library" },
 ];
