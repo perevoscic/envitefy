@@ -684,7 +684,7 @@ export default function StudioWorkspace() {
                   className="pointer-events-none absolute inset-x-3 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#6d28d9] to-[#7c3aed] opacity-95"
                 />
               ) : null}
-              <span className="relative">Details</span>
+              <span className="relative">Form</span>
             </button>
             <button
               type="button"
@@ -796,7 +796,7 @@ export default function StudioWorkspace() {
                   className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500 transition-colors hover:text-[#8a6fdb]"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Back to Details
+                  Back to form
                 </button>
 
                 <div className={`${shellClass} space-y-8`}>
@@ -1321,7 +1321,7 @@ export default function StudioWorkspace() {
                               {activeTab === "calendar" ? "Add to Calendar" : null}
                               {activeTab === "registry" ? "Gift Registry" : null}
                               {activeTab === "rsvp" ? "RSVP" : null}
-                              {activeTab === "details" ? "Event Details" : null}
+                              {activeTab === "details" ? "Overview" : null}
                             </h4>
                           </div>
                           <button
@@ -1417,7 +1417,7 @@ export default function StudioWorkspace() {
                               {clean(activePageRecord.data.eventDetails.detailsDescription) ? (
                                 <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
                                   <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                                    Event details
+                                    Description
                                   </p>
                                   <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
                                     {clean(activePageRecord.data.eventDetails.detailsDescription)}
@@ -1609,7 +1609,7 @@ export default function StudioWorkspace() {
                         },
                         {
                           key: "details",
-                          label: "Details",
+                          label: "Overview",
                           icon: ClipboardList,
                           visible: true,
                           onClick: () => setActiveTab(activeTab === "details" ? "none" : "details"),

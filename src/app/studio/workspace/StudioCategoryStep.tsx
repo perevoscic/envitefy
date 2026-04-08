@@ -32,18 +32,12 @@ export function StudioCategoryStep({
         <div className="absolute bottom-0 right-10 h-28 w-28 rounded-full bg-[#f3ecff] blur-3xl" />
         <div className="relative space-y-10">
           <div className="mx-auto max-w-2xl space-y-4 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
-              Details
-            </p>
             <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-5xl">
               What are we celebrating?
             </h2>
           </div>
 
           <div className="space-y-6">
-            <h3 className="text-center text-sm font-bold uppercase tracking-[0.14em] text-neutral-900">
-              Categories
-            </h3>
             <div className="mx-auto grid max-w-5xl grid-cols-2 gap-4 sm:grid-cols-4">
               {CATEGORIES.map((category) => {
                 const Icon = category.icon;

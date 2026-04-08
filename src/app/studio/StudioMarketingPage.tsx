@@ -179,7 +179,7 @@ const weddingHighlights: FeatureItem[] = [
   },
   {
     icon: MapPin,
-    title: "Venue Details",
+    title: "Venue",
     description: "Maps and parking for the ceremony and reception.",
   },
   {

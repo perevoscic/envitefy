@@ -22,7 +22,7 @@ export const STUDIO_STEPS: Array<{ id: StudioStep; label: string }> = [
 ];
 
 export const STUDIO_CATEGORY_NAV: Array<{ id: "details" | "studio" | "library"; label: string }> = [
-  { id: "details", label: "Details" },
+  { id: "details", label: "Form" },
   { id: "studio", label: "Studio" },
   { id: "library", label: "Library" },
 ];

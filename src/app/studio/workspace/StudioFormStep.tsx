@@ -116,7 +116,7 @@ export function StudioFormStep({
           <ArrowLeft className="h-5 w-5 text-neutral-900" />
         </button>
         <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
-          {details.category} Details
+          {details.category}
         </h2>
       </div>
 
@@ -124,7 +124,7 @@ export function StudioFormStep({
         <div className={`${shellClass} space-y-8 px-4 sm:px-6 lg:px-7`}>
           <div className="space-y-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-              Main details
+              Main fields
             </p>
             <div className="flex items-center gap-3">
               <div className="rounded-2xl bg-[#f4edff] p-3 text-[#8a6fdb]">
@@ -132,7 +132,7 @@ export function StudioFormStep({
               </div>
               <div>
                 <h3 className="text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
-                  Core event details
+                  Core fields
                 </h3>
               </div>
             </div>
@@ -238,7 +238,7 @@ export function StudioFormStep({
 
             <div className="space-y-3 border-t border-[#ece4f7]/80 pt-8">
               <label className={fieldLabelClass} htmlFor="studio-details-description">
-                Event details / description
+                Event description
               </label>
               <textarea
                 id="studio-details-description"
@@ -356,7 +356,7 @@ export function StudioFormStep({
               </div>
               <div className="text-left">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                  Optional Details
+                  Optional extras
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
                   Refinements and preferences
