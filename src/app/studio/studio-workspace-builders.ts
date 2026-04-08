@@ -417,6 +417,11 @@ export function buildStudioRequest(
 ): StudioGenerateRequest {
   const refinement = clean(editPrompt);
   const baseDescription = buildDescription(details);
+  const sanitizedGuestImageUrls = sanitizeGuestImageUrls(details.guestImageUrls);
+  const guestPhotoHint =
+    sanitizedGuestImageUrls.length > 0
+      ? ` Host provided ${sanitizedGuestImageUrls.length} reference photo(s) for invitation artwork; keep wording warm and personal where it fits.`
+      : "";
   const visualDirection = buildStudioVisualDirection(details);
   const categoryGuardrails = buildStudioCategoryGuardrails(details);
   const studioGuardrails =
@@ -431,7 +436,7 @@ export function buildStudioRequest(
         null,
       honoreeName: getHonoreeName(details) || null,
       description:
-        [baseDescription, refinement ? `Edit request: ${refinement}` : ""]
+        [baseDescription, refinement ? `Edit request: ${refinement}` : "", guestPhotoHint]
           .filter(Boolean)
           .join(" ") || null,
       date: clean(details.eventDate) || null,
@@ -449,10 +454,10 @@ export function buildStudioRequest(
       rsvpContact: clean(details.rsvpContact) || null,
       registryNote: getRegistryText(details) || null,
       links: buildLinks(details),
-      referenceImageUrls: (() => {
-        const urls = sanitizeGuestImageUrls(details.guestImageUrls);
-        return urls.length > 0 ? urls.slice(0, STUDIO_GUEST_IMAGE_URL_MAX) : undefined;
-      })(),
+      referenceImageUrls:
+        sanitizedGuestImageUrls.length > 0
+          ? sanitizedGuestImageUrls.slice(0, STUDIO_GUEST_IMAGE_URL_MAX)
+          : undefined,
     },
     guidance: {
       tone:

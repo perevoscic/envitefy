@@ -211,15 +211,6 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
     [details, props.title],
   );
 
-  const displayGuestImageUrls = useMemo(() => {
-    const raw = details?.guestImageUrls;
-    if (!Array.isArray(raw)) return [];
-    return raw
-      .filter((u): u is string => typeof u === "string")
-      .map((u) => readString(u))
-      .filter(Boolean);
-  }, [details?.guestImageUrls]);
-
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
@@ -375,24 +366,6 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                                 {readString(invitationData?.description) ||
                                   readString(details?.message)}
                               </p>
-                            </div>
-                          ) : null}
-                          {displayGuestImageUrls.length > 0 ? (
-                            <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                                Invite photos
-                              </p>
-                              <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
-                                {displayGuestImageUrls.map((url) => (
-                                  <img
-                                    key={url}
-                                    src={url}
-                                    alt=""
-                                    className="h-28 w-28 shrink-0 rounded-xl object-cover"
-                                    referrerPolicy="no-referrer"
-                                  />
-                                ))}
-                              </div>
                             </div>
                           ) : null}
                         </div>

@@ -172,15 +172,6 @@ export default function StudioWorkspace() {
     [activePageRecord?.data?.eventDetails, activePageRecord?.data?.title],
   );
 
-  const studioGuestImageUrls = useMemo(() => {
-    const raw = activePageRecord?.data?.eventDetails?.guestImageUrls;
-    if (!Array.isArray(raw)) return [];
-    return raw
-      .filter((u): u is string => typeof u === "string")
-      .map((u) => clean(u))
-      .filter(Boolean);
-  }, [activePageRecord?.data?.eventDetails?.guestImageUrls]);
-
   useEffect(() => {
     setEditPrompt("");
     setIsEditPanelOpen(false);
@@ -1448,24 +1439,6 @@ export default function StudioWorkspace() {
                                   </p>
                                 </div>
                               ) : null}
-                              {studioGuestImageUrls.length > 0 ? (
-                                <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                                    Invite photos
-                                  </p>
-                                  <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
-                                    {studioGuestImageUrls.map((url) => (
-                                      <img
-                                        key={url}
-                                        src={url}
-                                        alt=""
-                                        className="h-28 w-28 shrink-0 rounded-xl object-cover"
-                                        referrerPolicy="no-referrer"
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : null}
                               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {Object.entries(activePageRecord.data.eventDetails)
                                   .filter(([key, value]) => {
@@ -1477,6 +1450,7 @@ export default function StudioWorkspace() {
                                       "age",
                                       "detailsDescription",
                                       "guestImageUrls",
+                                      "coupleNames",
                                       "eventDate",
                                       "startTime",
                                       "endTime",

@@ -46,6 +46,16 @@ function hasRealismIntent(event: StudioEventDetails, guidance?: StudioGeneration
   );
 }
 
+export function isWeddingOccasion(event: StudioEventDetails): boolean {
+  const blob = [event.occasion, event.title, event.description, event.honoreeName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return /\b(wedding|weddings|bridal|nuptials|ceremony|reception|save the date|engagement(\s+party)?)\b/.test(
+    blob,
+  );
+}
+
 export function buildInvitationTextPrompt(
   event: StudioEventDetails,
   guidance?: StudioGenerationGuidance,
@@ -156,6 +166,14 @@ export function buildLiveCardPrompt(
     "- Treat explicit user visual instructions as the highest-priority requirement.",
     "- Do not replace a literal user request with a cuter or more whimsical version of the theme.",
     "- Avoid novelty puns, mascot language, and jokey rewrites unless the user explicitly asked for them.",
+    ...(isWeddingOccasion(event)
+      ? [
+          "- Wedding-related event: keep JSON tone like premium printed stationery or a boutique save-the-date—refined, romantic, and credible. Prefer palettes that print well (ivory, champagne, blush, sage, navy, gold accents) unless the user specified different colors.",
+          "- If wedding details are sparse, expand minimal user input into a refined, credible invitation tone and premium stationery-style concept.",
+          "- Infer an appropriate romantic, modern, classic, floral, or formal direction from a few words when needed.",
+          "- Use tasteful placeholder wording only if necessary to complete the invitation structure.",
+        ]
+      : []),
     ...(realismRequested
       ? [
           "- The requested visual direction is realistic. Keep the copy literal and grounded.",
@@ -202,6 +220,7 @@ export function buildInvitationImagePrompt(
 ): string {
   const isEditingExistingImage = options?.editingExistingImage === true;
   const refCount = Math.max(0, Math.min(6, options?.referenceImageCount ?? 0));
+  const wedding = isWeddingOccasion(event);
   const realismRequested = hasRealismIntent(event, guidance);
   return [
     isEditingExistingImage
@@ -210,15 +229,26 @@ export function buildInvitationImagePrompt(
     ...(refCount > 0
       ? [
           isEditingExistingImage
-            ? `Reference photos: After the first image (the current invitation artwork), ${refCount} user-provided image(s) follow in order (honoree, couple, family, or other event photos). Use them to guide likeness, mood, palette, or featured subjects while editing. Integrate tastefully—do not paste raw snapshots as the whole card.`
-            : `Reference photos: Before this text prompt, ${refCount} user-provided image(s) appear in order (honoree, couple, family, or other event photos). Use them to guide likeness, mood, palette, or featured subjects in the invitation artwork when appropriate for the celebration. Integrate tastefully into a polished invitation design—do not paste raw snapshots as the whole card. Respect privacy: no misleading or inappropriate contexts.`,
+            ? `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): After the first image (the current invitation card), ${refCount} user-uploaded photo(s) follow in order. Rebuild the artwork so those photos are the dominant visual—typically the upper ~45–60% hero, soft feathered blend into cream or tonal negative space, professional wedding-flyer or save-the-date layout. Preserve recognizable likeness of people. Do not leave user photos only as a tiny strip or thumbnail; they must read as the printed invitation's main photograph.`
+            : `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): Before this text prompt, ${refCount} user-uploaded photo(s) appear in order. The final invitation MUST weave these into the card background and hero art: large focal photo (upper ~45–60% of the canvas), cinematic blend/vignette into the rest of the design, elegant typography layered below or beside—like professional printed wedding or event stationery. Preserve recognizable likeness. Forbidden: tucking user photos into a small gallery row while generating unrelated stock people or generic art as the main visual.`,
         ]
       : []),
     "Style requirements:",
-    "- High-quality vertical invitation card composition.",
-    "- Legible typography area with decorative visuals.",
+    "- High-quality vertical invitation card composition (9:16 mobile card).",
+    "- Legible typography with editorial hierarchy (headline, subhead, detail lines).",
     "- No QR codes, no watermarks, no logos.",
-    "- Do not include explicit faces unless needed by theme.",
+    ...(refCount > 0
+      ? [
+          "- The supplied reference photo(s) may show people: show them prominently in the hero artwork with natural, respectful rendering. This overrides any generic 'avoid faces' guidance.",
+        ]
+      : ["- Do not include explicit faces unless needed by theme."]),
+    ...(wedding
+      ? [
+          "- Wedding / formal celebration: aim for serious, print-ready stationery—cream, ivory, champagne, soft blush, sage, or navy with restrained gold accents unless the user's palette overrides.",
+          "- Typography: elegant high-contrast serif for names or main title; clean sans-serif for date/venue lines. Avoid clip-art hearts, cartoon rings, or childish icons.",
+          "- Layout: photo-forward hero acceptable (couple portrait, soft florals, foil-line accents, circular or arch masks). Overall look should match boutique invitation suites, not a meme or social sticker pack.",
+        ]
+      : []),
     isEditingExistingImage
       ? "- Edit the supplied image instead of creating a new unrelated composition."
       : "- Create a fresh invitation artwork composition.",
@@ -229,6 +259,16 @@ export function buildInvitationImagePrompt(
       ? "- Make only the requested visual changes and keep the rest of the image consistent."
       : "- Keep the composition visually focused and cohesive.",
     "- The user's visual direction is the highest-priority art direction and overrides generic birthday, preset, category, or live-card styling.",
+    ...(wedding
+      ? [
+          "- Sparse input handling for weddings: even if the user provides only names, a few descriptive words, or partial event details, generate a complete, polished, premium wedding invitation concept.",
+          "- Infer the most appropriate layout, palette, typography pairing, decorative treatment, and overall mood from minimal input.",
+          "- Expand short phrases such as 'romantic garden', 'modern black and white', or 'formal beach wedding' into a believable luxury invitation design direction.",
+          "- If event details are incomplete, use tasteful placeholder text only when needed to complete the visual composition.",
+          "- Do not ask for missing information inside the image output. Make smart, elegant assumptions based on the supplied words.",
+          "- Prioritize a custom-designed boutique wedding stationery feel over a literal or flat generic template.",
+        ]
+      : []),
     "- If the user requests realistic or photorealistic subjects, render them as believable real-life subjects with natural anatomy, textures, and lighting.",
     "- Do not convert realistic animals or people into cartoons, mascots, plush toys, chibi characters, or anthropomorphic figures unless the user explicitly asks for that.",
     "- Keep text minimal and tasteful.",

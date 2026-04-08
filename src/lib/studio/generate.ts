@@ -42,7 +42,13 @@ export async function generateStudioInvitation(
   }
 
   if (wantsImage) {
+    const requestedRefCount = request.event.referenceImageUrls?.length ?? 0;
     const referenceImages = await resolveStudioReferenceImages(request.event.referenceImageUrls);
+    if (requestedRefCount > 0 && referenceImages.length === 0) {
+      warnings.push(
+        "Invite photos could not be loaded for generation (invalid or disallowed URLs). The artwork was created without them.",
+      );
+    }
     const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard, {
       editingExistingImage: Boolean(request.imageEdit?.sourceImageDataUrl),
       referenceImageCount: referenceImages.length,
