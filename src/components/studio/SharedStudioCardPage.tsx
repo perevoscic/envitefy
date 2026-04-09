@@ -23,6 +23,7 @@ import {
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
+import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 
 type ActiveTab = "none" | "location" | "calendar" | "registry" | "share" | "details" | "rsvp";
 
@@ -87,6 +88,13 @@ function formatDate(dateStr: string) {
   if (!dateStr || !dateStr.includes("-")) return dateStr;
   const [year, month, day] = dateStr.split("-");
   return `${month}.${day}.${year}`;
+}
+
+function formatCalendarSummary(dateStr: string, timeStr: string) {
+  const dateLabel = formatWeekdayMonthDayOrdinalEn(dateStr);
+  if (!dateLabel) return "";
+  const timeLabel = formatTimeLabelEn(timeStr);
+  return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel;
 }
 
 function getRegistryText(details: EventDetails | null | undefined) {
@@ -379,14 +387,6 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                           <p className="text-xs text-neutral-500">
                             {readString(details?.location)}
                           </p>
-                          <p className="mt-2 text-xs text-neutral-500">
-                            {readString(details?.eventDate)
-                              ? formatDate(readString(details?.eventDate))
-                              : "Date TBD"}
-                            {readString(details?.startTime)
-                              ? ` at ${readString(details?.startTime)}`
-                              : ""}
-                          </p>
                           {readString(details?.location) ? (
                             <button
                               onClick={() =>
@@ -409,11 +409,11 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                           <p className="text-sm font-medium text-neutral-900">Save the Date</p>
                           <p className="text-xs text-neutral-500">
                             {readString(details?.eventDate)
-                              ? formatDate(readString(details?.eventDate))
+                              ? formatCalendarSummary(
+                                  readString(details?.eventDate),
+                                  readString(details?.startTime),
+                                )
                               : "Date TBD"}
-                            {readString(details?.startTime)
-                              ? ` at ${readString(details?.startTime)}`
-                              : ""}
                           </p>
                           {buildGoogleCalendarUrl(props.title, invitationData) ? (
                             <button

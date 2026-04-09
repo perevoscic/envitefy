@@ -13,8 +13,6 @@ test("studio workspace sources do not reference lucide Sparkles icon (use WandSp
     "src/app/studio/StudioWorkspace.tsx",
     "src/app/studio/workspace/StudioFormStep.tsx",
     "src/app/studio/studio-workspace-field-config.ts",
-    "src/app/studio/studio-workspace-presets.ts",
-    "src/app/studio/studio-birthday-preset-data.ts",
     "src/app/studio/error.tsx",
     "src/app/studio/StudioMarketingPage.tsx",
   ];

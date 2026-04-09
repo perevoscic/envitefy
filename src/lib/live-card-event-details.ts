@@ -1,5 +1,10 @@
 /** Guest-facing copy for live card "Event Details" tab. */
 
+import {
+  formatTimeLabelEn,
+  formatWeekdayMonthDayOrdinalEn,
+} from "@/utils/format-month-day-ordinal";
+
 export type LiveCardDetailsLike = {
   category?: string;
   name?: string;
@@ -7,6 +12,8 @@ export type LiveCardDetailsLike = {
   venueName?: string;
   location?: string;
   eventTitle?: string;
+  eventDate?: string;
+  startTime?: string;
 };
 
 function readTrim(value: unknown): string {
@@ -59,6 +66,10 @@ export function buildLiveCardDetailsWelcomeMessage(
 ): string | null {
   const category = readTrim(details?.category);
   const venue = readTrim(details?.venueName) || readTrim(details?.location);
+  const eventDate = readTrim(details?.eventDate);
+  const dateLabel = eventDate ? formatWeekdayMonthDayOrdinalEn(eventDate) : "";
+  const timeLabel = formatTimeLabelEn(readTrim(details?.startTime));
+  const dateBit = dateLabel ? ` on ${dateLabel}${timeLabel ? ` at ${timeLabel}` : ""}` : "";
 
   if (category === "Birthday") {
     const honoree = honoreeFromDetails(details, cardTitle);
@@ -66,9 +77,9 @@ export function buildLiveCardDetailsWelcomeMessage(
     const ord = ageToOrdinalWord(readTrim(details?.age));
     const ageBit = ord ? `${ord} ` : "";
     if (venue) {
-      return `Join us to celebrate ${honoree}'s ${ageBit}birthday at ${venue}.`;
+      return `Join us to celebrate ${honoree}'s ${ageBit}birthday at ${venue}${dateBit}.`;
     }
-    return `Join us to celebrate ${honoree}'s ${ageBit}birthday!`.replace(
+    return `Join us to celebrate ${honoree}'s ${ageBit}birthday${dateBit}!`.replace(
       "'s  birthday",
       "'s birthday",
     );
@@ -77,13 +88,13 @@ export function buildLiveCardDetailsWelcomeMessage(
   const headline =
     readTrim(details?.eventTitle) || readTrim(cardTitle) || readTrim(category) || "";
   if (venue && headline) {
-    return `You're invited to ${headline} at ${venue}.`;
+    return `You're invited to ${headline} at ${venue}${dateBit}.`;
   }
   if (venue) {
-    return `Join us at ${venue}.`;
+    return `Join us at ${venue}${dateBit}.`;
   }
   if (headline) {
-    return `We'd love for you to join us for ${headline}.`;
+    return `We'd love for you to join us for ${headline}${dateBit}.`;
   }
   return null;
 }

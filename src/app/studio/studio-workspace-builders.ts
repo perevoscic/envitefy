@@ -4,18 +4,12 @@ import {
   type StudioGenerateMode,
   type StudioGenerateRequest,
 } from "@/lib/studio/types";
-import { BIRTHDAY_PRESET_LIBRARY, svgThumbnail } from "./studio-birthday-preset-data";
 import { EMPTY_POSITIONS } from "./studio-workspace-field-config";
-import { STUDIO_WORKSPACE_PRESETS } from "./studio-workspace-presets";
 import type {
-  BirthdayPresetAgeGroup,
-  BirthdayPresetAudience,
-  BirthdayPresetSeed,
   EventDetails,
   InvitationData,
   InviteCategory,
   MediaItem,
-  Preset,
 } from "./studio-workspace-types";
 import { readString, sanitizeGuestImageUrls, STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
 
@@ -130,17 +124,28 @@ export function getAbsoluteShareUrl(sharePath: string): string {
   return new URL(sharePath, window.location.origin).toString();
 }
 
-export function getFallbackThumbnail(details: EventDetails) {
-  const preset = getPresetsForDetails(details).find((item) => item.name === details.theme);
-  if (preset) return preset.thumbnail;
-  return svgThumbnail(getDisplayTitle(details), "#111827", "#7c3aed");
+export function svgThumbnail(label: string, from: string, to: string) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${from}" />
+          <stop offset="100%" stop-color="${to}" />
+        </linearGradient>
+      </defs>
+      <rect width="720" height="960" rx="56" fill="url(#g)" />
+      <circle cx="610" cy="120" r="96" fill="rgba(255,255,255,0.18)" />
+      <circle cx="120" cy="810" r="120" fill="rgba(255,255,255,0.12)" />
+      <rect x="76" y="92" width="568" height="776" rx="44" fill="rgba(255,255,255,0.16)" stroke="rgba(255,255,255,0.35)" />
+      <text x="92" y="640" fill="white" font-size="70" font-family="Arial, sans-serif" font-weight="700">${label}</text>
+      <text x="92" y="718" fill="rgba(255,255,255,0.82)" font-size="26" font-family="Arial, sans-serif">Envitefy Studio</text>
+    </svg>
+  `;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export function parseAgeValue(ageValue: string): number | null {
-  const match = readString(ageValue).match(/\d{1,3}/);
-  if (!match) return null;
-  const parsed = Number.parseInt(match[0], 10);
-  return Number.isFinite(parsed) ? parsed : null;
+export function getFallbackThumbnail(details: EventDetails) {
+  return svgThumbnail(getDisplayTitle(details), "#111827", "#7c3aed");
 }
 
 export const COMMON_GIRL_BIRTHDAY_NAMES = new Set([
@@ -204,114 +209,24 @@ export function inferBirthdayGenderFromName(nameValue: string): EventDetails["ge
   return null;
 }
 
-export function getBirthdayPresetAgeGroup(ageValue: string): BirthdayPresetAgeGroup {
-  const age = parseAgeValue(ageValue);
-  if (age == null) return "kids";
-  if (age <= 12) return "kids";
-  if (age <= 17) return "teens";
-  if (age <= 29) return "young-adults";
-  if (age <= 49) return "adults";
-  return "milestones";
+export const STUDIO_IDEA_CATEGORY_LABELS: Record<InviteCategory, string> = {
+  Birthday: "Birthday",
+  Wedding: "Wedding",
+  "Baby Shower": "Baby Shower",
+  Anniversary: "Anniversary",
+  "Bridal Shower": "Bridal Shower",
+  Housewarming: "Housewarming",
+  "Field Trip/Day": "Field Trip",
+  "Custom Invite": "Custom Invite",
+};
+
+export function getStudioIdeaLabel(category: InviteCategory) {
+  return `Enter Your ${STUDIO_IDEA_CATEGORY_LABELS[category]} Idea`;
 }
 
-export function buildBirthdayPresets(ageValue: string): {
-  label: string;
-  female: Preset[];
-  male: Preset[];
-} {
-  const ageGroup = getBirthdayPresetAgeGroup(ageValue);
-  const library = BIRTHDAY_PRESET_LIBRARY[ageGroup];
-  const buildPresets = (audience: BirthdayPresetAudience, items: BirthdayPresetSeed[]): Preset[] =>
-    items.map((item) => ({
-      id: `birthday-${ageGroup}-${audience}-${item.id}`,
-      category: "Birthday",
-      name: item.name,
-      description: item.description,
-      icon: item.icon,
-      thumbnail: svgThumbnail(item.name, item.from, item.to),
-    }));
-
-  return {
-    label: library.label,
-    female: buildPresets("female", library.female),
-    male: buildPresets("male", library.male),
-  };
-}
-
-export const BIRTHDAY_PRESET_AGE_GROUPS: BirthdayPresetAgeGroup[] = [
-  "kids",
-  "teens",
-  "young-adults",
-  "adults",
-  "milestones",
-];
-
-export function getBirthdayPresetAgeGroupPriority(ageGroup: BirthdayPresetAgeGroup) {
-  const activeIndex = BIRTHDAY_PRESET_AGE_GROUPS.indexOf(ageGroup);
-  return [...BIRTHDAY_PRESET_AGE_GROUPS].sort((left, right) => {
-    const leftDistance = Math.abs(BIRTHDAY_PRESET_AGE_GROUPS.indexOf(left) - activeIndex);
-    const rightDistance = Math.abs(BIRTHDAY_PRESET_AGE_GROUPS.indexOf(right) - activeIndex);
-    if (leftDistance !== rightDistance) return leftDistance - rightDistance;
-    return BIRTHDAY_PRESET_AGE_GROUPS.indexOf(left) - BIRTHDAY_PRESET_AGE_GROUPS.indexOf(right);
-  });
-}
-
-export function buildBirthdayAudiencePresets(
-  ageValue: string,
-  audience: BirthdayPresetAudience,
-  limit = 12,
-): Preset[] {
-  const ageGroup = getBirthdayPresetAgeGroup(ageValue);
-  const prioritizedAgeGroups = getBirthdayPresetAgeGroupPriority(ageGroup);
-  const presets: Preset[] = [];
-
-  for (const nextAgeGroup of prioritizedAgeGroups) {
-    const groupPresets = buildBirthdayPresetsForAgeGroup(nextAgeGroup)[audience];
-    presets.push(...groupPresets);
-    if (presets.length >= limit) break;
-  }
-
-  return presets.slice(0, limit);
-}
-
-export function buildBirthdayPresetsForAgeGroup(ageGroup: BirthdayPresetAgeGroup): {
-  label: string;
-  female: Preset[];
-  male: Preset[];
-} {
-  const library = BIRTHDAY_PRESET_LIBRARY[ageGroup];
-  const buildPresets = (audience: BirthdayPresetAudience, items: BirthdayPresetSeed[]): Preset[] =>
-    items.map((item) => ({
-      id: `birthday-${ageGroup}-${audience}-${item.id}`,
-      category: "Birthday",
-      name: item.name,
-      description: item.description,
-      icon: item.icon,
-      thumbnail: svgThumbnail(item.name, item.from, item.to),
-    }));
-
-  return {
-    label: library.label,
-    female: buildPresets("female", library.female),
-    male: buildPresets("male", library.male),
-  };
-}
-export function getBirthdayPresetAudience(details: EventDetails): BirthdayPresetAudience | null {
-  const inferredGender = inferBirthdayGenderFromName(details.name);
-  if (inferredGender === "Girl") return "female";
-  if (inferredGender === "Boy") return "male";
-  return null;
-}
-
-export function getPresetsForDetails(details: EventDetails): Preset[] {
-  if (details.category === "Birthday") {
-    const birthdayPresets = buildBirthdayPresets(details.age);
-    const audience = getBirthdayPresetAudience(details);
-    return audience
-      ? buildBirthdayAudiencePresets(details.age, audience, 12)
-      : [...birthdayPresets.female, ...birthdayPresets.male];
-  }
-  return STUDIO_WORKSPACE_PRESETS.filter((preset) => preset.category === details.category);
+export function getStudioIdeaPlaceholder(category: InviteCategory) {
+  const label = STUDIO_IDEA_CATEGORY_LABELS[category];
+  return `e.g. A ${label.toLowerCase()} design with the colors, mood, and details you want...`;
 }
 
 export function getThemeColors(details: EventDetails) {

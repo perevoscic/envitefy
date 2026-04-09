@@ -34,12 +34,12 @@ import {
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
+import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import type { StudioStep } from "./studio-types";
 import { requestStudioGeneration } from "./studio-workspace-api";
 import {
   accentClassForStudioRsvpChoice,
-  buildBirthdayPresets,
   buildInvitationData,
   buildStudioPublishPayload,
   clean,
@@ -47,7 +47,8 @@ import {
   formatDate,
   getAbsoluteShareUrl,
   getFallbackThumbnail,
-  getPresetsForDetails,
+  getStudioIdeaLabel,
+  getStudioIdeaPlaceholder,
   getRegistryText,
   getStudioShareTitle,
   hasRegistryContent,
@@ -116,6 +117,13 @@ async function persistStudioLibraryImageUrl(
     console.warn("[studio] failed to persist library image for sync");
     return u;
   }
+}
+
+function formatCalendarSummary(dateStr: string | undefined, timeStr: string | undefined) {
+  const dateLabel = formatWeekdayMonthDayOrdinalEn(dateStr);
+  if (!dateLabel) return "";
+  const timeLabel = formatTimeLabelEn(timeStr);
+  return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel;
 }
 
 export default function StudioWorkspace() {
@@ -650,9 +658,8 @@ export default function StudioWorkspace() {
     );
   }
 
-  const birthdayPresets =
-    details.category === "Birthday" ? buildBirthdayPresets(details.age) : null;
-  const currentPresets = getPresetsForDetails(details);
+  const studioIdeaLabel = getStudioIdeaLabel(details.category);
+  const studioIdeaPlaceholder = getStudioIdeaPlaceholder(details.category);
   const isDetailsTabActive = step === "category" || step === "form";
   const shellClass = studioWorkspaceShellClass;
   const mediaCardClass = studioWorkspaceMediaCardClass;
@@ -803,120 +810,15 @@ export default function StudioWorkspace() {
                   <div className="space-y-4">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                        Presets
+                        Idea
                       </p>
                     </div>
-                    {details.category !== "Birthday" ? (
-                      <div className="flex items-center gap-3 rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] px-4 py-3">
-                        <div className="rounded-2xl bg-[#f4edff] p-2.5 text-[#8a6fdb]">
-                          <WandSparkles className="h-4 w-4" />
-                        </div>
-                        <span className="text-sm font-semibold text-neutral-900">
-                          {details.category} Presets
-                        </span>
-                      </div>
-                    ) : null}
-
-                    {details.category === "Birthday" && birthdayPresets ? (
-                      <div className="space-y-4">
-                        <div className="grid max-h-[480px] grid-cols-2 gap-3 overflow-y-auto pr-2">
-                          {currentPresets.map((preset) => {
-                            const Icon = preset.icon;
-                            const active = details.theme === preset.name;
-                            return (
-                              <button
-                                key={preset.id}
-                                onClick={() =>
-                                  setDetails((prev) => ({ ...prev, theme: preset.name }))
-                                }
-                                className={`w-full rounded-[24px] border p-4 text-left transition-all ${
-                                  active
-                                    ? "border-[#d8c7fb] bg-[#f7f1ff] shadow-[0_18px_34px_-20px_rgba(88,55,140,0.26)] ring-1 ring-[#ece1ff]"
-                                    : "border-[#ece4f7] bg-white hover:-translate-y-0.5 hover:border-[#ddd0f6] hover:bg-[#fdfaff]"
-                                }`}
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div
-                                    className={`mt-0.5 rounded-2xl p-2.5 ${
-                                      active
-                                        ? "bg-white text-[#7d5ed8]"
-                                        : "bg-[#f7f3fd] text-[#8a6fdb]"
-                                    }`}
-                                  >
-                                    <Icon className="h-3.5 w-3.5" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-neutral-900">
-                                      {preset.name}
-                                    </p>
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="grid max-h-[450px] grid-cols-2 gap-3 overflow-y-auto pr-2">
-                        {currentPresets.map((preset) => {
-                          const Icon = preset.icon;
-                          const active = details.theme === preset.name;
-                          return (
-                            <button
-                              key={preset.id}
-                              onClick={() =>
-                                setDetails((prev) => ({ ...prev, theme: preset.name }))
-                              }
-                              className={`group relative aspect-[3/4] overflow-hidden rounded-[24px] border text-left transition-all ${
-                                active
-                                  ? "border-[#d8c7fb] shadow-[0_18px_34px_-20px_rgba(88,55,140,0.26)] ring-1 ring-[#ece1ff]"
-                                  : "border-[#ece4f7] hover:-translate-y-0.5 hover:border-[#ddd0f6]"
-                              }`}
-                            >
-                              <img
-                                src={preset.thumbnail}
-                                alt={preset.name}
-                                className="absolute inset-0 h-full w-full object-cover opacity-70 transition-all duration-500 group-hover:scale-[1.03] group-hover:opacity-90"
-                                referrerPolicy="no-referrer"
-                              />
-                              <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[rgba(255,255,255,0.96)] via-[rgba(255,255,255,0.18)] to-transparent p-3">
-                                <div className="mb-1 flex items-center gap-1.5">
-                                  <div className="rounded-xl border border-white/70 bg-white/80 p-1.5 backdrop-blur-sm">
-                                    <Icon className="h-3 w-3 text-purple-600" />
-                                  </div>
-                                  <span className="line-clamp-2 text-[11px] font-semibold leading-tight text-neutral-900">
-                                    {preset.name}
-                                  </span>
-                                </div>
-                                <span className="line-clamp-2 text-[10px] leading-4 text-neutral-600 opacity-0 transition-opacity group-hover:opacity-100">
-                                  {preset.description}
-                                </span>
-                              </div>
-                              {active ? (
-                                <div className="absolute right-3 top-3 rounded-full bg-white p-1.5 text-[#8a6fdb] shadow-[0_10px_24px_rgba(25,20,40,0.16)]">
-                                  <CheckCircle2 className="h-3 w-3 text-[#8a6fdb]" />
-                                </div>
-                              ) : null}
-                            </button>
-                          );
-                        })}
-
-                        {currentPresets.length === 0 ? (
-                          <div className="col-span-2 py-8 text-center">
-                            <p className="text-[11px] italic text-neutral-600">
-                              No presets for this category yet. Use a custom idea below.
-                            </p>
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-
                     <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
                       <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                        Custom Visual Idea
+                        {studioIdeaLabel}
                       </label>
                       <textarea
-                        placeholder="e.g. A minimalist gold and white theme with marble textures..."
+                        placeholder={studioIdeaPlaceholder}
                         className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
                         value={details.theme}
                         onChange={(event) =>
@@ -1493,10 +1395,6 @@ export default function StudioWorkspace() {
                               <p className="text-xs text-neutral-500">
                                 {activePageRecord.data.eventDetails.location}
                               </p>
-                              <p className="mt-2 text-xs text-neutral-500">
-                                {formatDate(activePageRecord.data.eventDetails.eventDate)} @{" "}
-                                {activePageRecord.data.eventDetails.startTime}
-                              </p>
                               <button
                                 onClick={() =>
                                   window.open(
@@ -1517,11 +1415,11 @@ export default function StudioWorkspace() {
                               <p className="text-sm font-medium text-neutral-900">Save the Date</p>
                               <p className="text-xs text-neutral-500">
                                 {activePageRecord.data.eventDetails.eventDate
-                                  ? formatDate(activePageRecord.data.eventDetails.eventDate)
+                                  ? formatCalendarSummary(
+                                      activePageRecord.data.eventDetails.eventDate,
+                                      activePageRecord.data.eventDetails.startTime,
+                                    )
                                   : "Date TBD"}
-                                {activePageRecord.data.eventDetails.startTime
-                                  ? ` at ${activePageRecord.data.eventDetails.startTime}`
-                                  : ""}
                               </p>
                               <button
                                 onClick={() => {
