@@ -205,6 +205,25 @@ export default function StudioWorkspace() {
     );
   }, [details.category, details.gender, details.name]);
 
+  useEffect(() => {
+    if (activeTab === "none" || activeTab === "share") return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (
+        target.closest("[data-live-card-panel]") ||
+        target.closest("[data-live-card-trigger]")
+      ) {
+        return;
+      }
+      setActiveTab("none");
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [activeTab]);
+
   function isFormValid() {
     const missingShared = SHARED_BASICS.filter(
       (field) => field.required && !clean(String(inputValue(details[field.key]))),
@@ -1194,6 +1213,7 @@ export default function StudioWorkspace() {
                         initial={{ opacity: 0, y: 10, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                        data-live-card-panel
                         className="pointer-events-auto absolute bottom-32 left-4 right-4 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl max-md:left-2 max-md:right-2 md:left-6 md:right-6"
                       >
                         <div className="mb-4 flex items-start justify-between">
@@ -1534,7 +1554,10 @@ export default function StudioWorkspace() {
                                 ? CheckCircle2
                                 : Share2,
                           visible: true,
-                          onClick: () => shareMedia(activePageRecord),
+                          onClick: () => {
+                            setActiveTab("none");
+                            void shareMedia(activePageRecord);
+                          },
                         },
                         {
                           key: "registry",
@@ -1570,6 +1593,7 @@ export default function StudioWorkspace() {
                                 if (!isDesignMode) button.onClick();
                               }}
                               disabled={button.key === "share" && sharingId === activePageRecord.id}
+                              data-live-card-trigger
                               className={`group flex w-full flex-col items-center gap-1 md:gap-2 ${isDesignMode ? "cursor-move" : ""}`}
                             >
                               <div

@@ -262,6 +262,29 @@ export function buildLinks(details: EventDetails) {
   ].filter((value): value is { label: string; url: string } => Boolean(value));
 }
 
+function buildStudioThemeFramingGuidance(details: EventDetails) {
+  const categoryThemeFraming: Record<InviteCategory, string> = {
+    Birthday:
+      "Interpret the user's theme words as a birthday-party version of that idea, not a generic standalone scene. If the user says Jurassic Park, make it feel like a Jurassic Park birthday party with birthday decor such as balloons, cake, candles, wrapped gifts, themed desserts, party tablescapes, and celebration energy instead of only jungle scenery or dinosaurs.",
+    Wedding:
+      "Interpret the user's theme words as a wedding or save-the-date version of that idea, with ceremony, reception, stationery, floral, and romantic celebration cues instead of generic scenery.",
+    "Baby Shower":
+      "Interpret the user's theme words as a baby-shower version of that idea, with baby-shower decor, favors, dessert-table styling, and welcoming celebration cues instead of generic scenery.",
+    "Bridal Shower":
+      "Interpret the user's theme words as a bridal-shower version of that idea, with bridal-party decor, gift-table, brunch or tea-party styling, and elevated celebration cues instead of generic scenery.",
+    Anniversary:
+      "Interpret the user's theme words as an anniversary celebration version of that idea, with couple-focused party styling, elegant decor, and relationship-celebration cues instead of generic scenery.",
+    Housewarming:
+      "Interpret the user's theme words as a housewarming celebration version of that idea, with welcoming home-party decor, hosting details, and lived-in gathering cues instead of generic scenery.",
+    "Field Trip/Day":
+      "Interpret the user's theme words as a school-event or field-trip invitation version of that idea, with organized group-activity cues, age-appropriate school styling, and event-planning details instead of generic scenery.",
+    "Custom Invite":
+      "Interpret the user's theme words as an invitation-worthy celebration or hosted-event version of that idea. Do not leave it as generic scenery alone; add event styling, decor, and hosting cues so it clearly reads as an invitation.",
+  };
+
+  return categoryThemeFraming[details.category];
+}
+
 export function buildStudioVisualDirection(details: EventDetails) {
   const customIdea = clean(details.theme);
   const extraPreferences = clean(details.visualPreferences);
@@ -269,9 +292,11 @@ export function buildStudioVisualDirection(details: EventDetails) {
   const instructions: string[] = [];
 
   if (combinedDirection) {
+    instructions.push(`Highest-priority visual direction from the user: ${combinedDirection}.`);
     instructions.push(
-      `Highest-priority visual direction from the user: ${combinedDirection}. Follow this literally and let it override generic preset, category, or celebration styling.`,
+      "Treat the user's words as the theme of the invitation, while still expressing the selected category clearly.",
     );
+    instructions.push(buildStudioThemeFramingGuidance(details));
   }
 
   if (
@@ -318,7 +343,8 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
 
   return [
     categoryPromptByType[details.category],
-    "Do not hallucinate people, animals, venue features, decorations, dates, times, logos, outfits, gifts, cakes, rings, balloons, or activities that are not supported by the event details or the user's visual direction.",
+    "You may add generic category-appropriate celebration decor and styling cues when needed to make the selected event type obvious, as long as they do not introduce factual claims.",
+    "Do not hallucinate specific people, animals, venue features, branded signage, logos, exact outfits, named activities, dates, times, or other factual details that are not supported by the event details or the user's visual direction.",
     "If an important visual detail is missing, keep it generic and restrained instead of inventing specifics.",
     "Any visible wording must match the provided event details exactly. Never fabricate names, phone numbers, addresses, schedules, or event copy.",
   ].join(" ");
@@ -340,7 +366,7 @@ export function buildStudioRequest(
   const visualDirection = buildStudioVisualDirection(details);
   const categoryGuardrails = buildStudioCategoryGuardrails(details);
   const studioGuardrails =
-    "Preserve exact spelling from the event details. Double-check visible words. Keep the lower button area visually clear and avoid placing important copy near the bottom of the card.";
+    "Preserve exact spelling from the event details. Double-check visible words. Keep important copy away from the bottom button area, but do not instruct the model to make that area visually empty or separated.";
   return {
     mode,
     event: {

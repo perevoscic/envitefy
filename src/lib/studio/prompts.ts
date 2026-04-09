@@ -56,6 +56,72 @@ export function isWeddingOccasion(event: StudioEventDetails): boolean {
   );
 }
 
+function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
+  const blob = [event.occasion, event.title, event.description, event.honoreeName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  const common = [
+    "- Theme words must be interpreted through the selected event type, not as generic standalone scenery.",
+    "- If the user names a franchise, place, motif, era, or mood, translate it into a celebration-themed invitation concept for this occasion.",
+  ];
+
+  if (/\bbirthday\b/.test(blob)) {
+    return [
+      ...common,
+      "- For birthdays, make the theme read as a birthday party with birthday decor and celebration cues. Example: Jurassic Park should become a Jurassic Park birthday party, not just jungle foliage and dinosaurs.",
+      "- When appropriate, themeStyle should name the celebration version of the concept, such as Jurassic birthday adventure instead of only jungle dinosaurs.",
+    ];
+  }
+
+  if (/\bwedding|weddings|bridal|nuptials|ceremony|reception|save the date|engagement(\s+party)?\b/.test(blob)) {
+    return [
+      ...common,
+      "- For weddings, make the theme read as a wedding or save-the-date concept with ceremony, reception, floral, stationery, or romantic celebration cues.",
+      "- themeStyle should describe the wedding-themed concept, not only the raw setting or scenery.",
+    ];
+  }
+
+  if (/\bbaby shower|baby\b/.test(blob)) {
+    return [
+      ...common,
+      "- For baby showers, make the theme read as a baby shower with baby-shower decor, favors, dessert-table styling, and welcoming celebration cues.",
+      "- themeStyle should describe the baby-shower version of the theme, not only the raw setting.",
+    ];
+  }
+
+  if (/\banniversary\b/.test(blob)) {
+    return [
+      ...common,
+      "- For anniversaries, make the theme read as an anniversary celebration with elegant party styling and couple-centered celebration cues.",
+      "- themeStyle should describe the anniversary-themed concept, not only the raw setting.",
+    ];
+  }
+
+  if (/\bhousewarming|new home|house party|open house\b/.test(blob)) {
+    return [
+      ...common,
+      "- For housewarmings, make the theme read as a welcoming hosted gathering with home-party decor and hosting cues.",
+      "- themeStyle should describe the housewarming version of the theme, not only the raw setting.",
+    ];
+  }
+
+  if (/\bfield trip|school day|school event|class trip|teacher|students?\b/.test(blob)) {
+    return [
+      ...common,
+      "- For field trips or school-day invites, make the theme read as an organized school event with group-activity and school-planning cues.",
+      "- themeStyle should describe the school-event version of the theme, not only the raw setting.",
+    ];
+  }
+
+  return [
+    ...common,
+    "- Keep the final concept invitation-ready and celebration-oriented rather than drifting into generic scenery.",
+    "- themeStyle should describe the invitation-ready version of the concept, not only the raw setting.",
+  ];
+}
+
 export function buildInvitationTextPrompt(
   event: StudioEventDetails,
   guidance?: StudioGenerationGuidance,
@@ -83,7 +149,7 @@ export function buildInvitationTextPrompt(
     "- Preserve the exact spelling of names, titles, venues, and event words from the provided details.",
     "- Double-check every visible word for spelling before returning JSON.",
     "- Do not stylize by misspelling or swapping letters unless the user explicitly supplied that wording.",
-    "- Keep copy compact enough to fit in the upper and middle card area without crowding the lower button area.",
+    "- Keep copy compact enough to fit in the upper and middle card area without pushing essential text into the lower action-button zone.",
     `- Emoji usage: ${includeEmoji}.`,
     "",
     "Event details:",
@@ -117,6 +183,7 @@ export function buildLiveCardPrompt(
 ): string {
   const includeEmoji = guidance?.includeEmoji === true ? "Allowed" : "Avoid";
   const realismRequested = hasRealismIntent(event, guidance);
+  const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   return [
     "You are designing a live event card for Envitefy.",
     "Return strict JSON only. Do not include markdown fences.",
@@ -159,13 +226,13 @@ export function buildLiveCardPrompt(
     "- If a word risks being misspelled, shorten the copy or omit that word instead of guessing.",
     "- If the user gives a concrete visual direction, keep the copy aligned with it and avoid novelty puns unless they are explicitly requested.",
     "- Copy must be layout-safe: keep every text field short enough for a mobile invitation card.",
-    "- Keep invitation copy compact so the bottom button area stays visually clear.",
+    "- Keep invitation copy compact so essential wording stays out of the lower action-button zone.",
     "- Important wording should stay in the upper and middle portions of the card, not the lower action-button zone.",
-    "- Keep the bottom quarter of the card clear of essential copy.",
     "- Prefer fewer words over crowded copy.",
     "- Treat explicit user visual instructions as the highest-priority requirement.",
     "- Do not replace a literal user request with a cuter or more whimsical version of the theme.",
     "- Avoid novelty puns, mascot language, and jokey rewrites unless the user explicitly asked for them.",
+    ...occasionThemeGuardrails,
     ...(isWeddingOccasion(event)
       ? [
           "- Wedding-related event: keep JSON tone like premium printed stationery or a boutique save-the-date—refined, romantic, and credible. Prefer palettes that print well (ivory, champagne, blush, sage, navy, gold accents) unless the user specified different colors.",
@@ -222,6 +289,7 @@ export function buildInvitationImagePrompt(
   const refCount = Math.max(0, Math.min(6, options?.referenceImageCount ?? 0));
   const wedding = isWeddingOccasion(event);
   const realismRequested = hasRealismIntent(event, guidance);
+  const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   return [
     isEditingExistingImage
       ? "Edit the provided invitation artwork image."
@@ -258,7 +326,8 @@ export function buildInvitationImagePrompt(
     isEditingExistingImage
       ? "- Make only the requested visual changes and keep the rest of the image consistent."
       : "- Keep the composition visually focused and cohesive.",
-    "- The user's visual direction is the highest-priority art direction and overrides generic birthday, preset, category, or live-card styling.",
+    "- The user's visual direction is the highest-priority art direction, but it must still be expressed as the selected event type or invitation concept.",
+    ...occasionThemeGuardrails,
     ...(wedding
       ? [
           "- Sparse input handling for weddings: even if the user provides only names, a few descriptive words, or partial event details, generate a complete, polished, premium wedding invitation concept.",
@@ -283,10 +352,11 @@ export function buildInvitationImagePrompt(
     "- Prefer one short headline, one short supporting line, and one short call to action at most.",
     "- Favor imagery over text density.",
     "- Keep all important text in the upper and middle portions of the card.",
-    "- Reserve roughly the bottom 28-30% of the card for app action buttons and overlays.",
+    "- Keep essential text out of the bottom action-button zone.",
     "- Do not place paragraphs, captions, labels, taglines, decorative badges, or key event details in the bottom button area.",
     "- Avoid crowded text blocks near the bottom edge of the invitation.",
-    "- The lower button area should be visually quiet: use mostly background art or empty space there, not copy-heavy content.",
+    "- Let the background and artwork continue naturally behind the bottom buttons as full-bleed art.",
+    "- Do not create a visible footer band, dark strip, boxed zone, or artificial empty shelf at the bottom.",
     "- Do not place important words directly above, behind, or between the bottom buttons.",
     "- No tiny footer copy.",
     "- Keep the total amount of visible text low enough that the composition still feels spacious on a mobile card.",

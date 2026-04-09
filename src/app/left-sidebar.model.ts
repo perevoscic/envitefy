@@ -166,6 +166,32 @@ export const CREATE_SECTION_COLORS = [
   "border border-amber-100 bg-amber-50 text-amber-600",
 ];
 
+const SIDEBAR_PRIMARY_ACTIVE_ACCENT = {
+  buttonClass:
+    "border-purple-200 bg-purple-50 text-purple-800 shadow-[0_16px_30px_rgba(147,51,234,0.12),inset_0_0_0_1px_rgba(147,51,234,0.18)]",
+  buttonStyle: {
+    backgroundColor: "#F3E8FF",
+    borderColor: "#E9D5FF",
+    boxShadow:
+      "0 16px 30px rgba(147, 51, 234, 0.12), inset 0 0 0 1px rgba(147, 51, 234, 0.18)",
+  } as InlineStyle,
+  chipClass: "border-purple-200 bg-white text-purple-700",
+  chevronClass: "text-purple-400",
+};
+
+const SIDEBAR_FOOTBALL_ACTIVE_ACCENT = {
+  buttonClass:
+    "border-orange-200 bg-orange-50 text-orange-900 shadow-[0_16px_30px_rgba(234,88,12,0.12),inset_0_0_0_1px_rgba(234,88,12,0.18)]",
+  buttonStyle: {
+    backgroundColor: "#fff7ed",
+    borderColor: "#fed7aa",
+    boxShadow:
+      "0 16px 30px rgba(234, 88, 12, 0.12), inset 0 0 0 1px rgba(234, 88, 12, 0.18)",
+  } as InlineStyle,
+  chipClass: "border-orange-200 bg-white text-orange-700",
+  chevronClass: "text-orange-400",
+};
+
 const CATEGORY_LABEL_OVERRIDES: Record<string, string> = {
   sport_football_season: "Football Season",
   "sport football season": "Football Season",
@@ -241,31 +267,13 @@ export function normalizeCalendarProvider(
 
 export function getCreateMenuActiveAccent(label: string) {
   if (label === "Football Season") {
-    return {
-      buttonClass:
-        "border-orange-200 bg-orange-50 text-orange-900 shadow-[0_16px_30px_rgba(234,88,12,0.12),inset_0_0_0_1px_rgba(234,88,12,0.18)]",
-      buttonStyle: {
-        backgroundColor: "#fff7ed",
-        borderColor: "#fed7aa",
-        boxShadow:
-          "0 16px 30px rgba(234, 88, 12, 0.12), inset 0 0 0 1px rgba(234, 88, 12, 0.18)",
-      } as InlineStyle,
-      chipClass: "border-orange-200 bg-white text-orange-700",
-      chevronClass: "text-orange-400",
-    };
+    return SIDEBAR_FOOTBALL_ACTIVE_ACCENT;
   }
-  return {
-    buttonClass:
-      "border-purple-200 bg-purple-50 text-purple-800 shadow-[0_16px_30px_rgba(147,51,234,0.12),inset_0_0_0_1px_rgba(147,51,234,0.18)]",
-    buttonStyle: {
-      backgroundColor: "#F3E8FF",
-      borderColor: "#E9D5FF",
-      boxShadow:
-        "0 16px 30px rgba(147, 51, 234, 0.12), inset 0 0 0 1px rgba(147, 51, 234, 0.18)",
-    } as InlineStyle,
-    chipClass: "border-purple-200 bg-white text-purple-700",
-    chevronClass: "text-purple-400",
-  };
+  return SIDEBAR_PRIMARY_ACTIVE_ACCENT;
+}
+
+export function getSidebarPrimaryActiveAccent() {
+  return SIDEBAR_PRIMARY_ACTIVE_ACCENT;
 }
 
 export function normalizeCategoryLabel(
