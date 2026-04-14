@@ -67,7 +67,7 @@ export function StudioFieldGrid({
         return (
           <div
             key={field.key}
-            className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2 lg:col-span-3" : ""}`}
+            className={`flex min-w-0 flex-col space-y-2 ${field.type === "textarea" ? "col-span-full" : ""}`}
           >
             <label className={fieldLabelClass}>
               {field.label}
@@ -103,7 +103,7 @@ export function StudioFieldGrid({
                 ))}
               </select>
             ) : field.type === "checkbox" ? (
-              <label className="inline-flex items-center gap-3 rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
+              <label className="inline-flex w-full max-w-full items-center gap-3 rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
                 <input
                   type="checkbox"
                   checked={Boolean(value)}
@@ -158,7 +158,7 @@ export function StudioTextAreaField({
   const textAreaClass = studioWorkspaceTextAreaClass;
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <label className={fieldLabelClass} htmlFor={id}>
         {label}
         {required ? <span className="text-[#8a6fdb]"> *</span> : null}

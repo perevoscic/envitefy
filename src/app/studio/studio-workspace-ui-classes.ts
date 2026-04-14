@@ -5,13 +5,13 @@ export const studioWorkspaceSecondaryShellClass =
   "rounded-[32px] border border-[#eee8f7] bg-[#fdfaff]/92 p-6 shadow-[0_14px_40px_rgba(84,61,140,0.06)] backdrop-blur-xl sm:p-8 lg:p-10";
 
 export const studioWorkspaceFieldLabelClass =
-  "text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500";
+  "block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500";
 
 export const studioWorkspaceInputClass =
-  "h-13 w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] px-4 text-[15px] text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35";
+  "h-12 w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] px-4 text-[15px] text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35";
 
 export const studioWorkspaceIconInputClass =
-  "h-13 w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] py-3 pr-4 text-[15px] text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35";
+  "h-12 w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] py-3 pr-4 text-[15px] text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35";
 
 export const studioWorkspaceTextAreaClass =
   "min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] px-4 py-3 text-[15px] text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35";

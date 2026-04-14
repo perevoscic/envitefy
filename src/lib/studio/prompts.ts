@@ -21,6 +21,7 @@ function renderCoreCreativeInputs(event: StudioEventDetails): string {
     line("User Idea", event.userIdea),
     line("Honoree / Couple / Main Person", event.honoreeName),
     line("Age or Milestone", event.ageOrMilestone),
+    line("Event Year", event.eventYear),
   ].join("\n");
 }
 
@@ -60,13 +61,25 @@ function hasRealismIntent(event: StudioEventDetails, guidance?: StudioGeneration
 }
 
 export function isWeddingOccasion(event: StudioEventDetails): boolean {
-  const blob = [event.category, event.occasion, event.title, event.userIdea, event.description, event.honoreeName]
+  const blob = [
+    event.category,
+    event.occasion,
+    event.title,
+    event.userIdea,
+    event.description,
+    event.honoreeName,
+  ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
   return /\b(wedding|weddings|bridal|nuptials|ceremony|reception|save the date|engagement(\s+party)?)\b/.test(
     blob,
   );
+}
+
+function isPosterFirstBirthdayOrWedding(event: StudioEventDetails): boolean {
+  const blob = [event.category, event.occasion].filter(Boolean).join(" ").toLowerCase();
+  return /\bbirthday\b/.test(blob) || isWeddingOccasion(event);
 }
 
 function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
@@ -95,7 +108,11 @@ function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
     ];
   }
 
-  if (/\bwedding|weddings|bridal|nuptials|ceremony|reception|save the date|engagement(\s+party)?\b/.test(blob)) {
+  if (
+    /\bwedding|weddings|bridal|nuptials|ceremony|reception|save the date|engagement(\s+party)?\b/.test(
+      blob,
+    )
+  ) {
     return [
       ...common,
       "- For weddings, make the theme read as a wedding or save-the-date concept with ceremony, reception, floral, stationery, or romantic celebration cues.",
@@ -147,6 +164,7 @@ export function buildInvitationTextPrompt(
   guidance?: StudioGenerationGuidance,
 ): string {
   const includeEmoji = guidance?.includeEmoji === true ? "Allowed" : "Avoid";
+  const posterFirstBirthdayOrWedding = isPosterFirstBirthdayOrWedding(event);
   return [
     "You are a professional invitation copywriter.",
     "Return strict JSON only. Do not include markdown fences.",
@@ -169,10 +187,19 @@ export function buildInvitationTextPrompt(
     "- Build the invitation around the selected event type first.",
     "- Treat the user's idea as the primary creative concept when one is provided.",
     "- If an age or milestone is provided, incorporate it naturally into the invitation concept or copy when helpful.",
+    "- If Event Year is provided, use that exact year when year wording appears.",
     "- Preserve the exact spelling of names, titles, venues, and event words from the provided details.",
     "- Double-check every visible word for spelling before returning JSON.",
     "- Do not stylize by misspelling or swapping letters unless the user explicitly supplied that wording.",
     "- Keep copy compact enough to fit in the upper and middle card area without pushing essential text into the lower action-button zone.",
+    ...(posterFirstBirthdayOrWedding
+      ? [
+          "- For birthday and wedding invitation copy, keep the hierarchy short, cinematic, and poster-ready rather than reading like flat form fields.",
+          "- Treat the user prompt/theme as the dominant art direction for the wording and mood.",
+          "- Make the wording read unmistakably as a hosted celebration invitation, not just a description of a place, backdrop, or scene.",
+          "- Bring celebration energy into the copy with event-oriented language, invitation intent, and occasion cues.",
+        ]
+      : []),
     `- Emoji usage: ${includeEmoji}.`,
     "",
     renderCoreCreativeInputs(event),
@@ -181,6 +208,7 @@ export function buildInvitationTextPrompt(
     line("Category", event.category),
     line("Title", event.title),
     line("Occasion", event.occasion),
+    line("Event Year", event.eventYear),
     line("Host Name", event.hostName),
     line("Honoree Name", event.honoreeName),
     line("Age or Milestone", event.ageOrMilestone),
@@ -212,6 +240,7 @@ export function buildLiveCardPrompt(
   const includeEmoji = guidance?.includeEmoji === true ? "Allowed" : "Avoid";
   const realismRequested = hasRealismIntent(event, guidance);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
+  const posterFirstBirthdayOrWedding = isPosterFirstBirthdayOrWedding(event);
   return [
     "You are designing a live event card for Envitefy.",
     "Return strict JSON only. Do not include markdown fences.",
@@ -260,9 +289,19 @@ export function buildLiveCardPrompt(
     "- Build the live card around the selected event type first, then express the user's idea through that celebration type.",
     "- Treat the user's idea as the main creative concept when one is provided.",
     "- If an age or milestone is provided, work it into the copy or concept naturally when it adds clarity.",
+    "- If Event Year is provided, use that exact year in the copy instead of inventing or omitting a different year.",
     "- Treat explicit user visual instructions as the highest-priority requirement.",
     "- Do not replace a literal user request with a cuter or more whimsical version of the theme.",
     "- Avoid novelty puns, mascot language, and jokey rewrites unless the user explicitly asked for them.",
+    ...(posterFirstBirthdayOrWedding
+      ? [
+          "- For birthday and wedding live cards, write short cinematic invitation copy with a poster-like hierarchy instead of flat form-field phrasing.",
+          "- Treat the user's prompt/theme as the dominant art direction for the copy and invitation mood.",
+          "- Make the result read first as a real celebration invite for this event type, not simply a stylish scene description.",
+          "- Bring clear party / celebration / hosted-event energy into the concept and invitation copy.",
+          "- Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy.",
+        ]
+      : []),
     ...occasionThemeGuardrails,
     ...(isWeddingOccasion(event)
       ? [
@@ -287,6 +326,7 @@ export function buildLiveCardPrompt(
     line("Category", event.category),
     line("Title", event.title),
     line("Occasion", event.occasion),
+    line("Event Year", event.eventYear),
     line("Host Name", event.hostName),
     line("Honoree Name", event.honoreeName),
     line("Age or Milestone", event.ageOrMilestone),
@@ -323,11 +363,13 @@ export function buildInvitationImagePrompt(
     surface?: StudioGenerateSurface;
     editingExistingImage?: boolean;
     referenceImageCount?: number;
+    posterTextInImage?: boolean;
   },
 ): string {
   const surface = options?.surface === "page" ? "page" : "image";
   const isEditingExistingImage = options?.editingExistingImage === true;
   const refCount = Math.max(0, Math.min(6, options?.referenceImageCount ?? 0));
+  const posterTextInImage = options?.posterTextInImage === true;
   const wedding = isWeddingOccasion(event);
   const realismRequested = hasRealismIntent(event, guidance);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
@@ -345,14 +387,43 @@ export function buildInvitationImagePrompt(
       : []),
     "Style requirements:",
     "- High-quality vertical invitation card composition (9:16 mobile card).",
-    ...(pageSurface
+    ...(posterTextInImage
       ? [
-          "- This image is the live-card background only. Do not add visible event wording, letters, numbers, captions, logos, monograms, or decorative type anywhere in the raster.",
-          "- Preserve clean negative space and readable contrast through the upper and middle zones so deterministic overlay text can sit on top later.",
-          "- Keep the background art full-bleed and compositionally strong without relying on text baked into the image.",
+          "- This is the first render of a live invitation card for Birthday or Wedding. Bake the invitation copy into the raster like cinematic poster art instead of leaving the text for an HTML overlay.",
+          "- When uploaded reference photo(s) are present, build the poster around those exact photo(s). Do not swap in unrelated stock people or generic scenery as the main subject.",
+          "- Preserve the exact supplied spelling of names, venue words, and key event terms.",
+          "- If Event Year is provided, show that exact year in the poster copy or hierarchy.",
+          "- Treat the user's prompt/theme as the dominant art direction.",
+          "- Keep the visible copy short and cinematic with a clear invitation/poster hierarchy rather than a plain list of form fields.",
+          "- The finished image must read first as a professional hosted event invitation, not merely a cinematic still, venue ad, mascot portrait, or mood board.",
+          "- Make the design unmistakably event-oriented and celebratory for the selected occasion, not just a pretty location or character portrait.",
+          "- Add strong celebration cues appropriate to the event type so the card reads as a hosted invite: for birthdays, favor party decor, birthday energy, and celebration details; for weddings, favor ceremony, reception, romance, and stationery cues.",
+          "- If the concept uses a theater, cinema, screening, or movie-party setting, keep the staging physically correct: seats and audience face the screen, sightlines make sense, and screen-to-seat geometry is believable.",
+          "- Never show theater chairs or audience rows facing away from the screen or arranged in impossible directions relative to the screen.",
+          "- Do not invent marquee text, venue branding, logos, signage, or event facts that are not explicitly supported by the supplied details, approved invitation copy, or source image.",
+          "- The floating action buttons sit low on the card. Keep the lower portion behind them free of visible copy.",
+          "- End all visible text comfortably above the button icons. No words, dates, venue lines, captions, or taglines may appear behind the bottom buttons.",
         ]
+      : []),
+    ...(pageSurface
+      ? isEditingExistingImage
+        ? [
+            "- This is an edit of the existing live-card raster. The source may already show headlines, body copy, dates, venue names, logos (for example theater or brand signage), RSVP lines, and decorative lettering.",
+            "- Preserve every character of existing visible text, numbers, punctuation, and logos as in the source (same spelling, wording, and approximate placement) unless the user's edit request explicitly names specific text or logos to add, remove, or replace.",
+            "- Apply the edit mainly to illustrated or photographic elements: scene, characters, props, lighting, color, atmosphere, and decor (for example balloons or confetti). Do not erase unrelated text or signage to clean the layout.",
+            "- Do not introduce new headlines, dates, RSVP lines, or decorative type in the raster unless the edit request explicitly asks for new wording in the image.",
+          ]
+        : [
+            "- This image is the live-card background only. Do not add visible event wording, letters, numbers, captions, logos, monograms, or decorative type anywhere in the raster.",
+            "- Preserve clean negative space and readable contrast through the upper and middle zones so deterministic overlay text can sit on top later.",
+            "- Keep the background art full-bleed and compositionally strong without relying on text baked into the image.",
+          ]
       : ["- Legible typography with editorial hierarchy (headline, subhead, detail lines)."]),
-    "- No QR codes, no watermarks, no logos.",
+    ...(pageSurface && isEditingExistingImage
+      ? [
+          "- No QR codes. Do not add new watermarks. Keep logos and brand signage that already appear in the source unless the edit explicitly asks to remove or replace them.",
+        ]
+      : ["- No QR codes, no watermarks, no logos."]),
     ...(refCount > 0
       ? [
           "- The supplied reference photo(s) may show people: show them prominently in the hero artwork with natural, respectful rendering. This overrides any generic 'avoid faces' guidance.",
@@ -361,13 +432,17 @@ export function buildInvitationImagePrompt(
     ...(wedding
       ? [
           "- Wedding / formal celebration: aim for serious, print-ready stationery—cream, ivory, champagne, soft blush, sage, or navy with restrained gold accents unless the user's palette overrides.",
-          ...(pageSurface
+          ...(pageSurface && !isEditingExistingImage
             ? [
                 "- Keep the wedding background refined and premium, but text-free. Avoid faux printed names, dates, letterpress headlines, or stationery wording inside the raster.",
               ]
-            : [
-                "- Typography: elegant high-contrast serif for names or main title; clean sans-serif for date/venue lines. Avoid clip-art hearts, cartoon rings, or childish icons.",
-              ]),
+            : pageSurface && isEditingExistingImage
+              ? [
+                  "- For wedding edits, keep existing printed-looking copy and embellishments from the source; only refine non-text visuals unless the edit names text changes.",
+                ]
+              : [
+                  "- Typography: elegant high-contrast serif for names or main title; clean sans-serif for date/venue lines. Avoid clip-art hearts, cartoon rings, or childish icons.",
+                ]),
           "- Layout: photo-forward hero acceptable (couple portrait, soft florals, foil-line accents, circular or arch masks). Overall look should match boutique invitation suites, not a meme or social sticker pack.",
         ]
       : []),
@@ -382,13 +457,16 @@ export function buildInvitationImagePrompt(
       : "- Keep the composition visually focused and cohesive.",
     ...(pageSurface && isEditingExistingImage
       ? [
-          "- Preserve the composition, subject placement, lighting, and background art as much as possible while applying the requested background-only edit.",
-          "- Never add, remove, rewrite, or restyle event copy during a page-background edit.",
+          "- Preserve the composition, subject placement, lighting, and background art as much as possible while applying the edit.",
         ]
       : []),
     "- Build the artwork around the selected event type first, then express the user's idea through that celebration type.",
     "- Treat the user's idea as the main visual concept when one is provided.",
-    "- If an age or milestone is provided, let it influence the invitation concept and any short visible copy where appropriate.",
+    ...(pageSurface && isEditingExistingImage
+      ? []
+      : [
+          "- If an age or milestone is provided, let it influence the invitation concept and any short visible copy where appropriate.",
+        ]),
     "- The user's visual direction is the highest-priority art direction, but it must still be expressed as the selected event type or invitation concept.",
     ...occasionThemeGuardrails,
     ...(wedding
@@ -404,11 +482,15 @@ export function buildInvitationImagePrompt(
     "- If the user requests realistic or photorealistic subjects, render them as believable real-life subjects with natural anatomy, textures, and lighting.",
     "- Do not convert realistic animals or people into cartoons, mascots, plush toys, chibi characters, or anthropomorphic figures unless the user explicitly asks for that.",
     ...(pageSurface
-      ? [
-          "- Visible text is forbidden in the final raster for page/live-card backgrounds.",
-          "- Do not embed names, dates, locations, headings, captions, decorative lettering, faux signatures, or microtype anywhere in the image.",
-          "- Favor imagery over text density and leave the upper and middle composition readable for overlay copy.",
-        ]
+      ? isEditingExistingImage
+        ? [
+            "- Treat existing raster typography and signage as locked: when repainting nearby pixels, keep text sharp, legible, and faithful to the source unless the edit explicitly targets that text.",
+          ]
+        : [
+            "- Visible text is forbidden in the final raster for page/live-card backgrounds.",
+            "- Do not embed names, dates, locations, headings, captions, decorative lettering, faux signatures, or microtype anywhere in the image.",
+            "- Favor imagery over text density and leave the upper and middle composition readable for overlay copy.",
+          ]
       : [
           "- Keep text minimal and tasteful.",
           "- Visible text is a hard requirement: spell every visible word correctly.",
@@ -422,16 +504,22 @@ export function buildInvitationImagePrompt(
           "- Prefer one short headline, one short supporting line, and one short call to action at most.",
           "- Keep all important text in the upper and middle portions of the card.",
           "- Keep essential text out of the bottom action-button zone.",
+          "- Leave the lower portion behind the floating buttons free of visible copy.",
+          "- End the final text block well above the button icons. If space is tight, shorten the copy instead of moving text lower.",
+          "- No words, dates, venue lines, captions, or taglines may appear behind the bottom buttons.",
           "- Do not place paragraphs, captions, labels, taglines, decorative badges, or key event details in the bottom button area.",
           "- Avoid crowded text blocks near the bottom edge of the invitation.",
         ]),
     "- Let the background and artwork continue naturally behind the bottom buttons as full-bleed art.",
     "- Do not create a visible footer band, dark strip, boxed zone, or artificial empty shelf at the bottom.",
     "- Do not place important words directly above, behind, or between the bottom buttons.",
+    "- These layout instructions are not visible copy. Never print phrases such as action buttons, button row, safe area, safe band, or any other instruction text in the artwork.",
     ...(pageSurface ? [] : ["- No tiny footer copy."]),
     ...(pageSurface
       ? []
-      : ["- Keep the total amount of visible text low enough that the composition still feels spacious on a mobile card."]),
+      : [
+          "- Keep the total amount of visible text low enough that the composition still feels spacious on a mobile card.",
+        ]),
     "- Treat explicit user visual instructions as mandatory, not optional inspiration.",
     ...(realismRequested
       ? [
@@ -449,6 +537,7 @@ export function buildInvitationImagePrompt(
     line("Category", event.category),
     line("Title", event.title),
     line("Occasion", event.occasion),
+    line("Event Year", event.eventYear),
     line("Host Name", event.hostName),
     line("Honoree Name", event.honoreeName),
     line("Age or Milestone", event.ageOrMilestone),

@@ -5,6 +5,7 @@ export type StudioEventDetails = {
   title: string;
   category?: string | null;
   occasion?: string | null;
+  eventYear?: string | null;
   hostName?: string | null;
   honoreeName?: string | null;
   ageOrMilestone?: string | null;
@@ -170,6 +171,7 @@ function normalizeEvent(value: unknown): StudioEventDetails | null {
     title,
     category: safeNullableString((value as any).category),
     occasion: safeNullableString((value as any).occasion),
+    eventYear: safeNullableString((value as any).eventYear),
     hostName: safeNullableString((value as any).hostName),
     honoreeName: safeNullableString((value as any).honoreeName),
     ageOrMilestone: safeNullableString((value as any).ageOrMilestone),

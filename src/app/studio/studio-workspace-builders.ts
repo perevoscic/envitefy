@@ -358,6 +358,43 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
   ].join(" ");
 }
 
+export function isPosterFirstLiveCardCategory(category: string | null | undefined) {
+  const normalized = clean(category).toLowerCase();
+  return normalized === "birthday" || normalized === "wedding";
+}
+
+export function resolveStudioGenerationSurface(
+  details: EventDetails,
+  type: MediaType,
+  options?: { existingItemType?: MediaType | null },
+): StudioGenerateSurface {
+  if (type === "image") return "image";
+  if (options?.existingItemType === "page") return "page";
+  return isPosterFirstLiveCardCategory(details.category) ? "image" : "page";
+}
+
+export function getStudioEventYear(details: EventDetails): string {
+  const match = getStudioEventDate(details).match(/^(\d{4})/);
+  return match?.[1] || "";
+}
+
+function buildDeterministicScheduleLine(details: EventDetails): string {
+  const date = formatDate(getStudioEventDate(details));
+  const time = getStudioEventStartTime(details);
+  if (date && time) return `${date} at ${time}`;
+  return date;
+}
+
+function buildDeterministicLocationLine(details: EventDetails): string {
+  return pickFirst(
+    details.venueName,
+    details.ceremonyVenue,
+    details.receptionVenue,
+    details.location,
+    "Location TBD",
+  );
+}
+
 export function buildStudioRequest(
   details: EventDetails,
   mode: StudioGenerateMode,
@@ -383,6 +420,7 @@ export function buildStudioRequest(
       title: getDisplayTitle(details),
       category: details.category,
       occasion: pickFirst(details.occasion, details.category),
+      eventYear: getStudioEventYear(details) || null,
       hostName:
         pickFirst(details.rsvpName, details.hostedBy, details.teacherName, details.mainPerson) ||
         null,
@@ -393,9 +431,9 @@ export function buildStudioRequest(
         [baseDescription, refinement ? `Edit request: ${refinement}` : "", guestPhotoHint]
           .filter(Boolean)
           .join(" ") || null,
-      date: clean(details.eventDate) || null,
-      startTime: clean(details.startTime) || null,
-      endTime: clean(details.endTime) || null,
+      date: getStudioEventDate(details) || null,
+      startTime: getStudioEventStartTime(details) || null,
+      endTime: getStudioEventEndTime(details) || null,
       timezone:
         typeof Intl !== "undefined"
           ? Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago"
@@ -442,7 +480,9 @@ export function buildInvitationData(
   return refreshLiveCardInvitationData(details, {
     title: liveCard?.title || invitation?.title,
     subtitle:
-      invitation?.subtitle || buildDescription(details) || pickFirst(details.theme, details.category),
+      invitation?.subtitle ||
+      buildDescription(details) ||
+      pickFirst(details.theme, details.category),
     description:
       liveCard?.description ||
       invitation?.openingLine ||
@@ -484,22 +524,25 @@ export function refreshLiveCardInvitationData(
 ): InvitationData {
   const fallbackTheme = getThemeColors(details);
   const description =
-    buildDescription(details) ||
     clean(previous?.description) ||
-    "Celebrate together with a beautifully designed invitation.";
-  const title = getDisplayTitle(details) || clean(previous?.title);
-  const subtitle =
     buildDescription(details) ||
-    pickFirst(details.theme, details.category) ||
-    clean(previous?.subtitle);
-  const scheduleLine =
-    `${formatDate(details.eventDate)}${details.startTime ? ` at ${details.startTime}` : ""}` ||
-    clean(previous?.scheduleLine);
-  const locationLine =
-    pickFirst(details.venueName, details.location, "Location TBD") || clean(previous?.locationLine);
+    "Celebrate together with a beautifully designed invitation.";
+  const title = clean(previous?.title) || getDisplayTitle(details);
+  const subtitle =
+    clean(previous?.subtitle) ||
+    buildDescription(details) ||
+    pickFirst(details.theme, details.category);
+  const scheduleLine = clean(previous?.scheduleLine) || buildDeterministicScheduleLine(details);
+  const locationLine = clean(previous?.locationLine) || buildDeterministicLocationLine(details);
   const callToAction =
     clean(previous?.callToAction) || pickFirst(details.calloutText, "Tap for details and RSVP.");
   const socialCaption = clean(previous?.socialCaption) || description;
+  const heroTextMode =
+    previous?.heroTextMode === "overlay" || previous?.heroTextMode === "image"
+      ? previous.heroTextMode
+      : isPosterFirstLiveCardCategory(details.category)
+        ? "image"
+        : "overlay";
 
   return {
     title,
@@ -509,7 +552,7 @@ export function refreshLiveCardInvitationData(
     locationLine,
     callToAction,
     socialCaption,
-    heroTextMode: "overlay",
+    heroTextMode,
     theme: {
       primaryColor: clean(previous?.theme?.primaryColor) || fallbackTheme.primaryColor,
       secondaryColor: clean(previous?.theme?.secondaryColor) || fallbackTheme.primaryColor,

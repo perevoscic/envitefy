@@ -19,6 +19,7 @@ test("library hydration restores persisted loading items instead of leaving them
   assert.match(hook, /putStudioLibraryRemote/);
   assert.match(hook, /canonicalizeLibraryPayloadForCompare/);
   assert.match(remote, /prepareStudioLibraryItemsForRemote/);
+  assert.doesNotMatch(sanitize, /\.slice\(0,\s*STUDIO_LIBRARY_LIMIT\)/);
   assert.match(
     sanitize,
     /if \(item\.status !== "loading" && item\.status !== "error"\) return item;/,
