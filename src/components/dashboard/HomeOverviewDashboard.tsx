@@ -330,13 +330,13 @@ function InvitationEventCard({
   const statusClassName = getInvitationStatusTextClass(item);
   const countdown = buildCountdownParts(parseSafeDate(item.startAt), now);
   const isInvited = item.ownership === "invited";
-  const primaryButtonClassName = `group/btn inline-flex min-w-[170px] flex-1 items-center justify-center gap-2 rounded-[20px] px-8 py-4 text-sm font-bold text-white shadow-xl transition-all ${
+  const primaryButtonClassName = `group/btn inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] px-4 py-4 text-xs font-bold text-white shadow-xl transition-all sm:min-w-[170px] sm:px-8 sm:text-sm ${
     isInvited
       ? "bg-indigo-600 hover:opacity-90"
       : "bg-slate-900 hover:bg-indigo-600"
   }`;
   const secondaryButtonClassName =
-    "inline-flex min-w-[170px] flex-1 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-8 py-4 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50";
+    "inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-4 py-4 text-xs font-bold text-slate-600 transition-all hover:bg-slate-50 sm:min-w-[170px] sm:px-8 sm:text-sm";
 
   const renderAction = (
     action: InvitationAction,
@@ -508,7 +508,7 @@ function InvitationEventCard({
               })}
             </div>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex gap-3 sm:gap-4">
               {renderAction(primaryAction, primaryButtonClassName, true)}
               {secondaryAction
                 ? renderAction(secondaryAction, secondaryButtonClassName)
@@ -869,7 +869,7 @@ export default function HomeOverviewDashboard({
   }
 
   return (
-    <div className="pt-8 md:pt-10 space-y-8 md:space-y-10">
+    <div className="pt-20 md:pt-10 space-y-8 md:space-y-10">
       <header className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
           <div className="mb-2 flex items-center gap-2">

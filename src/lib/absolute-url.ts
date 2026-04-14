@@ -36,9 +36,37 @@ const parseOrigin = (origin: string | null): { proto: string | null; host: strin
   }
 };
 
+function normalizeProto(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const normalized = value
+    .split(",")[0]
+    ?.trim()
+    .replace(/:$/, "")
+    .toLowerCase();
+  return normalized || null;
+}
+
+export function isLoopbackHost(candidate: string | null | undefined): boolean {
+  if (!candidate) return false;
+  try {
+    const parsed = new URL(candidate.includes("://") ? candidate : `http://${candidate}`);
+    const hostname = parsed.hostname.trim().toLowerCase();
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname === "::1" ||
+      hostname === "[::1]"
+    );
+  } catch {
+    return false;
+  }
+}
+
 const fallbackOriginParts = (): { proto: string; host: string } => {
   const envOrigin =
     sanitizeOrigin(process.env.NEXTAUTH_URL) ||
+    sanitizeOrigin(process.env.NEXT_PUBLIC_APP_URL) ||
     sanitizeOrigin(process.env.PUBLIC_BASE_URL) ||
     sanitizeOrigin(process.env.APP_URL) ||
     sanitizeOrigin(process.env.NEXT_PUBLIC_BASE_URL);
@@ -48,6 +76,46 @@ const fallbackOriginParts = (): { proto: string; host: string } => {
   }
   return { proto: "https", host: "envitefy.com" };
 };
+
+export function resolveAbsoluteUrlOrigin(input: {
+  headerHost?: string | null;
+  headerProto?: string | null;
+  fallbackHost: string;
+  fallbackProto: string;
+  overrideProto?: string | null;
+}): { proto: string; host: string } {
+  const overrideProto = normalizeProto(input.overrideProto);
+  let headerProto = normalizeProto(input.headerProto);
+  let hostCandidate = input.headerHost?.trim() || input.fallbackHost;
+
+  if (hostCandidate.includes("://")) {
+    try {
+      const parsed = new URL(hostCandidate);
+      hostCandidate = parsed.host;
+      if (!overrideProto && !headerProto) {
+        headerProto = normalizeProto(parsed.protocol);
+      }
+    } catch {
+      hostCandidate = hostCandidate.replace(/^https?:\/\//, "");
+    }
+  }
+
+  const shouldUseFallbackHost =
+    isLoopbackHost(hostCandidate) && !isLoopbackHost(input.fallbackHost);
+  const host = (shouldUseFallbackHost ? input.fallbackHost : hostCandidate || "envitefy.com").replace(
+    /\/+$/,
+    "",
+  );
+  const isLocal = isLoopbackHost(host);
+  const proto =
+    overrideProto ||
+    (shouldUseFallbackHost ? null : headerProto) ||
+    (isLocal ? "http" : null) ||
+    input.fallbackProto ||
+    "https";
+
+  return { proto, host };
+}
 
 export async function absoluteUrl(path = ""): Promise<string> {
   if (/^https?:\/\//i.test(path)) return path;
@@ -61,10 +129,6 @@ export async function absoluteUrl(path = ""): Promise<string> {
     const hdrs = await headers();
     headerProto = hdrs.get("x-forwarded-proto");
     headerHost = hdrs.get("x-forwarded-host") || hdrs.get("host");
-    if (headerProto?.includes(",")) {
-      headerProto = headerProto.split(",")[0]?.trim() || headerProto;
-    }
-    headerProto = headerProto ? headerProto.replace(/:$/, "").toLowerCase() : null;
     if (headerHost?.includes(",")) {
       headerHost = headerHost.split(",")[0]?.trim() || headerHost;
     }
@@ -77,31 +141,13 @@ export async function absoluteUrl(path = ""): Promise<string> {
     ? process.env.PROTOCOL.replace(/:$/, "").toLowerCase()
     : null;
 
-  let hostCandidate = headerHost || fallback.host;
-  if (hostCandidate?.includes("://")) {
-    try {
-      const parsed = new URL(hostCandidate);
-      hostCandidate = parsed.host;
-      if (!overrideProto && !headerProto) {
-        headerProto = (parsed.protocol.replace(/:$/, "") || headerProto || "").toLowerCase() || null;
-      }
-    } catch {
-      hostCandidate = hostCandidate.replace(/^https?:\/\//, "");
-    }
-  }
-  const host = (hostCandidate || "envitefy.com").replace(/\/+$/, "");
-
-  const isLocal =
-    host.includes("localhost") ||
-    host.startsWith("127.") ||
-    host.startsWith("0.") ||
-    host === "[::1]";
-  const proto =
-    overrideProto ||
-    headerProto ||
-    (isLocal ? "http" : null) ||
-    fallback.proto ||
-    "https";
+  const { proto, host } = resolveAbsoluteUrlOrigin({
+    headerHost,
+    headerProto,
+    fallbackHost: fallback.host,
+    fallbackProto: fallback.proto,
+    overrideProto,
+  });
 
   const origin = `${proto}://${host}`;
   if (!cleanPath || cleanPath === "/") {
