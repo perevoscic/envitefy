@@ -13,6 +13,16 @@ function renderLinks(links: StudioEventDetails["links"]): string {
   return ["Links:", ...links.slice(0, 8).map((item) => `- ${item.label}: ${item.url}`)].join("\n");
 }
 
+function renderCoreCreativeInputs(event: StudioEventDetails): string {
+  return [
+    "Core creative inputs:",
+    line("Selected Event Type", event.category || event.occasion),
+    line("User Idea", event.userIdea),
+    line("Honoree / Couple / Main Person", event.honoreeName),
+    line("Age or Milestone", event.ageOrMilestone),
+  ].join("\n");
+}
+
 function renderApprovedInvitationCopy(liveCard?: StudioLiveCardMetadata | null): string {
   if (!liveCard?.invitation) return "Approved invitation copy: None";
   const { invitation } = liveCard;
@@ -30,7 +40,9 @@ function renderApprovedInvitationCopy(liveCard?: StudioLiveCardMetadata | null):
 
 function hasRealismIntent(event: StudioEventDetails, guidance?: StudioGenerationGuidance): boolean {
   const combined = [
+    event.category,
     event.title,
+    event.userIdea,
     event.description,
     event.occasion,
     guidance?.style,
@@ -47,7 +59,7 @@ function hasRealismIntent(event: StudioEventDetails, guidance?: StudioGeneration
 }
 
 export function isWeddingOccasion(event: StudioEventDetails): boolean {
-  const blob = [event.occasion, event.title, event.description, event.honoreeName]
+  const blob = [event.category, event.occasion, event.title, event.userIdea, event.description, event.honoreeName]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -57,7 +69,14 @@ export function isWeddingOccasion(event: StudioEventDetails): boolean {
 }
 
 function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
-  const blob = [event.occasion, event.title, event.description, event.honoreeName]
+  const blob = [
+    event.category,
+    event.occasion,
+    event.title,
+    event.userIdea,
+    event.description,
+    event.honoreeName,
+  ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -146,17 +165,25 @@ export function buildInvitationTextPrompt(
     "- Keep language clear and warm, not overly formal.",
     "- Keep each line concise and ready for a card layout.",
     "- `hashtags` should be 1-6 short tags.",
+    "- Build the invitation around the selected event type first.",
+    "- Treat the user's idea as the primary creative concept when one is provided.",
+    "- If an age or milestone is provided, incorporate it naturally into the invitation concept or copy when helpful.",
     "- Preserve the exact spelling of names, titles, venues, and event words from the provided details.",
     "- Double-check every visible word for spelling before returning JSON.",
     "- Do not stylize by misspelling or swapping letters unless the user explicitly supplied that wording.",
     "- Keep copy compact enough to fit in the upper and middle card area without pushing essential text into the lower action-button zone.",
     `- Emoji usage: ${includeEmoji}.`,
     "",
+    renderCoreCreativeInputs(event),
+    "",
     "Event details:",
+    line("Category", event.category),
     line("Title", event.title),
     line("Occasion", event.occasion),
     line("Host Name", event.hostName),
     line("Honoree Name", event.honoreeName),
+    line("Age or Milestone", event.ageOrMilestone),
+    line("User Idea", event.userIdea),
     line("Description", event.description),
     line("Date", event.date),
     line("Start Time", event.startTime),
@@ -229,6 +256,9 @@ export function buildLiveCardPrompt(
     "- Keep invitation copy compact so essential wording stays out of the lower action-button zone.",
     "- Important wording should stay in the upper and middle portions of the card, not the lower action-button zone.",
     "- Prefer fewer words over crowded copy.",
+    "- Build the live card around the selected event type first, then express the user's idea through that celebration type.",
+    "- Treat the user's idea as the main creative concept when one is provided.",
+    "- If an age or milestone is provided, work it into the copy or concept naturally when it adds clarity.",
     "- Treat explicit user visual instructions as the highest-priority requirement.",
     "- Do not replace a literal user request with a cuter or more whimsical version of the theme.",
     "- Avoid novelty puns, mascot language, and jokey rewrites unless the user explicitly asked for them.",
@@ -250,11 +280,16 @@ export function buildLiveCardPrompt(
       : []),
     `- Emoji usage: ${includeEmoji}.`,
     "",
+    renderCoreCreativeInputs(event),
+    "",
     "Event details:",
+    line("Category", event.category),
     line("Title", event.title),
     line("Occasion", event.occasion),
     line("Host Name", event.hostName),
     line("Honoree Name", event.honoreeName),
+    line("Age or Milestone", event.ageOrMilestone),
+    line("User Idea", event.userIdea),
     line("Description", event.description),
     line("Date", event.date),
     line("Start Time", event.startTime),
@@ -326,6 +361,9 @@ export function buildInvitationImagePrompt(
     isEditingExistingImage
       ? "- Make only the requested visual changes and keep the rest of the image consistent."
       : "- Keep the composition visually focused and cohesive.",
+    "- Build the artwork around the selected event type first, then express the user's idea through that celebration type.",
+    "- Treat the user's idea as the main visual concept when one is provided.",
+    "- If an age or milestone is provided, let it influence the invitation concept and any short visible copy where appropriate.",
     "- The user's visual direction is the highest-priority art direction, but it must still be expressed as the selected event type or invitation concept.",
     ...occasionThemeGuardrails,
     ...(wedding
@@ -371,11 +409,16 @@ export function buildInvitationImagePrompt(
         ]
       : []),
     "",
+    renderCoreCreativeInputs(event),
+    "",
     "Event details to influence visual style:",
+    line("Category", event.category),
     line("Title", event.title),
     line("Occasion", event.occasion),
     line("Host Name", event.hostName),
     line("Honoree Name", event.honoreeName),
+    line("Age or Milestone", event.ageOrMilestone),
+    line("User Idea", event.userIdea),
     line("Description", event.description),
     line("Date", event.date),
     line("Venue", event.venueName),

@@ -47,7 +47,11 @@ export type TemplateDef = {
     | "appointments_general";
 };
 
-export const TEMPLATE_DEFINITIONS: TemplateDef[] = [
+export const ENABLED_TEMPLATE_KEYS: TemplateKey[] = ["gymnastics"];
+
+const ENABLED_TEMPLATE_KEY_SET = new Set<TemplateKey>(ENABLED_TEMPLATE_KEYS);
+
+const ALL_TEMPLATE_DEFINITIONS: TemplateDef[] = [
   {
     key: "birthdays",
     label: "Birthdays",
@@ -148,9 +152,25 @@ export const TEMPLATE_DEFINITIONS: TemplateDef[] = [
   },
 ];
 
-export const TEMPLATE_KEYS = TEMPLATE_DEFINITIONS.map((t) => t.key);
+export const TEMPLATE_DEFINITIONS: TemplateDef[] = ALL_TEMPLATE_DEFINITIONS.filter(
+  (definition) => ENABLED_TEMPLATE_KEY_SET.has(definition.key)
+);
+
+export const TEMPLATE_KEYS: TemplateKey[] = [...ENABLED_TEMPLATE_KEYS];
 
 const ALL_TEMPLATE_KEYS_SET = new Set<TemplateKey>(TEMPLATE_KEYS);
+
+export const DISABLED_EVENT_ROUTE_PREFIXES: string[] = Array.from(
+  new Set(
+    ALL_TEMPLATE_DEFINITIONS.filter(
+      (definition) => !ENABLED_TEMPLATE_KEY_SET.has(definition.key)
+    ).map((definition) => definition.href.replace(/\/customize$/, ""))
+  )
+);
+
+function clampEnabledTemplateKeys(keys: TemplateKey[]): TemplateKey[] {
+  return keys.filter((key) => ENABLED_TEMPLATE_KEY_SET.has(key));
+}
 
 export const QUICK_ACCESS_DEFAULT: QuickAccessKey[] = [
   "snap",
@@ -221,14 +241,7 @@ export const PERSONA_PRESETS: Record<UserPersona, TemplateKey[]> = {
   general: [...TEMPLATE_KEYS],
 };
 
-const SPORTS_KEYS: TemplateKey[] = [
-  "football_season",
-  "gymnastics",
-  "cheerleading",
-  "dance_ballet",
-  "soccer",
-  "sport_events",
-];
+const SPORTS_KEYS: TemplateKey[] = ["gymnastics"];
 
 export function getTemplateDefByKey(key: TemplateKey): TemplateDef | null {
   return TEMPLATE_DEFINITIONS.find((d) => d.key === key) || null;
@@ -276,7 +289,7 @@ export function mergeTemplateKeysForPersonas(personas: UserPersona[]): TemplateK
       merged.add(key);
     }
   }
-  return Array.from(merged);
+  return clampEnabledTemplateKeys(Array.from(merged));
 }
 
 export function resolveDashboardLayout(persona: UserPersona | null): DashboardLayout {
@@ -300,8 +313,9 @@ export function resolveVisibility(input: {
       : [];
   const normalizedKeys = normalizeTemplateKeys(input.visibleTemplateKeys);
   const preset = mergeTemplateKeysForPersonas(personas);
-  const visibleTemplateKeys =
-    normalizedKeys.length > 0 ? normalizedKeys : [...preset];
+  const visibleTemplateKeys = clampEnabledTemplateKeys(
+    normalizedKeys.length > 0 ? normalizedKeys : [...preset]
+  );
 
   return {
     persona,

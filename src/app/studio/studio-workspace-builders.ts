@@ -98,6 +98,10 @@ export function getHonoreeName(details: EventDetails) {
   );
 }
 
+export function getAgeOrMilestone(details: EventDetails) {
+  return pickFirst(details.age);
+}
+
 export function getRegistryText(details: EventDetails) {
   return pickFirst(
     details.giftPreferenceNote,
@@ -374,11 +378,14 @@ export function buildStudioRequest(
     mode,
     event: {
       title: getDisplayTitle(details),
+      category: details.category,
       occasion: pickFirst(details.occasion, details.category),
       hostName:
         pickFirst(details.rsvpName, details.hostedBy, details.teacherName, details.mainPerson) ||
         null,
       honoreeName: getHonoreeName(details) || null,
+      ageOrMilestone: getAgeOrMilestone(details) || null,
+      userIdea: clean(details.theme) || null,
       description:
         [baseDescription, refinement ? `Edit request: ${refinement}` : "", guestPhotoHint]
           .filter(Boolean)
