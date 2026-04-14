@@ -11,7 +11,11 @@ import type {
   InviteCategory,
   MediaItem,
 } from "./studio-workspace-types";
-import { readString, sanitizeGuestImageUrls, STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
+import {
+  readString,
+  STUDIO_GUEST_IMAGE_URL_MAX,
+  sanitizeGuestImageUrls,
+} from "./studio-workspace-utils";
 
 export function createId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -242,7 +246,6 @@ export function getThemeColors(details: EventDetails) {
   return { primaryColor: "#111827", accentColor: "#7c3aed" };
 }
 
-
 export function buildDescription(details: EventDetails) {
   const parts = [
     clean(details.detailsDescription),
@@ -419,7 +422,6 @@ export function buildStudioRequest(
       : undefined,
   };
 }
-
 
 export function buildInvitationData(
   details: EventDetails,

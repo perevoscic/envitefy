@@ -130,7 +130,6 @@ export default function StudioWorkspace() {
   const { status: sessionStatus } = useSession();
   const [step, setStep] = useState<StudioStep>("category");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [isOptionalCollapsed, setIsOptionalCollapsed] = useState(true);
   const [details, setDetails] = useState<EventDetails>(createInitialDetails);
   const { mediaList, setMediaList, librarySyncError, retryLibrarySync } = useStudioMediaLibrary();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -280,7 +279,6 @@ export default function StudioWorkspace() {
     setEditingId(item.id);
     setEditPrompt("");
     setIsEditPanelOpen(false);
-    setIsOptionalCollapsed(false);
     setActiveTab("none");
     setIsDesignMode(false);
     setActivePage(null);
@@ -672,7 +670,6 @@ export default function StudioWorkspace() {
             />
           </button>
         </div>
-
       </>
     );
   }
@@ -785,8 +782,6 @@ export default function StudioWorkspace() {
               details={details}
               setDetails={setDetails}
               setStep={setStep}
-              isOptionalCollapsed={isOptionalCollapsed}
-              setIsOptionalCollapsed={setIsOptionalCollapsed}
               isFormValid={isFormValid}
               editingId={editingId}
             />
@@ -844,6 +839,10 @@ export default function StudioWorkspace() {
                           setDetails((prev) => ({ ...prev, theme: event.target.value }))
                         }
                       />
+                      <p className="mt-2 text-xs text-neutral-500">
+                        Describe your invitation in your own words. We&apos;ll generate it for
+                        you.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -886,9 +885,6 @@ export default function StudioWorkspace() {
                       <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
                     </button>
                   </div>
-                  <p className="text-center text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-                    Powered by Gemini 3 &amp; Veo 3.1
-                  </p>
                 </div>
               </aside>
 

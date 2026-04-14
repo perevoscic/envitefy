@@ -14,6 +14,7 @@ import {
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
+import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { findFirstEmail } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
 import { uploadMediaFile } from "@/utils/media-upload-client";
@@ -32,11 +33,6 @@ type EventFields = {
   rsvp?: string | null;
   /** OCR guest tips (flyer footer); maps to event thingsToDo / Good To Know. */
   thingsToDo?: string | null;
-};
-
-type PendingSnapUpload = {
-  file: File;
-  previewUrl: string | null;
 };
 
 type SubmitScannedEventParams = {
@@ -1007,41 +1003,27 @@ export default function Dashboard({
 
   const openCamera = useCallback(() => {
     resetForm();
-    // Use setTimeout to ensure the click happens within the user gesture context on mobile
-    setTimeout(() => {
-      if (cameraInputRef.current) {
-        try {
-          cameraInputRef.current.click();
-        } catch (err) {
-          console.error("Failed to open camera:", err);
-          setError("Unable to open camera. Please try again.");
-        }
+    if (cameraInputRef.current) {
+      try {
+        cameraInputRef.current.click();
+      } catch (err) {
+        console.error("Failed to open camera:", err);
+        setError("Unable to open camera. Please try again.");
       }
-    }, 0);
+    }
   }, [resetForm, setError]);
 
   const openUpload = useCallback(() => {
     resetForm();
-    // Use setTimeout to ensure the click happens within the user gesture context on mobile
-    // This is necessary for iOS Safari and some Android browsers
-    setTimeout(() => {
-      if (fileInputRef.current) {
-        try {
-          fileInputRef.current.click();
-        } catch (err) {
-          console.error("Failed to open file picker:", err);
-          setError("Unable to open file picker. Please try again.");
-        }
+    if (fileInputRef.current) {
+      try {
+        fileInputRef.current.click();
+      } catch (err) {
+        console.error("Failed to open file picker:", err);
+        setError("Unable to open file picker. Please try again.");
       }
-    }, 0);
+    }
   }, [resetForm, setError]);
-
-  const takePendingUpload = useCallback(() => {
-    if (typeof window === "undefined") return null;
-    const pending = window.__pendingSnapUpload ?? null;
-    delete window.__pendingSnapUpload;
-    return pending;
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1060,35 +1042,45 @@ export default function Dashboard({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const action = (params.get("action") || "").toLowerCase();
-      if (!action) return;
-      const cleanup = () => {
-        try {
-          const url = new URL(window.location.href);
-          url.searchParams.delete("action");
-          window.history.replaceState({}, "", url.toString());
-        } catch {
-          // noop
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const action = (params.get("action") || "").toLowerCase();
+        if (!action) return;
+        const cleanup = () => {
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("action");
+            window.history.replaceState({}, "", url.toString());
+          } catch {
+            // noop
+          }
+        };
+        if (action === "camera") {
+          openCamera();
+          cleanup();
+          return;
         }
-      };
-      if (action === "camera") {
-        openCamera();
-        cleanup();
-      } else if (action === "upload") {
-        const pendingUpload = takePendingUpload();
-        if (pendingUpload) {
-          onFile(pendingUpload.file, pendingUpload.previewUrl);
-        } else {
-          openUpload();
+        if (action === "upload") {
+          const pendingUpload = await takePendingSnapUpload();
+          if (cancelled) return;
+          if (pendingUpload) {
+            onFile(pendingUpload.file, pendingUpload.previewUrl);
+          } else {
+            openUpload();
+          }
+          cleanup();
         }
-        cleanup();
+      } catch {
+        // noop
       }
-    } catch {
-      // noop
-    }
-  }, [onFile, openCamera, openUpload, takePendingUpload]);
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [onFile, openCamera, openUpload]);
 
   const saveToEnvitefyHistory = useCallback(
     async ({
