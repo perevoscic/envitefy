@@ -47,6 +47,7 @@ import {
   createSidebarIconLookup,
   CREATE_SECTION_COLORS,
   getCreateMenuActiveAccent,
+  getSidebarPrimaryActiveAccent,
   GroupedEventItem,
   GroupedEventSection,
   SIDEBAR_BACK_ROW_CLASS,
@@ -178,7 +179,7 @@ function SidebarMyEventsMenuIcon({
       height={size}
       className={[
         "shrink-0",
-        active ? "text-indigo-600" : "text-slate-500",
+        "text-current",
         className,
       ]
         .filter(Boolean)
@@ -421,15 +422,35 @@ function RootNavigationPanel({
     sidebarPage === "invitedEvents" ||
     (sidebarPage === "eventContext" &&
       eventContextSourcePage === "invitedEvents");
+  const mainActiveAccent = getSidebarPrimaryActiveAccent();
+  const rootMenuActiveChipClass =
+    "border-purple-200 bg-white text-purple-600 shadow-sm";
+  const rootMenuChipClass = SIDEBAR_ICON_CHIP_ACCENT_CLASS;
 
   const activeRowClass =
-    "border border-indigo-100 bg-white text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]";
-  const inactiveRowClass = "text-slate-500 hover:bg-slate-200/40";
+    `${mainActiveAccent.buttonClass} group border`;
+  const inactiveRowClass =
+    "group border border-slate-100 bg-white text-slate-700 hover:bg-slate-50 hover:shadow-md";
 
-  const renderChevronBadge = (count: number) => (
+  const renderChevronBadge = (count: number, isActive: boolean) => (
     <span className="ml-auto flex items-center gap-2">
-      <span className={SIDEBAR_BADGE_CLASS}>{count}</span>
-      <ChevronRight size={16} className="text-slate-400" />
+      <span
+        className={
+          isActive
+            ? "inline-flex min-w-[24px] items-center justify-center rounded-full border border-purple-200 bg-white px-2 py-1 text-[10px] font-black text-purple-600 shadow-sm"
+            : SIDEBAR_BADGE_CLASS
+        }
+      >
+        {count}
+      </span>
+      <ChevronRight
+        size={16}
+        className={
+          isActive
+            ? mainActiveAccent.chevronClass
+            : "text-slate-300 transition-all group-hover:text-indigo-500"
+        }
+      />
     </span>
   );
 
@@ -442,12 +463,13 @@ function RootNavigationPanel({
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isHomeActive ? activeRowClass : inactiveRowClass
           } py-3 pl-3 pr-4`}
+          style={isHomeActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
               isHomeActive
-                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
-                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                ? rootMenuActiveChipClass
+                : rootMenuChipClass
             }`}
           >
             <Home size={18} />
@@ -461,12 +483,13 @@ function RootNavigationPanel({
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isStudioActive ? activeRowClass : inactiveRowClass
           } py-3 pl-3 pr-4`}
+          style={isStudioActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
               isStudioActive
-                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
-                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                ? rootMenuActiveChipClass
+                : rootMenuChipClass
             }`}
           >
             <WandSparkles size={18} />
@@ -481,12 +504,13 @@ function RootNavigationPanel({
             className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
               isSnapActive ? activeRowClass : inactiveRowClass
             } py-3 pl-3 pr-4`}
+            style={isSnapActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
           >
             <span
               className={`${SIDEBAR_ICON_CHIP_CLASS} ${
                 isSnapActive
-                  ? "border-indigo-100 bg-indigo-50 text-indigo-600"
-                  : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                  ? rootMenuActiveChipClass
+                  : rootMenuChipClass
               }`}
             >
               <Camera size={18} />
@@ -502,19 +526,22 @@ function RootNavigationPanel({
             className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
               isCreateEntryActive ? activeRowClass : inactiveRowClass
             } py-3 pl-3 pr-4`}
+            style={
+              isCreateEntryActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
+            }
           >
             <span
               className={`${SIDEBAR_ICON_CHIP_CLASS} ${
                 isCreateEntryActive
-                  ? "border-indigo-100 bg-indigo-50 text-indigo-600"
-                  : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                  ? rootMenuActiveChipClass
+                  : rootMenuChipClass
               }`}
             >
               <Plus size={18} />
             </span>
             <span className="truncate">Create Event</span>
             {!useGymnasticsDirectCreate
-              ? renderChevronBadge(createMenuOptionCount)
+              ? renderChevronBadge(createMenuOptionCount, isCreateEntryActive)
               : null}
           </button>
         ) : null}
@@ -525,18 +552,21 @@ function RootNavigationPanel({
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isMyEventsActive ? activeRowClass : inactiveRowClass
           } py-3 pl-3 pr-4`}
+          style={
+            isMyEventsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
+          }
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
               isMyEventsActive
-                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
-                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                ? rootMenuActiveChipClass
+                : rootMenuChipClass
             }`}
           >
             <SidebarMyEventsMenuIcon size={18} active={isMyEventsActive} />
           </span>
           <span className="truncate">My Events</span>
-          {renderChevronBadge(createdEventsCount)}
+          {renderChevronBadge(createdEventsCount, isMyEventsActive)}
         </button>
 
         <button
@@ -545,18 +575,21 @@ function RootNavigationPanel({
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isInvitedEventsActive ? activeRowClass : inactiveRowClass
           } py-3 pl-3 pr-4`}
+          style={
+            isInvitedEventsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
+          }
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
               isInvitedEventsActive
-                ? "border-indigo-100 bg-indigo-50 text-indigo-600"
-                : SIDEBAR_ICON_CHIP_ACCENT_CLASS
+                ? rootMenuActiveChipClass
+                : rootMenuChipClass
             }`}
           >
             <Users size={18} />
           </span>
           <span className="truncate">Invited Events</span>
-          {renderChevronBadge(invitedEventsCount)}
+          {renderChevronBadge(invitedEventsCount, isInvitedEventsActive)}
         </button>
       </div>
     </div>
@@ -576,7 +609,8 @@ function CreateMenuButton({
 }) {
   const Icon =
     (sidebarIconLookup[item.label] as ComponentType<any>) || WandSparkles;
-  const colorClass = CREATE_SECTION_COLORS[index % CREATE_SECTION_COLORS.length];
+  const colorClass =
+    CREATE_SECTION_COLORS[index % CREATE_SECTION_COLORS.length];
   const activeAccent = getCreateMenuActiveAccent(item.label);
 
   return (
@@ -762,7 +796,10 @@ function EventListPanel({
       </button>
     ));
 
-  const renderGroupSections = (sections: GroupedEventSection[], muted: boolean) =>
+  const renderGroupSections = (
+    sections: GroupedEventSection[],
+    muted: boolean,
+  ) =>
     sections.map((group, index) => (
       <section
         key={`${muted ? "past" : "upcoming"}-${group.category}-${index}`}
@@ -825,15 +862,15 @@ function EventListPanel({
                   <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
                 </div>
 
-                {pastExpanded
-                  ? grouped.past.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
-                        {emptyPastCopy}
-                      </div>
-                    ) : (
-                      renderGroupSections(grouped.past, true)
-                    )
-                  : null}
+                {pastExpanded ? (
+                  grouped.past.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+                      {emptyPastCopy}
+                    </div>
+                  ) : (
+                    renderGroupSections(grouped.past, true)
+                  )
+                ) : null}
               </section>
             ) : null}
           </div>
@@ -1048,7 +1085,7 @@ export default function LeftSidebar() {
   const panelStyle = (
     transform: string,
     isActive: boolean,
-    isCompact: boolean
+    isCompact: boolean,
   ): CSSProperties => ({
     ...panelTransitionStyle,
     transform,
@@ -1164,7 +1201,7 @@ export default function LeftSidebar() {
               onClick={() => {
                 if (typeof window === "undefined") return;
                 window.dispatchEvent(
-                  new CustomEvent("envitefy:open-discovery-editor")
+                  new CustomEvent("envitefy:open-discovery-editor"),
                 );
               }}
               className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm"
@@ -1269,7 +1306,7 @@ export default function LeftSidebar() {
                     style={panelStyle(
                       rootPanelTransform,
                       viewModel.sidebarPage === "root",
-                      viewModel.isCompact
+                      viewModel.isCompact,
                     )}
                     aria-hidden={viewModel.sidebarPage !== "root"}
                   >
@@ -1299,7 +1336,7 @@ export default function LeftSidebar() {
                     style={panelStyle(
                       createEventPanelTransform,
                       viewModel.sidebarPage === "createEvent",
-                      viewModel.isCompact
+                      viewModel.isCompact,
                     )}
                     aria-hidden={viewModel.sidebarPage !== "createEvent"}
                   >
@@ -1320,7 +1357,7 @@ export default function LeftSidebar() {
                     style={panelStyle(
                       createEventOtherPanelTransform,
                       viewModel.sidebarPage === "createEventOther",
-                      viewModel.isCompact
+                      viewModel.isCompact,
                     )}
                     aria-hidden={viewModel.sidebarPage !== "createEventOther"}
                   >
@@ -1341,7 +1378,7 @@ export default function LeftSidebar() {
                     style={panelStyle(
                       myEventsPanelTransform,
                       viewModel.sidebarPage === "myEvents",
-                      viewModel.isCompact
+                      viewModel.isCompact,
                     )}
                     aria-hidden={viewModel.sidebarPage !== "myEvents"}
                   >
@@ -1365,7 +1402,7 @@ export default function LeftSidebar() {
                     style={panelStyle(
                       invitedEventsPanelTransform,
                       viewModel.sidebarPage === "invitedEvents",
-                      viewModel.isCompact
+                      viewModel.isCompact,
                     )}
                     aria-hidden={viewModel.sidebarPage !== "invitedEvents"}
                   >
@@ -1389,7 +1426,7 @@ export default function LeftSidebar() {
                     style={panelStyle(
                       eventPanelTransform,
                       viewModel.sidebarPage === "eventContext",
-                      viewModel.isCompact
+                      viewModel.isCompact,
                     )}
                     aria-hidden={viewModel.sidebarPage !== "eventContext"}
                   >

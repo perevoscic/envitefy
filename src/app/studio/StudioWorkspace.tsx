@@ -34,6 +34,7 @@ import {
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
+import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import type { StudioStep } from "./studio-types";
 import { requestStudioGeneration } from "./studio-workspace-api";
@@ -46,6 +47,8 @@ import {
   formatDate,
   getAbsoluteShareUrl,
   getFallbackThumbnail,
+  getStudioIdeaLabel,
+  getStudioIdeaPlaceholder,
   getRegistryText,
   getStudioShareTitle,
   hasRegistryContent,
@@ -114,6 +117,13 @@ async function persistStudioLibraryImageUrl(
     console.warn("[studio] failed to persist library image for sync");
     return u;
   }
+}
+
+function formatCalendarSummary(dateStr: string | undefined, timeStr: string | undefined) {
+  const dateLabel = formatWeekdayMonthDayOrdinalEn(dateStr);
+  if (!dateLabel) return "";
+  const timeLabel = formatTimeLabelEn(timeStr);
+  return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel;
 }
 
 export default function StudioWorkspace() {
@@ -193,6 +203,25 @@ export default function StudioWorkspace() {
         : prev,
     );
   }, [details.category, details.gender, details.name]);
+
+  useEffect(() => {
+    if (activeTab === "none" || activeTab === "share") return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (
+        target.closest("[data-live-card-panel]") ||
+        target.closest("[data-live-card-trigger]")
+      ) {
+        return;
+      }
+      setActiveTab("none");
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [activeTab]);
 
   function isFormValid() {
     const missingShared = SHARED_BASICS.filter(
@@ -645,6 +674,8 @@ export default function StudioWorkspace() {
     );
   }
 
+  const studioIdeaLabel = getStudioIdeaLabel(details.category);
+  const studioIdeaPlaceholder = getStudioIdeaPlaceholder(details.category);
   const isDetailsTabActive = step === "category" || step === "form";
   const shellClass = studioWorkspaceShellClass;
   const mediaCardClass = studioWorkspaceMediaCardClass;
@@ -789,33 +820,30 @@ export default function StudioWorkspace() {
                   Back to form
                 </button>
 
-                <div className="space-y-4 lg:pt-12">
-                  <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
-                    <div className="mb-3 flex items-center gap-3">
-                      <div className="rounded-2xl bg-[#f4edff] p-2.5 text-[#8a6fdb]">
-                        <WandSparkles className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-neutral-900">
-                          {details.category} Invitation Idea
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          Describe your invitation in your own words. We&apos;ll generate it for
-                          you.
-                        </p>
-                      </div>
+                <div className={`${shellClass} space-y-8`}>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                        Idea
+                      </p>
                     </div>
-                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                      Invitation Prompt
-                    </label>
-                    <textarea
-                      placeholder="e.g. A cozy cat movie birthday invitation with red velvet theater seats, warm lighting, popcorn, and elegant playful text..."
-                      className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
-                      value={details.theme}
-                      onChange={(event) =>
-                        setDetails((prev) => ({ ...prev, theme: event.target.value }))
-                      }
-                    />
+                    <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
+                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                        {studioIdeaLabel}
+                      </label>
+                      <textarea
+                        placeholder={studioIdeaPlaceholder}
+                        className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
+                        value={details.theme}
+                        onChange={(event) =>
+                          setDetails((prev) => ({ ...prev, theme: event.target.value }))
+                        }
+                      />
+                      <p className="mt-2 text-xs text-neutral-500">
+                        Describe your invitation in your own words. We&apos;ll generate it for
+                        you.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -1181,6 +1209,7 @@ export default function StudioWorkspace() {
                         initial={{ opacity: 0, y: 10, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                        data-live-card-panel
                         className="pointer-events-auto absolute bottom-32 left-4 right-4 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl max-md:left-2 max-md:right-2 md:left-6 md:right-6"
                       >
                         <div className="mb-4 flex items-start justify-between">
@@ -1382,10 +1411,6 @@ export default function StudioWorkspace() {
                               <p className="text-xs text-neutral-500">
                                 {activePageRecord.data.eventDetails.location}
                               </p>
-                              <p className="mt-2 text-xs text-neutral-500">
-                                {formatDate(activePageRecord.data.eventDetails.eventDate)} @{" "}
-                                {activePageRecord.data.eventDetails.startTime}
-                              </p>
                               <button
                                 onClick={() =>
                                   window.open(
@@ -1406,11 +1431,11 @@ export default function StudioWorkspace() {
                               <p className="text-sm font-medium text-neutral-900">Save the Date</p>
                               <p className="text-xs text-neutral-500">
                                 {activePageRecord.data.eventDetails.eventDate
-                                  ? formatDate(activePageRecord.data.eventDetails.eventDate)
+                                  ? formatCalendarSummary(
+                                      activePageRecord.data.eventDetails.eventDate,
+                                      activePageRecord.data.eventDetails.startTime,
+                                    )
                                   : "Date TBD"}
-                                {activePageRecord.data.eventDetails.startTime
-                                  ? ` at ${activePageRecord.data.eventDetails.startTime}`
-                                  : ""}
                               </p>
                               <button
                                 onClick={() => {
@@ -1525,7 +1550,10 @@ export default function StudioWorkspace() {
                                 ? CheckCircle2
                                 : Share2,
                           visible: true,
-                          onClick: () => shareMedia(activePageRecord),
+                          onClick: () => {
+                            setActiveTab("none");
+                            void shareMedia(activePageRecord);
+                          },
                         },
                         {
                           key: "registry",
@@ -1561,6 +1589,7 @@ export default function StudioWorkspace() {
                                 if (!isDesignMode) button.onClick();
                               }}
                               disabled={button.key === "share" && sharingId === activePageRecord.id}
+                              data-live-card-trigger
                               className={`group flex w-full flex-col items-center gap-1 md:gap-2 ${isDesignMode ? "cursor-move" : ""}`}
                             >
                               <div

@@ -158,31 +158,3 @@ export type CategoryCard = {
   name: InviteCategory;
   icon: LucideIcon;
 };
-
-export type Preset = {
-  id: string;
-  category: InviteCategory;
-  name: string;
-  description: string;
-  icon: LucideIcon;
-  thumbnail: string;
-  birthdayAgeGroup?: BirthdayPresetAgeGroup;
-  birthdayAudience?: BirthdayPresetAudience;
-};
-
-export type BirthdayPresetAudience = "female" | "male";
-export type BirthdayPresetAgeGroup =
-  | "kids"
-  | "teens"
-  | "young-adults"
-  | "adults"
-  | "milestones";
-
-export type BirthdayPresetSeed = {
-  id: string;
-  name: string;
-  description: string;
-  icon: LucideIcon;
-  from: string;
-  to: string;
-};

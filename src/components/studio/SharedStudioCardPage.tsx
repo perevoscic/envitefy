@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardRsvpOutboundHref,
@@ -23,6 +23,7 @@ import {
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
+import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 
 type ActiveTab = "none" | "location" | "calendar" | "registry" | "share" | "details" | "rsvp";
 
@@ -87,6 +88,13 @@ function formatDate(dateStr: string) {
   if (!dateStr || !dateStr.includes("-")) return dateStr;
   const [year, month, day] = dateStr.split("-");
   return `${month}.${day}.${year}`;
+}
+
+function formatCalendarSummary(dateStr: string, timeStr: string) {
+  const dateLabel = formatWeekdayMonthDayOrdinalEn(dateStr);
+  if (!dateLabel) return "";
+  const timeLabel = formatTimeLabelEn(timeStr);
+  return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel;
 }
 
 function getRegistryText(details: EventDetails | null | undefined) {
@@ -162,6 +170,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
           icon: copySuccess ? CheckCircle2 : Share2,
           visible: true,
           onClick: async () => {
+            setActiveTab("none");
             const shareUrl =
               props.shareUrl || (typeof window !== "undefined" ? window.location.href : "");
             const shareData = {
@@ -211,6 +220,25 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
     [details, props.title],
   );
 
+  useEffect(() => {
+    if (activeTab === "none" || activeTab === "share") return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (
+        target.closest("[data-live-card-panel]") ||
+        target.closest("[data-live-card-trigger]")
+      ) {
+        return;
+      }
+      setActiveTab("none");
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [activeTab]);
+
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
@@ -237,7 +265,10 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
             <div className="pointer-events-none absolute inset-0 flex flex-col pt-8 pb-1 px-3 max-md:px-1 max-md:pt-6 max-md:pb-0 sm:px-4 md:p-8 md:pb-2">
               <div className="flex h-full min-h-0 flex-col justify-end">
                 {activeTab !== "none" && activeTab !== "share" ? (
-                  <div className="pointer-events-auto absolute bottom-32 left-3 right-3 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl max-sm:left-2 max-sm:right-2 sm:left-5 sm:right-5 md:left-6 md:right-6">
+                  <div
+                    data-live-card-panel
+                    className="pointer-events-auto absolute bottom-32 left-3 right-3 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl max-sm:left-2 max-sm:right-2 sm:left-5 sm:right-5 md:left-6 md:right-6"
+                  >
                     <div className="mb-4 flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
@@ -379,14 +410,6 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                           <p className="text-xs text-neutral-500">
                             {readString(details?.location)}
                           </p>
-                          <p className="mt-2 text-xs text-neutral-500">
-                            {readString(details?.eventDate)
-                              ? formatDate(readString(details?.eventDate))
-                              : "Date TBD"}
-                            {readString(details?.startTime)
-                              ? ` at ${readString(details?.startTime)}`
-                              : ""}
-                          </p>
                           {readString(details?.location) ? (
                             <button
                               onClick={() =>
@@ -409,11 +432,11 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                           <p className="text-sm font-medium text-neutral-900">Save the Date</p>
                           <p className="text-xs text-neutral-500">
                             {readString(details?.eventDate)
-                              ? formatDate(readString(details?.eventDate))
+                              ? formatCalendarSummary(
+                                  readString(details?.eventDate),
+                                  readString(details?.startTime),
+                                )
                               : "Date TBD"}
-                            {readString(details?.startTime)
-                              ? ` at ${readString(details?.startTime)}`
-                              : ""}
                           </p>
                           {buildGoogleCalendarUrl(props.title, invitationData) ? (
                             <button
@@ -465,6 +488,8 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                     .map((button) => {
                       const Icon = button.icon;
                       const position = props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+                      const isPressed =
+                        button.key === "share" ? copySuccess : activeTab === button.key;
                       return (
                         <div
                           key={button.key}
@@ -472,25 +497,26 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                           className="pointer-events-auto max-sm:min-w-0 max-sm:flex-1 max-sm:max-w-[20%] sm:flex-none sm:max-w-none"
                         >
                           <button
+                            type="button"
                             onClick={button.onClick}
-                            className="group flex w-full flex-col items-center gap-1 md:gap-2"
+                            aria-pressed={button.key === "share" ? undefined : isPressed}
+                            data-live-card-trigger
+                            className="group flex w-full flex-col items-center gap-1 transition-transform duration-150 active:scale-[0.97] md:gap-2"
                           >
                             <div
-                              className={`rounded-full border border-white/30 bg-white/20 p-2 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 md:p-3 ${
-                                (button.key === "rsvp" && activeTab === "rsvp") ||
-                                (button.key === "details" && activeTab === "details") ||
-                                (button.key === "location" && activeTab === "location") ||
-                                (button.key === "calendar" && activeTab === "calendar") ||
-                                (button.key === "registry" && activeTab === "registry")
-                                  ? "border-white/50 bg-white/40"
-                                  : ""
+                              className={`rounded-full border p-2 backdrop-blur-md transition-all duration-200 md:p-3 ${
+                                isPressed
+                                  ? "translate-y-0.5 border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
+                                  : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] group-hover:-translate-y-0.5 group-hover:border-white/45 group-hover:bg-white/22"
                               }`}
                             >
                               <Icon
                                 className={`h-4 w-4 md:h-5 md:w-5 ${
                                   button.key === "share" && copySuccess
-                                    ? "text-green-400"
-                                    : "text-white"
+                                    ? "text-emerald-600"
+                                    : isPressed
+                                      ? "text-neutral-950"
+                                      : "text-white"
                                 }`}
                               />
                             </div>
