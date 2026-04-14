@@ -9,8 +9,6 @@ import {
   Images,
   Loader2,
   MapPin,
-  Plus,
-  WandSparkles,
   X,
 } from "lucide-react";
 import { type Dispatch, type SetStateAction, useRef, useState } from "react";
@@ -32,7 +30,6 @@ import {
   studioWorkspaceFieldLabelClass,
   studioWorkspaceIconInputClass,
   studioWorkspaceInputClass,
-  studioWorkspaceSecondaryShellClass,
   studioWorkspaceShellClass,
   studioWorkspaceTextAreaClass,
 } from "../studio-workspace-ui-classes";
@@ -42,8 +39,6 @@ export type StudioFormStepProps = {
   details: EventDetails;
   setDetails: Dispatch<SetStateAction<EventDetails>>;
   setStep: (step: StudioStep) => void;
-  isOptionalCollapsed: boolean;
-  setIsOptionalCollapsed: Dispatch<SetStateAction<boolean>>;
   isFormValid: () => boolean;
   editingId: string | null;
 };
@@ -52,13 +47,10 @@ export function StudioFormStep({
   details,
   setDetails,
   setStep,
-  isOptionalCollapsed,
-  setIsOptionalCollapsed,
   isFormValid,
   editingId,
 }: StudioFormStepProps) {
   const shellClass = studioWorkspaceShellClass;
-  const secondaryShellClass = studioWorkspaceSecondaryShellClass;
   const fieldLabelClass = studioWorkspaceFieldLabelClass;
   const inputClass = studioWorkspaceInputClass;
   const iconInputClass = studioWorkspaceIconInputClass;
@@ -338,241 +330,9 @@ export function StudioFormStep({
                   </button>
                 ) : null}
               </div>
-              {guestImageError ? (
-                <p className="text-sm text-red-600">{guestImageError}</p>
-              ) : null}
+              {guestImageError ? <p className="text-sm text-red-600">{guestImageError}</p> : null}
             </div>
           </div>
-        </div>
-
-        <div className={`${secondaryShellClass} space-y-6`}>
-          <button
-            onClick={() => setIsOptionalCollapsed((prev) => !prev)}
-            className="group flex w-full items-center justify-between"
-          >
-            <div className="flex items-center gap-4">
-              <div className="rounded-2xl bg-white p-3 text-[#8a6fdb] shadow-[0_10px_24px_rgba(25,20,40,0.08)] transition-colors">
-                <Plus className="h-5 w-5" />
-              </div>
-              <div className="text-left">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                  Optional extras
-                </p>
-                <h3 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
-                  Refinements and preferences
-                </h3>
-              </div>
-            </div>
-            <div
-              className={`transition-transform duration-300 ${isOptionalCollapsed ? "" : "rotate-90"}`}
-            >
-              <ChevronRight className="h-6 w-6 text-neutral-400 group-hover:text-neutral-600" />
-            </div>
-          </button>
-
-          {!isOptionalCollapsed ? (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              className="space-y-10 border-t border-white/80 pt-8"
-            >
-              <div className="grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
-                {(CATEGORY_FIELDS[details.category] || [])
-                  .filter((field) => !field.required)
-                  .map((field) => (
-                    <div
-                      key={field.key}
-                      className={`space-y-2 ${field.type === "textarea" ? "md:col-span-2" : ""}`}
-                    >
-                      <label className={fieldLabelClass}>{field.label}</label>
-                      {field.type === "textarea" ? (
-                        <textarea
-                          placeholder={field.placeholder}
-                          className={textAreaClass}
-                          value={String(inputValue(details[field.key]))}
-                          onChange={(event) =>
-                            setDetails((prev) => ({
-                              ...prev,
-                              [field.key]: event.target.value,
-                            }))
-                          }
-                        />
-                      ) : field.type === "checkbox" ? (
-                        <div className="flex min-h-[52px] items-center gap-3 rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
-                          <input
-                            type="checkbox"
-                            className="h-5 w-5 rounded border-neutral-200 bg-white text-purple-600 focus:ring-purple-500/20"
-                            checked={Boolean(details[field.key])}
-                            onChange={(event) =>
-                              setDetails((prev) => ({
-                                ...prev,
-                                [field.key]: event.target.checked,
-                              }))
-                            }
-                          />
-                          <span className="text-sm text-neutral-500">{field.label}</span>
-                        </div>
-                      ) : (
-                        <input
-                          type={field.type}
-                          placeholder={field.placeholder}
-                          className={inputClass}
-                          value={String(inputValue(details[field.key]))}
-                          onChange={(event) =>
-                            setDetails((prev) => ({
-                              ...prev,
-                              [field.key]: event.target.value,
-                            }))
-                          }
-                        />
-                      )}
-                    </div>
-                  ))}
-
-                {SHARED_BASICS.filter((field) => !field.required).map((field) => (
-                  <div key={field.key} className="space-y-2">
-                    <label className={fieldLabelClass}>{field.label}</label>
-                    <div className="relative">
-                      {field.key === "endTime" ? (
-                        <Clock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                      ) : null}
-                      <input
-                        type={field.type}
-                        placeholder={field.placeholder}
-                        className={`${iconInputClass} ${
-                          field.key === "endTime" ? "pl-12" : "px-4"
-                        }`}
-                        value={String(inputValue(details[field.key]))}
-                        onChange={(event) =>
-                          setDetails((prev) => ({
-                            ...prev,
-                            [field.key]: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                ))}
-
-                {RSVP_FIELDS.filter((field) => !field.required).map((field) => (
-                  <div key={field.key} className="space-y-2">
-                    <label className={fieldLabelClass}>{field.label}</label>
-                    <input
-                      type={field.type}
-                      placeholder={field.placeholder}
-                      className={inputClass}
-                      value={String(inputValue(details[field.key]))}
-                      onChange={(event) =>
-                        setDetails((prev) => ({ ...prev, [field.key]: event.target.value }))
-                      }
-                    />
-                  </div>
-                ))}
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className={fieldLabelClass}>Personal Message</label>
-                  <textarea
-                    placeholder="e.g. We can't wait to see you there!"
-                    className={textAreaClass}
-                    value={details.message}
-                    onChange={(event) =>
-                      setDetails((prev) => ({ ...prev, message: event.target.value }))
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className={fieldLabelClass}>Special Instructions</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Parking info, entrance code"
-                    className={inputClass}
-                    value={details.specialInstructions}
-                    onChange={(event) =>
-                      setDetails((prev) => ({
-                        ...prev,
-                        specialInstructions: event.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:p-8">
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="rounded-2xl bg-[#f6efff] p-3 text-[#8a6fdb]">
-                    <WandSparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                      Design Preferences
-                    </p>
-                    <h4 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-neutral-900">
-                      Visual direction
-                    </h4>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
-                  <div className="space-y-2">
-                    <label className={fieldLabelClass}>Orientation</label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setDetails((prev) => ({ ...prev, orientation: "portrait" }))}
-                        className={`h-13 flex-1 rounded-2xl border text-sm font-semibold transition-all ${
-                          details.orientation === "portrait"
-                            ? "border-[#c9b5fb] bg-[#f6efff] text-neutral-900 shadow-[0_10px_24px_rgba(84,61,140,0.10)]"
-                            : "border-[#e8e0f5] bg-white text-neutral-500 hover:bg-[#faf7ff]"
-                        }`}
-                      >
-                        Portrait
-                      </button>
-                      <button
-                        onClick={() =>
-                          setDetails((prev) => ({ ...prev, orientation: "landscape" }))
-                        }
-                        className={`h-13 flex-1 rounded-2xl border text-sm font-semibold transition-all ${
-                          details.orientation === "landscape"
-                            ? "border-[#c9b5fb] bg-[#f6efff] text-neutral-900 shadow-[0_10px_24px_rgba(84,61,140,0.10)]"
-                            : "border-[#e8e0f5] bg-white text-neutral-500 hover:bg-[#faf7ff]"
-                        }`}
-                      >
-                        Landscape
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className={fieldLabelClass}>Preferred Colors</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Red and gold"
-                      className={inputClass}
-                      value={details.colors}
-                      onChange={(event) =>
-                        setDetails((prev) => ({ ...prev, colors: event.target.value }))
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2 lg:col-span-1">
-                    <label className={fieldLabelClass}>Visual Style Idea</label>
-                    <textarea
-                      placeholder="e.g. Editorial premiere poster with red carpet lighting..."
-                      className={textAreaClass}
-                      value={details.visualPreferences}
-                      onChange={(event) =>
-                        setDetails((prev) => ({
-                          ...prev,
-                          visualPreferences: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ) : null}
         </div>
       </div>
 

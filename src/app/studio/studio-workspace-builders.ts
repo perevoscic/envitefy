@@ -17,7 +17,11 @@ import type {
   MediaItem,
   Preset,
 } from "./studio-workspace-types";
-import { readString, sanitizeGuestImageUrls, STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
+import {
+  readString,
+  STUDIO_GUEST_IMAGE_URL_MAX,
+  sanitizeGuestImageUrls,
+} from "./studio-workspace-utils";
 
 export function createId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -131,8 +135,6 @@ export function getAbsoluteShareUrl(sharePath: string): string {
 }
 
 export function getFallbackThumbnail(details: EventDetails) {
-  const preset = getPresetsForDetails(details).find((item) => item.name === details.theme);
-  if (preset) return preset.thumbnail;
   return svgThumbnail(getDisplayTitle(details), "#111827", "#7c3aed");
 }
 
@@ -327,7 +329,6 @@ export function getThemeColors(details: EventDetails) {
   return { primaryColor: "#111827", accentColor: "#7c3aed" };
 }
 
-
 export function buildDescription(details: EventDetails) {
   const parts = [
     clean(details.detailsDescription),
@@ -355,7 +356,7 @@ export function buildStudioVisualDirection(details: EventDetails) {
 
   if (combinedDirection) {
     instructions.push(
-      `Highest-priority visual direction from the user: ${combinedDirection}. Follow this literally and let it override generic preset, category, or celebration styling.`,
+      `Highest-priority visual direction from the user: ${combinedDirection}. Follow this literally and let it override generic category or celebration styling.`,
     );
   }
 
@@ -478,7 +479,6 @@ export function buildStudioRequest(
       : undefined,
   };
 }
-
 
 export function buildInvitationData(
   details: EventDetails,
