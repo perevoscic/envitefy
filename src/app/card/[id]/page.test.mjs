@@ -42,6 +42,7 @@ test("shared card page uses studio-aligned 9:16 shell layout (not full-viewport 
   assert.match(sharedPageSource, /aspect-\[9\/16\][\s\S]*rounded-\[3rem\]/);
   assert.match(sharedPageSource, /max-h-\[calc\(100dvh-5\.5rem\)\]/);
   assert.match(sharedPageSource, /object-cover/);
+  assert.match(sharedPageSource, /LiveCardHeroTextOverlay/);
   assert.match(sharedPageSource, /absolute bottom-32 left-6 right-6/);
   assert.match(
     sharedPageSource,
@@ -61,4 +62,14 @@ test("shared card page uses studio-aligned 9:16 shell layout (not full-viewport 
   );
   assert.match(mainWrapperSource, /isStudioCardShare/);
   assert.match(mainWrapperSource, /paddingTop = isStudioCardShare\s*\?\s*"0px"/);
+});
+
+test("shared card route and page preserve overlay hero text mode for live cards", () => {
+  const pageSource = readSource("src/app/card/[id]/page.tsx");
+  const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
+
+  assert.match(pageSource, /const heroTextMode =\s*data\.heroTextMode === "overlay" \|\| data\.heroTextMode === "image"/);
+  assert.match(pageSource, /heroTextMode,/);
+  assert.match(sharedPageSource, /heroTextMode\?: "image" \| "overlay"/);
+  assert.match(sharedPageSource, /<LiveCardHeroTextOverlay invitationData=\{invitationData\} \/>/);
 });

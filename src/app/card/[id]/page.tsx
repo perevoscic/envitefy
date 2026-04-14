@@ -58,9 +58,15 @@ function readGuestImageUrls(value: unknown): string[] {
 
 function buildFallbackInvitationData(data: Record<string, unknown>) {
   const eventDetailsRaw = isRecord(data.eventDetails) ? data.eventDetails : null;
+  const heroTextMode =
+    data.heroTextMode === "overlay" || data.heroTextMode === "image" ? data.heroTextMode : undefined;
   return {
     title: readString(data.title) || "Invitation",
+    subtitle: readString(data.subtitle) || "",
     description: readString(data.description) || "",
+    scheduleLine: readString(data.scheduleLine) || "",
+    locationLine: readString(data.locationLine) || "",
+    heroTextMode,
     theme: {
       themeStyle: readString(data.themeStyle) || "",
     },

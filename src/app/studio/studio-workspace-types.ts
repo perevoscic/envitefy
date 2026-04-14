@@ -100,6 +100,7 @@ export type InvitationData = {
   locationLine: string;
   callToAction: string;
   socialCaption: string;
+  heroTextMode?: "image" | "overlay";
   theme: {
     primaryColor: string;
     secondaryColor: string;

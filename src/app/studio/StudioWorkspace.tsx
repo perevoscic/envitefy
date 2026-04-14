@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
+import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardRsvpOutboundHref,
@@ -41,6 +42,7 @@ import { requestStudioGeneration } from "./studio-workspace-api";
 import {
   accentClassForStudioRsvpChoice,
   buildInvitationData,
+  refreshLiveCardInvitationData,
   buildStudioPublishPayload,
   clean,
   createId,
@@ -79,6 +81,7 @@ import {
 import { isRecord, STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
 import { StudioCategoryStep } from "./workspace/StudioCategoryStep";
 import { StudioFormStep } from "./workspace/StudioFormStep";
+import { LiveCardTextEditor } from "./workspace/LiveCardTextEditor";
 import { StudioLibraryStep } from "./workspace/StudioLibraryStep";
 import { useStudioMediaLibrary } from "./workspace/useStudioMediaLibrary";
 
@@ -145,6 +148,8 @@ export default function StudioWorkspace() {
   const [editPrompt, setEditPrompt] = useState("");
   const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
+  const [isLiveCardTextEditorOpen, setIsLiveCardTextEditorOpen] = useState(false);
+  const [liveCardTextDetails, setLiveCardTextDetails] = useState<EventDetails | null>(null);
   const [isLiveCardToolsDrawerOpen, setIsLiveCardToolsDrawerOpen] = useState(false);
   const [isDesktopLiveCardViewport, setIsDesktopLiveCardViewport] = useState(false);
 
@@ -205,6 +210,8 @@ export default function StudioWorkspace() {
 
   useEffect(() => {
     if (!activePageRecord?.data) {
+      setIsLiveCardTextEditorOpen(false);
+      setLiveCardTextDetails(null);
       setIsLiveCardToolsDrawerOpen(false);
       setIsDesktopLiveCardViewport(false);
       return;
@@ -215,7 +222,7 @@ export default function StudioWorkspace() {
     const syncLiveCardViewport = () => {
       const matches = mediaQuery.matches;
       setIsDesktopLiveCardViewport(matches);
-      setIsLiveCardToolsDrawerOpen(matches);
+      setIsLiveCardToolsDrawerOpen((current) => (matches ? true : current));
     };
 
     syncLiveCardViewport();
@@ -335,15 +342,42 @@ export default function StudioWorkspace() {
   }
 
   function openLiveCardTextEdit(item: MediaItem) {
-    beginLiveCardDetailEdit(item);
+    setIsLiveCardToolsDrawerOpen(true);
+    setActivePage(item);
+    setLiveCardTextDetails(item.details);
+    setIsLiveCardTextEditorOpen(true);
+    setIsEditPanelOpen(false);
+    setActiveTab("none");
+    setIsDesignMode(false);
   }
 
   function openLiveCardImageEdit(item: MediaItem) {
+    setIsLiveCardToolsDrawerOpen(true);
     setActivePage(item);
     setEditPrompt("");
     setIsEditPanelOpen(true);
+    setIsLiveCardTextEditorOpen(false);
+    setLiveCardTextDetails(null);
     setActiveTab("none");
     setIsDesignMode(false);
+  }
+
+  function closeLiveCardTextEditor() {
+    setIsLiveCardTextEditorOpen(false);
+    setLiveCardTextDetails(null);
+  }
+
+  function saveLiveCardTextEdits(item: MediaItem) {
+    const nextDetails = liveCardTextDetails || item.details;
+    const nextData = refreshLiveCardInvitationData(nextDetails, item.data);
+    patchMediaItem(item.id, {
+      details: nextDetails,
+      data: nextData,
+      status: "ready",
+      errorMessage: undefined,
+      sharePath: undefined,
+    });
+    closeLiveCardTextEditor();
   }
 
   async function ensurePublicSharePath(item: MediaItem): Promise<string> {
@@ -512,6 +546,7 @@ export default function StudioWorkspace() {
       const response = await requestStudioGeneration(
         currentDetails,
         type === "page" ? "both" : "image",
+        type,
         sourceImageDataUrl ? editPrompt : undefined,
         sourceImageDataUrl || undefined,
       );
@@ -582,6 +617,7 @@ export default function StudioWorkspace() {
       const response = await requestStudioGeneration(
         item.details,
         "image",
+        "page",
         prompt,
         sourceImageDataUrl,
       );
@@ -642,7 +678,7 @@ export default function StudioWorkspace() {
             <textarea
               value={editPrompt}
               onChange={(event) => setEditPrompt(event.target.value)}
-              placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
+              placeholder="e.g. soften the gold lighting, simplify the florals, and keep the same composition"
               className="min-h-[104px] w-full rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/40"
             />
             <div className="mt-3 flex justify-end">
@@ -667,10 +703,17 @@ export default function StudioWorkspace() {
 
   function renderEditTextPanel(item: MediaItem) {
     return (
-      <div className="pointer-events-auto flex flex-col gap-2">
+      <div className="pointer-events-auto flex min-h-0 flex-col gap-3">
         <button
           type="button"
-          onClick={() => openLiveCardTextEdit(item)}
+          onClick={() => {
+            if (isLiveCardTextEditorOpen) {
+              closeLiveCardTextEditor();
+            } else {
+              openLiveCardTextEdit(item);
+            }
+          }}
+          aria-expanded={isLiveCardTextEditorOpen}
           className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-left backdrop-blur-md transition-colors hover:bg-white/15"
         >
           <div className="flex items-center gap-3">
@@ -683,8 +726,25 @@ export default function StudioWorkspace() {
               </p>
             </div>
           </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-white/70" />
+          <ChevronRight
+            className={`h-5 w-5 shrink-0 text-white/70 transition-transform ${isLiveCardTextEditorOpen ? "rotate-90" : ""}`}
+          />
         </button>
+
+        {isLiveCardTextEditorOpen && liveCardTextDetails ? (
+          <LiveCardTextEditor
+            item={item}
+            details={liveCardTextDetails}
+            setDetails={(next) =>
+              setLiveCardTextDetails((prev) => {
+                const current = prev || item.details;
+                return typeof next === "function" ? next(current) : next;
+              })
+            }
+            onClose={closeLiveCardTextEditor}
+            onSave={() => saveLiveCardTextEdits(item)}
+          />
+        ) : null}
       </div>
     );
   }
@@ -891,10 +951,10 @@ export default function StudioWorkspace() {
                     {isEditingLiveCard ? (
                       <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
                         <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                          Edit current image
+                          Edit current background
                         </label>
                         <textarea
-                          placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
+                          placeholder="e.g. soften the gold lighting, simplify the florals, and keep the same composition"
                           className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
                           value={editPrompt}
                           onChange={(event) => setEditPrompt(event.target.value)}
@@ -1160,6 +1220,7 @@ export default function StudioWorkspace() {
           >
             <button
               onClick={() => {
+                closeLiveCardTextEditor();
                 setActivePage(null);
                 setActiveTab("none");
                 setIsDesignMode(false);
@@ -1244,6 +1305,7 @@ export default function StudioWorkspace() {
                 referrerPolicy="no-referrer"
                 onError={() => handleMediaImageLoadError(activePageRecord)}
               />
+              <LiveCardHeroTextOverlay invitationData={activePageRecord.data} />
 
               <div className="pointer-events-none absolute inset-0 flex flex-col pt-8 pb-1 px-3 max-md:px-1 max-md:pt-6 max-md:pb-0.5 sm:px-4 md:p-8 md:pb-2">
                 <div className="flex h-full min-h-0 flex-col justify-end">

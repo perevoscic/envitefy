@@ -303,6 +303,10 @@ export function sanitizeInvitationData(
       readString(value.socialCaption) ||
       readString(value.description) ||
       buildDescription(fallbackDetails),
+    heroTextMode:
+      value.heroTextMode === "overlay" || value.heroTextMode === "image"
+        ? value.heroTextMode
+        : undefined,
     theme: {
       primaryColor: readString(theme?.primaryColor) || defaultTheme.primaryColor,
       secondaryColor: readString(theme?.secondaryColor) || defaultTheme.primaryColor,

@@ -87,3 +87,43 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   assert.doesNotMatch(prompt, /Reserve roughly the bottom 28-30% of the card/);
   assert.doesNotMatch(prompt, /The lower button area should be visually quiet/);
 });
+
+test("page live-card background prompts forbid visible raster text and preserve overlay space", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Ava's Garden Party",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Ava",
+      links: [],
+    },
+    undefined,
+    null,
+    { surface: "page" },
+  );
+
+  assert.match(prompt, /live-card background only/);
+  assert.match(prompt, /Do not add visible event wording, letters, numbers, captions, logos, monograms, or decorative type/);
+  assert.match(prompt, /Visible text is forbidden in the final raster for page\/live-card backgrounds\./);
+  assert.match(prompt, /Preserve clean negative space and readable contrast through the upper and middle zones/);
+  assert.doesNotMatch(prompt, /Approved invitation copy to use verbatim/);
+});
+
+test("page live-card image edit prompts preserve composition and stay background-only", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Ava's Garden Party",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Ava",
+      links: [],
+    },
+    undefined,
+    null,
+    { surface: "page", editingExistingImage: true },
+  );
+
+  assert.match(prompt, /Edit the provided invitation artwork image\./);
+  assert.match(prompt, /Preserve the composition, subject placement, lighting, and background art as much as possible/);
+  assert.match(prompt, /Never add, remove, rewrite, or restyle event copy during a page-background edit\./);
+});

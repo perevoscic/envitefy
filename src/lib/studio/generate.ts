@@ -19,6 +19,7 @@ export async function generateStudioInvitation(
   request: StudioGenerateRequest,
 ): Promise<StudioGenerateResponse> {
   const mode = request.mode || "both";
+  const surface = request.surface || (mode === "both" || mode === "text" ? "page" : "image");
   const warnings: string[] = [];
   let liveCard: StudioLiveCardMetadata | null = null;
   let invitation: StudioGenerateResponse["invitation"] = null;
@@ -50,6 +51,7 @@ export async function generateStudioInvitation(
       );
     }
     const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard, {
+      surface,
       editingExistingImage: Boolean(request.imageEdit?.sourceImageDataUrl),
       referenceImageCount: referenceImages.length,
     });

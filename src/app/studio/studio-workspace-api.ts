@@ -4,18 +4,19 @@ import type { StudioGenerateMode } from "@/lib/studio/types";
 import { buildStudioRequest } from "./studio-workspace-builders";
 import { isRecord } from "./studio-workspace-utils";
 import { sanitizeStudioGenerateResponse } from "./studio-workspace-sanitize";
-import type { EventDetails } from "./studio-workspace-types";
+import type { EventDetails, MediaType } from "./studio-workspace-types";
 
 export async function requestStudioGeneration(
   details: EventDetails,
   mode: StudioGenerateMode,
+  surface: MediaType,
   editPrompt?: string,
   sourceImageDataUrl?: string,
 ) {
   const response = await fetch("/api/studio/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildStudioRequest(details, mode, editPrompt, sourceImageDataUrl)),
+    body: JSON.stringify(buildStudioRequest(details, mode, surface, editPrompt, sourceImageDataUrl)),
   });
 
   let rawData: unknown = null;

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardRsvpOutboundHref,
@@ -51,7 +52,11 @@ type EventDetails = {
 
 type InvitationData = {
   title?: string;
+  subtitle?: string;
   description?: string;
+  scheduleLine?: string;
+  locationLine?: string;
+  heroTextMode?: "image" | "overlay";
   theme?: {
     themeStyle?: string;
   };
@@ -261,6 +266,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
               className="absolute inset-0 h-full w-full object-cover"
               referrerPolicy="no-referrer"
             />
+            <LiveCardHeroTextOverlay invitationData={invitationData} />
 
             <div className="pointer-events-none absolute inset-0 flex flex-col pt-8 pb-1 px-3 max-md:px-1 max-md:pt-6 max-md:pb-0 sm:px-4 md:p-8 md:pb-2">
               <div className="flex h-full min-h-0 flex-col justify-end">

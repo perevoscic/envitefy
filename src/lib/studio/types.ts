@@ -1,4 +1,5 @@
 export type StudioGenerateMode = "text" | "image" | "both";
+export type StudioGenerateSurface = "page" | "image";
 
 export type StudioEventDetails = {
   title: string;
@@ -47,6 +48,7 @@ export type StudioLiveCardInteractiveMetadata = {
 
 export type StudioGenerateRequest = {
   mode?: StudioGenerateMode;
+  surface?: StudioGenerateSurface;
   event: StudioEventDetails;
   guidance?: StudioGenerationGuidance;
   imageEdit?: {
@@ -126,6 +128,10 @@ function safeNullableString(input: unknown): string | null | undefined {
 
 function isValidMode(value: unknown): value is StudioGenerateMode {
   return value === "text" || value === "image" || value === "both";
+}
+
+function isValidSurface(value: unknown): value is StudioGenerateSurface {
+  return value === "page" || value === "image";
 }
 
 function normalizeLinks(value: unknown): Array<{ label: string; url: string }> {
@@ -209,6 +215,12 @@ export function parseStudioGenerateRequest(input: unknown): ParseSuccess | Parse
   }
   const modeRaw = (input as any).mode;
   const mode: StudioGenerateMode = isValidMode(modeRaw) ? modeRaw : "both";
+  const surfaceRaw = (input as any).surface;
+  const surface: StudioGenerateSurface = isValidSurface(surfaceRaw)
+    ? surfaceRaw
+    : mode === "both" || mode === "text"
+      ? "page"
+      : "image";
   const event = normalizeEvent((input as any).event);
   if (!event) {
     return { ok: false, error: "Invalid event details. `event.title` is required." };
@@ -217,6 +229,7 @@ export function parseStudioGenerateRequest(input: unknown): ParseSuccess | Parse
     ok: true,
     value: {
       mode,
+      surface,
       event,
       guidance: normalizeGuidance((input as any).guidance),
       imageEdit: normalizeImageEdit((input as any).imageEdit),

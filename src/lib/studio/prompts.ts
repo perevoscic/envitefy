@@ -1,6 +1,7 @@
 import type {
   StudioEventDetails,
   StudioGenerationGuidance,
+  StudioGenerateSurface,
   StudioLiveCardMetadata,
 } from "@/lib/studio/types";
 
@@ -318,13 +319,19 @@ export function buildInvitationImagePrompt(
   event: StudioEventDetails,
   guidance?: StudioGenerationGuidance,
   liveCard?: StudioLiveCardMetadata | null,
-  options?: { editingExistingImage?: boolean; referenceImageCount?: number },
+  options?: {
+    surface?: StudioGenerateSurface;
+    editingExistingImage?: boolean;
+    referenceImageCount?: number;
+  },
 ): string {
+  const surface = options?.surface === "page" ? "page" : "image";
   const isEditingExistingImage = options?.editingExistingImage === true;
   const refCount = Math.max(0, Math.min(6, options?.referenceImageCount ?? 0));
   const wedding = isWeddingOccasion(event);
   const realismRequested = hasRealismIntent(event, guidance);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
+  const pageSurface = surface === "page";
   return [
     isEditingExistingImage
       ? "Edit the provided invitation artwork image."
@@ -338,7 +345,13 @@ export function buildInvitationImagePrompt(
       : []),
     "Style requirements:",
     "- High-quality vertical invitation card composition (9:16 mobile card).",
-    "- Legible typography with editorial hierarchy (headline, subhead, detail lines).",
+    ...(pageSurface
+      ? [
+          "- This image is the live-card background only. Do not add visible event wording, letters, numbers, captions, logos, monograms, or decorative type anywhere in the raster.",
+          "- Preserve clean negative space and readable contrast through the upper and middle zones so deterministic overlay text can sit on top later.",
+          "- Keep the background art full-bleed and compositionally strong without relying on text baked into the image.",
+        ]
+      : ["- Legible typography with editorial hierarchy (headline, subhead, detail lines)."]),
     "- No QR codes, no watermarks, no logos.",
     ...(refCount > 0
       ? [
@@ -348,7 +361,13 @@ export function buildInvitationImagePrompt(
     ...(wedding
       ? [
           "- Wedding / formal celebration: aim for serious, print-ready stationery—cream, ivory, champagne, soft blush, sage, or navy with restrained gold accents unless the user's palette overrides.",
-          "- Typography: elegant high-contrast serif for names or main title; clean sans-serif for date/venue lines. Avoid clip-art hearts, cartoon rings, or childish icons.",
+          ...(pageSurface
+            ? [
+                "- Keep the wedding background refined and premium, but text-free. Avoid faux printed names, dates, letterpress headlines, or stationery wording inside the raster.",
+              ]
+            : [
+                "- Typography: elegant high-contrast serif for names or main title; clean sans-serif for date/venue lines. Avoid clip-art hearts, cartoon rings, or childish icons.",
+              ]),
           "- Layout: photo-forward hero acceptable (couple portrait, soft florals, foil-line accents, circular or arch masks). Overall look should match boutique invitation suites, not a meme or social sticker pack.",
         ]
       : []),
@@ -361,6 +380,12 @@ export function buildInvitationImagePrompt(
     isEditingExistingImage
       ? "- Make only the requested visual changes and keep the rest of the image consistent."
       : "- Keep the composition visually focused and cohesive.",
+    ...(pageSurface && isEditingExistingImage
+      ? [
+          "- Preserve the composition, subject placement, lighting, and background art as much as possible while applying the requested background-only edit.",
+          "- Never add, remove, rewrite, or restyle event copy during a page-background edit.",
+        ]
+      : []),
     "- Build the artwork around the selected event type first, then express the user's idea through that celebration type.",
     "- Treat the user's idea as the main visual concept when one is provided.",
     "- If an age or milestone is provided, let it influence the invitation concept and any short visible copy where appropriate.",
@@ -378,26 +403,35 @@ export function buildInvitationImagePrompt(
       : []),
     "- If the user requests realistic or photorealistic subjects, render them as believable real-life subjects with natural anatomy, textures, and lighting.",
     "- Do not convert realistic animals or people into cartoons, mascots, plush toys, chibi characters, or anthropomorphic figures unless the user explicitly asks for that.",
-    "- Keep text minimal and tasteful.",
-    "- Visible text is a hard requirement: spell every visible word correctly.",
-    "- Double-check all visible text before finalizing the image.",
-    "- Preserve the exact spelling of names, titles, venues, and event words from the supplied details.",
-    "- Use only exact wording from the supplied event details or the approved invitation copy below when text appears in the artwork.",
-    "- Never guess at spelling. If you are not certain about a word, omit it.",
-    "- Do not create stylized misspellings or visual puns unless they are explicitly provided by the user.",
-    "- If the venue or category implies a standard real word such as cinema, theater, party, birthday, or celebration, spell it normally unless the user gave a different exact spelling.",
-    "- For movie themes, if you use the word Cinema, spell it exactly as Cinema.",
-    "- Prefer one short headline, one short supporting line, and one short call to action at most.",
-    "- Favor imagery over text density.",
-    "- Keep all important text in the upper and middle portions of the card.",
-    "- Keep essential text out of the bottom action-button zone.",
-    "- Do not place paragraphs, captions, labels, taglines, decorative badges, or key event details in the bottom button area.",
-    "- Avoid crowded text blocks near the bottom edge of the invitation.",
+    ...(pageSurface
+      ? [
+          "- Visible text is forbidden in the final raster for page/live-card backgrounds.",
+          "- Do not embed names, dates, locations, headings, captions, decorative lettering, faux signatures, or microtype anywhere in the image.",
+          "- Favor imagery over text density and leave the upper and middle composition readable for overlay copy.",
+        ]
+      : [
+          "- Keep text minimal and tasteful.",
+          "- Visible text is a hard requirement: spell every visible word correctly.",
+          "- Double-check all visible text before finalizing the image.",
+          "- Preserve the exact spelling of names, titles, venues, and event words from the supplied details.",
+          "- Use only exact wording from the supplied event details or the approved invitation copy below when text appears in the artwork.",
+          "- Never guess at spelling. If you are not certain about a word, omit it.",
+          "- Do not create stylized misspellings or visual puns unless they are explicitly provided by the user.",
+          "- If the venue or category implies a standard real word such as cinema, theater, party, birthday, or celebration, spell it normally unless the user gave a different exact spelling.",
+          "- For movie themes, if you use the word Cinema, spell it exactly as Cinema.",
+          "- Prefer one short headline, one short supporting line, and one short call to action at most.",
+          "- Keep all important text in the upper and middle portions of the card.",
+          "- Keep essential text out of the bottom action-button zone.",
+          "- Do not place paragraphs, captions, labels, taglines, decorative badges, or key event details in the bottom button area.",
+          "- Avoid crowded text blocks near the bottom edge of the invitation.",
+        ]),
     "- Let the background and artwork continue naturally behind the bottom buttons as full-bleed art.",
     "- Do not create a visible footer band, dark strip, boxed zone, or artificial empty shelf at the bottom.",
     "- Do not place important words directly above, behind, or between the bottom buttons.",
-    "- No tiny footer copy.",
-    "- Keep the total amount of visible text low enough that the composition still feels spacious on a mobile card.",
+    ...(pageSurface ? [] : ["- No tiny footer copy."]),
+    ...(pageSurface
+      ? []
+      : ["- Keep the total amount of visible text low enough that the composition still feels spacious on a mobile card."]),
     "- Treat explicit user visual instructions as mandatory, not optional inspiration.",
     ...(realismRequested
       ? [
@@ -425,7 +459,7 @@ export function buildInvitationImagePrompt(
     line("Dress Code", event.dressCode),
     renderLinks(event.links),
     "",
-    renderApprovedInvitationCopy(liveCard),
+    ...(pageSurface ? [] : [renderApprovedInvitationCopy(liveCard)]),
     liveCard
       ? [
           "",

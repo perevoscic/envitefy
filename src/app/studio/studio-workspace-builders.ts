@@ -3,6 +3,7 @@ import {
   type StudioGenerateApiResponse,
   type StudioGenerateMode,
   type StudioGenerateRequest,
+  type StudioGenerateSurface,
 } from "@/lib/studio/types";
 import { EMPTY_POSITIONS } from "./studio-workspace-field-config";
 import type {
@@ -360,6 +361,7 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
 export function buildStudioRequest(
   details: EventDetails,
   mode: StudioGenerateMode,
+  surface: StudioGenerateSurface,
   editPrompt?: string,
   sourceImageDataUrl?: string,
 ): StudioGenerateRequest {
@@ -376,6 +378,7 @@ export function buildStudioRequest(
     "Preserve exact spelling from the event details. Double-check visible words. Keep important copy away from the bottom button area, but do not instruct the model to make that area visually empty or separated.";
   return {
     mode,
+    surface,
     event: {
       title: getDisplayTitle(details),
       category: details.category,
@@ -436,24 +439,67 @@ export function buildInvitationData(
 ): InvitationData {
   const liveCard = response.liveCard;
   const invitation = liveCard?.invitation || response.invitation;
+  return refreshLiveCardInvitationData(details, {
+    title: liveCard?.title || invitation?.title,
+    subtitle:
+      invitation?.subtitle || buildDescription(details) || pickFirst(details.theme, details.category),
+    description:
+      liveCard?.description ||
+      invitation?.openingLine ||
+      buildDescription(details) ||
+      "Celebrate together with a beautifully designed invitation.",
+    scheduleLine: invitation?.scheduleLine,
+    locationLine: invitation?.locationLine,
+    callToAction:
+      liveCard?.interactiveMetadata.ctaLabel ||
+      invitation?.callToAction ||
+      pickFirst(details.calloutText, "Tap for details and RSVP."),
+    socialCaption:
+      liveCard?.interactiveMetadata.shareNote ||
+      invitation?.socialCaption ||
+      liveCard?.description ||
+      invitation?.openingLine,
+    theme: liveCard
+      ? {
+          primaryColor: liveCard.palette.primary,
+          secondaryColor: liveCard.palette.secondary,
+          accentColor: liveCard.palette.accent,
+          themeStyle: liveCard.themeStyle,
+        }
+      : undefined,
+    interactiveMetadata: liveCard?.interactiveMetadata
+      ? {
+          rsvpMessage: liveCard.interactiveMetadata.rsvpMessage,
+          funFacts: liveCard.interactiveMetadata.funFacts,
+          ctaLabel: liveCard.interactiveMetadata.ctaLabel,
+          shareNote: liveCard.interactiveMetadata.shareNote,
+        }
+      : undefined,
+  });
+}
+
+export function refreshLiveCardInvitationData(
+  details: EventDetails,
+  previous?: Partial<InvitationData>,
+): InvitationData {
   const fallbackTheme = getThemeColors(details);
-  const title = liveCard?.title || invitation?.title || getDisplayTitle(details);
-  const subtitle =
-    invitation?.subtitle || buildDescription(details) || pickFirst(details.theme, details.category);
-  const scheduleLine =
-    invitation?.scheduleLine ||
-    `${formatDate(details.eventDate)}${details.startTime ? ` at ${details.startTime}` : ""}`;
-  const locationLine =
-    invitation?.locationLine || pickFirst(details.venueName, details.location, "Location TBD");
-  const callToAction =
-    liveCard?.interactiveMetadata.ctaLabel ||
-    invitation?.callToAction ||
-    pickFirst(details.calloutText, "Tap for details and RSVP.");
   const description =
-    liveCard?.description ||
-    invitation?.openingLine ||
     buildDescription(details) ||
+    clean(previous?.description) ||
     "Celebrate together with a beautifully designed invitation.";
+  const title = getDisplayTitle(details) || clean(previous?.title);
+  const subtitle =
+    buildDescription(details) ||
+    pickFirst(details.theme, details.category) ||
+    clean(previous?.subtitle);
+  const scheduleLine =
+    `${formatDate(details.eventDate)}${details.startTime ? ` at ${details.startTime}` : ""}` ||
+    clean(previous?.scheduleLine);
+  const locationLine =
+    pickFirst(details.venueName, details.location, "Location TBD") || clean(previous?.locationLine);
+  const callToAction =
+    clean(previous?.callToAction) || pickFirst(details.calloutText, "Tap for details and RSVP.");
+  const socialCaption = clean(previous?.socialCaption) || description;
 
   return {
     title,
@@ -462,21 +508,21 @@ export function buildInvitationData(
     scheduleLine,
     locationLine,
     callToAction,
-    socialCaption:
-      liveCard?.interactiveMetadata.shareNote || invitation?.socialCaption || description,
+    socialCaption,
+    heroTextMode: "overlay",
     theme: {
-      primaryColor: liveCard?.palette.primary || fallbackTheme.primaryColor,
-      secondaryColor: liveCard?.palette.secondary || fallbackTheme.primaryColor,
-      accentColor: liveCard?.palette.accent || fallbackTheme.accentColor,
-      themeStyle: liveCard?.themeStyle || "editorial gradient",
+      primaryColor: clean(previous?.theme?.primaryColor) || fallbackTheme.primaryColor,
+      secondaryColor: clean(previous?.theme?.secondaryColor) || fallbackTheme.primaryColor,
+      accentColor: clean(previous?.theme?.accentColor) || fallbackTheme.accentColor,
+      themeStyle: clean(previous?.theme?.themeStyle) || "editorial gradient",
     },
     interactiveMetadata: {
       rsvpMessage:
-        liveCard?.interactiveMetadata.rsvpMessage || "Reply to let the host know you're coming.",
-      funFacts: liveCard?.interactiveMetadata.funFacts || [],
-      ctaLabel: liveCard?.interactiveMetadata.ctaLabel || callToAction,
-      shareNote:
-        liveCard?.interactiveMetadata.shareNote || invitation?.socialCaption || description,
+        clean(previous?.interactiveMetadata?.rsvpMessage) ||
+        "Reply to let the host know you're coming.",
+      funFacts: previous?.interactiveMetadata?.funFacts || [],
+      ctaLabel: clean(previous?.interactiveMetadata?.ctaLabel) || callToAction,
+      shareNote: clean(previous?.interactiveMetadata?.shareNote) || socialCaption,
     },
     eventDetails: details,
   };
