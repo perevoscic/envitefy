@@ -40,3 +40,19 @@ test("middleware keeps Studio public without treating it as a marketing redirect
   assert.match(middleware, /if \(isStudioCardSharePath\(normalized\)\) return true;/);
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[\s\S]*"\/studio"/s);
 });
+
+test("middleware redirects disabled event builders to gymnastics", () => {
+  const middleware = readSource("src/middleware.ts");
+  const featureVisibility = readSource("src/config/feature-visibility.ts");
+
+  assert.match(middleware, /DISABLED_EVENT_ROUTE_PREFIXES/);
+  assert.match(middleware, /const matchesPathPrefix = \(pathname: string, prefix: string\) =>/);
+  assert.match(middleware, /normalizedPathname === "\/event\/new"/);
+  assert.match(
+    middleware,
+    /DISABLED_EVENT_ROUTE_PREFIXES\.some\(\(prefix\) =>\s*matchesPathPrefix\(normalizedPathname, prefix\)\s*\)/s
+  );
+  assert.match(middleware, /url\.pathname = "\/event\/gymnastics";/);
+  assert.match(featureVisibility, /href: "\/event\/weddings\/customize"/);
+  assert.match(featureVisibility, /href: "\/event\/birthdays\/customize"/);
+});

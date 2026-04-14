@@ -126,6 +126,9 @@ function formatCalendarSummary(dateStr: string | undefined, timeStr: string | un
   return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel;
 }
 
+const STUDIO_MOBILE_TOP_CHROME = "3rem + max(0.5rem, env(safe-area-inset-top, 0px)) + 0.75rem";
+const STUDIO_MOBILE_BOTTOM_CHROME = "max(0.75rem, env(safe-area-inset-bottom, 0px)) + 0.5rem";
+
 export default function StudioWorkspace() {
   const { status: sessionStatus } = useSession();
   const [step, setStep] = useState<StudioStep>("category");
@@ -143,6 +146,7 @@ export default function StudioWorkspace() {
   const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
   const [isLiveCardToolsDrawerOpen, setIsLiveCardToolsDrawerOpen] = useState(false);
+  const [isDesktopLiveCardViewport, setIsDesktopLiveCardViewport] = useState(false);
 
   const editingMediaItem = useMemo(
     () => (editingId ? (mediaList.find((item) => item.id === editingId) ?? null) : null),
@@ -178,6 +182,21 @@ export default function StudioWorkspace() {
         : null,
     [activePageRecord?.data?.eventDetails, activePageRecord?.data?.title],
   );
+  const studioLiveCardModalStyle = isDesktopLiveCardViewport
+    ? undefined
+    : {
+        paddingTop: `calc(${STUDIO_MOBILE_TOP_CHROME} + 0.25rem)`,
+        paddingBottom: `calc(${STUDIO_MOBILE_BOTTOM_CHROME})`,
+      };
+  const studioLiveCardFrameStyle = isDesktopLiveCardViewport
+    ? undefined
+    : {
+        maxHeight: `calc(100dvh - (${STUDIO_MOBILE_TOP_CHROME}) - (${STUDIO_MOBILE_BOTTOM_CHROME}))`,
+        width: `min(100%, calc((100dvh - (${STUDIO_MOBILE_TOP_CHROME}) - (${STUDIO_MOBILE_BOTTOM_CHROME})) * 9 / 16))`,
+      };
+  const studioLiveCardControlTop = isDesktopLiveCardViewport
+    ? undefined
+    : `calc(${STUDIO_MOBILE_TOP_CHROME} + 0.25rem)`;
 
   useEffect(() => {
     setEditPrompt("");
@@ -187,10 +206,26 @@ export default function StudioWorkspace() {
   useEffect(() => {
     if (!activePageRecord?.data) {
       setIsLiveCardToolsDrawerOpen(false);
+      setIsDesktopLiveCardViewport(false);
       return;
     }
     if (typeof window === "undefined") return;
-    setIsLiveCardToolsDrawerOpen(window.matchMedia("(min-width: 768px)").matches);
+
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const syncLiveCardViewport = () => {
+      const matches = mediaQuery.matches;
+      setIsDesktopLiveCardViewport(matches);
+      setIsLiveCardToolsDrawerOpen(matches);
+    };
+
+    syncLiveCardViewport();
+    const onChange = () => syncLiveCardViewport();
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", onChange);
+      return () => mediaQuery.removeEventListener("change", onChange);
+    }
+    mediaQuery.addListener(onChange);
+    return () => mediaQuery.removeListener(onChange);
   }, [activePageRecord?.id, activePageRecord?.data]);
 
   useEffect(() => {
@@ -272,6 +307,16 @@ export default function StudioWorkspace() {
     if (selectedImage?.id === id) {
       setSelectedImage((prev) => (prev ? { ...prev, ...patch } : prev));
     }
+  }
+
+  function getMediaPreviewUrl(item: MediaItem) {
+    return clean(item.url) || getFallbackThumbnail(item.details);
+  }
+
+  function handleMediaImageLoadError(item: MediaItem) {
+    const fallbackUrl = getFallbackThumbnail(item.details);
+    if (clean(item.url) === fallbackUrl) return;
+    patchMediaItem(item.id, { url: fallbackUrl });
   }
 
   function beginLiveCardDetailEdit(item: MediaItem) {
@@ -684,7 +729,7 @@ export default function StudioWorkspace() {
 
   return (
     <div className="min-h-screen bg-[#faf7ff] text-neutral-900 selection:bg-purple-200">
-      <header className="sticky top-0 z-40 border-b border-[#efe7f8] bg-[#faf7ff]">
+      <header className="sticky top-0 z-40 border-b border-[#efe7f8] bg-[#faf7ff] max-md:pt-3">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-center px-5 sm:h-[72px] sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: -12 }}
@@ -801,6 +846,7 @@ export default function StudioWorkspace() {
               sharingId={sharingId}
               copySuccess={copySuccess}
               deleteMedia={deleteMedia}
+              handleMediaImageLoadError={handleMediaImageLoadError}
             />
           ) : null}
           {step === "studio" ? (
@@ -820,70 +866,62 @@ export default function StudioWorkspace() {
                   Back to form
                 </button>
 
-                <div className={`${shellClass} space-y-8`}>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                        Idea
-                      </p>
-                    </div>
-                    <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
-                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                        {studioIdeaLabel}
-                      </label>
-                      <textarea
-                        placeholder={studioIdeaPlaceholder}
-                        className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
-                        value={details.theme}
-                        onChange={(event) =>
-                          setDetails((prev) => ({ ...prev, theme: event.target.value }))
-                        }
-                      />
-                      <p className="mt-2 text-xs text-neutral-500">
-                        Describe your invitation in your own words. We&apos;ll generate it for
-                        you.
-                      </p>
-                    </div>
+                <div className="space-y-6 lg:pt-[5.25rem]">
+                  <div className={`${shellClass} space-y-3`}>
+                    <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      {studioIdeaLabel}
+                    </label>
+                    <textarea
+                      placeholder={studioIdeaPlaceholder}
+                      className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
+                      value={details.theme}
+                      onChange={(event) =>
+                        setDetails((prev) => ({ ...prev, theme: event.target.value }))
+                      }
+                    />
+                    <p className="text-xs text-neutral-500">
+                      Describe your invitation in your own words. We&apos;ll generate it for you.
+                    </p>
                   </div>
-                </div>
 
-                <div className="space-y-4 border-t border-white/80 pt-2">
-                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                    Generate Media
-                  </h2>
-                  {isEditingLiveCard ? (
-                    <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
-                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                        Edit current image
-                      </label>
-                      <textarea
-                        placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
-                        className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
-                        value={editPrompt}
-                        onChange={(event) => setEditPrompt(event.target.value)}
-                      />
+                  <div className="space-y-4 border-t border-white/80 pt-2">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      Generate Media
+                    </h2>
+                    {isEditingLiveCard ? (
+                      <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
+                        <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                          Edit current image
+                        </label>
+                        <textarea
+                          placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
+                          className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
+                          value={editPrompt}
+                          onChange={(event) => setEditPrompt(event.target.value)}
+                        />
+                      </div>
+                    ) : null}
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => generateMedia("page")}
+                        disabled={isGenerating}
+                        className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(25,20,40,0.18)] transition-all hover:-translate-y-0.5 hover:bg-neutral-800 disabled:opacity-50"
+                      >
+                        <Layout className="h-5 w-5" />
+                        {isEditingLiveCard ? "Update Invitation" : "Create Live Card"}
+                        <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
+                      </button>
+
+                      <button
+                        onClick={() => generateMedia("image")}
+                        disabled={isGenerating}
+                        className="group flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[#e8e0f5] bg-white text-sm font-semibold text-neutral-900 shadow-[0_12px_30px_rgba(25,20,40,0.08)] transition-all hover:-translate-y-0.5 hover:bg-[#faf7ff] disabled:opacity-50"
+                      >
+                        <ImageIcon className="h-5 w-5" />
+                        Generate Image
+                        <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
+                      </button>
                     </div>
-                  ) : null}
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => generateMedia("page")}
-                      disabled={isGenerating}
-                      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(25,20,40,0.18)] transition-all hover:-translate-y-0.5 hover:bg-neutral-800 disabled:opacity-50"
-                    >
-                      <Layout className="h-5 w-5" />
-                      {isEditingLiveCard ? "Update Invitation" : "Create Live Card"}
-                      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
-                    </button>
-
-                    <button
-                      onClick={() => generateMedia("image")}
-                      disabled={isGenerating}
-                      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[#e8e0f5] bg-white text-sm font-semibold text-neutral-900 shadow-[0_12px_30px_rgba(25,20,40,0.08)] transition-all hover:-translate-y-0.5 hover:bg-[#faf7ff] disabled:opacity-50"
-                    >
-                      <ImageIcon className="h-5 w-5" />
-                      Generate Image
-                      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
-                    </button>
                   </div>
                 </div>
               </aside>
@@ -950,10 +988,11 @@ export default function StudioWorkspace() {
                           ) : (
                             <div className="relative h-full w-full">
                               <img
-                                src={item.url}
+                                src={getMediaPreviewUrl(item)}
                                 alt={item.theme}
                                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                                 referrerPolicy="no-referrer"
+                                onError={() => handleMediaImageLoadError(item)}
                               />
                             </div>
                           )}
@@ -1083,10 +1122,11 @@ export default function StudioWorkspace() {
 
               <div className="group relative flex w-full justify-center">
                 <img
-                  src={selectedImage.url}
+                  src={getMediaPreviewUrl(selectedImage)}
                   alt={selectedImage.theme}
                   className="max-h-[80vh] max-w-full rounded-2xl border border-white/20 object-contain shadow-2xl"
                   referrerPolicy="no-referrer"
+                  onError={() => handleMediaImageLoadError(selectedImage)}
                 />
                 <div className="absolute bottom-6 right-6 flex gap-3 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
@@ -1116,6 +1156,7 @@ export default function StudioWorkspace() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl md:p-12"
+            style={studioLiveCardModalStyle}
           >
             <button
               onClick={() => {
@@ -1134,7 +1175,8 @@ export default function StudioWorkspace() {
                 type="button"
                 aria-label="Open studio tools"
                 onClick={() => setIsLiveCardToolsDrawerOpen(true)}
-                className="fixed left-3 top-20 z-[115] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-white/25 md:hidden"
+                className="fixed right-3 z-[115] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-white/25 md:hidden"
+                style={studioLiveCardControlTop ? { top: studioLiveCardControlTop } : undefined}
               >
                 <PanelLeft className="h-6 w-6" />
               </button>
@@ -1161,11 +1203,11 @@ export default function StudioWorkspace() {
                     onClick={() => setIsLiveCardToolsDrawerOpen(false)}
                   />
                   <motion.aside
-                    initial={{ x: "-100%" }}
+                    initial={{ x: "100%" }}
                     animate={{ x: 0 }}
-                    exit={{ x: "-100%" }}
+                    exit={{ x: "100%" }}
                     transition={{ type: "tween", duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-                    className="absolute bottom-0 left-0 top-0 z-10 flex w-[min(22rem,88vw)] flex-col gap-3 overflow-y-auto border-r border-white/10 bg-neutral-950/97 p-4 pb-8 pt-14 shadow-2xl backdrop-blur-xl"
+                    className="absolute bottom-0 right-0 top-0 z-10 flex w-[min(22rem,88vw)] flex-col gap-3 overflow-y-auto border-l border-white/10 bg-neutral-950/97 p-4 pb-8 pt-14 shadow-2xl backdrop-blur-xl"
                   >
                     <div className="flex shrink-0 items-center justify-between border-b border-white/10 pb-3">
                       <p className="text-xs font-bold uppercase tracking-widest text-white/70">
@@ -1193,12 +1235,14 @@ export default function StudioWorkspace() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               className="relative w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-purple-500/20 aspect-[9/16]"
+              style={studioLiveCardFrameStyle}
             >
               <img
-                src={activePageRecord.url}
+                src={getMediaPreviewUrl(activePageRecord)}
                 alt={activePageRecord.theme}
                 className="absolute inset-0 h-full w-full object-cover"
                 referrerPolicy="no-referrer"
+                onError={() => handleMediaImageLoadError(activePageRecord)}
               />
 
               <div className="pointer-events-none absolute inset-0 flex flex-col pt-8 pb-1 px-3 max-md:px-1 max-md:pt-6 max-md:pb-0.5 sm:px-4 md:p-8 md:pb-2">

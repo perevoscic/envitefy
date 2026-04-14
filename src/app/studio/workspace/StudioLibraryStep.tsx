@@ -37,6 +37,7 @@ export type StudioLibraryStepProps = {
   sharingId: string | null;
   copySuccess: boolean;
   deleteMedia: (id: string) => void;
+  handleMediaImageLoadError: (item: MediaItem) => void;
 };
 
 export function StudioLibraryStep({
@@ -53,6 +54,7 @@ export function StudioLibraryStep({
   sharingId,
   copySuccess,
   deleteMedia,
+  handleMediaImageLoadError,
 }: StudioLibraryStepProps) {
   const mediaCardClass = studioWorkspaceMediaCardClass;
   const mediaBadgeClass = studioWorkspaceMediaBadgeClass;
@@ -131,9 +133,11 @@ export function StudioLibraryStep({
                         ) : (
                           <>
                             <img
-                              src={item.url}
+                              src={item.url || getFallbackThumbnail(item.details)}
                               alt={item.theme}
                               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                              referrerPolicy="no-referrer"
+                              onError={() => handleMediaImageLoadError(item)}
                             />
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(18,14,28,0.12),rgba(18,14,28,0.54))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
                               {item.type === "page" ? (

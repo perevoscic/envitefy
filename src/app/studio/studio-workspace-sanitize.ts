@@ -29,6 +29,36 @@ import {
 
 export { STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
 
+function isLoopbackHostname(hostname: string): boolean {
+  const normalized = hostname.trim().toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "0.0.0.0" ||
+    normalized === "::1" ||
+    normalized === "[::1]"
+  );
+}
+
+export function normalizeStudioLibraryImageUrl(value: unknown): string | undefined {
+  const raw = readNullableString(value);
+  if (!raw) return undefined;
+  if (raw.startsWith("blob:")) return undefined;
+  if (raw.startsWith("/") || raw.startsWith("data:")) return raw;
+  if (!/^https?:\/\//i.test(raw)) return raw;
+
+  try {
+    const parsed = new URL(raw);
+    if (isLoopbackHostname(parsed.hostname)) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch {
+    return raw;
+  }
+
+  return raw;
+}
+
 export function createInitialDetails(): EventDetails {
   return {
     category: "Birthday",
@@ -310,7 +340,7 @@ export function sanitizeMediaItem(value: unknown): MediaItem | null {
   return {
     id,
     type,
-    url: readNullableString(value.url) || undefined,
+    url: normalizeStudioLibraryImageUrl(value.url),
     data: sanitizeInvitationData(value.data, details),
     errorMessage: readNullableString(value.errorMessage) || undefined,
     publishedEventId: readNullableString(value.publishedEventId) || undefined,

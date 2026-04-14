@@ -30,6 +30,9 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   assert.match(source, /If an important visual detail is missing, keep it generic and restrained instead of inventing specifics\./);
   assert.match(source, /Never fabricate names, phone numbers, addresses, schedules, or event copy\./);
   assert.match(source, /const categoryGuardrails = buildStudioCategoryGuardrails\(details\);/);
+  assert.match(source, /category:\s*details\.category,/);
+  assert.match(source, /ageOrMilestone:\s*getAgeOrMilestone\(details\)\s*\|\|\s*null,/);
+  assert.match(source, /userIdea:\s*clean\(details\.theme\)\s*\|\|\s*null,/);
   assert.match(
     source,
     /style:\s*\[visualDirection, categoryGuardrails, refinement, studioGuardrails\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
@@ -53,6 +56,10 @@ test("studio prompt sources keep the bottom overlay zone text-safe without reser
     promptSource,
     /Do not create a visible footer band, dark strip, boxed zone, or artificial empty shelf at the bottom\./,
   );
+  assert.match(promptSource, /Core creative inputs:/);
+  assert.match(promptSource, /Treat the user's idea as the main creative concept when one is provided\./);
+  assert.match(promptSource, /line\("Age or Milestone", event\.ageOrMilestone\)/);
+  assert.match(promptSource, /line\("User Idea", event\.userIdea\)/);
   assert.doesNotMatch(
     builderSource,
     /Keep the lower button area visually clear and avoid placing important copy near the bottom of the card\./,

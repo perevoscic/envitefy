@@ -766,7 +766,7 @@ export function useLeftSidebarController({
   const triggerCreateEvent = useCallback(() => {
     collapseSidebarOnTouch();
     try {
-      router.push("/event/new");
+      router.push("/event/gymnastics");
     } catch {}
   }, [collapseSidebarOnTouch, router]);
 

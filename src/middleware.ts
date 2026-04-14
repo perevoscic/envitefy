@@ -2,6 +2,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { DISABLED_EVENT_ROUTE_PREFIXES } from "@/config/feature-visibility";
 import { hasProductScope } from "@/lib/product-scopes";
 
 const PUBLIC_UNAUTH_PATHS = new Set([
@@ -62,6 +63,9 @@ const isAllowedForUnauth = (pathname: string) => {
   if (isStudioCardSharePath(normalized)) return true;
   return false;
 };
+
+const matchesPathPrefix = (pathname: string, prefix: string) =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 const getSessionCookie = (req: NextRequest) =>
   req.cookies.get("__Secure-next-auth.session-token") ??
@@ -154,6 +158,18 @@ export async function middleware(req: NextRequest) {
   ) {
     const url = req.nextUrl.clone();
     url.pathname = "/gymnastics";
+    url.search = "";
+    return redirectWithMarker(url, 308);
+  }
+
+  if (
+    normalizedPathname === "/event/new" ||
+    DISABLED_EVENT_ROUTE_PREFIXES.some((prefix) =>
+      matchesPathPrefix(normalizedPathname, prefix)
+    )
+  ) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/event/gymnastics";
     url.search = "";
     return redirectWithMarker(url, 308);
   }

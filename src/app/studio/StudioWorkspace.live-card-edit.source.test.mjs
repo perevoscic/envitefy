@@ -42,6 +42,13 @@ test("live card modal uses in-context image prompt panel; studio step keeps form
   assert.doesNotMatch(source, /openLiveCardEditor\(activePageRecord\)/);
   assert.match(source, /openLiveCardImageEdit=\{openLiveCardImageEdit\}/);
   assert.match(source, /openLiveCardTextEdit=\{openLiveCardTextEdit\}/);
+  assert.match(source, /const STUDIO_MOBILE_TOP_CHROME = /);
+  assert.match(source, /style=\{studioLiveCardModalStyle\}/);
+  assert.match(source, /style=\{studioLiveCardFrameStyle\}/);
+  assert.match(source, /className="fixed right-3 z-\[115\]/);
+  assert.match(source, /style=\{studioLiveCardControlTop \? \{ top: studioLiveCardControlTop \} : undefined\}/);
+  assert.match(source, /initial=\{\{ x: "100%" \}\}/);
+  assert.match(source, /className="absolute bottom-0 right-0 top-0 z-10 flex w-\[min\(22rem,88vw\)\][\s\S]*border-l border-white\/10/);
   assert.match(source, /Edit current image/);
   assert.doesNotMatch(source, /Edit live card details/);
 });

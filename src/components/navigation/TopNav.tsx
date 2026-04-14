@@ -41,7 +41,7 @@ export const NAV_LINKS: Array<{
   { label: "Home", href: "/", match: (path) => path === "/" },
   {
     label: "New Event",
-    href: "/event/new",
+    href: "/event/gymnastics",
     match: (path) =>
       path.startsWith("/event") && !path.startsWith("/event/new"),
   },

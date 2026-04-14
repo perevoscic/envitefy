@@ -131,7 +131,7 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Create Event",
-    href: "/event/new", // Fallback
+    href: "/event/gymnastics",
     isAction: true,
     match: (path) => isCreateEventRoute(path),
     icon: (

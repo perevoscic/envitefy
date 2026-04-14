@@ -615,7 +615,7 @@ export default function Dashboard({
 
   const openCreateEvent = useCallback(() => {
     try {
-      router.push("/event/new");
+      router.push("/event/gymnastics");
     } catch {}
   }, [router]);
 

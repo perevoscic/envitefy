@@ -2,9 +2,12 @@ export type StudioGenerateMode = "text" | "image" | "both";
 
 export type StudioEventDetails = {
   title: string;
+  category?: string | null;
   occasion?: string | null;
   hostName?: string | null;
   honoreeName?: string | null;
+  ageOrMilestone?: string | null;
+  userIdea?: string | null;
   description?: string | null;
   date?: string | null;
   startTime?: string | null;
@@ -159,9 +162,12 @@ function normalizeEvent(value: unknown): StudioEventDetails | null {
   if (!title) return null;
   return {
     title,
+    category: safeNullableString((value as any).category),
     occasion: safeNullableString((value as any).occasion),
     hostName: safeNullableString((value as any).hostName),
     honoreeName: safeNullableString((value as any).honoreeName),
+    ageOrMilestone: safeNullableString((value as any).ageOrMilestone),
+    userIdea: safeNullableString((value as any).userIdea),
     description: safeNullableString((value as any).description),
     date: safeNullableString((value as any).date),
     startTime: safeNullableString((value as any).startTime),
