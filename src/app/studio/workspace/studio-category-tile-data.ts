@@ -105,7 +105,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     imagePath:
       "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=2073&auto=format&fit=crop",
     themeColor: "#7D77C5",
-    sizeVariant: "horizontal",
+    sizeVariant: "wide",
     overlayStrength: "light",
     textTone: "dark",
     imagePositionClassName: "object-center",
@@ -119,7 +119,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     imagePath:
       "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=2069&auto=format&fit=crop",
     themeColor: "#8B5CF6",
-    sizeVariant: "panorama",
+    sizeVariant: "wide",
     overlayStrength: "dark",
     textTone: "light",
     surfaceVariant: "dark",
