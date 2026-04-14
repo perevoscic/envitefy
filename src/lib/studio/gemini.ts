@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { absoluteUrl } from "@/lib/absolute-url";
 import {
   normalizeLiveCardMetadata,
   type StudioGenerationError,
@@ -248,10 +249,11 @@ async function resolveInlineImageSource(
     };
   }
 
-  if (!/^https?:\/\//i.test(trimmed)) return null;
+  const resolvedUrl = trimmed.startsWith("/") ? await absoluteUrl(trimmed) : trimmed;
+  if (!/^https?:\/\//i.test(resolvedUrl)) return null;
 
   try {
-    const response = await fetch(trimmed);
+    const response = await fetch(resolvedUrl);
     if (!response.ok) return null;
     const mimeTypeHeader = safeString(response.headers.get("content-type"));
     const mimeType = mimeTypeHeader.split(";")[0]?.trim() || "image/png";

@@ -2,22 +2,21 @@
 
 import { motion } from "framer-motion";
 import type { Dispatch, SetStateAction } from "react";
-import { CATEGORIES } from "../studio-workspace-field-config";
 import type { StudioStep } from "../studio-types";
 import type { EventDetails } from "../studio-workspace-types";
+import { StudioCategoryGrid } from "./StudioCategoryGrid";
+import { STUDIO_CATEGORY_TILES } from "./studio-category-tile-data";
 
 type StudioCategoryStepProps = {
   details: EventDetails;
   setDetails: Dispatch<SetStateAction<EventDetails>>;
   setStep: (step: StudioStep) => void;
-  shellClass: string;
 };
 
 export function StudioCategoryStep({
   details,
   setDetails,
   setStep,
-  shellClass,
 }: StudioCategoryStepProps) {
   return (
     <motion.div
@@ -25,59 +24,42 @@ export function StudioCategoryStep({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="mx-auto max-w-[1120px]"
+      className="mx-auto w-full max-w-[1380px] px-2 sm:px-4 lg:px-6"
     >
-      <div className={`${shellClass} relative overflow-hidden`}>
-        <div className="absolute left-8 top-6 h-32 w-32 rounded-full bg-[#e8ddff]/50 blur-3xl" />
-        <div className="absolute bottom-0 right-10 h-28 w-28 rounded-full bg-[#f3ecff] blur-3xl" />
-        <div className="relative space-y-10">
-          <div className="mx-auto max-w-2xl space-y-4 text-center">
-            <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-5xl">
+      <div className="relative overflow-visible">
+        <div className="absolute left-6 top-8 h-40 w-40 rounded-full bg-[#eee4ff]/65 blur-3xl" />
+        <div className="absolute right-8 top-10 h-32 w-32 rounded-full bg-[#f3ebff]/85 blur-3xl" />
+        <div className="relative">
+          <header className="mb-12 space-y-4 text-center md:mb-16">
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8b74c8]/80"
+            >
+              Choose Your Invite Type
+            </motion.p>
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="font-[var(--font-playfair)] text-4xl font-medium tracking-[-0.04em] text-gray-900 md:text-6xl"
+            >
               What are we celebrating?
-            </h2>
-          </div>
+            </motion.h2>
+          </header>
 
-          <div className="space-y-6">
-            <div className="mx-auto grid max-w-5xl grid-cols-2 gap-4 sm:grid-cols-4">
-              {CATEGORIES.map((category) => {
-                const Icon = category.icon;
-                const active = details.category === category.name;
-                return (
-                  <motion.button
-                    key={category.name}
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    whileTap={{ scale: 0.99 }}
-                    onClick={() => {
-                      setDetails((prev) => ({
-                        ...prev,
-                        category: category.name,
-                      }));
-                      setStep("form");
-                    }}
-                    className={`flex min-h-[168px] flex-col items-center justify-center gap-4 rounded-2xl border px-4 py-6 text-center transition-all ${
-                      active
-                        ? "border-[#8f6fe8] bg-white shadow-[0_16px_40px_-20px_rgba(88,55,140,0.25)]"
-                        : "border-neutral-200/90 bg-white/95 shadow-sm hover:border-neutral-300 hover:shadow-md"
-                    }`}
-                  >
-                    <div
-                      className={`flex size-14 shrink-0 items-center justify-center rounded-2xl ${
-                        active ? "bg-[#8f6fe8] text-white" : "bg-transparent text-neutral-600"
-                      }`}
-                    >
-                      <Icon className="h-7 w-7" strokeWidth={active ? 2.25 : 1.75} />
-                    </div>
-                    <p
-                      className={`text-xs font-bold uppercase leading-snug tracking-[0.06em] sm:text-[13px] ${
-                        active ? "text-[#7d5ed8]" : "text-neutral-800"
-                      }`}
-                    >
-                      {category.name}
-                    </p>
-                  </motion.button>
-                );
-              })}
-            </div>
+          <div className="space-y-10">
+            <StudioCategoryGrid
+              categories={STUDIO_CATEGORY_TILES}
+              selectedCategory={details.category}
+              onSelect={(categoryName) => {
+                setDetails((prev) => ({
+                  ...prev,
+                  category: categoryName,
+                }));
+                setStep("form");
+              }}
+            />
           </div>
         </div>
       </div>

@@ -15,10 +15,16 @@ function uniqueWarnings(list: string[]): string[] {
   return Array.from(new Set(list.map((item) => item.trim()).filter(Boolean)));
 }
 
+function isPosterFirstBirthdayOrWedding(category: string | null | undefined): boolean {
+  const normalized = category?.trim().toLowerCase();
+  return normalized === "birthday" || normalized === "wedding";
+}
+
 export async function generateStudioInvitation(
   request: StudioGenerateRequest,
 ): Promise<StudioGenerateResponse> {
   const mode = request.mode || "both";
+  const surface = request.surface || (mode === "both" || mode === "text" ? "page" : "image");
   const warnings: string[] = [];
   let liveCard: StudioLiveCardMetadata | null = null;
   let invitation: StudioGenerateResponse["invitation"] = null;
@@ -44,31 +50,42 @@ export async function generateStudioInvitation(
   if (wantsImage) {
     const requestedRefCount = request.event.referenceImageUrls?.length ?? 0;
     const referenceImages = await resolveStudioReferenceImages(request.event.referenceImageUrls);
-    if (requestedRefCount > 0 && referenceImages.length === 0) {
-      warnings.push(
-        "Invite photos could not be loaded for generation (invalid or disallowed URLs). The artwork was created without them.",
-      );
-    }
-    const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard, {
-      editingExistingImage: Boolean(request.imageEdit?.sourceImageDataUrl),
-      referenceImageCount: referenceImages.length,
-    });
-    const imageResult = request.imageEdit?.sourceImageDataUrl
-      ? await editInvitationImageWithGemini(
-          imagePrompt,
-          request.imageEdit.sourceImageDataUrl,
-          referenceImages.length > 0 ? referenceImages : undefined,
-        )
-      : await generateInvitationImageWithGemini(
-          imagePrompt,
-          referenceImages.length > 0 ? referenceImages : undefined,
-        );
-    warnings.push(...imageResult.warnings);
-    if (imageResult.ok) {
-      imageDataUrl = imageResult.imageDataUrl;
+    if (requestedRefCount > 0 && referenceImages.length !== requestedRefCount) {
+      errors.image = {
+        code: "reference_images_unavailable",
+        message:
+          "The invite was not generated because attached reference photos could not be used. Re-upload the photos and try again.",
+        retryable: true,
+        provider: "gemini",
+        status: 400,
+      };
     } else {
-      errors.image = imageResult.error;
-      warnings.push("Invitation image generation failed.");
+      const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard, {
+        surface,
+        editingExistingImage: Boolean(request.imageEdit?.sourceImageDataUrl),
+        referenceImageCount: referenceImages.length,
+        posterTextInImage:
+          mode === "both" &&
+          surface === "image" &&
+          isPosterFirstBirthdayOrWedding(request.event.category),
+      });
+      const imageResult = request.imageEdit?.sourceImageDataUrl
+        ? await editInvitationImageWithGemini(
+            imagePrompt,
+            request.imageEdit.sourceImageDataUrl,
+            referenceImages.length > 0 ? referenceImages : undefined,
+          )
+        : await generateInvitationImageWithGemini(
+            imagePrompt,
+            referenceImages.length > 0 ? referenceImages : undefined,
+          );
+      warnings.push(...imageResult.warnings);
+      if (imageResult.ok) {
+        imageDataUrl = imageResult.imageDataUrl;
+      } else {
+        errors.image = imageResult.error;
+        warnings.push("Invitation image generation failed.");
+      }
     }
   }
 

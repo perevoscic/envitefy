@@ -100,6 +100,7 @@ export type InvitationData = {
   locationLine: string;
   callToAction: string;
   socialCaption: string;
+  heroTextMode?: "image" | "overlay";
   theme: {
     primaryColor: string;
     secondaryColor: string;
@@ -157,4 +158,30 @@ export type SharedFieldConfig = {
 export type CategoryCard = {
   name: InviteCategory;
   icon: LucideIcon;
+};
+
+export type StudioCategoryTileSizeVariant =
+  | "standard"
+  | "horizontal"
+  | "wide"
+  | "feature"
+  | "panorama";
+
+export type StudioCategoryTileOverlayStrength = "light" | "medium" | "dark";
+
+export type StudioCategoryTileTextTone = "dark" | "light";
+
+export type StudioCategoryTileDefinition = {
+  name: InviteCategory;
+  icon: LucideIcon;
+  description: string;
+  badge: string;
+  imagePath: string;
+  themeColor: string;
+  sizeVariant: StudioCategoryTileSizeVariant;
+  overlayStrength: StudioCategoryTileOverlayStrength;
+  textTone: StudioCategoryTileTextTone;
+  surfaceVariant?: "default" | "dark";
+  imagePositionClassName?: string;
+  selectedLabel?: string;
 };

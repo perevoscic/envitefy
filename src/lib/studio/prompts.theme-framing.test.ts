@@ -51,7 +51,10 @@ test("studio invitation image prompt keeps custom themes invitation-ready", () =
   );
 
   assert.match(prompt, /Theme words must be interpreted through the selected event type/);
-  assert.match(prompt, /Build the artwork around the selected event type first, then express the user's idea through that celebration type\./);
+  assert.match(
+    prompt,
+    /Build the artwork around the selected event type first, then express the user's idea through that celebration type\./,
+  );
   assert.match(prompt, /Treat the user's idea as the main visual concept when one is provided\./);
   assert.match(prompt, /Keep the final concept invitation-ready and celebration-oriented/);
   assert.match(prompt, /themeStyle should describe the invitation-ready version of the concept/);
@@ -79,11 +82,202 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   assert.match(prompt, /User Idea: modern race car/);
   assert.match(prompt, /Age or Milestone: 9/);
   assert.match(prompt, /Keep essential text out of the bottom action-button zone\./);
-  assert.match(prompt, /Let the background and artwork continue naturally behind the bottom buttons as full-bleed art\./);
+  assert.match(
+    prompt,
+    /Let the background and artwork continue naturally behind the bottom buttons as full-bleed art\./,
+  );
   assert.match(
     prompt,
     /Do not create a visible footer band, dark strip, boxed zone, or artificial empty shelf at the bottom\./,
   );
   assert.doesNotMatch(prompt, /Reserve roughly the bottom 28-30% of the card/);
   assert.doesNotMatch(prompt, /The lower button area should be visually quiet/);
+});
+
+test("page live-card background prompts forbid visible raster text and preserve overlay space", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Ava's Garden Party",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Ava",
+      links: [],
+    },
+    undefined,
+    null,
+    { surface: "page" },
+  );
+
+  assert.match(prompt, /live-card background only/);
+  assert.match(
+    prompt,
+    /Do not add visible event wording, letters, numbers, captions, logos, monograms, or decorative type/,
+  );
+  assert.match(
+    prompt,
+    /Visible text is forbidden in the final raster for page\/live-card backgrounds\./,
+  );
+  assert.match(
+    prompt,
+    /Preserve clean negative space and readable contrast through the upper and middle zones/,
+  );
+  assert.doesNotMatch(prompt, /Approved invitation copy to use verbatim/);
+});
+
+test("page live-card image edit prompts preserve baked-in text and logos", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Ava's Garden Party",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Ava",
+      links: [],
+    },
+    undefined,
+    null,
+    { surface: "page", editingExistingImage: true },
+  );
+
+  assert.match(prompt, /Edit the provided invitation artwork image\./);
+  assert.match(prompt, /Preserve every character of existing visible text/);
+  assert.match(prompt, /Apply the edit mainly to illustrated or photographic elements/);
+  assert.match(prompt, /Treat existing raster typography and signage as locked/);
+  assert.doesNotMatch(
+    prompt,
+    /Visible text is forbidden in the final raster for page\/live-card backgrounds\./,
+  );
+});
+
+test("poster-first birthday live-card image prompts allow cinematic raster text, exact spelling, and event year", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Ava After Dark",
+      category: "Birthday",
+      occasion: "Birthday",
+      eventYear: "2030",
+      honoreeName: "Ava",
+      venueName: "Moonlight Hall",
+      userIdea: "cinematic garden party",
+      links: [],
+    },
+    {
+      style:
+        "Highest-priority visual direction from the user: cinematic garden party. Treat the user's words as the theme of the invitation.",
+    },
+    {
+      title: "Ava After Dark",
+      description: "Golden-hour rooftop birthday invitation.",
+      palette: {
+        primary: "#101828",
+        secondary: "#f5d0fe",
+        accent: "#f59e0b",
+      },
+      themeStyle: "cinematic garden",
+      interactiveMetadata: {
+        rsvpMessage: "Reply yes to celebrate with Ava.",
+        funFacts: ["Sunset cocktails"],
+        ctaLabel: "RSVP Tonight",
+        shareNote: "Celebrate Ava under the city lights.",
+      },
+      invitation: {
+        title: "Ava After Dark",
+        subtitle: "Birthday in Bloom",
+        openingLine: "Meet us under the lights.",
+        scheduleLine: "May 10, 2030 at 7:00 PM",
+        locationLine: "Moonlight Hall",
+        detailsLine: "Cocktail attire",
+        callToAction: "RSVP Tonight",
+        socialCaption: "Celebrate Ava under the city lights.",
+        hashtags: ["#AvaAfterDark"],
+      },
+    },
+    { surface: "image", posterTextInImage: true, referenceImageCount: 2 },
+  );
+
+  assert.match(prompt, /first render of a live invitation card for Birthday or Wedding/);
+  assert.match(prompt, /Bake the invitation copy into the raster like cinematic poster art/);
+  assert.match(
+    prompt,
+    /When uploaded reference photo\(s\) are present, build the poster around those exact photo\(s\)/,
+  );
+  assert.match(
+    prompt,
+    /If Event Year is provided, show that exact year in the poster copy or hierarchy/,
+  );
+  assert.match(
+    prompt,
+    /Preserve the exact supplied spelling of names, venue words, and key event terms/,
+  );
+  assert.match(
+    prompt,
+    /Keep the visible copy short and cinematic with a clear invitation\/poster hierarchy/,
+  );
+  assert.match(
+    prompt,
+    /The finished image must read first as a professional hosted event invitation, not merely a cinematic still, venue ad, mascot portrait, or mood board/,
+  );
+  assert.match(
+    prompt,
+    /Make the design unmistakably event-oriented and celebratory for the selected occasion/,
+  );
+  assert.match(
+    prompt,
+    /If the concept uses a theater, cinema, screening, or movie-party setting, keep the staging physically correct: seats and audience face the screen, sightlines make sense, and screen-to-seat geometry is believable/,
+  );
+  assert.match(
+    prompt,
+    /Never show theater chairs or audience rows facing away from the screen or arranged in impossible directions relative to the screen/,
+  );
+  assert.match(
+    prompt,
+    /Do not invent marquee text, venue branding, logos, signage, or event facts that are not explicitly supported by the supplied details, approved invitation copy, or source image/,
+  );
+  assert.match(prompt, /Keep the lower portion behind them free of visible copy/);
+  assert.match(
+    prompt,
+    /No words, dates, venue lines, captions, or taglines may appear behind the bottom buttons/,
+  );
+  assert.match(
+    prompt,
+    /Never print phrases such as action buttons, button row, safe area, safe band, or any other instruction text in the artwork/,
+  );
+  assert.doesNotMatch(prompt, /text-free safe band/i);
+  assert.match(prompt, /Approved invitation copy to use verbatim if text appears in the artwork/);
+  assert.match(prompt, /Event Year: 2030/);
+});
+
+test("birthday and wedding live-card text prompts require event year and poster-like copy", () => {
+  const prompt = buildLiveCardPrompt(
+    {
+      title: "Ava After Dark",
+      category: "Birthday",
+      occasion: "Birthday",
+      eventYear: "2030",
+      honoreeName: "Ava",
+      venueName: "Moonlight Hall",
+      userIdea: "cinematic garden party",
+      links: [],
+    },
+    {
+      style:
+        "Highest-priority visual direction from the user: cinematic garden party. Treat the user's words as the theme of the invitation.",
+    },
+  );
+
+  assert.match(prompt, /If Event Year is provided, use that exact year in the copy/);
+  assert.match(prompt, /write short cinematic invitation copy with a poster-like hierarchy/);
+  assert.match(prompt, /Treat the user's prompt\/theme as the dominant art direction/);
+  assert.match(
+    prompt,
+    /Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy/,
+  );
+  assert.match(
+    prompt,
+    /Make the result read first as a real celebration invite for this event type/,
+  );
+  assert.match(
+    prompt,
+    /Bring clear party \/ celebration \/ hosted-event energy into the concept and invitation copy/,
+  );
+  assert.match(prompt, /Event Year: 2030/);
 });

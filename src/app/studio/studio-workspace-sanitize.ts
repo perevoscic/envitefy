@@ -13,7 +13,7 @@ import {
   getThemeColors,
   pickFirst,
 } from "./studio-workspace-builders";
-import { EMPTY_POSITIONS, STUDIO_LIBRARY_LIMIT } from "./studio-workspace-field-config";
+import { EMPTY_POSITIONS } from "./studio-workspace-field-config";
 import type {
   EventDetails,
   InvitationData,
@@ -303,6 +303,10 @@ export function sanitizeInvitationData(
       readString(value.socialCaption) ||
       readString(value.description) ||
       buildDescription(fallbackDetails),
+    heroTextMode:
+      value.heroTextMode === "overlay" || value.heroTextMode === "image"
+        ? value.heroTextMode
+        : undefined,
     theme: {
       primaryColor: readString(theme?.primaryColor) || defaultTheme.primaryColor,
       secondaryColor: readString(theme?.secondaryColor) || defaultTheme.primaryColor,
@@ -358,10 +362,7 @@ export function sanitizeMediaItem(value: unknown): MediaItem | null {
 
 export function sanitizeMediaItems(value: unknown): MediaItem[] {
   if (!Array.isArray(value)) return [];
-  return value
-    .map(sanitizeMediaItem)
-    .filter((item): item is MediaItem => Boolean(item))
-    .slice(0, STUDIO_LIBRARY_LIMIT);
+  return value.map(sanitizeMediaItem).filter((item): item is MediaItem => Boolean(item));
 }
 
 /** True when url is a real asset, not the synthetic theme/SVG fallback used for empty previews. */

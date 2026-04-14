@@ -42,23 +42,56 @@ test("shared card page uses studio-aligned 9:16 shell layout (not full-viewport 
   assert.match(sharedPageSource, /aspect-\[9\/16\][\s\S]*rounded-\[3rem\]/);
   assert.match(sharedPageSource, /max-h-\[calc\(100dvh-5\.5rem\)\]/);
   assert.match(sharedPageSource, /object-cover/);
-  assert.match(sharedPageSource, /absolute bottom-32 left-6 right-6/);
+  assert.match(sharedPageSource, /LiveCardHeroTextOverlay/);
   assert.match(
     sharedPageSource,
-    /pointer-events-none absolute inset-0 flex flex-col p-8/,
+    /absolute bottom-32 left-3 right-3[\s\S]*md:left-6 md:right-6/,
   );
   assert.match(
     sharedPageSource,
-    /flex flex-nowrap items-end justify-center gap-4/,
+    /pointer-events-none absolute inset-0 flex flex-col[\s\S]*md:p-8/,
+  );
+  assert.match(
+    sharedPageSource,
+    /flex w-full min-w-0 flex-nowrap items-end justify-center gap-2[\s\S]*md:gap-4/,
   );
   assert.doesNotMatch(
     sharedPageSource,
     /<main[^>]*h-screen[\s\S]*h-\[100dvh\]/,
   );
-  assert.match(
-    sharedPageSource,
-    /<footer[^>]*shrink-0[\s\S]*Created by Envitefy Studio[\s\S]*<\/footer>/s,
-  );
   assert.match(mainWrapperSource, /isStudioCardShare/);
   assert.match(mainWrapperSource, /paddingTop = isStudioCardShare\s*\?\s*"0px"/);
+});
+
+test("shared card route and page preserve overlay hero text mode for live cards", () => {
+  const pageSource = readSource("src/app/card/[id]/page.tsx");
+  const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
+
+  assert.match(pageSource, /const heroTextMode =\s*data\.heroTextMode === "overlay" \|\| data\.heroTextMode === "image"/);
+  assert.match(pageSource, /heroTextMode,/);
+  assert.match(sharedPageSource, /heroTextMode\?: "image" \| "overlay"/);
+  assert.match(sharedPageSource, /<LiveCardHeroTextOverlay invitationData=\{invitationData\} \/>/);
+});
+
+test("poster-first shared cards keep floating controls without a dark footer strip", () => {
+  const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
+
+  assert.match(sharedPageSource, /function isPosterFirstHeroCard\(invitationData\?: InvitationData \| null\)/);
+  assert.match(sharedPageSource, /const posterFirstHeroCard = isPosterFirstHeroCard\(invitationData\);/);
+  assert.match(
+    sharedPageSource,
+    /border-white\/28 bg-white\/16 shadow-\[0_12px_28px_rgba\(0,0,0,0\.34\)/,
+  );
+  assert.match(
+    sharedPageSource,
+    /max-md:min-h-\[min\(14svh,4rem\)\] min-h-\[min\(8svh,2\.4rem\)\] md:min-h-\[min\(6svh,2rem\)\]/,
+  );
+  assert.match(
+    sharedPageSource,
+    /posterFirstHeroCard \? \(\s*<div className="shrink-0 px-4 py-3 text-center">/s,
+  );
+  assert.match(
+    sharedPageSource,
+    /<footer className="shrink-0 border-t border-white\/10 bg-neutral-950 px-4 py-3 text-center">/,
+  );
 });

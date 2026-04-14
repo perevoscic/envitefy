@@ -1,16 +1,5 @@
-import {
-  Baby,
-  Bus,
-  Cake,
-  CalendarHeart,
-  Heart,
-  Home,
-  WandSparkles,
-  Wine,
-} from "lucide-react";
 import { STUDIO_LIBRARY_STORAGE_KEY } from "./studio-constants";
 import type {
-  CategoryCard,
   EventDetails,
   FieldConfig,
   InviteCategory,
@@ -341,16 +330,6 @@ export const RSVP_FIELDS: Array<{
   { label: "RSVP Deadline", key: "rsvpDeadline", type: "date" },
 ];
 
-export const CATEGORIES: CategoryCard[] = [
-  { name: "Birthday", icon: Cake },
-  { name: "Field Trip/Day", icon: Bus },
-  { name: "Bridal Shower", icon: Wine },
-  { name: "Wedding", icon: Heart },
-  { name: "Housewarming", icon: Home },
-  { name: "Baby Shower", icon: Baby },
-  { name: "Anniversary", icon: CalendarHeart },
-  { name: "Custom Invite", icon: WandSparkles },
-];
 export const EMPTY_POSITIONS = {
   rsvp: { x: 0, y: 0 },
   location: { x: 0, y: 0 },

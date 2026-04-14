@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardRsvpOutboundHref,
@@ -51,7 +52,11 @@ type EventDetails = {
 
 type InvitationData = {
   title?: string;
+  subtitle?: string;
   description?: string;
+  scheduleLine?: string;
+  locationLine?: string;
+  heroTextMode?: "image" | "overlay";
   theme?: {
     themeStyle?: string;
   };
@@ -124,11 +129,27 @@ function accentClassForRsvpChoice(choice: LiveCardRsvpChoice["key"]) {
   return "border-amber-200 bg-amber-50 text-amber-700";
 }
 
+function isPosterFirstHeroCard(invitationData?: InvitationData | null) {
+  if (invitationData?.heroTextMode !== "image") return false;
+  const blob = [
+    readString(invitationData?.eventDetails?.category),
+    readString(invitationData?.eventDetails?.occasion),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return (
+    /\bbirthday\b/.test(blob) ||
+    /\bwedding|weddings|bridal|ceremony|reception|save the date|engagement\b/.test(blob)
+  );
+}
+
 export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("none");
   const [copySuccess, setCopySuccess] = useState(false);
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
+  const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
   const rsvpContact = readString(details?.rsvpContact);
   const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
   const effectiveShareUrl =
@@ -261,6 +282,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
               className="absolute inset-0 h-full w-full object-cover"
               referrerPolicy="no-referrer"
             />
+            <LiveCardHeroTextOverlay invitationData={invitationData} />
 
             <div className="pointer-events-none absolute inset-0 flex flex-col pt-8 pb-1 px-3 max-md:px-1 max-md:pt-6 max-md:pb-0 sm:px-4 md:p-8 md:pb-2">
               <div className="flex h-full min-h-0 flex-col justify-end">
@@ -476,13 +498,22 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                   </div>
                 ) : null}
 
-                {/* Push controls toward the bottom edge so they clear typical caption / RSVP copy in the artwork */}
                 <div
-                  className="pointer-events-none max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] shrink-0 md:min-h-[min(8svh,2.5rem)]"
+                  className={`pointer-events-none shrink-0 ${
+                    posterFirstHeroCard
+                      ? "max-md:min-h-[min(14svh,4rem)] min-h-[min(8svh,2.4rem)] md:min-h-[min(6svh,2rem)]"
+                      : "max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] md:min-h-[min(8svh,2.5rem)]"
+                  }`}
                   aria-hidden
                 />
 
-                <div className="pointer-events-none z-20 flex w-full min-w-0 flex-nowrap items-end justify-center gap-2 overflow-x-auto pb-[max(0.35rem,calc(env(safe-area-inset-bottom)+0.15rem))] [scrollbar-width:none] [-ms-overflow-style:none] max-sm:justify-between max-sm:gap-0.5 max-sm:px-0 px-1 md:gap-4 md:px-2 [&::-webkit-scrollbar]:hidden">
+                <div
+                  className={`pointer-events-none z-20 flex w-full min-w-0 flex-nowrap items-end justify-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] max-sm:justify-between max-sm:gap-0.5 max-sm:px-0 px-1 md:gap-4 md:px-2 [&::-webkit-scrollbar]:hidden ${
+                    posterFirstHeroCard
+                      ? "pb-[max(0.45rem,calc(env(safe-area-inset-bottom)+0.2rem))]"
+                      : "pb-[max(0.35rem,calc(env(safe-area-inset-bottom)+0.15rem))]"
+                  }`}
+                >
                   {buttonConfigs
                     .filter((button) => button.visible)
                     .map((button) => {
@@ -505,9 +536,13 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
                           >
                             <div
                               className={`rounded-full border p-2 backdrop-blur-md transition-all duration-200 md:p-3 ${
-                                isPressed
-                                  ? "translate-y-0.5 border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
-                                  : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] group-hover:-translate-y-0.5 group-hover:border-white/45 group-hover:bg-white/22"
+                                posterFirstHeroCard
+                                  ? isPressed
+                                    ? "translate-y-0.5 border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
+                                    : "border-white/28 bg-white/16 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] group-hover:-translate-y-0.5 group-hover:border-white/42 group-hover:bg-white/24"
+                                  : isPressed
+                                    ? "translate-y-0.5 border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
+                                    : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] group-hover:-translate-y-0.5 group-hover:border-white/45 group-hover:bg-white/22"
                               }`}
                             >
                               <Icon
@@ -534,14 +569,25 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         </div>
       </main>
 
-      <footer className="shrink-0 border-t border-white/10 bg-neutral-950 px-4 py-3 text-center">
-        <Link
-          href="/studio"
-          className="text-[10px] font-medium uppercase tracking-[0.24em] text-white/55 transition hover:text-white/80"
-        >
-          Created by Envitefy Studio
-        </Link>
-      </footer>
+      {posterFirstHeroCard ? (
+        <div className="shrink-0 px-4 py-3 text-center">
+          <Link
+            href="/studio"
+            className="inline-flex rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.24em] text-white/70 backdrop-blur-md transition hover:border-white/22 hover:bg-white/12 hover:text-white/88"
+          >
+            Created by Envitefy Studio
+          </Link>
+        </div>
+      ) : (
+        <footer className="shrink-0 border-t border-white/10 bg-neutral-950 px-4 py-3 text-center">
+          <Link
+            href="/studio"
+            className="text-[10px] font-medium uppercase tracking-[0.24em] text-white/55 transition hover:text-white/80"
+          >
+            Created by Envitefy Studio
+          </Link>
+        </footer>
+      )}
     </div>
   );
 }

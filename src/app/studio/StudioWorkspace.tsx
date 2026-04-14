@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   ClipboardList,
   Download,
@@ -20,12 +21,12 @@ import {
   Phone,
   Share2,
   Trash2,
-  Type,
   WandSparkles,
   X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { type TouchEvent as ReactTouchEvent, useEffect, useMemo, useRef, useState } from "react";
+import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardRsvpOutboundHref,
@@ -34,7 +35,10 @@ import {
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
-import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
+import {
+  formatTimeLabelEn,
+  formatWeekdayMonthDayOrdinalEn,
+} from "@/utils/format-month-day-ordinal";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import type { StudioStep } from "./studio-types";
 import { requestStudioGeneration } from "./studio-workspace-api";
@@ -54,7 +58,9 @@ import {
   hasRegistryContent,
   inferBirthdayGenderFromName,
   inputValue,
+  isPosterFirstLiveCardCategory,
   pickFirst,
+  resolveStudioGenerationSurface,
 } from "./studio-workspace-builders";
 import {
   CATEGORY_FIELDS,
@@ -100,6 +106,35 @@ async function persistGuestImageUrlsForPublish(details: EventDetails): Promise<E
 }
 
 /** Upload data/blob URLs so library sync stays under remote payload limits and thumbnails work across devices. */
+/**
+ * Staged live-card / full-image edits: `previewStudioImageEdit` uploads the generated bitmap
+ * (see `persistStudioLibraryImageUrl`) and stores the returned URL here only — `mediaList` is
+ * unchanged until `commitStudioVisualDraft`. Design-mode drags update `positions` here as well;
+ * Save applies image URL (when set and different from saved) + positions together.
+ */
+type StudioVisualDraft = {
+  itemId: string;
+  /** Persisted or data URL preview; null means keep the saved library image until commit. */
+  previewImageUrl: string | null;
+  positions: NonNullable<MediaItem["positions"]>;
+};
+
+function mergeStudioButtonPositions(item: MediaItem): NonNullable<MediaItem["positions"]> {
+  return { ...EMPTY_POSITIONS, ...item.positions };
+}
+
+function studioVisualDraftDiffersFromSaved(item: MediaItem, draft: StudioVisualDraft): boolean {
+  const preview = clean(draft.previewImageUrl);
+  if (preview && preview !== clean(item.url)) return true;
+  const saved = mergeStudioButtonPositions(item);
+  for (const key of Object.keys(EMPTY_POSITIONS) as (keyof typeof EMPTY_POSITIONS)[]) {
+    if (saved[key].x !== draft.positions[key].x || saved[key].y !== draft.positions[key].y) {
+      return true;
+    }
+  }
+  return false;
+}
+
 async function persistStudioLibraryImageUrl(
   item: MediaItem,
   url: string | undefined,
@@ -129,6 +164,12 @@ function formatCalendarSummary(dateStr: string | undefined, timeStr: string | un
 const STUDIO_MOBILE_TOP_CHROME = "3rem + max(0.5rem, env(safe-area-inset-top, 0px)) + 0.75rem";
 const STUDIO_MOBILE_BOTTOM_CHROME = "max(0.75rem, env(safe-area-inset-bottom, 0px)) + 0.5rem";
 
+function getStudioGalleryItemsPerPage(viewportWidth: number) {
+  if (viewportWidth >= 1536) return 10;
+  if (viewportWidth >= 1024) return 6;
+  return 4;
+}
+
 export default function StudioWorkspace() {
   const { status: sessionStatus } = useSession();
   const [step, setStep] = useState<StudioStep>("category");
@@ -145,8 +186,13 @@ export default function StudioWorkspace() {
   const [editPrompt, setEditPrompt] = useState("");
   const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
+  const [studioVisualDraft, setStudioVisualDraft] = useState<StudioVisualDraft | null>(null);
   const [isLiveCardToolsDrawerOpen, setIsLiveCardToolsDrawerOpen] = useState(false);
   const [isDesktopLiveCardViewport, setIsDesktopLiveCardViewport] = useState(false);
+  const [studioGalleryPage, setStudioGalleryPage] = useState(0);
+  const [studioGalleryDirection, setStudioGalleryDirection] = useState<1 | -1>(1);
+  const [studioGalleryItemsPerPage, setStudioGalleryItemsPerPage] = useState(10);
+  const studioGalleryTouchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const editingMediaItem = useMemo(
     () => (editingId ? (mediaList.find((item) => item.id === editingId) ?? null) : null),
@@ -154,11 +200,33 @@ export default function StudioWorkspace() {
   );
 
   const isEditingLiveCard = editingMediaItem?.type === "page";
+  const editingLiveCardHeroTextMode = editingMediaItem?.data?.heroTextMode;
 
   const activePageRecord = useMemo(
     () => mediaList.find((item) => item.id === activePage?.id) ?? activePage,
     [activePage, mediaList],
   );
+  const studioGalleryPageCount = Math.max(
+    1,
+    Math.ceil(mediaList.length / Math.max(1, studioGalleryItemsPerPage)),
+  );
+  const studioGalleryWindowStart = studioGalleryPage * studioGalleryItemsPerPage;
+  const studioGalleryVisibleItems = useMemo(
+    () =>
+      mediaList.slice(
+        studioGalleryWindowStart,
+        studioGalleryWindowStart + studioGalleryItemsPerPage,
+      ),
+    [mediaList, studioGalleryItemsPerPage, studioGalleryWindowStart],
+  );
+  const studioGalleryVisibleRangeLabel =
+    mediaList.length > 0
+      ? `${studioGalleryWindowStart + 1}-${Math.min(
+          studioGalleryWindowStart + studioGalleryVisibleItems.length,
+          mediaList.length,
+        )}`
+      : "0-0";
+
   const activePageRsvpContact = clean(activePageRecord?.data?.eventDetails.rsvpContact);
   const activePageRsvpParsed = parseLiveCardRsvpContact(activePageRsvpContact);
   const studioPreviewShareUrl = useMemo(() => {
@@ -197,10 +265,17 @@ export default function StudioWorkspace() {
   const studioLiveCardControlTop = isDesktopLiveCardViewport
     ? undefined
     : `calc(${STUDIO_MOBILE_TOP_CHROME} + 0.25rem)`;
+  const activePageUsesPosterControls =
+    activePageRecord?.type === "page" &&
+    activePageRecord?.data?.heroTextMode === "image" &&
+    isPosterFirstLiveCardCategory(
+      clean(activePageRecord.data?.eventDetails.category) || clean(activePageRecord.details.category),
+    );
 
   useEffect(() => {
     setEditPrompt("");
     setIsEditPanelOpen(false);
+    setStudioVisualDraft(null);
   }, [selectedImage?.id, activePageRecord?.id, editingMediaItem?.id]);
 
   useEffect(() => {
@@ -215,7 +290,7 @@ export default function StudioWorkspace() {
     const syncLiveCardViewport = () => {
       const matches = mediaQuery.matches;
       setIsDesktopLiveCardViewport(matches);
-      setIsLiveCardToolsDrawerOpen(matches);
+      setIsLiveCardToolsDrawerOpen((current) => (matches ? true : current));
     };
 
     syncLiveCardViewport();
@@ -227,6 +302,22 @@ export default function StudioWorkspace() {
     mediaQuery.addListener(onChange);
     return () => mediaQuery.removeListener(onChange);
   }, [activePageRecord?.id, activePageRecord?.data]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncStudioGalleryItemsPerPage = () => {
+      setStudioGalleryItemsPerPage(getStudioGalleryItemsPerPage(window.innerWidth));
+    };
+
+    syncStudioGalleryItemsPerPage();
+    window.addEventListener("resize", syncStudioGalleryItemsPerPage);
+    return () => window.removeEventListener("resize", syncStudioGalleryItemsPerPage);
+  }, []);
+
+  useEffect(() => {
+    setStudioGalleryPage((current) => Math.min(current, Math.max(0, studioGalleryPageCount - 1)));
+  }, [studioGalleryPageCount]);
 
   useEffect(() => {
     if (details.category !== "Birthday") return;
@@ -245,10 +336,7 @@ export default function StudioWorkspace() {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      if (
-        target.closest("[data-live-card-panel]") ||
-        target.closest("[data-live-card-trigger]")
-      ) {
+      if (target.closest("[data-live-card-panel]") || target.closest("[data-live-card-trigger]")) {
         return;
       }
       setActiveTab("none");
@@ -313,6 +401,29 @@ export default function StudioWorkspace() {
     return clean(item.url) || getFallbackThumbnail(item.details);
   }
 
+  function getStudioImageDisplayUrl(item: MediaItem) {
+    if (studioVisualDraft?.itemId === item.id && clean(studioVisualDraft.previewImageUrl)) {
+      return studioVisualDraft.previewImageUrl as string;
+    }
+    return getMediaPreviewUrl(item);
+  }
+
+  const liveCardInteractionLayout = useMemo(() => {
+    if (!activePageRecord?.data) return null;
+    const item = activePageRecord;
+    const draft = studioVisualDraft;
+    if (!draft || draft.itemId !== item.id) {
+      return {
+        imageUrl: getMediaPreviewUrl(item),
+        positions: mergeStudioButtonPositions(item),
+      };
+    }
+    return {
+      imageUrl: draft.previewImageUrl ? draft.previewImageUrl : getMediaPreviewUrl(item),
+      positions: draft.positions,
+    };
+  }, [activePageRecord, studioVisualDraft]);
+
   function handleMediaImageLoadError(item: MediaItem) {
     const fallbackUrl = getFallbackThumbnail(item.details);
     if (clean(item.url) === fallbackUrl) return;
@@ -334,11 +445,8 @@ export default function StudioWorkspace() {
     beginLiveCardDetailEdit(item);
   }
 
-  function openLiveCardTextEdit(item: MediaItem) {
-    beginLiveCardDetailEdit(item);
-  }
-
   function openLiveCardImageEdit(item: MediaItem) {
+    setIsLiveCardToolsDrawerOpen(true);
     setActivePage(item);
     setEditPrompt("");
     setIsEditPanelOpen(true);
@@ -451,25 +559,20 @@ export default function StudioWorkspace() {
     buttonKey: keyof typeof EMPTY_POSITIONS,
     point: ButtonPosition,
   ) {
-    setMediaList((prev) =>
-      sanitizeMediaItems(
-        prev.map((item) => {
-          if (item.id !== id) return item;
-          const updated = {
-            ...item,
-            positions: {
-              ...EMPTY_POSITIONS,
-              ...item.positions,
-              [buttonKey]: point,
-            },
-          };
-          if (activePage?.id === id) {
-            setActivePage(updated);
-          }
-          return updated;
-        }),
-      ),
-    );
+    const savedItem = mediaList.find((item) => item.id === id) ?? null;
+    if (!savedItem) return;
+    setStudioVisualDraft((prev) => {
+      const base = mergeStudioButtonPositions(savedItem);
+      const nextPositions =
+        prev?.itemId === id
+          ? { ...prev.positions, [buttonKey]: point }
+          : { ...base, [buttonKey]: point };
+      return {
+        itemId: id,
+        positions: nextPositions,
+        previewImageUrl: prev?.itemId === id ? (prev.previewImageUrl ?? null) : null,
+      };
+    });
   }
 
   async function generateMedia(type: MediaType) {
@@ -478,6 +581,9 @@ export default function StudioWorkspace() {
     const existingItem = editingId
       ? (mediaList.find((item) => item.id === editingId) ?? null)
       : null;
+    const generationSurface = resolveStudioGenerationSurface(currentDetails, type, {
+      existingItemType: existingItem?.type,
+    });
     const sourceImageDataUrl =
       type === "page" && existingItem?.type === "page" ? clean(existingItem.url) : "";
     const loadingItem: MediaItem = {
@@ -512,9 +618,11 @@ export default function StudioWorkspace() {
       const response = await requestStudioGeneration(
         currentDetails,
         type === "page" ? "both" : "image",
+        generationSurface,
         sourceImageDataUrl ? editPrompt : undefined,
         sourceImageDataUrl || undefined,
       );
+      const generatedDetails = response.preparedDetails || currentDetails;
       const rawUrl =
         response.imageDataUrl || existingItem?.url || getFallbackThumbnail(currentDetails);
       const persistedUrl = await persistStudioLibraryImageUrl(
@@ -524,8 +632,9 @@ export default function StudioWorkspace() {
       const nextItem: MediaItem = {
         ...loadingItem,
         status: "ready",
+        details: generatedDetails,
         url: persistedUrl || rawUrl,
-        data: type === "page" ? buildInvitationData(currentDetails, response) : undefined,
+        data: type === "page" ? buildInvitationData(generatedDetails, response) : undefined,
         errorMessage: undefined,
       };
 
@@ -560,7 +669,7 @@ export default function StudioWorkspace() {
     }
   }
 
-  async function applyImageEdit(item: MediaItem) {
+  async function previewStudioImageEdit(item: MediaItem) {
     const prompt = clean(editPrompt);
     if (!prompt) {
       if (typeof window !== "undefined") {
@@ -569,7 +678,8 @@ export default function StudioWorkspace() {
       return;
     }
 
-    const sourceImageDataUrl = clean(item.url);
+    const savedItem = mediaList.find((media) => media.id === item.id) ?? item;
+    const sourceImageDataUrl = clean(savedItem.url);
     if (!sourceImageDataUrl) {
       if (typeof window !== "undefined") {
         window.alert("The current image is not available to edit.");
@@ -580,25 +690,36 @@ export default function StudioWorkspace() {
     try {
       setApplyingEditId(item.id);
       const response = await requestStudioGeneration(
-        item.details,
+        savedItem.details,
         "image",
+        "page",
         prompt,
         sourceImageDataUrl,
       );
 
-      const rawEditUrl = response.imageDataUrl || item.url;
+      const rawEditUrl = response.imageDataUrl || savedItem.url;
       const persistedEditUrl = await persistStudioLibraryImageUrl(
-        { ...item, url: rawEditUrl },
+        { ...savedItem, url: rawEditUrl },
         rawEditUrl,
       );
-      patchMediaItem(item.id, {
-        url: persistedEditUrl || rawEditUrl,
-        status: "ready",
-        errorMessage: undefined,
-        sharePath: undefined,
+      const nextUrl = clean(persistedEditUrl || rawEditUrl) || null;
+      if (!nextUrl) {
+        if (typeof window !== "undefined") {
+          window.alert("The preview did not return an image. Try a different prompt.");
+        }
+        return;
+      }
+      setStudioVisualDraft((prev) => {
+        const merged = mergeStudioButtonPositions(savedItem);
+        if (prev?.itemId === item.id) {
+          return { ...prev, previewImageUrl: nextUrl };
+        }
+        return {
+          itemId: item.id,
+          previewImageUrl: nextUrl,
+          positions: merged,
+        };
       });
-      setEditPrompt("");
-      setIsEditPanelOpen(false);
     } catch (error) {
       console.error("[studio] image edit failed", error);
       if (typeof window !== "undefined") {
@@ -613,7 +734,40 @@ export default function StudioWorkspace() {
     }
   }
 
-  function renderEditImagePanel(item: MediaItem) {
+  function commitStudioVisualDraft(item: MediaItem) {
+    const draft = studioVisualDraft;
+    if (!draft || draft.itemId !== item.id) return;
+    const savedItem = mediaList.find((media) => media.id === item.id) ?? item;
+    const patch: Partial<MediaItem> = { positions: draft.positions };
+    const preview = clean(draft.previewImageUrl);
+    if (preview && preview !== clean(savedItem.url)) {
+      patch.url = preview;
+      patch.sharePath = undefined;
+      patch.errorMessage = undefined;
+    }
+    patchMediaItem(item.id, { ...patch, status: "ready" });
+    setStudioVisualDraft(null);
+    setEditPrompt("");
+    setIsEditPanelOpen(false);
+    setIsDesignMode(false);
+  }
+
+  function discardStudioVisualDraft() {
+    setStudioVisualDraft(null);
+  }
+
+  function renderEditImagePanel(
+    item: MediaItem,
+    options: { layout: "liveCardTools" | "standalone" },
+  ) {
+    const { layout } = options;
+    const savedItem = mediaList.find((media) => media.id === item.id) ?? item;
+    const draftMatches = studioVisualDraft?.itemId === item.id;
+    const hasPendingVisualChanges =
+      draftMatches && studioVisualDraft
+        ? studioVisualDraftDiffersFromSaved(savedItem, studioVisualDraft)
+        : false;
+
     return (
       <div className="pointer-events-auto flex flex-col gap-3">
         <button
@@ -642,22 +796,48 @@ export default function StudioWorkspace() {
             <textarea
               value={editPrompt}
               onChange={(event) => setEditPrompt(event.target.value)}
-              placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
+              placeholder="e.g. soften the gold lighting, simplify the florals, and keep the same composition"
               className="min-h-[104px] w-full rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/40"
             />
-            <div className="mt-3 flex justify-end">
-              <button
-                onClick={() => applyImageEdit(item)}
-                disabled={applyingEditId === item.id}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-wait disabled:opacity-70"
-              >
-                {applyingEditId === item.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <WandSparkles className="h-4 w-4" />
-                )}
-                Edit Image
-              </button>
+            <div className="mt-3 flex flex-col gap-2">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => void previewStudioImageEdit(item)}
+                  disabled={applyingEditId === item.id}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-wait disabled:opacity-70"
+                >
+                  {applyingEditId === item.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <WandSparkles className="h-4 w-4" />
+                  )}
+                  Preview edit
+                </button>
+              </div>
+              {layout === "liveCardTools" ? (
+                <p className="text-center text-[10px] leading-relaxed text-white/50">
+                  Save or discard below to apply image and Design mode button moves together.
+                </p>
+              ) : null}
+              {layout === "standalone" && hasPendingVisualChanges ? (
+                <div className="flex flex-wrap justify-end gap-2 border-t border-white/10 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => discardStudioVisualDraft()}
+                    className="rounded-full border border-white/25 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => commitStudioVisualDraft(item)}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-100"
+                  >
+                    Save changes
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -665,36 +845,15 @@ export default function StudioWorkspace() {
     );
   }
 
-  function renderEditTextPanel(item: MediaItem) {
-    return (
-      <div className="pointer-events-auto flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={() => openLiveCardTextEdit(item)}
-          className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-left backdrop-blur-md transition-colors hover:bg-white/15"
-        >
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-white/15 p-2 text-white">
-              <Type className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-                Edit Text
-              </p>
-            </div>
-          </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-white/70" />
-        </button>
-      </div>
-    );
-  }
-
   function renderLiveCardPreviewTools(page: MediaItem) {
+    const savedPage = mediaList.find((media) => media.id === page.id) ?? page;
+    const showVisualSaveBar =
+      studioVisualDraft?.itemId === page.id &&
+      studioVisualDraftDiffersFromSaved(savedPage, studioVisualDraft);
+
     return (
       <>
-        {renderEditImagePanel(page)}
-
-        {renderEditTextPanel(page)}
+        {renderEditImagePanel(page, { layout: "liveCardTools" })}
 
         <div className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
           <div>
@@ -715,8 +874,61 @@ export default function StudioWorkspace() {
             />
           </button>
         </div>
+
+        {showVisualSaveBar ? (
+          <div className="pointer-events-auto rounded-2xl border border-amber-300/45 bg-amber-500/15 px-4 py-3 backdrop-blur-md">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-100/95">
+              Unsaved image or layout
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => discardStudioVisualDraft()}
+                className="rounded-full border border-white/25 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={() => commitStudioVisualDraft(page)}
+                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-100"
+              >
+                Save changes
+              </button>
+            </div>
+          </div>
+        ) : null}
       </>
     );
+  }
+
+  function goToStudioGalleryPage(nextPage: number) {
+    const clamped = Math.max(0, Math.min(nextPage, studioGalleryPageCount - 1));
+    if (clamped === studioGalleryPage) return;
+    setStudioGalleryDirection(clamped > studioGalleryPage ? 1 : -1);
+    setStudioGalleryPage(clamped);
+  }
+
+  function handleStudioGalleryTouchStart(event: ReactTouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0];
+    if (!touch) return;
+    studioGalleryTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function handleStudioGalleryTouchEnd(event: ReactTouchEvent<HTMLDivElement>) {
+    const start = studioGalleryTouchStartRef.current;
+    studioGalleryTouchStartRef.current = null;
+    if (!start) return;
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 48 || Math.abs(dx) <= Math.abs(dy)) return;
+    if (dx < 0) {
+      goToStudioGalleryPage(studioGalleryPage + 1);
+      return;
+    }
+    goToStudioGalleryPage(studioGalleryPage - 1);
   }
 
   const studioIdeaLabel = getStudioIdeaLabel(details.category);
@@ -818,7 +1030,6 @@ export default function StudioWorkspace() {
               details={details}
               setDetails={setDetails}
               setStep={setStep}
-              shellClass={shellClass}
             />
           ) : null}
 
@@ -840,7 +1051,6 @@ export default function StudioWorkspace() {
               setSelectedImage={setSelectedImage}
               openLiveCardEditor={openLiveCardEditor}
               openLiveCardImageEdit={openLiveCardImageEdit}
-              openLiveCardTextEdit={openLiveCardTextEdit}
               downloadMedia={downloadMedia}
               shareMedia={shareMedia}
               sharingId={sharingId}
@@ -891,10 +1101,12 @@ export default function StudioWorkspace() {
                     {isEditingLiveCard ? (
                       <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
                         <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                          Edit current image
+                          {editingLiveCardHeroTextMode === "image"
+                            ? "Edit current invitation art"
+                            : "Edit current background"}
                         </label>
                         <textarea
-                          placeholder="e.g. clean up the text, reduce clutter, and soften the gold lighting"
+                          placeholder="e.g. soften the gold lighting, simplify the florals, and keep the same composition"
                           className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
                           value={editPrompt}
                           onChange={(event) => setEditPrompt(event.target.value)}
@@ -946,147 +1158,233 @@ export default function StudioWorkspace() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 md:gap-7 md:grid-cols-2 2xl:grid-cols-5">
-                  <AnimatePresence>
-                    {mediaList.map((item) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className={mediaCardClass}
-                      >
-                        <div
-                          className={`relative flex items-center justify-center overflow-hidden bg-neutral-100 ${
-                            item.details.orientation === "portrait"
-                              ? "aspect-[9/16]"
-                              : "aspect-[16/9]"
-                          }`}
-                        >
-                          {item.status === "loading" ? (
-                            <div className="flex flex-col items-center gap-4">
-                              <Loader2 className="h-10 w-10 animate-spin text-purple-600" />
-                              <span className="animate-pulse text-xs font-bold uppercase tracking-widest text-neutral-400">
-                                Processing {item.type}...
-                              </span>
-                            </div>
-                          ) : item.status === "error" ? (
-                            <div className="p-6 text-center">
-                              <p className="mb-2 font-bold text-red-500">Generation Failed</p>
-                              {item.errorMessage ? (
-                                <p className="mb-3 text-[11px] leading-5 text-neutral-500">
-                                  {item.errorMessage}
-                                </p>
-                              ) : null}
+                {mediaList.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-3 rounded-[28px] border border-[#ece4f7] bg-white/72 px-4 py-4 shadow-[0_18px_44px_rgba(84,61,140,0.08)] backdrop-blur-xl sm:px-5">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="inline-flex items-center gap-2 rounded-full border border-[#eadff9] bg-white/92 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                            <span>{studioGalleryVisibleRangeLabel}</span>
+                            <span className="text-neutral-300">/</span>
+                            <span>{mediaList.length}</span>
+                          </div>
+                          {studioGalleryPageCount > 1 ? (
+                            <p className="text-xs text-neutral-500 max-sm:hidden">
+                              {studioGalleryPage + 1} of {studioGalleryPageCount}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        {studioGalleryPageCount > 1 ? (
+                          <div className="flex items-center justify-between gap-3 sm:justify-end">
+                            <p className="text-xs text-neutral-500 sm:hidden">Swipe to browse</p>
+                            <div className="flex items-center gap-2">
                               <button
-                                onClick={() => generateMedia(item.type)}
-                                className="text-xs text-neutral-500 underline hover:text-neutral-900"
+                                type="button"
+                                onClick={() => goToStudioGalleryPage(studioGalleryPage - 1)}
+                                disabled={studioGalleryPage === 0}
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e7dcf7] bg-white/95 text-neutral-700 shadow-[0_10px_26px_rgba(84,61,140,0.12)] transition-all hover:-translate-x-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+                                aria-label="Show previous studio cards"
                               >
-                                Try Again
+                                <ChevronLeft className="h-5 w-5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => goToStudioGalleryPage(studioGalleryPage + 1)}
+                                disabled={studioGalleryPage >= studioGalleryPageCount - 1}
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e7dcf7] bg-white/95 text-neutral-700 shadow-[0_10px_26px_rgba(84,61,140,0.12)] transition-all hover:translate-x-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+                                aria-label="Show more studio cards"
+                              >
+                                <ChevronRight className="h-5 w-5" />
                               </button>
                             </div>
-                          ) : (
-                            <div className="relative h-full w-full">
-                              <img
-                                src={getMediaPreviewUrl(item)}
-                                alt={item.theme}
-                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                                referrerPolicy="no-referrer"
-                                onError={() => handleMediaImageLoadError(item)}
-                              />
-                            </div>
-                          )}
+                          </div>
+                        ) : null}
+                      </div>
 
-                          {item.status === "ready" ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(18,14,28,0.12),rgba(18,14,28,0.54))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
-                              {item.type === "page" ? (
-                                <button
-                                  onClick={() => setActivePage(item)}
-                                  className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
-                                >
-                                  <Layout className="h-5 w-5" />
-                                  Open Live Card
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setSelectedImage(item)}
-                                  className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
-                                >
-                                  <ImageIcon className="h-5 w-5" />
-                                  View Full Image
-                                </button>
-                              )}
+                      {studioGalleryPageCount > 1 ? (
+                        <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          {Array.from({ length: studioGalleryPageCount }, (_, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => goToStudioGalleryPage(index)}
+                              aria-label={`Show studio page ${index + 1}`}
+                              aria-pressed={index === studioGalleryPage}
+                              className={`h-2.5 rounded-full transition-all ${
+                                index === studioGalleryPage
+                                  ? "w-10 bg-neutral-900"
+                                  : "w-2.5 bg-[#ded1f4] hover:bg-[#cdb8ef]"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
 
-                              <div className="flex items-center gap-3">
-                                <button
-                                  onClick={() => downloadMedia(item)}
-                                  className={ghostIconButtonClass}
-                                  title="Download"
-                                >
-                                  <Download className="h-5 w-5" />
-                                </button>
-                                <button
-                                  onClick={() => shareMedia(item)}
-                                  disabled={sharingId === item.id}
-                                  className={ghostIconButtonClass}
-                                  title={sharingId === item.id ? "Creating share link" : "Share"}
-                                >
-                                  {sharingId === item.id ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                  ) : copySuccess ? (
-                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <div
+                      className="relative overflow-hidden"
+                      onTouchStart={handleStudioGalleryTouchStart}
+                      onTouchEnd={handleStudioGalleryTouchEnd}
+                    >
+                      {studioGalleryPageCount > 1 ? (
+                        <>
+                          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#fcfaff] via-[#fcfaff]/78 to-transparent" />
+                          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#fcfaff] via-[#fcfaff]/78 to-transparent" />
+                        </>
+                      ) : null}
+
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                          key={`${studioGalleryPage}-${studioGalleryItemsPerPage}`}
+                          initial={{ opacity: 0, x: studioGalleryDirection > 0 ? 48 : -48 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: studioGalleryDirection > 0 ? -48 : 48 }}
+                          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                          className="grid grid-cols-2 gap-3 md:gap-7 lg:grid-cols-3 2xl:grid-cols-5"
+                        >
+                          {studioGalleryVisibleItems.map((item) => (
+                            <motion.div
+                              key={item.id}
+                              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              className={mediaCardClass}
+                            >
+                              <div
+                                className={`relative flex items-center justify-center overflow-hidden bg-neutral-100 ${
+                                  item.details.orientation === "portrait"
+                                    ? "aspect-[9/16]"
+                                    : "aspect-[16/9]"
+                                }`}
+                              >
+                                {item.status === "loading" ? (
+                                  <div className="flex flex-col items-center gap-4">
+                                    <Loader2 className="h-10 w-10 animate-spin text-purple-600" />
+                                    <span className="animate-pulse text-xs font-bold uppercase tracking-widest text-neutral-400">
+                                      Processing {item.type}...
+                                    </span>
+                                  </div>
+                                ) : item.status === "error" ? (
+                                  <div className="p-6 text-center">
+                                    <p className="mb-2 font-bold text-red-500">Generation Failed</p>
+                                    {item.errorMessage ? (
+                                      <p className="mb-3 text-[11px] leading-5 text-neutral-500">
+                                        {item.errorMessage}
+                                      </p>
+                                    ) : null}
+                                    <button
+                                      onClick={() => generateMedia(item.type)}
+                                      className="text-xs text-neutral-500 underline hover:text-neutral-900"
+                                    >
+                                      Try Again
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="relative h-full w-full">
+                                    <img
+                                      src={getMediaPreviewUrl(item)}
+                                      alt={item.theme}
+                                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                                      referrerPolicy="no-referrer"
+                                      onError={() => handleMediaImageLoadError(item)}
+                                    />
+                                  </div>
+                                )}
+
+                                {item.status === "ready" ? (
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(18,14,28,0.12),rgba(18,14,28,0.54))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
+                                    {item.type === "page" ? (
+                                      <button
+                                        onClick={() => setActivePage(item)}
+                                        className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
+                                      >
+                                        <Layout className="h-5 w-5" />
+                                        Open Live Card
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => setSelectedImage(item)}
+                                        className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
+                                      >
+                                        <ImageIcon className="h-5 w-5" />
+                                        View Full Image
+                                      </button>
+                                    )}
+
+                                    <div className="flex items-center gap-3">
+                                      <button
+                                        onClick={() => downloadMedia(item)}
+                                        className={ghostIconButtonClass}
+                                        title="Download"
+                                      >
+                                        <Download className="h-5 w-5" />
+                                      </button>
+                                      <button
+                                        onClick={() => shareMedia(item)}
+                                        disabled={sharingId === item.id}
+                                        className={ghostIconButtonClass}
+                                        title={
+                                          sharingId === item.id ? "Creating share link" : "Share"
+                                        }
+                                      >
+                                        {sharingId === item.id ? (
+                                          <Loader2 className="h-5 w-5 animate-spin" />
+                                        ) : copySuccess ? (
+                                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                        ) : (
+                                          <Share2 className="h-5 w-5" />
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={() => deleteMedia(item.id)}
+                                        className={`${ghostIconButtonClass} text-red-500 hover:text-red-600`}
+                                        title="Delete"
+                                      >
+                                        <Trash2 className="h-5 w-5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : null}
+
+                                <div className={`absolute left-4 top-4 ${mediaBadgeClass}`}>
+                                  {item.type === "page" ? (
+                                    <>
+                                      <Layout className="h-3 w-3 text-green-600" />
+                                      Live Card
+                                    </>
                                   ) : (
-                                    <Share2 className="h-5 w-5" />
+                                    <>
+                                      <ImageIcon className="h-3 w-3 text-blue-600" />
+                                      Image
+                                    </>
                                   )}
-                                </button>
+                                </div>
                                 <button
                                   onClick={() => deleteMedia(item.id)}
-                                  className={`${ghostIconButtonClass} text-red-500 hover:text-red-600`}
-                                  title="Delete"
+                                  className="absolute right-4 top-4 rounded-full border border-white/70 bg-white/82 p-2.5 text-neutral-500 shadow-[0_10px_24px_rgba(25,20,40,0.12)] transition-all hover:bg-white hover:text-red-500"
+                                  title="Delete from library"
+                                  aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
                                 >
-                                  <Trash2 className="h-5 w-5" />
+                                  <Trash2 className="h-4 w-4" />
                                 </button>
                               </div>
-                            </div>
-                          ) : null}
-
-                          <div className={`absolute left-4 top-4 ${mediaBadgeClass}`}>
-                            {item.type === "page" ? (
-                              <>
-                                <Layout className="h-3 w-3 text-green-600" />
-                                Live Card
-                              </>
-                            ) : (
-                              <>
-                                <ImageIcon className="h-3 w-3 text-blue-600" />
-                                Image
-                              </>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => deleteMedia(item.id)}
-                            className="absolute right-4 top-4 rounded-full border border-white/70 bg-white/82 p-2.5 text-neutral-500 shadow-[0_10px_24px_rgba(25,20,40,0.12)] transition-all hover:bg-white hover:text-red-500"
-                            title="Delete from library"
-                            aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </motion.div>
-                    ))}
-
-                    {mediaList.length === 0 ? (
-                      <div className="col-span-full rounded-[32px] border border-dashed border-[#e5dbf6] bg-white/88 py-28 text-center shadow-[0_20px_55px_rgba(84,61,140,0.06)]">
-                        <div className="mb-6 inline-flex rounded-full bg-[#f7f1ff] p-6 shadow-[0_10px_24px_rgba(84,61,140,0.08)]">
-                          <WandSparkles className="h-12 w-12 text-[#9b82e7]" />
-                        </div>
-                        <h3 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
-                          No media generated yet
-                        </h3>
-                      </div>
-                    ) : null}
-                  </AnimatePresence>
-                </div>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-[32px] border border-dashed border-[#e5dbf6] bg-white/88 py-28 text-center shadow-[0_20px_55px_rgba(84,61,140,0.06)]">
+                    <div className="mb-6 inline-flex rounded-full bg-[#f7f1ff] p-6 shadow-[0_10px_24px_rgba(84,61,140,0.08)]">
+                      <WandSparkles className="h-12 w-12 text-[#9b82e7]" />
+                    </div>
+                    <h3 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
+                      No media generated yet
+                    </h3>
+                  </div>
+                )}
               </section>
             </motion.div>
           ) : null}
@@ -1117,16 +1415,29 @@ export default function StudioWorkspace() {
               </button>
 
               <div className="absolute right-0 top-16 z-10 flex w-[min(22rem,calc(100vw-1.5rem))] flex-col gap-3">
-                {renderEditImagePanel(selectedImage)}
+                {renderEditImagePanel(selectedImage, { layout: "standalone" })}
               </div>
 
               <div className="group relative flex w-full justify-center">
                 <img
-                  src={getMediaPreviewUrl(selectedImage)}
+                  src={getStudioImageDisplayUrl(selectedImage)}
                   alt={selectedImage.theme}
                   className="max-h-[80vh] max-w-full rounded-2xl border border-white/20 object-contain shadow-2xl"
                   referrerPolicy="no-referrer"
-                  onError={() => handleMediaImageLoadError(selectedImage)}
+                  onError={() => {
+                    if (!selectedImage) return;
+                    setStudioVisualDraft((prev) => {
+                      if (
+                        !prev ||
+                        prev.itemId !== selectedImage.id ||
+                        !clean(prev.previewImageUrl)
+                      ) {
+                        handleMediaImageLoadError(selectedImage);
+                        return prev;
+                      }
+                      return { ...prev, previewImageUrl: null };
+                    });
+                  }}
                 />
                 <div className="absolute bottom-6 right-6 flex gap-3 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
@@ -1160,6 +1471,7 @@ export default function StudioWorkspace() {
           >
             <button
               onClick={() => {
+                discardStudioVisualDraft();
                 setActivePage(null);
                 setActiveTab("none");
                 setIsDesignMode(false);
@@ -1182,7 +1494,7 @@ export default function StudioWorkspace() {
               </button>
             ) : null}
 
-            <div className="absolute right-4 top-20 z-[110] hidden w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 md:right-8 md:top-24 md:flex">
+            <div className="absolute right-4 top-20 z-[110] hidden max-h-[calc(100dvh-6rem)] w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 overflow-y-auto overscroll-contain md:right-8 md:top-24 md:flex">
               {renderLiveCardPreviewTools(activePageRecord)}
             </div>
 
@@ -1238,12 +1550,26 @@ export default function StudioWorkspace() {
               style={studioLiveCardFrameStyle}
             >
               <img
-                src={getMediaPreviewUrl(activePageRecord)}
+                src={liveCardInteractionLayout?.imageUrl ?? getMediaPreviewUrl(activePageRecord)}
                 alt={activePageRecord.theme}
                 className="absolute inset-0 h-full w-full object-cover"
                 referrerPolicy="no-referrer"
-                onError={() => handleMediaImageLoadError(activePageRecord)}
+                onError={() => {
+                  setStudioVisualDraft((prev) => {
+                    if (
+                      !prev ||
+                      !activePageRecord ||
+                      prev.itemId !== activePageRecord.id ||
+                      !clean(prev.previewImageUrl)
+                    ) {
+                      handleMediaImageLoadError(activePageRecord);
+                      return prev;
+                    }
+                    return { ...prev, previewImageUrl: null };
+                  });
+                }}
               />
+              <LiveCardHeroTextOverlay invitationData={activePageRecord.data} />
 
               <div className="pointer-events-none absolute inset-0 flex flex-col pt-8 pb-1 px-3 max-md:px-1 max-md:pt-6 max-md:pb-0.5 sm:px-4 md:p-8 md:pb-2">
                 <div className="flex h-full min-h-0 flex-col justify-end">
@@ -1539,11 +1865,21 @@ export default function StudioWorkspace() {
                   </AnimatePresence>
 
                   <div
-                    className="pointer-events-none max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] shrink-0 md:min-h-[min(8svh,2.5rem)]"
+                    className={`pointer-events-none shrink-0 ${
+                      activePageUsesPosterControls
+                        ? "max-md:min-h-[min(14svh,4rem)] min-h-[min(8svh,2.4rem)] md:min-h-[min(6svh,2rem)]"
+                        : "max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] md:min-h-[min(8svh,2.5rem)]"
+                    }`}
                     aria-hidden
                   />
 
-                  <div className="pointer-events-none z-20 flex w-full min-w-0 flex-nowrap items-end justify-center gap-2 overflow-x-auto pb-8 [scrollbar-width:none] [-ms-overflow-style:none] max-sm:justify-between max-sm:gap-0.5 max-sm:px-0 max-md:pb-6 px-1 md:gap-4 md:px-2 [&::-webkit-scrollbar]:hidden">
+                  <div
+                    className={`pointer-events-none z-20 flex w-full min-w-0 flex-nowrap items-end justify-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] max-sm:justify-between max-sm:gap-0.5 max-sm:px-0 px-1 md:gap-4 md:px-2 [&::-webkit-scrollbar]:hidden ${
+                      activePageUsesPosterControls
+                        ? "pb-[max(0.45rem,calc(env(safe-area-inset-bottom)+0.2rem))] max-md:pb-[max(0.3rem,calc(env(safe-area-inset-bottom)+0.12rem))]"
+                        : "pb-8 max-md:pb-6"
+                    }`}
+                  >
                     {(
                       [
                         {
@@ -1613,7 +1949,8 @@ export default function StudioWorkspace() {
                       .map((button) => {
                         const Icon = button.icon;
                         const position =
-                          activePageRecord.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+                          liveCardInteractionLayout?.positions[button.key] ||
+                          EMPTY_POSITIONS[button.key];
                         return (
                           <motion.div
                             key={button.key}
@@ -1637,7 +1974,11 @@ export default function StudioWorkspace() {
                               className={`group flex w-full flex-col items-center gap-1 md:gap-2 ${isDesignMode ? "cursor-move" : ""}`}
                             >
                               <div
-                                className={`rounded-full border border-white/30 bg-white/20 p-2 shadow-xl backdrop-blur-md transition-all group-hover:bg-white/40 md:p-3 ${
+                                className={`rounded-full border p-2 backdrop-blur-md transition-all md:p-3 ${
+                                  activePageUsesPosterControls
+                                    ? "border-white/28 bg-white/18 shadow-[0_14px_32px_rgba(0,0,0,0.34),0_0_18px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.18)] group-hover:-translate-y-0.5 group-hover:border-white/42 group-hover:bg-white/24"
+                                    : "border-white/30 bg-white/20 shadow-xl group-hover:bg-white/40"
+                                } ${
                                   isDesignMode ? "ring-2 ring-purple-400" : ""
                                 } ${
                                   (button.key === "rsvp" && activeTab === "rsvp") ||
@@ -1645,7 +1986,9 @@ export default function StudioWorkspace() {
                                   (button.key === "location" && activeTab === "location") ||
                                   (button.key === "calendar" && activeTab === "calendar") ||
                                   (button.key === "registry" && activeTab === "registry")
-                                    ? "border-white/50 bg-white/40"
+                                    ? activePageUsesPosterControls
+                                      ? "translate-y-0.5 border-white/78 bg-white/92 shadow-[0_18px_36px_rgba(0,0,0,0.38),0_0_20px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
+                                      : "border-white/50 bg-white/40"
                                     : ""
                                 }`}
                               >
@@ -1653,6 +1996,13 @@ export default function StudioWorkspace() {
                                   className={`h-4 w-4 md:h-5 md:w-5 ${
                                     button.key === "share" && sharingId === activePageRecord.id
                                       ? "animate-spin text-white"
+                                      : activePageUsesPosterControls &&
+                                          ((button.key === "rsvp" && activeTab === "rsvp") ||
+                                            (button.key === "details" && activeTab === "details") ||
+                                            (button.key === "location" && activeTab === "location") ||
+                                            (button.key === "calendar" && activeTab === "calendar") ||
+                                            (button.key === "registry" && activeTab === "registry"))
+                                        ? "text-neutral-950"
                                       : button.key === "share" && copySuccess
                                         ? "text-green-400"
                                         : "text-white"
