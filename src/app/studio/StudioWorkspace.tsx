@@ -1030,7 +1030,6 @@ export default function StudioWorkspace() {
               details={details}
               setDetails={setDetails}
               setStep={setStep}
-              shellClass={shellClass}
             />
           ) : null}
 
