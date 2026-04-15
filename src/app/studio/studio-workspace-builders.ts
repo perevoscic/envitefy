@@ -86,6 +86,15 @@ export function getDisplayTitle(details: EventDetails) {
       "Housewarming",
     );
   }
+  if (details.category === "Game Day") {
+    return pickFirst(
+      details.eventTitle,
+      buildGameDayMatchup(details),
+      details.teamName,
+      details.sportType ? `${details.sportType} Game Day` : "",
+      "Game Day",
+    );
+  }
   return pickFirst(details.eventTitle, details.occasion, `${details.category} Event`);
 }
 
@@ -94,6 +103,7 @@ export function getHonoreeName(details: EventDetails) {
     details.name,
     details.coupleNames,
     details.honoreeNames,
+    details.teamName,
     details.mainPerson,
     details.eventTitle,
   );
@@ -226,6 +236,7 @@ export const STUDIO_IDEA_CATEGORY_LABELS: Record<InviteCategory, string> = {
   "Bridal Shower": "Bridal Shower",
   Housewarming: "Housewarming",
   "Field Trip/Day": "Field Trip",
+  "Game Day": "Game Day",
   "Custom Invite": "Custom Invite",
 };
 
@@ -248,7 +259,30 @@ export function getThemeColors(details: EventDetails) {
   if (details.category === "Baby Shower") {
     return { primaryColor: "#60a5fa", accentColor: "#f472b6" };
   }
+  if (details.category === "Game Day") {
+    return { primaryColor: "#0f172a", accentColor: "#f59e0b" };
+  }
   return { primaryColor: "#111827", accentColor: "#7c3aed" };
+}
+
+function buildGameDayMatchup(details: EventDetails) {
+  const team = clean(details.teamName);
+  const opponent = clean(details.opponentName);
+  if (team && opponent) return `${team} vs ${opponent}`;
+  return pickFirst(team, opponent);
+}
+
+function buildGameDayContextNotes(details: EventDetails): string[] {
+  if (details.category !== "Game Day") return [];
+
+  const matchup = buildGameDayMatchup(details);
+  return [
+    clean(details.sportType) ? `Sport: ${clean(details.sportType)}.` : "",
+    matchup ? `Matchup: ${matchup}.` : "",
+    clean(details.leagueDivision) ? `League / Division: ${clean(details.leagueDivision)}.` : "",
+    clean(details.broadcastInfo) ? `Broadcast / Stream: ${clean(details.broadcastInfo)}.` : "",
+    clean(details.parkingInfo) ? `Parking / Arrival: ${clean(details.parkingInfo)}.` : "",
+  ].filter(Boolean);
 }
 
 export function buildDescription(details: EventDetails) {
@@ -258,12 +292,14 @@ export function buildDescription(details: EventDetails) {
     clean(details.specialInstructions),
     clean(details.activityNote),
     clean(details.calloutText),
+    ...buildGameDayContextNotes(details),
   ].filter(Boolean);
   return parts.join(" ").trim();
 }
 
 export function buildLinks(details: EventDetails) {
   return [
+    details.ticketsLink ? { label: "Tickets", url: details.ticketsLink } : null,
     details.registryLink ? { label: "Registry", url: details.registryLink } : null,
     details.weddingWebsite ? { label: "Website", url: details.weddingWebsite } : null,
     details.optionalLink ? { label: "Event Link", url: details.optionalLink } : null,
@@ -286,6 +322,8 @@ function buildStudioThemeFramingGuidance(details: EventDetails) {
       "Interpret the user's theme words as a housewarming celebration version of that idea, with welcoming home-party decor, hosting details, and lived-in gathering cues instead of generic scenery.",
     "Field Trip/Day":
       "Interpret the user's theme words as a school-event or field-trip invitation version of that idea, with organized group-activity cues, age-appropriate school styling, and event-planning details instead of generic scenery.",
+    "Game Day":
+      "Interpret the user's theme words as a real game-day invitation version of that idea, with matchup energy, stadium or arena atmosphere, crowd cues, pep-rally or game-night styling, and sports-event presentation instead of generic sports photography or a random action shot.",
     "Custom Invite":
       "Interpret the user's theme words as an invitation-worthy celebration or hosted-event version of that idea. Do not leave it as generic scenery alone; add event styling, decor, and hosting cues so it clearly reads as an invitation.",
   };
@@ -345,13 +383,24 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
       "Generate a housewarming invitation image. Keep the composition, props, mood, and styling clearly housewarming-focused.",
     "Field Trip/Day":
       "Generate a field trip or school day invitation image. Keep the composition, props, mood, and styling clearly school-event-focused.",
+    "Game Day":
+      "Generate a game day invitation image. Keep the composition, props, mood, and styling clearly sports-event-focused.",
     "Custom Invite":
       "Generate an invitation image that fits the provided event details exactly and do not drift into a different celebration type.",
   };
 
+  const categorySpecificGuardrails =
+    details.category === "Game Day"
+      ? [
+          "Use the provided sport details to steer the field, court, arena, rink, or ballpark atmosphere without inventing branding.",
+          "Do not hallucinate team logos, mascots, scoreboard text, jersey numbers, sponsor marks, branded venue signage, or specific players.",
+        ]
+      : [];
+
   return [
     categoryPromptByType[details.category],
     "You may add generic category-appropriate celebration decor and styling cues when needed to make the selected event type obvious, as long as they do not introduce factual claims.",
+    ...categorySpecificGuardrails,
     "Do not hallucinate specific people, animals, venue features, branded signage, logos, exact outfits, named activities, dates, times, or other factual details that are not supported by the event details or the user's visual direction.",
     "If an important visual detail is missing, keep it generic and restrained instead of inventing specifics.",
     "Any visible wording must match the provided event details exactly. Never fabricate names, phone numbers, addresses, schedules, or event copy.",
@@ -425,6 +474,12 @@ export function buildStudioRequest(
         pickFirst(details.rsvpName, details.hostedBy, details.teacherName, details.mainPerson) ||
         null,
       honoreeName: getHonoreeName(details) || null,
+      sportType: clean(details.sportType) || null,
+      teamName: clean(details.teamName) || null,
+      opponentName: clean(details.opponentName) || null,
+      leagueDivision: clean(details.leagueDivision) || null,
+      broadcastInfo: clean(details.broadcastInfo) || null,
+      parkingInfo: clean(details.parkingInfo) || null,
       ageOrMilestone: getAgeOrMilestone(details) || null,
       userIdea: clean(details.theme) || null,
       description:
@@ -455,6 +510,9 @@ export function buildStudioRequest(
       tone:
         pickFirst(
           details.style,
+          details.category === "Game Day"
+            ? "Bold and energetic"
+            : null,
           details.category === "Birthday" ? "Playful and polished" : "Warm and elevated",
         ) || null,
       style:
@@ -462,7 +520,11 @@ export function buildStudioRequest(
           .filter(Boolean)
           .join(". ") || null,
       audience: pickFirst(details.invitedWho, details.audience, "Guests") || null,
-      colorPalette: clean(details.colors) || null,
+      colorPalette:
+        clean(details.colors) ||
+        (details.category === "Game Day"
+          ? "Deep navy, bright stadium lights, crisp white, and bold gold accents"
+          : null),
       includeEmoji: true,
     },
     imageEdit: clean(sourceImageDataUrl)
@@ -579,6 +641,8 @@ export function normalizeStudioEventCategory(category: InviteCategory): string {
       return "weddings";
     case "Baby Shower":
       return "baby showers";
+    case "Game Day":
+      return "sport events";
     case "Bridal Shower":
     case "Housewarming":
     case "Anniversary":
@@ -651,6 +715,7 @@ export function buildStudioPublishPayload(item: MediaItem, imageUrl: string | nu
     readString(details.detailsDescription),
     readString(details.message),
     readString(details.specialInstructions),
+    ...buildGameDayContextNotes(details),
     readString(details.optionalLink)
       ? `More info: ${normalizeStudioExternalUrl(details.optionalLink)}`
       : "",
@@ -659,6 +724,9 @@ export function buildStudioPublishPayload(item: MediaItem, imageUrl: string | nu
       : "",
   ].filter(Boolean);
   const registries = [
+    readString(details.ticketsLink)
+      ? { label: "Tickets", url: normalizeStudioExternalUrl(details.ticketsLink) }
+      : null,
     readString(details.registryLink)
       ? { label: "Registry", url: normalizeStudioExternalUrl(details.registryLink) }
       : null,
