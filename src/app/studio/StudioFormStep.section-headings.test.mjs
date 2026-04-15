@@ -7,7 +7,7 @@ function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("studio form step omits section heading chrome and the optional fields panel", () => {
+test("studio form step uses the editorial layout without the old optional panel chrome", () => {
   const source = readSource("src/app/studio/workspace/StudioFormStep.tsx");
 
   assert.doesNotMatch(source, />\s*Main fields\s*</);
@@ -29,9 +29,23 @@ test("studio form step omits section heading chrome and the optional fields pane
   assert.doesNotMatch(source, /Visual Style Idea/);
   assert.doesNotMatch(source, /isOptionalCollapsed/);
   assert.doesNotMatch(source, /setIsOptionalCollapsed/);
+  assert.doesNotMatch(source, /Shape the invitation details here/);
+  assert.doesNotMatch(source, /const secondaryCategoryFields = categoryFields\.slice\(2\);/);
+  assert.doesNotMatch(source, /const sharedSecondaryFields = SHARED_BASICS\.filter/);
+  assert.doesNotMatch(source, /fields=\{RSVP_FIELDS\}/);
+  assert.doesNotMatch(source, />\s*Additional details\s*</);
+  assert.doesNotMatch(source, /End Time/);
+  assert.doesNotMatch(source, /Venue Name/);
+  assert.doesNotMatch(source, /Host Name/);
+  assert.doesNotMatch(source, /Host Contact/);
+  assert.doesNotMatch(source, /RSVP Deadline/);
 
   assert.match(source, /Event description/);
-  assert.match(source, /RSVP_FIELDS\.filter\(\(field\) => field\.required\)/);
+  assert.match(source, /StudioOptionalMediaRow/);
+  assert.match(source, /space-y-12 pt-6 md:pt-8/);
+  assert.match(source, /const primaryCategoryFields = categoryFields\.slice\(0, 2\);/);
+  assert.match(source, /const sharedPrimaryFields = SHARED_BASICS\.filter/);
+  assert.match(source, /Responses typically within 48 hours\./);
 });
 
 test("studio workspace no longer threads optional panel state into the form step", () => {

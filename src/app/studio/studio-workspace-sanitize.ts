@@ -62,6 +62,10 @@ export function normalizeStudioLibraryImageUrl(value: unknown): string | undefin
 export function createInitialDetails(): EventDetails {
   return {
     category: "Birthday",
+    sourceMediaMode: "none",
+    sourceFlyerUrl: "",
+    sourceFlyerName: "",
+    sourceFlyerPreviewUrl: "",
     eventTitle: "",
     eventDate: "",
     startTime: "",
@@ -175,6 +179,9 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
   if (!isRecord(value)) return details;
 
   const stringKeys: Array<keyof EventDetails> = [
+    "sourceFlyerUrl",
+    "sourceFlyerName",
+    "sourceFlyerPreviewUrl",
     "eventTitle",
     "eventDate",
     "startTime",
@@ -244,6 +251,12 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
 
   const category = readString(value.category);
   details.category = isInviteCategory(category) ? category : details.category;
+  details.sourceMediaMode =
+    value.sourceMediaMode === "flyer" ||
+    value.sourceMediaMode === "subjectPhotos" ||
+    value.sourceMediaMode === "none"
+      ? value.sourceMediaMode
+      : "none";
   details.orientation = value.orientation === "landscape" ? "landscape" : "portrait";
   details.gender =
     value.gender === "Boy" || value.gender === "Girl" || value.gender === "Neutral"
@@ -269,6 +282,16 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
       : details.permissionSlipRequired;
 
   details.guestImageUrls = sanitizeGuestImageUrls(value.guestImageUrls);
+  if (details.sourceMediaMode === "flyer") {
+    details.guestImageUrls = [];
+  } else if (details.guestImageUrls.length > 0) {
+    details.sourceMediaMode = "subjectPhotos";
+    details.sourceFlyerUrl = "";
+    details.sourceFlyerName = "";
+    details.sourceFlyerPreviewUrl = "";
+  } else if (!details.sourceFlyerUrl) {
+    details.sourceMediaMode = "none";
+  }
 
   return details;
 }

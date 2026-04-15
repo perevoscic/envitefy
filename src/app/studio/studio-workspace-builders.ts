@@ -453,7 +453,10 @@ export function buildStudioRequest(
 ): StudioGenerateRequest {
   const refinement = clean(editPrompt);
   const baseDescription = buildDescription(details);
-  const sanitizedGuestImageUrls = sanitizeGuestImageUrls(details.guestImageUrls);
+  const sanitizedGuestImageUrls =
+    details.sourceMediaMode === "subjectPhotos"
+      ? sanitizeGuestImageUrls(details.guestImageUrls)
+      : [];
   const guestPhotoHint =
     sanitizedGuestImageUrls.length > 0
       ? ` Host provided ${sanitizedGuestImageUrls.length} reference photo(s) for invitation artwork; keep wording warm and personal where it fits.`
