@@ -146,10 +146,10 @@ export function StudioLibraryStep({
     >
       <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
         <div className="max-w-2xl space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8C7B65]">
             Library
           </p>
-          <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
+          <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-[#1A1A1A] sm:text-[44px]">
             Your Library
           </h2>
         </div>
@@ -158,7 +158,7 @@ export function StudioLibraryStep({
             setEditingId(null);
             setStep("form");
           }}
-          className="flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(25,20,40,0.18)] transition-all hover:-translate-y-0.5 hover:bg-neutral-800"
+          className="flex items-center justify-center gap-2 bg-[#1A1A1A] px-6 py-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#F5F2EF] shadow-[0_20px_50px_rgba(26,26,26,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#262626]"
         >
           <Plus className="h-5 w-5" />
           Create New
@@ -166,26 +166,26 @@ export function StudioLibraryStep({
       </div>
 
       {mediaList.length === 0 ? (
-        <div className="rounded-[32px] border border-dashed border-[#e5dbf6] bg-white/88 py-24 text-center shadow-[0_20px_55px_rgba(84,61,140,0.06)]">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f7f1ff] shadow-[0_10px_24px_rgba(84,61,140,0.08)]">
-            <ImageIcon className="h-8 w-8 text-[#9b82e7]" />
+        <div className="rounded-[2rem] border border-dashed border-[#d8cdc0] bg-[#fbf8f4] py-24 text-center shadow-[0_20px_55px_rgba(49,32,17,0.05)]">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f0e7db] shadow-[0_10px_24px_rgba(49,32,17,0.08)]">
+            <ImageIcon className="h-8 w-8 text-[#8C7B65]" />
           </div>
-          <p className="text-lg font-semibold tracking-[-0.02em] text-neutral-900">
+          <p className="text-lg font-semibold tracking-[-0.02em] text-[#1A1A1A]">
             No invitations created yet
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex flex-col gap-3 rounded-[28px] border border-[#ece4f7] bg-white/72 px-4 py-4 shadow-[0_18px_44px_rgba(84,61,140,0.08)] backdrop-blur-xl sm:px-5">
+          <div className="flex flex-col gap-3 rounded-[1.75rem] border border-[#d8cdc0]/85 bg-[#fbf8f4]/95 px-4 py-4 shadow-[0_18px_44px_rgba(49,32,17,0.06)] backdrop-blur-xl sm:px-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#eadff9] bg-white/92 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#e5d9ca] bg-[#f8f3ed] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5F5345]">
                   <span>{libraryVisibleRangeLabel}</span>
-                  <span className="text-neutral-300">/</span>
+                  <span className="text-[#8C7B65]/45">/</span>
                   <span>{mediaList.length}</span>
                 </div>
                 {libraryPageCount > 1 ? (
-                  <p className="text-xs text-neutral-500 max-sm:hidden">
+                  <p className="text-xs text-[#8C7B65] max-sm:hidden">
                     {libraryPage + 1} of {libraryPageCount}
                   </p>
                 ) : null}
@@ -193,13 +193,13 @@ export function StudioLibraryStep({
 
               {libraryPageCount > 1 ? (
                 <div className="flex items-center justify-between gap-3 sm:justify-end">
-                  <p className="text-xs text-neutral-500 sm:hidden">Swipe to browse</p>
+                  <p className="text-xs text-[#8C7B65] sm:hidden">Swipe to browse</p>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => goToLibraryPage(libraryPage - 1)}
                       disabled={libraryPage === 0}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e7dcf7] bg-white/95 text-neutral-700 shadow-[0_10px_26px_rgba(84,61,140,0.12)] transition-all hover:-translate-x-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d9ca] bg-[#f8f3ed] text-[#5F5345] shadow-[0_10px_26px_rgba(49,32,17,0.08)] transition-all hover:-translate-x-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-35"
                       aria-label="Show previous library cards"
                     >
                       <ChevronLeft className="h-5 w-5" />
@@ -208,7 +208,7 @@ export function StudioLibraryStep({
                       type="button"
                       onClick={() => goToLibraryPage(libraryPage + 1)}
                       disabled={libraryPage >= libraryPageCount - 1}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e7dcf7] bg-white/95 text-neutral-700 shadow-[0_10px_26px_rgba(84,61,140,0.12)] transition-all hover:translate-x-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d9ca] bg-[#f8f3ed] text-[#5F5345] shadow-[0_10px_26px_rgba(49,32,17,0.08)] transition-all hover:translate-x-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-35"
                       aria-label="Show more library cards"
                     >
                       <ChevronRight className="h-5 w-5" />
@@ -229,8 +229,8 @@ export function StudioLibraryStep({
                     aria-pressed={index === libraryPage}
                     className={`h-2.5 rounded-full transition-all ${
                       index === libraryPage
-                        ? "w-10 bg-neutral-900"
-                        : "w-2.5 bg-[#ded1f4] hover:bg-[#cdb8ef]"
+                        ? "w-10 bg-[#1A1A1A]"
+                        : "w-2.5 bg-[#d8c9b9] hover:bg-[#c7b39e]"
                     }`}
                   />
                 ))}
@@ -245,8 +245,8 @@ export function StudioLibraryStep({
           >
             {libraryPageCount > 1 ? (
               <>
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#fcfaff] via-[#fcfaff]/78 to-transparent" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#fcfaff] via-[#fcfaff]/78 to-transparent" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#F5F2EF] via-[#F5F2EF]/78 to-transparent" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#F5F2EF] via-[#F5F2EF]/78 to-transparent" />
               </>
             ) : null}
 
@@ -270,8 +270,8 @@ export function StudioLibraryStep({
                   >
                     <div className="relative aspect-[3/4] overflow-hidden sm:aspect-[4/5] md:aspect-[9/16]">
                       {item.status === "loading" ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-[#faf7ff]">
-                          <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-[#efe7dc]">
+                          <Loader2 className="h-8 w-8 animate-spin text-[#8C7B65]" />
                         </div>
                       ) : item.status === "error" ? (
                         <div className="absolute inset-0">
@@ -373,7 +373,7 @@ export function StudioLibraryStep({
                       </div>
                       <button
                         onClick={() => deleteMedia(item.id)}
-                        className="absolute right-4 top-4 rounded-full border border-white/70 bg-white/82 p-2.5 text-neutral-500 shadow-[0_10px_24px_rgba(25,20,40,0.12)] transition-all hover:bg-white hover:text-red-500"
+                        className="absolute right-4 top-4 rounded-full border border-[#efe4d7] bg-[#f8f3ed] p-2.5 text-[#5F5345] shadow-[0_10px_24px_rgba(49,32,17,0.12)] transition-all hover:bg-[#fffdf9] hover:text-red-500"
                         title="Delete from library"
                         aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
                       >

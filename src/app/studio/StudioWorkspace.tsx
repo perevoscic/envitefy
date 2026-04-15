@@ -39,7 +39,11 @@ import {
   formatTimeLabelEn,
   formatWeekdayMonthDayOrdinalEn,
 } from "@/utils/format-month-day-ordinal";
-import { persistImageMediaValue } from "@/utils/media-upload-client";
+import {
+  persistImageMediaValue,
+  uploadMediaFile,
+  validateClientUploadFile,
+} from "@/utils/media-upload-client";
 import type { StudioStep } from "./studio-types";
 import { requestStudioGeneration } from "./studio-workspace-api";
 import {
@@ -65,7 +69,6 @@ import {
 import {
   CATEGORY_FIELDS,
   EMPTY_POSITIONS,
-  RSVP_FIELDS,
   SHARED_BASICS,
 } from "./studio-workspace-field-config";
 import { createInitialDetails, sanitizeMediaItems } from "./studio-workspace-sanitize";
@@ -73,6 +76,7 @@ import type {
   ActiveTab,
   ButtonPosition,
   EventDetails,
+  InviteCategory,
   MediaItem,
   MediaType,
 } from "./studio-workspace-types";
@@ -161,6 +165,197 @@ function formatCalendarSummary(dateStr: string | undefined, timeStr: string | un
   return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel;
 }
 
+type StudioFlyerParseResponse = {
+  fieldsGuess?: {
+    title?: unknown;
+    start?: unknown;
+    end?: unknown;
+    location?: unknown;
+    description?: unknown;
+    rsvp?: unknown;
+    timezone?: unknown;
+  };
+  category?: unknown;
+  error?: unknown;
+  detail?: unknown;
+};
+
+function normalizeStudioParsedCategory(value: unknown): InviteCategory | null {
+  const normalized = clean(typeof value === "string" ? value : "").toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "birthday") return "Birthday";
+  if (normalized === "wedding") return "Wedding";
+  if (normalized === "baby shower") return "Baby Shower";
+  if (normalized === "bridal shower") return "Bridal Shower";
+  if (normalized === "anniversary") return "Anniversary";
+  if (normalized === "housewarming") return "Housewarming";
+  if (normalized === "field trip/day" || normalized === "field trip" || normalized === "field day") {
+    return "Field Trip/Day";
+  }
+  if (normalized === "game day" || normalized === "sports") return "Game Day";
+  if (normalized === "custom invite" || normalized === "custom") return "Custom Invite";
+  return null;
+}
+
+function formatOcrIsoToInputDate(value: string, timezone: string): string {
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone || "America/Chicago",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const parts = formatter.formatToParts(date);
+    const year = parts.find((part) => part.type === "year")?.value || "";
+    const month = parts.find((part) => part.type === "month")?.value || "";
+    const day = parts.find((part) => part.type === "day")?.value || "";
+    return year && month && day ? `${year}-${month}-${day}` : "";
+  } catch {
+    return "";
+  }
+}
+
+function formatOcrIsoToInputTime(value: string, timezone: string): string {
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone || "America/Chicago",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(date);
+    const hour = parts.find((part) => part.type === "hour")?.value || "";
+    const minute = parts.find((part) => part.type === "minute")?.value || "";
+    return hour && minute ? `${hour}:${minute}` : "";
+  } catch {
+    return "";
+  }
+}
+
+function extractStudioTitleHints(title: string, category: InviteCategory): Partial<EventDetails> {
+  const normalizedTitle = clean(title);
+  if (!normalizedTitle) return {};
+
+  if (category === "Birthday") {
+    const fullMatch = normalizedTitle.match(
+      /^(.+?)'?s(?:\s+(\d{1,3})(?:st|nd|rd|th)?)?\s+birthday\b/i,
+    );
+    if (fullMatch) {
+      return {
+        name: clean(fullMatch[1]),
+        age: clean(fullMatch[2]),
+      };
+    }
+  }
+
+  if (category === "Wedding" || category === "Anniversary") {
+    const coupleNames = clean(
+      normalizedTitle.replace(/\b(wedding|anniversary|celebration|party)\b.*$/i, ""),
+    );
+    if (coupleNames && /(&|\band\b|\+)/i.test(coupleNames)) {
+      return { coupleNames };
+    }
+  }
+
+  return {};
+}
+
+function mergeParsedFlyerDetails(
+  current: EventDetails,
+  parsed: Partial<EventDetails>,
+  parsedCategory: InviteCategory | null,
+): EventDetails {
+  const next = { ...current };
+
+  if (!clean(next.eventTitle) && clean(parsed.eventTitle)) {
+    next.eventTitle = clean(parsed.eventTitle);
+  }
+  if (!clean(next.eventDate) && clean(parsed.eventDate)) {
+    next.eventDate = clean(parsed.eventDate);
+  }
+  if (!clean(next.startTime) && clean(parsed.startTime)) {
+    next.startTime = clean(parsed.startTime);
+  }
+  if (!clean(next.endTime) && clean(parsed.endTime)) {
+    next.endTime = clean(parsed.endTime);
+  }
+  if (!clean(next.location) && clean(parsed.location)) {
+    next.location = clean(parsed.location);
+  }
+  if (!clean(next.detailsDescription) && clean(parsed.detailsDescription)) {
+    next.detailsDescription = clean(parsed.detailsDescription);
+  }
+  if (!clean(next.rsvpContact) && clean(parsed.rsvpContact)) {
+    next.rsvpContact = clean(parsed.rsvpContact);
+  }
+
+  const titleHints = extractStudioTitleHints(
+    clean(parsed.eventTitle),
+    parsedCategory || current.category,
+  );
+  if (!clean(next.name) && clean(titleHints.name)) {
+    next.name = clean(titleHints.name);
+  }
+  if (!clean(next.age) && clean(titleHints.age)) {
+    next.age = clean(titleHints.age);
+  }
+  if (!clean(next.coupleNames) && clean(titleHints.coupleNames)) {
+    next.coupleNames = clean(titleHints.coupleNames);
+  }
+
+  return next;
+}
+
+async function parseStudioFlyerDetails(file: File): Promise<{
+  parsedDetails: Partial<EventDetails>;
+  parsedCategory: InviteCategory | null;
+}> {
+  const formData = new FormData();
+  formData.set("file", file);
+
+  const response = await fetch("/api/ocr?fast=0", {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+
+  const payload = (await response.json().catch(() => null)) as StudioFlyerParseResponse | null;
+  if (!response.ok) {
+    const message =
+      clean(typeof payload?.error === "string" ? payload.error : "") ||
+      clean(typeof payload?.detail === "string" ? payload.detail : "") ||
+      `Flyer parsing failed with status ${response.status}.`;
+    throw new Error(message);
+  }
+
+  const guessed = isRecord(payload?.fieldsGuess) ? payload?.fieldsGuess : null;
+  const timezone =
+    clean(typeof guessed?.timezone === "string" ? guessed.timezone : "") ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone ||
+    "America/Chicago";
+  const startValue = clean(typeof guessed?.start === "string" ? guessed.start : "");
+  const endValue = clean(typeof guessed?.end === "string" ? guessed.end : "");
+
+  return {
+    parsedCategory: normalizeStudioParsedCategory(payload?.category),
+    parsedDetails: {
+      eventTitle: clean(typeof guessed?.title === "string" ? guessed.title : ""),
+      eventDate: startValue ? formatOcrIsoToInputDate(startValue, timezone) : "",
+      startTime: startValue ? formatOcrIsoToInputTime(startValue, timezone) : "",
+      endTime: endValue ? formatOcrIsoToInputTime(endValue, timezone) : "",
+      location: clean(typeof guessed?.location === "string" ? guessed.location : ""),
+      detailsDescription: clean(
+        typeof guessed?.description === "string" ? guessed.description : "",
+      ),
+      rsvpContact: clean(typeof guessed?.rsvp === "string" ? guessed.rsvp : ""),
+    },
+  };
+}
+
 const STUDIO_MOBILE_TOP_CHROME = "3rem + max(0.5rem, env(safe-area-inset-top, 0px)) + 0.75rem";
 const STUDIO_MOBILE_BOTTOM_CHROME = "max(0.75rem, env(safe-area-inset-bottom, 0px)) + 0.5rem";
 
@@ -192,6 +387,10 @@ export default function StudioWorkspace() {
   const [studioGalleryPage, setStudioGalleryPage] = useState(0);
   const [studioGalleryDirection, setStudioGalleryDirection] = useState<1 | -1>(1);
   const [studioGalleryItemsPerPage, setStudioGalleryItemsPerPage] = useState(10);
+  const [isFlyerUploading, setIsFlyerUploading] = useState(false);
+  const [isSubjectPhotoUploading, setIsSubjectPhotoUploading] = useState(false);
+  const [flyerUploadError, setFlyerUploadError] = useState<string | null>(null);
+  const [subjectPhotoUploadError, setSubjectPhotoUploadError] = useState<string | null>(null);
   const studioGalleryTouchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const editingMediaItem = useMemo(
@@ -352,15 +551,167 @@ export default function StudioWorkspace() {
     );
     if (missingShared.length > 0) return false;
 
+    if (details.sourceMediaMode === "flyer" && clean(details.sourceFlyerUrl)) {
+      return true;
+    }
+
     const missingCategory = (CATEGORY_FIELDS[details.category] || []).filter(
       (field) => field.required && !clean(String(inputValue(details[field.key]))),
     );
-    if (missingCategory.length > 0) return false;
+    return missingCategory.length === 0;
+  }
 
-    const missingRsvp = RSVP_FIELDS.filter(
-      (field) => field.required && !clean(String(inputValue(details[field.key]))),
-    );
-    return missingRsvp.length === 0;
+  async function handleUploadFlyer(file: File) {
+    const validationError = validateClientUploadFile(file, "header");
+    if (validationError) {
+      setFlyerUploadError(validationError);
+      return;
+    }
+
+    setIsFlyerUploading(true);
+    setFlyerUploadError(null);
+    setSubjectPhotoUploadError(null);
+
+    try {
+      const [uploadResult, parseResult] = await Promise.allSettled([
+        uploadMediaFile({ file, usage: "header" }),
+        parseStudioFlyerDetails(file),
+      ]);
+
+      if (uploadResult.status !== "fulfilled") {
+        throw uploadResult.reason instanceof Error
+          ? uploadResult.reason
+          : new Error("Unable to upload the flyer.");
+      }
+
+      const flyerUrl =
+        clean(uploadResult.value.stored.display?.url) ||
+        clean(uploadResult.value.eventMedia.thumbnail) ||
+        "";
+      const flyerPreviewUrl =
+        clean(uploadResult.value.stored.thumb?.url) ||
+        clean(uploadResult.value.stored.display?.url) ||
+        clean(uploadResult.value.eventMedia.thumbnail) ||
+        "";
+
+      if (!flyerUrl) {
+        throw new Error("Unable to prepare the uploaded flyer.");
+      }
+
+      setDetails((prev) => {
+        const nextBase: EventDetails = {
+          ...prev,
+          sourceMediaMode: "flyer",
+          sourceFlyerUrl: flyerUrl,
+          sourceFlyerName: file.name,
+          sourceFlyerPreviewUrl: flyerPreviewUrl || flyerUrl,
+          guestImageUrls: [],
+        };
+        if (parseResult.status !== "fulfilled") {
+          return nextBase;
+        }
+        return mergeParsedFlyerDetails(
+          nextBase,
+          parseResult.value.parsedDetails,
+          parseResult.value.parsedCategory,
+        );
+      });
+
+      if (parseResult.status !== "fulfilled") {
+        setFlyerUploadError(
+          "Flyer uploaded, but details could not be read. Fill the fields manually if needed.",
+        );
+      }
+    } catch (error) {
+      setFlyerUploadError(
+        error instanceof Error && clean(error.message)
+          ? clean(error.message)
+          : "Unable to upload that flyer right now.",
+      );
+    } finally {
+      setIsFlyerUploading(false);
+    }
+  }
+
+  function handleRemoveFlyer() {
+    setFlyerUploadError(null);
+    setDetails((prev) => ({
+      ...prev,
+      sourceMediaMode: prev.guestImageUrls.length > 0 ? "subjectPhotos" : "none",
+      sourceFlyerUrl: "",
+      sourceFlyerName: "",
+      sourceFlyerPreviewUrl: "",
+    }));
+  }
+
+  async function handleUploadSubjectPhotos(files: File[]) {
+    if (!files.length) return;
+
+    setIsSubjectPhotoUploading(true);
+    setSubjectPhotoUploadError(null);
+    setFlyerUploadError(null);
+
+    try {
+      const existingUrls =
+        details.sourceMediaMode === "subjectPhotos"
+          ? details.guestImageUrls.filter((url) => clean(url))
+          : [];
+      const availableSlots = Math.max(0, STUDIO_GUEST_IMAGE_URL_MAX - existingUrls.length);
+      if (availableSlots <= 0) {
+        throw new Error(`You can add up to ${STUDIO_GUEST_IMAGE_URL_MAX} photos.`);
+      }
+
+      const nextUploads = files.slice(0, availableSlots);
+      const uploadedUrls: string[] = [];
+
+      for (const file of nextUploads) {
+        const validationError = validateClientUploadFile(file, "header");
+        if (validationError) {
+          throw new Error(validationError);
+        }
+        const upload = await uploadMediaFile({ file, usage: "header" });
+        const url = clean(upload.stored.display?.url) || clean(upload.eventMedia.thumbnail) || "";
+        if (!url) {
+          throw new Error("A photo upload completed without a usable image URL.");
+        }
+        uploadedUrls.push(url);
+      }
+
+      setDetails((prev) => {
+        const currentUrls =
+          prev.sourceMediaMode === "subjectPhotos"
+            ? prev.guestImageUrls.filter((url) => clean(url))
+            : [];
+        return {
+          ...prev,
+          sourceMediaMode: "subjectPhotos",
+          sourceFlyerUrl: "",
+          sourceFlyerName: "",
+          sourceFlyerPreviewUrl: "",
+          guestImageUrls: [...currentUrls, ...uploadedUrls].slice(0, STUDIO_GUEST_IMAGE_URL_MAX),
+        };
+      });
+    } catch (error) {
+      setSubjectPhotoUploadError(
+        error instanceof Error && clean(error.message)
+          ? clean(error.message)
+          : "Unable to upload those photos right now.",
+      );
+    } finally {
+      setIsSubjectPhotoUploading(false);
+    }
+  }
+
+  function handleRemoveSubjectPhoto(index: number) {
+    setSubjectPhotoUploadError(null);
+    setDetails((prev) => {
+      const nextUrls = prev.guestImageUrls.filter((_, currentIndex) => currentIndex !== index);
+      return {
+        ...prev,
+        guestImageUrls: nextUrls,
+        sourceMediaMode: nextUrls.length > 0 ? "subjectPhotos" : "none",
+      };
+    });
   }
 
   function deleteMedia(id: string) {
@@ -585,7 +936,8 @@ export default function StudioWorkspace() {
       existingItemType: existingItem?.type,
     });
     const sourceImageDataUrl =
-      type === "page" && existingItem?.type === "page" ? clean(existingItem.url) : "";
+      clean(existingItem?.url) ||
+      (currentDetails.sourceMediaMode === "flyer" ? clean(currentDetails.sourceFlyerUrl) : "");
     const loadingItem: MediaItem = {
       id: targetId,
       type,
@@ -797,7 +1149,7 @@ export default function StudioWorkspace() {
               value={editPrompt}
               onChange={(event) => setEditPrompt(event.target.value)}
               placeholder="e.g. soften the gold lighting, simplify the florals, and keep the same composition"
-              className="min-h-[104px] w-full rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/40"
+              className="min-h-[104px] w-full rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#c9b49a]/40"
             />
             <div className="mt-3 flex flex-col gap-2">
               <div className="flex justify-end">
@@ -866,7 +1218,7 @@ export default function StudioWorkspace() {
             aria-pressed={isDesignMode}
             aria-label={isDesignMode ? "Turn off design mode" : "Turn on design mode"}
             onClick={() => setIsDesignMode((prev) => !prev)}
-            className={`relative h-7 w-14 rounded-full transition-all ${isDesignMode ? "bg-purple-500" : "bg-neutral-700"}`}
+            className={`relative h-7 w-14 rounded-full transition-all ${isDesignMode ? "bg-[#8C7B65]" : "bg-neutral-700"}`}
           >
             <motion.div
               animate={{ x: isDesignMode ? 28 : 4 }}
@@ -933,132 +1285,152 @@ export default function StudioWorkspace() {
 
   const studioIdeaLabel = getStudioIdeaLabel(details.category);
   const studioIdeaPlaceholder = getStudioIdeaPlaceholder(details.category);
-  const isDetailsTabActive = step === "category" || step === "form";
+  const activeEditorialTab = step === "studio" ? "studio" : step === "library" ? "library" : "details";
   const shellClass = studioWorkspaceShellClass;
   const mediaCardClass = studioWorkspaceMediaCardClass;
   const mediaBadgeClass = studioWorkspaceMediaBadgeClass;
   const ghostIconButtonClass = studioWorkspaceGhostIconButtonClass;
 
   return (
-    <div className="min-h-screen bg-[#faf7ff] text-neutral-900 selection:bg-purple-200">
-      <header className="sticky top-0 z-40 border-b border-[#efe7f8] bg-[#faf7ff] max-md:pt-3">
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-center px-5 sm:h-[72px] sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="flex w-full max-w-md items-center justify-center rounded-full border border-[#d4c2f5] bg-white/85 p-1.5 shadow-[0_4px_24px_rgba(91,33,182,0.1),0_12px_48px_-8px_rgba(109,40,217,0.22),inset_0_1px_0_rgba(255,255,255,0.95)] ring-2 ring-[#c4b0f0]/35 backdrop-blur-xl"
-          >
-            <button
-              type="button"
-              onClick={() => setStep("form")}
-              className={`relative flex-1 rounded-full px-4 py-2.5 text-sm transition-colors duration-200 ${
-                isDetailsTabActive
-                  ? "font-bold text-[#5b21b6]"
-                  : "font-medium text-neutral-500 hover:text-[#6d28d9]"
-              }`}
-            >
-              {isDetailsTabActive ? (
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-3 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#6d28d9] to-[#7c3aed] opacity-95"
-                />
-              ) : null}
-              <span className="relative">Details</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (isFormValid()) setStep("studio");
-              }}
-              disabled={!isFormValid()}
-              className={`relative flex-1 rounded-full px-4 py-2.5 text-sm transition-colors duration-200 disabled:cursor-not-allowed ${
-                step === "studio"
-                  ? "font-bold text-[#5b21b6]"
-                  : "font-medium text-neutral-500 hover:text-[#6d28d9] disabled:text-neutral-400 disabled:hover:text-neutral-400"
-              }`}
-            >
-              {step === "studio" ? (
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-3 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#6d28d9] to-[#7c3aed] opacity-95"
-                />
-              ) : null}
-              <span className="relative">Studio</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep("library")}
-              className={`relative flex-1 rounded-full px-4 py-2.5 text-sm transition-colors duration-200 ${
-                step === "library"
-                  ? "font-bold text-[#5b21b6]"
-                  : "font-medium text-neutral-500 hover:text-[#6d28d9]"
-              }`}
-            >
-              {step === "library" ? (
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-3 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#6d28d9] to-[#7c3aed] opacity-95"
-                />
-              ) : null}
-              <span className="relative">Library</span>
-            </button>
-          </motion.div>
-        </div>
-      </header>
+    <div className="relative min-h-screen overflow-hidden bg-[#F5F2EF] text-[#1A1A1A] selection:bg-[#e7d9c8]">
+      <div className="pointer-events-none absolute -left-[180px] -top-[180px] h-[430px] w-[430px] rounded-full border border-[#8C7B65]/10" />
+      <div className="pointer-events-none absolute inset-y-0 right-6 hidden items-center py-12 lg:flex">
+        <span className="[writing-mode:vertical-rl] text-[10px] font-semibold uppercase tracking-[0.3em] text-[#8C7B65]/35">
+          EST. MMXXIV - PRIVATE INQUIRY
+        </span>
+      </div>
 
       {sessionStatus === "authenticated" && librarySyncError ? (
         <div
           role="status"
-          className="border-b border-amber-200 bg-amber-50 px-5 py-2.5 text-center text-sm text-amber-950 sm:px-6"
+          className="border-b border-[#d9c7ab] bg-[#f5eadc] px-5 py-3 text-center text-sm text-[#5F5345] sm:px-6"
         >
           <span>{librarySyncError}</span>
           <button
             type="button"
             onClick={retryLibrarySync}
-            className="ml-2 font-semibold text-amber-900 underline decoration-amber-600/60 underline-offset-2 hover:text-amber-950"
+            className="ml-2 font-semibold text-[#1A1A1A] underline decoration-[#8C7B65]/60 underline-offset-2 hover:text-[#4A4036]"
           >
             Retry sync
           </button>
         </div>
       ) : null}
 
-      <main className="mx-auto px-5 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
-        <AnimatePresence mode="wait">
-          {step === "category" ? (
-            <StudioCategoryStep
-              details={details}
-              setDetails={setDetails}
-              setStep={setStep}
-            />
-          ) : null}
+      {step === "category" ? (
+        <main className="relative mx-auto w-full max-w-[1500px] px-6 py-10 sm:px-8 lg:px-12 lg:py-14">
+          <StudioCategoryStep details={details} setDetails={setDetails} setStep={setStep} />
+        </main>
+      ) : (
+        <main className="relative mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-8 lg:px-12 lg:py-14">
+          <div className="grid gap-16 lg:grid-cols-[minmax(210px,0.72fr)_minmax(0,1.88fr)] lg:gap-16 xl:gap-20">
+            <aside className="flex min-h-[420px] flex-col justify-between lg:min-h-[720px]">
+              <div>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="mb-8"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingId(null);
+                      setStep("category");
+                    }}
+                    className="mb-5 text-[#8C7B65] transition-colors hover:text-[#1A1A1A]"
+                  >
+                    <ArrowLeft className="h-6 w-6" />
+                  </button>
+                  <p className="text-sm font-semibold uppercase tracking-[0.28em] text-[#8C7B65]">
+                    {details.category}
+                  </p>
+                </motion.div>
 
-          {step === "form" ? (
-            <StudioFormStep
-              details={details}
-              setDetails={setDetails}
-              setStep={setStep}
-              isFormValid={isFormValid}
-              editingId={editingId}
-            />
-          ) : null}
-          {step === "library" ? (
-            <StudioLibraryStep
-              mediaList={mediaList}
-              setEditingId={setEditingId}
-              setStep={setStep}
-              setActivePage={setActivePage}
-              setSelectedImage={setSelectedImage}
-              openLiveCardEditor={openLiveCardEditor}
-              openLiveCardImageEdit={openLiveCardImageEdit}
-              downloadMedia={downloadMedia}
-              shareMedia={shareMedia}
-              sharingId={sharingId}
-              copySuccess={copySuccess}
-              deleteMedia={deleteMedia}
-              handleMediaImageLoadError={handleMediaImageLoadError}
-            />
-          ) : null}
+                <nav className="flex flex-col items-start gap-4">
+                  {[
+                    { id: "details", label: "Details" as const },
+                    { id: "studio", label: "Studio" as const },
+                    { id: "library", label: "Library" as const },
+                  ].map((tab) => {
+                    const isActive = activeEditorialTab === tab.id;
+                    const isDisabled = tab.id === "studio" && !isFormValid();
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => {
+                          if (tab.id === "details") {
+                            setStep("form");
+                            return;
+                          }
+                          if (tab.id === "studio") {
+                            if (isFormValid()) setStep("studio");
+                            return;
+                          }
+                          setStep("library");
+                        }}
+                        disabled={isDisabled}
+                        className={`text-left text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-300 ${
+                          isActive
+                            ? "translate-x-4 text-[#1A1A1A]"
+                            : "text-[#8C7B65]/55 hover:translate-x-2 hover:text-[#8C7B65]"
+                        } ${isDisabled ? "cursor-not-allowed opacity-45 hover:translate-x-0" : ""}`}
+                      >
+                        <span className="flex items-center gap-2">
+                          {isActive ? <span className="h-px w-8 bg-[#1A1A1A]" /> : null}
+                          {tab.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="max-w-[250px] text-[11px] uppercase tracking-[0.16em] leading-relaxed text-[#8C7B65]"
+              >
+                Every exceptional journey begins with a single, intentional conversation.
+              </motion.p>
+            </aside>
+
+            <section className="min-w-0">
+              <AnimatePresence mode="wait">
+                {step === "form" ? (
+                  <StudioFormStep
+                    details={details}
+                    setDetails={setDetails}
+                    setStep={setStep}
+                    isFormValid={isFormValid}
+                    editingId={editingId}
+                    onUploadFlyer={handleUploadFlyer}
+                    onRemoveFlyer={handleRemoveFlyer}
+                    onUploadSubjectPhotos={handleUploadSubjectPhotos}
+                    onRemoveSubjectPhoto={handleRemoveSubjectPhoto}
+                    isFlyerUploading={isFlyerUploading}
+                    isSubjectPhotoUploading={isSubjectPhotoUploading}
+                    flyerUploadError={flyerUploadError}
+                    subjectPhotoUploadError={subjectPhotoUploadError}
+                  />
+                ) : null}
+                {step === "library" ? (
+                  <StudioLibraryStep
+                    mediaList={mediaList}
+                    setEditingId={setEditingId}
+                    setStep={setStep}
+                    setActivePage={setActivePage}
+                    setSelectedImage={setSelectedImage}
+                    openLiveCardEditor={openLiveCardEditor}
+                    openLiveCardImageEdit={openLiveCardImageEdit}
+                    downloadMedia={downloadMedia}
+                    shareMedia={shareMedia}
+                    sharingId={sharingId}
+                    copySuccess={copySuccess}
+                    deleteMedia={deleteMedia}
+                    handleMediaImageLoadError={handleMediaImageLoadError}
+                  />
+                ) : null}
           {step === "studio" ? (
             <motion.div
               key="studio"
@@ -1070,7 +1442,7 @@ export default function StudioWorkspace() {
               <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
                 <button
                   onClick={() => setStep("form")}
-                  className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500 transition-colors hover:text-[#8a6fdb]"
+                  className="hidden"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back to form
@@ -1078,36 +1450,36 @@ export default function StudioWorkspace() {
 
                 <div className="space-y-6 lg:pt-[5.25rem]">
                   <div className={`${shellClass} space-y-3`}>
-                    <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
                       {studioIdeaLabel}
                     </label>
                     <textarea
                       placeholder={studioIdeaPlaceholder}
-                      className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-[#fcfaff] px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
+                      className="min-h-[120px] w-full resize-none border-0 border-b border-[#1A1A1A]/18 bg-transparent px-0 py-2 font-[var(--font-playfair)] text-2xl text-[#1A1A1A] transition-colors focus:border-[#1A1A1A] focus:outline-none focus:ring-0 [&::placeholder]:text-[rgba(26,26,26,0.1)] [&::placeholder]:italic [&::placeholder]:opacity-100"
                       value={details.theme}
                       onChange={(event) =>
                         setDetails((prev) => ({ ...prev, theme: event.target.value }))
                       }
                     />
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-sm leading-7 text-[#6B5E4E]">
                       Describe your invitation in your own words. We&apos;ll generate it for you.
                     </p>
                   </div>
 
-                  <div className="space-y-4 border-t border-white/80 pt-2">
-                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                  <div className="space-y-4 border-t border-[#1A1A1A]/8 pt-6">
+                    <h2 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
                       Generate Media
                     </h2>
                     {isEditingLiveCard ? (
-                      <div className="rounded-[24px] border border-[#eee7f7] bg-[#fdfaff] p-4">
-                        <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      <div className="rounded-[1.5rem] border border-[#d8cdc0]/85 bg-[#fbf8f4] p-4">
+                        <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
                           {editingLiveCardHeroTextMode === "image"
                             ? "Edit current invitation art"
                             : "Edit current background"}
                         </label>
                         <textarea
                           placeholder="e.g. soften the gold lighting, simplify the florals, and keep the same composition"
-                          className="min-h-[120px] w-full rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] transition-all focus:border-[#b59cff] focus:outline-none focus:ring-4 focus:ring-[#cab8ff]/35"
+                          className="min-h-[120px] w-full resize-none border-0 border-b border-[#1A1A1A]/18 bg-transparent px-0 py-2 font-[var(--font-playfair)] text-2xl text-[#1A1A1A] transition-colors focus:border-[#1A1A1A] focus:outline-none focus:ring-0 [&::placeholder]:text-[rgba(26,26,26,0.1)] [&::placeholder]:italic [&::placeholder]:opacity-100"
                           value={editPrompt}
                           onChange={(event) => setEditPrompt(event.target.value)}
                         />
@@ -1117,7 +1489,7 @@ export default function StudioWorkspace() {
                       <button
                         onClick={() => generateMedia("page")}
                         disabled={isGenerating}
-                        className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(25,20,40,0.18)] transition-all hover:-translate-y-0.5 hover:bg-neutral-800 disabled:opacity-50"
+                        className="group flex h-14 w-full items-center justify-center gap-3 bg-[#1A1A1A] px-6 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#F5F2EF] shadow-[0_20px_50px_rgba(26,26,26,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#262626] disabled:opacity-50"
                       >
                         <Layout className="h-5 w-5" />
                         {isEditingLiveCard ? "Update Invitation" : "Create Live Card"}
@@ -1127,7 +1499,7 @@ export default function StudioWorkspace() {
                       <button
                         onClick={() => generateMedia("image")}
                         disabled={isGenerating}
-                        className="group flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[#e8e0f5] bg-white text-sm font-semibold text-neutral-900 shadow-[0_12px_30px_rgba(25,20,40,0.08)] transition-all hover:-translate-y-0.5 hover:bg-[#faf7ff] disabled:opacity-50"
+                        className="group flex h-14 w-full items-center justify-center gap-3 border border-[#d8cdc0] bg-[#fbf8f4] text-[10px] font-semibold uppercase tracking-[0.28em] text-[#1A1A1A] shadow-[0_12px_30px_rgba(49,32,17,0.08)] transition-all hover:-translate-y-0.5 hover:bg-[#fffdf9] disabled:opacity-50"
                       >
                         <ImageIcon className="h-5 w-5" />
                         Generate Image
@@ -1141,14 +1513,14 @@ export default function StudioWorkspace() {
               <section className="space-y-8">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                   <div className="space-y-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8C7B65]">
                       Studio
                     </p>
-                    <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
+                    <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-[#1A1A1A] sm:text-[44px]">
                       Your Studio
                     </h2>
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50/90 px-4 py-2 text-sm font-medium text-emerald-800">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-[#d9c7ab] bg-[#fbf5ee] px-4 py-2 text-sm font-medium text-[#5F5345]">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                     <span>
                       {sessionStatus === "authenticated"
@@ -1160,16 +1532,16 @@ export default function StudioWorkspace() {
 
                 {mediaList.length > 0 ? (
                   <div className="space-y-4">
-                    <div className="flex flex-col gap-3 rounded-[28px] border border-[#ece4f7] bg-white/72 px-4 py-4 shadow-[0_18px_44px_rgba(84,61,140,0.08)] backdrop-blur-xl sm:px-5">
+                    <div className="flex flex-col gap-3 rounded-[1.75rem] border border-[#d8cdc0]/85 bg-[#fbf8f4]/95 px-4 py-4 shadow-[0_18px_44px_rgba(49,32,17,0.06)] backdrop-blur-xl sm:px-5">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="inline-flex items-center gap-2 rounded-full border border-[#eadff9] bg-white/92 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                          <div className="inline-flex items-center gap-2 rounded-full border border-[#e5d9ca] bg-[#f8f3ed] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5F5345]">
                             <span>{studioGalleryVisibleRangeLabel}</span>
-                            <span className="text-neutral-300">/</span>
+                            <span className="text-[#8C7B65]/45">/</span>
                             <span>{mediaList.length}</span>
                           </div>
                           {studioGalleryPageCount > 1 ? (
-                            <p className="text-xs text-neutral-500 max-sm:hidden">
+                            <p className="text-xs text-[#8C7B65] max-sm:hidden">
                               {studioGalleryPage + 1} of {studioGalleryPageCount}
                             </p>
                           ) : null}
@@ -1177,13 +1549,13 @@ export default function StudioWorkspace() {
 
                         {studioGalleryPageCount > 1 ? (
                           <div className="flex items-center justify-between gap-3 sm:justify-end">
-                            <p className="text-xs text-neutral-500 sm:hidden">Swipe to browse</p>
+                            <p className="text-xs text-[#8C7B65] sm:hidden">Swipe to browse</p>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => goToStudioGalleryPage(studioGalleryPage - 1)}
                                 disabled={studioGalleryPage === 0}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e7dcf7] bg-white/95 text-neutral-700 shadow-[0_10px_26px_rgba(84,61,140,0.12)] transition-all hover:-translate-x-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d9ca] bg-[#f8f3ed] text-[#5F5345] shadow-[0_10px_26px_rgba(49,32,17,0.08)] transition-all hover:-translate-x-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-35"
                                 aria-label="Show previous studio cards"
                               >
                                 <ChevronLeft className="h-5 w-5" />
@@ -1192,7 +1564,7 @@ export default function StudioWorkspace() {
                                 type="button"
                                 onClick={() => goToStudioGalleryPage(studioGalleryPage + 1)}
                                 disabled={studioGalleryPage >= studioGalleryPageCount - 1}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e7dcf7] bg-white/95 text-neutral-700 shadow-[0_10px_26px_rgba(84,61,140,0.12)] transition-all hover:translate-x-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d9ca] bg-[#f8f3ed] text-[#5F5345] shadow-[0_10px_26px_rgba(49,32,17,0.08)] transition-all hover:translate-x-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-35"
                                 aria-label="Show more studio cards"
                               >
                                 <ChevronRight className="h-5 w-5" />
@@ -1213,8 +1585,8 @@ export default function StudioWorkspace() {
                               aria-pressed={index === studioGalleryPage}
                               className={`h-2.5 rounded-full transition-all ${
                                 index === studioGalleryPage
-                                  ? "w-10 bg-neutral-900"
-                                  : "w-2.5 bg-[#ded1f4] hover:bg-[#cdb8ef]"
+                                  ? "w-10 bg-[#1A1A1A]"
+                                  : "w-2.5 bg-[#d8c9b9] hover:bg-[#c7b39e]"
                               }`}
                             />
                           ))}
@@ -1229,8 +1601,8 @@ export default function StudioWorkspace() {
                     >
                       {studioGalleryPageCount > 1 ? (
                         <>
-                          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#fcfaff] via-[#fcfaff]/78 to-transparent" />
-                          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#fcfaff] via-[#fcfaff]/78 to-transparent" />
+                          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#F5F2EF] via-[#F5F2EF]/78 to-transparent" />
+                          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#F5F2EF] via-[#F5F2EF]/78 to-transparent" />
                         </>
                       ) : null}
 
@@ -1252,7 +1624,7 @@ export default function StudioWorkspace() {
                               className={mediaCardClass}
                             >
                               <div
-                                className={`relative flex items-center justify-center overflow-hidden bg-neutral-100 ${
+                                className={`relative flex items-center justify-center overflow-hidden bg-[#efe7dc] ${
                                   item.details.orientation === "portrait"
                                     ? "aspect-[9/16]"
                                     : "aspect-[16/9]"
@@ -1260,22 +1632,22 @@ export default function StudioWorkspace() {
                               >
                                 {item.status === "loading" ? (
                                   <div className="flex flex-col items-center gap-4">
-                                    <Loader2 className="h-10 w-10 animate-spin text-purple-600" />
-                                    <span className="animate-pulse text-xs font-bold uppercase tracking-widest text-neutral-400">
+                                    <Loader2 className="h-10 w-10 animate-spin text-[#8C7B65]" />
+                                    <span className="animate-pulse text-xs font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
                                       Processing {item.type}...
                                     </span>
                                   </div>
                                 ) : item.status === "error" ? (
                                   <div className="p-6 text-center">
-                                    <p className="mb-2 font-bold text-red-500">Generation Failed</p>
+                                      <p className="mb-2 font-semibold text-red-600">Generation Failed</p>
                                     {item.errorMessage ? (
-                                      <p className="mb-3 text-[11px] leading-5 text-neutral-500">
+                                      <p className="mb-3 text-[11px] leading-5 text-[#6B5E4E]">
                                         {item.errorMessage}
                                       </p>
                                     ) : null}
                                     <button
                                       onClick={() => generateMedia(item.type)}
-                                      className="text-xs text-neutral-500 underline hover:text-neutral-900"
+                                      className="text-xs text-[#5F5345] underline hover:text-[#1A1A1A]"
                                     >
                                       Try Again
                                     </button>
@@ -1293,11 +1665,11 @@ export default function StudioWorkspace() {
                                 )}
 
                                 {item.status === "ready" ? (
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(18,14,28,0.12),rgba(18,14,28,0.54))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(27,20,15,0.12),rgba(27,20,15,0.58))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
                                     {item.type === "page" ? (
                                       <button
                                         onClick={() => setActivePage(item)}
-                                        className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
+                                        className="flex items-center gap-2 rounded-full bg-[#fbf8f4] px-6 py-3 text-sm font-semibold text-[#1A1A1A] shadow-[0_14px_34px_rgba(49,32,17,0.18)] transition-transform hover:scale-[1.02]"
                                       >
                                         <Layout className="h-5 w-5" />
                                         Open Live Card
@@ -1305,7 +1677,7 @@ export default function StudioWorkspace() {
                                     ) : (
                                       <button
                                         onClick={() => setSelectedImage(item)}
-                                        className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 shadow-[0_14px_34px_rgba(25,20,40,0.18)] transition-transform hover:scale-[1.02]"
+                                        className="flex items-center gap-2 rounded-full bg-[#fbf8f4] px-6 py-3 text-sm font-semibold text-[#1A1A1A] shadow-[0_14px_34px_rgba(49,32,17,0.18)] transition-transform hover:scale-[1.02]"
                                       >
                                         <ImageIcon className="h-5 w-5" />
                                         View Full Image
@@ -1350,19 +1722,19 @@ export default function StudioWorkspace() {
                                 <div className={`absolute left-4 top-4 ${mediaBadgeClass}`}>
                                   {item.type === "page" ? (
                                     <>
-                                      <Layout className="h-3 w-3 text-green-600" />
+                                          <Layout className="h-3 w-3 text-emerald-600" />
                                       Live Card
                                     </>
                                   ) : (
                                     <>
-                                      <ImageIcon className="h-3 w-3 text-blue-600" />
+                                          <ImageIcon className="h-3 w-3 text-sky-600" />
                                       Image
                                     </>
                                   )}
                                 </div>
                                 <button
                                   onClick={() => deleteMedia(item.id)}
-                                  className="absolute right-4 top-4 rounded-full border border-white/70 bg-white/82 p-2.5 text-neutral-500 shadow-[0_10px_24px_rgba(25,20,40,0.12)] transition-all hover:bg-white hover:text-red-500"
+                                  className="absolute right-4 top-4 rounded-full border border-[#efe4d7] bg-[#f8f3ed] p-2.5 text-[#5F5345] shadow-[0_10px_24px_rgba(49,32,17,0.12)] transition-all hover:bg-[#fffdf9] hover:text-red-500"
                                   title="Delete from library"
                                   aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
                                 >
@@ -1376,20 +1748,23 @@ export default function StudioWorkspace() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-[32px] border border-dashed border-[#e5dbf6] bg-white/88 py-28 text-center shadow-[0_20px_55px_rgba(84,61,140,0.06)]">
-                    <div className="mb-6 inline-flex rounded-full bg-[#f7f1ff] p-6 shadow-[0_10px_24px_rgba(84,61,140,0.08)]">
-                      <WandSparkles className="h-12 w-12 text-[#9b82e7]" />
+                  <div className="rounded-[2rem] border border-dashed border-[#d8cdc0] bg-[#fbf8f4] py-28 text-center shadow-[0_20px_55px_rgba(49,32,17,0.05)]">
+                    <div className="mb-6 inline-flex rounded-full bg-[#f0e7db] p-6 shadow-[0_10px_24px_rgba(49,32,17,0.08)]">
+                      <WandSparkles className="h-12 w-12 text-[#8C7B65]" />
                     </div>
-                    <h3 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-neutral-900">
+                    <h3 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-[#1A1A1A]">
                       No media generated yet
                     </h3>
                   </div>
                 )}
               </section>
             </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </main>
+                ) : null}
+              </AnimatePresence>
+            </section>
+          </div>
+        </main>
+      )}
 
       <AnimatePresence>
         {selectedImage ? (
@@ -1546,7 +1921,7 @@ export default function StudioWorkspace() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-purple-500/20 aspect-[9/16]"
+              className="relative w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-[#8C7B65]/20 aspect-[9/16]"
               style={studioLiveCardFrameStyle}
             >
               <img
@@ -1685,7 +2060,7 @@ export default function StudioWorkspace() {
                             <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
                               {studioDetailsWelcome ? (
                                 <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50 to-white p-4 shadow-sm">
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-purple-700">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7B65]">
                                     Welcome
                                   </p>
                                   <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-900">
@@ -1762,8 +2137,8 @@ export default function StudioWorkspace() {
                                     </div>
                                   ))}
                                 {activePageRecord.data.eventDetails.message ? (
-                                  <div className="rounded-xl border border-purple-100 bg-purple-50 p-4 italic">
-                                    <p className="text-xs text-purple-600">
+                                  <div className="rounded-xl border border-[#e2d5c7] bg-[#f7efe7] p-4 italic">
+                                    <p className="text-xs text-[#8C7B65]">
                                       "{activePageRecord.data.eventDetails.message}"
                                     </p>
                                   </div>
@@ -1979,7 +2354,7 @@ export default function StudioWorkspace() {
                                     ? "border-white/28 bg-white/18 shadow-[0_14px_32px_rgba(0,0,0,0.34),0_0_18px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.18)] group-hover:-translate-y-0.5 group-hover:border-white/42 group-hover:bg-white/24"
                                     : "border-white/30 bg-white/20 shadow-xl group-hover:bg-white/40"
                                 } ${
-                                  isDesignMode ? "ring-2 ring-purple-400" : ""
+                                  isDesignMode ? "ring-2 ring-[#c9b49a]" : ""
                                 } ${
                                   (button.key === "rsvp" && activeTab === "rsvp") ||
                                   (button.key === "details" && activeTab === "details") ||
@@ -2024,7 +2399,7 @@ export default function StudioWorkspace() {
         ) : null}
       </AnimatePresence>
 
-      <div className="pointer-events-none fixed left-1/2 top-0 -z-10 h-[600px] w-[1000px] -translate-x-1/2 bg-purple-600/5 blur-[120px]" />
+      <div className="pointer-events-none fixed left-1/2 top-0 -z-10 h-[600px] w-[1000px] -translate-x-1/2 bg-[#8C7B65]/6 blur-[120px]" />
     </div>
   );
 }

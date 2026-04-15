@@ -1,20 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { type Dispatch, type SetStateAction } from "react";
 import type { StudioStep } from "../studio-types";
 import {
   CATEGORY_FIELDS,
   DETAILS_DESCRIPTION_PLACEHOLDER,
-  RSVP_FIELDS,
   SHARED_BASICS,
 } from "../studio-workspace-field-config";
 import type { EventDetails } from "../studio-workspace-types";
+import { studioWorkspaceShellClass } from "../studio-workspace-ui-classes";
 import { StudioFieldGrid, StudioTextAreaField } from "./StudioFieldControls";
-import {
-  studioWorkspaceShellClass,
-} from "../studio-workspace-ui-classes";
+import { StudioOptionalMediaRow } from "./StudioOptionalMediaRow";
 
 export type StudioFormStepProps = {
   details: EventDetails;
@@ -22,6 +20,14 @@ export type StudioFormStepProps = {
   setStep: (step: StudioStep) => void;
   isFormValid: () => boolean;
   editingId: string | null;
+  onUploadFlyer: (file: File) => Promise<void>;
+  onRemoveFlyer: () => void;
+  onUploadSubjectPhotos: (files: File[]) => Promise<void>;
+  onRemoveSubjectPhoto: (index: number) => void;
+  isFlyerUploading: boolean;
+  isSubjectPhotoUploading: boolean;
+  flyerUploadError: string | null;
+  subjectPhotoUploadError: string | null;
 };
 
 export function StudioFormStep({
@@ -30,8 +36,21 @@ export function StudioFormStep({
   setStep,
   isFormValid,
   editingId,
+  onUploadFlyer,
+  onRemoveFlyer,
+  onUploadSubjectPhotos,
+  onRemoveSubjectPhoto,
+  isFlyerUploading,
+  isSubjectPhotoUploading,
+  flyerUploadError,
+  subjectPhotoUploadError,
 }: StudioFormStepProps) {
   const shellClass = studioWorkspaceShellClass;
+  const categoryFields = CATEGORY_FIELDS[details.category] || [];
+  const primaryCategoryFields = categoryFields.slice(0, 2);
+  const sharedPrimaryFields = SHARED_BASICS.filter((field) =>
+    ["eventDate", "startTime", "location"].includes(field.key),
+  );
 
   return (
     <motion.div
@@ -39,78 +58,74 @@ export function StudioFormStep({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="mx-auto max-w-[1180px] space-y-10"
+      className="mx-auto max-w-[1100px] space-y-14"
     >
-      <div className="flex items-start gap-4">
-        <button
-          onClick={() => setStep("category")}
-          className="mt-1 rounded-full border border-[#ece4f7] bg-white/90 p-3 text-neutral-700 shadow-[0_12px_24px_rgba(25,20,40,0.08)] transition-all hover:-translate-y-0.5 hover:bg-white"
-        >
-          <ArrowLeft className="h-5 w-5 text-neutral-900" />
-        </button>
-        <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-neutral-900 sm:text-[44px]">
-          {details.category}
-        </h2>
-      </div>
-
-      <div className="space-y-8">
-        <div className={`${shellClass} space-y-8 px-4 sm:px-6 lg:px-7`}>
-          <div className="space-y-10">
+      <div className={`${shellClass} space-y-12`}>
+        <div className="space-y-12 pt-6 md:pt-8">
+          {primaryCategoryFields.length ? (
             <div className="space-y-4">
               <StudioFieldGrid
                 details={details}
                 setDetails={setDetails}
-                fields={CATEGORY_FIELDS[details.category] || []}
-                requiredOnly
+                fields={primaryCategoryFields}
+                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2"
               />
             </div>
+          ) : null}
 
-            <div className="space-y-4 border-t border-[#ece4f7]/80 pt-8">
+          {sharedPrimaryFields.length ? (
+            <div className="space-y-4">
               <StudioFieldGrid
                 details={details}
                 setDetails={setDetails}
-                fields={SHARED_BASICS}
-                requiredOnly
-                columnsClassName="grid grid-cols-1 gap-x-6 gap-y-7 sm:grid-cols-2 lg:grid-cols-3"
+                fields={sharedPrimaryFields}
+                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
               />
             </div>
+          ) : null}
 
-            <div className="space-y-3 border-t border-[#ece4f7]/80 pt-8">
-              <StudioTextAreaField
-                details={details}
-                setDetails={setDetails}
-                fieldKey="detailsDescription"
-                label="Event description"
-                placeholder={DETAILS_DESCRIPTION_PLACEHOLDER[details.category]}
-                rows={4}
-                id="studio-details-description"
-              />
-            </div>
-
-            <div className="space-y-4 border-t border-[#ece4f7]/80 pt-8">
-              <StudioFieldGrid
-                details={details}
-                setDetails={setDetails}
-                fields={RSVP_FIELDS}
-                requiredOnly
-                columnsClassName="grid grid-cols-1 gap-x-6 gap-y-7 sm:grid-cols-2 lg:grid-cols-3"
-              />
-            </div>
+          <div className="space-y-3">
+            <StudioTextAreaField
+              details={details}
+              setDetails={setDetails}
+              fieldKey="detailsDescription"
+              label="Event description"
+              placeholder={DETAILS_DESCRIPTION_PLACEHOLDER[details.category]}
+              rows={4}
+              id="studio-details-description"
+            />
           </div>
+
+          <StudioOptionalMediaRow
+            details={details}
+            onUploadFlyer={onUploadFlyer}
+            onRemoveFlyer={onRemoveFlyer}
+            onUploadSubjectPhotos={onUploadSubjectPhotos}
+            onRemoveSubjectPhoto={onRemoveSubjectPhoto}
+            isFlyerUploading={isFlyerUploading}
+            isSubjectPhotoUploading={isSubjectPhotoUploading}
+            flyerUploadError={flyerUploadError}
+            subjectPhotoUploadError={subjectPhotoUploadError}
+          />
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-4 pt-2">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-          <span className="mr-1 text-[#8a6fdb]">*</span> Required fields
-        </p>
+      <div className="flex flex-col gap-8 border-t border-[#1A1A1A]/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#8C7B65]">
+            <span className="mr-1 text-[#1A1A1A]/35">*</span> Required fields
+          </p>
+          <p className="font-[var(--font-playfair)] text-sm italic text-[#8C7B65]">
+            Responses typically within 48 hours.
+          </p>
+        </div>
         <button
           onClick={() => setStep("studio")}
           disabled={!isFormValid()}
-          className="flex items-center gap-3 rounded-full bg-neutral-900 px-10 py-4 text-base font-semibold text-white shadow-[0_20px_50px_rgba(25,20,40,0.18)] transition-all hover:-translate-y-0.5 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center gap-3 bg-[#1A1A1A] px-10 py-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#F5F2EF] shadow-[0_24px_48px_rgba(26,26,26,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#262626] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {editingId ? "Update Invitation" : "Enter Studio"}
-          <ChevronRight className="h-5 w-5 text-white" />
+          {editingId ? "Update" : "Initiate"}
+          <ChevronRight className="h-4 w-4 text-[#F5F2EF]" />
         </button>
       </div>
     </motion.div>

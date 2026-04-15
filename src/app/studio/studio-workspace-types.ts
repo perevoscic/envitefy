@@ -20,6 +20,10 @@ export type ActiveTab = "none" | "location" | "calendar" | "registry" | "share" 
 
 export type EventDetails = {
   category: InviteCategory;
+  sourceMediaMode: "none" | "flyer" | "subjectPhotos";
+  sourceFlyerUrl: string;
+  sourceFlyerName: string;
+  sourceFlyerPreviewUrl: string;
   eventTitle: string;
   eventDate: string;
   startTime: string;
@@ -31,7 +35,7 @@ export type EventDetails = {
   rsvpDeadline: string;
   /** Host-written copy shown on the live card Event Details tab. */
   detailsDescription: string;
-  /** Optional honoree/event image URLs for the invite (live card Event Details tab, max 6). */
+  /** Optional honoree/event image URLs for invite generation (max 6). */
   guestImageUrls: string[];
   message: string;
   specialInstructions: string;

@@ -34,10 +34,14 @@ type StudioTextAreaFieldProps = {
 
 function renderFieldIcon(fieldKey: keyof EventDetails) {
   if (fieldKey === "startTime") {
-    return <Clock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />;
+    return (
+      <Clock className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C7B65]/55 transition-colors group-focus-within:text-[#1A1A1A]" />
+    );
   }
   if (fieldKey === "location") {
-    return <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />;
+    return (
+      <MapPin className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C7B65]/55 transition-colors group-focus-within:text-[#1A1A1A]" />
+    );
   }
   return null;
 }
@@ -64,19 +68,20 @@ export function StudioFieldGrid({
       {visibleFields.map((field) => {
         const showRequiredMark = Boolean(field.required);
         const value = inputValue(details[field.key]);
+        const isEmptyValue = String(value ?? "").trim() === "";
         return (
           <div
             key={field.key}
-            className={`flex min-w-0 flex-col space-y-2 ${field.type === "textarea" ? "col-span-full" : ""}`}
+            className={`flex min-w-0 flex-col space-y-4 ${field.type === "textarea" ? "col-span-full" : ""}`}
           >
             <label className={fieldLabelClass}>
               {field.label}
-              {showRequiredMark ? <span className="text-[#8a6fdb]"> *</span> : null}
+              {showRequiredMark ? <span className="ml-1 text-[#1A1A1A]/35">*</span> : null}
             </label>
             {field.type === "textarea" ? (
               <textarea
                 placeholder={field.placeholder}
-                className={textAreaClass}
+                className={`${textAreaClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)] resize-none`}
                 value={String(value)}
                 onChange={(event) =>
                   setDetails((prev) => ({
@@ -87,7 +92,7 @@ export function StudioFieldGrid({
               />
             ) : field.type === "select" ? (
               <select
-                className={`${inputClass} appearance-none`}
+                className={`${inputClass} appearance-none font-[var(--font-playfair)] text-[1.65rem]`}
                 value={String(value)}
                 onChange={(event) =>
                   setDetails((prev) => ({
@@ -103,7 +108,7 @@ export function StudioFieldGrid({
                 ))}
               </select>
             ) : field.type === "checkbox" ? (
-              <label className="inline-flex w-full max-w-full items-center gap-3 rounded-2xl border border-[#e8e0f5] bg-white px-4 py-3 text-sm text-neutral-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
+              <label className="inline-flex w-full max-w-full items-center gap-3 border-b border-[#1A1A1A]/18 pb-3 text-sm text-[#5F5345]">
                 <input
                   type="checkbox"
                   checked={Boolean(value)}
@@ -113,19 +118,22 @@ export function StudioFieldGrid({
                       [field.key]: event.target.checked,
                     }))
                   }
+                  className="h-4 w-4 rounded border-[#cdbba8] text-[#1A1A1A] focus:ring-[#8C7B65]/30"
                 />
-                <span>{field.placeholder || field.label}</span>
+                <span className="font-medium uppercase tracking-[0.16em]">
+                  {field.placeholder || field.label}
+                </span>
               </label>
             ) : (
-              <div className="relative">
+              <div className="group relative">
                 {renderFieldIcon(field.key)}
                 <input
                   type={field.type}
-                  placeholder={field.placeholder}
+                  placeholder={field.type === "text" ? "" : field.placeholder}
                   className={
                     usesIconInput(field.key)
-                      ? `${iconInputClass} pl-12`
-                      : inputClass
+                      ? `${iconInputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
+                      : `${inputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                   }
                   value={String(value)}
                   onChange={(event) =>
@@ -135,6 +143,15 @@ export function StudioFieldGrid({
                     }))
                   }
                 />
+                {field.type === "text" && isEmptyValue && field.placeholder ? (
+                  <span
+                    className={`pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[rgba(26,26,26,0.1)] transition-opacity group-focus-within:opacity-0 ${
+                      usesIconInput(field.key) ? "right-8" : "right-0"
+                    }`}
+                  >
+                    {field.placeholder}
+                  </span>
+                ) : null}
               </div>
             )}
           </div>
@@ -161,13 +178,13 @@ export function StudioTextAreaField({
     <div className="min-w-0 space-y-3">
       <label className={fieldLabelClass} htmlFor={id}>
         {label}
-        {required ? <span className="text-[#8a6fdb]"> *</span> : null}
+        {required ? <span className="ml-1 text-[#1A1A1A]/35">*</span> : null}
       </label>
       <textarea
         id={id}
         rows={rows}
         placeholder={placeholder}
-        className={textAreaClass}
+        className={`${textAreaClass} ${String(inputValue(details[fieldKey]) ?? "").trim() === "" ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)] resize-none`}
         value={String(inputValue(details[fieldKey]))}
         onChange={(event) =>
           setDetails((prev) => ({
