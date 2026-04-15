@@ -231,6 +231,59 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
       placeholder: "e.g. Water bottle and comfortable shoes",
     },
   ],
+  "Game Day": [
+    {
+      label: "Event Title",
+      key: "eventTitle",
+      type: "text",
+      placeholder: "e.g. Friday Night Lights",
+      required: true,
+    },
+    {
+      label: "Sport",
+      key: "sportType",
+      type: "text",
+      placeholder: "e.g. Football",
+      required: true,
+    },
+    {
+      label: "Team / Host",
+      key: "teamName",
+      type: "text",
+      placeholder: "e.g. Varsity Panthers",
+      required: true,
+    },
+    {
+      label: "Opponent",
+      key: "opponentName",
+      type: "text",
+      placeholder: "e.g. Central City Tigers",
+    },
+    {
+      label: "League / Division",
+      key: "leagueDivision",
+      type: "text",
+      placeholder: "e.g. District 4",
+    },
+    {
+      label: "Tickets / Link",
+      key: "ticketsLink",
+      type: "text",
+      placeholder: "e.g. https://tickets.example.com",
+    },
+    {
+      label: "Broadcast / Stream",
+      key: "broadcastInfo",
+      type: "text",
+      placeholder: "e.g. ESPN+, YouTube, local radio",
+    },
+    {
+      label: "Parking / Arrival",
+      key: "parkingInfo",
+      type: "text",
+      placeholder: "e.g. Gate B, Lot C, arrive 30 minutes early",
+    },
+  ],
   "Custom Invite": [
     {
       label: "Event Title",
@@ -294,6 +347,8 @@ export const DETAILS_DESCRIPTION_PLACEHOLDER: Record<InviteCategory, string> = {
     "e.g. Drop in between 2 and 6—apps and drinks provided. Park on Oak Street; blue door on the left.",
   "Field Trip/Day":
     "e.g. Meet at the gym at 8:15 AM; bus leaves at 8:30. Bring sack lunch and a water bottle. Back by 3 PM for pickup.",
+  "Game Day":
+    "e.g. Gates open at 6, kickoff at 7, and student section fills early. Park in Lot C, bring your team colors, and use the ticket link before arrival.",
   "Custom Invite":
     "e.g. Private screening, popcorn provided, feature starts at noon. Park in the east lot.",
 };

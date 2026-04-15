@@ -14,6 +14,7 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   assert.match(source, /function buildStudioCategoryGuardrails\(details: EventDetails\)/);
   assert.match(source, /Generate a birthday invitation image\./);
   assert.match(source, /Generate a wedding invitation image\./);
+  assert.match(source, /Generate a game day invitation image\./);
   assert.match(
     source,
     /Interpret the user's theme words as a birthday-party version of that idea, not a generic standalone scene\./,
@@ -37,6 +38,10 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   assert.match(
     source,
     /Never fabricate names, phone numbers, addresses, schedules, or event copy\./,
+  );
+  assert.match(
+    source,
+    /Do not hallucinate team logos, mascots, scoreboard text, jersey numbers, sponsor marks, branded venue signage, or specific players\./,
   );
   assert.match(source, /const categoryGuardrails = buildStudioCategoryGuardrails\(details\);/);
   assert.match(source, /return \{\s*mode,\s*surface,\s*event:/s);

@@ -8,6 +8,7 @@ export type MediaType = "image" | "page";
 export type InviteCategory =
   | "Birthday"
   | "Field Trip/Day"
+  | "Game Day"
   | "Bridal Shower"
   | "Wedding"
   | "Housewarming"
@@ -76,6 +77,13 @@ export type EventDetails = {
   transportationType: string;
   emergencyContact: string;
   whatToBring: string;
+  sportType: string;
+  teamName: string;
+  opponentName: string;
+  leagueDivision: string;
+  ticketsLink: string;
+  broadcastInfo: string;
+  parkingInfo: string;
   mainPerson: string;
   occasion: string;
   audience: string;

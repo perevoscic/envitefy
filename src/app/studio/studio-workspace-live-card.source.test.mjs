@@ -20,6 +20,7 @@ test("studio live-card builders carry poster-first surface rules and preserve re
     source,
     /return isPosterFirstLiveCardCategory\(details\.category\) \? "image" : "page";/,
   );
+  assert.match(source, /case "Game Day":\s*return "sport events";/);
   assert.match(source, /eventYear: getStudioEventYear\(details\) \|\| null,/);
   assert.match(source, /export function refreshLiveCardInvitationData\(/);
   assert.match(source, /const title = clean\(previous\?\.title\) \|\| getDisplayTitle\(details\);/);

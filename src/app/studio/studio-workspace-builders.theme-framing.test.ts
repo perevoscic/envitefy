@@ -26,3 +26,17 @@ test("studio builders keep custom invites celebration-oriented instead of litera
   assert.match(source, /You may add generic category-appropriate celebration decor and styling cues/);
   assert.match(source, /Never fabricate names, phone numbers, addresses, schedules, or event copy/);
 });
+
+test("studio builders frame game day themes as sports invitation concepts", () => {
+  const source = readBuildersSource();
+
+  assert.match(
+    source,
+    /Interpret the user's theme words as a real game-day invitation version of that idea/,
+  );
+  assert.match(source, /Generate a game day invitation image\./);
+  assert.match(
+    source,
+    /Do not hallucinate team logos, mascots, scoreboard text, jersey numbers, sponsor marks, branded venue signage, or specific players\./,
+  );
+});

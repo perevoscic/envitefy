@@ -8,6 +8,12 @@ export type StudioEventDetails = {
   eventYear?: string | null;
   hostName?: string | null;
   honoreeName?: string | null;
+  sportType?: string | null;
+  teamName?: string | null;
+  opponentName?: string | null;
+  leagueDivision?: string | null;
+  broadcastInfo?: string | null;
+  parkingInfo?: string | null;
   ageOrMilestone?: string | null;
   userIdea?: string | null;
   description?: string | null;
@@ -174,6 +180,12 @@ function normalizeEvent(value: unknown): StudioEventDetails | null {
     eventYear: safeNullableString((value as any).eventYear),
     hostName: safeNullableString((value as any).hostName),
     honoreeName: safeNullableString((value as any).honoreeName),
+    sportType: safeNullableString((value as any).sportType),
+    teamName: safeNullableString((value as any).teamName),
+    opponentName: safeNullableString((value as any).opponentName),
+    leagueDivision: safeNullableString((value as any).leagueDivision),
+    broadcastInfo: safeNullableString((value as any).broadcastInfo),
+    parkingInfo: safeNullableString((value as any).parkingInfo),
     ageOrMilestone: safeNullableString((value as any).ageOrMilestone),
     userIdea: safeNullableString((value as any).userIdea),
     description: safeNullableString((value as any).description),

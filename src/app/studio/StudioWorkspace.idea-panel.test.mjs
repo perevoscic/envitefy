@@ -31,6 +31,7 @@ test("studio idea copy uses cleaned category-specific wording", () => {
   const builders = readSource("src/app/studio/studio-workspace-builders.ts");
 
   assert.match(builders, /"Field Trip\/Day": "Field Trip"/);
+  assert.match(builders, /"Game Day": "Game Day"/);
   assert.match(builders, /"Custom Invite": "Custom Invite"/);
   assert.match(builders, /return `Enter Your \$\{STUDIO_IDEA_CATEGORY_LABELS\[category\]\} Idea`;/);
   assert.match(

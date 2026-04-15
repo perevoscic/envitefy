@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { StudioCategoryTileDefinition } from "../studio-workspace-types";
 
@@ -103,23 +102,17 @@ export function StudioCategoryTile({
         <div className="flex items-end justify-between gap-4">
           <div className="max-w-[280px] space-y-2">
             <h3
-              className="font-[var(--font-playfair)] text-3xl font-medium !text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]"
+              className="text-lg font-bold tracking-[-0.02em] !text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-xl lg:text-2xl"
             >
               {category.name}
             </h3>
             <p
               id={descriptionId}
-              className="max-w-[280px] text-sm leading-relaxed text-white/80"
+              className="hidden max-w-[280px] text-sm leading-relaxed text-white/80 sm:block"
             >
               {category.description}
             </p>
           </div>
-
-          {category.surfaceVariant === "dark" ? (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#8B5CF6] text-white shadow-lg transition-transform group-hover:scale-110">
-              <Plus className="h-6 w-6" strokeWidth={2.2} />
-            </div>
-          ) : null}
         </div>
       </div>
 

@@ -60,6 +60,40 @@ test("studio invitation image prompt keeps custom themes invitation-ready", () =
   assert.match(prompt, /themeStyle should describe the invitation-ready version of the concept/);
 });
 
+test("studio prompts keep game day themes tied to the sports invitation type", () => {
+  const prompt = buildLiveCardPrompt(
+    {
+      title: "Panthers vs Tigers",
+      category: "Game Day",
+      occasion: "Game Day",
+      sportType: "Football",
+      teamName: "Varsity Panthers",
+      opponentName: "Central City Tigers",
+      leagueDivision: "District 4",
+      userIdea: "Friday night lights",
+      description: "Home opener under the lights",
+      links: [],
+    },
+    {
+      style:
+        "Highest-priority visual direction from the user: Friday night lights. Treat the user's words as the theme of the invitation.",
+    },
+  );
+
+  assert.match(prompt, /Selected Event Type: Game Day/);
+  assert.match(prompt, /Sport: Football/);
+  assert.match(prompt, /Team \/ Host: Varsity Panthers/);
+  assert.match(prompt, /Opponent: Central City Tigers/);
+  assert.match(
+    prompt,
+    /For Game Day, make the theme read as a real sports-event invitation with matchup energy, crowd atmosphere, sport-specific setting cues, and game-night presentation rather than a generic athlete poster or random action shot\./,
+  );
+  assert.match(
+    prompt,
+    /For Game Day, make the result read first as a real sports-event invite with matchup energy and guest-useful information, not a generic sports poster or season recap\./,
+  );
+});
+
 test("studio invitation image prompt keeps the bottom action zone safe without forcing a footer strip", () => {
   const prompt = buildInvitationImagePrompt(
     {
@@ -92,6 +126,50 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   );
   assert.doesNotMatch(prompt, /Reserve roughly the bottom 28-30% of the card/);
   assert.doesNotMatch(prompt, /The lower button area should be visually quiet/);
+});
+
+test("studio invitation image prompt keeps game day imagery grounded in provided sports context", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Panthers vs Tigers",
+      category: "Game Day",
+      occasion: "Game Day",
+      sportType: "Football",
+      teamName: "Varsity Panthers",
+      opponentName: "Central City Tigers",
+      leagueDivision: "District 4",
+      broadcastInfo: "ESPN+",
+      parkingInfo: "Lot C",
+      userIdea: "Friday night lights",
+      description: "Home opener under the lights",
+      links: [],
+    },
+    {
+      style:
+        "Highest-priority visual direction from the user: Friday night lights. Treat the user's words as the theme of the invitation.",
+    },
+    null,
+    { surface: "page" },
+  );
+
+  assert.match(
+    prompt,
+    /Game Day \/ sports invitation: make the artwork read as a live game-day invite with sport-specific atmosphere, field, court, arena, rink, or ballpark cues, crowd energy, and arrival-night styling rather than generic athlete action photography\./,
+  );
+  assert.match(
+    prompt,
+    /Use the provided sport context to steer the scene\. If the sport is football, bias to stadium, turf, and Friday-night-light cues/,
+  );
+  assert.match(
+    prompt,
+    /Do not invent team logos, branded uniforms, scoreboard text, mascots, jersey numbers, sponsor marks, or venue signage\./,
+  );
+  assert.match(prompt, /Broadcast \/ Stream: ESPN\+/);
+  assert.match(prompt, /Parking \/ Arrival: Lot C/);
+  assert.match(
+    prompt,
+    /Visible text is forbidden in the final raster for page\/live-card backgrounds\./,
+  );
 });
 
 test("page live-card background prompts forbid visible raster text and preserve overlay space", () => {

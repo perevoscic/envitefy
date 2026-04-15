@@ -20,6 +20,9 @@ function renderCoreCreativeInputs(event: StudioEventDetails): string {
     line("Selected Event Type", event.category || event.occasion),
     line("User Idea", event.userIdea),
     line("Honoree / Couple / Main Person", event.honoreeName),
+    line("Sport", event.sportType),
+    line("Team / Host", event.teamName),
+    line("Opponent", event.opponentName),
     line("Age or Milestone", event.ageOrMilestone),
     line("Event Year", event.eventYear),
   ].join("\n");
@@ -68,11 +71,38 @@ export function isWeddingOccasion(event: StudioEventDetails): boolean {
     event.userIdea,
     event.description,
     event.honoreeName,
+    event.sportType,
+    event.teamName,
+    event.opponentName,
+    event.leagueDivision,
   ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
   return /\b(wedding|weddings|bridal|nuptials|ceremony|reception|save the date|engagement(\s+party)?)\b/.test(
+    blob,
+  );
+}
+
+function isGameDayOccasion(event: StudioEventDetails): boolean {
+  const blob = [
+    event.category,
+    event.occasion,
+    event.title,
+    event.userIdea,
+    event.description,
+    event.sportType,
+    event.teamName,
+    event.opponentName,
+    event.leagueDivision,
+    event.broadcastInfo,
+    event.parkingInfo,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return /\b(game day|matchup|opponent|kickoff|tipoff|first pitch|stadium|arena|rink|ballpark|football|basketball|baseball|soccer|volleyball|hockey|softball|lacrosse)\b/.test(
     blob,
   );
 }
@@ -128,6 +158,14 @@ function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
     ];
   }
 
+  if (isGameDayOccasion(event)) {
+    return [
+      ...common,
+      "- For Game Day, make the theme read as a real sports-event invitation with matchup energy, crowd atmosphere, sport-specific setting cues, and game-night presentation rather than a generic athlete poster or random action shot.",
+      "- themeStyle should describe the game-day version of the theme, not only the raw sport or venue.",
+    ];
+  }
+
   if (/\banniversary\b/.test(blob)) {
     return [
       ...common,
@@ -165,6 +203,7 @@ export function buildInvitationTextPrompt(
 ): string {
   const includeEmoji = guidance?.includeEmoji === true ? "Allowed" : "Avoid";
   const posterFirstBirthdayOrWedding = isPosterFirstBirthdayOrWedding(event);
+  const gameDay = isGameDayOccasion(event);
   return [
     "You are a professional invitation copywriter.",
     "Return strict JSON only. Do not include markdown fences.",
@@ -200,6 +239,12 @@ export function buildInvitationTextPrompt(
           "- Bring celebration energy into the copy with event-oriented language, invitation intent, and occasion cues.",
         ]
       : []),
+    ...(gameDay
+      ? [
+          "- For Game Day, make the copy read as a real game-day invitation or attendance page, not a generic sports poster, recap, or highlight reel.",
+          "- Use the supplied sport, team, opponent, league, broadcast, and parking details when present, but do not invent unsupported scores, records, player names, uniforms, logos, mascots, sponsors, or venue claims.",
+        ]
+      : []),
     `- Emoji usage: ${includeEmoji}.`,
     "",
     renderCoreCreativeInputs(event),
@@ -211,6 +256,10 @@ export function buildInvitationTextPrompt(
     line("Event Year", event.eventYear),
     line("Host Name", event.hostName),
     line("Honoree Name", event.honoreeName),
+    line("Sport", event.sportType),
+    line("Team / Host", event.teamName),
+    line("Opponent", event.opponentName),
+    line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
     line("User Idea", event.userIdea),
     line("Description", event.description),
@@ -220,6 +269,8 @@ export function buildInvitationTextPrompt(
     line("Timezone", event.timezone),
     line("Venue Name", event.venueName),
     line("Venue Address", event.venueAddress),
+    line("Broadcast / Stream", event.broadcastInfo),
+    line("Parking / Arrival", event.parkingInfo),
     line("Dress Code", event.dressCode),
     line("RSVP By", event.rsvpBy),
     line("RSVP Contact", event.rsvpContact),
@@ -241,6 +292,7 @@ export function buildLiveCardPrompt(
   const realismRequested = hasRealismIntent(event, guidance);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   const posterFirstBirthdayOrWedding = isPosterFirstBirthdayOrWedding(event);
+  const gameDay = isGameDayOccasion(event);
   return [
     "You are designing a live event card for Envitefy.",
     "Return strict JSON only. Do not include markdown fences.",
@@ -302,6 +354,12 @@ export function buildLiveCardPrompt(
           "- Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy.",
         ]
       : []),
+    ...(gameDay
+      ? [
+          "- For Game Day, make the result read first as a real sports-event invite with matchup energy and guest-useful information, not a generic sports poster or season recap.",
+          "- Use the provided sport context to keep the mood and wording specific to the event, but never invent scores, records, players, logos, mascots, sponsors, branded uniforms, or scoreboard claims.",
+        ]
+      : []),
     ...occasionThemeGuardrails,
     ...(isWeddingOccasion(event)
       ? [
@@ -329,6 +387,10 @@ export function buildLiveCardPrompt(
     line("Event Year", event.eventYear),
     line("Host Name", event.hostName),
     line("Honoree Name", event.honoreeName),
+    line("Sport", event.sportType),
+    line("Team / Host", event.teamName),
+    line("Opponent", event.opponentName),
+    line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
     line("User Idea", event.userIdea),
     line("Description", event.description),
@@ -338,6 +400,8 @@ export function buildLiveCardPrompt(
     line("Timezone", event.timezone),
     line("Venue Name", event.venueName),
     line("Venue Address", event.venueAddress),
+    line("Broadcast / Stream", event.broadcastInfo),
+    line("Parking / Arrival", event.parkingInfo),
     line("Dress Code", event.dressCode),
     line("RSVP By", event.rsvpBy),
     line("RSVP Contact", event.rsvpContact),
@@ -374,6 +438,7 @@ export function buildInvitationImagePrompt(
   const realismRequested = hasRealismIntent(event, guidance);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   const pageSurface = surface === "page";
+  const gameDay = isGameDayOccasion(event);
   return [
     isEditingExistingImage
       ? "Edit the provided invitation artwork image."
@@ -444,6 +509,14 @@ export function buildInvitationImagePrompt(
                   "- Typography: elegant high-contrast serif for names or main title; clean sans-serif for date/venue lines. Avoid clip-art hearts, cartoon rings, or childish icons.",
                 ]),
           "- Layout: photo-forward hero acceptable (couple portrait, soft florals, foil-line accents, circular or arch masks). Overall look should match boutique invitation suites, not a meme or social sticker pack.",
+        ]
+      : []),
+    ...(gameDay
+      ? [
+          "- Game Day / sports invitation: make the artwork read as a live game-day invite with sport-specific atmosphere, field, court, arena, rink, or ballpark cues, crowd energy, and arrival-night styling rather than generic athlete action photography.",
+          "- Use the provided sport context to steer the scene. If the sport is football, bias to stadium, turf, and Friday-night-light cues; if basketball, arena and court lighting; if baseball or softball, ballpark and diamond cues; if soccer, pitch and stadium cues; if volleyball, court and gym cues; if hockey, rink and arena cues.",
+          "- Do not invent team logos, branded uniforms, scoreboard text, mascots, jersey numbers, sponsor marks, or venue signage.",
+          "- Do not invent final scores, standings, named players, or branded arena features.",
         ]
       : []),
     isEditingExistingImage
@@ -540,11 +613,17 @@ export function buildInvitationImagePrompt(
     line("Event Year", event.eventYear),
     line("Host Name", event.hostName),
     line("Honoree Name", event.honoreeName),
+    line("Sport", event.sportType),
+    line("Team / Host", event.teamName),
+    line("Opponent", event.opponentName),
+    line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
     line("User Idea", event.userIdea),
     line("Description", event.description),
     line("Date", event.date),
     line("Venue", event.venueName),
+    line("Broadcast / Stream", event.broadcastInfo),
+    line("Parking / Arrival", event.parkingInfo),
     line("Dress Code", event.dressCode),
     renderLinks(event.links),
     "",

@@ -117,6 +117,13 @@ export function createInitialDetails(): EventDetails {
     transportationType: "",
     emergencyContact: "",
     whatToBring: "",
+    sportType: "",
+    teamName: "",
+    opponentName: "",
+    leagueDivision: "",
+    ticketsLink: "",
+    broadcastInfo: "",
+    parkingInfo: "",
     mainPerson: "",
     occasion: "",
     audience: "",
@@ -133,6 +140,7 @@ export function isInviteCategory(value: unknown): value is InviteCategory {
   return (
     value === "Birthday" ||
     value === "Field Trip/Day" ||
+    value === "Game Day" ||
     value === "Bridal Shower" ||
     value === "Wedding" ||
     value === "Housewarming" ||
@@ -212,6 +220,13 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
     "transportationType",
     "emergencyContact",
     "whatToBring",
+    "sportType",
+    "teamName",
+    "opponentName",
+    "leagueDivision",
+    "ticketsLink",
+    "broadcastInfo",
+    "parkingInfo",
     "mainPerson",
     "occasion",
     "audience",
