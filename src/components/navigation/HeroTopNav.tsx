@@ -28,7 +28,7 @@ function cx(...parts: Array<string | false | null | undefined>) {
 }
 
 const glassGhostLoginClass =
-  "cta-shell h-11 shrink-0 rounded-full border border-white/14 bg-white/[0.1] px-6 text-sm font-bold text-white transition-all hover:bg-white/[0.14]";
+  "cta-shell nav-chrome-motion h-11 shrink-0 rounded-full border border-white/18 bg-white/[0.12] px-6 text-sm font-bold text-white transition-all hover:bg-white/[0.18]";
 
 function NavLinkItem({
   href,
@@ -92,12 +92,12 @@ export default function HeroTopNav({
       <div className="relative mx-auto max-w-[1400px]">
         <div
           className={cx(
-            "px-4 py-3 sm:px-6",
+            "nav-chrome-glass-header px-4 py-3 sm:px-6",
             isDarkGlass
               ? cx(
-                  "theme-glass-nav rounded-[1.8rem] border border-white/14 shadow-[0_14px_36px_rgba(3,1,10,0.2)]",
+                  "theme-glass-nav rounded-[1.8rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]",
                 )
-              : "rounded-full border border-white/90 bg-white/96 shadow-[0_18px_44px_rgba(87,67,157,0.1)]",
+              : "rounded-[1.8rem]",
           )}
         >
           <div className="flex items-center justify-between gap-4">
@@ -123,10 +123,10 @@ export default function HeroTopNav({
                   href={link.href}
                   label={link.label}
                   className={cx(
-                    "rounded-full px-4 py-2 text-sm font-semibold transition",
+                    "nav-chrome-motion rounded-full px-4 py-2 text-sm font-semibold transition",
                     isDarkGlass
-                      ? "text-white hover:bg-white/[0.1]"
-                      : "text-[#5f5678] hover:bg-white hover:text-[#241b45]",
+                      ? "text-white hover:bg-white/[0.12]"
+                      : "nav-chrome-pill",
                   )}
                 />
               ))}
@@ -137,10 +137,10 @@ export default function HeroTopNav({
                 <Link
                   href={dashboardHref}
                   className={cx(
-                    "rounded-full px-3 py-2 text-sm font-semibold transition",
+                    "nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
                     isDarkGlass
                       ? "text-white"
-                      : "text-[#30264f] hover:text-[#1f1635]",
+                      : "nav-chrome-pill",
                   )}
                 >
                   Dashboard
@@ -152,7 +152,7 @@ export default function HeroTopNav({
                   className={cx(
                     isDarkGlass
                       ? glassGhostLoginClass
-                      : "rounded-full px-3 py-2 text-sm font-semibold text-[#30264f] transition hover:text-[#1f1635]",
+                      : "nav-chrome-pill nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
                   )}
                 >
                   Login
@@ -163,10 +163,10 @@ export default function HeroTopNav({
                 <Link
                   href={authenticatedPrimaryHref}
                   className={cx(
-                    "cta-shell h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
+                    "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
                     isDarkGlass
                       ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
-                      : "bg-[linear-gradient(135deg,#7b4dff_0%,#9d63ff_100%)] text-white shadow-[0_18px_38px_rgba(123,77,255,0.24)] hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
+                      : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
                   )}
                 >
                   <AnimatedButtonLabel label={primaryCtaLabel} />
@@ -176,10 +176,10 @@ export default function HeroTopNav({
                   type="button"
                   onClick={onGuestPrimaryAction}
                   className={cx(
-                    "cta-shell h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
+                    "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
                     isDarkGlass
                       ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
-                      : "bg-[linear-gradient(135deg,#7b4dff_0%,#9d63ff_100%)] text-white shadow-[0_18px_38px_rgba(123,77,255,0.24)] hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
+                      : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
                   )}
                 >
                   <AnimatedButtonLabel label={primaryCtaLabel} />
@@ -190,10 +190,10 @@ export default function HeroTopNav({
             <button
               type="button"
               className={cx(
-                "inline-flex h-11 w-11 items-center justify-center shadow-sm lg:hidden",
+                "nav-chrome-motion inline-flex h-11 w-11 items-center justify-center shadow-sm lg:hidden",
                 isDarkGlass
                   ? "rounded-full border border-white/14 bg-white/[0.08] text-white"
-                  : "rounded-full border border-[#eadfff] bg-white text-[#31264f]",
+                  : "nav-chrome-pill-secondary rounded-full text-[#31264f]",
               )}
               onClick={() => setMobileMenuOpen((value) => !value)}
               aria-label={
@@ -221,10 +221,10 @@ export default function HeroTopNav({
         >
           <div
             className={cx(
-              "pointer-events-auto ml-auto w-full max-w-[20rem] p-3",
+              "nav-chrome-menu-card pointer-events-auto ml-auto w-full max-w-[20rem] p-3",
               isDarkGlass
                 ? "theme-glass-menu rounded-[1.75rem] border border-white/12 shadow-[0_24px_54px_rgba(0,0,0,0.26)]"
-                : "rounded-[1.75rem] border border-[#efe6ff] bg-white/98 shadow-[0_24px_54px_rgba(87,67,157,0.16)]",
+                : "rounded-[1.75rem]",
             )}
           >
             <nav
@@ -237,10 +237,10 @@ export default function HeroTopNav({
                   href={link.href}
                   label={link.label}
                   className={cx(
-                    "w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
+                    "nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
                     isDarkGlass
                       ? "text-white hover:bg-white/[0.06]"
-                      : "text-[#433865] hover:bg-[#f8f4ff]",
+                      : "nav-chrome-pill",
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 />
@@ -250,10 +250,10 @@ export default function HeroTopNav({
                 <Link
                   href={dashboardHref}
                   className={cx(
-                    "mt-2 w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
+                    "nav-chrome-motion mt-2 w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
                     isDarkGlass
                       ? "text-white hover:bg-white/[0.06]"
-                      : "text-[#433865] hover:bg-[#f8f4ff]",
+                      : "nav-chrome-pill",
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -270,7 +270,7 @@ export default function HeroTopNav({
                     "mt-2 transition",
                     isDarkGlass
                       ? `${glassGhostLoginClass} self-end`
-                      : "w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold text-[#433865] hover:bg-[#f8f4ff]",
+                      : "nav-chrome-pill nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold",
                   )}
                 >
                   Login
@@ -281,10 +281,10 @@ export default function HeroTopNav({
                 <Link
                   href={authenticatedPrimaryHref}
                   className={cx(
-                    "cta-shell h-11 rounded-full px-5 text-sm font-semibold",
+                    "cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
                     isDarkGlass
                       ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.24)]"
-                      : "bg-[linear-gradient(135deg,#7b4dff_0%,#9d63ff_100%)] text-white shadow-[0_16px_32px_rgba(123,77,255,0.22)]",
+                      : "nav-chrome-pill-primary text-white",
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -298,10 +298,10 @@ export default function HeroTopNav({
                     onGuestPrimaryAction();
                   }}
                   className={cx(
-                    "cta-shell h-11 rounded-full px-5 text-sm font-semibold",
+                    "cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
                     isDarkGlass
                       ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.24)]"
-                      : "bg-[linear-gradient(135deg,#7b4dff_0%,#9d63ff_100%)] text-white shadow-[0_16px_32px_rgba(123,77,255,0.22)]",
+                      : "nav-chrome-pill-primary text-white",
                   )}
                 >
                   <AnimatedButtonLabel label={primaryCtaLabel} />

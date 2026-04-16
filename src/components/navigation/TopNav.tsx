@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useSidebar } from "@/app/sidebar-context";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import { secureSignOut } from "@/utils/secureSignOut";
 import {
   CalendarIconGoogle,
@@ -113,7 +113,7 @@ export function MyEventsDropdown({
         }`}
         onMouseLeave={onClose}
       >
-        <div className="bg-white rounded-2xl border border-[#ece9ff] shadow-2xl p-6">
+        <div className="nav-chrome-menu-card rounded-[1.65rem] p-6">
           <div className="flex flex-row flex-wrap gap-8">
             {categories
               .filter((cat) => cat.items.length > 0)
@@ -259,7 +259,7 @@ export function ProfileMenu({
       ref={profileRef}
       className={`${
         variant === "topnav"
-          ? "absolute left-1/2 -translate-x-1/2 mt-2 w-64 rounded-3xl border border-[#ece9ff] bg-white p-2 text-sm shadow-xl z-50"
+          ? "nav-chrome-menu-card absolute left-1/2 z-50 mt-2 w-64 -translate-x-1/2 rounded-[1.65rem] p-2 text-sm"
           : "p-2"
       }`}
     >
@@ -579,7 +579,7 @@ export default function TopNav() {
               event.stopPropagation();
               setIsCollapsed(false);
             }}
-            className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-md touch-manipulation cursor-pointer"
+            className="nav-chrome-pill-secondary nav-chrome-motion inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full touch-manipulation cursor-pointer"
           >
             <span className="flex h-5 w-6 flex-col justify-between">
               <span className="block h-0.5 w-full rounded-full bg-current" />
@@ -590,74 +590,65 @@ export default function TopNav() {
         </div>
       )}
       <header
-        className={`fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
+        className={`fixed inset-x-0 top-0 z-40 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
           showMobileStickyBar
-            ? "translate-y-0 opacity-100 pointer-events-auto border-white/60 bg-[#F8F5FF]/95 backdrop-blur-md shadow-sm"
+            ? "translate-y-0 opacity-100 pointer-events-auto"
             : "-translate-y-full opacity-0 pointer-events-none"
         }`}
         suppressHydrationWarning
       >
-        <button
-          type="button"
-          aria-label="Open sidebar"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            setIsCollapsed(false);
-          }}
-          className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white text-[#4a4170] shadow-sm touch-manipulation cursor-pointer"
-        >
-          <span className="flex h-5 w-6 flex-col justify-between">
-            <span className="block h-0.5 w-full rounded-full bg-current" />
-            <span className="block h-0.5 w-full rounded-full bg-current" />
-            <span className="block h-0.5 w-full rounded-full bg-current" />
-          </span>
-        </button>
-        <Link
-          href="/"
-          className="inline-flex items-center"
-          suppressHydrationWarning
-        >
-          <Image
-            src="/logo.png"
-            alt="Envitefy logo"
-            width={100}
-            height={32}
-            priority
-          />
-        </Link>
-        <div className="h-10 w-10" aria-hidden="true"></div>
+        <div className="nav-chrome-glass-header flex items-center justify-between gap-3 rounded-[1.65rem] px-3 py-2.5">
+          <button
+            type="button"
+            aria-label="Open sidebar"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setIsCollapsed(false);
+            }}
+            className="nav-chrome-pill-secondary nav-chrome-motion inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full touch-manipulation cursor-pointer"
+          >
+            <span className="flex h-5 w-6 flex-col justify-between">
+              <span className="block h-0.5 w-full rounded-full bg-current" />
+              <span className="block h-0.5 w-full rounded-full bg-current" />
+              <span className="block h-0.5 w-full rounded-full bg-current" />
+            </span>
+          </button>
+          <Link
+            href="/"
+            className="ml-auto inline-flex items-center"
+            suppressHydrationWarning
+          >
+            <EnvitefyWordmark
+              scaled={false}
+              className="text-[1.55rem] leading-none sm:text-[1.65rem]"
+            />
+          </Link>
+        </div>
       </header>
 
       {/* Desktop TopNav */}
       <div
-        className={`fixed inset-x-0 top-0 z-40 w-full text-[#1b1540] hidden lg:block bg-[#F8F5FF] ${
+        className={`fixed inset-x-0 top-0 z-40 hidden w-full text-[#1b1540] lg:block ${
           !isInitialMount ? "transition-all duration-300" : ""
-        } ${
-          navIsScrolled
-            ? "border-b border-white/60 backdrop-blur-md shadow-sm"
-            : ""
         }`}
         suppressHydrationWarning
       >
         <div
-          className={`mx-auto flex w-full max-w-7xl items-center gap-4 px-3 md:px-8 ${
-            navIsScrolled ? "py-3" : "py-5"
+          className={`nav-chrome-glass-header mx-auto mt-3 flex w-[min(100%-1.5rem,80rem)] items-center gap-4 rounded-[1.9rem] px-4 md:px-6 ${
+            navIsScrolled ? "py-3" : "py-4"
           }`}
           suppressHydrationWarning
         >
-          <div className="flex flex-shrink-0 items-center -ml-10 md:-ml-6">
+          <div className="flex flex-shrink-0 items-center">
             <Link
               href="/"
               className="inline-flex items-center text-[#7f8cff] opacity-100"
               suppressHydrationWarning
             >
-              <Image
-                src="/logo.png"
-                alt="Envitefy logo"
-                width={112}
-                height={46}
-                priority
+              <EnvitefyWordmark
+                scaled={false}
+                className="text-[2rem] leading-none"
               />
             </Link>
           </div>
@@ -668,10 +659,8 @@ export default function TopNav() {
                 return (
                   <div key={link.href} className="relative group">
                     <button
-                      className={`rounded-full px-4 py-1.5 transition flex items-center gap-1 ${
-                        active
-                          ? "bg-[#ece9ff] text-[#281f52] shadow-sm"
-                          : "hover:bg-white/70"
+                      className={`nav-chrome-motion flex items-center gap-1 rounded-full px-4 py-1.5 ${
+                        active ? "nav-chrome-pill-active" : "nav-chrome-pill"
                       }`}
                     >
                       {link.label}
@@ -697,7 +686,7 @@ export default function TopNav() {
                       className="fixed left-1/2 -translate-x-1/2 mt-2 w-full max-w-[95vw] origin-top transform opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex justify-center"
                       suppressHydrationWarning
                     >
-                      <div className="rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-2xl">
+                      <div className="nav-chrome-menu-card rounded-[1.75rem] p-4 text-sm">
                         {isHydrated && (
                           <CreateEventMenu
                             visibleTemplateKeys={visibleTemplateKeys}
@@ -713,10 +702,8 @@ export default function TopNav() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`rounded-full px-4 py-1.5 transition ${
-                    active
-                      ? "bg-[#ece9ff] text-[#281f52] shadow-sm"
-                      : "hover:bg-white/70"
+                  className={`nav-chrome-motion rounded-full px-4 py-1.5 ${
+                    active ? "nav-chrome-pill-active" : "nav-chrome-pill"
                   }`}
                 >
                   {link.label}
@@ -732,7 +719,7 @@ export default function TopNav() {
               onMouseLeave={() => setMyEventsOpen(false)}
             >
               <button
-                className="rounded-full px-4 py-1.5 transition hover:bg-white/70 flex items-center gap-1"
+                className="nav-chrome-pill nav-chrome-motion flex items-center gap-1 rounded-full px-4 py-1.5"
                 onClick={() => setMyEventsOpen((prev) => !prev)}
               >
                 My events
@@ -750,14 +737,14 @@ export default function TopNav() {
               <button
                 type="button"
                 onClick={() => setOpenRecent((prev) => !prev)}
-                className="rounded-full border border-[#dcd8ff] bg-white px-4 py-1.5 text-sm font-semibold text-[#4a4170] shadow-sm transition hover:border-[#bfb6ff]"
+                className="nav-chrome-pill-secondary nav-chrome-motion rounded-full px-4 py-1.5 text-sm font-semibold"
                 aria-haspopup="true"
                 aria-expanded={openRecent}
               >
                 Recent events
               </button>
               {openRecent && (
-                <div className="absolute right-0 mt-2 w-80 rounded-3xl border border-[#ece9ff] bg-white p-4 text-sm shadow-xl z-50">
+                <div className="nav-chrome-menu-card absolute right-0 z-50 mt-2 w-80 rounded-[1.75rem] p-4 text-sm">
                   {history.length === 0 ? (
                     <p className="text-[#7a7595]">No history yet.</p>
                   ) : (
@@ -789,7 +776,7 @@ export default function TopNav() {
               <button
                 type="button"
                 onClick={() => setProfileOpen((prev) => !prev)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-[#dcd8ff] bg-[#FBF7F2] text-[#4a4170] shadow-sm transition hover:border-[#bfb6ff]"
+                className="nav-chrome-avatar nav-chrome-motion flex h-10 w-10 items-center justify-center rounded-full text-[#4a4170]"
                 aria-label="Profile menu"
                 aria-expanded={profileOpen}
               >

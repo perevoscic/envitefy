@@ -22,7 +22,6 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   FileEdit,
   Footprints,
   GraduationCap,
@@ -50,9 +49,7 @@ import {
   getSidebarPrimaryActiveAccent,
   GroupedEventItem,
   GroupedEventSection,
-  SIDEBAR_BACK_ROW_CLASS,
   SIDEBAR_BADGE_CLASS,
-  SIDEBAR_CARD_CLASS,
   SIDEBAR_DIVIDER_CLASS,
   SIDEBAR_EVENT_PANEL_CLASS,
   SIDEBAR_FOOTER_TRIGGER_CLASS,
@@ -61,10 +58,7 @@ import {
   SIDEBAR_ITEM_CARD_CLASS,
   SIDEBAR_MENU_ROW_CLASS,
   SIDEBAR_PANEL_CLASS,
-  SIDEBAR_TOGGLE_CLASS,
   SUBPAGE_STICKY_HEADER_CLASS,
-  type CompactNavItem,
-  type CompactNavItemId,
 } from "./left-sidebar.model";
 import { useLeftSidebarController } from "./left-sidebar.controller";
 
@@ -177,11 +171,7 @@ function SidebarMyEventsMenuIcon({
       viewBox="0 0 24 24"
       width={size}
       height={size}
-      className={[
-        "shrink-0",
-        "text-current",
-        className,
-      ]
+      className={["shrink-0", "text-current", className]
         .filter(Boolean)
         .join(" ")}
       fill="none"
@@ -249,133 +239,50 @@ const footerItemIcons: Record<string, ComponentType<{ size?: number }>> = {
   Admin: ShieldCheck,
 };
 
+const SIDEBAR_SUBMENU_CARD_CLASS =
+  "nav-chrome-menu-card nav-chrome-motion rounded-[24px] border border-[rgba(235,231,255,0.94)] bg-white/84 shadow-[0_16px_32px_rgba(103,88,160,0.12)]";
+const SIDEBAR_SUBMENU_ENTRY_CLASS =
+  "nav-chrome-motion group flex w-full items-center gap-3.5 rounded-[18px] border border-transparent px-2.5 py-2.5 text-left transition-[transform,background-color,box-shadow,border-color] hover:border-[rgba(226,220,255,0.98)] hover:bg-white/82 hover:shadow-[0_14px_28px_rgba(103,88,160,0.1)]";
+const SIDEBAR_SUBMENU_ROW_CLASS =
+  "nav-chrome-motion group flex w-full items-center gap-3 rounded-[20px] border border-transparent px-2 py-2.5 text-left transition-[background-color,border-color,box-shadow,color,transform]";
+const SIDEBAR_SUBMENU_ICON_CLASS =
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-[background-color,color,border-color,box-shadow]";
+const SIDEBAR_SUBMENU_LABEL_CLASS =
+  "font-[var(--font-josefin-sans)] flex-1 truncate text-[0.95rem] font-bold uppercase tracking-[0.13em] leading-none transition-colors";
+const SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS =
+  "bg-white/92 border-[rgba(236,231,255,0.98)] shadow-[0_16px_32px_rgba(103,88,160,0.12)]";
+const SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS =
+  "text-[#beb9e8] hover:bg-white/28";
+const SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS = "text-[#6b5fc2]";
+const SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS =
+  "text-[rgba(107,95,194,0.64)] group-hover:text-[#6b5fc2]";
+const SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS =
+  "border-[rgba(236,231,255,0.98)] bg-white text-[#6e59db] shadow-[0_10px_20px_rgba(103,88,160,0.1)]";
+const SIDEBAR_SUBPAGE_TITLE_CLASS =
+  "font-[var(--font-josefin-sans)] text-[1.25rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]";
+const SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS =
+  "border-transparent bg-transparent text-[#beb9e8] group-hover:text-[#aba4e3]";
+
 function PanelBackButton({
-  title,
   onClick,
 }: {
-  title: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_BACK_ROW_CLASS}`}
+      className="nav-chrome-motion flex w-full items-center gap-3 rounded-[22px] px-2 py-2 text-left hover:bg-white/24"
     >
       <span
-        className={`${SIDEBAR_ICON_CHIP_CLASS} ${SIDEBAR_ICON_CHIP_ACCENT_CLASS}`}
+        className={`${SIDEBAR_ICON_CHIP_CLASS} text-[#7c76c7]`}
       >
         <ChevronLeft size={16} />
       </span>
-      <span className="min-w-0">
-        <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-500">
-          Return
-        </span>
-        <span className="block truncate text-xl font-extrabold text-slate-900">
-          {title}
-        </span>
+      <span className="font-[var(--font-josefin-sans)] min-w-0 block text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
+        Back to main menu
       </span>
     </button>
-  );
-}
-
-function CompactRail({
-  compactNavItems,
-  isCompact,
-  isCompactNavActive,
-  onExpand,
-}: {
-  compactNavItems: CompactNavItem[];
-  isCompact: boolean;
-  isCompactNavActive: (id: CompactNavItemId) => boolean;
-  onExpand: () => void;
-}) {
-  return (
-    <div
-      className={`absolute inset-0 flex h-full flex-col items-center gap-4 bg-[#f8f9fb] px-3 py-5 transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-        isCompact
-          ? "translate-x-0 opacity-100"
-          : "-translate-x-3 opacity-0 pointer-events-none"
-      }`}
-      aria-hidden={!isCompact}
-    >
-      <div className="flex h-full flex-col items-center gap-4">
-        <button
-          type="button"
-          aria-label="Expand navigation"
-          onClick={onExpand}
-          className={SIDEBAR_TOGGLE_CLASS}
-        >
-          <ChevronRight size={18} />
-        </button>
-        <div className="flex-1 flex flex-col items-center gap-3">
-          {compactNavItems.map((item) => {
-            const Icon = item.icon as ComponentType<any>;
-            const badgeCount = item.badge || 0;
-            const active = isCompactNavActive(item.id);
-            const compactNavClass = `relative inline-flex h-12 w-12 cursor-pointer touch-manipulation items-center justify-center rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-              active
-                ? "border-indigo-100 bg-indigo-50 text-indigo-600 shadow-[0_16px_30px_rgba(99,102,241,0.14)]"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-white hover:text-slate-900"
-            }`;
-            const iconNode =
-              item.id === "myEvents" ? (
-                <SidebarMyEventsMenuIcon size={18} active={active} />
-              ) : (
-                <Icon size={18} />
-              );
-            const badgeNode =
-              badgeCount > 0 ? (
-                <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white shadow-sm">
-                  {badgeCount}
-                </span>
-              ) : null;
-
-            if (item.href) {
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={item.onClick}
-                  className={compactNavClass}
-                  title={item.label}
-                  aria-label={item.label}
-                  aria-current={active ? "page" : undefined}
-                >
-                  {iconNode}
-                  {badgeNode}
-                </Link>
-              );
-            }
-
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={item.onClick}
-                className={compactNavClass}
-                title={item.label}
-                aria-label={item.label}
-                aria-current={active ? "true" : undefined}
-              >
-                {iconNode}
-                {badgeNode}
-              </button>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            void secureSignOut("/");
-          }}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-red-500 transition hover:bg-[#e8e8e8]"
-          title="Log out"
-        >
-          <LogOut size={18} />
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -385,7 +292,6 @@ function RootNavigationPanel({
   eventContextSourcePage,
   hasCreateEventAccess,
   isCreateEntryActive,
-  createMenuOptionCount,
   useGymnasticsDirectCreate,
   createdEventsCount,
   invitedEventsCount,
@@ -401,7 +307,6 @@ function RootNavigationPanel({
   eventContextSourcePage: string;
   hasCreateEventAccess: boolean;
   isCreateEntryActive: boolean;
-  createMenuOptionCount: number;
   useGymnasticsDirectCreate: boolean;
   createdEventsCount: number;
   invitedEventsCount: number;
@@ -415,66 +320,71 @@ function RootNavigationPanel({
   const isHomeActive = pathname === "/" && sidebarPage === "root";
   const isStudioActive = pathname === "/studio" && sidebarPage === "root";
   const isSnapActive = pathname === "/event" && sidebarPage === "root";
+  const isViewingEventFromListInRoot =
+    sidebarPage === "root" &&
+    Boolean(
+      pathname &&
+        (pathname.startsWith("/event/") ||
+          pathname.startsWith("/smart-signup-form/"))
+    );
   const isMyEventsActive =
     sidebarPage === "myEvents" ||
-    (sidebarPage === "eventContext" && eventContextSourcePage === "myEvents");
+    (sidebarPage === "eventContext" && eventContextSourcePage === "myEvents") ||
+    (isViewingEventFromListInRoot && eventContextSourcePage === "myEvents");
   const isInvitedEventsActive =
     sidebarPage === "invitedEvents" ||
     (sidebarPage === "eventContext" &&
-      eventContextSourcePage === "invitedEvents");
+      eventContextSourcePage === "invitedEvents") ||
+    (isViewingEventFromListInRoot && eventContextSourcePage === "invitedEvents");
   const mainActiveAccent = getSidebarPrimaryActiveAccent();
-  const rootMenuActiveChipClass =
-    "border-purple-200 bg-white text-purple-600 shadow-sm";
+  const rootMenuActiveChipClass = "nav-chrome-sidebar-chip-active";
   const rootMenuChipClass = SIDEBAR_ICON_CHIP_ACCENT_CLASS;
 
-  const activeRowClass =
-    `${mainActiveAccent.buttonClass} group border`;
-  const inactiveRowClass =
-    "group border border-slate-100 bg-white text-slate-700 hover:bg-slate-50 hover:shadow-md";
-
-  const renderChevronBadge = (count: number, isActive: boolean) => (
-    <span className="ml-auto flex items-center gap-2">
-      <span
-        className={
-          isActive
-            ? "inline-flex min-w-[24px] items-center justify-center rounded-full border border-purple-200 bg-white px-2 py-1 text-[10px] font-black text-purple-600 shadow-sm"
-            : SIDEBAR_BADGE_CLASS
-        }
-      >
-        {count}
-      </span>
-      <ChevronRight
-        size={16}
-        className={
-          isActive
-            ? mainActiveAccent.chevronClass
-            : "text-slate-300 transition-all group-hover:text-indigo-500"
-        }
-      />
-    </span>
-  );
+  const activeRowClass = `${mainActiveAccent.buttonClass} group`;
+  const inactiveRowClass = "group";
+  const rootRowTextClass =
+    "font-[var(--font-josefin-sans)] text-[0.95rem] font-bold uppercase tracking-[0.13em] leading-none";
+  const rootInactiveTextClass = "text-[#beb9e8]";
+  const rootActiveTextClass = "text-[#6e59db]";
+  const rootHoverTextClass = "group-hover:text-[#aba4e3]";
+  const rootIconClass = (isActive: boolean) =>
+    `transition-colors ${
+      isActive
+        ? rootActiveTextClass
+        : `${rootInactiveTextClass} ${rootHoverTextClass}`
+    }`;
 
   return (
-    <div className="space-y-3 pt-2">
-      <div className="-ml-2 space-y-2">
+    <div className="space-y-7 pt-3">
+      <div className="space-y-2">
         <Link
           href="/"
           onClick={onHome}
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isHomeActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-3 pr-4`}
-          style={isHomeActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
+          } py-3 pl-4 pr-4`}
+          style={
+            isHomeActive
+              ? (mainActiveAccent.buttonStyle as CSSProperties)
+              : undefined
+          }
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+              isHomeActive ? rootMenuActiveChipClass : rootMenuChipClass
+            } ${rootIconClass(isHomeActive)}`}
+          >
+            <Home size={17} strokeWidth={1.9} />
+          </span>
+          <span
+            className={`truncate ${rootRowTextClass} ${
               isHomeActive
-                ? rootMenuActiveChipClass
-                : rootMenuChipClass
+                ? rootActiveTextClass
+                : `${rootInactiveTextClass} ${rootHoverTextClass}`
             }`}
           >
-            <Home size={18} />
+            Home
           </span>
-          <span className="truncate">Home</span>
         </Link>
 
         <Link
@@ -482,19 +392,29 @@ function RootNavigationPanel({
           onClick={onStudio}
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isStudioActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-3 pr-4`}
-          style={isStudioActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
+          } py-3 pl-4 pr-4`}
+          style={
+            isStudioActive
+              ? (mainActiveAccent.buttonStyle as CSSProperties)
+              : undefined
+          }
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+              isStudioActive ? rootMenuActiveChipClass : rootMenuChipClass
+            } ${rootIconClass(isStudioActive)}`}
+          >
+            <WandSparkles size={17} strokeWidth={1.9} />
+          </span>
+          <span
+            className={`truncate ${rootRowTextClass} ${
               isStudioActive
-                ? rootMenuActiveChipClass
-                : rootMenuChipClass
+                ? rootActiveTextClass
+                : `${rootInactiveTextClass} ${rootHoverTextClass}`
             }`}
           >
-            <WandSparkles size={18} />
+            Studio
           </span>
-          <span className="truncate">Studio</span>
         </Link>
 
         {!useGymnasticsDirectCreate ? (
@@ -503,19 +423,29 @@ function RootNavigationPanel({
             onClick={onSnap}
             className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
               isSnapActive ? activeRowClass : inactiveRowClass
-            } py-3 pl-3 pr-4`}
-            style={isSnapActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
+            } py-3 pl-4 pr-4`}
+            style={
+              isSnapActive
+                ? (mainActiveAccent.buttonStyle as CSSProperties)
+                : undefined
+            }
           >
             <span
               className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                isSnapActive ? rootMenuActiveChipClass : rootMenuChipClass
+              } ${rootIconClass(isSnapActive)}`}
+            >
+              <Camera size={17} strokeWidth={1.9} />
+            </span>
+            <span
+              className={`truncate ${rootRowTextClass} ${
                 isSnapActive
-                  ? rootMenuActiveChipClass
-                  : rootMenuChipClass
+                  ? rootActiveTextClass
+                  : `${rootInactiveTextClass} ${rootHoverTextClass}`
               }`}
             >
-              <Camera size={18} />
+              Snap Event
             </span>
-            <span className="truncate">Snap event</span>
           </Link>
         ) : null}
 
@@ -525,9 +455,11 @@ function RootNavigationPanel({
             onClick={onCreate}
             className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
               isCreateEntryActive ? activeRowClass : inactiveRowClass
-            } py-3 pl-3 pr-4`}
+            } py-3 pl-4 pr-4`}
             style={
-              isCreateEntryActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
+              isCreateEntryActive
+                ? (mainActiveAccent.buttonStyle as CSSProperties)
+                : undefined
             }
           >
             <span
@@ -535,14 +467,19 @@ function RootNavigationPanel({
                 isCreateEntryActive
                   ? rootMenuActiveChipClass
                   : rootMenuChipClass
+              } ${rootIconClass(isCreateEntryActive)}`}
+            >
+              <Plus size={17} strokeWidth={1.9} />
+            </span>
+            <span
+              className={`truncate ${rootRowTextClass} ${
+                isCreateEntryActive
+                  ? rootActiveTextClass
+                  : `${rootInactiveTextClass} ${rootHoverTextClass}`
               }`}
             >
-              <Plus size={18} />
+              Create Event
             </span>
-            <span className="truncate">Create Event</span>
-            {!useGymnasticsDirectCreate
-              ? renderChevronBadge(createMenuOptionCount, isCreateEntryActive)
-              : null}
           </button>
         ) : null}
 
@@ -551,22 +488,34 @@ function RootNavigationPanel({
           onClick={onMyEvents}
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isMyEventsActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-3 pr-4`}
+          } py-3 pl-4 pr-4`}
           style={
-            isMyEventsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
+            isMyEventsActive
+              ? (mainActiveAccent.buttonStyle as CSSProperties)
+              : undefined
           }
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-              isMyEventsActive
-                ? rootMenuActiveChipClass
-                : rootMenuChipClass
-            }`}
+              isMyEventsActive ? rootMenuActiveChipClass : rootMenuChipClass
+            } ${rootIconClass(isMyEventsActive)}`}
           >
             <SidebarMyEventsMenuIcon size={18} active={isMyEventsActive} />
           </span>
-          <span className="truncate">My Events</span>
-          {renderChevronBadge(createdEventsCount, isMyEventsActive)}
+          <span
+            className={`truncate ${rootRowTextClass} ${
+              isMyEventsActive
+                ? rootActiveTextClass
+                : `${rootInactiveTextClass} ${rootHoverTextClass}`
+            }`}
+          >
+            My Events
+          </span>
+          {createdEventsCount > 0 ? (
+            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>
+              {createdEventsCount}
+            </span>
+          ) : null}
         </button>
 
         <button
@@ -574,9 +523,11 @@ function RootNavigationPanel({
           onClick={onInvitedEvents}
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isInvitedEventsActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-3 pr-4`}
+          } py-3 pl-4 pr-4`}
           style={
-            isInvitedEventsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
+            isInvitedEventsActive
+              ? (mainActiveAccent.buttonStyle as CSSProperties)
+              : undefined
           }
         >
           <span
@@ -584,12 +535,24 @@ function RootNavigationPanel({
               isInvitedEventsActive
                 ? rootMenuActiveChipClass
                 : rootMenuChipClass
+            } ${rootIconClass(isInvitedEventsActive)}`}
+          >
+            <Users size={17} strokeWidth={1.9} />
+          </span>
+          <span
+            className={`truncate ${rootRowTextClass} ${
+              isInvitedEventsActive
+                ? rootActiveTextClass
+                : `${rootInactiveTextClass} ${rootHoverTextClass}`
             }`}
           >
-            <Users size={18} />
+            Invited Events
           </span>
-          <span className="truncate">Invited Events</span>
-          {renderChevronBadge(invitedEventsCount, isInvitedEventsActive)}
+          {invitedEventsCount > 0 ? (
+            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>
+              {invitedEventsCount}
+            </span>
+          ) : null}
         </button>
       </div>
     </div>
@@ -616,34 +579,43 @@ function CreateMenuButton({
   return (
     <button
       type="button"
-      className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} group border py-3 pl-3 pr-4 ${
+      className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${
         isActive
-          ? activeAccent.buttonClass
-          : "border-slate-100 bg-white hover:bg-slate-50 hover:shadow-md"
+          ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS
+          : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
       }`}
-      style={isActive ? (activeAccent.buttonStyle as CSSProperties) : undefined}
       onClick={() => onSelect(item.label, item.href)}
     >
       <span
-        className={`flex h-11 w-11 items-center justify-center rounded-xl border shadow-sm ${
-          isActive ? activeAccent.chipClass : colorClass
+        className={`${SIDEBAR_SUBMENU_ICON_CLASS} ${
+          isActive
+            ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
+            : `${colorClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
         }`}
       >
         {Icon === SidebarGymnasticsMenuIcon ? (
-          <SidebarGymnasticsMenuIcon size={22} active={isActive} />
+          <SidebarGymnasticsMenuIcon size={18} active={isActive} />
         ) : Icon === SidebarFootballMenuIcon ? (
-          <SidebarFootballMenuIcon size={22} active={isActive} />
+          <SidebarFootballMenuIcon size={18} active={isActive} />
         ) : (
-          <Icon size={22} />
+          <Icon size={18} />
         )}
       </span>
-      <span className="flex-1 truncate">{item.label}</span>
+      <span
+        className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${
+          isActive
+            ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+            : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+        }`}
+      >
+        {item.label}
+      </span>
       <ChevronRight
         size={16}
         className={`ml-auto transition-all ${
           isActive
             ? activeAccent.chevronClass
-            : "text-slate-300 group-hover:text-indigo-500"
+            : "text-[#b5afe8] group-hover:text-[#7b73d2]"
         }`}
       />
     </button>
@@ -670,11 +642,14 @@ function CreatePanel({
   onOpenOther: () => void;
 }) {
   return (
-    <div className="space-y-3 pt-2">
+    <div className="space-y-4 pt-2">
       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
-        <PanelBackButton title={title} onClick={onBack} />
+        <PanelBackButton onClick={onBack} />
+        <div className="px-2 pb-1 pt-1">
+          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>{title}</p>
+        </div>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-1.5">
         {items.map((item, index) => (
           <CreateMenuButton
             key={item.label}
@@ -688,40 +663,38 @@ function CreatePanel({
           <button
             type="button"
             onClick={onOpenOther}
-            className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} group border py-3 pl-3 pr-4 ${
+            className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${
               isOtherEventsActive
-                ? "border-purple-200 bg-purple-50 text-purple-800 shadow-[0_16px_30px_rgba(147,51,234,0.12),inset_0_0_0_1px_rgba(147,51,234,0.18)]"
-                : "border-slate-100 bg-white hover:bg-slate-50 hover:shadow-md"
+                ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS
+                : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
             }`}
-            style={
-              isOtherEventsActive
-                ? {
-                    backgroundColor: "#F3E8FF",
-                    borderColor: "#E9D5FF",
-                    boxShadow:
-                      "0 16px 30px rgba(147, 51, 234, 0.12), inset 0 0 0 1px rgba(147, 51, 234, 0.18)",
-                  }
-                : undefined
-            }
           >
             <span
-              className={`flex h-11 w-11 items-center justify-center rounded-xl border shadow-sm ${
+              className={`${SIDEBAR_SUBMENU_ICON_CLASS} ${
                 isOtherEventsActive
-                  ? "border-purple-200 bg-white text-purple-700"
-                  : CREATE_SECTION_COLORS[0]
+                  ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
+                  : `${CREATE_SECTION_COLORS[0]} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
               }`}
             >
               <CalendarDays size={17} />
             </span>
-            <span className="flex-1 truncate">Other Events</span>
+            <span
+              className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${
+                isOtherEventsActive
+                  ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+                  : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+              }`}
+            >
+              Other Events
+            </span>
             <span className="ml-auto flex items-center gap-2">
               <span className={SIDEBAR_BADGE_CLASS}>{otherItems.length}</span>
               <ChevronRight
                 size={16}
                 className={`transition-all ${
                   isOtherEventsActive
-                    ? "text-purple-400"
-                    : "text-slate-300 group-hover:text-indigo-500"
+                    ? "text-[#655ec0]"
+                    : "text-[#b5afe8] group-hover:text-[#7b73d2]"
                 }`}
               />
             </span>
@@ -763,19 +736,31 @@ function EventListPanel({
         key={item.row.id}
         type="button"
         onClick={() => onRowClick(item)}
-        className={`${SIDEBAR_ITEM_CARD_CLASS} ${
+        className={`${SIDEBAR_SUBMENU_ROW_CLASS} items-start px-2 py-2.5 ${
           isHistoryRowActive(item.row.id)
-            ? `${item.activeCardClass} ${item.activeTintClass} ring-1 ring-indigo-100`
-            : `${item.tintClass} ${item.hoverTintClass}`
-        } flex w-full items-start border border-slate-100 bg-white px-4 py-3 text-left text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
-          muted ? pastRowOpacityClass : ""
-        }`}
-        style={item.style as CSSProperties | undefined}
+            ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS
+            : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
+        } ${muted ? pastRowOpacityClass : ""}`}
       >
+        <span
+          className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${
+            isHistoryRowActive(item.row.id)
+              ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
+              : `${item.tintClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
+          }`}
+        >
+          <CalendarDays size={16} />
+        </span>
         <span className="min-w-0 flex-1">
           {showPendingBadge ? (
             <span className="flex items-center gap-2">
-              <span className="block truncate text-sm font-semibold md:text-base">
+              <span
+                className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-none md:text-[1.02rem] ${
+                  isHistoryRowActive(item.row.id)
+                    ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+                    : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+                }`}
+              >
                 {item.title}
               </span>
               {item.shareStatus === "pending" ? (
@@ -785,11 +770,23 @@ function EventListPanel({
               ) : null}
             </span>
           ) : (
-            <span className="block truncate text-sm font-semibold md:text-base">
+            <span
+              className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-none md:text-[1.02rem] ${
+                isHistoryRowActive(item.row.id)
+                  ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+                  : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+              }`}
+            >
               {item.title}
             </span>
           )}
-          <span className="mt-0.5 block truncate text-xs text-slate-500">
+          <span
+            className={`mt-0.5 block truncate text-xs ${
+              isHistoryRowActive(item.row.id)
+                ? "text-[#9d95db]"
+                : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
+            }`}
+          >
             {item.dateLabel}
           </span>
         </span>
@@ -798,15 +795,15 @@ function EventListPanel({
 
   const renderGroupSections = (
     sections: GroupedEventSection[],
-    muted: boolean,
+    muted: boolean
   ) =>
     sections.map((group, index) => (
       <section
         key={`${muted ? "past" : "upcoming"}-${group.category}-${index}`}
-        className="space-y-2"
+        className="space-y-1"
       >
         <div className="px-1 pt-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+          <p className="font-[var(--font-josefin-sans)] text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
             {group.category}
           </p>
           <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
@@ -816,20 +813,27 @@ function EventListPanel({
     ));
 
   return (
-    <div className="space-y-3 pt-2">
+    <div className="space-y-4 pt-2">
       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
-        <PanelBackButton title={title} onClick={onBack} />
+        <PanelBackButton onClick={onBack} />
+        <div className="px-2 pb-1 pt-1">
+          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>{title}</p>
+        </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {grouped.upcoming.length === 0 && grouped.past.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+          <div
+            className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
+          >
             {emptyStateCopy}
           </div>
         ) : (
           <div className="space-y-4">
             {grouped.upcoming.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+              <div
+                className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
+              >
                 No upcoming events.
               </div>
             ) : (
@@ -840,13 +844,13 @@ function EventListPanel({
               <section className="space-y-1">
                 <div className="px-1 pt-2">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9f98d7]">
                       Past Events
                     </p>
                     <button
                       type="button"
                       onClick={() => setPastExpanded((prev) => !prev)}
-                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-slate-600 shadow-sm transition hover:bg-slate-50"
+                      className="nav-chrome-menu-card nav-chrome-motion inline-flex items-center gap-1 rounded-full border border-[rgba(117,103,177,0.18)] bg-white/88 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--nav-chrome-muted)] shadow-[0_10px_22px_rgba(96,81,154,0.08)] hover:bg-white"
                     >
                       <span>
                         {pastExpanded ? "Hide past events" : "Show past events"}
@@ -864,7 +868,9 @@ function EventListPanel({
 
                 {pastExpanded ? (
                   grouped.past.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
+                    <div
+                      className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
+                    >
                       {emptyPastCopy}
                     </div>
                   ) : (
@@ -916,7 +922,7 @@ function FooterProfileMenu({
 }) {
   return (
     <div
-      className={`border-t border-slate-200 bg-[#f8f9fb] px-5 py-4 ${
+      className={`absolute bottom-0 left-0 right-0 z-[40] bg-transparent px-5 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-6 ${
         isCompact ? "pointer-events-none" : ""
       }`}
     >
@@ -932,36 +938,33 @@ function FooterProfileMenu({
           onPointerDown={(event) => event.stopPropagation()}
           aria-expanded={menuOpen}
           className={`${SIDEBAR_FOOTER_TRIGGER_CLASS} ${
-            menuOpen ? "ring-2 ring-indigo-50/60 shadow-xl" : ""
+            menuOpen
+              ? "ring-2 ring-[rgba(110,94,181,0.14)] shadow-[0_22px_40px_rgba(123,112,206,0.18)]"
+              : ""
           }`}
         >
           <div className="min-w-0 flex-1 inline-flex items-center gap-3.5">
-            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-[15px] font-bold text-indigo-700">
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[linear-gradient(135deg,#7f67ff_0%,#6f7aff_100%)] text-[15px] font-bold text-white shadow-[0_12px_22px_rgba(102,93,219,0.22)]">
               {profileInitials}
             </span>
             <div className="min-w-0 flex-1 text-left">
-              <div className="truncate text-[14px] font-bold leading-tight text-slate-700">
+              <div className="truncate text-[13px] font-bold leading-tight text-[#5e54b7]">
                 {userTitleLabel}
               </div>
               {userEmail ? (
-                <div className="truncate text-[12px] text-slate-400">
+                <div className="truncate text-[11px] text-[#b7b1e8]">
                   {userEmail}
                 </div>
               ) : null}
             </div>
             {showCreditsShell && creditsAreKnown ? (
-              <span className="shrink-0 inline-flex items-center rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              <span className="shrink-0 inline-flex items-center rounded-md bg-[#7f67ff] px-1.5 py-0.5 text-[10px] font-semibold text-white">
                 {creditsValue}
               </span>
             ) : null}
           </div>
-          <span
-            className={`pr-1 text-slate-300 transition-transform duration-300 ${
-              menuOpen ? "rotate-180" : "rotate-0"
-            }`}
-            aria-hidden="true"
-          >
-            <ChevronUp size={18} />
+          <span className="pr-1 text-[#8a80df]" aria-hidden="true">
+            <ChevronRight size={16} />
           </span>
         </button>
 
@@ -971,11 +974,15 @@ function FooterProfileMenu({
             onClick={(event) => event.stopPropagation()}
             onMouseDown={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
-            className={`pointer-events-auto absolute bottom-full right-0 z-[1000] mb-2 w-[75%] origin-bottom-right rounded-[22px] border border-indigo-50 bg-white p-1.5 shadow-xl transition-all duration-300 ease-out ${
+            className={`nav-chrome-menu-card pointer-events-auto !absolute z-[1000] w-[75%] origin-bottom-right rounded-[24px] p-1.5 transition-all duration-300 ease-out ${
               menuOpen
                 ? "translate-y-0 scale-100 opacity-100"
                 : "pointer-events-none translate-y-4 scale-90 opacity-0"
             }`}
+            style={{
+              right: 0,
+              bottom: "calc(100% + 0.5rem)",
+            }}
           >
             <div className="flex flex-col space-y-0.5">
               {footerMenuItems.map(({ href, label, colorClass, bgClass }) => {
@@ -987,30 +994,30 @@ function FooterProfileMenu({
                     onClick={() => {
                       setMenuOpen(false);
                     }}
-                    className="group flex w-full items-center gap-3.5 rounded-xl px-2.5 py-2.5 text-left transition-colors hover:bg-slate-50"
+                    className={SIDEBAR_SUBMENU_ENTRY_CLASS}
                   >
                     <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${bgClass} ${colorClass} transition-transform group-hover:scale-105`}
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/70 ${bgClass} ${colorClass} shadow-[0_10px_20px_rgba(103,88,160,0.08)] transition-transform group-hover:scale-105`}
                     >
                       <Icon size={16} />
                     </span>
-                    <span className="text-[13px] font-medium text-slate-600">
+                    <span className="text-[13px] font-medium text-[var(--nav-chrome-ink)]">
                       {label}
                     </span>
                   </Link>
                 );
               })}
 
-              <div className="mx-2 my-1 h-px bg-slate-100" />
+              <div className="nav-chrome-divider mx-2 my-1 h-px" />
 
               <button
                 type="button"
                 onClick={() => {
                   void secureSignOut("/");
                 }}
-                className="group flex w-full items-center gap-3.5 rounded-xl px-2.5 py-2.5 text-left transition-colors hover:bg-red-50"
+                className={SIDEBAR_SUBMENU_ENTRY_CLASS}
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-400 transition-transform group-hover:scale-105">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-red-50 text-red-400 shadow-[0_10px_20px_rgba(103,88,160,0.08)] transition-transform group-hover:scale-105">
                   <LogOut size={16} />
                 </span>
                 <span className="text-[13px] font-medium text-red-400">
@@ -1058,8 +1065,8 @@ export default function LeftSidebar() {
     viewModel.sidebarPage === "createEvent"
       ? "translateX(0%)"
       : viewModel.sidebarPage === "createEventOther"
-        ? "translateX(-2rem)"
-        : "translateX(100%)";
+      ? "translateX(-2rem)"
+      : "translateX(100%)";
   const createEventOtherPanelTransform =
     viewModel.sidebarPage === "createEventOther"
       ? "translateX(0%)"
@@ -1068,155 +1075,97 @@ export default function LeftSidebar() {
     viewModel.sidebarPage === "myEvents"
       ? "translateX(0%)"
       : viewModel.sidebarPage === "eventContext" &&
-          viewModel.eventContextSourcePage === "myEvents"
-        ? "translateX(-2rem)"
-        : "translateX(100%)";
+        viewModel.eventContextSourcePage === "myEvents"
+      ? "translateX(-2rem)"
+      : "translateX(100%)";
   const invitedEventsPanelTransform =
     viewModel.sidebarPage === "invitedEvents"
       ? "translateX(0%)"
       : viewModel.sidebarPage === "eventContext" &&
-          viewModel.eventContextSourcePage === "invitedEvents"
-        ? "translateX(-2rem)"
-        : "translateX(100%)";
+        viewModel.eventContextSourcePage === "invitedEvents"
+      ? "translateX(-2rem)"
+      : "translateX(100%)";
   const eventPanelTransform =
     viewModel.sidebarPage === "eventContext"
       ? "translateX(0%)"
       : "translateX(100%)";
-  const panelStyle = (
-    transform: string,
-    isActive: boolean,
-    isCompact: boolean,
-  ): CSSProperties => ({
+  const panelStyle = (transform: string, isActive: boolean): CSSProperties => ({
     ...panelTransitionStyle,
     transform,
-    pointerEvents: isCompact ? "none" : isActive ? "auto" : "none",
+    pointerEvents: isActive ? "auto" : "none",
     opacity: isActive ? 1 : 0,
   });
-
-  const compactNavItems = [
-    {
-      id: "home" as const,
-      icon: Home,
-      label: "Home",
-      href: "/",
-      onClick: viewModel.goHomeFromSidebar,
-    },
-    {
-      id: "studio" as const,
-      icon: WandSparkles,
-      label: "Studio",
-      href: "/studio",
-      onClick: viewModel.goStudioFromSidebar,
-    },
-    !viewModel.useGymnasticsDirectCreate
-      ? {
-          id: "snap" as const,
-          icon: Camera,
-          label: "Snap event",
-          href: "/event",
-          onClick: viewModel.handleRootSnapNavigate,
-        }
-      : null,
-    viewModel.hasCreateEventAccess
-      ? {
-          id: "create" as const,
-          icon: Plus,
-          label: "Create event",
-          onClick: viewModel.openCreateEventPage,
-        }
-      : null,
-    {
-      id: "myEvents" as const,
-      icon: SidebarMyEventsMenuIcon,
-      label: "My events",
-      onClick: viewModel.openMyEventsPage,
-      badge: viewModel.createdEventsCount,
-    },
-    {
-      id: "invitedEvents" as const,
-      icon: Users,
-      label: "Invited events",
-      onClick: viewModel.openInvitedEventsPage,
-      badge: viewModel.invitedEventsCount,
-    },
-  ].filter((item): item is CompactNavItem => Boolean(item));
 
   return (
     <>
       {!viewModel.isOpen ? (
         <header
-          className={`fixed inset-x-0 top-0 z-[6500] flex items-center justify-between px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
+          className={`fixed inset-x-0 top-0 z-[6500] px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
             viewModel.showMobileTopBar
-              ? "translate-y-0 opacity-100 pointer-events-auto bg-[#F8F5FF]/95 backdrop-blur-md shadow-sm"
-              : "-translate-y-full opacity-0 pointer-events-none border-transparent bg-transparent"
+              ? "translate-y-0 opacity-100 pointer-events-auto"
+              : "-translate-y-full opacity-0 pointer-events-none"
           }`}
         >
-          <button
-            ref={viewModel.openBarButtonRef}
-            type="button"
-            className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center text-slate-700"
-            onClick={(event) => {
-              event.stopPropagation();
-              viewModel.openSidebarFromTrigger(false);
-            }}
-            onPointerDown={(event) => {
-              if (event.pointerType === "touch") {
+          <div className="nav-chrome-glass-header nav-chrome-motion flex items-center justify-between gap-3 rounded-[1.65rem] px-3 py-2.5">
+            <button
+              ref={viewModel.openBarButtonRef}
+              type="button"
+              className="nav-chrome-pill-secondary nav-chrome-motion inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full"
+              onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                viewModel.openSidebarFromTrigger(true);
-              }
-            }}
-            onTouchStart={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              viewModel.openSidebarFromTrigger(true);
-            }}
-            aria-label="Open navigation"
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="4" cy="5" r="2" />
-              <rect x="9" y="3" width="13" height="4" rx="2" />
-              <circle cx="4" cy="12" r="2" />
-              <rect x="9" y="10" width="13" height="4" rx="2" />
-              <circle cx="4" cy="19" r="2" />
-              <rect x="9" y="17" width="13" height="4" rx="2" />
-            </svg>
-          </button>
-          <Link
-            href="/"
-            onClick={viewModel.goHomeFromSidebar}
-            className="flex h-11 min-w-0 flex-1 items-center justify-end pr-1"
-          >
-            <EnvitefyWordmark className="text-[1.55rem] leading-none drop-shadow-sm sm:text-[1.65rem]" />
-          </Link>
-          {viewModel.showEditTopBar ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window === "undefined") return;
-                window.dispatchEvent(
-                  new CustomEvent("envitefy:open-discovery-editor"),
-                );
+                viewModel.openSidebarFromTrigger();
               }}
-              className="inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm"
-              aria-label="Customize your meet"
+              aria-label="Open navigation"
             >
-              <CustomizeIcon size={14} />
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="4" cy="5" r="2" />
+                <rect x="9" y="3" width="13" height="4" rx="2" />
+                <circle cx="4" cy="12" r="2" />
+                <rect x="9" y="10" width="13" height="4" rx="2" />
+                <circle cx="4" cy="19" r="2" />
+                <rect x="9" y="17" width="13" height="4" rx="2" />
+              </svg>
             </button>
-          ) : (
-            <div className="h-10 w-10" aria-hidden="true" />
-          )}
+            <div className="ml-auto flex min-w-0 items-center gap-2">
+              {viewModel.showEditTopBar ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window === "undefined") return;
+                    window.dispatchEvent(
+                      new CustomEvent("envitefy:open-discovery-editor")
+                    );
+                  }}
+                  className="nav-chrome-pill-secondary nav-chrome-motion inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full"
+                  aria-label="Customize your meet"
+                >
+                  <CustomizeIcon size={14} />
+                </button>
+              ) : null}
+              <Link
+                href="/"
+                onClick={viewModel.goHomeFromSidebar}
+                className="flex h-11 min-w-0 items-center justify-end"
+              >
+                <EnvitefyWordmark
+                  className="text-[1.55rem] leading-none sm:text-[1.65rem]"
+                  scaled={false}
+                />
+              </Link>
+            </div>
+          </div>
         </header>
       ) : null}
 
       <div
-        className={`fixed inset-0 z-[5999] bg-black/20 backdrop-blur-sm transition-opacity duration-200 lg:hidden ${
+        className={`nav-chrome-mobile-drawer-backdrop fixed inset-0 z-[5999] transition-opacity duration-200 lg:hidden ${
           viewModel.isOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -1230,83 +1179,39 @@ export default function LeftSidebar() {
 
       <aside
         ref={viewModel.asideRef}
-        className={`fixed left-0 top-0 z-[6000] flex h-full flex-col border-r border-slate-200 bg-[#f8f9fb] ${viewModel.overflowClass} transition-[transform,opacity,width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform ${viewModel.pointerClass} lg:flex`}
+        className={`nav-chrome-sidebar-surface fixed left-0 top-0 z-[6000] flex h-full flex-col border-r border-[rgba(112,97,168,0.14)] ${viewModel.overflowClass} transition-[transform,opacity,width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform ${viewModel.pointerClass} lg:flex`}
         style={{
           width: viewModel.sidebarWidth,
           transform: viewModel.sidebarTransform,
           opacity: viewModel.isDesktop ? 1 : viewModel.isOpen ? 1 : 0,
-          backgroundColor: "#f8f9fb",
-          boxShadow: "0 24px 60px rgba(15, 23, 42, 0.08)",
+          boxShadow: "0 24px 60px rgba(88, 71, 171, 0.18)",
         }}
         aria-label="Sidebar"
       >
-        <CompactRail
-          compactNavItems={compactNavItems}
-          isCompact={viewModel.isCompact}
-          isCompactNavActive={viewModel.isCompactNavActive}
-          onExpand={() => sidebar.setIsCollapsed(false)}
-        />
-
-        <div
-          className={`relative h-full w-full transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-            viewModel.isCompact
-              ? "translate-x-3 opacity-0 pointer-events-none select-none"
-              : "translate-x-0 opacity-100"
-          }`}
-          aria-hidden={viewModel.isCompact}
-        >
+        <div className="relative h-full w-full transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]">
           <div className="relative h-full w-full overflow-hidden">
-            <div className="absolute inset-0 z-[1] flex h-full flex-col bg-[#f8f9fb]">
-              <div
-                className={`relative z-10 flex-shrink-0 px-5 pb-3 pt-5 ${
-                  viewModel.isCompact ? "pointer-events-none" : ""
-                }`}
-              >
-                <div className={`relative ${SIDEBAR_CARD_CLASS} px-5 py-4`}>
-                  <button
-                    type="button"
-                    aria-label={
-                      sidebar.isCollapsed
-                        ? "Expand navigation"
-                        : "Collapse navigation"
-                    }
-                    onClick={() => sidebar.setIsCollapsed(!sidebar.isCollapsed)}
-                    className={`absolute right-4 top-4 ${SIDEBAR_TOGGLE_CLASS}`}
-                  >
-                    {sidebar.isCollapsed ? (
-                      <ChevronRight size={16} />
-                    ) : (
-                      <ChevronLeft size={16} />
-                    )}
-                  </button>
-                  <div className="flex w-full justify-start pr-12">
-                    <Link
-                      href="/"
-                      onClick={viewModel.goHomeFromSidebar}
-                      className="inline-flex max-w-[190px] translate-y-1 items-center pl-8"
-                    >
-                      <EnvitefyWordmark className="text-[1.75rem] leading-none" />
-                    </Link>
-                  </div>
-                </div>
+            <div className="nav-chrome-sidebar-surface absolute inset-0 z-[1] flex h-full flex-col">
+              <div className="relative z-10 flex-shrink-0 px-5 pb-4 pt-5">
+                <Link
+                  href="/"
+                  onClick={viewModel.goHomeFromSidebar}
+                  className="inline-flex min-h-11 max-w-full items-center"
+                  aria-label="Workspace home"
+                >
+                  <EnvitefyWordmark
+                    className="text-[3.15rem] leading-none"
+                    scaled={false}
+                  />
+                </Link>
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="px-5">
-                  <div className={SIDEBAR_DIVIDER_CLASS} />
-                </div>
-
-                <div
-                  className={`relative mt-1 min-h-0 flex-1 overflow-hidden ${
-                    viewModel.isCompact ? "pointer-events-none" : ""
-                  }`}
-                >
+                <div className="relative min-h-0 flex-1 overflow-hidden">
                   <div
                     className={`${SIDEBAR_PANEL_CLASS} z-[5]`}
                     style={panelStyle(
                       rootPanelTransform,
-                      viewModel.sidebarPage === "root",
-                      viewModel.isCompact,
+                      viewModel.sidebarPage === "root"
                     )}
                     aria-hidden={viewModel.sidebarPage !== "root"}
                   >
@@ -1316,7 +1221,6 @@ export default function LeftSidebar() {
                       eventContextSourcePage={viewModel.eventContextSourcePage}
                       hasCreateEventAccess={viewModel.hasCreateEventAccess}
                       isCreateEntryActive={viewModel.isCreateEntryActive}
-                      createMenuOptionCount={viewModel.createMenuOptionCount}
                       useGymnasticsDirectCreate={
                         viewModel.useGymnasticsDirectCreate
                       }
@@ -1335,8 +1239,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[10]`}
                     style={panelStyle(
                       createEventPanelTransform,
-                      viewModel.sidebarPage === "createEvent",
-                      viewModel.isCompact,
+                      viewModel.sidebarPage === "createEvent"
                     )}
                     aria-hidden={viewModel.sidebarPage !== "createEvent"}
                   >
@@ -1356,8 +1259,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[12]`}
                     style={panelStyle(
                       createEventOtherPanelTransform,
-                      viewModel.sidebarPage === "createEventOther",
-                      viewModel.isCompact,
+                      viewModel.sidebarPage === "createEventOther"
                     )}
                     aria-hidden={viewModel.sidebarPage !== "createEventOther"}
                   >
@@ -1377,8 +1279,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[15]`}
                     style={panelStyle(
                       myEventsPanelTransform,
-                      viewModel.sidebarPage === "myEvents",
-                      viewModel.isCompact,
+                      viewModel.sidebarPage === "myEvents"
                     )}
                     aria-hidden={viewModel.sidebarPage !== "myEvents"}
                   >
@@ -1401,8 +1302,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
-                      viewModel.sidebarPage === "invitedEvents",
-                      viewModel.isCompact,
+                      viewModel.sidebarPage === "invitedEvents"
                     )}
                     aria-hidden={viewModel.sidebarPage !== "invitedEvents"}
                   >
@@ -1425,8 +1325,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_EVENT_PANEL_CLASS} z-[30]`}
                     style={panelStyle(
                       eventPanelTransform,
-                      viewModel.sidebarPage === "eventContext",
-                      viewModel.isCompact,
+                      viewModel.sidebarPage === "eventContext"
                     )}
                     aria-hidden={viewModel.sidebarPage !== "eventContext"}
                   >

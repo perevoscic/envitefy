@@ -35,26 +35,21 @@ test("left sidebar view still gates both root and compact create entries behind 
 
   assert.match(
     source,
-    /\{hasCreateEventAccess \? \(\s*<button\s+type="button"\s+onClick=\{onCreate\}[\s\S]*?<span className="truncate">Create Event<\/span>/s
+    /\{hasCreateEventAccess \? \(\s*<button\s+type="button"\s+onClick=\{onCreate\}[\s\S]*?Create Event\s*<\/span>/s
   );
-  assert.match(
-    source,
-    /viewModel\.hasCreateEventAccess\s*\?\s*\{\s*id: "create" as const,\s*icon: Plus,\s*label: "Create event",\s*onClick: viewModel\.openCreateEventPage,\s*\}\s*:\s*null/s
-  );
+  assert.doesNotMatch(source, /CompactRail/);
+  assert.doesNotMatch(source, /Collapse navigation/);
+  assert.doesNotMatch(source, /Expand navigation/);
 });
 
-test("left sidebar exposes Studio below Home in both full and compact navigation", () => {
+test("left sidebar exposes Studio below Home in the always-open workspace navigation", () => {
   const source = readSource("src/app/left-sidebar.tsx");
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const modelSource = readSource("src/app/left-sidebar.model.ts");
 
   assert.match(
     source,
-    /<span className="truncate">Home<\/span>\s*<\/Link>\s*<Link\s+href="\/studio"[\s\S]*?<span className="truncate">Studio<\/span>/s
-  );
-  assert.match(
-    source,
-    /\{\s*id: "studio" as const,\s*icon: WandSparkles,\s*label: "Studio",\s*href: "\/studio",\s*onClick: viewModel\.goStudioFromSidebar,\s*\}/s
+    /Home\s*<\/span>\s*<\/Link>\s*<Link\s+href="\/studio"[\s\S]*?Studio\s*<\/span>/s
   );
   assert.match(
     controllerSource,

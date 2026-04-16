@@ -58,62 +58,46 @@ const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
         tabIndex={-1}
         role="region"
         aria-label="Event menu"
-        className="flex h-full flex-col"
+        className="nav-chrome-sidebar-surface flex h-full flex-col"
       >
-        <div className="relative flex-shrink-0 px-4 pt-5 pb-4">
-          <div className="rounded-3xl border border-white/60 bg-white/80 px-4 py-4 shadow-[0_25px_60px_rgba(101,67,145,0.18)] backdrop-blur-2xl">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onBack}
-                aria-label={`Back to ${backLabel}`}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/85 text-[#6d5b9f] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#cdbdff]/70"
-              >
-                <ArrowLeft size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={onBack}
-                className="min-w-0 text-left text-sm font-semibold text-[#4a3b76] hover:text-[#2f2453]"
-              >
-                {backLabel}
-              </button>
-            </div>
-          </div>
+        <div className="relative flex-shrink-0 px-5 pt-5 pb-4">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label={`Back to ${backLabel}`}
+            className="flex items-center gap-3 rounded-full bg-white px-4 py-3 text-left text-[0.86rem] font-semibold uppercase tracking-[0.12em] text-[#6c60db] shadow-[0_16px_34px_rgba(120,105,214,0.16)]"
+          >
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full">
+              <ArrowLeft size={16} strokeWidth={1.9} />
+            </span>
+            <span className="truncate">{backLabel}</span>
+          </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-1">
-          <div className="rounded-2xl border border-white/60 bg-white/80 px-3 py-3 shadow-[0_18px_40px_rgba(81,54,123,0.15)] backdrop-blur-xl">
-            <div className="space-y-2">
-              {tabItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeEventTab === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => onTabChange(item.key)}
-                    aria-pressed={isActive}
-                    className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
-                      isActive
-                        ? "bg-gradient-to-r from-[#ece7ff] to-[#edf3ff] text-[#2c1d52] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
-                        : "text-[#4b3f72] hover:bg-[#f3efff]"
-                    }`}
-                  >
-                    <span
-                      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${
-                        isActive
-                          ? "bg-white/90 text-[#5b44a0] shadow-sm"
-                          : "bg-[#f3efff] text-[#7662aa]"
-                      }`}
-                    >
-                      <Icon size={16} />
-                    </span>
-                    <span className="font-medium">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-1">
+          <div className="space-y-2">
+            {tabItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeEventTab === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => onTabChange(item.key)}
+                  aria-pressed={isActive}
+                  className={`nav-chrome-motion flex w-full items-center gap-3 rounded-full px-4 py-3 text-left text-[0.86rem] font-semibold uppercase tracking-[0.12em] ${
+                    isActive
+                      ? "nav-chrome-sidebar-row-active text-[#6c60db]"
+                      : "nav-chrome-sidebar-row text-[#c1bcf0]"
+                  }`}
+                >
+                  <span className={`${isActive ? "text-[#6c60db]" : "text-[#c1bcf0]"}`}>
+                    <Icon size={16} strokeWidth={1.9} />
+                  </span>
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

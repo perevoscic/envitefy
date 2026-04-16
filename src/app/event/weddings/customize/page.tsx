@@ -4010,24 +4010,24 @@ const App = () => {
 
       {mobileMenuOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-slate-900/50 z-10"
+          className="nav-chrome-mobile-drawer-backdrop md:hidden fixed inset-0 z-10"
           onClick={closeMobileMenu}
           role="presentation"
         ></div>
       )}
 
       <div
-        className={`w-full md:w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-20 absolute md:fixed top-0 right-0 h-screen transition-transform duration-300 transform md:translate-x-0 ${
+        className={`nav-chrome-mobile-drawer w-full md:w-[400px] flex flex-col z-20 absolute md:fixed top-0 right-0 h-screen transition-transform duration-300 transform md:translate-x-0 ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
         {...drawerTouchHandlers}
       >
         <ScrollHandoffContainer className="flex-1">
           {mobileMenuOpen && (
-            <div className="sticky top-0 z-20 flex items-center justify-between bg-white border-b border-slate-100 px-4 py-3 gap-3">
+            <div className="nav-chrome-mobile-drawer-header sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3">
               <button
                 onClick={closeMobileMenu}
-                className="flex items-center gap-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-full px-3 py-1"
+                className="nav-chrome-mobile-drawer-back-button flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
               >
                 <ChevronLeft size={14} />
                 Back to preview
@@ -4063,7 +4063,7 @@ const App = () => {
           <button
             type="button"
             onClick={openMobileMenu}
-            className="flex items-center gap-2 rounded-full bg-slate-900 text-white px-4 py-3 text-sm font-semibold shadow-lg"
+            className="nav-chrome-mobile-drawer-trigger flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold"
           >
             <Edit2 size={18} />
             Edit

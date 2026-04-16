@@ -1,16 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useSidebar } from "@/app/sidebar-context";
+import { SIDEBAR_WIDTH_REM } from "@/app/left-sidebar.model";
 import { useEffect, useState } from "react";
 
-const SIDEBAR_WIDTH_REM = "20rem";
-const SIDEBAR_COLLAPSED_REM = "4.5rem";
 /** Must match the mobile <header> in left-sidebar.tsx:
- *  pt-[max(0.5rem,env(safe-area-inset-top))] + h-10 button + pb-2
- *  = max(0.5rem, safe-area) + 3rem */
+ *  pt-[max(0.75rem,env(safe-area-inset-top))] + h-10 button + pb-2
+ *  = max(0.75rem, safe-area) + 3rem */
 const MOBILE_TOPBAR_PT =
-  "calc(3rem + max(0.5rem, env(safe-area-inset-top, 0px)))";
+  "calc(3rem + max(0.75rem, env(safe-area-inset-top, 0px)))";
 
 export function MainContentWrapper({
   children,
@@ -24,7 +22,6 @@ export function MainContentWrapper({
   className?: string;
 }) {
   const pathname = usePathname();
-  const { isCollapsed } = useSidebar();
   const [isDesktop, setIsDesktop] = useState(false);
 
   const normalizedPath = (pathname || "").replace(/\/+$/, "");
@@ -41,11 +38,7 @@ export function MainContentWrapper({
   }, []);
 
   const paddingLeft =
-    reserveSidebarSpace && isDesktop
-      ? isCollapsed
-        ? SIDEBAR_COLLAPSED_REM
-        : SIDEBAR_WIDTH_REM
-      : "0";
+    reserveSidebarSpace && isDesktop ? SIDEBAR_WIDTH_REM : "0";
 
   const paddingTop = isStudioCardShare
     ? "0px"
