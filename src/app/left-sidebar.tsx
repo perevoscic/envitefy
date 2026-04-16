@@ -280,7 +280,7 @@ function PanelBackButton({
         <ChevronLeft size={16} />
       </span>
       <span className="font-[var(--font-josefin-sans)] min-w-0 block text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
-        Back to main menu
+        Back
       </span>
     </button>
   );
