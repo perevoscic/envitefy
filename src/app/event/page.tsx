@@ -18,55 +18,23 @@ export default function EventSnapLandingPage() {
       data-theme-color={themeColorPalette.eventFallback}
     >
       <div className="mx-auto w-full max-w-5xl">
-        <SnapLaunchCards />
-        <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_60px_rgba(120,110,160,0.12)]">
-          <div className="grid gap-8 px-6 py-8 md:grid-cols-[1.15fr_0.85fr] md:px-10 md:py-12">
-            <div className="flex flex-col justify-center">
-              <div className="inline-flex w-fit items-center rounded-full bg-indigo-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-indigo-600">
-                Snap And Style
-              </div>
-              <h1 className="mt-5 text-4xl font-black leading-tight text-[#0f1935] sm:text-5xl">
-                Snap or upload your{" "}
-                <span className="bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent">
-                  flyer or invite
-                </span>
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-[#66677f] sm:text-lg">
-                Use your camera for a quick scan or upload a photo or PDF. Envitefy reads the
-                details, detects birthday invites, and routes them into the right polished event
-                page automatically.
-              </p>
-            </div>
-
-            <div className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-[#f4f0ff] via-[#fff7fb] to-[#eef7ff] p-6">
-              <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-indigo-200/40 blur-2xl" />
-              <div className="absolute -bottom-10 -left-6 h-24 w-24 rounded-full bg-sky-200/40 blur-2xl" />
-              <div className="relative space-y-4">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">
-                  What happens next
-                </p>
-                <div className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm">
-                  <p className="text-sm font-bold text-slate-700">1. Scan the flyer</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Capture it live or upload a saved image/PDF.
-                  </p>
-                </div>
-                <div className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm">
-                  <p className="text-sm font-bold text-slate-700">2. Envitefy scans the details</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Date, time, location, RSVP, and birthday cues are extracted.
-                  </p>
-                </div>
-                <div className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm">
-                  <p className="text-sm font-bold text-slate-700">3. Share the page</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Guests get a clean page with RSVP and calendar actions.
-                  </p>
-                </div>
-              </div>
-            </div>
+        <section className="mx-auto max-w-4xl text-center">
+          <div className="inline-flex w-fit items-center rounded-full bg-[#f3f0ff] px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-[#6e5de7] shadow-[0_10px_28px_rgba(124,58,237,0.08)]">
+            SMART EVENT TRANSFORMATION
           </div>
+          <h1 className="mt-5 pb-[0.08em] text-[clamp(3.2rem,8vw,5.5rem)] font-semibold leading-[1] tracking-[-0.06em] text-[#151229] [font-family:var(--font-playfair),Georgia,serif]">
+            Snap or upload your
+            <br />
+            <span className="mt-3 inline-block pb-[0.1em] pr-[0.08em] bg-[linear-gradient(135deg,#5c43ff_0%,#8f42ff_55%,#b24cff_100%)] bg-clip-text italic text-transparent">
+              flyer or invite
+            </span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-[#767287] sm:text-[1.35rem]">
+            Envitefy reads the details, detects invitation types, and routes them into
+            polished, interactive event pages automatically.
+          </p>
         </section>
+        <SnapLaunchCards />
       </div>
     </main>
   );

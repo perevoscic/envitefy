@@ -101,7 +101,7 @@ export const SIDEBAR_ICON_CHIP_CLASS =
 export const SIDEBAR_ICON_CHIP_ACCENT_CLASS =
   "";
 export const SIDEBAR_PANEL_CLASS =
-  "absolute inset-0 overflow-y-auto no-scrollbar px-5 pb-36 lg:pb-40";
+  "nav-chrome-sidebar-scroll-region absolute inset-0 overflow-y-auto no-scrollbar px-5 pb-36 touch-pan-y lg:pb-40";
 export const SIDEBAR_EVENT_PANEL_CLASS =
   "absolute inset-0 overflow-hidden nav-chrome-sidebar-surface";
 export const SIDEBAR_FOOTER_TRIGGER_CLASS =

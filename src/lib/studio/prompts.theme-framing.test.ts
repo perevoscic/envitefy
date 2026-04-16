@@ -226,7 +226,7 @@ test("page live-card image edit prompts preserve baked-in text and logos", () =>
   );
 });
 
-test("poster-first birthday live-card image prompts allow cinematic raster text, exact spelling, and event year", () => {
+test("poster-first birthday live-card image prompts allow cinematic raster text, exact spelling, and no visible year by default", () => {
   const prompt = buildInvitationImagePrompt(
     {
       title: "Ava After Dark",
@@ -261,7 +261,7 @@ test("poster-first birthday live-card image prompts allow cinematic raster text,
         title: "Ava After Dark",
         subtitle: "Birthday in Bloom",
         openingLine: "Meet us under the lights.",
-        scheduleLine: "May 10, 2030 at 7:00 PM",
+        scheduleLine: "Friday May 10th at 7:00 PM",
         locationLine: "Moonlight Hall",
         detailsLine: "Cocktail attire",
         callToAction: "RSVP Tonight",
@@ -280,7 +280,15 @@ test("poster-first birthday live-card image prompts allow cinematic raster text,
   );
   assert.match(
     prompt,
-    /If Event Year is provided, show that exact year in the poster copy or hierarchy/,
+    /Visible poster schedule\/date lines should omit the year and prefer Saturday May 23rd at 12:00 PM; if time is missing, use Saturday May 23rd\./,
+  );
+  assert.match(
+    prompt,
+    /Only show a year in visible poster copy when the user's custom wording explicitly includes that year and it must be preserved\./,
+  );
+  assert.match(
+    prompt,
+    /Keep venue\/location on its own line or separate field rather than merging it into the visible schedule\/date line\./,
   );
   assert.match(
     prompt,
@@ -317,6 +325,15 @@ test("poster-first birthday live-card image prompts allow cinematic raster text,
   );
   assert.match(
     prompt,
+    /Treat the lowest part of the poster as art-first support for the floating buttons/,
+  );
+  assert.match(
+    prompt,
+    /Do not place marquee wording, signage, decorative captions, or secondary copy in the lowest part of the card/,
+  );
+  assert.doesNotMatch(prompt, /show that exact year in the poster copy or hierarchy/i);
+  assert.match(
+    prompt,
     /Never print phrases such as action buttons, button row, safe area, safe band, or any other instruction text in the artwork/,
   );
   assert.doesNotMatch(prompt, /text-free safe band/i);
@@ -324,7 +341,7 @@ test("poster-first birthday live-card image prompts allow cinematic raster text,
   assert.match(prompt, /Event Year: 2030/);
 });
 
-test("birthday and wedding live-card text prompts require event year and poster-like copy", () => {
+test("birthday and wedding live-card text prompts omit visible year and require poster-like copy", () => {
   const prompt = buildLiveCardPrompt(
     {
       title: "Ava After Dark",
@@ -342,12 +359,27 @@ test("birthday and wedding live-card text prompts require event year and poster-
     },
   );
 
-  assert.match(prompt, /If Event Year is provided, use that exact year in the copy/);
+  assert.match(
+    prompt,
+    /`invitation\.scheduleLine` is for visible date\/time only\. Prefer Saturday May 23rd at 12:00 PM; if time is missing, use Saturday May 23rd\./,
+  );
+  assert.match(
+    prompt,
+    /Visible card schedule\/date lines should omit the year unless the user explicitly typed year wording that must be preserved\./,
+  );
+  assert.match(
+    prompt,
+    /For birthday and wedding visible card copy, never add the year to schedule\/date wording unless the user's custom wording explicitly includes that year\./,
+  );
   assert.match(prompt, /write short cinematic invitation copy with a poster-like hierarchy/);
   assert.match(prompt, /Treat the user's prompt\/theme as the dominant art direction/);
   assert.match(
     prompt,
     /Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy/,
+  );
+  assert.match(
+    prompt,
+    /Resolve the final visible text line well above the bottom action buttons/,
   );
   assert.match(
     prompt,
@@ -357,5 +389,71 @@ test("birthday and wedding live-card text prompts require event year and poster-
     prompt,
     /Bring clear party \/ celebration \/ hosted-event energy into the concept and invitation copy/,
   );
+  assert.doesNotMatch(prompt, /use that exact year in the copy/i);
   assert.match(prompt, /Event Year: 2030/);
+});
+
+test("studio live-card prompts keep birthday copy centered on honoree name and age before theme", () => {
+  const prompt = buildLiveCardPrompt(
+    {
+      title: "Lara's 7th Birthday",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Lara",
+      ageOrMilestone: "7",
+      userIdea: "movie cats",
+      referenceImageUrls: ["https://example.com/lara.png"],
+      links: [],
+    },
+    {
+      subjectTransformMode: "premium_makeover",
+      likenessStrength: "creative",
+      visualStyleMode: "editorial_cinematic",
+    },
+  );
+
+  assert.match(
+    prompt,
+    /For birthdays, when Honoree Name and Age or Milestone are available, make the main invitation title center on that person's name and milestone first\./,
+  );
+  assert.match(prompt, /Premium themed makeover is enabled/);
+  assert.match(prompt, /Likeness strength is Creative/);
+  assert.match(prompt, /Visual style mode is Editorial cinematic/);
+  assert.match(prompt, /Subject Treatment: Premium themed makeover/);
+});
+
+test("studio invitation image prompts use subject-photo makeover rules instead of cutout behavior", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Lara's 7th Birthday",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Lara",
+      ageOrMilestone: "7",
+      userIdea: "movie cats",
+      links: [],
+    },
+    {
+      subjectTransformMode: "premium_makeover",
+      likenessStrength: "balanced",
+      visualStyleMode: "photoreal",
+    },
+    null,
+    { surface: "image", referenceImageCount: 1, posterTextInImage: true },
+  );
+
+  assert.match(
+    prompt,
+    /Do not use the uploaded person as a pasted cutout, sticker, tiny inset, or throwaway reference/,
+  );
+  assert.match(
+    prompt,
+    /Premium themed makeover is enabled\. Preserve identity while restyling wardrobe, hair, props, pose energy, and environmental styling to match the event concept\./,
+  );
+  assert.match(prompt, /Visual style mode is Photoreal/);
+  assert.match(
+    prompt,
+    /For birthdays, when Honoree Name and Age or Milestone are available, make that birthday identity the main visible title hierarchy\./,
+  );
+  assert.match(prompt, /Render Style Mode: Photoreal/);
 });

@@ -1179,9 +1179,10 @@ export default function LeftSidebar() {
 
       <aside
         ref={viewModel.asideRef}
-        className={`nav-chrome-sidebar-surface fixed left-0 top-0 z-[6000] flex h-full flex-col border-r border-[rgba(112,97,168,0.14)] ${viewModel.overflowClass} transition-[transform,opacity,width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform ${viewModel.pointerClass} lg:flex`}
+        className={`nav-chrome-sidebar-surface fixed left-0 top-0 z-[6000] flex h-full flex-col border-r border-[rgba(112,97,168,0.14)] ${viewModel.overflowClass} transition-[transform,opacity,width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${viewModel.pointerClass} lg:flex`}
         style={{
           width: viewModel.sidebarWidth,
+          height: viewModel.isDesktop ? "100%" : "100dvh",
           transform: viewModel.sidebarTransform,
           opacity: viewModel.isDesktop ? 1 : viewModel.isOpen ? 1 : 0,
           boxShadow: "0 24px 60px rgba(88, 71, 171, 0.18)",

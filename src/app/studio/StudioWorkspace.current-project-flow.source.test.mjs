@@ -1,0 +1,28 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+
+function readSource(relPath) {
+  return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
+}
+
+test("studio workspace separates the current project from the saved library", () => {
+  const source = readSource("src/app/studio/StudioWorkspace.tsx");
+  const libraryStep = readSource("src/app/studio/workspace/StudioLibraryStep.tsx");
+
+  assert.match(source, /function upsertLibraryItem\(item: MediaItem\)/);
+  assert.match(source, /function saveWorkingProject\(project: MediaItem \| null\)/);
+  assert.match(source, /function saveCurrentProjectToLibrary\(\)/);
+  assert.match(source, /function clearCurrentProject\(options\?: \{ resetDetails\?: boolean \}\)/);
+  assert.match(source, /function confirmDiscardCurrentProject\(/);
+  assert.match(source, /setCurrentProject\(loadingItem\);/);
+  assert.match(source, /setCurrentProject\(nextItem\);/);
+  assert.match(source, /saveWorkingProject\(workingItem\);/);
+  assert.match(source, /upsertLibraryItem\(syncedItem\);/);
+  assert.match(source, /clearCurrentProject\(\{ resetDetails: true \}\);/);
+
+  assert.match(libraryStep, /setActivePage: \(item: MediaItem \| null\) => void;/);
+  assert.match(libraryStep, /function openLibraryItem\(item: MediaItem\)/);
+  assert.match(libraryStep, /setActivePage\(item\);/);
+});

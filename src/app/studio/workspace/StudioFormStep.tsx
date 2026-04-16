@@ -5,9 +5,9 @@ import { ChevronRight } from "lucide-react";
 import { type Dispatch, type SetStateAction } from "react";
 import type { StudioStep } from "../studio-types";
 import {
-  CATEGORY_FIELDS,
   DETAILS_DESCRIPTION_PLACEHOLDER,
   SHARED_BASICS,
+  STUDIO_COMPACT_CATEGORY_FORM_CONFIG,
 } from "../studio-workspace-field-config";
 import type { EventDetails } from "../studio-workspace-types";
 import { studioWorkspaceShellClass } from "../studio-workspace-ui-classes";
@@ -46,8 +46,9 @@ export function StudioFormStep({
   subjectPhotoUploadError,
 }: StudioFormStepProps) {
   const shellClass = studioWorkspaceShellClass;
-  const categoryFields = CATEGORY_FIELDS[details.category] || [];
-  const primaryCategoryFields = categoryFields.slice(0, 2);
+  const formConfig = STUDIO_COMPACT_CATEGORY_FORM_CONFIG[details.category];
+  const primaryCategoryFields = formConfig.primaryFields;
+  const secondaryCategoryFields = formConfig.secondaryFields || [];
   const sharedPrimaryFields = SHARED_BASICS.filter((field) =>
     ["eventDate", "startTime", "location"].includes(field.key),
   );
@@ -58,7 +59,7 @@ export function StudioFormStep({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="mx-auto max-w-[1100px] space-y-14"
+      className="mr-auto max-w-[1100px] space-y-14"
     >
       <div className={`${shellClass} space-y-12`}>
         <div className="space-y-12 pt-6 md:pt-8">
@@ -68,7 +69,7 @@ export function StudioFormStep({
                 details={details}
                 setDetails={setDetails}
                 fields={primaryCategoryFields}
-                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2"
+                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
               />
             </div>
           ) : null}
@@ -80,6 +81,17 @@ export function StudioFormStep({
                 setDetails={setDetails}
                 fields={sharedPrimaryFields}
                 columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
+              />
+            </div>
+          ) : null}
+
+          {secondaryCategoryFields.length ? (
+            <div className="space-y-4">
+              <StudioFieldGrid
+                details={details}
+                setDetails={setDetails}
+                fields={secondaryCategoryFields}
+                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
               />
             </div>
           ) : null}

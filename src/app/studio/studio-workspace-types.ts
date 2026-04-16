@@ -18,6 +18,10 @@ export type InviteCategory =
 
 export type ActiveTab = "none" | "location" | "calendar" | "registry" | "share" | "details" | "rsvp";
 
+export type StudioSubjectTransformMode = "default" | "premium_makeover";
+export type StudioLikenessStrength = "strict" | "balanced" | "creative";
+export type StudioVisualStyleMode = "photoreal" | "editorial_cinematic" | "playful_stylized";
+
 export type EventDetails = {
   category: InviteCategory;
   sourceMediaMode: "none" | "flyer" | "subjectPhotos";
@@ -43,6 +47,9 @@ export type EventDetails = {
   colors: string;
   style: string;
   visualPreferences: string;
+  subjectTransformMode: StudioSubjectTransformMode;
+  likenessStrength: StudioLikenessStrength;
+  visualStyleMode: StudioVisualStyleMode;
   name: string;
   age: string;
   theme: string;

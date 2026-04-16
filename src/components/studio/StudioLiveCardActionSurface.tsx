@@ -1,0 +1,661 @@
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
+import type { PanInfo } from "framer-motion";
+import {
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  ExternalLink,
+  Gift,
+  Loader2,
+  Mail,
+  MapPin,
+  MessageSquare,
+  Phone,
+  Share2,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
+import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
+import {
+  buildLiveCardRsvpOutboundHref,
+  LIVE_CARD_RSVP_CHOICES,
+  parseLiveCardRsvpContact,
+  shouldShowLiveCardDescriptionSection,
+} from "@/lib/live-card-rsvp";
+import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
+
+export type LiveCardActiveTab =
+  | "none"
+  | "location"
+  | "calendar"
+  | "registry"
+  | "share"
+  | "details"
+  | "rsvp";
+
+export type LiveCardButtonKey = Exclude<LiveCardActiveTab, "none">;
+
+export type LiveCardButtonPosition = {
+  x: number;
+  y: number;
+};
+
+export type LiveCardButtonPositions = Partial<Record<LiveCardButtonKey, LiveCardButtonPosition>>;
+
+export type LiveCardEventDetails = {
+  category?: string;
+  occasion?: string;
+  eventDate?: string;
+  startTime?: string;
+  endTime?: string;
+  venueName?: string;
+  location?: string;
+  rsvpName?: string;
+  rsvpContact?: string;
+  rsvpDeadline?: string;
+  detailsDescription?: string;
+  guestImageUrls?: string[];
+  message?: string;
+  registryLink?: string;
+  [key: string]: unknown;
+};
+
+export type LiveCardInvitationData = {
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  scheduleLine?: string;
+  locationLine?: string;
+  heroTextMode?: "image" | "overlay";
+  theme?: {
+    themeStyle?: string;
+  };
+  interactiveMetadata?: {
+    rsvpMessage?: string;
+    ctaLabel?: string;
+    shareNote?: string;
+  };
+  eventDetails?: LiveCardEventDetails | null;
+};
+
+type LiveCardShareState = "idle" | "pending" | "success";
+
+type StudioLiveCardActionSurfaceProps = {
+  title: string;
+  invitationData?: LiveCardInvitationData | null;
+  activeTab: LiveCardActiveTab;
+  onActiveTabChange: (tab: LiveCardActiveTab) => void;
+  positions?: LiveCardButtonPositions | null;
+  shareUrl?: string | null;
+  fallbackShareUrlToWindowLocation?: boolean;
+  onShare?: () => void;
+  shareState?: LiveCardShareState;
+  isDesignMode?: boolean;
+  onDragEnd?: (key: LiveCardButtonKey, position: LiveCardButtonPosition) => void;
+  showExtendedDetails?: boolean;
+  registryHelperText?: string | null;
+};
+
+const EMPTY_POSITIONS: Record<LiveCardButtonKey, LiveCardButtonPosition> = {
+  rsvp: { x: 0, y: 0 },
+  location: { x: 0, y: 0 },
+  share: { x: 0, y: 0 },
+  calendar: { x: 0, y: 0 },
+  registry: { x: 0, y: 0 },
+  details: { x: 0, y: 0 },
+};
+
+function readString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function formatDate(dateStr: string) {
+  if (!dateStr || !dateStr.includes("-")) return dateStr;
+  const [year, month, day] = dateStr.split("-");
+  return `${month}.${day}.${year}`;
+}
+
+function formatCalendarSummary(dateStr: string, timeStr: string) {
+  const dateLabel = formatWeekdayMonthDayOrdinalEn(dateStr);
+  if (!dateLabel) return "";
+  const timeLabel = formatTimeLabelEn(timeStr);
+  return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel;
+}
+
+function getRegistryText(details: LiveCardEventDetails | null | undefined) {
+  const link = readString(details?.registryLink);
+  if (!link) return "Registry details will be shared by the host.";
+  try {
+    const url = new URL(link.startsWith("http") ? link : `https://${link}`);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return link;
+  }
+}
+
+function buildGoogleCalendarUrl(title: string, invitationData?: LiveCardInvitationData | null) {
+  const details = invitationData?.eventDetails;
+  const eventDate = readString(details?.eventDate).replace(/-/g, "");
+  if (!eventDate) return "";
+  const location = encodeURIComponent(readString(details?.location));
+  const description = encodeURIComponent(readString(invitationData?.description));
+  const encodedTitle = encodeURIComponent(title);
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&details=${description}&location=${location}&dates=${eventDate}/${eventDate}`;
+}
+
+function accentClassForRsvpChoice(choice: "yes" | "no" | "maybe") {
+  if (choice === "yes") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (choice === "no") return "border-rose-200 bg-rose-50 text-rose-700";
+  return "border-amber-200 bg-amber-50 text-amber-700";
+}
+
+export function isPosterFirstHeroCard(invitationData?: LiveCardInvitationData | null) {
+  if (invitationData?.heroTextMode !== "image") return false;
+  const blob = [
+    readString(invitationData?.eventDetails?.category),
+    readString(invitationData?.eventDetails?.occasion),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return (
+    /\bbirthday\b/.test(blob) ||
+    /\bwedding|weddings|bridal|ceremony|reception|save the date|engagement\b/.test(blob)
+  );
+}
+
+function renderExtraDetailFields(details: LiveCardEventDetails | null | undefined) {
+  if (!details) return null;
+  const entries = Object.entries(details).filter(([key, value]) => {
+    if (!value || typeof value === "boolean") return false;
+    if (Array.isArray(value)) return false;
+    return ![
+      "category",
+      "name",
+      "age",
+      "detailsDescription",
+      "guestImageUrls",
+      "coupleNames",
+      "eventDate",
+      "startTime",
+      "endTime",
+      "location",
+      "venueName",
+      "rsvpName",
+      "rsvpContact",
+      "rsvpDeadline",
+      "message",
+      "specialInstructions",
+      "orientation",
+      "colors",
+      "style",
+      "visualPreferences",
+      "subjectTransformMode",
+      "likenessStrength",
+      "visualStyleMode",
+      "theme",
+      "gender",
+    ].includes(key);
+  });
+
+  if (entries.length === 0 && !readString(details.message)) {
+    return null;
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {entries.map(([key, value]) => (
+        <div key={key} className="rounded-xl border border-neutral-100 bg-neutral-50 p-3">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+            {key
+              .replace(/([A-Z])/g, " $1")
+              .replace(/^./, (char) => char.toUpperCase())}
+          </p>
+          <p className="text-sm text-neutral-900">{String(value)}</p>
+        </div>
+      ))}
+      {readString(details.message) ? (
+        <div className="rounded-xl border border-[#e2d5c7] bg-[#f7efe7] p-4 italic">
+          <p className="text-xs text-[#8C7B65]">"{readString(details.message)}"</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
+  const invitationData = props.invitationData || null;
+  const details = invitationData?.eventDetails || null;
+  const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
+  const categorySupportsRsvp = supportsStudioCategoryRsvp(readString(details?.category));
+  const rsvpContact = readString(details?.rsvpContact);
+  const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
+  const effectiveShareUrl =
+    readString(props.shareUrl) ||
+    (props.fallbackShareUrlToWindowLocation && typeof window !== "undefined"
+      ? window.location.href
+      : "");
+  const shareState = props.shareState || "idle";
+  const detailsWelcome = useMemo(
+    () => buildLiveCardDetailsWelcomeMessage(details ?? undefined, props.title),
+    [details, props.title],
+  );
+
+  useEffect(() => {
+    if (props.activeTab === "none" || props.activeTab === "share") return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (
+        target.closest("[data-live-card-panel]") ||
+        target.closest("[data-live-card-trigger]")
+      ) {
+        return;
+      }
+      props.onActiveTabChange("none");
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [props.activeTab, props.onActiveTabChange]);
+
+  useEffect(() => {
+    if (!categorySupportsRsvp && props.activeTab === "rsvp") {
+      props.onActiveTabChange("none");
+    }
+  }, [categorySupportsRsvp, props.activeTab, props.onActiveTabChange]);
+
+  const rsvpOutboundHint =
+    rsvpParsed.kind === "email"
+      ? "Tap a response to open your email with a draft message."
+      : rsvpParsed.kind === "sms"
+        ? "Tap a response to open your messages app with a draft text."
+        : "Add a phone number or email as the RSVP contact to send a reply from here.";
+
+  const buttonConfigs = useMemo(
+    () =>
+      [
+        {
+          key: "rsvp" as const,
+          label: "RSVP",
+          icon: MessageSquare,
+          visible:
+            categorySupportsRsvp &&
+            Boolean(readString(details?.rsvpName) || readString(details?.rsvpContact)),
+          onClick: () =>
+            props.onActiveTabChange(props.activeTab === "rsvp" ? "none" : "rsvp"),
+        },
+        {
+          key: "details" as const,
+          label: "Overview",
+          icon: ClipboardList,
+          visible: Boolean(invitationData),
+          onClick: () =>
+            props.onActiveTabChange(props.activeTab === "details" ? "none" : "details"),
+        },
+        {
+          key: "location" as const,
+          label: "Location",
+          icon: MapPin,
+          visible: Boolean(readString(details?.location) || readString(details?.venueName)),
+          onClick: () =>
+            props.onActiveTabChange(props.activeTab === "location" ? "none" : "location"),
+        },
+        {
+          key: "calendar" as const,
+          label: "Calendar",
+          icon: CalendarDays,
+          visible: Boolean(readString(details?.eventDate)),
+          onClick: () =>
+            props.onActiveTabChange(props.activeTab === "calendar" ? "none" : "calendar"),
+        },
+        {
+          key: "share" as const,
+          label:
+            shareState === "pending"
+              ? "Sharing..."
+              : shareState === "success"
+                ? "Copied!"
+                : "Share",
+          icon:
+            shareState === "pending"
+              ? Loader2
+              : shareState === "success"
+                ? CheckCircle2
+                : Share2,
+          visible: Boolean(props.onShare),
+          onClick: () => {
+            props.onActiveTabChange("none");
+            props.onShare?.();
+          },
+        },
+        {
+          key: "registry" as const,
+          label: "Registry",
+          icon: Gift,
+          visible: Boolean(readString(details?.registryLink)),
+          onClick: () =>
+            props.onActiveTabChange(props.activeTab === "registry" ? "none" : "registry"),
+        },
+      ].filter((button) => button.visible),
+    [
+      props.activeTab,
+      props.onActiveTabChange,
+      props.onShare,
+      shareState,
+      categorySupportsRsvp,
+      details,
+      invitationData,
+    ],
+  );
+
+  return (
+    <div className="pointer-events-none absolute inset-0 flex flex-col px-1 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2">
+      <div className="flex h-full min-h-0 flex-col justify-end">
+        <AnimatePresence initial={false}>
+          {props.activeTab !== "none" && props.activeTab !== "share" ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.96 }}
+              data-live-card-panel
+              className="pointer-events-auto absolute bottom-32 left-2 right-2 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl sm:left-4 sm:right-4 md:left-6 md:right-6"
+            >
+              <div className="mb-4 flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
+                    {props.activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
+                    {props.activeTab === "calendar" ? <CalendarDays className="h-5 w-5" /> : null}
+                    {props.activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
+                    {props.activeTab === "rsvp" ? <MessageSquare className="h-5 w-5" /> : null}
+                    {props.activeTab === "details" ? <ClipboardList className="h-5 w-5" /> : null}
+                  </div>
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
+                    {props.activeTab === "location" ? "Event Location" : null}
+                    {props.activeTab === "calendar" ? "Add to Calendar" : null}
+                    {props.activeTab === "registry" ? "Gift Registry" : null}
+                    {props.activeTab === "rsvp" ? "RSVP" : null}
+                    {props.activeTab === "details" ? "Overview" : null}
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => props.onActiveTabChange("none")}
+                  className="rounded-full p-1 text-neutral-500 hover:bg-neutral-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {props.activeTab === "rsvp" ? (
+                  <div className="flex flex-col space-y-4">
+                    <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                      <p className="text-sm font-medium text-neutral-900">
+                        {readString(details?.rsvpName) || "Host"}
+                      </p>
+                      {readString(details?.rsvpContact) ? (
+                        <div>
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                            RSVP contact
+                          </p>
+                          <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
+                            {rsvpParsed.kind === "email" ? (
+                              <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
+                            ) : rsvpParsed.kind === "sms" ? (
+                              <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
+                            ) : null}
+                            {readString(details?.rsvpContact)}
+                          </p>
+                        </div>
+                      ) : null}
+                      {readString(details?.rsvpDeadline) ? (
+                        <div>
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                            RSVP deadline
+                          </p>
+                          <p className="text-sm text-red-600">
+                            {formatDate(readString(details?.rsvpDeadline))}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
+                      {LIVE_CARD_RSVP_CHOICES.map((choice) => {
+                        const href = buildLiveCardRsvpOutboundHref({
+                          rsvpContact,
+                          eventTitle: props.title,
+                          responseLabel: choice.label,
+                          shareUrl: effectiveShareUrl,
+                        });
+                        const accent = accentClassForRsvpChoice(choice.key);
+                        if (!href) {
+                          return (
+                            <button
+                              key={choice.key}
+                              type="button"
+                              disabled
+                              aria-disabled="true"
+                              title={rsvpOutboundHint}
+                              className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
+                            >
+                              {choice.label}
+                            </button>
+                          );
+                        }
+                        return (
+                          <a
+                            key={choice.key}
+                            href={href}
+                            className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
+                          >
+                            {choice.label}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+
+                {props.activeTab === "details" ? (
+                  <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
+                    {detailsWelcome ? (
+                      <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50 to-white p-4 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7B65]">
+                          Welcome
+                        </p>
+                        <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-900">
+                          {detailsWelcome}
+                        </p>
+                      </div>
+                    ) : null}
+                    {readString(details?.detailsDescription) ? (
+                      <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                          {props.showExtendedDetails ? "Description" : "Event details"}
+                        </p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
+                          {readString(details?.detailsDescription)}
+                        </p>
+                      </div>
+                    ) : null}
+                    {shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
+                    (readString(invitationData?.description) || readString(details?.message)) ? (
+                      <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                          Description
+                        </p>
+                        <p className="mt-1 text-sm text-neutral-900">
+                          {readString(invitationData?.description) || readString(details?.message)}
+                        </p>
+                      </div>
+                    ) : null}
+                    {props.showExtendedDetails ? renderExtraDetailFields(details) : null}
+                  </div>
+                ) : null}
+
+                {props.activeTab === "location" ? (
+                  <>
+                    <p className="text-sm font-medium text-neutral-900">
+                      {readString(details?.venueName) || readString(details?.location)}
+                    </p>
+                    <p className="text-xs text-neutral-500">{readString(details?.location)}</p>
+                    {readString(details?.location) ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          window.open(
+                            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(readString(details?.location))}`,
+                            "_blank",
+                          )
+                        }
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 py-2 text-xs font-bold text-white"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Open in Maps
+                      </button>
+                    ) : null}
+                  </>
+                ) : null}
+
+                {props.activeTab === "calendar" ? (
+                  <>
+                    <p className="text-sm font-medium text-neutral-900">Save the Date</p>
+                    <p className="text-xs text-neutral-500">
+                      {readString(details?.eventDate)
+                        ? formatCalendarSummary(
+                            readString(details?.eventDate),
+                            readString(details?.startTime),
+                          )
+                        : "Date TBD"}
+                    </p>
+                    {buildGoogleCalendarUrl(props.title, invitationData) ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          window.open(buildGoogleCalendarUrl(props.title, invitationData), "_blank")
+                        }
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white"
+                      >
+                        <CalendarDays className="h-3 w-3" />
+                        Add to Google Calendar
+                      </button>
+                    ) : null}
+                  </>
+                ) : null}
+
+                {props.activeTab === "registry" ? (
+                  <>
+                    <p className="text-sm font-medium text-neutral-900">Gift Registry</p>
+                    <p className="text-xs text-neutral-500">{getRegistryText(details)}</p>
+                    {readString(props.registryHelperText) ? (
+                      <p className="text-xs text-neutral-500">{readString(props.registryHelperText)}</p>
+                    ) : null}
+                    {readString(details?.registryLink) ? (
+                      <button
+                        type="button"
+                        onClick={() => window.open(readString(details?.registryLink), "_blank")}
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-pink-600 py-2 text-xs font-bold text-white"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Visit Registry
+                      </button>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
+        <div
+          className={`pointer-events-none shrink-0 ${
+            posterFirstHeroCard
+              ? "max-md:min-h-[min(14svh,4rem)] min-h-[min(8svh,2.4rem)] md:min-h-[min(6svh,2rem)]"
+              : "max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] md:min-h-[min(8svh,2.5rem)]"
+          }`}
+          aria-hidden
+        />
+
+        <div
+          className={`pointer-events-none z-20 w-full min-w-0 ${
+            posterFirstHeroCard
+              ? "pb-[max(0.45rem,calc(env(safe-area-inset-bottom)+0.2rem))] max-md:pb-[max(0.3rem,calc(env(safe-area-inset-bottom)+0.12rem))]"
+              : "pb-[max(0.35rem,calc(env(safe-area-inset-bottom)+0.15rem))]"
+          }`}
+        >
+          <div className="grid w-full min-w-0 grid-flow-col auto-cols-fr items-end gap-1.5 md:gap-3">
+            {buttonConfigs.map((button) => {
+              const Icon = button.icon;
+              const position = props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+              const isPressed =
+                button.key === "share"
+                  ? shareState === "success"
+                  : props.activeTab === button.key;
+              const isPending = button.key === "share" && shareState === "pending";
+              return (
+                <motion.div
+                  key={button.key}
+                  drag={Boolean(props.onDragEnd) && props.isDesignMode}
+                  dragMomentum={false}
+                  onDragEnd={(_, info: PanInfo) =>
+                    props.onDragEnd?.(button.key, {
+                      x: position.x + info.offset.x,
+                      y: position.y + info.offset.y,
+                    })
+                  }
+                  style={{ x: position.x, y: position.y }}
+                  className="pointer-events-auto min-w-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!props.isDesignMode) button.onClick();
+                    }}
+                    disabled={isPending}
+                    aria-pressed={button.key === "share" ? undefined : isPressed}
+                    data-live-card-trigger
+                    className={`group flex w-full min-w-0 flex-col items-center gap-1 transition-transform duration-150 active:scale-[0.97] md:gap-2 ${
+                      props.isDesignMode ? "cursor-move" : ""
+                    }`}
+                  >
+                    <div
+                      className={`rounded-full border p-2 backdrop-blur-md transition-all duration-200 md:p-3 ${
+                        posterFirstHeroCard
+                          ? isPressed
+                            ? "translate-y-0.5 border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
+                            : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] group-hover:-translate-y-0.5 group-hover:border-white/42 group-hover:bg-white/24"
+                          : isPressed
+                            ? "translate-y-0.5 border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
+                            : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] group-hover:-translate-y-0.5 group-hover:border-white/45 group-hover:bg-white/22"
+                      } ${props.isDesignMode ? "ring-2 ring-[#c9b49a]" : ""}`}
+                    >
+                      <Icon
+                        className={`h-4 w-4 md:h-5 md:w-5 ${
+                          isPending
+                            ? "animate-spin text-white"
+                            : button.key === "share" && shareState === "success"
+                              ? "text-emerald-600"
+                              : isPressed
+                                ? "text-neutral-950"
+                                : "text-white"
+                        }`}
+                      />
+                    </div>
+                    <span className="max-w-full truncate text-center text-[7px] font-bold uppercase leading-tight tracking-tight text-white drop-shadow-md sm:text-[8px] sm:tracking-wider md:text-[9px] md:tracking-widest">
+                      {button.label}
+                    </span>
+                  </button>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

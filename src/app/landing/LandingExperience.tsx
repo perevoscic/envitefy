@@ -508,12 +508,6 @@ export default function LandingExperience() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                         <div className="absolute bottom-7 left-6 text-white">
-                          <div className="mb-3 flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-green-500" />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/80">
-                              Live Now
-                            </span>
-                          </div>
                           <h3 className={cx(styles.headline, "text-3xl font-extrabold")}>
                             Leo&apos;s 5th Birthday
                           </h3>
@@ -583,9 +577,9 @@ export default function LandingExperience() {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/68">
-                        Live RSVPs
+                        RSVPs
                       </p>
-                      <p className="mt-1 text-xl font-bold text-white">42 Guests</p>
+                      <p className="mt-1 text-xl font-bold text-white">12 Kids</p>
                     </div>
                   </motion.div>
 

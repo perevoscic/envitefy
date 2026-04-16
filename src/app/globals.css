@@ -212,6 +212,11 @@
     linear-gradient(180deg, #f7f5ff 0%, #f1effd 100%);
 }
 
+.nav-chrome-sidebar-scroll-region {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .nav-chrome-pill,
 .nav-chrome-sidebar-row {
   border: 1px solid transparent;
@@ -596,6 +601,20 @@ body {
   overflow-y: auto;
   /* Allow scrolling */
   -webkit-overflow-scrolling: touch;
+}
+
+html.sidebar-mobile-open,
+body.sidebar-mobile-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.sidebar-mobile-open {
+  position: fixed;
+  inset: 0;
+  top: calc(var(--nav-sidebar-scroll-y, 0px) * -1);
+  width: 100%;
+  min-height: 100dvh;
 }
 
 body::before {

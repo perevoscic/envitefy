@@ -6,10 +6,13 @@ import {
   type StudioGenerationError,
 } from "@/lib/studio/types";
 import {
+  buildDeterministicScheduleLine,
   buildDescription,
-  formatDate,
   getDisplayTitle,
   getFallbackThumbnail,
+  resolveStudioCallToAction,
+  resolveStudioRsvpMessage,
+  getStudioThemeLine,
   getThemeColors,
   pickFirst,
 } from "./studio-workspace-builders";
@@ -83,6 +86,9 @@ export function createInitialDetails(): EventDetails {
     colors: "",
     style: "",
     visualPreferences: "",
+    subjectTransformMode: "default",
+    likenessStrength: "balanced",
+    visualStyleMode: "editorial_cinematic",
     name: "",
     age: "",
     theme: "",
@@ -197,6 +203,9 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
     "colors",
     "style",
     "visualPreferences",
+    "subjectTransformMode",
+    "likenessStrength",
+    "visualStyleMode",
     "name",
     "age",
     "theme",
@@ -258,6 +267,20 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
       ? value.sourceMediaMode
       : "none";
   details.orientation = value.orientation === "landscape" ? "landscape" : "portrait";
+  details.subjectTransformMode =
+    value.subjectTransformMode === "premium_makeover" ? "premium_makeover" : "default";
+  details.likenessStrength =
+    value.likenessStrength === "strict" ||
+    value.likenessStrength === "creative" ||
+    value.likenessStrength === "balanced"
+      ? value.likenessStrength
+      : "balanced";
+  details.visualStyleMode =
+    value.visualStyleMode === "photoreal" ||
+    value.visualStyleMode === "playful_stylized" ||
+    value.visualStyleMode === "editorial_cinematic"
+      ? value.visualStyleMode
+      : "editorial_cinematic";
   details.gender =
     value.gender === "Boy" || value.gender === "Girl" || value.gender === "Neutral"
       ? value.gender
@@ -322,21 +345,20 @@ export function sanitizeInvitationData(
 
   return {
     title: readString(value.title) || getDisplayTitle(fallbackDetails),
-    subtitle:
-      readString(value.subtitle) || pickFirst(fallbackDetails.theme, fallbackDetails.category),
+    subtitle: readString(value.subtitle) || getStudioThemeLine(fallbackDetails),
     description:
       readString(value.description) ||
       buildDescription(fallbackDetails) ||
       "Celebrate together with a beautifully designed invitation.",
-    scheduleLine:
-      readString(value.scheduleLine) ||
-      `${formatDate(fallbackDetails.eventDate)}${fallbackDetails.startTime ? ` at ${fallbackDetails.startTime}` : ""}`,
+    scheduleLine: readString(value.scheduleLine) || buildDeterministicScheduleLine(fallbackDetails),
     locationLine:
       readString(value.locationLine) ||
       pickFirst(fallbackDetails.venueName, fallbackDetails.location, "Location TBD"),
-    callToAction:
-      readString(value.callToAction) ||
-      pickFirst(fallbackDetails.calloutText, "Tap for details and RSVP."),
+    callToAction: resolveStudioCallToAction(
+      fallbackDetails,
+      readString(value.callToAction),
+      fallbackDetails.calloutText,
+    ),
     socialCaption:
       readString(value.socialCaption) ||
       readString(value.description) ||
@@ -352,15 +374,18 @@ export function sanitizeInvitationData(
       themeStyle: readString(theme?.themeStyle) || "editorial gradient",
     },
     interactiveMetadata: {
-      rsvpMessage:
-        readString(interactiveMetadata?.rsvpMessage) || "Reply to let the host know you're coming.",
+      rsvpMessage: resolveStudioRsvpMessage(
+        fallbackDetails,
+        readString(interactiveMetadata?.rsvpMessage),
+      ),
       funFacts: Array.isArray(interactiveMetadata?.funFacts)
         ? interactiveMetadata.funFacts.map(readString).filter(Boolean).slice(0, 5)
         : [],
-      ctaLabel:
-        readString(interactiveMetadata?.ctaLabel) ||
-        readString(value.callToAction) ||
-        "Tap for details and RSVP.",
+      ctaLabel: resolveStudioCallToAction(
+        fallbackDetails,
+        readString(interactiveMetadata?.ctaLabel),
+        readString(value.callToAction),
+      ),
       shareNote:
         readString(interactiveMetadata?.shareNote) ||
         readString(value.socialCaption) ||
