@@ -42,6 +42,7 @@ import {
   INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
   MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
   normalizeCalendarProvider,
+  SIDEBAR_WIDTH_REM,
   SidebarPage,
   SubscriptionPlan,
 } from "./left-sidebar.model";
@@ -129,7 +130,7 @@ export type LeftSidebarControllerViewModel = {
   menuRef: RefObject<HTMLDivElement | null>;
   buttonRef: RefObject<HTMLButtonElement | null>;
   openBarButtonRef: RefObject<HTMLButtonElement | null>;
-  openSidebarFromTrigger: (viaTouch: boolean) => void;
+  openSidebarFromTrigger: () => void;
   closeSidebarFromBackdrop: () => void;
   goHomeFromSidebar: () => void;
   goStudioFromSidebar: () => void;
@@ -232,7 +233,6 @@ export function useLeftSidebarController({
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openBarButtonRef = useRef<HTMLButtonElement | null>(null);
   const lastSidebarOpenAtRef = useRef(0);
-  const openedFromTouchRef = useRef(false);
   const asideRef = useRef<HTMLDivElement | null>(null);
   const eventSidebarRef = useRef<HTMLDivElement | null>(null);
   const invitedNavigationPendingRef = useRef(false);
@@ -274,12 +274,8 @@ export function useLeftSidebarController({
   const useGymnasticsDirectCreate =
     effectivePrimarySignupSource === "gymnastics";
   const isOpen = isDesktop ? true : !isCollapsed;
-  const isCompact = isDesktop && isCollapsed;
-  const sidebarWidth = isDesktop
-    ? isCollapsed
-      ? "5.25rem"
-      : "21.25rem"
-    : "21.25rem";
+  const isCompact = false;
+  const sidebarWidth = SIDEBAR_WIDTH_REM;
   const sidebarTransform = isDesktop
     ? "translateX(0)"
     : isOpen
@@ -292,23 +288,16 @@ export function useLeftSidebarController({
       : "pointer-events-none";
   const overflowClass = "overflow-hidden";
   const showEditTopBar = isEventPageWithEditSidebar;
-  const showMobileTopBar = !isOpen;
+  const showMobileTopBar = !isDesktop && !isOpen;
   const isEventMenuActive = Boolean(selectedEventId);
 
-  const openSidebarFromTrigger = useCallback(
-    (viaTouch: boolean) => {
-      lastSidebarOpenAtRef.current = Date.now();
-      if (viaTouch) {
-        openedFromTouchRef.current = true;
-      }
-      setIsCollapsed(false);
-    },
-    [setIsCollapsed]
-  );
+  const openSidebarFromTrigger = useCallback(() => {
+    lastSidebarOpenAtRef.current = Date.now();
+    setIsCollapsed(false);
+  }, [setIsCollapsed]);
 
   const closeSidebarFromBackdrop = useCallback(() => {
     if (Date.now() - lastSidebarOpenAtRef.current < 1200) return;
-    if (openedFromTouchRef.current) return;
     setIsCollapsed(true);
   }, [setIsCollapsed]);
 
@@ -343,14 +332,6 @@ export function useLeftSidebarController({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!openedFromTouchRef.current) return;
-    const timeout = window.setTimeout(() => {
-      openedFromTouchRef.current = false;
-    }, 1600);
-    return () => window.clearTimeout(timeout);
-  }, [isOpen]);
-
-  useEffect(() => {
     if (status === "authenticated") {
       void refreshConnectedCalendars();
     }
@@ -372,7 +353,6 @@ export function useLeftSidebarController({
       const target = event.target as Node | null;
       if (!asideRef.current) return;
       if (Date.now() - lastSidebarOpenAtRef.current < 1200) return;
-      if (openedFromTouchRef.current) return;
       if (openBarButtonRef.current?.contains(target as Node)) {
         return;
       }
@@ -1225,6 +1205,7 @@ export function useLeftSidebarController({
       const nextHref = buildEventGuestHref(item.href, item.row.id);
       blurActiveElement();
       clearEventContext();
+      setEventContextSourcePage("invitedEvents");
       if (isDesktop) {
         setSidebarPage("invitedEvents");
       } else {
@@ -1243,6 +1224,7 @@ export function useLeftSidebarController({
       clearEventContext,
       isDesktop,
       router,
+      setEventContextSourcePage,
       setIsCollapsed,
     ]
   );

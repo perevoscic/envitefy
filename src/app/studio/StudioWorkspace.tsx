@@ -1322,8 +1322,8 @@ export default function StudioWorkspace() {
         </main>
       ) : (
         <main className="relative mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-8 lg:px-12 lg:py-14">
-          <div className="grid gap-16 lg:grid-cols-[minmax(210px,0.72fr)_minmax(0,1.88fr)] lg:gap-16 xl:gap-20">
-            <aside className="flex min-h-[420px] flex-col justify-between lg:min-h-[720px]">
+          <div className="grid gap-8 sm:gap-10 lg:grid-cols-[minmax(210px,0.72fr)_minmax(0,1.88fr)] lg:gap-16 xl:gap-20">
+            <aside className="flex flex-col gap-8 lg:min-h-[720px] lg:justify-between lg:gap-0">
               <div>
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -1389,7 +1389,7 @@ export default function StudioWorkspace() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="max-w-[250px] text-[11px] uppercase tracking-[0.16em] leading-relaxed text-[#8C7B65]"
+                className="hidden max-w-[250px] text-[11px] uppercase tracking-[0.16em] leading-relaxed text-[#8C7B65] lg:block"
               >
                 Every exceptional journey begins with a single, intentional conversation.
               </motion.p>

@@ -83,32 +83,29 @@ export const INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY =
 export const CREATE_ACTIVE_STORAGE_KEY = "sidebar:create-event:last-selection";
 
 export const SIDEBAR_CARD_CLASS =
-  "rounded-[28px] border border-white/70 bg-white/90 shadow-[0_20px_40px_rgba(15,23,42,0.06)] backdrop-blur";
+  "rounded-[24px]";
 export const SIDEBAR_ITEM_CARD_CLASS =
-  "rounded-2xl border border-transparent bg-transparent shadow-none transition-all duration-200 ease-out";
+  "nav-chrome-motion rounded-full";
 export const SIDEBAR_BADGE_CLASS =
-  "inline-flex min-w-[24px] items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500";
-export const SIDEBAR_WIDTH_REM = "21.25rem";
-export const SIDEBAR_COLLAPSED_REM = "5.25rem";
+  "inline-flex min-w-[20px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-[#7269dd] shadow-[0_8px_18px_rgba(126,111,233,0.14)]";
+export const SIDEBAR_WIDTH_REM = "19rem";
 export const SUBPAGE_STICKY_HEADER_CLASS =
-  "sticky top-0 z-20 -mx-6 bg-[#f8f9fb]/95 px-6 pb-4 pt-2 backdrop-blur";
+  "sticky top-0 z-20 -mx-5 bg-[linear-gradient(180deg,rgba(245,243,255,0.98),rgba(245,243,255,0.82))] px-5 pb-4 pt-2 backdrop-blur-xl";
 export const SIDEBAR_DIVIDER_CLASS = "h-px w-full bg-transparent";
 export const SIDEBAR_MENU_ROW_CLASS =
-  "flex w-full items-center gap-4 px-5 py-4 text-left text-[17px] font-bold text-slate-700";
+  "flex w-full items-center gap-3 px-3 py-3 text-left text-[0.92rem] font-semibold uppercase tracking-[0.12em]";
 export const SIDEBAR_BACK_ROW_CLASS =
-  "flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left text-sm text-slate-700 shadow-sm transition-all hover:bg-white/85";
+  "flex w-full items-center gap-3 rounded-[22px] bg-white px-4 py-3 text-left text-sm shadow-[0_16px_34px_rgba(120,105,214,0.14)]";
 export const SIDEBAR_ICON_CHIP_CLASS =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm";
+  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full";
 export const SIDEBAR_ICON_CHIP_ACCENT_CLASS =
-  "border-slate-200 bg-slate-100 text-slate-500";
+  "";
 export const SIDEBAR_PANEL_CLASS =
-  "absolute inset-0 overflow-y-auto no-scrollbar px-6 pb-6";
+  "absolute inset-0 overflow-y-auto no-scrollbar px-5 pb-36 lg:pb-40";
 export const SIDEBAR_EVENT_PANEL_CLASS =
-  "absolute inset-0 overflow-hidden bg-[#f8f9fb]";
-export const SIDEBAR_TOGGLE_CLASS =
-  "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-200/60 p-2.5 text-slate-500 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-700";
+  "absolute inset-0 overflow-hidden nav-chrome-sidebar-surface";
 export const SIDEBAR_FOOTER_TRIGGER_CLASS =
-  "w-full inline-flex items-center justify-between gap-3 rounded-[20px] border border-indigo-100 bg-white px-3 py-3 text-slate-700 shadow-lg transition-all duration-200 hover:shadow-xl active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-50/50";
+  "nav-chrome-motion w-full inline-flex items-center justify-between gap-3 rounded-[18px] border border-[#ece8ff] bg-white px-3 py-3 shadow-[0_16px_32px_rgba(123,112,206,0.12)] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[rgba(110,94,181,0.18)]";
 
 export const CATEGORY_DEFAULT_COLOR_MAP: Record<string, string> = {
   Birthdays: "pink",
@@ -160,36 +157,32 @@ export const CATEGORY_FALLBACK_COLORS = [
 ];
 
 export const CREATE_SECTION_COLORS = [
-  "border border-indigo-100 bg-indigo-50 text-indigo-600",
-  "border border-sky-100 bg-sky-50 text-sky-600",
-  "border border-emerald-100 bg-emerald-50 text-emerald-600",
-  "border border-amber-100 bg-amber-50 text-amber-600",
+  "border border-[rgba(110,94,181,0.14)] bg-[rgba(244,239,255,0.92)] text-[#5c4ab0]",
+  "border border-[rgba(108,136,214,0.16)] bg-[rgba(237,243,255,0.92)] text-[#4d67b7]",
+  "border border-[rgba(148,111,212,0.16)] bg-[rgba(244,238,255,0.92)] text-[#7a59bf]",
+  "border border-[rgba(83,149,198,0.16)] bg-[rgba(236,246,255,0.92)] text-[#4f75b5]",
 ];
 
 const SIDEBAR_PRIMARY_ACTIVE_ACCENT = {
-  buttonClass:
-    "border-purple-200 bg-purple-50 text-purple-800 shadow-[0_16px_30px_rgba(147,51,234,0.12),inset_0_0_0_1px_rgba(147,51,234,0.18)]",
+  buttonClass: "nav-chrome-sidebar-row-active",
   buttonStyle: {
-    backgroundColor: "#F3E8FF",
-    borderColor: "#E9D5FF",
-    boxShadow:
-      "0 16px 30px rgba(147, 51, 234, 0.12), inset 0 0 0 1px rgba(147, 51, 234, 0.18)",
+    background: "#ffffff",
+    borderColor: "rgba(232, 228, 255, 0.9)",
+    boxShadow: "0 16px 34px rgba(120, 105, 214, 0.16)",
   } as InlineStyle,
-  chipClass: "border-purple-200 bg-white text-purple-700",
-  chevronClass: "text-purple-400",
+  chipClass: "text-[#6b5fd6]",
+  chevronClass: "text-[#b4acef]",
 };
 
 const SIDEBAR_FOOTBALL_ACTIVE_ACCENT = {
-  buttonClass:
-    "border-orange-200 bg-orange-50 text-orange-900 shadow-[0_16px_30px_rgba(234,88,12,0.12),inset_0_0_0_1px_rgba(234,88,12,0.18)]",
+  buttonClass: "nav-chrome-sidebar-row-active",
   buttonStyle: {
-    backgroundColor: "#fff7ed",
-    borderColor: "#fed7aa",
-    boxShadow:
-      "0 16px 30px rgba(234, 88, 12, 0.12), inset 0 0 0 1px rgba(234, 88, 12, 0.18)",
+    background: "#ffffff",
+    borderColor: "rgba(232, 228, 255, 0.9)",
+    boxShadow: "0 16px 34px rgba(120, 105, 214, 0.16)",
   } as InlineStyle,
-  chipClass: "border-orange-200 bg-white text-orange-700",
-  chevronClass: "text-orange-400",
+  chipClass: "text-[#6b5fd6]",
+  chevronClass: "text-[#b4acef]",
 };
 
 const CATEGORY_LABEL_OVERRIDES: Record<string, string> = {

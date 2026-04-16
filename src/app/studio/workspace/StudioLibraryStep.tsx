@@ -145,10 +145,7 @@ export function StudioLibraryStep({
       className="mx-auto max-w-[1320px] space-y-10"
     >
       <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-        <div className="max-w-2xl space-y-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8C7B65]">
-            Library
-          </p>
+        <div className="max-w-2xl">
           <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-[#1A1A1A] sm:text-[44px]">
             Your Library
           </h2>
