@@ -30,7 +30,9 @@ test("studio form step uses the editorial layout without the old optional panel 
   assert.doesNotMatch(source, /isOptionalCollapsed/);
   assert.doesNotMatch(source, /setIsOptionalCollapsed/);
   assert.doesNotMatch(source, /Shape the invitation details here/);
-  assert.doesNotMatch(source, /const secondaryCategoryFields = categoryFields\.slice\(2\);/);
+  assert.doesNotMatch(source, /const categoryFields = CATEGORY_FIELDS\[details\.category\] \|\| \[\];/);
+  assert.doesNotMatch(source, /const primaryCategoryFields = categoryFields\.slice\(0, 2\);/);
+  assert.doesNotMatch(source, /const rsvpPrimaryField: FieldConfig = \{/);
   assert.doesNotMatch(source, /const sharedSecondaryFields = SHARED_BASICS\.filter/);
   assert.doesNotMatch(source, /fields=\{RSVP_FIELDS\}/);
   assert.doesNotMatch(source, />\s*Additional details\s*</);
@@ -43,7 +45,10 @@ test("studio form step uses the editorial layout without the old optional panel 
   assert.match(source, /Event description/);
   assert.match(source, /StudioOptionalMediaRow/);
   assert.match(source, /space-y-12 pt-6 md:pt-8/);
-  assert.match(source, /const primaryCategoryFields = categoryFields\.slice\(0, 2\);/);
+  assert.match(source, /STUDIO_COMPACT_CATEGORY_FORM_CONFIG/);
+  assert.match(source, /const formConfig = STUDIO_COMPACT_CATEGORY_FORM_CONFIG\[details\.category\];/);
+  assert.match(source, /const primaryCategoryFields = formConfig\.primaryFields;/);
+  assert.match(source, /const secondaryCategoryFields = formConfig\.secondaryFields \|\| \[\];/);
   assert.match(source, /const sharedPrimaryFields = SHARED_BASICS\.filter/);
   assert.match(source, /Responses typically within 48 hours\./);
 });

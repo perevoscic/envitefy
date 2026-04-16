@@ -24,3 +24,18 @@ export const studioWorkspaceMediaBadgeClass =
 
 export const studioWorkspaceGhostIconButtonClass =
   "rounded-full border border-[#efe4d7] bg-[#f8f3ed] p-2.5 text-[#5F5345] shadow-[0_10px_24px_rgba(49,32,17,0.1)] transition-all hover:scale-105 hover:bg-[#fffdf9]";
+
+export const studioLibraryPanelClass =
+  "rounded-[2rem] border border-black/6 bg-[#f7f8fb]/96 p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-5";
+
+export const studioLibraryCardClass =
+  "group relative cursor-pointer transition-all duration-300 hover:-translate-y-2";
+
+export const studioLibraryBadgeClass =
+  "inline-flex items-center gap-1.5 rounded-full border border-black/8 bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#111111] shadow-[0_8px_22px_rgba(15,23,42,0.08)] backdrop-blur-md";
+
+export const studioLibraryGhostIconButtonClass =
+  "inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/8 bg-white/82 text-[#4b5563] shadow-[0_10px_24px_rgba(15,23,42,0.1)] backdrop-blur-md transition-all hover:scale-105 hover:bg-white";
+
+export const studioLibraryPrimaryCtaClass =
+  "inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#1A1A1A] text-white shadow-[0_14px_28px_rgba(15,23,42,0.24)] transition-transform duration-200 hover:scale-105";

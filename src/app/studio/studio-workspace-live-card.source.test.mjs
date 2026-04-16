@@ -43,11 +43,11 @@ test("studio live-card builders carry poster-first surface rules and preserve re
   assert.match(source, /title: liveCard\?\.title \|\| invitation\?\.title,/);
   assert.match(
     source,
-    /subtitle:\s*invitation\?\.subtitle\s*\|\|\s*buildDescription\(details\)\s*\|\|\s*pickFirst\(details\.theme, details\.category\),/s,
+    /subtitle:\s*invitation\?\.subtitle\s*\|\|\s*getStudioThemeLine\(details\),/s,
   );
   assert.match(
     source,
-    /callToAction:\s*liveCard\?\.interactiveMetadata\.ctaLabel\s*\|\|\s*invitation\?\.callToAction\s*\|\|/s,
+    /callToAction:\s*resolveStudioCallToAction\(\s*details,\s*liveCard\?\.interactiveMetadata\.ctaLabel,\s*invitation\?\.callToAction,\s*details\.calloutText,\s*\),/s,
   );
   assert.match(
     source,
@@ -68,16 +68,18 @@ test("studio live-card sanitizer and publish payload preserve heroTextMode", () 
 
 test("studio preview uses floating glass controls for poster-first live cards", () => {
   const workspaceSource = readSource("src/app/studio/StudioWorkspace.tsx");
+  const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
-  assert.match(workspaceSource, /const activePageUsesPosterControls =/);
-  assert.match(workspaceSource, /activePageRecord\?\.data\?\.heroTextMode === "image"/);
-  assert.match(workspaceSource, /isPosterFirstLiveCardCategory\(/);
+  assert.match(surfaceSource, /export function isPosterFirstHeroCard/);
+  assert.match(surfaceSource, /invitationData\?\.heroTextMode !== "image"/);
   assert.match(
-    workspaceSource,
-    /activePageUsesPosterControls\s*\?\s*"border-white\/28 bg-white\/18/,
+    surfaceSource,
+    /posterFirstHeroCard\s*\?\s*isPressed\s*\?\s*"translate-y-0\.5 border-white\/85 bg-white\/92/,
   );
   assert.match(
-    workspaceSource,
-    /activePageUsesPosterControls\s*\?\s*"pb-\[max\(0\.45rem,calc\(env\(safe-area-inset-bottom\)\+0\.2rem\)\)\]/,
+    surfaceSource,
+    /posterFirstHeroCard\s*\?\s*"pb-\[max\(0\.45rem,calc\(env\(safe-area-inset-bottom\)\+0\.2rem\)\)\]/,
   );
+  assert.match(surfaceSource, /grid w-full min-w-0 grid-flow-col auto-cols-fr/);
+  assert.match(workspaceSource, /<StudioLiveCardActionSurface/);
 });

@@ -5,7 +5,13 @@ import {
   type StudioGenerateRequest,
   type StudioGenerateSurface,
 } from "@/lib/studio/types";
-import { EMPTY_POSITIONS } from "./studio-workspace-field-config";
+import { formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
+import {
+  EMPTY_POSITIONS,
+  getStudioDefaultCallToAction,
+  getStudioDefaultRsvpMessage,
+  supportsStudioCategoryRsvp,
+} from "./studio-workspace-field-config";
 import type {
   EventDetails,
   InvitationData,
@@ -43,11 +49,38 @@ export function pickFirst(...values: Array<string | null | undefined>) {
   return "";
 }
 
+function toOrdinal(value: string): string {
+  const parsed = Number.parseInt(clean(value), 10);
+  if (!Number.isFinite(parsed)) return clean(value);
+  const mod100 = parsed % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${parsed}th`;
+  const mod10 = parsed % 10;
+  if (mod10 === 1) return `${parsed}st`;
+  if (mod10 === 2) return `${parsed}nd`;
+  if (mod10 === 3) return `${parsed}rd`;
+  return `${parsed}th`;
+}
+
+function buildBirthdayHeadline(details: EventDetails): string {
+  const name = clean(details.name);
+  const age = clean(details.age);
+  if (name && /^\d+$/.test(age)) {
+    return `${name}'s ${toOrdinal(age)} Birthday`;
+  }
+  if (name && age) {
+    return `${name} Celebrates ${age}`;
+  }
+  if (name) {
+    return `${name}'s Birthday`;
+  }
+  return "";
+}
+
 export function getDisplayTitle(details: EventDetails) {
   if (details.category === "Birthday") {
     return pickFirst(
+      buildBirthdayHeadline(details),
       details.eventTitle,
-      details.name ? `${details.name}'s Birthday` : "",
       "Birthday Celebration",
     );
   }
@@ -111,6 +144,20 @@ export function getHonoreeName(details: EventDetails) {
 
 export function getAgeOrMilestone(details: EventDetails) {
   return pickFirst(details.age);
+}
+
+export function getStudioThemeLine(details: EventDetails) {
+  if (details.category === "Birthday") {
+    return pickFirst(details.theme, details.activityNote, buildDescription(details), details.category);
+  }
+  return pickFirst(buildDescription(details), details.theme, details.category);
+}
+
+export function hasStudioSubjectReferencePhotos(details: EventDetails) {
+  return (
+    details.sourceMediaMode === "subjectPhotos" &&
+    sanitizeGuestImageUrls(details.guestImageUrls).length > 0
+  );
 }
 
 export function getRegistryText(details: EventDetails) {
@@ -272,6 +319,38 @@ function buildGameDayMatchup(details: EventDetails) {
   return pickFirst(team, opponent);
 }
 
+function containsRsvpLanguage(value: string): boolean {
+  return /\brsvp\b/i.test(value);
+}
+
+export function resolveStudioCallToAction(
+  details: EventDetails,
+  ...candidates: Array<string | null | undefined>
+): string {
+  const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
+  for (const candidate of candidates) {
+    const next = clean(candidate);
+    if (!next) continue;
+    if (!categorySupportsRsvp && containsRsvpLanguage(next)) continue;
+    return next;
+  }
+  return getStudioDefaultCallToAction(details.category);
+}
+
+export function resolveStudioRsvpMessage(
+  details: EventDetails,
+  ...candidates: Array<string | null | undefined>
+): string {
+  const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
+  for (const candidate of candidates) {
+    const next = clean(candidate);
+    if (!next) continue;
+    if (!categorySupportsRsvp && containsRsvpLanguage(next)) continue;
+    return next;
+  }
+  return getStudioDefaultRsvpMessage(details.category);
+}
+
 function buildGameDayContextNotes(details: EventDetails): string[] {
   if (details.category !== "Game Day") return [];
 
@@ -401,7 +480,7 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
     categoryPromptByType[details.category],
     "You may add generic category-appropriate celebration decor and styling cues when needed to make the selected event type obvious, as long as they do not introduce factual claims.",
     ...categorySpecificGuardrails,
-    "Do not hallucinate specific people, animals, venue features, branded signage, logos, exact outfits, named activities, dates, times, or other factual details that are not supported by the event details or the user's visual direction.",
+    "Do not hallucinate specific people, animals, venue features, branded signage, logos, copyrighted character costumes, named activities, dates, times, or other factual details that are not supported by the event details or the user's visual direction.",
     "If an important visual detail is missing, keep it generic and restrained instead of inventing specifics.",
     "Any visible wording must match the provided event details exactly. Never fabricate names, phone numbers, addresses, schedules, or event copy.",
   ].join(" ");
@@ -427,9 +506,17 @@ export function getStudioEventYear(details: EventDetails): string {
   return match?.[1] || "";
 }
 
-function buildDeterministicScheduleLine(details: EventDetails): string {
-  const date = formatDate(getStudioEventDate(details));
-  const time = getStudioEventStartTime(details);
+function formatVisibleCardTime(timeValue: string): string {
+  const trimmed = clean(timeValue);
+  if (!trimmed) return "";
+  return trimmed.replace(/\s*([AaPp][Mm])$/, (_, meridiem: string) => ` ${meridiem.toUpperCase()}`);
+}
+
+export function buildDeterministicScheduleLine(details: EventDetails): string {
+  const date = formatWeekdayMonthDayOrdinalEn(getStudioEventDate(details), {
+    includeComma: false,
+  });
+  const time = formatVisibleCardTime(getStudioEventStartTime(details));
   if (date && time) return `${date} at ${time}`;
   return date;
 }
@@ -452,11 +539,11 @@ export function buildStudioRequest(
   sourceImageDataUrl?: string,
 ): StudioGenerateRequest {
   const refinement = clean(editPrompt);
+  const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
   const baseDescription = buildDescription(details);
-  const sanitizedGuestImageUrls =
-    details.sourceMediaMode === "subjectPhotos"
-      ? sanitizeGuestImageUrls(details.guestImageUrls)
-      : [];
+  const sanitizedGuestImageUrls = hasStudioSubjectReferencePhotos(details)
+    ? sanitizeGuestImageUrls(details.guestImageUrls)
+    : [];
   const guestPhotoHint =
     sanitizedGuestImageUrls.length > 0
       ? ` Host provided ${sanitizedGuestImageUrls.length} reference photo(s) for invitation artwork; keep wording warm and personal where it fits.`
@@ -464,7 +551,7 @@ export function buildStudioRequest(
   const visualDirection = buildStudioVisualDirection(details);
   const categoryGuardrails = buildStudioCategoryGuardrails(details);
   const studioGuardrails =
-    "Preserve exact spelling from the event details. Double-check visible words. Keep important copy away from the bottom button area, but do not instruct the model to make that area visually empty or separated.";
+    "Preserve exact spelling from the event details. Double-check visible words. Keep important copy away from the bottom button area, but do not instruct the model to make that area visually empty or separated. Resolve the lowest visible text line well above the bottom controls so the button row never sits on top of copy.";
   return {
     mode,
     surface,
@@ -474,7 +561,12 @@ export function buildStudioRequest(
       occasion: pickFirst(details.occasion, details.category),
       eventYear: getStudioEventYear(details) || null,
       hostName:
-        pickFirst(details.rsvpName, details.hostedBy, details.teacherName, details.mainPerson) ||
+        pickFirst(
+          categorySupportsRsvp ? details.rsvpName : "",
+          details.hostedBy,
+          details.teacherName,
+          details.mainPerson,
+        ) ||
         null,
       honoreeName: getHonoreeName(details) || null,
       sportType: clean(details.sportType) || null,
@@ -500,8 +592,8 @@ export function buildStudioRequest(
         pickFirst(details.venueName, details.ceremonyVenue, details.receptionVenue) || null,
       venueAddress: clean(details.location) || null,
       dressCode: clean(details.dressCode) || null,
-      rsvpBy: clean(details.rsvpDeadline) || null,
-      rsvpContact: clean(details.rsvpContact) || null,
+      rsvpBy: categorySupportsRsvp ? clean(details.rsvpDeadline) || null : null,
+      rsvpContact: categorySupportsRsvp ? clean(details.rsvpContact) || null : null,
       registryNote: getRegistryText(details) || null,
       links: buildLinks(details),
       referenceImageUrls:
@@ -529,6 +621,10 @@ export function buildStudioRequest(
           ? "Deep navy, bright stadium lights, crisp white, and bold gold accents"
           : null),
       includeEmoji: true,
+      subjectTransformMode:
+        sanitizedGuestImageUrls.length > 0 ? "premium_makeover" : undefined,
+      likenessStrength: sanitizedGuestImageUrls.length > 0 ? details.likenessStrength : undefined,
+      visualStyleMode: sanitizedGuestImageUrls.length > 0 ? details.visualStyleMode : undefined,
     },
     imageEdit: clean(sourceImageDataUrl)
       ? { sourceImageDataUrl: clean(sourceImageDataUrl) }
@@ -546,8 +642,7 @@ export function buildInvitationData(
     title: liveCard?.title || invitation?.title,
     subtitle:
       invitation?.subtitle ||
-      buildDescription(details) ||
-      pickFirst(details.theme, details.category),
+      getStudioThemeLine(details),
     description:
       liveCard?.description ||
       invitation?.openingLine ||
@@ -555,10 +650,12 @@ export function buildInvitationData(
       "Celebrate together with a beautifully designed invitation.",
     scheduleLine: invitation?.scheduleLine,
     locationLine: invitation?.locationLine,
-    callToAction:
-      liveCard?.interactiveMetadata.ctaLabel ||
-      invitation?.callToAction ||
-      pickFirst(details.calloutText, "Tap for details and RSVP."),
+    callToAction: resolveStudioCallToAction(
+      details,
+      liveCard?.interactiveMetadata.ctaLabel,
+      invitation?.callToAction,
+      details.calloutText,
+    ),
     socialCaption:
       liveCard?.interactiveMetadata.shareNote ||
       invitation?.socialCaption ||
@@ -593,14 +690,14 @@ export function refreshLiveCardInvitationData(
     buildDescription(details) ||
     "Celebrate together with a beautifully designed invitation.";
   const title = clean(previous?.title) || getDisplayTitle(details);
-  const subtitle =
-    clean(previous?.subtitle) ||
-    buildDescription(details) ||
-    pickFirst(details.theme, details.category);
+  const subtitle = clean(previous?.subtitle) || getStudioThemeLine(details);
   const scheduleLine = clean(previous?.scheduleLine) || buildDeterministicScheduleLine(details);
   const locationLine = clean(previous?.locationLine) || buildDeterministicLocationLine(details);
-  const callToAction =
-    clean(previous?.callToAction) || pickFirst(details.calloutText, "Tap for details and RSVP.");
+  const callToAction = resolveStudioCallToAction(
+    details,
+    previous?.callToAction,
+    details.calloutText,
+  );
   const socialCaption = clean(previous?.socialCaption) || description;
   const heroTextMode =
     previous?.heroTextMode === "overlay" || previous?.heroTextMode === "image"
@@ -625,11 +722,13 @@ export function refreshLiveCardInvitationData(
       themeStyle: clean(previous?.theme?.themeStyle) || "editorial gradient",
     },
     interactiveMetadata: {
-      rsvpMessage:
-        clean(previous?.interactiveMetadata?.rsvpMessage) ||
-        "Reply to let the host know you're coming.",
+      rsvpMessage: resolveStudioRsvpMessage(details, previous?.interactiveMetadata?.rsvpMessage),
       funFacts: previous?.interactiveMetadata?.funFacts || [],
-      ctaLabel: clean(previous?.interactiveMetadata?.ctaLabel) || callToAction,
+      ctaLabel: resolveStudioCallToAction(
+        details,
+        previous?.interactiveMetadata?.ctaLabel,
+        callToAction,
+      ),
       shareNote: clean(previous?.interactiveMetadata?.shareNote) || socialCaption,
     },
     eventDetails: details,
@@ -685,6 +784,7 @@ export function normalizeStudioExternalUrl(value: string): string {
 }
 
 export function buildStudioRsvpLine(details: EventDetails): string | undefined {
+  if (!supportsStudioCategoryRsvp(details.category)) return undefined;
   const hostName = readString(details.rsvpName);
   const hostContact = readString(details.rsvpContact);
   const deadline = formatDate(details.rsvpDeadline);

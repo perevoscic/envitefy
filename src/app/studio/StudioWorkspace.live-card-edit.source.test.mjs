@@ -39,6 +39,7 @@ test("live card updates reuse the current image in the studio generation request
 
 test("live card modal exposes image edit tools without in-modal text editor", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
+  const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
   assert.match(source, /function openLiveCardImageEdit\(item: MediaItem\)/);
   assert.match(source, /function renderEditImagePanel\(\s*item: MediaItem,/);
@@ -61,6 +62,9 @@ test("live card modal exposes image edit tools without in-modal text editor", ()
   assert.match(source, /Edit current background/);
   assert.match(source, /Edit current invitation art/);
   assert.match(source, /<LiveCardHeroTextOverlay invitationData=\{activePageRecord\.data\} \/>/);
+  assert.match(source, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{activeTab\}/);
+  assert.match(surfaceSource, /data-live-card-panel/);
+  assert.match(surfaceSource, /data-live-card-trigger/);
 
   assert.doesNotMatch(source, /LiveCardTextEditor/);
   assert.doesNotMatch(source, />\s*Edit Text\s*</);

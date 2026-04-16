@@ -50,6 +50,18 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   assert.match(source, /userIdea:\s*clean\(details\.theme\)\s*\|\|\s*null,/);
   assert.match(
     source,
+    /subjectTransformMode:\s*sanitizedGuestImageUrls\.length > 0 \? "premium_makeover" : undefined,/,
+  );
+  assert.match(
+    source,
+    /likenessStrength:\s*sanitizedGuestImageUrls\.length > 0 \? details\.likenessStrength : undefined,/,
+  );
+  assert.match(
+    source,
+    /visualStyleMode:\s*sanitizedGuestImageUrls\.length > 0 \? details\.visualStyleMode : undefined,/,
+  );
+  assert.match(
+    source,
     /style:\s*\[visualDirection, categoryGuardrails, refinement, studioGuardrails\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
   );
 });
@@ -61,6 +73,10 @@ test("studio prompt sources keep the bottom overlay zone text-safe without reser
   assert.match(
     builderSource,
     /Keep important copy away from the bottom button area, but do not instruct the model to make that area visually empty or separated\./,
+  );
+  assert.match(
+    builderSource,
+    /Resolve the lowest visible text line well above the bottom controls so the button row never sits on top of copy\./,
   );
   assert.match(promptSource, /Keep essential text out of the bottom action-button zone\./);
   assert.match(
@@ -90,6 +106,14 @@ test("studio prompt sources keep the bottom overlay zone text-safe without reser
   assert.match(
     promptSource,
     /Do not invent marquee text, venue branding, logos, signage, or event facts that are not explicitly supported by the supplied details, approved invitation copy, or source image\./,
+  );
+  assert.match(
+    promptSource,
+    /Treat the lowest part of the poster as art-first support for the floating buttons\./,
+  );
+  assert.match(
+    promptSource,
+    /Treat the lower edge as artwork continuation for the controls\./,
   );
   assert.match(promptSource, /Core creative inputs:/);
   assert.match(

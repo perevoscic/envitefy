@@ -5,6 +5,9 @@ import type {
   StudioLiveCardMetadata,
 } from "@/lib/studio/types";
 
+const CARD_SCHEDULE_EXAMPLE = "Saturday May 23rd at 12:00 PM";
+const CARD_SCHEDULE_DATE_ONLY_EXAMPLE = "Saturday May 23rd";
+
 function line(label: string, value: string | null | undefined): string {
   return `${label}: ${value?.trim().length ? value.trim() : "Not provided"}`;
 }
@@ -43,6 +46,76 @@ function renderApprovedInvitationCopy(liveCard?: StudioLiveCardMetadata | null):
   ].join("\n");
 }
 
+function getSubjectTransformMode(guidance?: StudioGenerationGuidance): "default" | "premium_makeover" {
+  return guidance?.subjectTransformMode === "premium_makeover" ? "premium_makeover" : "default";
+}
+
+function getLikenessStrength(guidance?: StudioGenerationGuidance): "strict" | "balanced" | "creative" {
+  if (guidance?.likenessStrength === "strict" || guidance?.likenessStrength === "creative") {
+    return guidance.likenessStrength;
+  }
+  return "balanced";
+}
+
+function getVisualStyleMode(
+  guidance?: StudioGenerationGuidance,
+): "photoreal" | "editorial_cinematic" | "playful_stylized" {
+  if (guidance?.visualStyleMode === "photoreal" || guidance?.visualStyleMode === "playful_stylized") {
+    return guidance.visualStyleMode;
+  }
+  return "editorial_cinematic";
+}
+
+function humanizeSubjectTransformMode(guidance?: StudioGenerationGuidance): string {
+  return getSubjectTransformMode(guidance) === "premium_makeover"
+    ? "Premium themed makeover"
+    : "Natural photo integration";
+}
+
+function humanizeLikenessStrength(guidance?: StudioGenerationGuidance): string {
+  const strength = getLikenessStrength(guidance);
+  if (strength === "strict") return "Strict";
+  if (strength === "creative") return "Creative";
+  return "Balanced";
+}
+
+function humanizeVisualStyleMode(guidance?: StudioGenerationGuidance): string {
+  const mode = getVisualStyleMode(guidance);
+  if (mode === "photoreal") return "Photoreal";
+  if (mode === "playful_stylized") return "Playful stylized";
+  return "Editorial cinematic";
+}
+
+function buildReferencePhotoPromptRules(
+  guidance: StudioGenerationGuidance | undefined,
+  refCount: number,
+): string[] {
+  if (refCount <= 0) return [];
+  const transformMode = getSubjectTransformMode(guidance);
+  const likenessStrength = getLikenessStrength(guidance);
+  const visualStyleMode = getVisualStyleMode(guidance);
+
+  return [
+    "- Treat uploaded reference photo(s) like real invitation-hero source material. Preserve recognizable facial identity, age, and overall personhood.",
+    "- Do not use the uploaded person as a pasted cutout, sticker, tiny inset, or throwaway reference while unrelated stock people or scenery dominate the card.",
+    "- Integrate the person into the invitation world with matched lighting, perspective, color treatment, and premium composition so the result feels custom-designed.",
+    transformMode === "premium_makeover"
+      ? "- Premium themed makeover is enabled. Preserve identity while restyling wardrobe, hair, props, pose energy, and environmental styling to match the event concept."
+      : "- Keep the uploaded person naturally integrated. Preserve their real clothing and everyday likeness unless subtle theme styling is needed to make the invitation feel cohesive.",
+    likenessStrength === "strict"
+      ? "- Likeness strength is Strict. Keep the face, age, proportions, and overall styling very close to the uploaded photo; minimize makeover changes."
+      : likenessStrength === "creative"
+        ? "- Likeness strength is Creative. Keep the person recognizable, but allow bolder styling, wardrobe, and scene transformation when it improves the invitation concept."
+        : "- Likeness strength is Balanced. Keep the person clearly recognizable while allowing polished editorial styling and tasteful theme integration.",
+    visualStyleMode === "photoreal"
+      ? "- Visual style mode is Photoreal. Keep anatomy, textures, lighting, fabrics, and materials grounded in believable real-life photography."
+      : visualStyleMode === "playful_stylized"
+        ? "- Visual style mode is Playful stylized. Allow tasteful stylization and heightened art direction, but keep the result premium and invitation-ready rather than childish or gimmicky."
+        : "- Visual style mode is Editorial cinematic. Favor polished premium lighting, elevated styling, and bespoke invitation art direction over plain snapshots.",
+    "- The finished result must still read first as a hosted invitation or greeting-card design, not a fan poster, character sheet, collage, or movie still.",
+  ];
+}
+
 function hasRealismIntent(event: StudioEventDetails, guidance?: StudioGenerationGuidance): boolean {
   const combined = [
     event.category,
@@ -58,8 +131,11 @@ function hasRealismIntent(event: StudioEventDetails, guidance?: StudioGeneration
     .join(" ")
     .toLowerCase();
 
-  return /\b(realistic|photorealistic|photo-realistic|lifelike|true to life|naturalistic|real cats?)\b/.test(
-    combined,
+  return (
+    getVisualStyleMode(guidance) === "photoreal" ||
+    /\b(realistic|photorealistic|photo-realistic|lifelike|true to life|naturalistic|real cats?)\b/.test(
+      combined,
+    )
   );
 }
 
@@ -205,7 +281,7 @@ export function buildInvitationTextPrompt(
   const posterFirstBirthdayOrWedding = isPosterFirstBirthdayOrWedding(event);
   const gameDay = isGameDayOccasion(event);
   return [
-    "You are a professional invitation copywriter.",
+    "You are a premium invitation designer and invitation copywriter for Envitefy.",
     "Return strict JSON only. Do not include markdown fences.",
     "Use this exact JSON shape and key names:",
     "{",
@@ -223,10 +299,11 @@ export function buildInvitationTextPrompt(
     "- Keep language clear and warm, not overly formal.",
     "- Keep each line concise and ready for a card layout.",
     "- `hashtags` should be 1-6 short tags.",
+    `- \`scheduleLine\` is for visible date/time only. Prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}. Keep venue/location on the next line or separate field, not inside \`scheduleLine\`.`,
+    "- Visible card schedule/date lines should omit the year unless the user explicitly typed year wording that must be preserved.",
     "- Build the invitation around the selected event type first.",
     "- Treat the user's idea as the primary creative concept when one is provided.",
     "- If an age or milestone is provided, incorporate it naturally into the invitation concept or copy when helpful.",
-    "- If Event Year is provided, use that exact year when year wording appears.",
     "- Preserve the exact spelling of names, titles, venues, and event words from the provided details.",
     "- Double-check every visible word for spelling before returning JSON.",
     "- Do not stylize by misspelling or swapping letters unless the user explicitly supplied that wording.",
@@ -234,9 +311,11 @@ export function buildInvitationTextPrompt(
     ...(posterFirstBirthdayOrWedding
       ? [
           "- For birthday and wedding invitation copy, keep the hierarchy short, cinematic, and poster-ready rather than reading like flat form fields.",
+          "- For birthdays, when Honoree Name and Age or Milestone are available, make the main title anchor that person's name and birthday milestone first. Treat the user idea as a short subtitle, theme line, or mood cue rather than the primary birthday headline.",
           "- Treat the user prompt/theme as the dominant art direction for the wording and mood.",
           "- Make the wording read unmistakably as a hosted celebration invitation, not just a description of a place, backdrop, or scene.",
           "- Bring celebration energy into the copy with event-oriented language, invitation intent, and occasion cues.",
+          "- For birthday and wedding visible card copy, never add the year to schedule/date wording unless the user's custom wording explicitly includes that year.",
         ]
       : []),
     ...(gameDay
@@ -293,8 +372,9 @@ export function buildLiveCardPrompt(
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   const posterFirstBirthdayOrWedding = isPosterFirstBirthdayOrWedding(event);
   const gameDay = isGameDayOccasion(event);
+  const referenceImageCount = Math.max(0, event.referenceImageUrls?.length ?? 0);
   return [
-    "You are designing a live event card for Envitefy.",
+    "You are a premium invitation designer, greeting-card art director, and live-event card writer for Envitefy.",
     "Return strict JSON only. Do not include markdown fences.",
     "Use this exact JSON shape and key names:",
     "{",
@@ -337,21 +417,25 @@ export function buildLiveCardPrompt(
     "- Copy must be layout-safe: keep every text field short enough for a mobile invitation card.",
     "- Keep invitation copy compact so essential wording stays out of the lower action-button zone.",
     "- Important wording should stay in the upper and middle portions of the card, not the lower action-button zone.",
+    "- Resolve the final visible text line well above the bottom action buttons. If space is tight, shorten copy instead of pushing it lower.",
     "- Prefer fewer words over crowded copy.",
+    `- \`invitation.scheduleLine\` is for visible date/time only. Prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}. Keep venue/location on \`invitation.locationLine\`, not inside \`invitation.scheduleLine\`.`,
+    "- Visible card schedule/date lines should omit the year unless the user explicitly typed year wording that must be preserved.",
     "- Build the live card around the selected event type first, then express the user's idea through that celebration type.",
     "- Treat the user's idea as the main creative concept when one is provided.",
     "- If an age or milestone is provided, work it into the copy or concept naturally when it adds clarity.",
-    "- If Event Year is provided, use that exact year in the copy instead of inventing or omitting a different year.",
     "- Treat explicit user visual instructions as the highest-priority requirement.",
     "- Do not replace a literal user request with a cuter or more whimsical version of the theme.",
     "- Avoid novelty puns, mascot language, and jokey rewrites unless the user explicitly asked for them.",
     ...(posterFirstBirthdayOrWedding
       ? [
           "- For birthday and wedding live cards, write short cinematic invitation copy with a poster-like hierarchy instead of flat form-field phrasing.",
+          "- For birthdays, when Honoree Name and Age or Milestone are available, make the main invitation title center on that person's name and milestone first. Use the user idea as a short subtitle, theme line, or mood line instead of the dominant birthday headline.",
           "- Treat the user's prompt/theme as the dominant art direction for the copy and invitation mood.",
           "- Make the result read first as a real celebration invite for this event type, not simply a stylish scene description.",
           "- Bring clear party / celebration / hosted-event energy into the concept and invitation copy.",
           "- Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy.",
+          "- For birthday and wedding visible card copy, never add the year to schedule/date wording unless the user's custom wording explicitly includes that year.",
         ]
       : []),
     ...(gameDay
@@ -376,6 +460,7 @@ export function buildLiveCardPrompt(
           "- Do not invent cat puns or cute rewritten titles when the style request is realistic.",
         ]
       : []),
+    ...buildReferencePhotoPromptRules(guidance, referenceImageCount),
     `- Emoji usage: ${includeEmoji}.`,
     "",
     renderCoreCreativeInputs(event),
@@ -412,6 +497,18 @@ export function buildLiveCardPrompt(
     line("Tone", guidance?.tone),
     line("Style", guidance?.style),
     line("Audience", guidance?.audience),
+    line(
+      "Subject Treatment",
+      referenceImageCount > 0 ? humanizeSubjectTransformMode(guidance) : "Not requested",
+    ),
+    line(
+      "Likeness Strength",
+      referenceImageCount > 0 ? humanizeLikenessStrength(guidance) : "Default",
+    ),
+    line(
+      "Render Style Mode",
+      referenceImageCount > 0 ? humanizeVisualStyleMode(guidance) : "Default",
+    ),
     line("Color Palette", guidance?.colorPalette),
     line("Emoji Usage", guidance?.includeEmoji === true ? "Allowed" : "Avoid"),
   ].join("\n");
@@ -452,12 +549,16 @@ export function buildInvitationImagePrompt(
       : []),
     "Style requirements:",
     "- High-quality vertical invitation card composition (9:16 mobile card).",
+    ...(refCount > 0 ? buildReferencePhotoPromptRules(guidance, refCount) : []),
     ...(posterTextInImage
       ? [
           "- This is the first render of a live invitation card for Birthday or Wedding. Bake the invitation copy into the raster like cinematic poster art instead of leaving the text for an HTML overlay.",
           "- When uploaded reference photo(s) are present, build the poster around those exact photo(s). Do not swap in unrelated stock people or generic scenery as the main subject.",
+          "- For birthdays, when Honoree Name and Age or Milestone are available, make that birthday identity the main visible title hierarchy. Use the user idea as a secondary subtitle, theme line, or mood cue.",
           "- Preserve the exact supplied spelling of names, venue words, and key event terms.",
-          "- If Event Year is provided, show that exact year in the poster copy or hierarchy.",
+          `- Visible poster schedule/date lines should omit the year and prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}.`,
+          "- Only show a year in visible poster copy when the user's custom wording explicitly includes that year and it must be preserved.",
+          "- Keep venue/location on its own line or separate field rather than merging it into the visible schedule/date line.",
           "- Treat the user's prompt/theme as the dominant art direction.",
           "- Keep the visible copy short and cinematic with a clear invitation/poster hierarchy rather than a plain list of form fields.",
           "- The finished image must read first as a professional hosted event invitation, not merely a cinematic still, venue ad, mascot portrait, or mood board.",
@@ -468,6 +569,8 @@ export function buildInvitationImagePrompt(
           "- Do not invent marquee text, venue branding, logos, signage, or event facts that are not explicitly supported by the supplied details, approved invitation copy, or source image.",
           "- The floating action buttons sit low on the card. Keep the lower portion behind them free of visible copy.",
           "- End all visible text comfortably above the button icons. No words, dates, venue lines, captions, or taglines may appear behind the bottom buttons.",
+          "- Treat the lowest part of the poster as art-first support for the floating buttons. The final text line must sit clearly above that lower area.",
+          "- Do not place marquee wording, signage, decorative captions, or secondary copy in the lowest part of the card.",
         ]
       : []),
     ...(pageSurface
@@ -580,6 +683,7 @@ export function buildInvitationImagePrompt(
           "- Leave the lower portion behind the floating buttons free of visible copy.",
           "- End the final text block well above the button icons. If space is tight, shorten the copy instead of moving text lower.",
           "- No words, dates, venue lines, captions, or taglines may appear behind the bottom buttons.",
+          "- Treat the lower edge as artwork continuation for the controls. If needed, delete copy instead of lowering it toward the buttons.",
           "- Do not place paragraphs, captions, labels, taglines, decorative badges, or key event details in the bottom button area.",
           "- Avoid crowded text blocks near the bottom edge of the invitation.",
         ]),
@@ -650,6 +754,9 @@ export function buildInvitationImagePrompt(
     line("Visual Style", guidance?.style),
     line("Audience", guidance?.audience),
     line("Color Palette", guidance?.colorPalette),
+    line("Subject Treatment", refCount > 0 ? humanizeSubjectTransformMode(guidance) : "Not requested"),
+    line("Likeness Strength", refCount > 0 ? humanizeLikenessStrength(guidance) : "Default"),
+    line("Render Style Mode", refCount > 0 ? humanizeVisualStyleMode(guidance) : "Default"),
     line("Emoji Usage", guidance?.includeEmoji === true ? "Allowed" : "Avoid"),
   ].join("\n");
 }

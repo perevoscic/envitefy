@@ -47,6 +47,8 @@ import {
   SubscriptionPlan,
 } from "./left-sidebar.model";
 
+const MOBILE_SIDEBAR_SCROLL_LOCK_CLASS = "sidebar-mobile-open";
+
 type LeftSidebarControllerArgs = {
   session: any;
   status: string;
@@ -277,9 +279,9 @@ export function useLeftSidebarController({
   const isCompact = false;
   const sidebarWidth = SIDEBAR_WIDTH_REM;
   const sidebarTransform = isDesktop
-    ? "translateX(0)"
+    ? "none"
     : isOpen
-      ? "translateX(0)"
+      ? "none"
       : "translateX(-100%)";
   const pointerClass = isDesktop
     ? "pointer-events-auto"
@@ -330,6 +332,30 @@ export function useLeftSidebarController({
     }
     lastSidebarOpenAtRef.current = Date.now();
   }, [isOpen]);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof document === "undefined" ||
+      isDesktop ||
+      !isOpen
+    ) {
+      return;
+    }
+
+    const scrollY = window.scrollY;
+    const { body, documentElement } = document;
+    documentElement.style.setProperty("--nav-sidebar-scroll-y", `${scrollY}px`);
+    documentElement.classList.add(MOBILE_SIDEBAR_SCROLL_LOCK_CLASS);
+    body.classList.add(MOBILE_SIDEBAR_SCROLL_LOCK_CLASS);
+
+    return () => {
+      documentElement.classList.remove(MOBILE_SIDEBAR_SCROLL_LOCK_CLASS);
+      body.classList.remove(MOBILE_SIDEBAR_SCROLL_LOCK_CLASS);
+      documentElement.style.removeProperty("--nav-sidebar-scroll-y");
+      window.scrollTo(0, scrollY);
+    };
+  }, [isDesktop, isOpen]);
 
   useEffect(() => {
     if (status === "authenticated") {

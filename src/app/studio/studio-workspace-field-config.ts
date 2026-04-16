@@ -385,6 +385,124 @@ export const RSVP_FIELDS: Array<{
   { label: "RSVP Deadline", key: "rsvpDeadline", type: "date" },
 ];
 
+export type StudioCompactCategoryFormConfig = {
+  primaryFields: FieldConfig[];
+  secondaryFields?: FieldConfig[];
+  supportsRsvp: boolean;
+};
+
+export const STUDIO_COMPACT_RSVP_CONTACT_FIELD: FieldConfig = {
+  label: "RSVP Phone or Email",
+  key: "rsvpContact",
+  type: "text",
+  placeholder: "e.g. 555-123-4567 or hello@example.com",
+  required: true,
+};
+
+function pickCategoryFields(
+  category: InviteCategory,
+  keys: Array<keyof EventDetails>,
+): FieldConfig[] {
+  const categoryFields = CATEGORY_FIELDS[category] || [];
+  return keys.map((key) => {
+    const field = categoryFields.find((entry) => entry.key === key);
+    if (!field) {
+      throw new Error(`Missing studio field config for ${category}:${String(key)}`);
+    }
+    return field;
+  });
+}
+
+export function supportsStudioCategoryRsvp(
+  category: InviteCategory | string | null | undefined,
+): boolean {
+  return category !== "Game Day";
+}
+
+export function getStudioDefaultCallToAction(
+  category: InviteCategory | string | null | undefined,
+): string {
+  return supportsStudioCategoryRsvp(category)
+    ? "Tap for details and RSVP."
+    : "Tap for details and game info.";
+}
+
+export function getStudioDefaultRsvpMessage(
+  category: InviteCategory | string | null | undefined,
+): string {
+  return supportsStudioCategoryRsvp(category)
+    ? "Reply to let the host know you're coming."
+    : "Check the live card for game details and arrival info.";
+}
+
+export const STUDIO_COMPACT_CATEGORY_FORM_CONFIG: Record<
+  InviteCategory,
+  StudioCompactCategoryFormConfig
+> = {
+  Birthday: {
+    primaryFields: [
+      ...pickCategoryFields("Birthday", ["name", "age"]),
+      STUDIO_COMPACT_RSVP_CONTACT_FIELD,
+    ],
+    supportsRsvp: true,
+  },
+  Wedding: {
+    primaryFields: [
+      ...pickCategoryFields("Wedding", ["coupleNames", "eventTitle"]),
+      STUDIO_COMPACT_RSVP_CONTACT_FIELD,
+    ],
+    supportsRsvp: true,
+  },
+  "Baby Shower": {
+    primaryFields: [
+      ...pickCategoryFields("Baby Shower", ["honoreeNames", "babyName"]),
+      STUDIO_COMPACT_RSVP_CONTACT_FIELD,
+    ],
+    supportsRsvp: true,
+  },
+  Anniversary: {
+    primaryFields: [
+      ...pickCategoryFields("Anniversary", ["coupleNames", "age"]),
+      STUDIO_COMPACT_RSVP_CONTACT_FIELD,
+    ],
+    supportsRsvp: true,
+  },
+  "Bridal Shower": {
+    primaryFields: [
+      ...pickCategoryFields("Bridal Shower", ["honoreeNames", "hostedBy"]),
+      STUDIO_COMPACT_RSVP_CONTACT_FIELD,
+    ],
+    supportsRsvp: true,
+  },
+  Housewarming: {
+    primaryFields: [
+      ...pickCategoryFields("Housewarming", ["honoreeNames"]),
+      STUDIO_COMPACT_RSVP_CONTACT_FIELD,
+    ],
+    secondaryFields: pickCategoryFields("Housewarming", ["message"]),
+    supportsRsvp: true,
+  },
+  "Field Trip/Day": {
+    primaryFields: [
+      ...pickCategoryFields("Field Trip/Day", ["eventTitle", "gradeLevel"]),
+      STUDIO_COMPACT_RSVP_CONTACT_FIELD,
+    ],
+    supportsRsvp: true,
+  },
+  "Game Day": {
+    primaryFields: pickCategoryFields("Game Day", ["eventTitle", "sportType", "teamName"]),
+    secondaryFields: pickCategoryFields("Game Day", ["opponentName"]),
+    supportsRsvp: false,
+  },
+  "Custom Invite": {
+    primaryFields: [
+      ...pickCategoryFields("Custom Invite", ["eventTitle", "mainPerson"]),
+      STUDIO_COMPACT_RSVP_CONTACT_FIELD,
+    ],
+    supportsRsvp: true,
+  },
+};
+
 export const EMPTY_POSITIONS = {
   rsvp: { x: 0, y: 0 },
   location: { x: 0, y: 0 },

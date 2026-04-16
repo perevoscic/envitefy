@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { inputValue } from "../studio-workspace-builders";
 import type { EventDetails, FieldConfig, SharedFieldConfig } from "../studio-workspace-types";
@@ -33,11 +33,6 @@ type StudioTextAreaFieldProps = {
 };
 
 function renderFieldIcon(fieldKey: keyof EventDetails) {
-  if (fieldKey === "startTime") {
-    return (
-      <Clock className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C7B65]/55 transition-colors group-focus-within:text-[#1A1A1A]" />
-    );
-  }
   if (fieldKey === "location") {
     return (
       <MapPin className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C7B65]/55 transition-colors group-focus-within:text-[#1A1A1A]" />
@@ -47,7 +42,7 @@ function renderFieldIcon(fieldKey: keyof EventDetails) {
 }
 
 function usesIconInput(fieldKey: keyof EventDetails) {
-  return fieldKey === "startTime" || fieldKey === "location";
+  return fieldKey === "location";
 }
 
 export function StudioFieldGrid({

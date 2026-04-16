@@ -25,3 +25,10 @@ test("/event upload launch persists the selected file before navigation", () => 
   assert.match(launchCards, /router\.push\("\/\?action=upload"\);/);
   assert.doesNotMatch(launchCards, /__pendingSnapUpload/);
 });
+
+test("/event launch cards stay in one mobile row and hide helper copy on small screens", () => {
+  const launchCards = readSource("src/app/event/SnapLaunchCards.tsx");
+
+  assert.match(launchCards, /className="mt-10 grid grid-cols-2 gap-3 pb-10 sm:gap-6"/);
+  assert.match(launchCards, /className="mt-2 hidden text-sm text-\[#66677f\] sm:block"/);
+});

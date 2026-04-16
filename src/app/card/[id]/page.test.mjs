@@ -31,6 +31,7 @@ test("shared card route prefers the public-safe cover image url", () => {
 test("shared card page uses studio-aligned 9:16 shell layout (not full-viewport card canvas)", () => {
   const conditionalFooter = readSource("src/components/ConditionalFooter.tsx");
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
+  const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
   const mainWrapperSource = readSource("src/components/MainContentWrapper.tsx");
 
   assert.match(conditionalFooter, /const isStudioCardSharePath = \(pathname: string\) => \{/);
@@ -44,16 +45,16 @@ test("shared card page uses studio-aligned 9:16 shell layout (not full-viewport 
   assert.match(sharedPageSource, /object-cover/);
   assert.match(sharedPageSource, /LiveCardHeroTextOverlay/);
   assert.match(
-    sharedPageSource,
-    /absolute bottom-32 left-3 right-3[\s\S]*md:left-6 md:right-6/,
+    surfaceSource,
+    /absolute bottom-32 left-2 right-2[\s\S]*md:left-6 md:right-6/,
   );
   assert.match(
-    sharedPageSource,
+    surfaceSource,
     /pointer-events-none absolute inset-0 flex flex-col[\s\S]*md:p-8/,
   );
   assert.match(
-    sharedPageSource,
-    /flex w-full min-w-0 flex-nowrap items-end justify-center gap-2[\s\S]*md:gap-4/,
+    surfaceSource,
+    /grid w-full min-w-0 grid-flow-col auto-cols-fr[\s\S]*md:gap-3/,
   );
   assert.doesNotMatch(
     sharedPageSource,
@@ -66,24 +67,26 @@ test("shared card page uses studio-aligned 9:16 shell layout (not full-viewport 
 test("shared card route and page preserve overlay hero text mode for live cards", () => {
   const pageSource = readSource("src/app/card/[id]/page.tsx");
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
+  const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
   assert.match(pageSource, /const heroTextMode =\s*data\.heroTextMode === "overlay" \|\| data\.heroTextMode === "image"/);
   assert.match(pageSource, /heroTextMode,/);
-  assert.match(sharedPageSource, /heroTextMode\?: "image" \| "overlay"/);
+  assert.match(surfaceSource, /heroTextMode\?: "image" \| "overlay"/);
   assert.match(sharedPageSource, /<LiveCardHeroTextOverlay invitationData=\{invitationData\} \/>/);
 });
 
 test("poster-first shared cards keep floating controls without a dark footer strip", () => {
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
+  const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
-  assert.match(sharedPageSource, /function isPosterFirstHeroCard\(invitationData\?: InvitationData \| null\)/);
+  assert.match(surfaceSource, /export function isPosterFirstHeroCard\(invitationData\?: LiveCardInvitationData \| null\)/);
   assert.match(sharedPageSource, /const posterFirstHeroCard = isPosterFirstHeroCard\(invitationData\);/);
   assert.match(
-    sharedPageSource,
-    /border-white\/28 bg-white\/16 shadow-\[0_12px_28px_rgba\(0,0,0,0\.34\)/,
+    surfaceSource,
+    /border-white\/28 bg-white\/18 shadow-\[0_12px_28px_rgba\(0,0,0,0\.34\)/,
   );
   assert.match(
-    sharedPageSource,
+    surfaceSource,
     /max-md:min-h-\[min\(14svh,4rem\)\] min-h-\[min\(8svh,2\.4rem\)\] md:min-h-\[min\(6svh,2rem\)\]/,
   );
   assert.match(

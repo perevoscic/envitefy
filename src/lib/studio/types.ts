@@ -1,5 +1,8 @@
 export type StudioGenerateMode = "text" | "image" | "both";
 export type StudioGenerateSurface = "page" | "image";
+export type StudioSubjectTransformMode = "default" | "premium_makeover";
+export type StudioLikenessStrength = "strict" | "balanced" | "creative";
+export type StudioVisualStyleMode = "photoreal" | "editorial_cinematic" | "playful_stylized";
 
 export type StudioEventDetails = {
   title: string;
@@ -38,6 +41,9 @@ export type StudioGenerationGuidance = {
   audience?: string | null;
   colorPalette?: string | null;
   includeEmoji?: boolean | null;
+  subjectTransformMode?: StudioSubjectTransformMode | null;
+  likenessStrength?: StudioLikenessStrength | null;
+  visualStyleMode?: StudioVisualStyleMode | null;
 };
 
 export type StudioLiveCardPalette = {
@@ -213,6 +219,20 @@ function normalizeGuidance(value: unknown): StudioGenerationGuidance | undefined
     colorPalette: safeNullableString((value as any).colorPalette),
     includeEmoji:
       typeof (value as any).includeEmoji === "boolean" ? (value as any).includeEmoji : null,
+    subjectTransformMode:
+      (value as any).subjectTransformMode === "premium_makeover" ? "premium_makeover" : "default",
+    likenessStrength:
+      (value as any).likenessStrength === "strict" ||
+      (value as any).likenessStrength === "creative" ||
+      (value as any).likenessStrength === "balanced"
+        ? (value as any).likenessStrength
+        : "balanced",
+    visualStyleMode:
+      (value as any).visualStyleMode === "photoreal" ||
+      (value as any).visualStyleMode === "playful_stylized" ||
+      (value as any).visualStyleMode === "editorial_cinematic"
+        ? (value as any).visualStyleMode
+        : "editorial_cinematic",
   };
 }
 

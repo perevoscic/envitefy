@@ -52,7 +52,7 @@ export function formatMonthDayOrdinalEn(
 
 export function formatWeekdayMonthDayOrdinalEn(
   dateInput: string | Date | undefined | null,
-  options?: { includeYear?: boolean; utc?: boolean },
+  options?: { includeYear?: boolean; utc?: boolean; includeComma?: boolean },
 ): string {
   if (dateInput == null || dateInput === "") return "";
   const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
@@ -67,7 +67,8 @@ export function formatWeekdayMonthDayOrdinalEn(
     weekday: "long",
     ...(utc ? { timeZone: "UTC" } : {}),
   }).format(date);
-  const label = `${weekday}, ${MONTHS_EN[month]} ${day}${dayOrdinalSuffix(day)}`;
+  const separator = options?.includeComma === false ? " " : ", ";
+  const label = `${weekday}${separator}${MONTHS_EN[month]} ${day}${dayOrdinalSuffix(day)}`;
   if (options?.includeYear) {
     return `${label}, ${year}`;
   }

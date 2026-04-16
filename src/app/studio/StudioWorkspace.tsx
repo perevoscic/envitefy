@@ -3,42 +3,20 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
-  CalendarDays,
-  CheckCircle2,
-  ChevronLeft,
   ChevronRight,
-  ClipboardList,
   Download,
-  ExternalLink,
-  Gift,
   Image as ImageIcon,
   Layout,
   Loader2,
-  Mail,
-  MapPin,
-  MessageSquare,
   PanelLeft,
-  Phone,
-  Share2,
-  Trash2,
   WandSparkles,
   X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { type TouchEvent as ReactTouchEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
-import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
-import {
-  buildLiveCardRsvpOutboundHref,
-  LIVE_CARD_RSVP_CHOICES,
-  parseLiveCardRsvpContact,
-  shouldShowLiveCardDescriptionSection,
-} from "@/lib/live-card-rsvp";
+import StudioLiveCardActionSurface from "@/components/studio/StudioLiveCardActionSurface";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
-import {
-  formatTimeLabelEn,
-  formatWeekdayMonthDayOrdinalEn,
-} from "@/utils/format-month-day-ordinal";
 import {
   persistImageMediaValue,
   uploadMediaFile,
@@ -47,7 +25,6 @@ import {
 import type { StudioStep } from "./studio-types";
 import { requestStudioGeneration } from "./studio-workspace-api";
 import {
-  accentClassForStudioRsvpChoice,
   buildInvitationData,
   buildStudioPublishPayload,
   clean,
@@ -57,12 +34,10 @@ import {
   getFallbackThumbnail,
   getStudioIdeaLabel,
   getStudioIdeaPlaceholder,
-  getRegistryText,
   getStudioShareTitle,
-  hasRegistryContent,
+  hasStudioSubjectReferencePhotos,
   inferBirthdayGenderFromName,
   inputValue,
-  isPosterFirstLiveCardCategory,
   pickFirst,
   resolveStudioGenerationSurface,
 } from "./studio-workspace-builders";
@@ -70,6 +45,7 @@ import {
   CATEGORY_FIELDS,
   EMPTY_POSITIONS,
   SHARED_BASICS,
+  supportsStudioCategoryRsvp,
 } from "./studio-workspace-field-config";
 import { createInitialDetails, sanitizeMediaItems } from "./studio-workspace-sanitize";
 import type {
@@ -81,7 +57,6 @@ import type {
   MediaType,
 } from "./studio-workspace-types";
 import {
-  studioWorkspaceGhostIconButtonClass,
   studioWorkspaceMediaBadgeClass,
   studioWorkspaceMediaCardClass,
   studioWorkspaceShellClass,
@@ -123,6 +98,24 @@ type StudioVisualDraft = {
   positions: NonNullable<MediaItem["positions"]>;
 };
 
+const STUDIO_LIKENESS_OPTIONS: Array<{
+  value: EventDetails["likenessStrength"];
+  label: string;
+}> = [
+  { value: "strict", label: "Strict" },
+  { value: "balanced", label: "Balanced" },
+  { value: "creative", label: "Creative" },
+];
+
+const STUDIO_VISUAL_STYLE_OPTIONS: Array<{
+  value: EventDetails["visualStyleMode"];
+  label: string;
+}> = [
+  { value: "photoreal", label: "Photoreal" },
+  { value: "editorial_cinematic", label: "Editorial cinematic" },
+  { value: "playful_stylized", label: "Playful stylized" },
+];
+
 function mergeStudioButtonPositions(item: MediaItem): NonNullable<MediaItem["positions"]> {
   return { ...EMPTY_POSITIONS, ...item.positions };
 }
@@ -137,6 +130,28 @@ function studioVisualDraftDiffersFromSaved(item: MediaItem, draft: StudioVisualD
     }
   }
   return false;
+}
+
+function applyStudioVisualDraft(item: MediaItem, draft: StudioVisualDraft | null): MediaItem {
+  if (!draft || draft.itemId !== item.id) return item;
+  const preview = clean(draft.previewImageUrl);
+  const nextItem: MediaItem = {
+    ...item,
+    positions: draft.positions,
+  };
+  if (preview && preview !== clean(item.url)) {
+    nextItem.url = preview;
+    nextItem.sharePath = undefined;
+    nextItem.errorMessage = undefined;
+    nextItem.status = "ready";
+  }
+  return nextItem;
+}
+
+function serializeStudioMediaItem(item: MediaItem | null): string {
+  if (!item) return "";
+  const [sanitized] = sanitizeMediaItems([item]);
+  return sanitized ? JSON.stringify(sanitized) : "";
 }
 
 async function persistStudioLibraryImageUrl(
@@ -156,13 +171,6 @@ async function persistStudioLibraryImageUrl(
     console.warn("[studio] failed to persist library image for sync");
     return u;
   }
-}
-
-function formatCalendarSummary(dateStr: string | undefined, timeStr: string | undefined) {
-  const dateLabel = formatWeekdayMonthDayOrdinalEn(dateStr);
-  if (!dateLabel) return "";
-  const timeLabel = formatTimeLabelEn(timeStr);
-  return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel;
 }
 
 type StudioFlyerParseResponse = {
@@ -359,21 +367,16 @@ async function parseStudioFlyerDetails(file: File): Promise<{
 const STUDIO_MOBILE_TOP_CHROME = "3rem + max(0.5rem, env(safe-area-inset-top, 0px)) + 0.75rem";
 const STUDIO_MOBILE_BOTTOM_CHROME = "max(0.75rem, env(safe-area-inset-bottom, 0px)) + 0.5rem";
 
-function getStudioGalleryItemsPerPage(viewportWidth: number) {
-  if (viewportWidth >= 1536) return 10;
-  if (viewportWidth >= 1024) return 6;
-  return 4;
-}
-
 export default function StudioWorkspace() {
   const { status: sessionStatus } = useSession();
   const [step, setStep] = useState<StudioStep>("category");
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [details, setDetails] = useState<EventDetails>(createInitialDetails);
   const { mediaList, setMediaList, librarySyncError, retryLibrarySync } = useStudioMediaLibrary();
+  const [currentProject, setCurrentProject] = useState<MediaItem | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activePage, setActivePage] = useState<MediaItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<MediaItem | null>(null);
+  const [currentProjectPreviewTab, setCurrentProjectPreviewTab] = useState<ActiveTab>("none");
   const [activeTab, setActiveTab] = useState<ActiveTab>("none");
   const [isDesignMode, setIsDesignMode] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -384,71 +387,51 @@ export default function StudioWorkspace() {
   const [studioVisualDraft, setStudioVisualDraft] = useState<StudioVisualDraft | null>(null);
   const [isLiveCardToolsDrawerOpen, setIsLiveCardToolsDrawerOpen] = useState(false);
   const [isDesktopLiveCardViewport, setIsDesktopLiveCardViewport] = useState(false);
-  const [studioGalleryPage, setStudioGalleryPage] = useState(0);
-  const [studioGalleryDirection, setStudioGalleryDirection] = useState<1 | -1>(1);
-  const [studioGalleryItemsPerPage, setStudioGalleryItemsPerPage] = useState(10);
   const [isFlyerUploading, setIsFlyerUploading] = useState(false);
   const [isSubjectPhotoUploading, setIsSubjectPhotoUploading] = useState(false);
   const [flyerUploadError, setFlyerUploadError] = useState<string | null>(null);
   const [subjectPhotoUploadError, setSubjectPhotoUploadError] = useState<string | null>(null);
-  const studioGalleryTouchStartRef = useRef<{ x: number; y: number } | null>(null);
-
-  const editingMediaItem = useMemo(
-    () => (editingId ? (mediaList.find((item) => item.id === editingId) ?? null) : null),
-    [editingId, mediaList],
-  );
+  const editingMediaItem = currentProject;
 
   const isEditingLiveCard = editingMediaItem?.type === "page";
   const editingLiveCardHeroTextMode = editingMediaItem?.data?.heroTextMode;
 
   const activePageRecord = useMemo(
-    () => mediaList.find((item) => item.id === activePage?.id) ?? activePage,
-    [activePage, mediaList],
-  );
-  const studioGalleryPageCount = Math.max(
-    1,
-    Math.ceil(mediaList.length / Math.max(1, studioGalleryItemsPerPage)),
-  );
-  const studioGalleryWindowStart = studioGalleryPage * studioGalleryItemsPerPage;
-  const studioGalleryVisibleItems = useMemo(
     () =>
-      mediaList.slice(
-        studioGalleryWindowStart,
-        studioGalleryWindowStart + studioGalleryItemsPerPage,
-      ),
-    [mediaList, studioGalleryItemsPerPage, studioGalleryWindowStart],
+      (currentProject?.id && activePage?.id === currentProject.id ? currentProject : null) ||
+      mediaList.find((item) => item.id === activePage?.id) ||
+      activePage,
+    [activePage, currentProject, mediaList],
   );
-  const studioGalleryVisibleRangeLabel =
-    mediaList.length > 0
-      ? `${studioGalleryWindowStart + 1}-${Math.min(
-          studioGalleryWindowStart + studioGalleryVisibleItems.length,
-          mediaList.length,
-        )}`
-      : "0-0";
-
-  const activePageRsvpContact = clean(activePageRecord?.data?.eventDetails.rsvpContact);
-  const activePageRsvpParsed = parseLiveCardRsvpContact(activePageRsvpContact);
+  const currentProjectWithVisualDraft = useMemo(
+    () => (currentProject ? applyStudioVisualDraft(currentProject, studioVisualDraft) : null),
+    [currentProject, studioVisualDraft],
+  );
+  const savedCurrentProject = useMemo(
+    () => (currentProject ? (mediaList.find((item) => item.id === currentProject.id) ?? null) : null),
+    [currentProject, mediaList],
+  );
+  const currentProjectHasUnsavedChanges = useMemo(() => {
+    if (!currentProjectWithVisualDraft) return false;
+    if (!savedCurrentProject) return true;
+    return (
+      serializeStudioMediaItem(currentProjectWithVisualDraft) !==
+      serializeStudioMediaItem(savedCurrentProject)
+    );
+  }, [currentProjectWithVisualDraft, savedCurrentProject]);
+  const currentProjectSaveLabel = !savedCurrentProject
+    ? "Save to Library"
+    : currentProjectHasUnsavedChanges
+      ? "Save Changes"
+      : "Saved to Library";
   const studioPreviewShareUrl = useMemo(() => {
     const path = activePageRecord?.sharePath;
     return path?.startsWith("/card/") ? getAbsoluteShareUrl(path) : "";
   }, [activePageRecord?.sharePath]);
-  const studioRsvpOutboundHint =
-    activePageRsvpParsed.kind === "email"
-      ? "Tap a response to open your email with a draft message."
-      : activePageRsvpParsed.kind === "sms"
-        ? "Tap a response to open your messages app with a draft text."
-        : "Add a phone number or email as the RSVP contact to send a reply from here.";
-
-  const studioDetailsWelcome = useMemo(
-    () =>
-      activePageRecord?.data
-        ? buildLiveCardDetailsWelcomeMessage(
-            activePageRecord.data.eventDetails,
-            activePageRecord.data.title,
-          )
-        : null,
-    [activePageRecord?.data?.eventDetails, activePageRecord?.data?.title],
-  );
+  const currentProjectPreviewShareUrl = useMemo(() => {
+    const path = currentProjectWithVisualDraft?.sharePath;
+    return path?.startsWith("/card/") ? getAbsoluteShareUrl(path) : "";
+  }, [currentProjectWithVisualDraft?.sharePath]);
   const studioLiveCardModalStyle = isDesktopLiveCardViewport
     ? undefined
     : {
@@ -464,18 +447,20 @@ export default function StudioWorkspace() {
   const studioLiveCardControlTop = isDesktopLiveCardViewport
     ? undefined
     : `calc(${STUDIO_MOBILE_TOP_CHROME} + 0.25rem)`;
-  const activePageUsesPosterControls =
-    activePageRecord?.type === "page" &&
-    activePageRecord?.data?.heroTextMode === "image" &&
-    isPosterFirstLiveCardCategory(
-      clean(activePageRecord.data?.eventDetails.category) || clean(activePageRecord.details.category),
-    );
 
   useEffect(() => {
     setEditPrompt("");
     setIsEditPanelOpen(false);
     setStudioVisualDraft(null);
   }, [selectedImage?.id, activePageRecord?.id, editingMediaItem?.id]);
+
+  useEffect(() => {
+    setCurrentProjectPreviewTab("none");
+  }, [currentProject?.id]);
+
+  useEffect(() => {
+    setActiveTab("none");
+  }, [activePageRecord?.id]);
 
   useEffect(() => {
     if (!activePageRecord?.data) {
@@ -503,22 +488,6 @@ export default function StudioWorkspace() {
   }, [activePageRecord?.id, activePageRecord?.data]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const syncStudioGalleryItemsPerPage = () => {
-      setStudioGalleryItemsPerPage(getStudioGalleryItemsPerPage(window.innerWidth));
-    };
-
-    syncStudioGalleryItemsPerPage();
-    window.addEventListener("resize", syncStudioGalleryItemsPerPage);
-    return () => window.removeEventListener("resize", syncStudioGalleryItemsPerPage);
-  }, []);
-
-  useEffect(() => {
-    setStudioGalleryPage((current) => Math.min(current, Math.max(0, studioGalleryPageCount - 1)));
-  }, [studioGalleryPageCount]);
-
-  useEffect(() => {
     if (details.category !== "Birthday") return;
     const nextGender = inferBirthdayGenderFromName(details.name) || "Neutral";
     if (details.gender === nextGender) return;
@@ -529,27 +498,12 @@ export default function StudioWorkspace() {
     );
   }, [details.category, details.gender, details.name]);
 
-  useEffect(() => {
-    if (activeTab === "none" || activeTab === "share") return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      if (target.closest("[data-live-card-panel]") || target.closest("[data-live-card-trigger]")) {
-        return;
-      }
-      setActiveTab("none");
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [activeTab]);
-
   function isFormValid() {
     const missingShared = SHARED_BASICS.filter(
       (field) => field.required && !clean(String(inputValue(details[field.key]))),
     );
     if (missingShared.length > 0) return false;
+    if (supportsStudioCategoryRsvp(details.category) && !clean(details.rsvpContact)) return false;
 
     if (details.sourceMediaMode === "flyer" && clean(details.sourceFlyerUrl)) {
       return true;
@@ -736,16 +690,79 @@ export default function StudioWorkspace() {
     document.body.removeChild(link);
   }
 
+  function getProjectItem(id: string) {
+    if (currentProject?.id === id) return currentProject;
+    return mediaList.find((item) => item.id === id) ?? null;
+  }
+
+  function upsertLibraryItem(item: MediaItem) {
+    setMediaList((prev) => {
+      const exists = prev.some((entry) => entry.id === item.id);
+      const next = exists
+        ? prev.map((entry) => (entry.id === item.id ? item : entry))
+        : [item, ...prev];
+      return sanitizeMediaItems(next);
+    });
+  }
+
   function patchMediaItem(id: string, patch: Partial<MediaItem>) {
-    setMediaList((prev) =>
-      sanitizeMediaItems(prev.map((item) => (item.id === id ? { ...item, ...patch } : item))),
-    );
+    if (currentProject?.id === id) {
+      setCurrentProject((prev) => (prev ? { ...prev, ...patch } : prev));
+    } else {
+      setMediaList((prev) =>
+        sanitizeMediaItems(prev.map((item) => (item.id === id ? { ...item, ...patch } : item))),
+      );
+    }
     if (activePage?.id === id) {
       setActivePage((prev) => (prev ? { ...prev, ...patch } : prev));
     }
     if (selectedImage?.id === id) {
       setSelectedImage((prev) => (prev ? { ...prev, ...patch } : prev));
     }
+  }
+
+  function clearCurrentProject(options?: { resetDetails?: boolean }) {
+    setCurrentProject(null);
+    setEditPrompt("");
+    setIsEditPanelOpen(false);
+    setStudioVisualDraft(null);
+    setIsLiveCardToolsDrawerOpen(false);
+    setActiveTab("none");
+    setIsDesignMode(false);
+    if (activePage?.id === currentProject?.id) {
+      setActivePage(null);
+    }
+    if (selectedImage?.id === currentProject?.id) {
+      setSelectedImage(null);
+    }
+    if (options?.resetDetails) {
+      setDetails(createInitialDetails());
+    }
+  }
+
+  function confirmDiscardCurrentProject(message?: string) {
+    if (!currentProjectHasUnsavedChanges) return true;
+    if (typeof window === "undefined") return false;
+    return window.confirm(
+      message ||
+        "You have an unsaved Studio project. Discard it and continue?",
+    );
+  }
+
+  function saveWorkingProject(project: MediaItem | null) {
+    if (!project) return;
+    const nextProject = applyStudioVisualDraft(project, studioVisualDraft);
+    setCurrentProject(nextProject);
+    upsertLibraryItem(nextProject);
+    setStudioVisualDraft((prev) => (prev?.itemId === nextProject.id ? null : prev));
+    setEditPrompt("");
+    setIsEditPanelOpen(false);
+    setIsDesignMode(false);
+  }
+
+  function saveCurrentProjectToLibrary() {
+    if (!currentProject || currentProject.status !== "ready") return;
+    saveWorkingProject(currentProject);
   }
 
   function getMediaPreviewUrl(item: MediaItem) {
@@ -782,10 +799,15 @@ export default function StudioWorkspace() {
   }
 
   function beginLiveCardDetailEdit(item: MediaItem) {
-    setDetails(item.details);
-    setEditingId(item.id);
+    if (currentProject?.id !== item.id && !confirmDiscardCurrentProject()) {
+      return;
+    }
+    const target = currentProject?.id === item.id ? currentProject : item;
+    setCurrentProject(target);
+    setDetails(target.details);
     setEditPrompt("");
     setIsEditPanelOpen(false);
+    setStudioVisualDraft(null);
     setActiveTab("none");
     setIsDesignMode(false);
     setActivePage(null);
@@ -797,40 +819,59 @@ export default function StudioWorkspace() {
   }
 
   function openLiveCardImageEdit(item: MediaItem) {
+    if (currentProject?.id !== item.id && !confirmDiscardCurrentProject()) {
+      return;
+    }
+    const target = currentProject?.id === item.id ? currentProject : item;
+    setCurrentProject(target);
+    setDetails(target.details);
     setIsLiveCardToolsDrawerOpen(true);
-    setActivePage(item);
+    setActivePage(target);
     setEditPrompt("");
     setIsEditPanelOpen(true);
     setActiveTab("none");
     setIsDesignMode(false);
+    setStep("studio");
   }
 
   async function ensurePublicSharePath(item: MediaItem): Promise<string> {
-    if (item.sharePath?.startsWith("/card/")) {
-      return item.sharePath;
+    const isCurrentProjectItem = currentProject?.id === item.id;
+    const workingItem =
+      isCurrentProjectItem && currentProjectWithVisualDraft
+        ? currentProjectWithVisualDraft
+        : getProjectItem(item.id) || item;
+    if (
+      workingItem.sharePath?.startsWith("/card/") &&
+      (!isCurrentProjectItem || !currentProjectHasUnsavedChanges)
+    ) {
+      return workingItem.sharePath;
     }
-    if (item.status !== "ready") {
+    if (workingItem.status !== "ready") {
       throw new Error("This invite must finish generating before it can be shared.");
     }
 
+    if (isCurrentProjectItem) {
+      saveWorkingProject(workingItem);
+    }
+
     const persistedImageUrl = await persistImageMediaValue({
-      value: item.url,
-      fileName: `${buildEventSlug(getStudioShareTitle(item)) || "studio-invite"}.png`,
+      value: workingItem.url,
+      fileName: `${buildEventSlug(getStudioShareTitle(workingItem)) || "studio-invite"}.png`,
     });
 
-    let publishItem = item;
-    if (item.data?.eventDetails) {
-      const eventDetails = await persistGuestImageUrlsForPublish(item.data.eventDetails);
+    let publishItem = workingItem;
+    if (workingItem.data?.eventDetails) {
+      const eventDetails = await persistGuestImageUrlsForPublish(workingItem.data.eventDetails);
       publishItem = {
-        ...item,
-        data: { ...item.data, eventDetails },
+        ...workingItem,
+        data: { ...workingItem.data, eventDetails },
       };
     }
 
     const payload = buildStudioPublishPayload(publishItem, persistedImageUrl);
 
-    const response = item.publishedEventId
-      ? await fetch(`/api/history/${encodeURIComponent(item.publishedEventId)}`, {
+    const response = publishItem.publishedEventId
+      ? await fetch(`/api/history/${encodeURIComponent(publishItem.publishedEventId)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -856,11 +897,18 @@ export default function StudioWorkspace() {
     }
 
     const sharePath = buildStudioCardPath(json.id, payload.title);
-    patchMediaItem(item.id, {
+    const syncedItem = {
+      ...publishItem,
       publishedEventId: json.id,
       sharePath,
       ...(publishItem.data ? { data: publishItem.data } : {}),
-    });
+    };
+    if (isCurrentProjectItem) {
+      setCurrentProject(syncedItem);
+      upsertLibraryItem(syncedItem);
+    } else {
+      patchMediaItem(syncedItem.id, syncedItem);
+    }
     return sharePath;
   }
 
@@ -869,12 +917,16 @@ export default function StudioWorkspace() {
       setSharingId(item.id);
       const sharePath = await ensurePublicSharePath(item);
       const shareUrl = getAbsoluteShareUrl(sharePath);
+      const shareItem =
+        currentProject?.id === item.id && currentProjectWithVisualDraft
+          ? currentProjectWithVisualDraft
+          : getProjectItem(item.id) || item;
       const shareData = {
-        title: getStudioShareTitle(item),
+        title: getStudioShareTitle(shareItem),
         text:
-          item.data?.interactiveMetadata.shareNote ||
-          item.data?.socialCaption ||
-          item.data?.description ||
+          shareItem.data?.interactiveMetadata.shareNote ||
+          shareItem.data?.socialCaption ||
+          shareItem.data?.description ||
           "Check out this invitation!",
         url: shareUrl,
       };
@@ -910,7 +962,7 @@ export default function StudioWorkspace() {
     buttonKey: keyof typeof EMPTY_POSITIONS,
     point: ButtonPosition,
   ) {
-    const savedItem = mediaList.find((item) => item.id === id) ?? null;
+    const savedItem = getProjectItem(id);
     if (!savedItem) return;
     setStudioVisualDraft((prev) => {
       const base = mergeStudioButtonPositions(savedItem);
@@ -928,16 +980,13 @@ export default function StudioWorkspace() {
 
   async function generateMedia(type: MediaType) {
     const currentDetails = { ...details };
-    const targetId = editingId ?? createId();
-    const existingItem = editingId
-      ? (mediaList.find((item) => item.id === editingId) ?? null)
-      : null;
+    const targetId = currentProject?.id ?? createId();
+    const existingItem = currentProject;
     const generationSurface = resolveStudioGenerationSurface(currentDetails, type, {
       existingItemType: existingItem?.type,
     });
     const sourceImageDataUrl =
-      clean(existingItem?.url) ||
-      (currentDetails.sourceMediaMode === "flyer" ? clean(currentDetails.sourceFlyerUrl) : "");
+      type === "page" && existingItem?.type === "page" ? clean(existingItem.url) : "";
     const loadingItem: MediaItem = {
       id: targetId,
       type,
@@ -954,17 +1003,7 @@ export default function StudioWorkspace() {
 
     setIsGenerating(true);
     setActiveTab("none");
-
-    setMediaList((prev) => {
-      if (editingId) {
-        return sanitizeMediaItems(
-          prev.map((item) =>
-            item.id === editingId ? { ...loadingItem, createdAt: item.createdAt } : item,
-          ),
-        );
-      }
-      return sanitizeMediaItems([loadingItem, ...prev]);
-    });
+    setCurrentProject(loadingItem);
 
     try {
       const response = await requestStudioGeneration(
@@ -990,10 +1029,7 @@ export default function StudioWorkspace() {
         errorMessage: undefined,
       };
 
-      setMediaList((prev) =>
-        sanitizeMediaItems(prev.map((item) => (item.id === targetId ? nextItem : item))),
-      );
-      setEditingId(null);
+      setCurrentProject(nextItem);
       setEditPrompt("");
       setStep("studio");
     } catch (error) {
@@ -1002,20 +1038,12 @@ export default function StudioWorkspace() {
           ? error.message.trim()
           : "Studio generation failed.";
       console.error("Studio generation failed", error);
-      setMediaList((prev) =>
-        sanitizeMediaItems(
-          prev.map((item) =>
-            item.id === targetId
-              ? {
-                  ...item,
-                  status: "error",
-                  url: existingItem?.url || getFallbackThumbnail(currentDetails),
-                  errorMessage,
-                }
-              : item,
-          ),
-        ),
-      );
+      setCurrentProject({
+        ...loadingItem,
+        status: "error",
+        url: existingItem?.url || getFallbackThumbnail(currentDetails),
+        errorMessage,
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -1030,7 +1058,7 @@ export default function StudioWorkspace() {
       return;
     }
 
-    const savedItem = mediaList.find((media) => media.id === item.id) ?? item;
+    const savedItem = getProjectItem(item.id) ?? item;
     const sourceImageDataUrl = clean(savedItem.url);
     if (!sourceImageDataUrl) {
       if (typeof window !== "undefined") {
@@ -1089,7 +1117,7 @@ export default function StudioWorkspace() {
   function commitStudioVisualDraft(item: MediaItem) {
     const draft = studioVisualDraft;
     if (!draft || draft.itemId !== item.id) return;
-    const savedItem = mediaList.find((media) => media.id === item.id) ?? item;
+    const savedItem = getProjectItem(item.id) ?? item;
     const patch: Partial<MediaItem> = { positions: draft.positions };
     const preview = clean(draft.previewImageUrl);
     if (preview && preview !== clean(savedItem.url)) {
@@ -1113,7 +1141,7 @@ export default function StudioWorkspace() {
     options: { layout: "liveCardTools" | "standalone" },
   ) {
     const { layout } = options;
-    const savedItem = mediaList.find((media) => media.id === item.id) ?? item;
+    const savedItem = getProjectItem(item.id) ?? item;
     const draftMatches = studioVisualDraft?.itemId === item.id;
     const hasPendingVisualChanges =
       draftMatches && studioVisualDraft
@@ -1198,7 +1226,7 @@ export default function StudioWorkspace() {
   }
 
   function renderLiveCardPreviewTools(page: MediaItem) {
-    const savedPage = mediaList.find((media) => media.id === page.id) ?? page;
+    const savedPage = getProjectItem(page.id) ?? page;
     const showVisualSaveBar =
       studioVisualDraft?.itemId === page.id &&
       studioVisualDraftDiffersFromSaved(savedPage, studioVisualDraft);
@@ -1254,52 +1282,17 @@ export default function StudioWorkspace() {
     );
   }
 
-  function goToStudioGalleryPage(nextPage: number) {
-    const clamped = Math.max(0, Math.min(nextPage, studioGalleryPageCount - 1));
-    if (clamped === studioGalleryPage) return;
-    setStudioGalleryDirection(clamped > studioGalleryPage ? 1 : -1);
-    setStudioGalleryPage(clamped);
-  }
-
-  function handleStudioGalleryTouchStart(event: ReactTouchEvent<HTMLDivElement>) {
-    const touch = event.touches[0];
-    if (!touch) return;
-    studioGalleryTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  }
-
-  function handleStudioGalleryTouchEnd(event: ReactTouchEvent<HTMLDivElement>) {
-    const start = studioGalleryTouchStartRef.current;
-    studioGalleryTouchStartRef.current = null;
-    if (!start) return;
-    const touch = event.changedTouches[0];
-    if (!touch) return;
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-    if (Math.abs(dx) < 48 || Math.abs(dx) <= Math.abs(dy)) return;
-    if (dx < 0) {
-      goToStudioGalleryPage(studioGalleryPage + 1);
-      return;
-    }
-    goToStudioGalleryPage(studioGalleryPage - 1);
-  }
-
   const studioIdeaLabel = getStudioIdeaLabel(details.category);
   const studioIdeaPlaceholder = getStudioIdeaPlaceholder(details.category);
   const activeEditorialTab = step === "studio" ? "studio" : step === "library" ? "library" : "details";
   const shellClass = studioWorkspaceShellClass;
   const mediaCardClass = studioWorkspaceMediaCardClass;
   const mediaBadgeClass = studioWorkspaceMediaBadgeClass;
-  const ghostIconButtonClass = studioWorkspaceGhostIconButtonClass;
+  const showStudioCreativeControls = hasStudioSubjectReferencePhotos(details);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F5F2EF] text-[#1A1A1A] selection:bg-[#e7d9c8]">
       <div className="pointer-events-none absolute -left-[180px] -top-[180px] h-[430px] w-[430px] rounded-full border border-[#8C7B65]/10" />
-      <div className="pointer-events-none absolute inset-y-0 right-6 hidden items-center py-12 lg:flex">
-        <span className="[writing-mode:vertical-rl] text-[10px] font-semibold uppercase tracking-[0.3em] text-[#8C7B65]/35">
-          EST. MMXXIV - PRIVATE INQUIRY
-        </span>
-      </div>
-
       {sessionStatus === "authenticated" && librarySyncError ? (
         <div
           role="status"
@@ -1322,7 +1315,7 @@ export default function StudioWorkspace() {
         </main>
       ) : (
         <main className="relative mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-8 lg:px-12 lg:py-14">
-          <div className="grid gap-8 sm:gap-10 lg:grid-cols-[minmax(210px,0.72fr)_minmax(0,1.88fr)] lg:gap-16 xl:gap-20">
+          <div className="grid gap-8 sm:gap-10 lg:grid-cols-[minmax(210px,260px)_minmax(0,1fr)] lg:gap-0">
             <aside className="flex flex-col gap-8 lg:min-h-[720px] lg:justify-between lg:gap-0">
               <div>
                 <motion.div
@@ -1333,7 +1326,10 @@ export default function StudioWorkspace() {
                   <button
                     type="button"
                     onClick={() => {
-                      setEditingId(null);
+                      if (!confirmDiscardCurrentProject("Discard the current Studio project and switch categories?")) {
+                        return;
+                      }
+                      clearCurrentProject({ resetDetails: true });
                       setStep("category");
                     }}
                     className="mb-5 text-[#8C7B65] transition-colors hover:text-[#1A1A1A]"
@@ -1403,7 +1399,7 @@ export default function StudioWorkspace() {
                     setDetails={setDetails}
                     setStep={setStep}
                     isFormValid={isFormValid}
-                    editingId={editingId}
+                    editingId={currentProject?.id ?? null}
                     onUploadFlyer={handleUploadFlyer}
                     onRemoveFlyer={handleRemoveFlyer}
                     onUploadSubjectPhotos={handleUploadSubjectPhotos}
@@ -1417,8 +1413,6 @@ export default function StudioWorkspace() {
                 {step === "library" ? (
                   <StudioLibraryStep
                     mediaList={mediaList}
-                    setEditingId={setEditingId}
-                    setStep={setStep}
                     setActivePage={setActivePage}
                     setSelectedImage={setSelectedImage}
                     openLiveCardEditor={openLiveCardEditor}
@@ -1437,7 +1431,7 @@ export default function StudioWorkspace() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="mx-auto grid max-w-[1440px] gap-8 lg:grid-cols-[380px_minmax(0,1fr)] xl:gap-10"
+              className="mr-auto grid max-w-[1440px] gap-8 lg:grid-cols-[380px_minmax(0,1fr)] xl:gap-10"
             >
               <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
                 <button
@@ -1466,10 +1460,87 @@ export default function StudioWorkspace() {
                     </p>
                   </div>
 
-                  <div className="space-y-4 border-t border-[#1A1A1A]/8 pt-6">
-                    <h2 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
-                      Generate Media
-                    </h2>
+                  {showStudioCreativeControls ? (
+                    <div className="space-y-4 rounded-[1.75rem] border border-[#d8cdc0]/85 bg-[#fbf8f4] p-5">
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
+                          Creative Upgrade
+                        </p>
+                        <p className="text-sm leading-7 text-[#6B5E4E]">
+                          Use these controls when you want the uploaded person transformed into the
+                          theme instead of simply blended into the scene.
+                        </p>
+                      </div>
+
+                      <div className="space-y-4 border-t border-[#1A1A1A]/8 pt-4">
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
+                            Likeness Strength
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {STUDIO_LIKENESS_OPTIONS.map((option) => {
+                              const active = details.likenessStrength === option.value;
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  aria-pressed={active}
+                                  onClick={() =>
+                                    setDetails((prev) => ({
+                                      ...prev,
+                                      likenessStrength: option.value,
+                                      subjectTransformMode: "premium_makeover",
+                                    }))
+                                  }
+                                  className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-colors ${
+                                    active
+                                      ? "border-[#1A1A1A] bg-[#1A1A1A] text-[#F5F2EF]"
+                                      : "border-[#d8cdc0] bg-white text-[#5F5345] hover:border-[#8C7B65]"
+                                  }`}
+                                >
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
+                            Visual Style
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {STUDIO_VISUAL_STYLE_OPTIONS.map((option) => {
+                              const active = details.visualStyleMode === option.value;
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  aria-pressed={active}
+                                  onClick={() =>
+                                    setDetails((prev) => ({
+                                      ...prev,
+                                      visualStyleMode: option.value,
+                                      subjectTransformMode: "premium_makeover",
+                                    }))
+                                  }
+                                  className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-colors ${
+                                    active
+                                      ? "border-[#1A1A1A] bg-[#1A1A1A] text-[#F5F2EF]"
+                                      : "border-[#d8cdc0] bg-white text-[#5F5345] hover:border-[#8C7B65]"
+                                  }`}
+                                >
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="space-y-3 pt-6">
                     {isEditingLiveCard ? (
                       <div className="rounded-[1.5rem] border border-[#d8cdc0]/85 bg-[#fbf8f4] p-4">
                         <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
@@ -1511,250 +1582,205 @@ export default function StudioWorkspace() {
               </aside>
 
               <section className="space-y-8">
-                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8C7B65]">
-                      Studio
-                    </p>
-                    <h2 className="font-[var(--font-playfair)] text-4xl tracking-[-0.03em] text-[#1A1A1A] sm:text-[44px]">
-                      Your Studio
-                    </h2>
-                  </div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-[#d9c7ab] bg-[#fbf5ee] px-4 py-2 text-sm font-medium text-[#5F5345]">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span>
-                      {sessionStatus === "authenticated"
-                        ? "Synced to your account"
-                        : "Saved on this device only"}
-                    </span>
-                  </div>
-                </div>
-
-                {mediaList.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="flex flex-col gap-3 rounded-[1.75rem] border border-[#d8cdc0]/85 bg-[#fbf8f4]/95 px-4 py-4 shadow-[0_18px_44px_rgba(49,32,17,0.06)] backdrop-blur-xl sm:px-5">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="inline-flex items-center gap-2 rounded-full border border-[#e5d9ca] bg-[#f8f3ed] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5F5345]">
-                            <span>{studioGalleryVisibleRangeLabel}</span>
-                            <span className="text-[#8C7B65]/45">/</span>
-                            <span>{mediaList.length}</span>
-                          </div>
-                          {studioGalleryPageCount > 1 ? (
-                            <p className="text-xs text-[#8C7B65] max-sm:hidden">
-                              {studioGalleryPage + 1} of {studioGalleryPageCount}
-                            </p>
-                          ) : null}
-                        </div>
-
-                        {studioGalleryPageCount > 1 ? (
-                          <div className="flex items-center justify-between gap-3 sm:justify-end">
-                            <p className="text-xs text-[#8C7B65] sm:hidden">Swipe to browse</p>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => goToStudioGalleryPage(studioGalleryPage - 1)}
-                                disabled={studioGalleryPage === 0}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d9ca] bg-[#f8f3ed] text-[#5F5345] shadow-[0_10px_26px_rgba(49,32,17,0.08)] transition-all hover:-translate-x-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-35"
-                                aria-label="Show previous studio cards"
-                              >
-                                <ChevronLeft className="h-5 w-5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => goToStudioGalleryPage(studioGalleryPage + 1)}
-                                disabled={studioGalleryPage >= studioGalleryPageCount - 1}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d9ca] bg-[#f8f3ed] text-[#5F5345] shadow-[0_10px_26px_rgba(49,32,17,0.08)] transition-all hover:translate-x-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-35"
-                                aria-label="Show more studio cards"
-                              >
-                                <ChevronRight className="h-5 w-5" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      {studioGalleryPageCount > 1 ? (
-                        <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                          {Array.from({ length: studioGalleryPageCount }, (_, index) => (
-                            <button
-                              key={index}
-                              type="button"
-                              onClick={() => goToStudioGalleryPage(index)}
-                              aria-label={`Show studio page ${index + 1}`}
-                              aria-pressed={index === studioGalleryPage}
-                              className={`h-2.5 rounded-full transition-all ${
-                                index === studioGalleryPage
-                                  ? "w-10 bg-[#1A1A1A]"
-                                  : "w-2.5 bg-[#d8c9b9] hover:bg-[#c7b39e]"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      ) : null}
+                {currentProjectWithVisualDraft ? (
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={saveCurrentProjectToLibrary}
+                        disabled={
+                          currentProjectWithVisualDraft.status !== "ready" ||
+                          (!currentProjectHasUnsavedChanges && Boolean(savedCurrentProject))
+                        }
+                        className="inline-flex items-center justify-center rounded-full bg-[#1A1A1A] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#F5F2EF] transition-all hover:-translate-y-0.5 hover:bg-[#262626] disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {currentProjectSaveLabel}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void shareMedia(currentProjectWithVisualDraft)}
+                        disabled={
+                          currentProjectWithVisualDraft.status !== "ready" ||
+                          sharingId === currentProjectWithVisualDraft.id
+                        }
+                        className="inline-flex items-center justify-center rounded-full border border-[#d8cdc0] bg-[#fbf8f4] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#1A1A1A] transition-all hover:-translate-y-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {sharingId === currentProjectWithVisualDraft.id ? "Sharing..." : "Share"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => downloadMedia(currentProjectWithVisualDraft)}
+                        disabled={!currentProjectWithVisualDraft.url}
+                        className="inline-flex items-center justify-center rounded-full border border-[#d8cdc0] bg-[#fbf8f4] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#1A1A1A] transition-all hover:-translate-y-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        Download
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            !currentProjectHasUnsavedChanges ||
+                            confirmDiscardCurrentProject(
+                              "Discard the current Studio project?",
+                            )
+                          ) {
+                            clearCurrentProject();
+                          }
+                        }}
+                        className="inline-flex items-center justify-center rounded-full border border-[#e6d7c7] bg-[#fffaf4] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#7a5e47] transition-all hover:-translate-y-0.5 hover:bg-[#fffdf9]"
+                      >
+                        {currentProjectHasUnsavedChanges ? "Discard" : "Clear Studio"}
+                      </button>
                     </div>
+                  </div>
+                ) : null}
 
-                    <div
-                      className="relative overflow-hidden"
-                      onTouchStart={handleStudioGalleryTouchStart}
-                      onTouchEnd={handleStudioGalleryTouchEnd}
-                    >
-                      {studioGalleryPageCount > 1 ? (
-                        <>
-                          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#F5F2EF] via-[#F5F2EF]/78 to-transparent" />
-                          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#F5F2EF] via-[#F5F2EF]/78 to-transparent" />
-                        </>
-                      ) : null}
-
-                      <AnimatePresence mode="wait" initial={false}>
-                        <motion.div
-                          key={`${studioGalleryPage}-${studioGalleryItemsPerPage}`}
-                          initial={{ opacity: 0, x: studioGalleryDirection > 0 ? 48 : -48 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: studioGalleryDirection > 0 ? -48 : 48 }}
-                          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                          className="grid grid-cols-2 gap-3 md:gap-7 lg:grid-cols-3 2xl:grid-cols-5"
-                        >
-                          {studioGalleryVisibleItems.map((item) => (
-                            <motion.div
-                              key={item.id}
-                              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.9 }}
-                              className={mediaCardClass}
+                {currentProjectWithVisualDraft ? (
+                  <div className="grid gap-6 xl:grid-cols-[minmax(0,25rem)_16rem] xl:justify-center">
+                    <div className={`${mediaCardClass} overflow-hidden`}>
+                      <div
+                        className={`relative mx-auto flex items-center justify-center overflow-hidden bg-[#efe7dc] ${
+                          currentProjectWithVisualDraft.details.orientation === "portrait"
+                            ? "aspect-[9/16] w-full"
+                            : "aspect-[16/9] w-full max-w-[38rem]"
+                        }`}
+                      >
+                        {currentProjectWithVisualDraft.status === "loading" ? (
+                          <div className="flex flex-col items-center gap-4">
+                            <Loader2 className="h-10 w-10 animate-spin text-[#8C7B65]" />
+                            <span className="animate-pulse text-xs font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
+                              Processing {currentProjectWithVisualDraft.type}...
+                            </span>
+                          </div>
+                        ) : currentProjectWithVisualDraft.status === "error" ? (
+                          <div className="max-w-md p-8 text-center">
+                            <p className="mb-2 font-semibold text-red-600">Generation Failed</p>
+                            {currentProjectWithVisualDraft.errorMessage ? (
+                              <p className="mb-4 text-sm leading-6 text-[#6B5E4E]">
+                                {currentProjectWithVisualDraft.errorMessage}
+                              </p>
+                            ) : null}
+                            <button
+                              onClick={() => generateMedia(currentProjectWithVisualDraft.type)}
+                              className="text-sm font-medium text-[#5F5345] underline hover:text-[#1A1A1A]"
                             >
-                              <div
-                                className={`relative flex items-center justify-center overflow-hidden bg-[#efe7dc] ${
-                                  item.details.orientation === "portrait"
-                                    ? "aspect-[9/16]"
-                                    : "aspect-[16/9]"
-                                }`}
-                              >
-                                {item.status === "loading" ? (
-                                  <div className="flex flex-col items-center gap-4">
-                                    <Loader2 className="h-10 w-10 animate-spin text-[#8C7B65]" />
-                                    <span className="animate-pulse text-xs font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
-                                      Processing {item.type}...
-                                    </span>
-                                  </div>
-                                ) : item.status === "error" ? (
-                                  <div className="p-6 text-center">
-                                      <p className="mb-2 font-semibold text-red-600">Generation Failed</p>
-                                    {item.errorMessage ? (
-                                      <p className="mb-3 text-[11px] leading-5 text-[#6B5E4E]">
-                                        {item.errorMessage}
-                                      </p>
-                                    ) : null}
-                                    <button
-                                      onClick={() => generateMedia(item.type)}
-                                      className="text-xs text-[#5F5345] underline hover:text-[#1A1A1A]"
-                                    >
-                                      Try Again
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="relative h-full w-full">
-                                    <img
-                                      src={getMediaPreviewUrl(item)}
-                                      alt={item.theme}
-                                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                                      referrerPolicy="no-referrer"
-                                      onError={() => handleMediaImageLoadError(item)}
-                                    />
-                                  </div>
-                                )}
-
-                                {item.status === "ready" ? (
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(27,20,15,0.12),rgba(27,20,15,0.58))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
-                                    {item.type === "page" ? (
-                                      <button
-                                        onClick={() => setActivePage(item)}
-                                        className="flex items-center gap-2 rounded-full bg-[#fbf8f4] px-6 py-3 text-sm font-semibold text-[#1A1A1A] shadow-[0_14px_34px_rgba(49,32,17,0.18)] transition-transform hover:scale-[1.02]"
-                                      >
-                                        <Layout className="h-5 w-5" />
-                                        Open Live Card
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => setSelectedImage(item)}
-                                        className="flex items-center gap-2 rounded-full bg-[#fbf8f4] px-6 py-3 text-sm font-semibold text-[#1A1A1A] shadow-[0_14px_34px_rgba(49,32,17,0.18)] transition-transform hover:scale-[1.02]"
-                                      >
-                                        <ImageIcon className="h-5 w-5" />
-                                        View Full Image
-                                      </button>
-                                    )}
-
-                                    <div className="flex items-center gap-3">
-                                      <button
-                                        onClick={() => downloadMedia(item)}
-                                        className={ghostIconButtonClass}
-                                        title="Download"
-                                      >
-                                        <Download className="h-5 w-5" />
-                                      </button>
-                                      <button
-                                        onClick={() => shareMedia(item)}
-                                        disabled={sharingId === item.id}
-                                        className={ghostIconButtonClass}
-                                        title={
-                                          sharingId === item.id ? "Creating share link" : "Share"
-                                        }
-                                      >
-                                        {sharingId === item.id ? (
-                                          <Loader2 className="h-5 w-5 animate-spin" />
-                                        ) : copySuccess ? (
-                                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                        ) : (
-                                          <Share2 className="h-5 w-5" />
-                                        )}
-                                      </button>
-                                      <button
-                                        onClick={() => deleteMedia(item.id)}
-                                        className={`${ghostIconButtonClass} text-red-500 hover:text-red-600`}
-                                        title="Delete"
-                                      >
-                                        <Trash2 className="h-5 w-5" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : null}
-
-                                <div className={`absolute left-4 top-4 ${mediaBadgeClass}`}>
-                                  {item.type === "page" ? (
-                                    <>
-                                          <Layout className="h-3 w-3 text-emerald-600" />
-                                      Live Card
-                                    </>
-                                  ) : (
-                                    <>
-                                          <ImageIcon className="h-3 w-3 text-sky-600" />
-                                      Image
-                                    </>
-                                  )}
-                                </div>
+                              Try Again
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <img
+                              src={getStudioImageDisplayUrl(currentProjectWithVisualDraft)}
+                              alt={currentProjectWithVisualDraft.theme}
+                              className="h-full w-full object-cover"
+                              referrerPolicy="no-referrer"
+                              onError={() => handleMediaImageLoadError(currentProjectWithVisualDraft)}
+                            />
+                            {currentProjectWithVisualDraft.type === "page" ? (
+                              <>
+                                <LiveCardHeroTextOverlay invitationData={currentProjectWithVisualDraft.data} />
+                                <StudioLiveCardActionSurface
+                                  title={getStudioShareTitle(currentProjectWithVisualDraft)}
+                                  invitationData={currentProjectWithVisualDraft.data}
+                                  activeTab={currentProjectPreviewTab}
+                                  onActiveTabChange={setCurrentProjectPreviewTab}
+                                  positions={currentProjectWithVisualDraft.positions}
+                                  shareUrl={currentProjectPreviewShareUrl}
+                                  onShare={() => void shareMedia(currentProjectWithVisualDraft)}
+                                  shareState={
+                                    sharingId === currentProjectWithVisualDraft.id
+                                      ? "pending"
+                                      : copySuccess
+                                        ? "success"
+                                        : "idle"
+                                  }
+                                  showExtendedDetails
+                                  registryHelperText={
+                                    currentProjectWithVisualDraft.data?.interactiveMetadata?.shareNote
+                                  }
+                                />
+                              </>
+                            ) : (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[linear-gradient(180deg,rgba(27,20,15,0.12),rgba(27,20,15,0.58))] opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
                                 <button
-                                  onClick={() => deleteMedia(item.id)}
-                                  className="absolute right-4 top-4 rounded-full border border-[#efe4d7] bg-[#f8f3ed] p-2.5 text-[#5F5345] shadow-[0_10px_24px_rgba(49,32,17,0.12)] transition-all hover:bg-[#fffdf9] hover:text-red-500"
-                                  title="Delete from library"
-                                  aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
+                                  onClick={() => setSelectedImage(currentProjectWithVisualDraft)}
+                                  className="flex items-center gap-2 rounded-full bg-[#fbf8f4] px-6 py-3 text-sm font-semibold text-[#1A1A1A] shadow-[0_14px_34px_rgba(49,32,17,0.18)] transition-transform hover:scale-[1.02]"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <ImageIcon className="h-5 w-5" />
+                                  View Full Image
                                 </button>
                               </div>
-                            </motion.div>
-                          ))}
-                        </motion.div>
-                      </AnimatePresence>
+                            )}
+                          </>
+                        )}
+
+                        <div className={`absolute left-4 top-4 ${mediaBadgeClass}`}>
+                          {currentProjectWithVisualDraft.type === "page" ? (
+                            <>
+                              <Layout className="h-3 w-3 text-emerald-600" />
+                              Live Card
+                            </>
+                          ) : (
+                            <>
+                              <ImageIcon className="h-3 w-3 text-sky-600" />
+                              Image
+                            </>
+                          )}
+                        </div>
+                        <div className="absolute right-4 top-4 rounded-full border border-[#efe4d7] bg-[#f8f3ed] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#5F5345] shadow-[0_10px_24px_rgba(49,32,17,0.12)]">
+                          {currentProjectHasUnsavedChanges ? "Unsaved" : "Saved"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`${shellClass} space-y-4 self-start`}>
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8C7B65]">
+                          Current Project
+                        </p>
+                        <h3 className="mt-2 font-[var(--font-playfair)] text-3xl tracking-[-0.03em] text-[#1A1A1A]">
+                          {getStudioShareTitle(currentProjectWithVisualDraft)}
+                        </h3>
+                      </div>
+                      <div className="space-y-3 text-sm text-[#6B5E4E]">
+                        <p>{currentProjectWithVisualDraft.details.category}</p>
+                        {currentProjectWithVisualDraft.details.eventDate ? (
+                          <p>{formatDate(currentProjectWithVisualDraft.details.eventDate)}</p>
+                        ) : null}
+                        {clean(currentProjectWithVisualDraft.details.location) ? (
+                          <p>{clean(currentProjectWithVisualDraft.details.location)}</p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-3 border-t border-[#1A1A1A]/8 pt-4 text-sm leading-7 text-[#6B5E4E]">
+                        <p>
+                          Save this project to keep it in Library. If you clear Studio without saving, it will be discarded.
+                        </p>
+                        {currentProjectWithVisualDraft.type === "image" ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedImage(currentProjectWithVisualDraft)}
+                            className="inline-flex items-center gap-2 text-sm font-medium text-[#1A1A1A] underline decoration-[#8C7B65]/50 underline-offset-4"
+                          >
+                            <ImageIcon className="h-4 w-4" />
+                            Open current image
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-[2rem] border border-dashed border-[#d8cdc0] bg-[#fbf8f4] py-28 text-center shadow-[0_20px_55px_rgba(49,32,17,0.05)]">
-                    <div className="mb-6 inline-flex rounded-full bg-[#f0e7db] p-6 shadow-[0_10px_24px_rgba(49,32,17,0.08)]">
+                  <div className="flex min-h-[304px] items-center justify-center rounded-[2rem] border border-dashed border-[#d8cdc0] bg-[#fbf8f4] px-8 py-12 text-center shadow-[0_20px_55px_rgba(49,32,17,0.05)] lg:mt-[5.25rem]">
+                    <div className="max-w-xl">
+                      <div className="mb-6 inline-flex rounded-full bg-[#f0e7db] p-6 shadow-[0_10px_24px_rgba(49,32,17,0.08)]">
                       <WandSparkles className="h-12 w-12 text-[#8C7B65]" />
+                      </div>
+                      <h3 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-[#1A1A1A]">
+                        No current project yet
+                      </h3>
+                      <p className="mx-auto max-w-xl text-sm leading-7 text-[#6B5E4E]">
+                        Generate a live card or image here, then save it to Library only when you want to keep it.
+                      </p>
                     </div>
-                    <h3 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-[#1A1A1A]">
-                      No media generated yet
-                    </h3>
                   </div>
                 )}
               </section>
@@ -1946,454 +1972,28 @@ export default function StudioWorkspace() {
               />
               <LiveCardHeroTextOverlay invitationData={activePageRecord.data} />
 
-              <div className="pointer-events-none absolute inset-0 flex flex-col pt-8 pb-1 px-3 max-md:px-1 max-md:pt-6 max-md:pb-0.5 sm:px-4 md:p-8 md:pb-2">
-                <div className="flex h-full min-h-0 flex-col justify-end">
-                  <AnimatePresence>
-                    {activeTab !== "none" && activeTab !== "share" ? (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                        data-live-card-panel
-                        className="pointer-events-auto absolute bottom-32 left-4 right-4 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl max-md:left-2 max-md:right-2 md:left-6 md:right-6"
-                      >
-                        <div className="mb-4 flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
-                              {activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
-                              {activeTab === "calendar" ? (
-                                <CalendarDays className="h-5 w-5" />
-                              ) : null}
-                              {activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
-                              {activeTab === "rsvp" ? <MessageSquare className="h-5 w-5" /> : null}
-                              {activeTab === "details" ? (
-                                <ClipboardList className="h-5 w-5" />
-                              ) : null}
-                            </div>
-                            <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
-                              {activeTab === "location" ? "Event Location" : null}
-                              {activeTab === "calendar" ? "Add to Calendar" : null}
-                              {activeTab === "registry" ? "Gift Registry" : null}
-                              {activeTab === "rsvp" ? "RSVP" : null}
-                              {activeTab === "details" ? "Overview" : null}
-                            </h4>
-                          </div>
-                          <button
-                            onClick={() => setActiveTab("none")}
-                            className="rounded-full p-1 text-neutral-500 hover:bg-neutral-100"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-
-                        <div className="space-y-3">
-                          {activeTab === "rsvp" ? (
-                            <div className="flex flex-col space-y-4">
-                              <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                                <p className="text-sm font-medium text-neutral-900">
-                                  {activePageRecord.data.eventDetails.rsvpName || "Host"}
-                                </p>
-                                {activePageRecord.data.eventDetails.rsvpContact ? (
-                                  <div>
-                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                      RSVP contact
-                                    </p>
-                                    <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
-                                      {activePageRsvpParsed.kind === "email" ? (
-                                        <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
-                                      ) : activePageRsvpParsed.kind === "sms" ? (
-                                        <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
-                                      ) : null}
-                                      {activePageRecord.data.eventDetails.rsvpContact}
-                                    </p>
-                                  </div>
-                                ) : null}
-                                {activePageRecord.data.eventDetails.rsvpDeadline ? (
-                                  <div>
-                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                      RSVP deadline
-                                    </p>
-                                    <p className="text-sm text-red-600">
-                                      {formatDate(activePageRecord.data.eventDetails.rsvpDeadline)}
-                                    </p>
-                                  </div>
-                                ) : null}
-                              </div>
-                              <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
-                                {LIVE_CARD_RSVP_CHOICES.map((choice) => {
-                                  const href = buildLiveCardRsvpOutboundHref({
-                                    rsvpContact: activePageRsvpContact,
-                                    eventTitle: activePageRecord.data?.title || "Event",
-                                    responseLabel: choice.label,
-                                    shareUrl: studioPreviewShareUrl,
-                                  });
-                                  const accent = accentClassForStudioRsvpChoice(choice.key);
-                                  if (!href) {
-                                    return (
-                                      <button
-                                        key={choice.key}
-                                        type="button"
-                                        disabled
-                                        aria-disabled="true"
-                                        title={studioRsvpOutboundHint}
-                                        className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
-                                      >
-                                        {choice.label}
-                                      </button>
-                                    );
-                                  }
-                                  return (
-                                    <a
-                                      key={choice.key}
-                                      href={href}
-                                      className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
-                                    >
-                                      {choice.label}
-                                    </a>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ) : null}
-
-                          {activeTab === "details" ? (
-                            <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
-                              {studioDetailsWelcome ? (
-                                <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50 to-white p-4 shadow-sm">
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7B65]">
-                                    Welcome
-                                  </p>
-                                  <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-900">
-                                    {studioDetailsWelcome}
-                                  </p>
-                                </div>
-                              ) : null}
-                              {clean(activePageRecord.data.eventDetails.detailsDescription) ? (
-                                <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                                    Description
-                                  </p>
-                                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
-                                    {clean(activePageRecord.data.eventDetails.detailsDescription)}
-                                  </p>
-                                </div>
-                              ) : null}
-                              {shouldShowLiveCardDescriptionSection(
-                                clean(activePageRecord.data.eventDetails.message),
-                              ) &&
-                              (clean(activePageRecord.data.description) ||
-                                clean(activePageRecord.data.eventDetails.message)) ? (
-                                <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                    Description
-                                  </p>
-                                  <p className="mt-1 text-sm text-neutral-900">
-                                    {clean(activePageRecord.data.description) ||
-                                      clean(activePageRecord.data.eventDetails.message)}
-                                  </p>
-                                </div>
-                              ) : null}
-                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                {Object.entries(activePageRecord.data.eventDetails)
-                                  .filter(([key, value]) => {
-                                    if (!value || typeof value === "boolean") return false;
-                                    if (Array.isArray(value)) return false;
-                                    return ![
-                                      "category",
-                                      "name",
-                                      "age",
-                                      "detailsDescription",
-                                      "guestImageUrls",
-                                      "coupleNames",
-                                      "eventDate",
-                                      "startTime",
-                                      "endTime",
-                                      "location",
-                                      "venueName",
-                                      "rsvpName",
-                                      "rsvpContact",
-                                      "rsvpDeadline",
-                                      "message",
-                                      "specialInstructions",
-                                      "orientation",
-                                      "colors",
-                                      "style",
-                                      "visualPreferences",
-                                      "theme",
-                                      "gender",
-                                    ].includes(key);
-                                  })
-                                  .map(([key, value]) => (
-                                    <div
-                                      key={key}
-                                      className="rounded-xl border border-neutral-100 bg-neutral-50 p-3"
-                                    >
-                                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                        {key
-                                          .replace(/([A-Z])/g, " $1")
-                                          .replace(/^./, (char) => char.toUpperCase())}
-                                      </p>
-                                      <p className="text-sm text-neutral-900">{String(value)}</p>
-                                    </div>
-                                  ))}
-                                {activePageRecord.data.eventDetails.message ? (
-                                  <div className="rounded-xl border border-[#e2d5c7] bg-[#f7efe7] p-4 italic">
-                                    <p className="text-xs text-[#8C7B65]">
-                                      "{activePageRecord.data.eventDetails.message}"
-                                    </p>
-                                  </div>
-                                ) : null}
-                              </div>
-                            </div>
-                          ) : null}
-
-                          {activeTab === "location" ? (
-                            <>
-                              <p className="text-sm font-medium text-neutral-900">
-                                {activePageRecord.data.eventDetails.venueName ||
-                                  activePageRecord.data.eventDetails.location}
-                              </p>
-                              <p className="text-xs text-neutral-500">
-                                {activePageRecord.data.eventDetails.location}
-                              </p>
-                              <button
-                                onClick={() =>
-                                  window.open(
-                                    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activePageRecord.data?.eventDetails.location || "")}`,
-                                    "_blank",
-                                  )
-                                }
-                                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 py-2 text-xs font-bold text-white"
-                              >
-                                <ExternalLink className="h-3 w-3" />
-                                Open in Maps
-                              </button>
-                            </>
-                          ) : null}
-
-                          {activeTab === "calendar" ? (
-                            <>
-                              <p className="text-sm font-medium text-neutral-900">Save the Date</p>
-                              <p className="text-xs text-neutral-500">
-                                {activePageRecord.data.eventDetails.eventDate
-                                  ? formatCalendarSummary(
-                                      activePageRecord.data.eventDetails.eventDate,
-                                      activePageRecord.data.eventDetails.startTime,
-                                    )
-                                  : "Date TBD"}
-                              </p>
-                              <button
-                                onClick={() => {
-                                  const title = encodeURIComponent(
-                                    activePageRecord.data?.title || "Event",
-                                  );
-                                  const detailsText = encodeURIComponent(
-                                    activePageRecord.data?.description || "",
-                                  );
-                                  const location = encodeURIComponent(
-                                    activePageRecord.data?.eventDetails.location || "",
-                                  );
-                                  const date = (
-                                    activePageRecord.data?.eventDetails.eventDate || ""
-                                  ).replace(/-/g, "");
-                                  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${detailsText}&location=${location}&dates=${date}/${date}`;
-                                  window.open(url, "_blank");
-                                }}
-                                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white"
-                              >
-                                <CalendarDays className="h-3 w-3" />
-                                Add to Google Calendar
-                              </button>
-                            </>
-                          ) : null}
-
-                          {activeTab === "registry" ? (
-                            <>
-                              <p className="text-sm font-medium text-neutral-900">Gift Registry</p>
-                              {hasRegistryContent(activePageRecord.data.eventDetails) ? (
-                                <p className="text-xs text-neutral-500">
-                                  {getRegistryText(activePageRecord.data.eventDetails)}
-                                </p>
-                              ) : null}
-                              <p className="text-xs text-neutral-500">
-                                {activePageRecord.data.interactiveMetadata.shareNote}
-                              </p>
-                              {activePageRecord.data.eventDetails.registryLink ? (
-                                <button
-                                  onClick={() =>
-                                    window.open(
-                                      activePageRecord.data?.eventDetails.registryLink,
-                                      "_blank",
-                                    )
-                                  }
-                                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-pink-600 py-2 text-xs font-bold text-white"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                  Visit Registry
-                                </button>
-                              ) : null}
-                            </>
-                          ) : null}
-                        </div>
-                      </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-
-                  <div
-                    className={`pointer-events-none shrink-0 ${
-                      activePageUsesPosterControls
-                        ? "max-md:min-h-[min(14svh,4rem)] min-h-[min(8svh,2.4rem)] md:min-h-[min(6svh,2rem)]"
-                        : "max-md:min-h-[min(18svh,5.5rem)] min-h-[min(10svh,3rem)] md:min-h-[min(8svh,2.5rem)]"
-                    }`}
-                    aria-hidden
-                  />
-
-                  <div
-                    className={`pointer-events-none z-20 flex w-full min-w-0 flex-nowrap items-end justify-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] max-sm:justify-between max-sm:gap-0.5 max-sm:px-0 px-1 md:gap-4 md:px-2 [&::-webkit-scrollbar]:hidden ${
-                      activePageUsesPosterControls
-                        ? "pb-[max(0.45rem,calc(env(safe-area-inset-bottom)+0.2rem))] max-md:pb-[max(0.3rem,calc(env(safe-area-inset-bottom)+0.12rem))]"
-                        : "pb-8 max-md:pb-6"
-                    }`}
-                  >
-                    {(
-                      [
-                        {
-                          key: "rsvp",
-                          label: "RSVP",
-                          icon: MessageSquare,
-                          visible: Boolean(
-                            activePageRecord.data.eventDetails.rsvpName ||
-                              activePageRecord.data.eventDetails.rsvpContact,
-                          ),
-                          onClick: () => setActiveTab(activeTab === "rsvp" ? "none" : "rsvp"),
-                        },
-                        {
-                          key: "details",
-                          label: "Overview",
-                          icon: ClipboardList,
-                          visible: true,
-                          onClick: () => setActiveTab(activeTab === "details" ? "none" : "details"),
-                        },
-                        {
-                          key: "location",
-                          label: "Location",
-                          icon: MapPin,
-                          visible: true,
-                          onClick: () =>
-                            setActiveTab(activeTab === "location" ? "none" : "location"),
-                        },
-                        {
-                          key: "calendar",
-                          label: "Calendar",
-                          icon: CalendarDays,
-                          visible: true,
-                          onClick: () =>
-                            setActiveTab(activeTab === "calendar" ? "none" : "calendar"),
-                        },
-                        {
-                          key: "share",
-                          label:
-                            sharingId === activePageRecord.id
-                              ? "Sharing..."
-                              : copySuccess
-                                ? "Copied!"
-                                : "Share",
-                          icon:
-                            sharingId === activePageRecord.id
-                              ? Loader2
-                              : copySuccess
-                                ? CheckCircle2
-                                : Share2,
-                          visible: true,
-                          onClick: () => {
-                            setActiveTab("none");
-                            void shareMedia(activePageRecord);
-                          },
-                        },
-                        {
-                          key: "registry",
-                          label: "Registry",
-                          icon: Gift,
-                          visible: hasRegistryContent(activePageRecord.data.eventDetails),
-                          onClick: () =>
-                            setActiveTab(activeTab === "registry" ? "none" : "registry"),
-                        },
-                      ] as const
-                    )
-                      .filter((button) => button.visible)
-                      .map((button) => {
-                        const Icon = button.icon;
-                        const position =
-                          liveCardInteractionLayout?.positions[button.key] ||
-                          EMPTY_POSITIONS[button.key];
-                        return (
-                          <motion.div
-                            key={button.key}
-                            drag={isDesignMode}
-                            dragMomentum={false}
-                            onDragEnd={(_, info) =>
-                              updatePosition(activePageRecord.id, button.key, {
-                                x: position.x + info.offset.x,
-                                y: position.y + info.offset.y,
-                              })
-                            }
-                            style={{ x: position.x, y: position.y }}
-                            className="pointer-events-auto max-sm:min-w-0 max-sm:flex-1 max-sm:max-w-[20%] sm:flex-none sm:max-w-none"
-                          >
-                            <button
-                              onClick={() => {
-                                if (!isDesignMode) button.onClick();
-                              }}
-                              disabled={button.key === "share" && sharingId === activePageRecord.id}
-                              data-live-card-trigger
-                              className={`group flex w-full flex-col items-center gap-1 md:gap-2 ${isDesignMode ? "cursor-move" : ""}`}
-                            >
-                              <div
-                                className={`rounded-full border p-2 backdrop-blur-md transition-all md:p-3 ${
-                                  activePageUsesPosterControls
-                                    ? "border-white/28 bg-white/18 shadow-[0_14px_32px_rgba(0,0,0,0.34),0_0_18px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.18)] group-hover:-translate-y-0.5 group-hover:border-white/42 group-hover:bg-white/24"
-                                    : "border-white/30 bg-white/20 shadow-xl group-hover:bg-white/40"
-                                } ${
-                                  isDesignMode ? "ring-2 ring-[#c9b49a]" : ""
-                                } ${
-                                  (button.key === "rsvp" && activeTab === "rsvp") ||
-                                  (button.key === "details" && activeTab === "details") ||
-                                  (button.key === "location" && activeTab === "location") ||
-                                  (button.key === "calendar" && activeTab === "calendar") ||
-                                  (button.key === "registry" && activeTab === "registry")
-                                    ? activePageUsesPosterControls
-                                      ? "translate-y-0.5 border-white/78 bg-white/92 shadow-[0_18px_36px_rgba(0,0,0,0.38),0_0_20px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
-                                      : "border-white/50 bg-white/40"
-                                    : ""
-                                }`}
-                              >
-                                <Icon
-                                  className={`h-4 w-4 md:h-5 md:w-5 ${
-                                    button.key === "share" && sharingId === activePageRecord.id
-                                      ? "animate-spin text-white"
-                                      : activePageUsesPosterControls &&
-                                          ((button.key === "rsvp" && activeTab === "rsvp") ||
-                                            (button.key === "details" && activeTab === "details") ||
-                                            (button.key === "location" && activeTab === "location") ||
-                                            (button.key === "calendar" && activeTab === "calendar") ||
-                                            (button.key === "registry" && activeTab === "registry"))
-                                        ? "text-neutral-950"
-                                      : button.key === "share" && copySuccess
-                                        ? "text-green-400"
-                                        : "text-white"
-                                  }`}
-                                />
-                              </div>
-                              <span className="max-w-full truncate text-center text-[7px] font-bold uppercase tracking-tight text-white drop-shadow-md sm:text-[8px] sm:tracking-wider md:text-[9px] md:tracking-widest">
-                                {button.label}
-                              </span>
-                            </button>
-                          </motion.div>
-                        );
-                      })}
-                  </div>
-                </div>
-              </div>
+              <StudioLiveCardActionSurface
+                title={activePageRecord.data?.title || getStudioShareTitle(activePageRecord)}
+                invitationData={activePageRecord.data}
+                activeTab={activeTab}
+                onActiveTabChange={setActiveTab}
+                positions={liveCardInteractionLayout?.positions}
+                shareUrl={studioPreviewShareUrl}
+                onShare={() => void shareMedia(activePageRecord)}
+                shareState={
+                  sharingId === activePageRecord.id
+                    ? "pending"
+                    : copySuccess
+                      ? "success"
+                      : "idle"
+                }
+                isDesignMode={isDesignMode}
+                onDragEnd={(buttonKey, position) =>
+                  updatePosition(activePageRecord.id, buttonKey, position)
+                }
+                showExtendedDetails
+                registryHelperText={activePageRecord.data.interactiveMetadata.shareNote}
+              />
             </motion.div>
           </motion.div>
         ) : null}
