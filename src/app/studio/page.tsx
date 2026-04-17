@@ -5,13 +5,13 @@ import StudioMarketingPage from "./StudioMarketingPage";
 import StudioWorkspace from "./StudioWorkspace";
 
 export const metadata: Metadata = {
-  title: "Studio - Envitefy",
+  title: "Envitefy Studio | Live Cards, Invitation Design & Event Pages",
   description:
-    "Explore Studio, a public Envitefy space for shaping event ideas, pages, and creative direction.",
+    "Explore Envitefy Studio to shape live cards, invitation designs, and hosted event pages with RSVP, registry, schedule, and sharing actions.",
   openGraph: {
-    title: "Studio - Envitefy",
+    title: "Envitefy Studio | Live Cards, Invitation Design & Event Pages",
     description:
-      "Explore Studio, a public Envitefy space for shaping event ideas, pages, and creative direction.",
+      "Explore Envitefy Studio to shape live cards, invitation designs, and hosted event pages with RSVP, registry, schedule, and sharing actions.",
     url: "https://envitefy.com/studio",
     siteName: "Envitefy",
     images: [
@@ -23,6 +23,13 @@ export const metadata: Metadata = {
       },
     ],
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Envitefy Studio | Live Cards, Invitation Design & Event Pages",
+    description:
+      "Explore Envitefy Studio to shape live cards, invitation designs, and hosted event pages with RSVP, registry, schedule, and sharing actions.",
+    images: ["https://envitefy.com/og-default.jpg"],
   },
   alternates: { canonical: "/studio" },
 };

@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 
+const path = require("path");
 const { chromium } = require("playwright");
 
 const DEFAULT_BASE_URL = "http://localhost:3000";
 const DEFAULT_TIMEOUT_MS = 240000;
+const DEFAULT_EDGE_USER_DATA_DIR = process.env.LOCALAPPDATA
+  ? path.join(process.env.LOCALAPPDATA, "Microsoft", "Edge", "User Data")
+  : null;
 
 const CATEGORY_FIXTURES = [
   {
@@ -140,6 +144,8 @@ const CATEGORY_FIXTURES = [
 function parseArgs(argv) {
   const options = {
     baseUrl: DEFAULT_BASE_URL,
+    edgeProfileDirectory: null,
+    edgeUserDataDir: DEFAULT_EDGE_USER_DATA_DIR,
     headed: false,
     storageState: null,
     slowMo: 0,
@@ -155,6 +161,16 @@ function parseArgs(argv) {
     }
     if (arg === "--storage-state") {
       options.storageState = argv[index + 1] || null;
+      index += 1;
+      continue;
+    }
+    if (arg === "--edge-profile-directory") {
+      options.edgeProfileDirectory = argv[index + 1] || null;
+      index += 1;
+      continue;
+    }
+    if (arg === "--edge-user-data-dir") {
+      options.edgeUserDataDir = argv[index + 1] || null;
       index += 1;
       continue;
     }
@@ -189,6 +205,10 @@ Usage:
 Options:
   --base-url <url>        Studio base URL. Default: ${DEFAULT_BASE_URL}
   --storage-state <file>  Playwright storage state JSON for an authenticated Studio session.
+  --edge-profile-directory <name>
+                          Launch against a local Edge profile directory (for example: "Profile 1").
+  --edge-user-data-dir <dir>
+                          Edge user data directory. Default: ${DEFAULT_EDGE_USER_DATA_DIR || "not detected"}
   --headed                Run with a visible browser window.
   --slow-mo <ms>          Slow actions for easier observation.
   --timeout-ms <ms>       Per-generation wait timeout. Default: ${DEFAULT_TIMEOUT_MS}
@@ -227,7 +247,7 @@ async function goToTypeStep(page, baseUrl) {
   await page.goto(`${baseUrl}/studio?view=create&step=type`, {
     waitUntil: "networkidle",
   });
-  await page.getByText("What are we celebrating?").waitFor();
+  await page.getByText("What are we celebrating?").waitFor({ state: "visible" });
 }
 
 async function fieldControl(page, labelText) {
@@ -235,10 +255,10 @@ async function fieldControl(page, labelText) {
     .locator("label")
     .filter({ hasText: new RegExp(`^${escapeRegex(labelText)}(?:\\s*\\*)?$`) })
     .first();
-  await label.waitFor();
+  await label.waitFor({ state: "visible" });
   const fieldRoot = label.locator("xpath=..");
   const control = fieldRoot.locator("input, textarea, select").first();
-  await control.waitFor();
+  await control.waitFor({ state: "visible" });
   return control;
 }
 
@@ -262,19 +282,39 @@ async function fillFixtureDetails(page, fixture) {
   }
 }
 
+async function findVisibleEnabledButton(locator) {
+  const count = await locator.count();
+  for (let index = 0; index < count; index += 1) {
+    const button = locator.nth(index);
+    if ((await button.isVisible()) && (await button.isEnabled())) {
+      return button;
+    }
+  }
+  return null;
+}
+
+async function clickVisibleEnabledButton(locator, missingMessage) {
+  const button = await findVisibleEnabledButton(locator);
+  if (!button) {
+    throw new Error(missingMessage);
+  }
+  await button.click();
+}
+
 async function waitForSaveReady(page, timeoutMs) {
   const startedAt = Date.now();
   const failureHeading = page.getByText("Generation Failed");
-  const saveButton = page
-    .getByRole("button", { name: /Save to Library|Save Changes|Saved to Library/i })
-    .first();
+  const saveButtons = page.getByRole("button", {
+    name: /Save to Library|Save Changes|Saved to Library/i,
+  });
 
   while (Date.now() - startedAt < timeoutMs) {
     if ((await failureHeading.count()) > 0) {
       const message = await page.locator("text=Generation Failed").first().textContent();
       throw new Error(message || "Generation failed.");
     }
-    if ((await saveButton.count()) > 0 && (await saveButton.isEnabled())) {
+    const saveButton = await findVisibleEnabledButton(saveButtons);
+    if (saveButton) {
       return saveButton;
     }
     await sleep(1000);
@@ -285,9 +325,10 @@ async function waitForSaveReady(page, timeoutMs) {
 
 async function waitForSavedState(page, timeoutMs) {
   const startedAt = Date.now();
-  const savedButton = page.getByRole("button", { name: /^Saved to Library$/i }).first();
+  const savedButtons = page.getByRole("button", { name: /^Saved to Library$/i });
   while (Date.now() - startedAt < timeoutMs) {
-    if ((await savedButton.count()) > 0) {
+    const savedButton = await findVisibleEnabledButton(savedButtons);
+    if (savedButton) {
       return;
     }
     await sleep(500);
@@ -295,28 +336,7 @@ async function waitForSavedState(page, timeoutMs) {
   throw new Error(`Timed out waiting for the library save state after ${timeoutMs}ms.`);
 }
 
-async function createLiveCard(page, baseUrl, fixture, timeoutMs) {
-  await goToTypeStep(page, baseUrl);
-  await page.getByRole("button", { name: `Select ${fixture.category}` }).click();
-  await page.getByRole("button", { name: /^Details$/i }).waitFor();
-  await page.getByRole("button", { name: /^Details$/i }).click();
-  await page.locator("#studio-details-description").waitFor();
-  await fillFixtureDetails(page, fixture);
-  await page.getByRole("button", { name: /^Editor$/i }).click();
-
-  const promptBox = page.locator("aside textarea").first();
-  await promptBox.waitFor();
-  await promptBox.fill(fixture.prompt);
-
-  const createButton = page.getByRole("button", { name: /Create Live Card|Update Invitation/i }).first();
-  await createButton.click();
-
-  const saveButton = await waitForSaveReady(page, timeoutMs);
-  await saveButton.click();
-  await waitForSavedState(page, 30000);
-}
-
-async function verifyLibrary(page, baseUrl) {
+async function countLibraryLiveCards(page, baseUrl) {
   await page.goto(`${baseUrl}/studio?view=library`, {
     waitUntil: "networkidle",
   });
@@ -325,8 +345,72 @@ async function verifyLibrary(page, baseUrl) {
   return openButtons.count();
 }
 
-async function main() {
-  const options = parseArgs(process.argv.slice(2));
+async function waitForLibraryCount(page, baseUrl, minimumCount, timeoutMs) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const count = await countLibraryLiveCards(page, baseUrl);
+    if (count >= minimumCount) {
+      return count;
+    }
+    await sleep(1500);
+  }
+  throw new Error(
+    `Timed out waiting for the library count to reach ${minimumCount} after ${timeoutMs}ms.`,
+  );
+}
+
+async function createLiveCard(page, baseUrl, fixture, timeoutMs, expectedLibraryCount) {
+  await goToTypeStep(page, baseUrl);
+  await clickVisibleEnabledButton(
+    page.getByRole("button", { name: `Select ${fixture.category}` }),
+    `Could not find a visible selector button for ${fixture.category}.`,
+  );
+  await page.getByRole("button", { name: /^Details$/i }).first().waitFor({ state: "visible" });
+  await clickVisibleEnabledButton(
+    page.getByRole("button", { name: /^Details$/i }),
+    "Could not find a visible Details step button.",
+  );
+  await page.locator("#studio-details-description").waitFor({ state: "visible" });
+  await fillFixtureDetails(page, fixture);
+  await clickVisibleEnabledButton(
+    page.getByRole("button", { name: /^Editor$/i }),
+    "Could not find a visible Editor step button.",
+  );
+
+  const promptBox = page.locator("aside textarea:visible").first();
+  await promptBox.waitFor({ state: "visible" });
+  await promptBox.fill(fixture.prompt);
+
+  await clickVisibleEnabledButton(
+    page.getByRole("button", { name: /Create Live Card|Update Invitation/i }),
+    "Could not find a visible live-card generation button.",
+  );
+
+  const saveButton = await waitForSaveReady(page, timeoutMs);
+  await saveButton.click();
+  return waitForLibraryCount(page, baseUrl, expectedLibraryCount, 45000);
+}
+
+async function verifyLibrary(page, baseUrl) {
+  return countLibraryLiveCards(page, baseUrl);
+}
+
+async function openStudioPage(options) {
+  if (options.edgeProfileDirectory) {
+    if (!options.edgeUserDataDir) {
+      throw new Error("Edge user data directory is not configured.");
+    }
+
+    const context = await chromium.launchPersistentContext(options.edgeUserDataDir, {
+      channel: "msedge",
+      headless: !options.headed,
+      slowMo: options.slowMo,
+      args: [`--profile-directory=${options.edgeProfileDirectory}`],
+    });
+    const page = context.pages()[0] || (await context.newPage());
+    return { context, page };
+  }
+
   const browser = await chromium.launch({
     headless: !options.headed,
     slowMo: options.slowMo,
@@ -335,22 +419,39 @@ async function main() {
     options.storageState ? { storageState: options.storageState } : undefined,
   );
   const page = await context.newPage();
+  return { browser, context, page };
+}
+
+async function main() {
+  const options = parseArgs(process.argv.slice(2));
+  const { browser, context, page } = await openStudioPage(options);
 
   try {
     const email = await ensureAuthenticated(page, options.baseUrl);
     console.log(`Authenticated as ${email}`);
 
+    let libraryCount = await verifyLibrary(page, options.baseUrl);
+    console.log(`Library starts with ${libraryCount} live card item(s).`);
+
     for (const fixture of CATEGORY_FIXTURES) {
       console.log(`Creating ${fixture.category}...`);
-      await createLiveCard(page, options.baseUrl, fixture, options.timeoutMs);
-      console.log(`Saved ${fixture.category}.`);
+      libraryCount = await createLiveCard(
+        page,
+        options.baseUrl,
+        fixture,
+        options.timeoutMs,
+        libraryCount + 1,
+      );
+      console.log(`Saved ${fixture.category}. Library now shows ${libraryCount} item(s).`);
     }
 
     const count = await verifyLibrary(page, options.baseUrl);
     console.log(`Done. Library currently shows ${count} live card item(s) in the active session.`);
   } finally {
     await context.close();
-    await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 }
 

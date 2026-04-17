@@ -906,8 +906,6 @@ function StudioMarketingUseCasePreview({
 }) {
   const details = preview.invitationData.eventDetails;
   const eyebrow = readString(details?.occasion) || readString(details?.category) || "Event";
-  const subcopy =
-    readString(preview.invitationData.subtitle) || readString(preview.invitationData.description);
   const actionChips = [
     readString(details?.rsvpContact) ? "RSVP" : null,
     readString(details?.location) || readString(details?.venueName) ? "Location" : null,
@@ -931,16 +929,8 @@ function StudioMarketingUseCasePreview({
         </span>
       </div>
       <div className="absolute inset-x-5 bottom-5">
-        <div className="max-w-[18rem] rounded-[1.35rem] border border-white/14 bg-black/20 p-4 backdrop-blur-md">
-          <h3 className="text-[1.5rem] font-black leading-[0.95] tracking-tight text-white">
-            {preview.title}
-          </h3>
-          {subcopy ? (
-            <p className="mt-2 text-sm leading-6 text-white/84 line-clamp-2">{subcopy}</p>
-          ) : null}
-        </div>
         {actionChips.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {actionChips.map((chip) => (
               <span
                 key={chip}
