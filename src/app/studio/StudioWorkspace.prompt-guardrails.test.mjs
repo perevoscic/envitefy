@@ -43,6 +43,14 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
     source,
     /Do not hallucinate team logos, mascots, scoreboard text, jersey numbers, sponsor marks, branded venue signage, or specific players\./,
   );
+  assert.match(
+    source,
+    /Frame it as an upcoming educational visit rather than a souvenir or tourism poster, and avoid making one specific student group feel like they authored the invite unless reference photos were provided\./,
+  );
+  assert.match(
+    source,
+    /Keep the concept future-facing and destination-led; do not imply that the pictured students designed, printed, or are personally presenting the invitation\./,
+  );
   assert.match(source, /const categoryGuardrails = buildStudioCategoryGuardrails\(details\);/);
   assert.match(source, /return \{\s*mode,\s*surface,\s*event:/s);
   assert.match(source, /category:\s*details\.category,/);

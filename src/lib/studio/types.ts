@@ -1,5 +1,6 @@
 export type StudioGenerateMode = "text" | "image" | "both";
 export type StudioGenerateSurface = "page" | "image";
+export type StudioProvider = "gemini" | "openai";
 export type StudioSubjectTransformMode = "default" | "premium_makeover";
 export type StudioLikenessStrength = "strict" | "balanced" | "creative";
 export type StudioVisualStyleMode = "photoreal" | "editorial_cinematic" | "playful_stylized";
@@ -94,7 +95,7 @@ export type StudioGenerationError = {
   code: string;
   message: string;
   retryable: boolean;
-  provider: "gemini";
+  provider: StudioProvider;
   status?: number;
 };
 

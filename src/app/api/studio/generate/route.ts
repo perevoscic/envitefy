@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateStudioInvitation } from "@/lib/studio/generate";
+import { resolveStudioProvider } from "@/lib/studio/provider";
 import { parseStudioGenerateRequest, type StudioGenerateFailureResponse } from "@/lib/studio/types";
 
 export const runtime = "nodejs";
@@ -13,6 +14,7 @@ function buildFailureResponse(
   message: string,
   retryable: boolean,
 ): NextResponse<StudioGenerateFailureResponse> {
+  const provider = resolveStudioProvider();
   return NextResponse.json(
     {
       ok: false,
@@ -26,7 +28,7 @@ function buildFailureResponse(
           code,
           message,
           retryable,
-          provider: "gemini",
+          provider,
           status,
         },
       },

@@ -197,6 +197,20 @@ test("studio baked-text invitation prompts give every non-birthday-wedding categ
       /Visible invitation text is allowed in the final raster, but it must be intentional, sparse, and supported by the supplied event details\./,
     );
     assert.match(imagePrompt, testCase.imageRule);
+    if (testCase.category === "Field Trip/Day") {
+      assert.match(
+        liveCardPrompt,
+        /Phrase the invite like an upcoming visit, not like the pictured students already hosted, designed, or commemorated the event\./,
+      );
+      assert.match(
+        imagePrompt,
+        /Field trip \/ school outing invitation: make the artwork read as a future organized visit, discovery day, or school excursion rather than a souvenir poster from a completed trip\./,
+      );
+      assert.match(
+        imagePrompt,
+        /Do not imply that the depicted students designed, printed, or are personally presenting the invitation\./,
+      );
+    }
   }
 });
 

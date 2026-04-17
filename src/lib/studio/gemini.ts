@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { absoluteUrl } from "@/lib/absolute-url";
+import { STUDIO_LIVE_CARD_RESPONSE_SCHEMA } from "@/lib/studio/live-card-schema";
 import {
   normalizeLiveCardMetadata,
   type StudioGenerationError,
@@ -23,70 +24,6 @@ type GeminiTextResult =
 type GeminiImageResult =
   | { ok: true; imageDataUrl: string; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] };
-
-const LIVE_CARD_RESPONSE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["title", "description", "palette", "themeStyle", "interactiveMetadata", "invitation"],
-  properties: {
-    title: { type: "string" },
-    description: { type: "string" },
-    palette: {
-      type: "object",
-      additionalProperties: false,
-      required: ["primary", "secondary", "accent"],
-      properties: {
-        primary: { type: "string" },
-        secondary: { type: "string" },
-        accent: { type: "string" },
-      },
-    },
-    themeStyle: { type: "string" },
-    interactiveMetadata: {
-      type: "object",
-      additionalProperties: false,
-      required: ["rsvpMessage", "funFacts", "ctaLabel", "shareNote"],
-      properties: {
-        rsvpMessage: { type: "string" },
-        funFacts: {
-          type: "array",
-          items: { type: "string" },
-        },
-        ctaLabel: { type: "string" },
-        shareNote: { type: "string" },
-      },
-    },
-    invitation: {
-      type: "object",
-      additionalProperties: false,
-      required: [
-        "title",
-        "subtitle",
-        "openingLine",
-        "scheduleLine",
-        "locationLine",
-        "detailsLine",
-        "callToAction",
-        "socialCaption",
-        "hashtags",
-      ],
-      properties: {
-        title: { type: "string" },
-        subtitle: { type: "string" },
-        openingLine: { type: "string" },
-        scheduleLine: { type: "string" },
-        locationLine: { type: "string" },
-        detailsLine: { type: "string" },
-        callToAction: { type: "string" },
-        socialCaption: { type: "string" },
-        hashtags: {
-          type: "array",
-          items: { type: "string" },
-        },
-      },
-    },
-  },
-} as const;
 
 function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -282,7 +219,7 @@ async function postStructuredGeminiContent(
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
-        responseJsonSchema: LIVE_CARD_RESPONSE_SCHEMA,
+        responseJsonSchema: STUDIO_LIVE_CARD_RESPONSE_SCHEMA,
         temperature: 0.6,
         topP: 0.9,
         candidateCount: 1,

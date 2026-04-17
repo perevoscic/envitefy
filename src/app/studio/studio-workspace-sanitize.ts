@@ -321,11 +321,12 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
 
 export function sanitizeGenerationError(value: unknown): StudioGenerationError | undefined {
   if (!isRecord(value)) return undefined;
+  const provider = readString(value.provider);
   return {
     code: readString(value.code) || "unknown_error",
     message: readString(value.message) || "Studio generation failed.",
     retryable: typeof value.retryable === "boolean" ? value.retryable : true,
-    provider: "gemini",
+    provider: provider === "openai" ? "openai" : "gemini",
     status: typeof value.status === "number" ? value.status : undefined,
   };
 }

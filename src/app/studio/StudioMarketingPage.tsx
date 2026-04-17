@@ -220,7 +220,7 @@ const heroPreview: StudioMarketingCardConfig = {
     venueName: "Grand Ballroom",
     location: "River House, 14 Wabash Landing, Chicago, IL",
     rsvpName: "Event Concierge",
-    rsvpContact: "events@summergala.com",
+    rsvpContact: "rsvp@summergala.example.com",
     heroTextMode: "image",
   }),
 };
@@ -243,7 +243,7 @@ const birthdayPreview: StudioMarketingCardConfig = {
     venueName: "Sunnybrook Social Club",
     location: "118 Garden Lane, Austin, TX",
     rsvpName: "Rachel",
-    rsvpContact: "512-555-0148",
+    rsvpContact: "512-555-0108",
     heroTextMode: "image",
   }),
 };
@@ -266,7 +266,7 @@ const weddingPreview: StudioMarketingCardConfig = {
     venueName: "Villa Terrace Gardens",
     location: "1900 Lakefront Drive, Milwaukee, WI",
     rsvpName: "Wedding Planner",
-    rsvpContact: "planner@elenamarcus.com",
+    rsvpContact: "planner@elenamarcus.example.com",
     registryLink: "https://registry.example.com/elena-marcus",
     heroTextMode: "image",
   }),
@@ -291,7 +291,7 @@ const babyPreview: StudioMarketingCardConfig = {
     venueName: "The Garden Room",
     location: "44 Juniper Street, Nashville, TN",
     rsvpName: "Sarah",
-    rsvpContact: "615-555-0192",
+    rsvpContact: "512-555-0108",
     registryLink: "https://registry.example.com/baby-bloom",
     heroTextMode: "image",
   }),
@@ -316,7 +316,7 @@ const schoolPreview: StudioMarketingCardConfig = {
     venueName: "Northview Academy Quad",
     location: "88 Crescent Drive, Denver, CO",
     rsvpName: "Ms. Lopez",
-    rsvpContact: "fieldday@northview.edu",
+    rsvpContact: "fieldday@northview.example.com",
     heroTextMode: "image",
   }),
 };
@@ -339,7 +339,7 @@ const communityPreview: StudioMarketingCardConfig = {
     venueName: "Maple Street Commons",
     location: "201 Maple Street, Portland, OR",
     rsvpName: "Community Team",
-    rsvpContact: "hello@maplecommons.org",
+    rsvpContact: "hello@maplecommons.example.com",
   }),
 };
 
@@ -361,7 +361,132 @@ const teamPreview: StudioMarketingCardConfig = {
     venueName: "Harbor House Rooftop",
     location: "900 Bay Street, Seattle, WA",
     rsvpName: "People Ops",
-    rsvpContact: "people@harborhouse.co",
+    rsvpContact: "people@harborhouse.example.com",
+    heroTextMode: "image",
+  }),
+};
+
+const showcaseBirthdayPreview: StudioMarketingCardConfig = {
+  title: "Lara's Dino-Adventure",
+  imageUrl: "/api/blob/event-media/upload-9f766086-693e-45aa-9813-bfe97f095651/header/display.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Lara's Dino-Adventure",
+    subtitle: "A Prehistoric Celebration 🦖",
+    description:
+      "A prehistoric 7th birthday celebration for Lara Bennett featuring a dinosaur adventure theme at the park with roaring fun and explorer vibes.",
+    scheduleLine: "Saturday May 23rd at 12:00 PM",
+    locationLine: "AMC Boulevard 10, Franklin, TN",
+    category: "Birthday",
+    occasion: "Birthday Party",
+    eventDate: "2026-05-23",
+    startTime: "12:00",
+    venueName: "AMC Boulevard 10",
+    location: "AMC Boulevard 10, Franklin, TN",
+    rsvpContact: "512-555-0108",
+    heroTextMode: "image",
+  }),
+};
+
+const showcaseGameDayPreview: StudioMarketingCardConfig = {
+  title: "Panther Game Night",
+  imageUrl: "/api/blob/event-media/upload-8cc5fc5f-deb5-4083-a3a2-daeb53602a51/header/display.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Panther Game Night",
+    subtitle: "PANTHERS VS TIGERS",
+    description:
+      "A bold football invitation featuring the Varsity Panthers under the Friday night lights with blue and gold energy.",
+    scheduleLine: "Friday, September 18th at 7:00 PM",
+    locationLine: "Panther Stadium • Austin, TX",
+    category: "Game Day",
+    occasion: "Football Game",
+    eventDate: "2026-09-18",
+    startTime: "19:00",
+    venueName: "Panther Stadium",
+    location: "Panther Stadium, 800 Victory Lane, Austin, TX",
+    heroTextMode: "image",
+  }),
+};
+
+const showcaseBridalPreview: StudioMarketingCardConfig = {
+  title: "Madeline's Garden Brunch",
+  imageUrl: "/api/blob/event-media/upload-c23c3d9e-45b5-4822-a8c8-b8892289de3e/header/display.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Madeline's Garden Brunch",
+    subtitle: "Bridal Shower Brunch",
+    description:
+      "An elegant garden-side bridal shower for Madeline Rivers, featuring blush florals, artisanal pastries, and champagne toasts at the historic Willow House.",
+    scheduleLine: "Saturday, August 8th at 11:00 AM",
+    locationLine: "Willow House, Savannah",
+    category: "Bridal Shower",
+    occasion: "Bridal Shower",
+    eventDate: "2026-08-08",
+    startTime: "11:00",
+    venueName: "Willow House",
+    location: "Willow House, 44 Magnolia Street, Savannah, GA",
+    rsvpContact: "sofia@willowhouse.example.com",
+    heroTextMode: "image",
+  }),
+};
+
+const showcaseBabyPreview: StudioMarketingCardConfig = {
+  title: "Elena's Blue Bear Shower",
+  imageUrl: "/api/blob/event-media/upload-66ac676d-ad60-4391-b974-ec67199cbe77/header/display.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Elena's Blue Bear Shower",
+    subtitle: "A Celebration for a Little One 🧸",
+    description:
+      "A serene and elevated baby shower for Elena Martinez, featuring soft blue balloon clouds, heritage teddy bear motifs, and warm floral accents in the sunlit Olive Room.",
+    scheduleLine: "Sunday, July 19th at 1:00 PM",
+    locationLine: "Olive Room, 212 Harbor Avenue, Tampa",
+    category: "Baby Shower",
+    occasion: "Baby Shower",
+    eventDate: "2026-07-19",
+    startTime: "13:00",
+    venueName: "Olive Room",
+    location: "Olive Room, 212 Harbor Avenue, Tampa, FL",
+    rsvpContact: "elena.shower@olive-room.example.com",
+    heroTextMode: "image",
+  }),
+};
+
+const showcaseAnniversaryPreview: StudioMarketingCardConfig = {
+  title: "Silver Anniversary Soirée",
+  imageUrl: "/api/blob/event-media/upload-767b4cbd-a67b-43b4-8339-1b2afe60016b/header/display.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Silver Anniversary Soirée",
+    subtitle: "Our 25th Anniversary Dinner",
+    description:
+      "An elegant 25th-anniversary dinner for Naomi & Daniel Brooks featuring candlelit tables, deep red roses, and live jazz at The Marlowe Room.",
+    scheduleLine: "Sunday June 14th at 6:30 PM",
+    locationLine: "The Marlowe Room, Chicago",
+    category: "Anniversary",
+    occasion: "Anniversary Dinner",
+    eventDate: "2026-06-14",
+    startTime: "18:30",
+    venueName: "The Marlowe Room",
+    location: "The Marlowe Room, 17 Crescent Avenue, Chicago, IL",
+    rsvpContact: "anniversary@brooks.example.com",
+    heroTextMode: "image",
+  }),
+};
+
+const showcaseMuseumPreview: StudioMarketingCardConfig = {
+  title: "Museum Discovery Day",
+  imageUrl: "/api/blob/event-media/upload-b9b6e1f6-f6bc-47a2-b036-2088b8366e47/header/display.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Museum Discovery Day",
+    subtitle: "A Science Museum Field Trip 🚀",
+    description:
+      "An elevated and organized school field trip invitation for a day of scientific exploration and hands-on learning at the City Science Museum.",
+    scheduleLine: "Thursday, April 30th at 8:15 AM",
+    locationLine: "City Science Museum, Dallas",
+    category: "Field Trip/Day",
+    occasion: "Field Trip",
+    eventDate: "2026-04-30",
+    startTime: "08:15",
+    venueName: "City Science Museum",
+    location: "City Science Museum, 100 Discovery Plaza, Dallas, TX",
+    rsvpContact: "mrs.harper@cityscience.example.com",
     heroTextMode: "image",
   }),
 };
@@ -405,20 +530,44 @@ const showcaseCards: ShowcaseCardItem[] = [
     preview: birthdayPreview,
   },
   {
+    title: "Lara's Dino-Adventure",
+    preview: showcaseBirthdayPreview,
+  },
+  {
     title: "Wedding Weekend",
     preview: weddingPreview,
+  },
+  {
+    title: "Panther Game Night",
+    preview: showcaseGameDayPreview,
   },
   {
     title: "Baby Shower",
     preview: babyPreview,
   },
   {
+    title: "Madeline's Garden Brunch",
+    preview: showcaseBridalPreview,
+  },
+  {
     title: "School Fundraiser",
     preview: schoolPreview,
   },
   {
+    title: "Elena's Blue Bear Shower",
+    preview: showcaseBabyPreview,
+  },
+  {
     title: "Team Offsite",
     preview: teamPreview,
+  },
+  {
+    title: "Silver Anniversary Soirée",
+    preview: showcaseAnniversaryPreview,
+  },
+  {
+    title: "Museum Discovery Day",
+    preview: showcaseMuseumPreview,
   },
 ];
 
@@ -614,8 +763,104 @@ function StudioMarketingLiveCard({
   const [internalActiveTab, setInternalActiveTab] = useState<LiveCardActiveTab>(
     preview.initialActiveTab || "none",
   );
+  const [shareState, setShareState] = useState<"idle" | "pending" | "success">("idle");
+  const shareResetTimeoutRef = useRef<number | null>(null);
+  const [shareUrl, setShareUrl] = useState("");
   const resolvedActiveTab = activeTab ?? internalActiveTab;
   const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
+
+  useEffect(() => {
+    setShareUrl(`${window.location.origin}/studio?showcase=${encodeURIComponent(preview.title)}`);
+
+    return () => {
+      if (shareResetTimeoutRef.current) {
+        window.clearTimeout(shareResetTimeoutRef.current);
+      }
+    };
+  }, [preview.title]);
+
+  const handleShare = async () => {
+    const resolvedShareUrl =
+      shareUrl || `${window.location.origin}/studio?showcase=${encodeURIComponent(preview.title)}`;
+    if (!resolvedShareUrl) return;
+
+    if (shareResetTimeoutRef.current) {
+      window.clearTimeout(shareResetTimeoutRef.current);
+      shareResetTimeoutRef.current = null;
+    }
+
+    setShareState("pending");
+
+    const sharePayload = {
+      title: preview.title,
+      text:
+        preview.invitationData.description || preview.invitationData.subtitle || `${preview.title} on Envitefy Studio`,
+      url: resolvedShareUrl,
+    };
+    const shareCandidates = [
+      sharePayload,
+      { title: preview.title, url: resolvedShareUrl },
+      { url: resolvedShareUrl },
+      { text: resolvedShareUrl },
+    ];
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        let shared = false;
+
+        for (const candidate of shareCandidates) {
+          try {
+            await navigator.share(candidate);
+            shared = true;
+            break;
+          } catch (error) {
+            if (
+              error instanceof DOMException &&
+              (error.name === "AbortError" || error.name === "NotAllowedError")
+            ) {
+              throw error;
+            }
+          }
+        }
+
+        if (!shared) {
+          throw new Error("Native share is unavailable for the current payload.");
+        }
+      } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(resolvedShareUrl);
+      } else {
+        window.prompt("Copy this link", resolvedShareUrl);
+      }
+
+      setShareState("success");
+      shareResetTimeoutRef.current = window.setTimeout(() => {
+        setShareState("idle");
+        shareResetTimeoutRef.current = null;
+      }, 1800);
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        (error.name === "AbortError" || error.name === "NotAllowedError")
+      ) {
+        setShareState("idle");
+        return;
+      }
+
+      try {
+        if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(resolvedShareUrl);
+          setShareState("success");
+          shareResetTimeoutRef.current = window.setTimeout(() => {
+            setShareState("idle");
+            shareResetTimeoutRef.current = null;
+          }, 1800);
+          return;
+        }
+      } catch {}
+
+      setShareState("idle");
+    }
+  };
 
   return (
     <div
@@ -641,9 +886,10 @@ function StudioMarketingLiveCard({
           invitationData={preview.invitationData}
           activeTab={resolvedActiveTab}
           onActiveTabChange={handleActiveTabChange}
-          onShare={() => {}}
+          onShare={handleShare}
+          shareUrl={shareUrl}
           fallbackShareUrlToWindowLocation={false}
-          shareState="idle"
+          shareState={shareState}
         />
       </div>
       {showcaseOverlay}
@@ -881,7 +1127,15 @@ export default function StudioMarketingPage() {
     setFullscreenShowcaseIndex(index);
   };
 
-  const handleShowcaseCardClick = (index: number) => {
+  const handleShowcaseCardClick = (index: number, event?: React.MouseEvent<HTMLDivElement>) => {
+    const target = event?.target;
+    if (
+      target instanceof HTMLElement &&
+      target.closest("[data-live-card-trigger], [data-live-card-panel], button, a")
+    ) {
+      return;
+    }
+
     if (index !== activeIndex) {
       scrollToShowcaseIndex(index);
       return;
@@ -1378,7 +1632,7 @@ export default function StudioMarketingPage() {
                   {showcaseCards.map((item, index) => (
                     <div
                       key={item.title}
-                      onClick={() => handleShowcaseCardClick(index)}
+                      onClick={(event) => handleShowcaseCardClick(index, event)}
                       data-showcase-card
                       data-showcase-card-index={index}
                       className="w-[min(300px,calc(100vw-4rem))] shrink-0 snap-center cursor-pointer"
@@ -1445,11 +1699,11 @@ export default function StudioMarketingPage() {
 
           <motion.section
             id="cta"
-            className="hash-anchor-below-fixed-nav px-4 py-24 sm:px-6 lg:px-8"
+            className="hash-anchor-below-fixed-nav px-4 pt-14 pb-24 sm:px-6 sm:pt-16 lg:px-8"
             {...revealIn}
           >
             <div className="mx-auto w-full max-w-7xl">
-              <div className="relative overflow-hidden rounded-[3rem] bg-[#7c3aed] p-12 text-center text-white shadow-[0_30px_90px_rgba(124,58,237,0.24)] lg:p-24">
+              <div className="relative overflow-hidden rounded-[3rem] bg-[#7c3aed] px-12 pb-12 pt-8 text-center text-white shadow-[0_30px_90px_rgba(124,58,237,0.24)] lg:px-24 lg:pb-24 lg:pt-12">
                 <div className="absolute left-0 top-0 h-full w-full opacity-20">
                   <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-white blur-[100px]" />
                   <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-[#c4b5fd] blur-[100px]" />
