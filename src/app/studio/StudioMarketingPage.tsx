@@ -1,11 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   Baby,
   Calendar,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Gift,
@@ -19,15 +20,21 @@ import {
   Share2,
   Smartphone,
   Ticket,
-  WandSparkles,
   Upload,
   Users,
+  WandSparkles,
+  X,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
+import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
+import StudioLiveCardActionSurface, {
+  type LiveCardActiveTab,
+  type LiveCardInvitationData,
+} from "@/components/studio/StudioLiveCardActionSurface";
 
 type FeatureItem = {
   icon: LucideIcon;
@@ -43,8 +50,21 @@ type ActionItem = {
 
 type UseCaseItem = {
   title: string;
-  image: string;
   description: string;
+  preview: StudioMarketingCardConfig;
+};
+
+type ShowcaseCardItem = {
+  title: string;
+  preview: StudioMarketingCardConfig;
+};
+
+type StudioMarketingCardConfig = {
+  title: string;
+  imageUrl: string;
+  wideImageUrl?: string;
+  invitationData: LiveCardInvitationData;
+  initialActiveTab?: LiveCardActiveTab;
 };
 
 const revealIn = {
@@ -115,36 +135,290 @@ const activeButtons: ActionItem[] = [
   },
 ];
 
+function createMarketingInvitationData({
+  title,
+  subtitle,
+  description,
+  scheduleLine,
+  locationLine,
+  category,
+  occasion,
+  eventDate,
+  startTime,
+  endTime,
+  venueName,
+  location,
+  rsvpName,
+  rsvpContact,
+  registryLink,
+  heroTextMode = "overlay",
+}: {
+  title: string;
+  subtitle: string;
+  description: string;
+  scheduleLine: string;
+  locationLine: string;
+  category: string;
+  occasion: string;
+  eventDate: string;
+  startTime: string;
+  endTime?: string;
+  venueName: string;
+  location: string;
+  rsvpName?: string;
+  rsvpContact?: string;
+  registryLink?: string;
+  heroTextMode?: "image" | "overlay";
+}): LiveCardInvitationData {
+  return {
+    title,
+    subtitle,
+    description,
+    scheduleLine,
+    locationLine,
+    heroTextMode,
+    theme: {
+      themeStyle: "studio-marketing",
+    },
+    interactiveMetadata: {
+      rsvpMessage: `Reply to ${rsvpName || "the host"} to let them know you're in.`,
+      ctaLabel: "RSVP",
+      shareNote: description,
+    },
+    eventDetails: {
+      category,
+      occasion,
+      eventDate,
+      startTime,
+      endTime,
+      venueName,
+      location,
+      rsvpName,
+      rsvpContact,
+      registryLink,
+      detailsDescription: description,
+      message: subtitle,
+    },
+  };
+}
+
+const heroPreview: StudioMarketingCardConfig = {
+  title: "Summer Gala 2026",
+  imageUrl: "/images/studio/invite-hero-gala.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Summer Gala 2026",
+    subtitle: "Cocktails, live music, and a black-tie night under the lights.",
+    description:
+      "A polished evening invite with RSVP, location, and calendar actions built directly into the live card.",
+    scheduleLine: "Thu, Jun 18, 2026 • 7:00 PM",
+    locationLine: "Grand Ballroom • River House",
+    category: "Custom Invite",
+    occasion: "Black Tie Gala",
+    eventDate: "2026-06-18",
+    startTime: "19:00",
+    endTime: "23:00",
+    venueName: "Grand Ballroom",
+    location: "River House, 14 Wabash Landing, Chicago, IL",
+    rsvpName: "Event Concierge",
+    rsvpContact: "events@summergala.com",
+    heroTextMode: "image",
+  }),
+};
+
+const birthdayPreview: StudioMarketingCardConfig = {
+  title: "Mila Turns 8",
+  imageUrl: "/images/studio/invite-birthday-bash.webp",
+  wideImageUrl: "/images/marketing/use-case-birthday.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Mila Turns 8",
+    subtitle: "Cupcakes, confetti, and a full afternoon of birthday fun.",
+    description: "Guests can RSVP, get directions, and save the date from one live card.",
+    scheduleLine: "Sat, May 16, 2026 • 2:00 PM",
+    locationLine: "Sunnybrook Social Club",
+    category: "Birthday",
+    occasion: "Birthday Party",
+    eventDate: "2026-05-16",
+    startTime: "14:00",
+    endTime: "17:00",
+    venueName: "Sunnybrook Social Club",
+    location: "118 Garden Lane, Austin, TX",
+    rsvpName: "Rachel",
+    rsvpContact: "512-555-0148",
+    heroTextMode: "image",
+  }),
+};
+
+const weddingPreview: StudioMarketingCardConfig = {
+  title: "Elena & Marcus",
+  imageUrl: "/images/studio/invite-wedding-weekend.webp",
+  wideImageUrl: "/images/marketing/use-case-wedding.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Elena & Marcus",
+    subtitle: "A full wedding weekend with RSVP, registry, hotel, and timeline details.",
+    description: "Give guests one elegant page for every part of the celebration.",
+    scheduleLine: "Sun, Sep 27, 2026 • 4:30 PM",
+    locationLine: "Villa Terrace Gardens",
+    category: "Wedding",
+    occasion: "Wedding Weekend",
+    eventDate: "2026-09-27",
+    startTime: "16:30",
+    endTime: "23:00",
+    venueName: "Villa Terrace Gardens",
+    location: "1900 Lakefront Drive, Milwaukee, WI",
+    rsvpName: "Wedding Planner",
+    rsvpContact: "planner@elenamarcus.com",
+    registryLink: "https://registry.example.com/elena-marcus",
+    heroTextMode: "image",
+  }),
+  initialActiveTab: "registry",
+};
+
+const babyPreview: StudioMarketingCardConfig = {
+  title: "Baby Bloom Shower",
+  imageUrl: "/images/studio/invite-baby-shower.webp",
+  wideImageUrl: "/images/marketing/use-case-baby.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Baby Bloom Shower",
+    subtitle: "Registry, venue notes, and host contact wrapped into one guest-ready card.",
+    description: "Perfect for baby showers where guests need directions and gift details fast.",
+    scheduleLine: "Sat, Jun 12, 2026 • 11:00 AM",
+    locationLine: "The Garden Room",
+    category: "Baby Shower",
+    occasion: "Baby Shower",
+    eventDate: "2026-06-12",
+    startTime: "11:00",
+    endTime: "14:00",
+    venueName: "The Garden Room",
+    location: "44 Juniper Street, Nashville, TN",
+    rsvpName: "Sarah",
+    rsvpContact: "615-555-0192",
+    registryLink: "https://registry.example.com/baby-bloom",
+    heroTextMode: "image",
+  }),
+  initialActiveTab: "rsvp",
+};
+
+const schoolPreview: StudioMarketingCardConfig = {
+  title: "Spring Field Day",
+  imageUrl: "/images/studio/invite-school-event.webp",
+  wideImageUrl: "/images/marketing/use-case-school.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Spring Field Day",
+    subtitle: "Parents get timing, campus location, and reminders without a PDF hunt.",
+    description: "A clear live card for school events, family nights, and campus programs.",
+    scheduleLine: "Fri, Apr 24, 2026 • 9:30 AM",
+    locationLine: "Northview Academy Quad",
+    category: "Field Trip/Day",
+    occasion: "School Event",
+    eventDate: "2026-04-24",
+    startTime: "09:30",
+    endTime: "13:00",
+    venueName: "Northview Academy Quad",
+    location: "88 Crescent Drive, Denver, CO",
+    rsvpName: "Ms. Lopez",
+    rsvpContact: "fieldday@northview.edu",
+    heroTextMode: "image",
+  }),
+};
+
+const communityPreview: StudioMarketingCardConfig = {
+  title: "Neighborhood Night Market",
+  imageUrl: "/images/marketing/use-case-community.webp",
+  wideImageUrl: "/images/marketing/use-case-community.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Neighborhood Night Market",
+    subtitle: "A shareable card for maps, vendor details, and evening updates.",
+    description: "Ideal for festivals, meetups, and recurring community events.",
+    scheduleLine: "Thu, Aug 20, 2026 • 6:00 PM",
+    locationLine: "Maple Street Commons",
+    category: "Custom Invite",
+    occasion: "Community Event",
+    eventDate: "2026-08-20",
+    startTime: "18:00",
+    endTime: "21:00",
+    venueName: "Maple Street Commons",
+    location: "201 Maple Street, Portland, OR",
+    rsvpName: "Community Team",
+    rsvpContact: "hello@maplecommons.org",
+  }),
+};
+
+const teamPreview: StudioMarketingCardConfig = {
+  title: "Studio Team Offsite",
+  imageUrl: "/images/studio/invite-team-offsite.webp",
+  wideImageUrl: "/images/marketing/use-case-team.webp",
+  invitationData: createMarketingInvitationData({
+    title: "Studio Team Offsite",
+    subtitle: "A clean live card for agendas, location, and internal team logistics.",
+    description: "Professional enough for work, simple enough to open on mobile.",
+    scheduleLine: "Wed, Oct 14, 2026 • 1:00 PM",
+    locationLine: "Harbor House Rooftop",
+    category: "Custom Invite",
+    occasion: "Team Event",
+    eventDate: "2026-10-14",
+    startTime: "13:00",
+    endTime: "18:00",
+    venueName: "Harbor House Rooftop",
+    location: "900 Bay Street, Seattle, WA",
+    rsvpName: "People Ops",
+    rsvpContact: "people@harborhouse.co",
+    heroTextMode: "image",
+  }),
+};
+
 const useCases: UseCaseItem[] = [
   {
     title: "Birthdays",
-    image: "https://picsum.photos/seed/studio-birthday/600/400",
     description: "Fun, vibrant invites with RSVP and gift registry links.",
+    preview: birthdayPreview,
   },
   {
     title: "Weddings",
-    image: "https://picsum.photos/seed/studio-wedding/600/400",
     description: "Elegant, sophisticated cards for your special day.",
+    preview: weddingPreview,
   },
   {
     title: "Baby Showers",
-    image: "https://picsum.photos/seed/studio-baby/600/400",
     description: "Soft designs with registry, venue, and calendar actions.",
+    preview: babyPreview,
   },
   {
     title: "School Events",
-    image: "https://picsum.photos/seed/studio-school/600/400",
     description: "Clear, informative flyers for parents and students.",
+    preview: schoolPreview,
   },
   {
     title: "Community Events",
-    image: "https://picsum.photos/seed/studio-community/600/400",
     description: "Engaging cards for festivals, markets, and meetups.",
+    preview: communityPreview,
   },
   {
     title: "Team Events",
-    image: "https://picsum.photos/seed/studio-team/600/400",
     description: "Professional invites for retreats and internal events.",
+    preview: teamPreview,
+  },
+];
+
+const showcaseCards: ShowcaseCardItem[] = [
+  {
+    title: "Birthday Bash",
+    preview: birthdayPreview,
+  },
+  {
+    title: "Wedding Weekend",
+    preview: weddingPreview,
+  },
+  {
+    title: "Baby Shower",
+    preview: babyPreview,
+  },
+  {
+    title: "School Fundraiser",
+    preview: schoolPreview,
+  },
+  {
+    title: "Team Offsite",
+    preview: teamPreview,
   },
 ];
 
@@ -221,18 +495,29 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
+function readString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function SectionHeading({
   title,
   description,
   center = false,
+  titleClassName,
 }: {
   title: string;
   description: string;
   center?: boolean;
+  titleClassName?: string;
 }) {
   return (
     <div className={cx(center && "mx-auto max-w-2xl text-center")}>
-      <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+      <h2
+        className={cx(
+          "text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl",
+          titleClassName,
+        )}
+      >
         {title}
       </h2>
       <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">{description}</p>
@@ -305,18 +590,312 @@ function MockPhoneFrame({
   );
 }
 
+function StudioMarketingLiveCard({
+  preview,
+  className,
+  compactChrome = false,
+  showcaseMode = false,
+  imageLoading = "lazy",
+  imageFetchPriority = "auto",
+  activeTab,
+  onActiveTabChange,
+  showcaseOverlay,
+}: {
+  preview: StudioMarketingCardConfig;
+  className?: string;
+  compactChrome?: boolean;
+  showcaseMode?: boolean;
+  imageLoading?: "eager" | "lazy";
+  imageFetchPriority?: "high" | "low" | "auto";
+  activeTab?: LiveCardActiveTab;
+  onActiveTabChange?: (tab: LiveCardActiveTab) => void;
+  showcaseOverlay?: React.ReactNode;
+}) {
+  const [internalActiveTab, setInternalActiveTab] = useState<LiveCardActiveTab>(
+    preview.initialActiveTab || "none",
+  );
+  const resolvedActiveTab = activeTab ?? internalActiveTab;
+  const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
+
+  return (
+    <div
+      className={cx(
+        "relative aspect-[9/16] overflow-hidden rounded-[2.2rem] border border-white/10 bg-neutral-950 shadow-[0_28px_80px_rgba(15,23,42,0.32)]",
+        showcaseMode && "border-slate-300/70 bg-transparent shadow-none",
+        className,
+      )}
+    >
+      <img
+        src={preview.imageUrl}
+        alt={preview.title}
+        loading={imageLoading}
+        fetchPriority={imageFetchPriority}
+        decoding="async"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_26%,rgba(0,0,0,0.28)_100%)]" />
+      <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
+      <div className={cx("absolute inset-0", compactChrome && "origin-bottom scale-[0.88]")}>
+        <StudioLiveCardActionSurface
+          title={preview.title}
+          invitationData={preview.invitationData}
+          activeTab={resolvedActiveTab}
+          onActiveTabChange={handleActiveTabChange}
+          onShare={() => {}}
+          fallbackShareUrlToWindowLocation={false}
+          shareState="idle"
+        />
+      </div>
+      {showcaseOverlay}
+    </div>
+  );
+}
+
+function StudioMarketingUseCasePreview({
+  preview,
+  imageLoading = "lazy",
+}: {
+  preview: StudioMarketingCardConfig;
+  imageLoading?: "eager" | "lazy";
+}) {
+  const details = preview.invitationData.eventDetails;
+  const eyebrow = readString(details?.occasion) || readString(details?.category) || "Event";
+  const subcopy =
+    readString(preview.invitationData.subtitle) || readString(preview.invitationData.description);
+  const actionChips = [
+    readString(details?.rsvpContact) ? "RSVP" : null,
+    readString(details?.location) || readString(details?.venueName) ? "Location" : null,
+    readString(details?.eventDate) ? "Calendar" : null,
+    readString(details?.registryLink) ? "Registry" : null,
+  ].filter((item): item is string => Boolean(item));
+
+  return (
+    <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-[1.7rem] bg-[#ede9fe] shadow-lg shadow-slate-100">
+      <img
+        src={preview.wideImageUrl || preview.imageUrl}
+        alt={preview.title}
+        loading={imageLoading}
+        decoding="async"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(13,16,32,0.08),rgba(13,16,32,0.2)_38%,rgba(13,16,32,0.78)_100%)]" />
+      <div className="absolute inset-x-5 top-5">
+        <span className="inline-flex rounded-full border border-white/18 bg-black/20 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-white/90 backdrop-blur-md">
+          {eyebrow}
+        </span>
+      </div>
+      <div className="absolute inset-x-5 bottom-5">
+        <div className="max-w-[18rem] rounded-[1.35rem] border border-white/14 bg-black/20 p-4 backdrop-blur-md">
+          <h3 className="text-[1.5rem] font-black leading-[0.95] tracking-tight text-white">
+            {preview.title}
+          </h3>
+          {subcopy ? (
+            <p className="mt-2 text-sm leading-6 text-white/84 line-clamp-2">{subcopy}</p>
+          ) : null}
+        </div>
+        {actionChips.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {actionChips.map((chip) => (
+              <span
+                key={chip}
+                className="inline-flex items-center rounded-full border border-white/16 bg-white/10 px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-white/92 backdrop-blur-md"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] ring-1 ring-inset ring-white/10" />
+    </div>
+  );
+}
+
 export default function StudioMarketingPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [showcaseOverlayIndex, setShowcaseOverlayIndex] = useState<number | null>(null);
+  const [fullscreenShowcaseIndex, setFullscreenShowcaseIndex] = useState<number | null>(null);
+  const [fullscreenActiveTab, setFullscreenActiveTab] = useState<LiveCardActiveTab>("none");
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(showcaseCards.length > 1);
+  const showcaseScrollRef = useRef<HTMLDivElement | null>(null);
+  const showcaseCardsRef = useRef<HTMLElement[]>([]);
+  const showcaseCardCentersRef = useRef<number[]>([]);
 
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
 
+  useEffect(() => {
+    const node = showcaseScrollRef.current;
+    if (!node) return;
+
+    let activeIndexValue = 0;
+    let canScrollLeftValue = false;
+    let canScrollRightValue = showcaseCards.length > 1;
+
+    const syncShowcaseMeasurements = () => {
+      const cards = Array.from(node.querySelectorAll<HTMLElement>("[data-showcase-card]"));
+      showcaseCardsRef.current = cards;
+      showcaseCardCentersRef.current = cards.map((card) => card.offsetLeft + card.offsetWidth / 2);
+    };
+
+    const syncShowcaseState = () => {
+      const cards = showcaseCardsRef.current;
+      if (cards.length === 0) {
+        if (activeIndexValue !== 0) {
+          activeIndexValue = 0;
+          setActiveIndex(0);
+        }
+        if (canScrollLeftValue) {
+          canScrollLeftValue = false;
+          setCanScrollLeft(false);
+        }
+        if (canScrollRightValue) {
+          canScrollRightValue = false;
+          setCanScrollRight(false);
+        }
+        return;
+      }
+
+      const maxScrollLeft = Math.max(node.scrollWidth - node.clientWidth, 0);
+      const nextCanScrollLeft = node.scrollLeft > 10;
+      const nextCanScrollRight = node.scrollLeft < maxScrollLeft - 10;
+
+      if (canScrollLeftValue !== nextCanScrollLeft) {
+        canScrollLeftValue = nextCanScrollLeft;
+        setCanScrollLeft(nextCanScrollLeft);
+      }
+      if (canScrollRightValue !== nextCanScrollRight) {
+        canScrollRightValue = nextCanScrollRight;
+        setCanScrollRight(nextCanScrollRight);
+      }
+
+      const containerCenter = node.scrollLeft + node.clientWidth / 2;
+      let nextActiveIndex = 0;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      for (const [index, cardCenter] of showcaseCardCentersRef.current.entries()) {
+        const distance = Math.abs(cardCenter - containerCenter);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          nextActiveIndex = index;
+        }
+      }
+
+      if (activeIndexValue !== nextActiveIndex) {
+        activeIndexValue = nextActiveIndex;
+        setActiveIndex(nextActiveIndex);
+      }
+    };
+
+    let frameId = 0;
+    const handleScroll = () => {
+      cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(syncShowcaseState);
+    };
+    const handleResize = () => {
+      cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => {
+        syncShowcaseMeasurements();
+        syncShowcaseState();
+      });
+    };
+
+    syncShowcaseMeasurements();
+    syncShowcaseState();
+    node.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      node.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    setShowcaseOverlayIndex(null);
+  }, [activeIndex]);
+
+  useEffect(() => {
+    if (showcaseOverlayIndex === null) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.closest(`[data-showcase-card-index="${showcaseOverlayIndex}"]`)) {
+        return;
+      }
+      setShowcaseOverlayIndex(null);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [showcaseOverlayIndex]);
+
+  useEffect(() => {
+    if (fullscreenShowcaseIndex === null) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFullscreenShowcaseIndex(null);
+        setFullscreenActiveTab("none");
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [fullscreenShowcaseIndex]);
+
+  const scrollToShowcaseIndex = (index: number) => {
+    const node = showcaseScrollRef.current;
+    if (!node) return;
+    const cards = showcaseCardsRef.current;
+    if (cards.length === 0) return;
+
+    const nextIndex = Math.max(0, Math.min(index, cards.length - 1));
+    const card = cards[nextIndex];
+    const targetLeft = card.offsetLeft - (node.clientWidth - card.offsetWidth) / 2;
+    const maxScrollLeft = Math.max(node.scrollWidth - node.clientWidth, 0);
+
+    setShowcaseOverlayIndex(null);
+    setActiveIndex(nextIndex);
+    node.scrollTo({
+      left: Math.min(Math.max(targetLeft, 0), maxScrollLeft),
+      behavior: "smooth",
+    });
+  };
+
+  const closeShowcaseFullscreen = () => {
+    setFullscreenShowcaseIndex(null);
+    setFullscreenActiveTab("none");
+  };
+
+  const openShowcaseFullscreen = (index: number) => {
+    setShowcaseOverlayIndex(null);
+    setFullscreenActiveTab("none");
+    setFullscreenShowcaseIndex(index);
+  };
+
+  const handleShowcaseCardClick = (index: number) => {
+    if (index !== activeIndex) {
+      scrollToShowcaseIndex(index);
+      return;
+    }
+    setShowcaseOverlayIndex((current) => (current === index ? null : index));
+  };
+
+  const scrollShowcase = (direction: "left" | "right") => {
+    scrollToShowcaseIndex(activeIndex + (direction === "left" ? -1 : 1));
+  };
+
   return (
     <>
-      <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,#f6f0ff_0%,#ffffff_45%,#f7f3ff_100%)] text-slate-900 selection:bg-[#ddd6fe] selection:text-[#4c1d95]">
+      <div className="min-h-screen overflow-x-hidden bg-white text-slate-900 selection:bg-[#ddd6fe] selection:text-[#4c1d95]">
         <HeroTopNav
           navLinks={[
             { label: "Create in Studio", href: "#features" },
@@ -380,37 +959,12 @@ export default function StudioMarketingPage() {
                 className="relative"
               >
                 <MockPhoneFrame className="lg:mr-0">
-                  <div className="relative aspect-[9/19.5] overflow-hidden rounded-[2rem] bg-slate-50">
-                    <img
-                      src="https://picsum.photos/seed/studio-hero-live-card/600/1200"
-                      alt="Live card preview"
-                      className="h-full w-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
-                    <div className="absolute bottom-6 left-4 right-4 space-y-3">
-                      <div className="rounded-xl bg-white/90 p-3 shadow-lg backdrop-blur-sm">
-                        <h3 className="text-sm font-bold text-slate-900">Summer Gala 2026</h3>
-                        <p className="text-[10px] text-slate-500">Grand Ballroom • 7:00 PM</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          className="flex items-center justify-center gap-1 rounded-lg bg-[#7c3aed] py-2 text-[10px] font-bold text-white"
-                        >
-                          <CheckCircle2 className="h-3 w-3" />
-                          RSVP
-                        </button>
-                        <button
-                          type="button"
-                          className="flex items-center justify-center gap-1 rounded-lg bg-white py-2 text-[10px] font-bold text-slate-900"
-                        >
-                          <MapPin className="h-3 w-3" />
-                          Directions
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <StudioMarketingLiveCard
+                    preview={heroPreview}
+                    className="rounded-[2rem]"
+                    imageLoading="eager"
+                    imageFetchPriority="high"
+                  />
                 </MockPhoneFrame>
 
                 <motion.div
@@ -515,10 +1069,11 @@ export default function StudioMarketingPage() {
                       <div className="flex flex-1 items-center justify-center bg-slate-800 p-6">
                         <div className="relative aspect-[9/16] w-48 overflow-hidden rounded-xl bg-white shadow-2xl">
                           <img
-                            src="https://picsum.photos/seed/studio-editor-preview/300/500"
+                            src="/images/studio/editor-preview.webp"
                             alt="Studio editor preview"
+                            loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-cover"
-                            referrerPolicy="no-referrer"
                           />
                           <div className="pointer-events-none absolute inset-0 border-2 border-[#8b5cf6]/60" />
                           <div className="absolute right-2 top-2 flex gap-1">
@@ -592,25 +1147,13 @@ export default function StudioMarketingPage() {
                 title="Made for real events."
                 description="From intimate gatherings to large community moments, Envitefy Studio scales with the event."
                 center
+                titleClassName="text-white"
               />
 
               <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {useCases.map((useCase) => (
                   <div key={useCase.title} className="group cursor-pointer">
-                    <div className="relative mb-4 aspect-[3/2] overflow-hidden rounded-2xl shadow-lg shadow-slate-100">
-                      <img
-                        src={useCase.image}
-                        alt={useCase.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                      <div className="absolute bottom-4 left-4 opacity-0 transition-opacity group-hover:opacity-100">
-                        <span className="text-xs font-bold uppercase tracking-[0.18em] text-white">
-                          Explore Templates
-                        </span>
-                      </div>
-                    </div>
+                    <StudioMarketingUseCasePreview preview={useCase.preview} imageLoading="lazy" />
                     <h3 className="text-xl font-bold text-slate-900">{useCase.title}</h3>
                     <p className="mt-1 text-sm text-slate-500">{useCase.description}</p>
                   </div>
@@ -662,35 +1205,11 @@ export default function StudioMarketingPage() {
 
                 <div className="relative">
                   <div className="rotate-2 rounded-[2.5rem] border border-slate-200 bg-slate-50 p-4 shadow-xl">
-                    <div className="relative aspect-[9/16] overflow-hidden rounded-[2rem] bg-white shadow-inner">
-                      <img
-                        src="https://picsum.photos/seed/studio-baby-card/600/1000"
-                        alt="Baby shower live card"
-                        className="h-full w-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                      <div className="absolute bottom-6 left-4 right-4 space-y-4">
-                        <div className="space-y-1 text-center">
-                          <h3 className="text-xl font-bold text-white">
-                            A Little One Is on the Way!
-                          </h3>
-                          <p className="text-xs text-[#ddd6fe]">Honoring Sarah Miller • June 12</p>
-                        </div>
-                        <div className="grid gap-2">
-                          <div className="flex items-center justify-between rounded-xl border border-white/20 bg-white/10 p-3 backdrop-blur">
-                            <span className="text-xs font-medium text-white">
-                              View Baby Registry
-                            </span>
-                            <ChevronRight className="h-4 w-4 text-white" />
-                          </div>
-                          <div className="flex items-center justify-center gap-2 rounded-xl bg-[#7c3aed] p-3 shadow-lg">
-                            <Calendar className="h-4 w-4 text-white" />
-                            <span className="text-xs font-bold text-white">Add to Calendar</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <StudioMarketingLiveCard
+                      preview={babyPreview}
+                      className="rounded-[2rem] shadow-inner"
+                      imageLoading="lazy"
+                    />
                   </div>
                   <div className="absolute -right-12 -top-12 -z-10 h-32 w-32 rounded-full bg-[#c4b5fd] blur-3xl opacity-50" />
                   <div className="absolute -bottom-12 -left-12 -z-10 h-48 w-48 rounded-full bg-[#ddd6fe] blur-3xl opacity-50" />
@@ -706,37 +1225,11 @@ export default function StudioMarketingPage() {
                 <div className="order-2 lg:order-1">
                   <div className="relative">
                     <div className="mx-auto max-w-[320px] rounded-[2.5rem] border border-white/20 bg-white/10 p-4 shadow-2xl backdrop-blur-md lg:mx-0">
-                      <div className="relative aspect-[9/16] overflow-hidden rounded-[2rem] bg-white">
-                        <img
-                          src="https://picsum.photos/seed/studio-wedding-card/600/1000"
-                          alt="Wedding live card"
-                          className="h-full w-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                        <div className="absolute bottom-6 left-4 right-4 space-y-4">
-                          <div className="text-center">
-                            <h3 className="font-[var(--font-playfair)] text-2xl text-white">
-                              Sarah &amp; James
-                            </h3>
-                            <p className="text-xs uppercase tracking-[0.24em] text-[#ddd6fe]">
-                              September 24, 2026
-                            </p>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="rounded-lg bg-white p-2 text-center text-[10px] font-bold text-[#4c1d95]">
-                              RSVP
-                            </div>
-                            <div className="rounded-lg bg-white/20 p-2 text-center text-[10px] font-bold text-white backdrop-blur">
-                              Registry
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-center gap-2 rounded-xl bg-[#7c3aed] p-3">
-                            <Calendar className="h-4 w-4 text-white" />
-                            <span className="text-xs font-bold text-white">Add to Calendar</span>
-                          </div>
-                        </div>
-                      </div>
+                      <StudioMarketingLiveCard
+                        preview={weddingPreview}
+                        className="rounded-[2rem]"
+                        imageLoading="lazy"
+                      />
                     </div>
                     <motion.div
                       animate={{ y: [0, 10, 0] }}
@@ -831,49 +1324,121 @@ export default function StudioMarketingPage() {
 
           <motion.section
             id="showcase"
-            className="hash-anchor-below-fixed-nav overflow-hidden bg-slate-50 px-4 py-24 sm:px-6 lg:px-8"
+            className="hash-anchor-below-fixed-nav overflow-hidden py-24"
             {...revealIn}
           >
-            <div className="mx-auto w-full max-w-7xl">
-              <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col gap-6">
                 <div>
                   <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
                     Live Card Showcase
                   </h2>
-                  <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+                  <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base lg:text-lg">
                     See how hosts use Envitefy Studio to create memorable event experiences.
                   </p>
                 </div>
-                <a
-                  href="#cta"
-                  className="inline-flex items-center gap-2 text-base font-bold text-[#7c3aed] transition hover:gap-3"
-                >
-                  <span>View Full Gallery</span>
-                  <ArrowRight className="h-5 w-5" />
-                </a>
               </div>
+            </div>
 
-              <div className="no-scrollbar mt-16 flex gap-6 overflow-x-auto pb-12">
-                {[1, 2, 3, 4, 5].map((item) => (
-                  <div key={`showcase-${item}`} className="w-72 flex-shrink-0">
-                    <div className="rounded-3xl border border-slate-100 bg-white p-3 shadow-lg">
-                      <div className="mb-4 aspect-[9/16] overflow-hidden rounded-2xl">
-                        <img
-                          src={`https://picsum.photos/seed/studio-showcase-${item}/400/700`}
-                          alt={`Showcase example ${item}`}
-                          className="h-full w-full object-cover"
-                          referrerPolicy="no-referrer"
+            <div className="relative left-1/2 mt-12 w-screen -translate-x-1/2 px-4 py-4 sm:px-6 lg:px-8">
+              <div className="relative group/carousel">
+                <button
+                  type="button"
+                  aria-label="Scroll showcase left"
+                  onClick={() => scrollShowcase("left")}
+                  disabled={!canScrollLeft}
+                  className={cx(
+                    "absolute left-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/92 text-slate-700 shadow-[0_16px_36px_rgba(15,23,42,0.14)] backdrop-blur-sm transition-all duration-500 hover:border-slate-300 hover:bg-white active:scale-95 md:inline-flex lg:left-8",
+                    canScrollLeft
+                      ? "opacity-0 group-hover/carousel:opacity-100"
+                      : "pointer-events-none -translate-x-8 opacity-0",
+                  )}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Scroll showcase right"
+                  onClick={() => scrollShowcase("right")}
+                  disabled={!canScrollRight}
+                  className={cx(
+                    "absolute right-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/92 text-slate-700 shadow-[0_16px_36px_rgba(15,23,42,0.14)] backdrop-blur-sm transition-all duration-500 hover:border-slate-300 hover:bg-white active:scale-95 md:inline-flex lg:right-8",
+                    canScrollRight
+                      ? "opacity-0 group-hover/carousel:opacity-100"
+                      : "pointer-events-none translate-x-8 opacity-0",
+                  )}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+
+                <div
+                  ref={showcaseScrollRef}
+                  className="no-scrollbar flex items-start gap-6 overflow-x-auto scroll-smooth px-[max(2rem,calc(50vw-150px))] py-8 snap-x snap-mandatory"
+                >
+                  {showcaseCards.map((item, index) => (
+                    <div
+                      key={item.title}
+                      onClick={() => handleShowcaseCardClick(index)}
+                      data-showcase-card
+                      data-showcase-card-index={index}
+                      className="w-[min(300px,calc(100vw-4rem))] shrink-0 snap-center cursor-pointer"
+                    >
+                      <div
+                        className={cx(
+                          "rounded-[2.2rem] shadow-[0_28px_60px_rgba(15,23,42,0.12),0_12px_28px_rgba(15,23,42,0.08),0_1px_0_rgba(255,255,255,0.7)_inset] transition-all duration-700 ease-out",
+                          activeIndex === index
+                            ? "scale-100 opacity-100 blur-0"
+                            : "scale-[0.85] opacity-40 blur-[2px]",
+                        )}
+                      >
+                        <StudioMarketingLiveCard
+                          preview={item.preview}
+                          compactChrome
+                          showcaseMode
+                          imageLoading="lazy"
+                          showcaseOverlay={
+                            showcaseOverlayIndex === index && activeIndex === index ? (
+                              <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/45 backdrop-blur-md">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    openShowcaseFullscreen(index);
+                                  }}
+                                  className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/92 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-slate-900 shadow-[0_18px_45px_rgba(15,23,42,0.24)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                  Open live card
+                                </button>
+                              </div>
+                            ) : null
+                          }
                         />
                       </div>
-                      <div className="px-2 pb-2">
-                        <h4 className="text-sm font-bold text-slate-900">Event Title {item}</h4>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                          Live Card • Published
-                        </p>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                <div className="mt-6 flex justify-center gap-3">
+                  {showcaseCards.map((item, index) => (
+                    <button
+                      key={item.title}
+                      type="button"
+                      aria-label={`Show showcase card ${index + 1}`}
+                      aria-current={activeIndex === index}
+                      onClick={() => scrollToShowcaseIndex(index)}
+                      className={cx(
+                        "rounded-full transition-all duration-500",
+                        activeIndex === index
+                          ? "h-1.5 w-8 bg-[#7c3aed]"
+                          : "h-1.5 w-1.5 bg-black/10",
+                      )}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-6 text-center font-sans text-[10px] uppercase tracking-[0.2em] text-slate-500/70 md:hidden">
+                  Swipe to explore
+                </div>
               </div>
             </div>
           </motion.section>
@@ -917,6 +1482,44 @@ export default function StudioMarketingPage() {
           </motion.section>
         </main>
       </div>
+
+      <AnimatePresence>
+        {fullscreenShowcaseIndex !== null ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[7000] flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl md:p-12"
+            onClick={() => closeShowcaseFullscreen()}
+          >
+            <button
+              type="button"
+              aria-label="Close live card"
+              onClick={() => closeShowcaseFullscreen()}
+              className="absolute right-4 top-4 z-[7010] rounded-full border border-white/20 bg-white/15 p-3 text-white transition-colors hover:bg-white/25 md:right-8 md:top-8"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <motion.div
+              initial={{ scale: 0.94, y: 24 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.94, y: 24 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              className="relative w-full max-w-md"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <StudioMarketingLiveCard
+                preview={showcaseCards[fullscreenShowcaseIndex].preview}
+                activeTab={fullscreenActiveTab}
+                onActiveTabChange={setFullscreenActiveTab}
+                className="rounded-[3rem] shadow-2xl shadow-black/40"
+                imageLoading="eager"
+              />
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <AuthModal
         open={authModalOpen}

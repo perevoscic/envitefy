@@ -30,11 +30,18 @@ test("studio generation fails image creation when any attached reference photo c
   assert.doesNotMatch(source, /The artwork was created without them\./);
 });
 
-test("poster-first live-card image generation passes posterTextInImage for birthday and wedding page cards", () => {
+test("studio image generation passes background-only image prompt options without poster text flags", () => {
   const source = readSource("src/lib/studio/generate.ts");
 
-  assert.match(source, /posterTextInImage:/);
+  assert.match(source, /const imagePrompt = buildInvitationImagePrompt\(request\.event, request\.guidance, liveCard, \{/);
+  assert.match(source, /surface,/);
+  assert.match(source, /editingExistingImage: Boolean\(request\.imageEdit\?\.sourceImageDataUrl\),/);
+  assert.match(source, /referenceImageCount: referenceImages\.length,/);
   assert.match(source, /mode === "both"/);
-  assert.match(source, /surface === "image"/);
-  assert.match(source, /isPosterFirstBirthdayOrWedding\(request\.event\.category\)/);
+  assert.match(
+    source,
+    /const surface = request\.surface \|\| \(mode === "both" \|\| mode === "text" \? "page" : "image"\);/,
+  );
+  assert.doesNotMatch(source, /posterTextInImage/);
+  assert.doesNotMatch(source, /isPosterFirstBirthdayOrWedding/);
 });

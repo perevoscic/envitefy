@@ -66,22 +66,78 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   );
 });
 
-test("studio prompt sources keep the bottom overlay zone text-safe without reserving a fake footer", () => {
+test("studio prompt sources require baked-in invitation text while keeping the bottom action zone clear", () => {
   const builderSource = readSource("src/app/studio/studio-workspace-builders.ts");
   const promptSource = readSource("src/lib/studio/prompts.ts");
 
   assert.match(
     builderSource,
-    /Keep important copy away from the bottom button area, but do not instruct the model to make that area visually empty or separated\./,
+    /For live cards, the invitation text should feel like part of the designed image itself, not a detached app overlay\./,
   );
   assert.match(
     builderSource,
-    /Resolve the lowest visible text line well above the bottom controls so the button row never sits on top of copy\./,
+    /Keep the copy concentrated in the upper and middle portions of the card\./,
   );
-  assert.match(promptSource, /Keep essential text out of the bottom action-button zone\./);
+  assert.match(
+    builderSource,
+    /never place visible text, faux buttons, icons, chips, circles, bars, or device chrome in the bottom action-button area\./,
+  );
+  assert.match(
+    builderSource,
+    /Keep the top edge decorative too: no status bar, carrier text, clock text, battery icons, notches, camera cutouts, or phone chrome\./,
+  );
+  assert.match(
+    promptSource,
+    /Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay\./,
+  );
+  assert.match(
+    promptSource,
+    /Create one single seamless full-bleed invitation image with one unified continuous scene from top to bottom\./,
+  );
+  assert.match(promptSource, /Do not split the composition into separate top and bottom scenes\./);
+  assert.match(promptSource, /Never compose the image as top scene plus text band plus bottom scene\./);
+  assert.match(
+    promptSource,
+    /Treat all visible text as integrated invitation typography inside the scene, not as interface chrome or floating app labels\./,
+  );
+  assert.match(
+    promptSource,
+    /Use a restrained premium invitation hierarchy: one clear headline, optional short subtitle or opening line, and short event-detail lines only when supported by the event details\./,
+  );
+  assert.match(
+    promptSource,
+    /Use at most one short supporting line beyond the title and event details\. Do not create body-paragraph blocks, prose descriptions, or multi-sentence copy sections\./,
+  );
+  assert.match(promptSource, /Do not repeat or duplicate any visible words or phrases in the image\./);
+  assert.match(
+    promptSource,
+    /Do not duplicate or mirror scene elements\. Avoid repeated tables, repeated floral arrangements, repeated gazebos, repeated desserts, repeated arches, repeated portraits, or second copies of the main scene stacked elsewhere in the card\./,
+  );
+  assert.match(
+    promptSource,
+    /Do not create an unrelated solid bar, footer slab, color block, green strip, dark strip, or banner panel near the bottom of the card\./,
+  );
+  assert.match(
+    promptSource,
+    /Do not generate any UI elements, interface overlays, app controls, buttons, icons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays\./,
+  );
+  assert.match(promptSource, /Approved invitation copy to use verbatim if visible text appears in the artwork:/);
+  assert.match(
+    promptSource,
+    /Use only the approved invitation copy below for visible wording in the artwork\. Preserve spelling exactly and do not duplicate lines\./,
+  );
+  assert.match(promptSource, /The output must read as one clean continuous invitation image, not a screenshot, poster mockup, or app capture\./);
   assert.match(
     promptSource,
     /Let the background and artwork continue naturally behind the bottom buttons as full-bleed art\./,
+  );
+  assert.match(
+    promptSource,
+    /Keep the bottom area art-led and decorative, not blank, but never let it read like a mobile app UI or control tray\./,
+  );
+  assert.match(
+    promptSource,
+    /Keep the top edge art-led and decorative, not blank, but never let it read like a mobile status bar or phone frame\./,
   );
   assert.match(
     promptSource,
@@ -93,57 +149,56 @@ test("studio prompt sources keep the bottom overlay zone text-safe without reser
   );
   assert.match(
     promptSource,
-    /The finished image must read first as a professional hosted event invitation, not merely a cinematic still, venue ad, mascot portrait, or mood board\./,
+    /Do not create a colored footer slab, tinted rectangle, or unrelated graphic block at the bottom edge\./,
   );
   assert.match(
     promptSource,
-    /If the concept uses a theater, cinema, screening, or movie-party setting, keep the staging physically correct: seats and audience face the screen, sightlines make sense, and screen-to-seat geometry is believable\./,
+    /The finished result must still read first as a hosted invitation or greeting-card design, not a fan poster, character sheet, collage, or movie still\./,
   );
   assert.match(
     promptSource,
-    /Never show theater chairs or audience rows facing away from the screen or arranged in impossible directions relative to the screen\./,
+    /Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome\./,
   );
   assert.match(
     promptSource,
-    /Do not invent marquee text, venue branding, logos, signage, or event facts that are not explicitly supported by the supplied details, approved invitation copy, or source image\./,
+    /Keep the bottom action-button zone art-only and text-free\. End the final visible text line well above the bottom controls area\./,
   );
   assert.match(
     promptSource,
-    /Treat the lowest part of the poster as art-first support for the floating buttons\./,
+    /Treat the lower edge as artwork continuation behind the app action buttons\./,
   );
   assert.match(
     promptSource,
-    /Treat the lower edge as artwork continuation for the controls\./,
+    /The lower zone must stay decorative rather than UI-like: do not invent buttons, icons, icon clusters, circular controls, pills, chips, chat bars, nav bars, progress dots, home indicators, or device chrome\./,
+  );
+  assert.match(
+    promptSource,
+    /Do not place captions, labels, taglines, schedule lines, location lines, decorative badges, or faux footer details in the bottom button area\./,
+  );
+  assert.match(
+    promptSource,
+    /Do not draw interface elements in the raster: no buttons, icons, circular controls, pill-shaped bars, chat inputs, nav bars, status bars, carrier labels, clock readouts, battery indicators, notches, home indicators, camera cutouts, or device chrome\./,
+  );
+  assert.match(
+    promptSource,
+    /Keep the typography elegant, readable, and invitation-first, not like a flyer app screenshot or a dense poster wall of text\./,
   );
   assert.match(promptSource, /Core creative inputs:/);
   assert.match(
     promptSource,
-    /Treat the user's idea as the main creative concept when one is provided\./,
+    /Treat the user's idea as the main visual concept when one is provided\./,
   );
   assert.match(
     promptSource,
-    /Visible text is forbidden in the final raster for page\/live-card backgrounds\./,
-  );
-  assert.match(
-    promptSource,
-    /Preserve clean negative space and readable contrast through the upper and middle zones/,
+    /Visible invitation text is required in the final raster for page\/live-card images, but keep it sparse, readable, and intentionally designed\./,
   );
   assert.match(promptSource, /line\("Age or Milestone", event\.ageOrMilestone\)/);
   assert.match(promptSource, /line\("User Idea", event\.userIdea\)/);
-  assert.doesNotMatch(
-    builderSource,
-    /Keep the lower button area visually clear and avoid placing important copy near the bottom of the card\./,
-  );
-  assert.doesNotMatch(
+  assert.match(
     promptSource,
-    /Reserve roughly the bottom 28-30% of the card for app action buttons and overlays\./,
+    /Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome\./,
   );
-  assert.doesNotMatch(
-    promptSource,
-    /The lower button area should be visually quiet: use mostly background art or empty space there, not copy-heavy content\./,
-  );
-  assert.doesNotMatch(
-    promptSource,
-    /Reserve a fully text-free safe band behind the bottom button row\./,
-  );
+  assert.doesNotMatch(promptSource, /Treat all visible text as post-production overlay, not part of the generated image\./);
+  assert.doesNotMatch(promptSource, /Visible text is forbidden in the final raster for page\/live-card backgrounds\./);
+  assert.doesNotMatch(promptSource, /Leave soft clean negative space where text and app controls can be placed later as overlays\./);
 });

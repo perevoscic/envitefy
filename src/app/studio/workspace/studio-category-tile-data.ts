@@ -17,7 +17,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
   {
     name: "Birthday",
     icon: Cake,
-    description: "Curated themes for milestone dinners, birthday parties, and polished celebrations.",
+    description: "Celebration Moments",
     badge: "Party",
     imagePath:
       "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?q=80&w=2072&auto=format&fit=crop",
@@ -31,7 +31,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
   {
     name: "Game Day",
     icon: Trophy,
-    description: "Sports invites for matchups, stadium nights, team send-offs, and spirited game-day moments.",
+    description: "Team Spirit Events",
     badge: "Sports",
     imagePath: "/templates/hero-images/general-sport-hero.jpeg",
     themeColor: "#2563EB",
@@ -44,7 +44,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
   {
     name: "Wedding",
     icon: Heart,
-    description: "Timeless elegance for save-the-dates, ceremonies, receptions, and wedding weekends.",
+    description: "Elegant Wedding Weekends",
     badge: "Featured",
     imagePath:
       "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop",
@@ -58,7 +58,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
   {
     name: "Bridal Shower",
     icon: Wine,
-    description: "Refined brunches, floral gatherings, and pre-wedding celebrations with soft romance.",
+    description: "Elegant Shower Gatherings",
     badge: "Bridal",
     imagePath:
       "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop",
@@ -72,7 +72,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
   {
     name: "Baby Shower",
     icon: Baby,
-    description: "Soft, elevated baby celebrations with gifting tables, florals, and welcoming details.",
+    description: "Welcoming Baby Joy",
     badge: "Baby",
     imagePath:
       "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop",
@@ -86,7 +86,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
   {
     name: "Field Trip/Day",
     icon: Bus,
-    description: "School outings, museum visits, class adventures, and daytime group events.",
+    description: "Learning Adventures",
     badge: "School",
     imagePath:
       "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop",
@@ -100,7 +100,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
   {
     name: "Anniversary",
     icon: CalendarHeart,
-    description: "Romantic dinners, candlelit toasts, and milestone celebrations with an editorial feel.",
+    description: "Romantic Celebrations",
     badge: "Milestone",
     imagePath:
       "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=2070&auto=format&fit=crop",
@@ -114,7 +114,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
   {
     name: "Housewarming",
     icon: Home,
-    description: "Warm modern home invites for open houses, move-in parties, and casual hosting.",
+    description: "New Home Gatherings",
     badge: "Home",
     imagePath:
       "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=2073&auto=format&fit=crop",
@@ -128,7 +128,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
   {
     name: "Custom Invite",
     icon: WandSparkles,
-    description: "Create a one-of-a-kind invitation with a premium flexible canvas for any occasion.",
+    description: "Any Occasion Design",
     badge: "Create your own",
     imagePath:
       "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=2069&auto=format&fit=crop",

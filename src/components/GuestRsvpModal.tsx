@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 
 export type RsvpResponse = "yes" | "no" | "maybe" | null;
 
@@ -12,6 +13,10 @@ interface GuestRsvpModalProps {
   eventTitle: string;
   rsvpDeadline?: string;
   initialResponse?: Exclude<RsvpResponse, null> | null;
+  rsvpName?: string | null;
+  rsvpPhone?: string | null;
+  rsvpEmail?: string | null;
+  shareUrl?: string | null;
   themeColors?: {
     primary: string;
     secondary: string;
@@ -36,6 +41,10 @@ export default function GuestRsvpModal({
   eventTitle,
   rsvpDeadline,
   initialResponse,
+  rsvpName,
+  rsvpPhone,
+  rsvpEmail,
+  shareUrl,
   themeColors,
 }: GuestRsvpModalProps) {
   const { data: session } = useSession();
@@ -47,6 +56,8 @@ export default function GuestRsvpModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [followUpHref, setFollowUpHref] = useState("");
+  const [followUpKind, setFollowUpKind] = useState<"sms" | "email" | null>(null);
 
   const closeModal = useCallback(() => {
     setError(null);
@@ -76,6 +87,10 @@ export default function GuestRsvpModal({
         setLastName(parts.slice(1).join(" ") || "");
       }
       setResponse(initialResponse || null);
+      setMessage("");
+      setSuccess(false);
+      setFollowUpHref("");
+      setFollowUpKind(null);
       setError(null);
     }
   }, [initialResponse, isOpen, session]);
@@ -92,6 +107,17 @@ export default function GuestRsvpModal({
   }, [closeModal, isOpen]);
 
   if (!isOpen) return null;
+
+  const responseLabel =
+    response === "yes"
+      ? "Yes"
+      : response === "maybe"
+      ? "Maybe"
+      : response === "no"
+      ? "No"
+      : "";
+
+  const followUpContact = (rsvpPhone || "").trim() || (rsvpEmail || "").trim();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -130,15 +156,34 @@ export default function GuestRsvpModal({
         localStorage.setItem(`envitefy_rsvp_${eventId}`, response!);
 
         window.dispatchEvent(new CustomEvent("rsvp-submitted", { detail: { eventId, response } }));
-        
-        setTimeout(() => {
-          closeModal();
+
+        const outboundHref = followUpContact
+          ? buildLiveCardRsvpOutboundHref({
+              rsvpContact: followUpContact,
+              eventTitle,
+              responseLabel,
+              shareUrl: shareUrl || "",
+            })
+          : "";
+        const nextFollowUpKind = outboundHref.startsWith("sms:")
+          ? "sms"
+          : outboundHref.startsWith("mailto:")
+          ? "email"
+          : null;
+
+        setFollowUpHref(outboundHref);
+        setFollowUpKind(nextFollowUpKind);
+
+        if (!outboundHref || !nextFollowUpKind) {
           setTimeout(() => {
-             setResponse(null);
-             setMessage("");
-             setSuccess(false);
-          }, 500);
-        }, 2000);
+            closeModal();
+            setTimeout(() => {
+              setResponse(null);
+              setMessage("");
+              setSuccess(false);
+            }, 500);
+          }, 2000);
+        }
       } else {
         const data = await res.json();
         setError(data.error || "Failed to submit RSVP");
@@ -152,8 +197,7 @@ export default function GuestRsvpModal({
 
   const primaryColor = themeColors?.primary || "#7c3aed";
   const secondaryColor = themeColors?.secondary || "#a855f7";
-
-  const responseLabel =
+  const responseDisplayLabel =
     response === "yes"
       ? "Yes, I'm in"
       : response === "maybe"
@@ -215,7 +259,7 @@ export default function GuestRsvpModal({
                       Selected from the event page
                     </p>
                     <p className="mt-1 text-lg font-black text-slate-900">
-                      {responseLabel}
+                      {responseDisplayLabel}
                     </p>
                   </div>
                 ) : (
@@ -316,9 +360,34 @@ export default function GuestRsvpModal({
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
               </div>
               <h2 className="text-4xl font-black text-slate-900">RSVP Sent</h2>
-              <p className="text-xl font-medium text-slate-500">
-                The host has been notified.
-              </p>
+              {followUpHref && followUpKind ? (
+                <>
+                  <p className="text-lg font-medium text-slate-500">
+                    Your RSVP is saved. Send a {followUpKind === "sms" ? "text" : "quick email"} to{" "}
+                    {rsvpName?.trim() || "the host"} too?
+                  </p>
+                  <div className="mx-auto flex max-w-sm flex-col gap-3">
+                    <a
+                      href={followUpHref}
+                      className="flex h-[54px] w-full items-center justify-center rounded-full px-6 text-base font-black text-white shadow-xl transition-all hover:scale-[1.01] active:scale-[0.98]"
+                      style={{ backgroundColor: primaryColor, color: "#fff" }}
+                    >
+                      {followUpKind === "sms" ? "Open Text Message" : "Open Email Draft"}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="flex h-[50px] w-full items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xl font-medium text-slate-500">
+                  The host has been notified.
+                </p>
+              )}
             </div>
           )}
         </div>

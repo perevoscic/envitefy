@@ -88,6 +88,10 @@ export type EventData = {
   rsvpEnabled?: boolean;
   rsvpLink?: string;
   rsvpDeadline?: string;
+  rsvpName?: string;
+  rsvpPhone?: string;
+  rsvpEmail?: string;
+  shareUrl?: string;
   registry?: { label?: string; url: string }[];
   registries?: { label?: string; url: string }[];
   venue?: {
@@ -261,6 +265,10 @@ export default function BirthdayRenderer({
             eventTitle={event.headlineTitle || "Birthday Party"}
             rsvpDeadline={event.rsvpDeadline}
             initialResponse={selectedResponse}
+            rsvpName={event.rsvpName}
+            rsvpPhone={event.rsvpPhone}
+            rsvpEmail={event.rsvpEmail}
+            shareUrl={event.shareUrl}
             themeColors={{
               primary: theme.colors.secondary,
               secondary: theme.colors.primary,

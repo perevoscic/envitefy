@@ -388,23 +388,23 @@ export function buildLinks(details: EventDetails) {
 function buildStudioThemeFramingGuidance(details: EventDetails) {
   const categoryThemeFraming: Record<InviteCategory, string> = {
     Birthday:
-      "Interpret the user's theme words as a birthday-party version of that idea, not a generic standalone scene. If the user says Jurassic Park, make it feel like a Jurassic Park birthday party with birthday decor such as balloons, cake, candles, wrapped gifts, themed desserts, party tablescapes, and celebration energy instead of only jungle scenery or dinosaurs.",
+      "Interpret the user's theme words as a birthday-party version of that idea, not a generic standalone scene. If the user says Jurassic Park, make it feel like a Jurassic Park birthday party with birthday decor such as balloons, cake, candles, wrapped gifts, themed desserts, party tablescapes, and celebration energy instead of only jungle scenery or dinosaurs. Let the honoree name, age or milestone, and venue type shape the scene when those details are available so the result feels personalized rather than generic.",
     Wedding:
-      "Interpret the user's theme words as a wedding or save-the-date version of that idea, with ceremony, reception, stationery, floral, and romantic celebration cues instead of generic scenery.",
+      "Interpret the user's theme words as a wedding or save-the-date version of that idea, with ceremony, reception, stationery, floral, and romantic celebration cues instead of generic scenery. Let venue type, floral direction, and formality cues steer the setting, and do not inflate a single-evening event into an unsupported wedding-weekend concept.",
     "Baby Shower":
-      "Interpret the user's theme words as a baby-shower version of that idea, with baby-shower decor, favors, dessert-table styling, and welcoming celebration cues instead of generic scenery.",
+      "Interpret the user's theme words as a baby-shower version of that idea, with baby-shower decor, favors, dessert-table styling, and welcoming celebration cues instead of generic scenery. If the theme implies a mascot such as teddy bears, moons, clouds, or animals, keep the motif restrained and design-led instead of filling the room with repeated plush props.",
     "Bridal Shower":
-      "Interpret the user's theme words as a bridal-shower version of that idea, with bridal-party decor, gift-table, brunch or tea-party styling, and elevated celebration cues instead of generic scenery.",
+      "Interpret the user's theme words as a bridal-shower version of that idea, with bridal-party decor, gift-table, brunch or tea-party styling, and elevated celebration cues instead of generic scenery. Favor one polished hosted moment, such as a brunch table or tea service, instead of a collage of repeated garden scenes.",
     Anniversary:
-      "Interpret the user's theme words as an anniversary celebration version of that idea, with couple-focused party styling, elegant decor, and relationship-celebration cues instead of generic scenery.",
+      "Interpret the user's theme words as an anniversary celebration version of that idea, with couple-focused party styling, elegant decor, and relationship-celebration cues instead of generic scenery. If the milestone implies a traditional material or palette such as silver or gold, let that influence the decor and color story.",
     Housewarming:
-      "Interpret the user's theme words as a housewarming celebration version of that idea, with welcoming home-party decor, hosting details, and lived-in gathering cues instead of generic scenery.",
+      "Interpret the user's theme words as a housewarming celebration version of that idea, with welcoming home-party decor, hosting details, and lived-in gathering cues instead of generic scenery. Let the home style and hosting style shape the scene so it feels like a real gathering instead of an empty real-estate rendering.",
     "Field Trip/Day":
-      "Interpret the user's theme words as a school-event or field-trip invitation version of that idea, with organized group-activity cues, age-appropriate school styling, and event-planning details instead of generic scenery.",
+      "Interpret the user's theme words as a school-event or field-trip invitation version of that idea, with organized group-activity cues, age-appropriate school styling, and event-planning details instead of generic scenery. Prioritize destination realism, believable architecture, and documentary school-trip credibility over theme-park stylization.",
     "Game Day":
-      "Interpret the user's theme words as a real game-day invitation version of that idea, with matchup energy, stadium or arena atmosphere, crowd cues, pep-rally or game-night styling, and sports-event presentation instead of generic sports photography or a random action shot.",
+      "Interpret the user's theme words as a real game-day invitation version of that idea, with matchup energy, stadium or arena atmosphere, crowd cues, pep-rally or game-night styling, and sports-event presentation instead of generic sports photography or a random action shot. When team, opponent, or school colors are present, use them to make the scene feel specific without inventing logos, mascots, or branded signage.",
     "Custom Invite":
-      "Interpret the user's theme words as an invitation-worthy celebration or hosted-event version of that idea. Do not leave it as generic scenery alone; add event styling, decor, and hosting cues so it clearly reads as an invitation.",
+      "Interpret the user's theme words as an invitation-worthy celebration or hosted-event version of that idea. Do not leave it as generic scenery alone; add event styling, decor, and hosting cues so it clearly reads as an invitation. Let the event purpose and host identity do more work than the venue aesthetic so the concept does not collapse into a generic mood board.",
   };
 
   return categoryThemeFraming[details.category];
@@ -468,13 +468,47 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
       "Generate an invitation image that fits the provided event details exactly and do not drift into a different celebration type.",
   };
 
-  const categorySpecificGuardrails =
-    details.category === "Game Day"
-      ? [
-          "Use the provided sport details to steer the field, court, arena, rink, or ballpark atmosphere without inventing branding.",
-          "Do not hallucinate team logos, mascots, scoreboard text, jersey numbers, sponsor marks, branded venue signage, or specific players.",
-        ]
-      : [];
+  const categorySpecificGuardrailsByType: Record<InviteCategory, string[]> = {
+    Birthday: [
+      "Use honoree name, age or milestone, and venue context when present so the image feels like a real hosted birthday instead of a generic theme scene.",
+      "If the venue implies a theater, arcade, restaurant, park, or backyard, reflect that type of place without inventing brand signage or unsupported architectural details.",
+    ],
+    Wedding: [
+      "Use venue type, floral direction, and formality cues to make the invitation feel like a credible ceremony, reception, or save-the-date rather than generic romance imagery.",
+      "Do not imply a full wedding weekend, destination takeover, or extra wedding events unless the user supplied those details.",
+    ],
+    "Baby Shower": [
+      "Keep theme mascots or motifs restrained and premium; one strong teddy-bear or nursery motif is better than a cluttered room full of repeated props.",
+      "Use balloon styling, gift-table cues, florals, and palette to make the shower feel designed rather than crowded.",
+    ],
+    "Bridal Shower": [
+      "Favor one polished brunch, tea, or gift-table moment over collage-like repeated setups.",
+      "Use bride-focused hosting cues, florals, pastries, table styling, and venue type to make the shower feel premium and specific.",
+    ],
+    Anniversary: [
+      "If the milestone maps to a traditional anniversary palette or material, let that influence decor and color choices.",
+      "Use dinner, toast, dancing, or live-music cues when supported so the scene reads as an anniversary celebration rather than generic roses-and-candles decor.",
+    ],
+    Housewarming: [
+      "Make the home feel warm, hosted, and lived-in with food, drinks, seating, and welcoming gathering cues rather than a sterile real-estate showcase.",
+      "Use home style and hosting style to shape the scene without inventing unsupported luxury details.",
+    ],
+    "Field Trip/Day": [
+      "Prioritize believable architecture, destination realism, and documentary group-activity staging.",
+      "Use teacher or docent cues, age-appropriate students, and organized outing energy so the image reads as a real school event.",
+    ],
+    "Game Day": [
+      "Use the provided sport details to steer the field, court, arena, rink, or ballpark atmosphere without inventing branding.",
+      "When team, opponent, or school colors are provided, use them to make the scene feel specific and guest-useful.",
+      "Do not hallucinate team logos, mascots, scoreboard text, jersey numbers, sponsor marks, branded venue signage, or specific players.",
+    ],
+    "Custom Invite": [
+      "Keep the event purpose and host identity legible in the concept so appreciation nights, socials, dinners, and launches do not flatten into a generic venue mood board.",
+      "Use hosted-event cues and clean invitation composition instead of treating the request like a poster for a place alone.",
+    ],
+  };
+
+  const categorySpecificGuardrails = categorySpecificGuardrailsByType[details.category] ?? [];
 
   return [
     categoryPromptByType[details.category],
@@ -498,7 +532,7 @@ export function resolveStudioGenerationSurface(
 ): StudioGenerateSurface {
   if (type === "image") return "image";
   if (options?.existingItemType === "page") return "page";
-  return isPosterFirstLiveCardCategory(details.category) ? "image" : "page";
+  return "page";
 }
 
 export function getStudioEventYear(details: EventDetails): string {
@@ -551,7 +585,7 @@ export function buildStudioRequest(
   const visualDirection = buildStudioVisualDirection(details);
   const categoryGuardrails = buildStudioCategoryGuardrails(details);
   const studioGuardrails =
-    "Preserve exact spelling from the event details. Double-check visible words. Reserve the bottom 10-15% of the card as a clean control-safe zone with no text, logos, or decorative badges. Resolve the lowest visible text line well above the bottom controls so the live-card button row never sits on top of copy.";
+    "Preserve exact spelling from the event details when visible wording is baked into the generated invitation image. For live cards, the invitation text should feel like part of the designed image itself, not a detached app overlay. Keep the copy concentrated in the upper and middle portions of the card. Keep the lower zone decorative and art-led rather than empty or separated, but never place visible text, faux buttons, icons, chips, circles, bars, or device chrome in the bottom action-button area. Keep the top edge decorative too: no status bar, carrier text, clock text, battery icons, notches, camera cutouts, or phone chrome.";
   return {
     mode,
     surface,
@@ -661,6 +695,7 @@ export function buildInvitationData(
       invitation?.socialCaption ||
       liveCard?.description ||
       invitation?.openingLine,
+    heroTextMode: "image",
     theme: liveCard
       ? {
           primaryColor: liveCard.palette.primary,
@@ -702,9 +737,7 @@ export function refreshLiveCardInvitationData(
   const heroTextMode =
     previous?.heroTextMode === "overlay" || previous?.heroTextMode === "image"
       ? previous.heroTextMode
-      : isPosterFirstLiveCardCategory(details.category)
-        ? "image"
-        : "overlay";
+      : "overlay";
 
   return {
     title,

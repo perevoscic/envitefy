@@ -15,11 +15,6 @@ function uniqueWarnings(list: string[]): string[] {
   return Array.from(new Set(list.map((item) => item.trim()).filter(Boolean)));
 }
 
-function isPosterFirstBirthdayOrWedding(category: string | null | undefined): boolean {
-  const normalized = category?.trim().toLowerCase();
-  return normalized === "birthday" || normalized === "wedding";
-}
-
 export async function generateStudioInvitation(
   request: StudioGenerateRequest,
 ): Promise<StudioGenerateResponse> {
@@ -64,10 +59,6 @@ export async function generateStudioInvitation(
         surface,
         editingExistingImage: Boolean(request.imageEdit?.sourceImageDataUrl),
         referenceImageCount: referenceImages.length,
-        posterTextInImage:
-          mode === "both" &&
-          surface === "image" &&
-          isPosterFirstBirthdayOrWedding(request.event.category),
       });
       const imageResult = request.imageEdit?.sourceImageDataUrl
         ? await editInvitationImageWithGemini(

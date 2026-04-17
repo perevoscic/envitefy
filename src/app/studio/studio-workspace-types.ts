@@ -1,8 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 
-import type { StudioStep } from "./studio-types";
+import type { StudioCreateStep, StudioWorkspaceView } from "./studio-types";
 
-export type { StudioStep };
+export type { StudioCreateStep, StudioWorkspaceView };
 
 export type MediaType = "image" | "page";
 export type InviteCategory =

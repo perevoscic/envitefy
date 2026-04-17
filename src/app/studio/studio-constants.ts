@@ -1,7 +1,6 @@
 import {
   Baby,
   CalendarHeart,
-  CakeSlice,
   Flower2,
   Heart,
   House,
@@ -9,21 +8,23 @@ import {
   PartyPopper,
   WandSparkles,
 } from "lucide-react";
-import type { StudioCategoryDefinition, StudioStep } from "./studio-types";
+import type {
+  StudioCategoryDefinition,
+  StudioCreateStep,
+  StudioWorkspaceView,
+} from "./studio-types";
 
 /** Browser local cache for Studio library (same key historically used by the workspace). */
 export const STUDIO_LIBRARY_STORAGE_KEY = "envitefy_media";
 
-export const STUDIO_STEPS: Array<{ id: StudioStep; label: string }> = [
-  { id: "category", label: "Category" },
-  { id: "form", label: "Details" },
-  { id: "studio", label: "Studio" },
-  { id: "library", label: "Library" },
+export const STUDIO_CREATE_STEPS: Array<{ id: StudioCreateStep; label: string }> = [
+  { id: "type", label: "Type" },
+  { id: "details", label: "Details" },
+  { id: "editor", label: "Editor" },
 ];
 
-export const STUDIO_CATEGORY_NAV: Array<{ id: "details" | "studio" | "library"; label: string }> = [
-  { id: "details", label: "Details" },
-  { id: "studio", label: "Studio" },
+export const STUDIO_WORKSPACE_VIEWS: Array<{ id: StudioWorkspaceView; label: string }> = [
+  { id: "create", label: "Create" },
   { id: "library", label: "Library" },
 ];
 

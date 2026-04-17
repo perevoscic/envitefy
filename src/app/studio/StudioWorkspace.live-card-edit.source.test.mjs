@@ -39,6 +39,7 @@ test("live card updates reuse the current image in the studio generation request
 
 test("live card modal exposes image edit tools without in-modal text editor", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
+  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
   assert.match(source, /function openLiveCardImageEdit\(item: MediaItem\)/);
@@ -49,7 +50,7 @@ test("live card modal exposes image edit tools without in-modal text editor", ()
   assert.match(source, /const STUDIO_MOBILE_TOP_CHROME = /);
   assert.match(source, /style=\{studioLiveCardModalStyle\}/);
   assert.match(source, /style=\{studioLiveCardFrameStyle\}/);
-  assert.match(source, /className="fixed right-3 z-\[115\]/);
+  assert.match(source, /className="fixed right-3 z-\[7015\]/);
   assert.match(
     source,
     /style=\{studioLiveCardControlTop \? \{ top: studioLiveCardControlTop \} : undefined\}/,
@@ -59,8 +60,8 @@ test("live card modal exposes image edit tools without in-modal text editor", ()
     source,
     /className="absolute bottom-0 right-0 top-0 z-10 flex w-\[min\(22rem,88vw\)\][\s\S]*border-l border-white\/10/,
   );
-  assert.match(source, /Edit current background/);
-  assert.match(source, /Edit current invitation art/);
+  assert.match(editorStep, /Edit current background/);
+  assert.match(editorStep, /Edit current invitation art/);
   assert.match(source, /<LiveCardHeroTextOverlay invitationData=\{activePageRecord\.data\} \/>/);
   assert.match(source, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{activeTab\}/);
   assert.match(surfaceSource, /data-live-card-panel/);
@@ -90,4 +91,26 @@ test("image edit preview stages URL and layout; commit patches media item", () =
   assert.ok(updateBlock, "expected updatePosition block");
   assert.doesNotMatch(updateBlock[0], /setMediaList/);
   assert.match(updateBlock[0], /setStudioVisualDraft/);
+});
+
+test("live card library delete asks for confirmation before removal", () => {
+  const workspaceSource = readSource("src/app/studio/StudioWorkspace.tsx");
+  const librarySource = readSource("src/app/studio/workspace/StudioLibraryStep.tsx");
+
+  assert.match(workspaceSource, /function deleteMedia\(item: MediaItem\)/);
+  assert.match(workspaceSource, /const \[deleteConfirmationItem, setDeleteConfirmationItem\] = useState<MediaItem \| null>\(null\);/);
+  assert.match(workspaceSource, /if \(item\.type === "page"\) \{\s*setDeleteConfirmationItem\(item\);\s*return;\s*\}/s);
+  assert.match(workspaceSource, /function performDeleteMedia\(item: MediaItem\)/);
+  assert.match(workspaceSource, /function confirmDeleteMedia\(\)/);
+  assert.match(workspaceSource, /performDeleteMedia\(deleteConfirmationItem\);/);
+  assert.match(workspaceSource, /Delete live card\?/);
+  assert.match(
+    workspaceSource,
+    /Remove this live card from your Studio library\. This action cannot be undone\./,
+  );
+  assert.match(workspaceSource, /Keep live card/);
+  assert.match(workspaceSource, /Delete live card/);
+  assert.match(librarySource, /deleteMedia: \(item: MediaItem\) => void;/);
+  assert.match(librarySource, /onClick=\{\(\) => deleteMedia\(item\)\}/);
+  assert.doesNotMatch(workspaceSource, /window\.confirm\(confirmMessage\)/);
 });
