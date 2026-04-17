@@ -511,12 +511,13 @@ export default function StudioWorkspace() {
 
   useEffect(() => {
     const nextView = parseStudioWorkspaceView(searchParams.get("view"));
-    const nextCreateStep = parseStudioCreateStep(searchParams.get("step"));
+    const stepParam = searchParams.get("step");
+    const nextCreateStep = stepParam ? parseStudioCreateStep(stepParam) : null;
     const safeCreateStep =
-      nextView === "create" && nextCreateStep === "editor" && !formValid ? "details" : nextCreateStep;
+      nextCreateStep === "editor" && !formValid ? "details" : nextCreateStep;
 
     setView((current) => (current === nextView ? current : nextView));
-    if (nextView === "create") {
+    if (nextView === "create" && safeCreateStep) {
       setCreateStep((current) => (current === safeCreateStep ? current : safeCreateStep));
     }
   }, [formValid, searchParams]);
