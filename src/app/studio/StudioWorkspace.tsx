@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface from "@/components/studio/StudioLiveCardActionSurface";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
@@ -391,6 +391,7 @@ export default function StudioWorkspace() {
   const [isSubjectPhotoUploading, setIsSubjectPhotoUploading] = useState(false);
   const [flyerUploadError, setFlyerUploadError] = useState<string | null>(null);
   const [subjectPhotoUploadError, setSubjectPhotoUploadError] = useState<string | null>(null);
+  const liveCardHistoryEntryActiveRef = useRef(false);
   const editingMediaItem = currentProject;
 
   const isEditingLiveCard = editingMediaItem?.type === "page";
@@ -461,6 +462,43 @@ export default function StudioWorkspace() {
   useEffect(() => {
     setActiveTab("none");
   }, [activePageRecord?.id]);
+
+  const closeLiveCardFullscreen = useCallback(
+    (options?: { fromPopState?: boolean }) => {
+      discardStudioVisualDraft();
+      setActivePage(null);
+      setActiveTab("none");
+      setIsDesignMode(false);
+      setIsLiveCardToolsDrawerOpen(false);
+      setStep("library");
+      if (!options?.fromPopState && liveCardHistoryEntryActiveRef.current && typeof window !== "undefined") {
+        liveCardHistoryEntryActiveRef.current = false;
+        window.history.back();
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!activePageRecord?.id || !activePageRecord.data || typeof window === "undefined") return;
+
+    window.history.pushState({ ...(window.history.state ?? {}), studioLiveCardFullscreen: true }, "");
+    liveCardHistoryEntryActiveRef.current = true;
+
+    const handlePopState = () => {
+      if (!activePageRecord?.id) return;
+      closeLiveCardFullscreen({ fromPopState: true });
+      liveCardHistoryEntryActiveRef.current = false;
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (!activePageRecord?.id) {
+        liveCardHistoryEntryActiveRef.current = false;
+      }
+    };
+  }, [activePageRecord?.id, closeLiveCardFullscreen]);
 
   useEffect(() => {
     if (!activePageRecord?.data) {
@@ -966,10 +1004,14 @@ export default function StudioWorkspace() {
     if (!savedItem) return;
     setStudioVisualDraft((prev) => {
       const base = mergeStudioButtonPositions(savedItem);
+      const clampedPoint = {
+        x: point.x,
+        y: Math.min(point.y, 0),
+      };
       const nextPositions =
         prev?.itemId === id
-          ? { ...prev.positions, [buttonKey]: point }
-          : { ...base, [buttonKey]: point };
+          ? { ...prev.positions, [buttonKey]: clampedPoint }
+          : { ...base, [buttonKey]: clampedPoint };
       return {
         itemId: id,
         positions: nextPositions,
@@ -1311,6 +1353,22 @@ export default function StudioWorkspace() {
 
       {step === "category" ? (
         <main className="relative mx-auto w-full max-w-[1500px] px-6 py-10 sm:px-8 lg:px-12 lg:py-14">
+          <div className="mb-8 inline-flex rounded-full border border-[#d8cdc0] bg-[#fbf8f4] p-1">
+            <button
+              type="button"
+              onClick={() => setStep("category")}
+              className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#1A1A1A] transition-colors hover:text-[#4A4036]"
+            >
+              Studio
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep("library")}
+              className="rounded-full bg-[#1A1A1A] px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#2b2b2b]"
+            >
+              Library
+            </button>
+          </div>
           <StudioCategoryStep details={details} setDetails={setDetails} setStep={setStep} />
         </main>
       ) : (
@@ -1798,7 +1856,7 @@ export default function StudioWorkspace() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-6 backdrop-blur-xl"
+            className="fixed inset-0 z-[7000] flex items-center justify-center bg-black/95 p-6 backdrop-blur-xl"
             onClick={() => setSelectedImage(null)}
           >
             <motion.div
@@ -1867,18 +1925,12 @@ export default function StudioWorkspace() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl md:p-12"
+            className="fixed inset-0 z-[7000] flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl md:p-12"
             style={studioLiveCardModalStyle}
           >
             <button
-              onClick={() => {
-                discardStudioVisualDraft();
-                setActivePage(null);
-                setActiveTab("none");
-                setIsDesignMode(false);
-                setIsLiveCardToolsDrawerOpen(false);
-              }}
-              className="absolute right-4 top-4 z-[110] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30 md:right-8 md:top-8"
+              onClick={() => closeLiveCardFullscreen()}
+              className="absolute right-4 top-4 z-[7010] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30 md:right-8 md:top-8"
             >
               <X className="h-6 w-6" />
             </button>
@@ -1888,14 +1940,14 @@ export default function StudioWorkspace() {
                 type="button"
                 aria-label="Open studio tools"
                 onClick={() => setIsLiveCardToolsDrawerOpen(true)}
-                className="fixed right-3 z-[115] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-white/25 md:hidden"
+                className="fixed right-3 z-[7015] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-white/25 md:hidden"
                 style={studioLiveCardControlTop ? { top: studioLiveCardControlTop } : undefined}
               >
                 <PanelLeft className="h-6 w-6" />
               </button>
             ) : null}
 
-            <div className="absolute right-4 top-20 z-[110] hidden max-h-[calc(100dvh-6rem)] w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 overflow-y-auto overscroll-contain md:right-8 md:top-24 md:flex">
+            <div className="absolute right-4 top-20 z-[7010] hidden max-h-[calc(100dvh-6rem)] w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 overflow-y-auto overscroll-contain md:right-8 md:top-24 md:flex">
               {renderLiveCardPreviewTools(activePageRecord)}
             </div>
 
@@ -1907,7 +1959,7 @@ export default function StudioWorkspace() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="fixed inset-0 z-[112] md:hidden"
+                  className="fixed inset-0 z-[7012] md:hidden"
                 >
                   <button
                     type="button"

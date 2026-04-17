@@ -551,7 +551,7 @@ export function buildStudioRequest(
   const visualDirection = buildStudioVisualDirection(details);
   const categoryGuardrails = buildStudioCategoryGuardrails(details);
   const studioGuardrails =
-    "Preserve exact spelling from the event details. Double-check visible words. Keep important copy away from the bottom button area, but do not instruct the model to make that area visually empty or separated. Resolve the lowest visible text line well above the bottom controls so the button row never sits on top of copy.";
+    "Preserve exact spelling from the event details. Double-check visible words. Reserve the bottom 10-15% of the card as a clean control-safe zone with no text, logos, or decorative badges. Resolve the lowest visible text line well above the bottom controls so the live-card button row never sits on top of copy.";
   return {
     mode,
     surface,
