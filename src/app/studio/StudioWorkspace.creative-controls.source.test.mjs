@@ -9,27 +9,29 @@ function readSource(relPath) {
 
 test("studio sidebar only shows creative controls for subject-photo flows", () => {
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
+  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
 
   assert.match(workspace, /const showStudioCreativeControls = hasStudioSubjectReferencePhotos\(details\);/);
-  assert.match(workspace, /Creative Upgrade/);
-  assert.match(workspace, /Likeness Strength/);
-  assert.match(workspace, /Visual Style/);
+  assert.match(editorStep, /Creative Upgrade/);
+  assert.match(editorStep, /Likeness Strength/);
+  assert.match(editorStep, /Visual Style/);
   assert.match(
-    workspace,
+    editorStep,
     /subjectTransformMode:\s*"premium_makeover"/,
   );
-  assert.match(workspace, /\{showStudioCreativeControls \? \(/);
-  assert.doesNotMatch(workspace, /Transform Subject/);
+  assert.match(editorStep, /\{showStudioCreativeControls \? \(/);
+  assert.doesNotMatch(editorStep, /Transform Subject/);
 });
 
 test("studio preview shows the final live card inline instead of an open-live-card CTA", () => {
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
+  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
 
-  assert.match(workspace, /<LiveCardHeroTextOverlay invitationData=\{currentProjectWithVisualDraft\.data\} \/>/);
+  assert.match(editorStep, /<LiveCardHeroTextOverlay invitationData=\{currentProjectWithVisualDraft\.data\} \/>/);
   assert.match(workspace, /const \[currentProjectPreviewTab, setCurrentProjectPreviewTab\] = useState<ActiveTab>\("none"\);/);
-  assert.match(workspace, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{currentProjectPreviewTab\}/);
-  assert.match(workspace, /aspect-\[9\/16\] w-full/);
-  assert.doesNotMatch(workspace, /aspect-\[9\/16\] w-full max-w-\[23rem\]/);
-  assert.doesNotMatch(workspace, /Open Live Card/);
-  assert.doesNotMatch(workspace, /Open current live card/);
+  assert.match(editorStep, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{currentProjectPreviewTab\}/);
+  assert.match(editorStep, /aspect-\[9\/16\] w-full/);
+  assert.doesNotMatch(editorStep, /aspect-\[9\/16\] w-full max-w-\[23rem\]/);
+  assert.doesNotMatch(editorStep, /Open Live Card/);
+  assert.doesNotMatch(editorStep, /Open current live card/);
 });

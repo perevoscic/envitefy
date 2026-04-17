@@ -11,6 +11,7 @@ function readSource(relPath) {
 test("studio workspace sources do not reference lucide Sparkles icon (use WandSparkles)", () => {
   const files = [
     "src/app/studio/StudioWorkspace.tsx",
+    "src/app/studio/workspace/StudioEditorStep.tsx",
     "src/app/studio/workspace/StudioFormStep.tsx",
     "src/app/studio/studio-workspace-field-config.ts",
     "src/app/studio/error.tsx",
@@ -19,9 +20,21 @@ test("studio workspace sources do not reference lucide Sparkles icon (use WandSp
   const jsxSparkles = /<Sparkles\b/;
   for (const rel of files) {
     const src = readSource(rel);
-    assert.match(src, /WandSparkles|lucide-react/, `${rel} should import lucide icons`);
+    if (
+      rel.includes("StudioWorkspace") ||
+      rel.includes("StudioEditorStep") ||
+      rel.includes("StudioFormStep") ||
+      rel.includes("error.tsx") ||
+      rel.includes("StudioMarketingPage")
+    ) {
+      assert.match(src, /WandSparkles|lucide-react/, `${rel} should import lucide icons`);
+    }
     assert.doesNotMatch(src, jsxSparkles, `${rel} must not use <Sparkles (use <WandSparkles)`);
-    if (rel.includes("StudioFormStep") || rel.includes("StudioWorkspace")) {
+    if (
+      rel.includes("StudioFormStep") ||
+      rel.includes("StudioWorkspace") ||
+      rel.includes("StudioEditorStep")
+    ) {
       assert.doesNotMatch(
         src,
         /from "lucide-react"[\s\S]*\bSparkles\b/m,

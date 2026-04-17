@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { Dispatch, SetStateAction } from "react";
-import type { StudioStep } from "../studio-types";
+import type { StudioCreateStep } from "../studio-types";
 import type { EventDetails } from "../studio-workspace-types";
 import { StudioCategoryGrid } from "./StudioCategoryGrid";
 import { STUDIO_CATEGORY_TILES } from "./studio-category-tile-data";
@@ -10,17 +10,17 @@ import { STUDIO_CATEGORY_TILES } from "./studio-category-tile-data";
 type StudioCategoryStepProps = {
   details: EventDetails;
   setDetails: Dispatch<SetStateAction<EventDetails>>;
-  setStep: (step: StudioStep) => void;
+  setCreateStep: (step: StudioCreateStep) => void;
 };
 
 export function StudioCategoryStep({
   details,
   setDetails,
-  setStep,
+  setCreateStep,
 }: StudioCategoryStepProps) {
   return (
     <motion.div
-      key="category"
+      key="type"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -57,7 +57,7 @@ export function StudioCategoryStep({
                   ...prev,
                   category: categoryName,
                 }));
-                setStep("form");
+                setCreateStep("details");
               }}
             />
           </div>

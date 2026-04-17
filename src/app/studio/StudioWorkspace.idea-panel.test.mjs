@@ -9,22 +9,23 @@ function readSource(relPath) {
 
 test("studio step uses a single category-specific idea panel instead of presets", () => {
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
+  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
 
   assert.match(workspace, /const studioIdeaLabel = getStudioIdeaLabel\(details\.category\);/);
   assert.match(
     workspace,
     /const studioIdeaPlaceholder = getStudioIdeaPlaceholder\(details\.category\);/,
   );
-  assert.match(workspace, /<label[\s\S]*\{studioIdeaLabel\}[\s\S]*<\/label>/);
-  assert.match(workspace, /placeholder=\{studioIdeaPlaceholder\}/);
-  assert.match(workspace, /value=\{details\.theme\}/);
+  assert.match(editorStep, /<label[\s\S]*\{studioIdeaLabel\}[\s\S]*<\/label>/);
+  assert.match(editorStep, /placeholder=\{studioIdeaPlaceholder\}/);
+  assert.match(editorStep, /value=\{details\.theme\}/);
   assert.match(
-    workspace,
+    editorStep,
     /setDetails\(\(prev\) => \(\{ \.\.\.prev, theme: event\.target\.value \}\)\)/,
   );
-  assert.doesNotMatch(workspace, /\bPresets\b/);
-  assert.doesNotMatch(workspace, /Custom Visual Idea/);
-  assert.doesNotMatch(workspace, /No presets for this category yet/);
+  assert.doesNotMatch(editorStep, /\bPresets\b/);
+  assert.doesNotMatch(editorStep, /Custom Visual Idea/);
+  assert.doesNotMatch(editorStep, /No presets for this category yet/);
 });
 
 test("studio idea copy uses cleaned category-specific wording", () => {

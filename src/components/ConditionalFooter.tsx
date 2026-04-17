@@ -73,7 +73,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
 
   if (isMarketingRoute) {
     return (
-      <footer className="relative z-[2] bg-[#f8f5ff] px-4 pb-8 sm:px-6 lg:px-8">
+      <footer className="relative z-[2] bg-[#f8f5ff] px-4 pt-8 pb-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl isolate overflow-hidden rounded-[2rem] border border-[#eadfd5] bg-[rgba(255,250,246,0.9)] shadow-[0_30px_80px_rgba(43,27,22,0.10)] backdrop-blur-[12px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.82),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.72),rgba(255,255,255,0.4)_46%,rgba(201,143,107,0.08)_100%)]" />
           <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,0.7fr))] lg:px-10">

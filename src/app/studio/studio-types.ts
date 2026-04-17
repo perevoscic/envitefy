@@ -5,7 +5,9 @@ import type {
   StudioGenerateResponse,
 } from "@/lib/studio/types";
 
-export type StudioStep = "category" | "form" | "studio" | "library";
+export type StudioWorkspaceView = "create" | "library";
+
+export type StudioCreateStep = "type" | "details" | "editor";
 
 export type StudioCategoryId =
   | "birthday"

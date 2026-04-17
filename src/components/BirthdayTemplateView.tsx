@@ -933,6 +933,10 @@ export default function BirthdayTemplateView({
         eventId={eventId}
         eventTitle={eventTitle}
         rsvpDeadline={eventData?.rsvpDeadline}
+        rsvpName={_rsvpName}
+        rsvpPhone={rsvpPhone}
+        rsvpEmail={rsvpEmail}
+        shareUrl={shareUrl}
         themeColors={{
           primary: accentColor || "#4f46e5",
           secondary: headingColor || "#000",

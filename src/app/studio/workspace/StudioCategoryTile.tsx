@@ -101,11 +101,11 @@ export function StudioCategoryTile({
 
         <div className="flex items-end justify-between gap-4">
           <div className="max-w-[280px] space-y-2">
-            <h3
-              className="text-lg font-bold tracking-[-0.02em] !text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-xl lg:text-2xl"
+            <p
+              className="font-[var(--font-josefin-sans)] text-[1rem] font-bold uppercase tracking-[0.13em] leading-none !text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-[1.08rem] lg:text-[1.16rem]"
             >
               {category.name}
-            </h3>
+            </p>
             <p
               id={descriptionId}
               className="hidden max-w-[280px] text-sm leading-relaxed text-white/80 sm:block"

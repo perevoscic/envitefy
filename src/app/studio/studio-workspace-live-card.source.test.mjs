@@ -7,7 +7,7 @@ function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("studio live-card builders carry poster-first surface rules and preserve refreshed invitation data locally", () => {
+test("studio live-card builders preserve local invitation data and default generated live-card imagery to baked poster text", () => {
   const source = readSource("src/app/studio/studio-workspace-builders.ts");
 
   assert.match(
@@ -16,10 +16,11 @@ test("studio live-card builders carry poster-first surface rules and preserve re
   );
   assert.match(source, /return \{\s*mode,\s*surface,\s*event:/s);
   assert.match(source, /export function resolveStudioGenerationSurface\(/);
-  assert.match(
-    source,
-    /return isPosterFirstLiveCardCategory\(details\.category\) \? "image" : "page";/,
-  );
+  assert.match(source, /export function isPosterFirstLiveCardCategory\(category: string \| null \| undefined\)/);
+  assert.match(source, /return normalized === "birthday" \|\| normalized === "wedding";/);
+  assert.match(source, /if \(type === "image"\) return "image";/);
+  assert.match(source, /if \(options\?\.existingItemType === "page"\) return "page";/);
+  assert.match(source, /return "page";/);
   assert.match(source, /case "Game Day":\s*return "sport events";/);
   assert.match(source, /eventYear: getStudioEventYear\(details\) \|\| null,/);
   assert.match(source, /export function refreshLiveCardInvitationData\(/);
@@ -36,10 +37,7 @@ test("studio live-card builders carry poster-first surface rules and preserve re
     source,
     /const heroTextMode =\s*previous\?\.heroTextMode === "overlay" \|\| previous\?\.heroTextMode === "image"/s,
   );
-  assert.match(
-    source,
-    /isPosterFirstLiveCardCategory\(details\.category\)\s*\?\s*"image"\s*:\s*"overlay"/s,
-  );
+  assert.match(source, /heroTextMode:\s*"image",/);
   assert.match(source, /title: liveCard\?\.title \|\| invitation\?\.title,/);
   assert.match(
     source,

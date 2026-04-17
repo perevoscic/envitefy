@@ -31,21 +31,6 @@ function renderCoreCreativeInputs(event: StudioEventDetails): string {
   ].join("\n");
 }
 
-function renderApprovedInvitationCopy(liveCard?: StudioLiveCardMetadata | null): string {
-  if (!liveCard?.invitation) return "Approved invitation copy: None";
-  const { invitation } = liveCard;
-  return [
-    "Approved invitation copy to use verbatim if text appears in the artwork:",
-    `- Title: ${invitation.title}`,
-    `- Subtitle: ${invitation.subtitle}`,
-    `- Opening Line: ${invitation.openingLine}`,
-    `- Schedule Line: ${invitation.scheduleLine}`,
-    `- Location Line: ${invitation.locationLine}`,
-    `- Details Line: ${invitation.detailsLine}`,
-    `- Call To Action: ${invitation.callToAction}`,
-  ].join("\n");
-}
-
 function getSubjectTransformMode(guidance?: StudioGenerationGuidance): "default" | "premium_makeover" {
   return guidance?.subjectTransformMode === "premium_makeover" ? "premium_makeover" : "default";
 }
@@ -139,34 +124,14 @@ function hasRealismIntent(event: StudioEventDetails, guidance?: StudioGeneration
   );
 }
 
-export function isWeddingOccasion(event: StudioEventDetails): boolean {
-  const blob = [
+function buildOccasionBlob(event: StudioEventDetails): string {
+  return [
     event.category,
     event.occasion,
     event.title,
     event.userIdea,
     event.description,
     event.honoreeName,
-    event.sportType,
-    event.teamName,
-    event.opponentName,
-    event.leagueDivision,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return /\b(wedding|weddings|bridal|nuptials|ceremony|reception|save the date|engagement(\s+party)?)\b/.test(
-    blob,
-  );
-}
-
-function isGameDayOccasion(event: StudioEventDetails): boolean {
-  const blob = [
-    event.category,
-    event.occasion,
-    event.title,
-    event.userIdea,
-    event.description,
     event.sportType,
     event.teamName,
     event.opponentName,
@@ -177,92 +142,140 @@ function isGameDayOccasion(event: StudioEventDetails): boolean {
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
-
-  return /\b(game day|matchup|opponent|kickoff|tipoff|first pitch|stadium|arena|rink|ballpark|football|basketball|baseball|soccer|volleyball|hockey|softball|lacrosse)\b/.test(
-    blob,
-  );
 }
 
-function isPosterFirstBirthdayOrWedding(event: StudioEventDetails): boolean {
-  const blob = [event.category, event.occasion].filter(Boolean).join(" ").toLowerCase();
-  return /\bbirthday\b/.test(blob) || isWeddingOccasion(event);
+function getOccasionType(event: StudioEventDetails):
+  | "birthday"
+  | "wedding"
+  | "baby_shower"
+  | "bridal_shower"
+  | "anniversary"
+  | "housewarming"
+  | "field_trip"
+  | "game_day"
+  | "custom_invite"
+  | "general" {
+  const blob = buildOccasionBlob(event);
+
+  if (/\bbridal shower\b/.test(blob)) return "bridal_shower";
+  if (/\bbaby shower\b/.test(blob)) return "baby_shower";
+  if (/\bfield trip\/day\b|\bfield trip\b|\bfield day\b|\bschool day\b|\bschool event\b|\bclass trip\b/.test(blob)) {
+    return "field_trip";
+  }
+  if (
+    /\bgame day|matchup|opponent|kickoff|tipoff|first pitch|stadium|arena|rink|ballpark|football|basketball|baseball|soccer|volleyball|hockey|softball|lacrosse\b/.test(
+      blob,
+    )
+  ) {
+    return "game_day";
+  }
+  if (/\bhousewarming|new home|house party|open house\b/.test(blob)) return "housewarming";
+  if (/\banniversary\b/.test(blob)) return "anniversary";
+  if (/\bbirthday\b/.test(blob)) return "birthday";
+  if (/\bwedding|weddings|nuptials|ceremony|reception|save the date|engagement(\s+party)?\b/.test(blob)) {
+    return "wedding";
+  }
+  if (/\bcustom invite\b/.test(blob)) return "custom_invite";
+  return "general";
+}
+
+export function isWeddingOccasion(event: StudioEventDetails): boolean {
+  return getOccasionType(event) === "wedding";
+}
+
+function isGameDayOccasion(event: StudioEventDetails): boolean {
+  return getOccasionType(event) === "game_day";
+}
+
+function isPosterFirstLiveCardOccasion(event: StudioEventDetails): boolean {
+  return getOccasionType(event) !== "general";
 }
 
 function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
-  const blob = [
-    event.category,
-    event.occasion,
-    event.title,
-    event.userIdea,
-    event.description,
-    event.honoreeName,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+  const occasionType = getOccasionType(event);
 
   const common = [
     "- Theme words must be interpreted through the selected event type, not as generic standalone scenery.",
     "- If the user names a franchise, place, motif, era, or mood, translate it into a celebration-themed invitation concept for this occasion.",
   ];
 
-  if (/\bbirthday\b/.test(blob)) {
+  if (occasionType === "birthday") {
     return [
       ...common,
       "- For birthdays, make the theme read as a birthday party with birthday decor and celebration cues. Example: Jurassic Park should become a Jurassic Park birthday party, not just jungle foliage and dinosaurs.",
       "- When appropriate, themeStyle should name the celebration version of the concept, such as Jurassic birthday adventure instead of only jungle dinosaurs.",
+      "- When Honoree Name or Age or Milestone is provided, let those details shape the concept so the result feels like that person's party rather than a generic themed scene.",
+      "- If the venue wording implies a venue type such as a theater, arcade, park, restaurant, or backyard, reflect that venue context in the celebration scene without inventing branded signage or unsupported venue features.",
     ];
   }
 
-  if (
-    /\bwedding|weddings|bridal|nuptials|ceremony|reception|save the date|engagement(\s+party)?\b/.test(
-      blob,
-    )
-  ) {
+  if (occasionType === "wedding") {
     return [
       ...common,
       "- For weddings, make the theme read as a wedding or save-the-date concept with ceremony, reception, floral, stationery, or romantic celebration cues.",
       "- themeStyle should describe the wedding-themed concept, not only the raw setting or scenery.",
+      "- Let venue type, floral palette, and formality cues steer the setting so the result reads like a credible wedding invitation rather than generic romantic scenery.",
+      "- If the supplied details describe a single ceremony or evening, keep the concept focused on that event instead of inflating it into an unsupported wedding-weekend concept.",
     ];
   }
 
-  if (/\bbaby shower|baby\b/.test(blob)) {
+  if (occasionType === "baby_shower") {
     return [
       ...common,
       "- For baby showers, make the theme read as a baby shower with baby-shower decor, favors, dessert-table styling, and welcoming celebration cues.",
       "- themeStyle should describe the baby-shower version of the theme, not only the raw setting.",
+      "- If the theme suggests a mascot or motif such as teddy bears, moons, clouds, or animals, use one or two hero motifs with restrained prop density instead of cluttering the scene with repeated plush props.",
+      "- Let shower palette, gift-table cues, balloon styling, and softness or luxury level shape the setup so the result feels designed rather than crowded.",
     ];
   }
 
-  if (isGameDayOccasion(event)) {
+  if (occasionType === "bridal_shower") {
+    return [
+      ...common,
+      "- For bridal showers, make the theme read as a bridal shower with brunch, tea-party, gift-table, floral, and bride-focused celebration cues.",
+      "- themeStyle should describe the bridal-shower version of the theme, not only the raw setting.",
+      "- Favor one polished hosting moment, such as a brunch table, tea service, or gift-table setup, instead of a collage of repeated tables or duplicated garden vignettes.",
+      "- Let the bride's name, shower style, floral palette, and venue type guide the mood so the result feels premium and intentionally hosted.",
+    ];
+  }
+
+  if (occasionType === "game_day") {
     return [
       ...common,
       "- For Game Day, make the theme read as a real sports-event invitation with matchup energy, crowd atmosphere, sport-specific setting cues, and game-night presentation rather than a generic athlete poster or random action shot.",
       "- themeStyle should describe the game-day version of the theme, not only the raw sport or venue.",
+      "- When team, opponent, or school colors are provided, use them to make the atmosphere feel specific and guest-useful without inventing logos, mascots, or branded signage.",
+      "- Favor one coherent hero sports moment and clear stadium or arena context over generic poster clutter, redundant action scenes, or unsupported scoreboard text.",
     ];
   }
 
-  if (/\banniversary\b/.test(blob)) {
+  if (occasionType === "anniversary") {
     return [
       ...common,
       "- For anniversaries, make the theme read as an anniversary celebration with elegant party styling and couple-centered celebration cues.",
       "- themeStyle should describe the anniversary-themed concept, not only the raw setting.",
+      "- If a milestone year implies a traditional material or palette such as silver or gold, let that influence the decor and color story so the milestone reads visually.",
+      "- If dinner, toasts, dancing, or live music are mentioned, reflect them subtly in the celebration scene instead of reducing the invite to flowers and candles alone.",
     ];
   }
 
-  if (/\bhousewarming|new home|house party|open house\b/.test(blob)) {
+  if (occasionType === "housewarming") {
     return [
       ...common,
       "- For housewarmings, make the theme read as a welcoming hosted gathering with home-party decor and hosting cues.",
       "- themeStyle should describe the housewarming version of the theme, not only the raw setting.",
+      "- Let the home style and hosting style shape the scene so it feels like a warm lived-in gathering rather than an empty real-estate rendering.",
+      "- Use hospitality cues such as food, drinks, music, open doors, patio seating, or neighborhood welcome energy when supported by the event details.",
     ];
   }
 
-  if (/\bfield trip|school day|school event|class trip|teacher|students?\b/.test(blob)) {
+  if (occasionType === "field_trip") {
     return [
       ...common,
       "- For field trips or school-day invites, make the theme read as an organized school event with group-activity and school-planning cues.",
       "- themeStyle should describe the school-event version of the theme, not only the raw setting.",
+      "- Prioritize landmark or venue realism, believable camera angles, and documentary credibility over impossible architecture or theme-park stylization.",
+      "- Let student age group, destination type, teacher or docent presence, and organized outing cues shape the scene so it reads like a real school trip.",
     ];
   }
 
@@ -270,7 +283,69 @@ function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
     ...common,
     "- Keep the final concept invitation-ready and celebration-oriented rather than drifting into generic scenery.",
     "- themeStyle should describe the invitation-ready version of the concept, not only the raw setting.",
+    "- Let the event purpose, host or honoree identity, venue type, and hosting mood shape the result so the image feels custom to the occasion.",
   ];
+}
+
+function buildPosterFirstInvitationCopyRules(event: StudioEventDetails): string[] {
+  switch (getOccasionType(event)) {
+    case "birthday":
+      return [
+        "- For birthdays, when Honoree Name and Age or Milestone are available, make the main invitation title center on that person's name and milestone first. Use the user idea as a short subtitle, theme line, or mood line instead of the dominant birthday headline.",
+        "- Make the wording feel like a real birthday invitation with party decor, hosted-event energy, and celebration cues instead of a themed scene description alone.",
+        "- When venue type or party format is clear, let it influence the supporting line so the copy sounds like an actual hosted birthday plan rather than generic theme words.",
+      ];
+    case "wedding":
+      return [
+        "- For weddings, make the couple names, wedding title, or save-the-date identity the main invitation hierarchy first. Treat the user idea as the romantic mood or stationery direction rather than the only headline.",
+        "- Make the wording feel like a real wedding invitation with ceremony, reception, romance, and premium stationery cues instead of a venue mood board alone.",
+        "- If the event wording points to a ceremony, reception, dinner, or wedding weekend, make the scope explicit and credible instead of mixing several unsupported wedding formats together.",
+      ];
+    case "baby_shower":
+      return [
+        "- For baby showers, make the honoree name, baby name, or baby shower title the main invitation hierarchy first. Use the user idea as a supporting theme line or mood cue.",
+        "- Make the wording feel like a real baby shower invitation with shower decor, balloons, favors, dessert-table styling, and welcoming hosted-celebration cues instead of generic pastel scenery.",
+        "- Keep the supporting line focused on one or two motifs or palette cues instead of listing every prop or mascot in the room.",
+      ];
+    case "bridal_shower":
+      return [
+        "- For bridal showers, make the bride's name or bridal shower title the main invitation hierarchy first. Use the user idea as a supporting brunch, floral, tea-party, or shower mood line.",
+        "- Make the wording feel like a real bridal shower invitation with bride-focused celebration, brunch or tea cues, florals, and gift-table energy instead of generic garden scenery.",
+        "- Favor polished shower language that sounds hosted and premium rather than collage-like or overdescriptive.",
+      ];
+    case "anniversary":
+      return [
+        "- For anniversaries, make the couple names, anniversary title, or milestone year the main invitation hierarchy first. Use the user idea as a supporting mood line or dinner-party direction.",
+        "- Make the wording feel like a real anniversary celebration with candles, dinner, roses, toasts, dancing, and couple-centered event cues instead of only a romantic scene.",
+        "- When a milestone year implies silver, gold, or another traditional anniversary cue, let that appear in the wording only if supported by the event details.",
+      ];
+    case "housewarming":
+      return [
+        "- For housewarmings, make the host names, housewarming title, or new-home identity the main invitation hierarchy first. Use the user idea as a supporting home-party mood line.",
+        "- Make the wording feel like a real housewarming with welcoming hosted-gathering cues, home-tour energy, table styling, drinks, and lived-in hospitality instead of an empty real-estate interior.",
+        "- Let the supporting line suggest gathering warmth, food, drinks, music, or neighborhood welcome when the details support it.",
+      ];
+    case "field_trip":
+      return [
+        "- For field trips or school days, make the event title, school outing name, or destination title the main invitation hierarchy first. Use the user idea as a supporting activity or discovery line.",
+        "- Make the wording feel like a real organized school outing with field-trip planning, museum or exhibit cues, student group activity, and teacher or chaperone context instead of a generic brochure headline.",
+        "- Keep the copy documentary and destination-led rather than promotional, cinematic, or tourist-brochure-like.",
+      ];
+    case "game_day":
+      return [
+        "- For Game Day, make the matchup, team, or game-day title the main invitation hierarchy first. Use the user idea as a supporting energy or atmosphere line.",
+        "- Make the wording feel like a real game-day invite or attendance card with stadium energy, crowd cues, arrival-night information, and sport-specific framing instead of a generic sports poster or season recap.",
+        "- When team, opponent, league, or school-color cues are available, use them to make the copy feel specific without inventing slogans, mascots, or branded phrasing.",
+      ];
+    case "custom_invite":
+      return [
+        "- For custom invites, make the event title, honoree, or host identity the main invitation hierarchy first. Use the user idea as a supporting mood line rather than letting it replace the event identity.",
+        "- Make the wording feel like a real hosted invitation with celebration decor, event styling, and invitation intent instead of a bare loft, venue, or mood-board scene.",
+        "- Let the event purpose do more work than the venue aesthetic so appreciation nights, launches, dinners, and socials do not collapse into generic networking copy.",
+      ];
+    default:
+      return [];
+  }
 }
 
 export function buildInvitationTextPrompt(
@@ -278,8 +353,9 @@ export function buildInvitationTextPrompt(
   guidance?: StudioGenerationGuidance,
 ): string {
   const includeEmoji = guidance?.includeEmoji === true ? "Allowed" : "Avoid";
-  const posterFirstBirthdayOrWedding = isPosterFirstBirthdayOrWedding(event);
+  const posterFirstLiveCard = isPosterFirstLiveCardOccasion(event);
   const gameDay = isGameDayOccasion(event);
+  const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   return [
     "You are a premium invitation designer and invitation copywriter for Envitefy.",
     "Return strict JSON only. Do not include markdown fences.",
@@ -307,15 +383,16 @@ export function buildInvitationTextPrompt(
     "- Preserve the exact spelling of names, titles, venues, and event words from the provided details.",
     "- Double-check every visible word for spelling before returning JSON.",
     "- Do not stylize by misspelling or swapping letters unless the user explicitly supplied that wording.",
+    "- Do not repeat or duplicate the same visible word, title, or phrase across multiple invitation lines unless the user explicitly asked for repetition.",
     "- Keep copy compact enough to fit in the upper and middle card area without pushing essential text into the lower action-button zone.",
-    ...(posterFirstBirthdayOrWedding
+    ...(posterFirstLiveCard
       ? [
-          "- For birthday and wedding invitation copy, keep the hierarchy short, cinematic, and poster-ready rather than reading like flat form fields.",
-          "- For birthdays, when Honoree Name and Age or Milestone are available, make the main title anchor that person's name and birthday milestone first. Treat the user idea as a short subtitle, theme line, or mood cue rather than the primary birthday headline.",
+          "- Keep the invitation hierarchy short, cinematic, and poster-ready rather than reading like flat form fields.",
           "- Treat the user prompt/theme as the dominant art direction for the wording and mood.",
           "- Make the wording read unmistakably as a hosted celebration invitation, not just a description of a place, backdrop, or scene.",
           "- Bring celebration energy into the copy with event-oriented language, invitation intent, and occasion cues.",
-          "- For birthday and wedding visible card copy, never add the year to schedule/date wording unless the user's custom wording explicitly includes that year.",
+          "- Never add the year to schedule/date wording unless the user's custom wording explicitly includes that year.",
+          ...buildPosterFirstInvitationCopyRules(event),
         ]
       : []),
     ...(gameDay
@@ -324,6 +401,7 @@ export function buildInvitationTextPrompt(
           "- Use the supplied sport, team, opponent, league, broadcast, and parking details when present, but do not invent unsupported scores, records, player names, uniforms, logos, mascots, sponsors, or venue claims.",
         ]
       : []),
+    ...occasionThemeGuardrails,
     `- Emoji usage: ${includeEmoji}.`,
     "",
     renderCoreCreativeInputs(event),
@@ -370,7 +448,7 @@ export function buildLiveCardPrompt(
   const includeEmoji = guidance?.includeEmoji === true ? "Allowed" : "Avoid";
   const realismRequested = hasRealismIntent(event, guidance);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
-  const posterFirstBirthdayOrWedding = isPosterFirstBirthdayOrWedding(event);
+  const posterFirstLiveCard = isPosterFirstLiveCardOccasion(event);
   const gameDay = isGameDayOccasion(event);
   const referenceImageCount = Math.max(0, event.referenceImageUrls?.length ?? 0);
   return [
@@ -414,6 +492,7 @@ export function buildLiveCardPrompt(
     "- Do not intentionally misspell words for style. Never invent pun spellings unless they are explicitly provided in the event details.",
     "- If a word risks being misspelled, shorten the copy or omit that word instead of guessing.",
     "- If the user gives a concrete visual direction, keep the copy aligned with it and avoid novelty puns unless they are explicitly requested.",
+    "- Do not repeat or duplicate the same visible word, title, or phrase across multiple invitation fields unless the user explicitly asked for repetition.",
     "- Copy must be layout-safe: keep every text field short enough for a mobile invitation card.",
     "- Keep invitation copy compact so essential wording stays out of the lower action-button zone.",
     "- Important wording should stay in the upper and middle portions of the card, not the lower action-button zone.",
@@ -427,15 +506,15 @@ export function buildLiveCardPrompt(
     "- Treat explicit user visual instructions as the highest-priority requirement.",
     "- Do not replace a literal user request with a cuter or more whimsical version of the theme.",
     "- Avoid novelty puns, mascot language, and jokey rewrites unless the user explicitly asked for them.",
-    ...(posterFirstBirthdayOrWedding
+    ...(posterFirstLiveCard
       ? [
-          "- For birthday and wedding live cards, write short cinematic invitation copy with a poster-like hierarchy instead of flat form-field phrasing.",
-          "- For birthdays, when Honoree Name and Age or Milestone are available, make the main invitation title center on that person's name and milestone first. Use the user idea as a short subtitle, theme line, or mood line instead of the dominant birthday headline.",
+          "- For live cards, write short cinematic invitation copy with a poster-like hierarchy instead of flat form-field phrasing.",
           "- Treat the user's prompt/theme as the dominant art direction for the copy and invitation mood.",
           "- Make the result read first as a real celebration invite for this event type, not simply a stylish scene description.",
           "- Bring clear party / celebration / hosted-event energy into the concept and invitation copy.",
           "- Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy.",
-          "- For birthday and wedding visible card copy, never add the year to schedule/date wording unless the user's custom wording explicitly includes that year.",
+          "- Never add the year to schedule/date wording unless the user's custom wording explicitly includes that year.",
+          ...buildPosterFirstInvitationCopyRules(event),
         ]
       : []),
     ...(gameDay
@@ -516,6 +595,40 @@ export function buildLiveCardPrompt(
 
 export const buildInvitationMetadataPrompt = buildLiveCardPrompt;
 
+function trimOrEmpty(value: string | null | undefined): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function buildApprovedVisibleCopySection(
+  event: StudioEventDetails,
+  liveCard?: StudioLiveCardMetadata | null,
+): string {
+  const invitationOpeningLine = trimOrEmpty(liveCard?.invitation?.openingLine);
+  const shortOpeningLine =
+    invitationOpeningLine &&
+    invitationOpeningLine.split(/\s+/).length <= 8 &&
+    invitationOpeningLine.length <= 64
+      ? invitationOpeningLine
+      : "";
+  const lines = [
+    line(
+      "Main Title",
+      trimOrEmpty(liveCard?.title) || trimOrEmpty(liveCard?.invitation?.title) || trimOrEmpty(event.title),
+    ),
+    line("Subtitle / Theme Line", trimOrEmpty(liveCard?.invitation?.subtitle)),
+    line("Opening Line", shortOpeningLine),
+    line("Schedule Line", trimOrEmpty(liveCard?.invitation?.scheduleLine)),
+    line("Location Line", trimOrEmpty(liveCard?.invitation?.locationLine)),
+  ].filter((item) => !item.endsWith("Not provided"));
+
+  if (lines.length === 0) return "";
+
+  return [
+    "Approved invitation copy to use verbatim if visible text appears in the artwork:",
+    ...lines,
+  ].join("\n");
+}
+
 export function buildInvitationImagePrompt(
   event: StudioEventDetails,
   guidance?: StudioGenerationGuidance,
@@ -524,18 +637,17 @@ export function buildInvitationImagePrompt(
     surface?: StudioGenerateSurface;
     editingExistingImage?: boolean;
     referenceImageCount?: number;
-    posterTextInImage?: boolean;
   },
 ): string {
   const surface = options?.surface === "page" ? "page" : "image";
   const isEditingExistingImage = options?.editingExistingImage === true;
   const refCount = Math.max(0, Math.min(6, options?.referenceImageCount ?? 0));
-  const posterTextInImage = options?.posterTextInImage === true;
   const wedding = isWeddingOccasion(event);
   const realismRequested = hasRealismIntent(event, guidance);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   const pageSurface = surface === "page";
   const gameDay = isGameDayOccasion(event);
+  const approvedVisibleCopy = buildApprovedVisibleCopySection(event, liveCard);
   return [
     isEditingExistingImage
       ? "Edit the provided invitation artwork image."
@@ -543,36 +655,41 @@ export function buildInvitationImagePrompt(
     ...(refCount > 0
       ? [
           isEditingExistingImage
-            ? `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): After the first image (the current invitation card), ${refCount} user-uploaded photo(s) follow in order. Rebuild the artwork so those photos are the dominant visual—typically the upper ~45–60% hero, soft feathered blend into cream or tonal negative space, professional wedding-flyer or save-the-date layout. Preserve recognizable likeness of people. Do not leave user photos only as a tiny strip or thumbnail; they must read as the printed invitation's main photograph.`
-            : `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): Before this text prompt, ${refCount} user-uploaded photo(s) appear in order. The final invitation MUST weave these into the card background and hero art: large focal photo (upper ~45–60% of the canvas), cinematic blend/vignette into the rest of the design, elegant typography layered below or beside—like professional printed wedding or event stationery. Preserve recognizable likeness. Forbidden: tucking user photos into a small gallery row while generating unrelated stock people or generic art as the main visual.`,
+            ? `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): After the first image (the current invitation card), ${refCount} user-uploaded photo(s) follow in order. Rebuild the artwork so those photos are the dominant visual, typically as the upper ~45–60% hero with a soft feathered blend into cream or tonal negative space. Preserve recognizable likeness of people. Do not leave user photos only as a tiny strip or thumbnail; they must read as the invitation background's main photograph.`
+            : `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): Before this text prompt, ${refCount} user-uploaded photo(s) appear in order. The final invitation MUST weave these into the card background and hero art: large focal photo (upper ~45–60% of the canvas), cinematic blend or vignette into the rest of the design, and clean negative space for later overlays. Preserve recognizable likeness. Forbidden: tucking user photos into a small gallery row while generating unrelated stock people or generic art as the main visual.`,
         ]
       : []),
     "Style requirements:",
     "- High-quality vertical invitation card composition (9:16 mobile card).",
-    ...(refCount > 0 ? buildReferencePhotoPromptRules(guidance, refCount) : []),
-    ...(posterTextInImage
+    "- Create one single seamless full-bleed invitation image with one unified continuous scene from top to bottom.",
+    "- This is a finished invitation poster image, not a screenshot and not an app UI mockup.",
+    "- Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay.",
+    "- Treat all visible text as integrated invitation typography inside the scene, not as interface chrome or floating app labels.",
+    "- Keep lighting, perspective, depth, and environment continuous across the full card.",
+    "- Do not split the composition into separate top and bottom scenes.",
+    "- Do not create a collage, stacked sections, framed panels, segmented card design, or a horizontal text band dividing two scenes.",
+    "- Never compose the image as top scene plus text band plus bottom scene.",
+    "- Use a restrained premium invitation hierarchy: one clear headline, optional short subtitle or opening line, and short event-detail lines only when supported by the event details.",
+    "- Use at most one short supporting line beyond the title and event details. Do not create body-paragraph blocks, prose descriptions, or multi-sentence copy sections.",
+    "- Do not repeat or duplicate any visible words or phrases in the image.",
+    "- Do not generate extra paragraphs, filler copy, repeated titles, duplicated names, duplicated schedule lines, or decorative nonsense typography.",
+    "- Do not duplicate or mirror scene elements. Avoid repeated tables, repeated floral arrangements, repeated gazebos, repeated desserts, repeated arches, repeated portraits, or second copies of the main scene stacked elsewhere in the card.",
+    "- Do not create an unrelated solid bar, footer slab, color block, green strip, dark strip, or banner panel near the bottom of the card.",
+    "- Treat all visible text as post-production-grade invitation copy, not generic placeholder wording.",
+    "- Do not generate any UI elements, interface overlays, app controls, buttons, icons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays.",
+    "- Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome.",
+    "- Keep the bottom action-button zone art-only and text-free. End the final visible text line well above the bottom controls area.",
+    "- Do not place any visible text, captions, labels, taglines, icons, buttons, or decorative badges in the bottom button area.",
+    "- Let the artwork continue naturally behind the bottom buttons as full-bleed art; do not create a footer strip, boxed shelf, or empty tray.",
+    "- The output must read as one clean continuous invitation image, not a screenshot, poster mockup, or app capture.",
+    ...(approvedVisibleCopy
       ? [
-          "- This is the first render of a live invitation card for Birthday or Wedding. Bake the invitation copy into the raster like cinematic poster art instead of leaving the text for an HTML overlay.",
-          "- When uploaded reference photo(s) are present, build the poster around those exact photo(s). Do not swap in unrelated stock people or generic scenery as the main subject.",
-          "- For birthdays, when Honoree Name and Age or Milestone are available, make that birthday identity the main visible title hierarchy. Use the user idea as a secondary subtitle, theme line, or mood cue.",
-          "- Preserve the exact supplied spelling of names, venue words, and key event terms.",
-          `- Visible poster schedule/date lines should omit the year and prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}.`,
-          "- Only show a year in visible poster copy when the user's custom wording explicitly includes that year and it must be preserved.",
-          "- Keep venue/location on its own line or separate field rather than merging it into the visible schedule/date line.",
-          "- Treat the user's prompt/theme as the dominant art direction.",
-          "- Keep the visible copy short and cinematic with a clear invitation/poster hierarchy rather than a plain list of form fields.",
-          "- The finished image must read first as a professional hosted event invitation, not merely a cinematic still, venue ad, mascot portrait, or mood board.",
-          "- Make the design unmistakably event-oriented and celebratory for the selected occasion, not just a pretty location or character portrait.",
-          "- Add strong celebration cues appropriate to the event type so the card reads as a hosted invite: for birthdays, favor party decor, birthday energy, and celebration details; for weddings, favor ceremony, reception, romance, and stationery cues.",
-          "- If the concept uses a theater, cinema, screening, or movie-party setting, keep the staging physically correct: seats and audience face the screen, sightlines make sense, and screen-to-seat geometry is believable.",
-          "- Never show theater chairs or audience rows facing away from the screen or arranged in impossible directions relative to the screen.",
-          "- Do not invent marquee text, venue branding, logos, signage, or event facts that are not explicitly supported by the supplied details, approved invitation copy, or source image.",
-          "- The floating action buttons sit low on the card. Keep the lower portion behind them free of visible copy.",
-          "- End all visible text comfortably above the button icons. No words, dates, venue lines, captions, or taglines may appear behind the bottom buttons.",
-          "- Treat the lowest part of the poster as art-first support for the floating buttons. The final text line must sit clearly above that lower area.",
-          "- Do not place marquee wording, signage, decorative captions, or secondary copy in the lowest part of the card.",
+          "- Use only the approved invitation copy below for visible wording in the artwork. Preserve spelling exactly and do not duplicate lines.",
         ]
-      : []),
+      : [
+          "- If visible copy is needed, use only directly supported event details from this prompt. Do not invent unsupported slogans, RSVP lines, footer labels, or extra wording.",
+        ]),
+    ...(refCount > 0 ? buildReferencePhotoPromptRules(guidance, refCount) : []),
     ...(pageSurface
       ? isEditingExistingImage
         ? [
@@ -582,11 +699,17 @@ export function buildInvitationImagePrompt(
             "- Do not introduce new headlines, dates, RSVP lines, or decorative type in the raster unless the edit request explicitly asks for new wording in the image.",
           ]
         : [
-            "- This image is the live-card background only. Do not add visible event wording, letters, numbers, captions, logos, monograms, or decorative type anywhere in the raster.",
-            "- Preserve clean negative space and readable contrast through the upper and middle zones so deterministic overlay text can sit on top later.",
-            "- Keep the background art full-bleed and compositionally strong without relying on text baked into the image.",
+            "- This image is a finished live-card invitation raster, not a blank background.",
+            "- Visible event wording belongs in the raster for this live card, but it must feel like part of one designed invitation composition rather than detached overlay text.",
+            "- Keep the text concentrated in the upper and middle portions of the card and resolve the final visible text line well above the bottom action buttons.",
+            "- Do not draw interface elements in the raster: no buttons, icons, circular controls, pill-shaped bars, chat inputs, nav bars, status bars, carrier labels, clock readouts, battery indicators, notches, home indicators, camera cutouts, or device chrome.",
+            "- Keep the typography elegant, readable, and invitation-first, not like a flyer app screenshot or a dense poster wall of text.",
           ]
-      : ["- Legible typography with editorial hierarchy (headline, subhead, detail lines)."]),
+      : [
+          "- This image is a finished invitation raster rather than empty background art.",
+          "- Visible event wording should feel integrated into the invitation design instead of floating like app overlay text.",
+          "- Keep the typography elegant, readable, and invitation-first, not like a screenshot, flyer editor, or generic poster template.",
+        ]),
     ...(pageSurface && isEditingExistingImage
       ? [
           "- No QR codes. Do not add new watermarks. Keep logos and brand signage that already appear in the source unless the edit explicitly asks to remove or replace them.",
@@ -602,15 +725,13 @@ export function buildInvitationImagePrompt(
           "- Wedding / formal celebration: aim for serious, print-ready stationery—cream, ivory, champagne, soft blush, sage, or navy with restrained gold accents unless the user's palette overrides.",
           ...(pageSurface && !isEditingExistingImage
             ? [
-                "- Keep the wedding background refined and premium, but text-free. Avoid faux printed names, dates, letterpress headlines, or stationery wording inside the raster.",
+                "- Keep the wedding invitation refined and premium. Use restrained elegant typography and avoid duplicated vows copy, repeated names, or repeated wedding-weekend wording.",
               ]
             : pageSurface && isEditingExistingImage
               ? [
                   "- For wedding edits, keep existing printed-looking copy and embellishments from the source; only refine non-text visuals unless the edit names text changes.",
                 ]
-              : [
-                  "- Typography: elegant high-contrast serif for names or main title; clean sans-serif for date/venue lines. Avoid clip-art hearts, cartoon rings, or childish icons.",
-                ]),
+              : []),
           "- Layout: photo-forward hero acceptable (couple portrait, soft florals, foil-line accents, circular or arch masks). Overall look should match boutique invitation suites, not a meme or social sticker pack.",
         ]
       : []),
@@ -650,7 +771,7 @@ export function buildInvitationImagePrompt(
           "- Sparse input handling for weddings: even if the user provides only names, a few descriptive words, or partial event details, generate a complete, polished, premium wedding invitation concept.",
           "- Infer the most appropriate layout, palette, typography pairing, decorative treatment, and overall mood from minimal input.",
           "- Expand short phrases such as 'romantic garden', 'modern black and white', or 'formal beach wedding' into a believable luxury invitation design direction.",
-          "- If event details are incomplete, use tasteful placeholder text only when needed to complete the visual composition.",
+          "- If event details are incomplete, use tasteful visual motifs and composition instead of placeholder wording.",
           "- Do not ask for missing information inside the image output. Make smart, elegant assumptions based on the supplied words.",
           "- Prioritize a custom-designed boutique wedding stationery feel over a literal or flat generic template.",
         ]
@@ -663,40 +784,29 @@ export function buildInvitationImagePrompt(
             "- Treat existing raster typography and signage as locked: when repainting nearby pixels, keep text sharp, legible, and faithful to the source unless the edit explicitly targets that text.",
           ]
         : [
-            "- Visible text is forbidden in the final raster for page/live-card backgrounds.",
-            "- Do not embed names, dates, locations, headings, captions, decorative lettering, faux signatures, or microtype anywhere in the image.",
-            "- Favor imagery over text density and leave the upper and middle composition readable for overlay copy.",
+            "- Visible invitation text is required in the final raster for page/live-card images, but keep it sparse, readable, and intentionally designed.",
+            "- Do not scatter text across the entire card. Use a clear hierarchy in the upper and middle zones and keep the lower action-button zone free of visible wording.",
+            "- Do not embed faux footer microtype, button labels, RSVP instructions, or UI-like labels anywhere in the image.",
           ]
       : [
-          "- Keep text minimal and tasteful.",
-          "- Visible text is a hard requirement: spell every visible word correctly.",
-          "- Double-check all visible text before finalizing the image.",
-          "- Preserve the exact spelling of names, titles, venues, and event words from the supplied details.",
-          "- Use only exact wording from the supplied event details or the approved invitation copy below when text appears in the artwork.",
-          "- Never guess at spelling. If you are not certain about a word, omit it.",
-          "- Do not create stylized misspellings or visual puns unless they are explicitly provided by the user.",
-          "- If the venue or category implies a standard real word such as cinema, theater, party, birthday, or celebration, spell it normally unless the user gave a different exact spelling.",
-          "- For movie themes, if you use the word Cinema, spell it exactly as Cinema.",
-          "- Prefer one short headline, one short supporting line, and one short call to action at most.",
-          "- Keep all important text in the upper and middle portions of the card.",
-          "- Keep essential text out of the bottom action-button zone.",
-          "- Leave the lower portion behind the floating buttons free of visible copy.",
-          "- End the final text block well above the button icons. If space is tight, shorten the copy instead of moving text lower.",
-          "- No words, dates, venue lines, captions, or taglines may appear behind the bottom buttons.",
-          "- Treat the lower edge as artwork continuation for the controls. If needed, delete copy instead of lowering it toward the buttons.",
-          "- Do not place paragraphs, captions, labels, taglines, decorative badges, or key event details in the bottom button area.",
-          "- Avoid crowded text blocks near the bottom edge of the invitation.",
+          "- Visible invitation text is allowed in the final raster, but it must be intentional, sparse, and supported by the supplied event details.",
+          "- Do not embed random filler microtype, extra footer labels, screenshot captions, or unsupported wording anywhere in the image.",
+          "- Favor strong imagery with readable integrated typography instead of overcrowding the card with copy.",
+          "- Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome.",
+          "- Keep the lower portion reserved visually for the app action buttons without turning it into a blank tray or fake footer.",
+          "- Treat the lower edge as artwork continuation behind the app action buttons.",
+          "- The lower zone must stay decorative rather than UI-like: do not invent buttons, icons, icon clusters, circular controls, pills, chips, chat bars, nav bars, progress dots, home indicators, or device chrome.",
+          "- Do not place captions, labels, taglines, schedule lines, location lines, decorative badges, or faux footer details in the bottom button area.",
+          "- Avoid crowded faux-layout structures near the bottom edge of the invitation.",
         ]),
     "- Let the background and artwork continue naturally behind the bottom buttons as full-bleed art.",
+    "- Keep the top edge art-led and decorative, not blank, but never let it read like a mobile status bar or phone frame.",
     "- Do not create a visible footer band, dark strip, boxed zone, or artificial empty shelf at the bottom.",
+    "- Do not create a colored footer slab, tinted rectangle, or unrelated graphic block at the bottom edge.",
+    "- Keep the bottom area art-led and decorative, not blank, but never let it read like a mobile app UI or control tray.",
     "- Do not place important words directly above, behind, or between the bottom buttons.",
     "- These layout instructions are not visible copy. Never print phrases such as action buttons, button row, safe area, safe band, or any other instruction text in the artwork.",
-    ...(pageSurface ? [] : ["- No tiny footer copy."]),
-    ...(pageSurface
-      ? []
-      : [
-          "- Keep the total amount of visible text low enough that the composition still feels spacious on a mobile card.",
-        ]),
+    ...(pageSurface ? [] : ["- No footer copy, microtype, or faux labels."]),
     "- Treat explicit user visual instructions as mandatory, not optional inspiration.",
     ...(realismRequested
       ? [
@@ -709,6 +819,7 @@ export function buildInvitationImagePrompt(
       : []),
     "",
     renderCoreCreativeInputs(event),
+    ...(approvedVisibleCopy ? ["", approvedVisibleCopy] : []),
     "",
     "Event details to influence visual style:",
     line("Category", event.category),
@@ -731,21 +842,15 @@ export function buildInvitationImagePrompt(
     line("Dress Code", event.dressCode),
     renderLinks(event.links),
     "",
-    ...(pageSurface ? [] : [renderApprovedInvitationCopy(liveCard)]),
     liveCard
       ? [
           "",
-          "Secondary live card metadata for copy and palette only:",
-          line("Live Card Title", liveCard.title),
-          line("Live Card Description", liveCard.description),
+          "Secondary live card styling metadata only:",
           line("Theme Style", liveCard.themeStyle),
           line(
             "Palette",
             `${liveCard.palette.primary}, ${liveCard.palette.secondary}, ${liveCard.palette.accent}`,
           ),
-          line("RSVP Message", liveCard.interactiveMetadata.rsvpMessage),
-          line("CTA Label", liveCard.interactiveMetadata.ctaLabel),
-          line("Share Note", liveCard.interactiveMetadata.shareNote),
         ].join("\n")
       : "",
     "",

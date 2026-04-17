@@ -7,7 +7,6 @@ import {
   Camera,
   CheckCircle2,
   ChevronRight,
-  Clock,
   FileText,
   Hotel,
   Image as ImageIcon,
@@ -48,58 +47,66 @@ const floatTransition: Transition = {
 const comparisonCards = [
   {
     eyebrow: "The Artistic Keepsake",
-    title: "Timeless Design",
+    title: "Signature Invitation Design",
     description:
-      "Create print-friendly art for the fridge, the group text, and the family scrapbook.",
-    image: "https://picsum.photos/seed/keepsake/800/1000",
-    tags: ["300 DPI Print", "Custom Art"],
+      "Create polished invitation artwork for print, text threads, and keepsake sharing from the same production workflow.",
+    image: "/images/studio/invite-wedding-weekend.webp",
+    imageAlt: "Wedding invitation design preview",
+    tags: ["Print-Ready Layouts", "Premium Art Direction"],
     surfaceClassName: "bg-[#f3e3d6] text-[#4d352c]",
+    titleClassName: "",
     bodyClassName: "text-[#6c5448]",
     accentClassName: "bg-white text-[#4d352c]",
-    imageFrameClassName: "rotate-[-2deg]",
+    imageFrameClassName:
+      "aspect-[10/16] max-w-[320px] rotate-[-2deg] rounded-[2.1rem] border-[10px] border-white bg-white shadow-[0_30px_70px_rgba(43,27,22,0.16)]",
+    imageClassName: "object-cover object-center",
   },
   {
     eyebrow: "The Interactive Hub",
-    title: "Live Command Center",
+    title: "Hosted Event Hub",
     description:
-      "Turn the same design into a hosted page with RSVPs, maps, links, and real-time updates.",
-    image: "https://picsum.photos/seed/live-hub/800/1400",
-    tags: ["RSVP Tracking", "Live Maps"],
+      "Publish a mobile-ready page with RSVP, schedules, maps, and live guest actions in one hosted destination.",
+    image: "/images/landing/interactive-hub-phone-cutout.webp",
+    imageAlt: "Hosted event hub preview on a mobile phone",
+    tags: ["RSVP & Attendance", "Maps, Links & Updates"],
     surfaceClassName: "bg-[#1f1838] text-white",
+    titleClassName: "!text-white",
     bodyClassName: "text-white/72",
     accentClassName: "bg-[#c98f6b] text-white",
-    imageFrameClassName: "",
+    imageFrameClassName:
+      "aspect-[10/16] max-w-[320px] rounded-[2.1rem] bg-transparent",
+    imageClassName: "object-contain object-center scale-[0.9]",
   },
 ] as const;
 
 const studioFeatures = [
   {
     icon: Layout,
-    title: "Flexible Layouts",
-    desc: "Start with a polished structure, then tailor the event story without fighting the layout.",
+    title: "Structured Layouts",
+    desc: "Start from polished invitation and event-page formats instead of rebuilding the presentation layer for every event.",
   },
   {
     icon: Zap,
-    title: "Action Buttons",
-    desc: "Drop in RSVP, maps, calendar, registry, and update links without another tool chain.",
+    title: "Guest Actions Built In",
+    desc: "Attach RSVP, maps, calendar saves, hotel blocks, registry links, and updates without another tool chain.",
   },
   {
     icon: Share2,
-    title: "Instant Publishing",
-    desc: "Ship a hosted page that looks intentional on mobile, not like a screenshot rescue mission.",
+    title: "Faster Publishing",
+    desc: "Move from approved layout to a live, mobile-ready guest experience without reformatting or duplicate entry.",
   },
 ] as const;
 
 const snapCards = [
   {
     icon: ImageIcon,
-    title: "Screenshots",
-    desc: "Turn social posts, flyers, and text invites into a cleaner page in seconds.",
+    title: "Flyers & Social Captures",
+    desc: "Convert screenshots, promos, and image-based invites into a structured event draft in seconds.",
   },
   {
     icon: FileText,
-    title: "PDF Packets",
-    desc: "Pull schedules, hotel details, and venue notes out of long meet documents.",
+    title: "PDF Schedules",
+    desc: "Extract timing, venue notes, lodging details, and logistics from long-form event documents.",
   },
 ] as const;
 
@@ -139,41 +146,37 @@ const gymnasticsFeatures = [
 const useCases = [
   {
     title: "Gymnastics Meet",
-    subtitle: "Live Event Hub",
-    image: "https://picsum.photos/seed/gym1/600/800",
+    image: "/images/marketing/use-case-gymnastics.webp",
     large: true,
   },
   {
     title: "Birthday Party",
-    subtitle: "Live Event Hub",
-    image: "https://picsum.photos/seed/bday/600/800",
+    image: "/images/marketing/use-case-birthday.webp",
     large: false,
   },
   {
     title: "Wedding Weekend",
-    subtitle: "Live Event Hub",
-    image: "https://picsum.photos/seed/wedding/600/800",
+    image: "/images/marketing/use-case-wedding.webp",
     large: false,
   },
   {
     title: "School Event",
-    subtitle: "Live Event Hub",
-    image: "https://picsum.photos/seed/school/600/800",
+    image: "/images/marketing/use-case-school.webp",
     large: false,
   },
   {
     title: "Community Meetup",
-    subtitle: "Live Event Hub",
-    image: "https://picsum.photos/seed/community/600/800",
+    image: "/images/marketing/use-case-community.webp",
     large: true,
   },
   {
     title: "Sports Schedule",
-    subtitle: "Live Event Hub",
-    image: "https://picsum.photos/seed/sports/600/800",
+    image: "/images/marketing/use-case-sports.webp",
     large: false,
   },
 ] as const;
+
+const hostInitials = ["AL", "MJ", "SK", "TR"] as const;
 
 const howItWorksPaths = [
   {
@@ -217,9 +220,9 @@ const howItWorksPaths = [
 ] as const;
 
 const rsvpHighlights = [
-  "One-tap RSVP from mobile",
-  "Calendar save without extra apps",
-  "Maps and directions attached to the same event page",
+  "One-tap response from any mobile device",
+  "Calendar save built into the same guest flow",
+  "Venue details and directions on the same event page",
 ] as const;
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -344,7 +347,7 @@ function PhoneShell({ children, className }: { children: ReactNode; className?: 
       )}
     >
       <div className="absolute left-1/2 top-3 z-30 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />
-      <div className="overflow-hidden rounded-[3.2rem] bg-white">{children}</div>
+      <div className="h-full overflow-hidden rounded-[3.2rem] bg-white">{children}</div>
     </div>
   );
 }
@@ -473,14 +476,17 @@ export default function LandingExperience() {
                   <div className="mt-12 flex flex-col gap-8">
                     <div className="flex items-center gap-5">
                       <div className="flex -space-x-3">
-                        {[1, 2, 3, 4].map((index) => (
-                          <img
-                            key={index}
-                            src={`https://picsum.photos/seed/user${index}/100/100`}
-                            alt="Envitefy host"
-                            className="h-11 w-11 rounded-full border-4 border-white/85 object-cover shadow-lg"
-                            referrerPolicy="no-referrer"
-                          />
+                        {hostInitials.map((initials, index) => (
+                          <div
+                            key={initials}
+                            aria-hidden="true"
+                            className={cx(
+                              "flex h-11 w-11 items-center justify-center rounded-full border-4 border-white/85 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white shadow-lg",
+                              index % 2 === 0 ? "bg-[#c98f6b]" : "bg-[#7b63d8]",
+                            )}
+                          >
+                            {initials}
+                          </div>
                         ))}
                       </div>
                       <p className="text-sm font-medium text-white/74">
@@ -501,10 +507,9 @@ export default function LandingExperience() {
                     <div className="relative flex h-full flex-col">
                       <div className="relative h-64 overflow-hidden bg-[#c98f6b]">
                         <img
-                          src="https://picsum.photos/seed/birthday-party/600/1000"
+                          src="/images/marketing/landing-hero-live-card.webp"
                           alt="Birthday event preview"
                           className="h-full w-full object-cover opacity-90"
-                          referrerPolicy="no-referrer"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                         <div className="absolute bottom-7 left-6 text-white">
@@ -773,12 +778,12 @@ export default function LandingExperience() {
                 eyebrow="One Studio. Infinite Ways to Host."
                 title={
                   <>
-                    One Studio.
+                    Design once.
                     <br />
-                    <span className={styles.textGradient}>Infinite Ways to Host.</span>
+                    <span className={styles.textGradient}>Deliver every guest-facing surface.</span>
                   </>
                 }
-                description="Whether you need a keepsake design or a high-performance event page, Envitefy covers both surfaces."
+                description="Create polished invitation artwork, hosted event hubs, and mobile-ready guest experiences from the same studio workflow."
                 align="center"
               />
 
@@ -810,6 +815,7 @@ export default function LandingExperience() {
                           className={cx(
                             styles.headline,
                             "mt-6 text-4xl font-extrabold leading-tight",
+                            card.titleClassName,
                           )}
                         >
                           {card.title}
@@ -819,21 +825,23 @@ export default function LandingExperience() {
                         </p>
                       </div>
 
-                      <div className="relative mt-10">
+                      <div className="relative mt-auto pt-10">
                         <div
                           className={cx(
-                            "mx-auto aspect-[4/5] max-w-[360px] overflow-hidden rounded-[2rem] border-[10px] border-white shadow-[0_30px_70px_rgba(43,27,22,0.16)]",
+                            "mx-auto overflow-hidden",
                             card.imageFrameClassName,
                           )}
                         >
                           <img
                             src={card.image}
-                            alt={card.title}
-                            className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
-                            referrerPolicy="no-referrer"
+                            alt={card.imageAlt}
+                            className={cx(
+                              "h-full w-full transition-transform duration-700 hover:scale-105",
+                              card.imageClassName,
+                            )}
                           />
                         </div>
-                        <div className="mt-6 flex flex-wrap justify-center gap-3">
+                        <div className="mt-5 flex flex-wrap justify-center gap-3">
                           {card.tags.map((tag) => (
                             <span
                               key={tag}
@@ -897,52 +905,40 @@ export default function LandingExperience() {
                           <motion.div
                             animate={{ y: [0, -10, 0] }}
                             transition={{ ...floatTransition, duration: 4.6 }}
-                            className="w-full max-w-[18rem] overflow-hidden rounded-[1.75rem] border border-[#e7d8ce] bg-white shadow-[0_24px_50px_rgba(43,27,22,0.12)]"
+                            className="relative w-full max-w-[18rem] overflow-hidden rounded-[1.75rem] border border-[#e7d8ce] bg-white shadow-[0_24px_50px_rgba(43,27,22,0.12)]"
                           >
-                            <div className="h-24 bg-[linear-gradient(135deg,#f3d8c4_0%,#f6eee8_100%)] p-4">
-                              <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[#8c6149] shadow-sm">
+                            <img
+                              src="/images/studio/editor-preview.webp"
+                              alt="Studio editor invitation preview"
+                              className="h-full w-full object-cover"
+                            />
+                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(243,225,212,0.92)_0%,rgba(243,225,212,0.48)_16%,rgba(243,225,212,0)_34%),linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0.18)_100%)]" />
+                            <div className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-1 ring-inset ring-white/58" />
+                            <div className="absolute inset-x-4 top-4 rounded-[1.35rem] bg-white/88 px-4 py-3 shadow-[0_18px_36px_rgba(43,27,22,0.12)] backdrop-blur">
+                              <div className="inline-flex items-center gap-2 rounded-full bg-[#f8efe7] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[#8c6149]">
                                 <WandSparkles className="h-3.5 w-3.5" />
-                                Live Event Page
+                                Invitation Canvas
                               </div>
-                              <div className="mt-7">
-                                <div className="h-3 w-24 rounded-full bg-white/70" />
-                                <div className="mt-3 h-4 w-36 rounded-full bg-white" />
-                              </div>
+                              <p className={cx(styles.headline, "mt-2 text-lg font-bold text-[#2b1b16]")}>
+                                Wedding Weekend
+                              </p>
+                              <p className="mt-1 text-xs leading-5 text-[#6a5549]">
+                                Coordinated print design with live event actions ready to publish.
+                              </p>
                             </div>
-                            <div className="space-y-4 p-4">
-                              <div className="rounded-2xl border border-[#efe4db] bg-[#fbf7f2] p-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3e1d4] text-[#c98f6b]">
-                                    <Calendar className="h-5 w-5" />
-                                  </div>
-                                  <div>
-                                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9b877b]">
-                                      Date & Time
-                                    </div>
-                                    <div className="mt-1 text-sm font-bold text-[#2b1b16]">
-                                      Saturday, Dec 12 at 2 PM
-                                    </div>
-                                  </div>
-                                </div>
+                            <div className="absolute inset-x-4 bottom-4 rounded-[1.35rem] bg-[#201939]/82 p-4 text-white shadow-[0_18px_36px_rgba(24,16,51,0.26)] backdrop-blur">
+                              <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/66">
+                                Linked Actions
                               </div>
-                              <div className="rounded-2xl border border-[#efe4db] bg-[#fbf7f2] p-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3e1d4] text-[#c98f6b]">
-                                    <MapPin className="h-5 w-5" />
-                                  </div>
-                                  <div>
-                                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9b877b]">
-                                      Location
-                                    </div>
-                                    <div className="mt-1 text-sm font-bold text-[#2b1b16]">
-                                      The Glass House Venue
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3 rounded-2xl bg-[#c98f6b] px-4 py-3 text-sm font-bold text-white shadow-[0_18px_32px_rgba(201,143,107,0.24)]">
-                                <Users className="h-4 w-4" />
-                                RSVP Enabled
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {["RSVP", "Hotels", "Registry", "Directions"].map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="rounded-full border border-white/12 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/86"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
                               </div>
                             </div>
                           </motion.div>
@@ -960,17 +956,17 @@ export default function LandingExperience() {
 
                 <div className="order-1 lg:order-2">
                   <SectionIntro
-                    eyebrow="Design with Purpose"
+                    eyebrow="Studio Workflow"
                     title={
                       <>
-                        The Studio:
+                        From layout approval
                         <br />
                         <span className={styles.textGradient}>
-                          Where Events Come Alive.
+                          to live distribution.
                         </span>
                       </>
                     }
-                    description="Ditch the static PDF. Build a polished event hub that handles sharing, RSVPs, directions, and updates automatically."
+                    description="Configure the presentation layer, connect guest actions, and publish a page that is ready for attendance, directions, hotel links, registry links, and live updates."
                   />
 
                   <div className="mt-10 space-y-6">
@@ -1018,16 +1014,17 @@ export default function LandingExperience() {
                       )}
                     >
                       <span className="[text-shadow:0_6px_24px_rgba(255,226,210,0.16)] text-[#fffaf5]">
-                        Already have a flyer?
+                        Already have the source file?
                       </span>
                       <br />
                       <span className="bg-[linear-gradient(135deg,#ffe2d2_0%,#ffb697_100%)] bg-clip-text text-transparent">
-                        Let AI Build It.
+                        Let Envitefy structure it.
                       </span>
                     </h3>
                     <p className="mt-6 max-w-2xl text-lg leading-8 text-white/68">
-                      Envitefy turns paper invites, screenshots, and meet PDFs
-                      into live pages without making you retype the whole event.
+                      Upload a flyer, screenshot, or meet PDF and Envitefy turns
+                      it into a structured draft that is ready to publish as a
+                      live event page.
                     </p>
 
                     <div className="mt-10 grid gap-5 sm:grid-cols-2">
@@ -1065,13 +1062,13 @@ export default function LandingExperience() {
 
                   <div className="relative">
                     <PhoneShell className="mx-auto aspect-[9/19.5] max-w-[320px] border-white/10">
-                      <div className="relative h-full overflow-hidden bg-[#0f142b] text-white">
+                      <div className="relative h-full overflow-hidden bg-[#120f1e] text-white">
                         <img
-                          src="https://picsum.photos/seed/scan-flyer/1000/1800"
+                          src="/images/landing/snap-phone-lara.webp"
                           alt="Flyer scan preview"
-                          className="h-full w-full object-cover opacity-30 grayscale"
-                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
                         />
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,8,18,0.06)_0%,rgba(10,8,18,0.24)_100%)]" />
                         <motion.div
                           animate={{ top: ["0%", "100%", "0%"] }}
                           transition={{
@@ -1095,7 +1092,7 @@ export default function LandingExperience() {
                           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#c98f6b] text-white">
                             <Calendar className="h-3 w-3" />
                           </div>
-                          Dec 12, 2026
+                          Saturday, May 23
                         </motion.div>
 
                         <motion.div
@@ -1111,7 +1108,7 @@ export default function LandingExperience() {
                           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#c98f6b] text-white">
                             <MapPin className="h-3 w-3" />
                           </div>
-                          The Adventure Park
+                          Movie Theater
                         </motion.div>
 
                         <motion.div
@@ -1304,12 +1301,11 @@ export default function LandingExperience() {
                         <h3
                           className={cx(
                             styles.headline,
-                            "text-2xl font-bold text-white",
+                            "text-2xl font-bold !text-white [text-shadow:0_10px_28px_rgba(0,0,0,0.65)]",
                           )}
                         >
                           {item.title}
                         </h3>
-                        <p className="mt-1 text-sm text-white/64">{item.subtitle}</p>
                       </div>
                       <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/18 bg-white/10 text-white opacity-0 transition group-hover:opacity-100">
                         <ArrowRight className="h-5 w-5" />
@@ -1336,58 +1332,28 @@ export default function LandingExperience() {
             <div className={cx(styles.surfacePanel, "overflow-visible rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
               <div className="grid gap-12 lg:grid-cols-[minmax(300px,420px)_minmax(0,1fr)] lg:items-center">
                 <div className="relative order-2 h-[420px] lg:order-1">
-                  <div
-                    className={cx(
-                      styles.rsvpBubble,
-                      styles.floatUp,
-                      "absolute left-0 top-4 max-w-[calc(100%-4rem)]",
-                    )}
-                  >
-                    <Calendar className="h-5 w-5" />
-                    <span className="text-sm font-bold sm:text-lg">Oct 24, 2026</span>
+                  <div className="absolute inset-0 overflow-hidden rounded-[2.6rem] border border-[#efe4db] bg-white shadow-[0_28px_80px_rgba(43,27,22,0.12)]">
+                    <img
+                      src="/images/landing/rsvp-flow-generated.webp"
+                      alt="RSVP flow mobile preview"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02)_0%,rgba(255,255,255,0.16)_100%)]" />
                   </div>
 
-                  <div
-                    className={cx(
-                      styles.rsvpBubble,
-                      styles.floatDown,
-                      "absolute right-0 top-[40%] max-w-[calc(100%-2rem)]",
-                    )}
-                  >
-                    <Clock className="h-5 w-5" />
-                    <span className="text-sm font-bold sm:text-lg">
-                      6:30 PM - 10:00 PM
-                    </span>
-                  </div>
-
-                  <div
-                    className={cx(
-                      styles.rsvpBubble,
-                      styles.floatLift,
-                      "absolute bottom-6 left-6 max-w-[calc(100%-5rem)]",
-                    )}
-                  >
-                    <MapPin className="h-5 w-5" />
-                    <span className="text-sm font-bold sm:text-lg">
-                      The Glass House Venue
-                    </span>
-                  </div>
-
-                  <div className="absolute left-1/2 top-14 w-max max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full bg-white px-5 py-4 text-[#2b1b16] shadow-[0_28px_70px_rgba(43,27,22,0.12)] sm:px-8">
+                  <div className="absolute left-4 top-4 rounded-full bg-white px-5 py-4 text-[#2b1b16] shadow-[0_28px_70px_rgba(43,27,22,0.12)]">
                     <div className="flex items-center gap-3">
-                      <CheckCircle2 className="h-6 w-6 text-[#c98f6b]" />
-                      <span className="text-sm font-extrabold sm:text-xl">
-                        I&apos;m Attending
+                      <CheckCircle2 className="h-5 w-5 text-[#c98f6b]" />
+                      <span className="text-sm font-extrabold sm:text-base">
+                        Confirmed in one tap
                       </span>
                     </div>
                   </div>
-
-                  <div className={styles.rsvpHalo} />
                 </div>
 
                 <div className="order-1 lg:order-2">
                   <SectionIntro
-                    eyebrow="RSVP flow"
+                    eyebrow="RSVP Flow"
                     title={
                       <>
                         Designed to get a
@@ -1395,7 +1361,7 @@ export default function LandingExperience() {
                         <span className={styles.textGradient}>yes.</span>
                       </>
                     }
-                    description="The RSVP surface stays light and mobile-friendly so guests can respond, save the date, and find the venue without extra friction."
+                    description="The RSVP experience stays fast, legible, and conversion-focused so guests can confirm, save the date, and open directions from the same page."
                   />
 
                   <ul className="mt-10 space-y-5">

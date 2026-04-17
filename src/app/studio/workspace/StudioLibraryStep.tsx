@@ -12,7 +12,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getFallbackThumbnail,
   getStudioShareTitle,
@@ -21,9 +21,9 @@ import {
   studioLibraryBadgeClass,
   studioLibraryCardClass,
   studioLibraryGhostIconButtonClass,
-  studioLibraryPanelClass,
 } from "../studio-workspace-ui-classes";
 import type { MediaItem } from "../studio-workspace-types";
+import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 
 export type StudioLibraryStepProps = {
   mediaList: MediaItem[];
@@ -35,11 +35,11 @@ export type StudioLibraryStepProps = {
   shareMedia: (item: MediaItem) => void | Promise<void>;
   sharingId: string | null;
   copySuccess: boolean;
-  deleteMedia: (id: string) => void;
+  deleteMedia: (item: MediaItem) => void;
   handleMediaImageLoadError: (item: MediaItem) => void;
 };
 
-const LIBRARY_ITEMS_PER_PAGE = 8;
+const LIBRARY_ITEMS_PER_BATCH = 10;
 
 function getLibraryTitle(item: MediaItem) {
   return getStudioShareTitle(item);
@@ -63,18 +63,15 @@ export function StudioLibraryStep({
   deleteMedia,
   handleMediaImageLoadError,
 }: StudioLibraryStepProps) {
-  const [libraryPage, setLibraryPage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-
-  const libraryPageCount = isMobile
-    ? 1
-    : Math.max(1, Math.ceil(mediaList.length / LIBRARY_ITEMS_PER_PAGE));
+  const [visibleCount, setVisibleCount] = useState(LIBRARY_ITEMS_PER_BATCH);
+  const libraryLoadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const libraryVisibleItems = useMemo(() => {
-    if (isMobile) return mediaList;
-    const windowStart = libraryPage * LIBRARY_ITEMS_PER_PAGE;
-    return mediaList.slice(windowStart, windowStart + LIBRARY_ITEMS_PER_PAGE);
-  }, [isMobile, libraryPage, mediaList]);
+    return mediaList.slice(0, visibleCount);
+  }, [mediaList, visibleCount]);
+
+  const hasMoreLibraryItems = libraryVisibleItems.length < mediaList.length;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -87,11 +84,35 @@ export function StudioLibraryStep({
   }, []);
 
   useEffect(() => {
-    setLibraryPage((current) => {
-      if (isMobile) return 0;
-      return Math.min(current, Math.max(0, libraryPageCount - 1));
-    });
-  }, [isMobile, libraryPageCount]);
+    const nextVisibleCount = Math.max(LIBRARY_ITEMS_PER_BATCH, visibleCount);
+    if (mediaList.length <= nextVisibleCount) {
+      setVisibleCount(mediaList.length);
+      return;
+    }
+    setVisibleCount(nextVisibleCount);
+  }, [mediaList.length]);
+
+  useEffect(() => {
+    if (!hasMoreLibraryItems) return;
+    if (typeof window === "undefined") return;
+    const target = libraryLoadMoreRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry?.isIntersecting) return;
+        setVisibleCount((current) => Math.min(current + LIBRARY_ITEMS_PER_BATCH, mediaList.length));
+      },
+      {
+        rootMargin: "0px 0px 320px 0px",
+        threshold: 0.01,
+      },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMoreLibraryItems, mediaList.length, libraryVisibleItems.length]);
 
   function openLibraryItem(item: MediaItem) {
     if (item.status === "error") {
@@ -132,41 +153,14 @@ export function StudioLibraryStep({
         </div>
       ) : (
         <>
-          <div className={studioLibraryPanelClass}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#6b7280]">
-                  Studio Library
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#111111] sm:text-3xl">
-                  Saved cards gallery
-                </h2>
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-black/6 bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6b7280]">
-                <span>{mediaList.length}</span>
-                <span>items</span>
-                {!isMobile && libraryPageCount > 1 ? (
-                  <>
-                    <span className="text-black/20">•</span>
-                    <span>
-                      Page {libraryPage + 1} of {libraryPageCount}
-                    </span>
-                  </>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
           <section className="min-h-[500px]">
             <AnimatePresence mode="wait">
               <motion.div
-                key={libraryPage + (isMobile ? "-mobile" : "-desktop")}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.4 }}
                 className={`grid gap-6 md:gap-8 ${
-                  isMobile ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+                  isMobile ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
                 }`}
               >
                 {libraryVisibleItems.map((item) => {
@@ -222,6 +216,9 @@ export function StudioLibraryStep({
                               referrerPolicy="no-referrer"
                               onError={() => handleMediaImageLoadError(item)}
                             />
+                            {item.type === "page" ? (
+                              <LiveCardHeroTextOverlay invitationData={item.data} />
+                            ) : null}
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[linear-gradient(180deg,rgba(17,24,39,0.16),rgba(17,24,39,0.58))] opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
                               <button
                                 type="button"
@@ -274,7 +271,7 @@ export function StudioLibraryStep({
 
                         <button
                           type="button"
-                          onClick={() => deleteMedia(item.id)}
+                          onClick={() => deleteMedia(item)}
                           className="absolute left-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/8 bg-white/82 text-[#ef4444] shadow-[0_10px_24px_rgba(15,23,42,0.12)] backdrop-blur-md transition-all hover:scale-105 hover:bg-white"
                           title="Delete from library"
                           aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
@@ -299,23 +296,13 @@ export function StudioLibraryStep({
               </motion.div>
             </AnimatePresence>
           </section>
-
-          {!isMobile && libraryPageCount > 1 ? (
-            <div className="flex justify-center items-center gap-3">
-              {Array.from({ length: libraryPageCount }).map((_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => setLibraryPage(index)}
-                  aria-label={`Show library page ${index + 1}`}
-                  aria-pressed={index === libraryPage}
-                  className={`h-2 rounded-full transition-all duration-500 ${
-                    index === libraryPage
-                      ? "w-6 bg-[#1A1A1A]"
-                      : "w-2 bg-[#d1d5db] hover:bg-[#9ca3af]"
-                  }`}
-                />
-              ))}
+          {hasMoreLibraryItems ? (
+            <div
+              ref={libraryLoadMoreRef}
+              aria-hidden="true"
+              className="flex min-h-16 items-center justify-center"
+            >
+              <Loader2 className="h-5 w-5 animate-spin text-[#9ca3af]" />
             </div>
           ) : null}
         </>

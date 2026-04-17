@@ -49,7 +49,7 @@ const REMOTE_SAVE_DEBOUNCE_MS = 800;
 
 export function useStudioMediaLibrary() {
   const { data: session, status } = useSession();
-  const [mediaList, setMediaList] = useState<MediaItem[]>(() => readLocalStorageItems());
+  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
   const [remoteHydrated, setRemoteHydrated] = useState(false);
   const [librarySyncError, setLibrarySyncError] = useState<string | null>(null);
   const [syncRetryTick, setSyncRetryTick] = useState(0);

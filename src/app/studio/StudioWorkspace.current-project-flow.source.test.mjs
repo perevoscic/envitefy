@@ -10,6 +10,7 @@ function readSource(relPath) {
 test("studio workspace separates the current project from the saved library", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
   const libraryStep = readSource("src/app/studio/workspace/StudioLibraryStep.tsx");
+  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
 
   assert.match(source, /function upsertLibraryItem\(item: MediaItem\)/);
   assert.match(source, /function saveWorkingProject\(project: MediaItem \| null\)/);
@@ -21,6 +22,10 @@ test("studio workspace separates the current project from the saved library", ()
   assert.match(source, /saveWorkingProject\(workingItem\);/);
   assert.match(source, /upsertLibraryItem\(syncedItem\);/);
   assert.match(source, /clearCurrentProject\(\{ resetDetails: true \}\);/);
+  assert.match(editorStep, /Save this project to keep it in Library\./);
+  assert.match(editorStep, /No current project yet/);
+  assert.match(source, /const currentProjectSaveLabel = /);
+  assert.match(editorStep, /Discard/);
 
   assert.match(libraryStep, /setActivePage: \(item: MediaItem \| null\) => void;/);
   assert.match(libraryStep, /function openLibraryItem\(item: MediaItem\)/);

@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { type Dispatch, type SetStateAction } from "react";
-import type { StudioStep } from "../studio-types";
+import type { StudioCreateStep } from "../studio-types";
 import {
   DETAILS_DESCRIPTION_PLACEHOLDER,
   SHARED_BASICS,
@@ -17,8 +17,8 @@ import { StudioOptionalMediaRow } from "./StudioOptionalMediaRow";
 export type StudioFormStepProps = {
   details: EventDetails;
   setDetails: Dispatch<SetStateAction<EventDetails>>;
-  setStep: (step: StudioStep) => void;
-  isFormValid: () => boolean;
+  setCreateStep: (step: StudioCreateStep) => void;
+  isFormValid: boolean;
   editingId: string | null;
   onUploadFlyer: (file: File) => Promise<void>;
   onRemoveFlyer: () => void;
@@ -33,7 +33,7 @@ export type StudioFormStepProps = {
 export function StudioFormStep({
   details,
   setDetails,
-  setStep,
+  setCreateStep,
   isFormValid,
   editingId,
   onUploadFlyer,
@@ -132,11 +132,11 @@ export function StudioFormStep({
           </p>
         </div>
         <button
-          onClick={() => setStep("studio")}
-          disabled={!isFormValid()}
+          onClick={() => setCreateStep("editor")}
+          disabled={!isFormValid}
           className="flex items-center justify-center gap-3 bg-[#1A1A1A] px-10 py-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#F5F2EF] shadow-[0_24px_48px_rgba(26,26,26,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#262626] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {editingId ? "Update" : "Initiate"}
+          {editingId ? "Return to Editor" : "Open Editor"}
           <ChevronRight className="h-4 w-4 text-[#F5F2EF]" />
         </button>
       </div>

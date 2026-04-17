@@ -29,6 +29,8 @@ function cx(...parts: Array<string | false | null | undefined>) {
 
 const glassGhostLoginClass =
   "cta-shell nav-chrome-motion h-11 shrink-0 rounded-full border border-white/18 bg-white/[0.12] px-6 text-sm font-bold text-white transition-all hover:bg-white/[0.18]";
+const lightNavPillClass =
+  "hero-top-nav-pill-light";
 
 function NavLinkItem({
   href,
@@ -97,7 +99,7 @@ export default function HeroTopNav({
               ? cx(
                   "theme-glass-nav rounded-[1.8rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]",
                 )
-              : "rounded-[1.8rem]",
+              : "hero-top-nav-shell-light rounded-[1.8rem]",
           )}
         >
           <div className="flex items-center justify-between gap-4">
@@ -109,7 +111,10 @@ export default function HeroTopNav({
               <EnvitefyWordmark
                 scaled={false}
                 tone={isDarkGlass ? "light" : "gradient"}
-                className="max-w-full text-[2.05rem] leading-none transition-transform duration-300 group-hover:scale-[1.02] sm:text-[2.28rem] md:text-[2.52rem]"
+                className={cx(
+                  "max-w-full text-[2.05rem] leading-none transition-transform duration-300 group-hover:scale-[1.02] sm:text-[2.28rem] md:text-[2.52rem]",
+                  !isDarkGlass && "hero-top-nav-brand-light",
+                )}
               />
             </Link>
 
@@ -126,7 +131,7 @@ export default function HeroTopNav({
                     "nav-chrome-motion rounded-full px-4 py-2 text-sm font-semibold transition",
                     isDarkGlass
                       ? "text-white hover:bg-white/[0.12]"
-                      : "nav-chrome-pill",
+                      : lightNavPillClass,
                   )}
                 />
               ))}
@@ -140,7 +145,7 @@ export default function HeroTopNav({
                     "nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
                     isDarkGlass
                       ? "text-white"
-                      : "nav-chrome-pill",
+                      : lightNavPillClass,
                   )}
                 >
                   Dashboard
@@ -152,7 +157,8 @@ export default function HeroTopNav({
                   className={cx(
                     isDarkGlass
                       ? glassGhostLoginClass
-                      : "nav-chrome-pill nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
+                      : "nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
+                    !isDarkGlass && lightNavPillClass,
                   )}
                 >
                   Login
@@ -240,7 +246,7 @@ export default function HeroTopNav({
                     "nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
                     isDarkGlass
                       ? "text-white hover:bg-white/[0.06]"
-                      : "nav-chrome-pill",
+                      : lightNavPillClass,
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 />
@@ -253,7 +259,7 @@ export default function HeroTopNav({
                     "nav-chrome-motion mt-2 w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
                     isDarkGlass
                       ? "text-white hover:bg-white/[0.06]"
-                      : "nav-chrome-pill",
+                      : lightNavPillClass,
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -267,10 +273,10 @@ export default function HeroTopNav({
                     onGuestLoginAction();
                   }}
                   className={cx(
-                    "mt-2 transition",
+                    "mt-2 nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
                     isDarkGlass
                       ? `${glassGhostLoginClass} self-end`
-                      : "nav-chrome-pill nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold",
+                      : lightNavPillClass,
                   )}
                 >
                   Login

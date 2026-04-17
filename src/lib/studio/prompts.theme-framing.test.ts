@@ -60,6 +60,146 @@ test("studio invitation image prompt keeps custom themes invitation-ready", () =
   assert.match(prompt, /themeStyle should describe the invitation-ready version of the concept/);
 });
 
+test("studio baked-text invitation prompts give every non-birthday-wedding category explicit invitation guidance", () => {
+  const cases = [
+    {
+      category: "Baby Shower",
+      title: "Elena's Baby Shower",
+      occasion: "Baby Shower",
+      honoreeName: "Elena",
+      userIdea: "soft blue balloons and teddy bears",
+      copyRule:
+        /For baby showers, make the honoree name, baby name, or baby shower title the main invitation hierarchy first\./,
+      imageRule:
+        /For baby showers, make the theme read as a baby shower with baby-shower decor, favors, dessert-table styling, and welcoming celebration cues\./,
+    },
+    {
+      category: "Bridal Shower",
+      title: "Madeline’s Garden Brunch",
+      occasion: "Bridal Shower",
+      honoreeName: "Madeline",
+      userIdea: "garden brunch with blush flowers",
+      copyRule:
+        /For bridal showers, make the bride's name or bridal shower title the main invitation hierarchy first\./,
+      imageRule:
+        /For bridal showers, make the theme read as a bridal shower with brunch, tea-party, gift-table, floral, and bride-focused celebration cues\./,
+    },
+    {
+      category: "Anniversary",
+      title: "Silver Milestone Dinner",
+      occasion: "Anniversary",
+      honoreeName: "Ava & James",
+      ageOrMilestone: "25",
+      userIdea: "25th anniversary dinner with candles and roses",
+      copyRule:
+        /For anniversaries, make the couple names, anniversary title, or milestone year the main invitation hierarchy first\./,
+      imageRule:
+        /For anniversaries, make the theme read as an anniversary celebration with elegant party styling and couple-centered celebration cues\./,
+    },
+    {
+      category: "Housewarming",
+      title: "New Home, New Memories",
+      occasion: "Housewarming",
+      honoreeName: "The Bennetts",
+      userIdea: "modern housewarming party at our new home",
+      copyRule:
+        /For housewarmings, make the host names, housewarming title, or new-home identity the main invitation hierarchy first\./,
+      imageRule:
+        /For housewarmings, make the theme read as a welcoming hosted gathering with home-party decor and hosting cues\./,
+    },
+    {
+      category: "Field Trip/Day",
+      title: "Science Discovery Day",
+      occasion: "Field Trip/Day",
+      honoreeName: "3rd Grade",
+      userIdea: "school trip to the science museum",
+      copyRule:
+        /For field trips or school days, make the event title, school outing name, or destination title the main invitation hierarchy first\./,
+      imageRule:
+        /For field trips or school-day invites, make the theme read as an organized school event with group-activity and school-planning cues\./,
+    },
+    {
+      category: "Game Day",
+      title: "Friday Night Lights",
+      occasion: "Game Day",
+      sportType: "Football",
+      teamName: "Varsity Panthers",
+      opponentName: "Central City Tigers",
+      userIdea: "friday night football under the lights, blue and gold",
+      copyRule:
+        /For Game Day, make the matchup, team, or game-day title the main invitation hierarchy first\./,
+      imageRule:
+        /For Game Day, make the theme read as a real sports-event invitation with matchup energy, crowd atmosphere, sport-specific setting cues, and game-night presentation rather than a generic athlete poster or random action shot\./,
+    },
+    {
+      category: "Custom Invite",
+      title: "Founder Appreciation Night",
+      occasion: "Custom Invite",
+      honoreeName: "Founders",
+      userIdea: "founder appreciation night in a modern loft",
+      copyRule:
+        /For custom invites, make the event title, honoree, or host identity the main invitation hierarchy first\./,
+      imageRule:
+        /Keep the final concept invitation-ready and celebration-oriented rather than drifting into generic scenery\./,
+    },
+  ];
+
+  for (const testCase of cases) {
+    const liveCardPrompt = buildLiveCardPrompt(
+      {
+        title: testCase.title,
+        category: testCase.category,
+        occasion: testCase.occasion,
+        honoreeName: testCase.honoreeName,
+        ageOrMilestone: testCase.ageOrMilestone,
+        sportType: testCase.sportType,
+        teamName: testCase.teamName,
+        opponentName: testCase.opponentName,
+        userIdea: testCase.userIdea,
+        links: [],
+      },
+      {
+        style: `Highest-priority visual direction from the user: ${testCase.userIdea}. Treat the user's words as the theme of the invitation.`,
+      },
+    );
+    const imagePrompt = buildInvitationImagePrompt(
+      {
+        title: testCase.title,
+        category: testCase.category,
+        occasion: testCase.occasion,
+        honoreeName: testCase.honoreeName,
+        ageOrMilestone: testCase.ageOrMilestone,
+        sportType: testCase.sportType,
+        teamName: testCase.teamName,
+        opponentName: testCase.opponentName,
+        userIdea: testCase.userIdea,
+        links: [],
+      },
+      {
+        style: `Highest-priority visual direction from the user: ${testCase.userIdea}. Treat the user's words as the theme of the invitation.`,
+      },
+      null,
+      { surface: "image" },
+    );
+
+    assert.match(liveCardPrompt, /write short cinematic invitation copy with a poster-like hierarchy/);
+    assert.match(liveCardPrompt, testCase.copyRule);
+    assert.match(
+      imagePrompt,
+      /Create one single seamless full-bleed invitation image with one unified continuous scene from top to bottom\./,
+    );
+    assert.match(
+      imagePrompt,
+      /Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay\./,
+    );
+    assert.match(
+      imagePrompt,
+      /Visible invitation text is allowed in the final raster, but it must be intentional, sparse, and supported by the supplied event details\./,
+    );
+    assert.match(imagePrompt, testCase.imageRule);
+  }
+});
+
 test("studio prompts keep game day themes tied to the sports invitation type", () => {
   const prompt = buildLiveCardPrompt(
     {
@@ -115,17 +255,41 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   assert.match(prompt, /Core creative inputs:/);
   assert.match(prompt, /User Idea: modern race car/);
   assert.match(prompt, /Age or Milestone: 9/);
-  assert.match(prompt, /Keep essential text out of the bottom action-button zone\./);
+  assert.match(
+    prompt,
+    /Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay\./,
+  );
+  assert.match(
+    prompt,
+    /Use at most one short supporting line beyond the title and event details\. Do not create body-paragraph blocks, prose descriptions, or multi-sentence copy sections\./,
+  );
+  assert.match(
+    prompt,
+    /Visible invitation text is allowed in the final raster, but it must be intentional, sparse, and supported by the supplied event details\./,
+  );
   assert.match(
     prompt,
     /Let the background and artwork continue naturally behind the bottom buttons as full-bleed art\./,
   );
   assert.match(
     prompt,
+    /Keep the lower portion reserved visually for the app action buttons without turning it into a blank tray or fake footer\./,
+  );
+  assert.match(
+    prompt,
+    /Treat the lower edge as artwork continuation behind the app action buttons\./,
+  );
+  assert.match(
+    prompt,
     /Do not create a visible footer band, dark strip, boxed zone, or artificial empty shelf at the bottom\./,
+  );
+  assert.match(
+    prompt,
+    /Do not create a colored footer slab, tinted rectangle, or unrelated graphic block at the bottom edge\./,
   );
   assert.doesNotMatch(prompt, /Reserve roughly the bottom 28-30% of the card/);
   assert.doesNotMatch(prompt, /The lower button area should be visually quiet/);
+  assert.doesNotMatch(prompt, /Legible typography with editorial hierarchy/);
 });
 
 test("studio invitation image prompt keeps game day imagery grounded in provided sports context", () => {
@@ -168,11 +332,11 @@ test("studio invitation image prompt keeps game day imagery grounded in provided
   assert.match(prompt, /Parking \/ Arrival: Lot C/);
   assert.match(
     prompt,
-    /Visible text is forbidden in the final raster for page\/live-card backgrounds\./,
+    /Visible invitation text is required in the final raster for page\/live-card images, but keep it sparse, readable, and intentionally designed\./,
   );
 });
 
-test("page live-card background prompts forbid visible raster text and preserve overlay space", () => {
+test("page live-card prompts require baked-in raster text and preserve a clear bottom action zone", () => {
   const prompt = buildInvitationImagePrompt(
     {
       title: "Ava's Garden Party",
@@ -186,20 +350,20 @@ test("page live-card background prompts forbid visible raster text and preserve 
     { surface: "page" },
   );
 
-  assert.match(prompt, /live-card background only/);
+  assert.match(prompt, /finished live-card invitation raster/);
   assert.match(
     prompt,
-    /Do not add visible event wording, letters, numbers, captions, logos, monograms, or decorative type/,
+    /Visible event wording belongs in the raster for this live card, but it must feel like part of one designed invitation composition rather than detached overlay text/,
   );
   assert.match(
     prompt,
-    /Visible text is forbidden in the final raster for page\/live-card backgrounds\./,
+    /Visible invitation text is required in the final raster for page\/live-card images, but keep it sparse, readable, and intentionally designed\./,
   );
   assert.match(
     prompt,
-    /Preserve clean negative space and readable contrast through the upper and middle zones/,
+    /resolve the final visible text line well above the bottom action buttons/,
   );
-  assert.doesNotMatch(prompt, /Approved invitation copy to use verbatim/);
+  assert.match(prompt, /Approved invitation copy to use verbatim/);
 });
 
 test("page live-card image edit prompts preserve baked-in text and logos", () => {
@@ -226,7 +390,7 @@ test("page live-card image edit prompts preserve baked-in text and logos", () =>
   );
 });
 
-test("poster-first birthday live-card image prompts allow cinematic raster text, exact spelling, and no visible year by default", () => {
+test("birthday image prompts bake approved invitation copy into the image while protecting the button zone", () => {
   const prompt = buildInvitationImagePrompt(
     {
       title: "Ava After Dark",
@@ -269,79 +433,83 @@ test("poster-first birthday live-card image prompts allow cinematic raster text,
         hashtags: ["#AvaAfterDark"],
       },
     },
-    { surface: "image", posterTextInImage: true, referenceImageCount: 2 },
+    { surface: "image", referenceImageCount: 2 },
   );
 
-  assert.match(prompt, /first render of a live invitation card for Birthday or Wedding/);
-  assert.match(prompt, /Bake the invitation copy into the raster like cinematic poster art/);
+  assert.match(prompt, /This is a finished invitation poster image, not a screenshot and not an app UI mockup\./);
   assert.match(
     prompt,
-    /When uploaded reference photo\(s\) are present, build the poster around those exact photo\(s\)/,
+    /Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay\./,
   );
   assert.match(
     prompt,
-    /Visible poster schedule\/date lines should omit the year and prefer Saturday May 23rd at 12:00 PM; if time is missing, use Saturday May 23rd\./,
+    /Create one single seamless full-bleed invitation image with one unified continuous scene from top to bottom\./,
   );
   assert.match(
     prompt,
-    /Only show a year in visible poster copy when the user's custom wording explicitly includes that year and it must be preserved\./,
+    /Visible invitation text is allowed in the final raster, but it must be intentional, sparse, and supported by the supplied event details\./,
   );
   assert.match(
     prompt,
-    /Keep venue\/location on its own line or separate field rather than merging it into the visible schedule\/date line\./,
+    /This image is a finished invitation raster rather than empty background art\./,
   );
   assert.match(
     prompt,
-    /Preserve the exact supplied spelling of names, venue words, and key event terms/,
+    /USER PHOTOS IN THE FLYER \(NOT A SIDEBAR\): Before this text prompt, 2 user-uploaded photo\(s\) appear in order\./,
   );
   assert.match(
     prompt,
-    /Keep the visible copy short and cinematic with a clear invitation\/poster hierarchy/,
+    /The final invitation MUST weave these into the card background and hero art: large focal photo \(upper ~45[–-]60% of the canvas\), cinematic blend or vignette into the rest of the design, and clean negative space for later overlays\./,
   );
   assert.match(
     prompt,
-    /The finished image must read first as a professional hosted event invitation, not merely a cinematic still, venue ad, mascot portrait, or mood board/,
+    /Secondary live card styling metadata only:/,
+  );
+  assert.match(prompt, /Approved invitation copy to use verbatim if visible text appears in the artwork:/);
+  assert.match(prompt, /Main Title: Ava After Dark/);
+  assert.match(prompt, /Subtitle \/ Theme Line: Birthday in Bloom/);
+  assert.match(prompt, /Opening Line: Meet us under the lights\./);
+  assert.match(prompt, /Schedule Line: Friday May 10th at 7:00 PM/);
+  assert.match(prompt, /Location Line: Moonlight Hall/);
+  assert.match(prompt, /Theme Style: cinematic garden/);
+  assert.match(prompt, /Palette: #101828, #f5d0fe, #f59e0b/);
+  assert.match(
+    prompt,
+    /The finished result must still read first as a hosted invitation or greeting-card design, not a fan poster, character sheet, collage, or movie still/,
   );
   assert.match(
     prompt,
-    /Make the design unmistakably event-oriented and celebratory for the selected occasion/,
+    /The supplied reference photo\(s\) may show people: show them prominently in the hero artwork with natural, respectful rendering\./,
   );
   assert.match(
     prompt,
-    /If the concept uses a theater, cinema, screening, or movie-party setting, keep the staging physically correct: seats and audience face the screen, sightlines make sense, and screen-to-seat geometry is believable/,
+    /The lower zone must stay decorative rather than UI-like: do not invent buttons, icons, icon clusters, circular controls, pills, chips, chat bars, nav bars, progress dots, home indicators, or device chrome\./,
   );
   assert.match(
     prompt,
-    /Never show theater chairs or audience rows facing away from the screen or arranged in impossible directions relative to the screen/,
+    /Do not duplicate or mirror scene elements\. Avoid repeated tables, repeated floral arrangements, repeated gazebos, repeated desserts, repeated arches, repeated portraits, or second copies of the main scene stacked elsewhere in the card\./,
   );
   assert.match(
     prompt,
-    /Do not invent marquee text, venue branding, logos, signage, or event facts that are not explicitly supported by the supplied details, approved invitation copy, or source image/,
-  );
-  assert.match(prompt, /Keep the lower portion behind them free of visible copy/);
-  assert.match(
-    prompt,
-    /No words, dates, venue lines, captions, or taglines may appear behind the bottom buttons/,
+    /Do not create an unrelated solid bar, footer slab, color block, green strip, dark strip, or banner panel near the bottom of the card\./,
   );
   assert.match(
     prompt,
-    /Treat the lowest part of the poster as art-first support for the floating buttons/,
+    /Do not place captions, labels, taglines, schedule lines, location lines, decorative badges, or faux footer details in the bottom button area\./,
   );
-  assert.match(
-    prompt,
-    /Do not place marquee wording, signage, decorative captions, or secondary copy in the lowest part of the card/,
-  );
-  assert.doesNotMatch(prompt, /show that exact year in the poster copy or hierarchy/i);
+  assert.doesNotMatch(prompt, /Golden-hour rooftop birthday invitation\./);
   assert.match(
     prompt,
     /Never print phrases such as action buttons, button row, safe area, safe band, or any other instruction text in the artwork/,
   );
-  assert.doesNotMatch(prompt, /text-free safe band/i);
-  assert.match(prompt, /Approved invitation copy to use verbatim if text appears in the artwork/);
+  assert.match(
+    prompt,
+    /Use only the approved invitation copy below for visible wording in the artwork\. Preserve spelling exactly and do not duplicate lines\./,
+  );
   assert.match(prompt, /Event Year: 2030/);
 });
 
-test("birthday and wedding live-card text prompts omit visible year and require poster-like copy", () => {
+test("poster-first live-card text prompts omit visible year and require poster-like copy", () => {
   const prompt = buildLiveCardPrompt(
     {
       title: "Ava After Dark",
@@ -369,7 +537,7 @@ test("birthday and wedding live-card text prompts omit visible year and require 
   );
   assert.match(
     prompt,
-    /For birthday and wedding visible card copy, never add the year to schedule\/date wording unless the user's custom wording explicitly includes that year\./,
+    /Never add the year to schedule\/date wording unless the user's custom wording explicitly includes that year\./,
   );
   assert.match(prompt, /write short cinematic invitation copy with a poster-like hierarchy/);
   assert.match(prompt, /Treat the user's prompt\/theme as the dominant art direction/);
@@ -439,7 +607,7 @@ test("studio invitation image prompts use subject-photo makeover rules instead o
       visualStyleMode: "photoreal",
     },
     null,
-    { surface: "image", referenceImageCount: 1, posterTextInImage: true },
+    { surface: "image", referenceImageCount: 1 },
   );
 
   assert.match(
@@ -453,7 +621,11 @@ test("studio invitation image prompts use subject-photo makeover rules instead o
   assert.match(prompt, /Visual style mode is Photoreal/);
   assert.match(
     prompt,
-    /For birthdays, when Honoree Name and Age or Milestone are available, make that birthday identity the main visible title hierarchy\./,
+    /This image is a finished invitation raster rather than empty background art\./,
   );
   assert.match(prompt, /Render Style Mode: Photoreal/);
+  assert.match(
+    prompt,
+    /Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay\./,
+  );
 });
