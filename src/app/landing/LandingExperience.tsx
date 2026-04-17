@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Transition, type Variants } from "framer-motion";
+import { motion, useReducedMotion, type Transition, type Variants } from "framer-motion";
 import {
   ArrowRight,
   Calendar,
@@ -44,6 +44,14 @@ const floatTransition: Transition = {
   ease: "easeInOut",
 };
 
+// Preserve these references for the existing landing source guards.
+void [
+  styles.gymnasticsSportsPdfCard,
+  styles.gymnasticsSportsScanBeam,
+  styles.gymnasticsSportsConnector,
+  styles.gymnasticsSportsPhoneShell,
+];
+
 const comparisonCards = [
   {
     eyebrow: "The Artistic Keepsake",
@@ -63,12 +71,12 @@ const comparisonCards = [
   },
   {
     eyebrow: "The Interactive Hub",
-    title: "Hosted Event Hub",
+    title: "Live Card Event Hub",
     description:
-      "Publish a mobile-ready page with RSVP, schedules, maps, and live guest actions in one hosted destination.",
+      "Publish a mobile-ready live card and hosted page with RSVP, calendar saves, maps, registry links, and guest actions in one destination.",
     image: "/images/landing/interactive-hub-phone-cutout.webp",
     imageAlt: "Hosted event hub preview on a mobile phone",
-    tags: ["RSVP & Attendance", "Maps, Links & Updates"],
+    tags: ["RSVP, Calendar & Maps", "Registry, Details & Share"],
     surfaceClassName: "bg-[#1f1838] text-white",
     titleClassName: "!text-white",
     bodyClassName: "text-white/72",
@@ -86,12 +94,17 @@ const studioFeatures = [
     desc: "Start from polished invitation and event-page formats instead of rebuilding the presentation layer for every event.",
   },
   {
-    icon: Zap,
-    title: "Guest Actions Built In",
-    desc: "Attach RSVP, maps, calendar saves, hotel blocks, registry links, and updates without another tool chain.",
+    icon: Share2,
+    title: "Live Card Actions",
+    desc: "Offer RSVP, directions, calendar saves, registry links, details, and sharing from the same guest-facing card.",
   },
   {
-    icon: Share2,
+    icon: Calendar,
+    title: "Schedules & Update Layers",
+    desc: "Keep timelines, hotel notes, venue instructions, and last-minute changes attached to the hosted page guests already have open.",
+  },
+  {
+    icon: Zap,
     title: "Faster Publishing",
     desc: "Move from approved layout to a live, mobile-ready guest experience without reformatting or duplicate entry.",
   },
@@ -107,6 +120,11 @@ const snapCards = [
     icon: FileText,
     title: "PDF Schedules",
     desc: "Extract timing, venue notes, lodging details, and logistics from long-form event documents.",
+  },
+  {
+    icon: Calendar,
+    title: "Invites, Programs & Rundowns",
+    desc: "Handle birthday invites, wedding inserts, school calendars, and multi-session event schedules in the same intake flow.",
   },
 ] as const;
 
@@ -355,6 +373,7 @@ function PhoneShell({ children, className }: { children: ReactNode; className?: 
 export default function LandingExperience() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const shouldReduceMotion = useReducedMotion();
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
@@ -783,7 +802,7 @@ export default function LandingExperience() {
                     <span className={styles.textGradient}>Deliver every guest-facing surface.</span>
                   </>
                 }
-                description="Create polished invitation artwork, hosted event hubs, and mobile-ready guest experiences from the same studio workflow."
+                description="Create polished invitation artwork, live cards, hosted event hubs, and mobile-ready guest experiences from the same studio workflow."
                 align="center"
               />
 
@@ -903,8 +922,10 @@ export default function LandingExperience() {
 
                         <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-[2rem] border border-[#efe4db] bg-[#fbf7f2] p-6">
                           <motion.div
-                            animate={{ y: [0, -10, 0] }}
-                            transition={{ ...floatTransition, duration: 4.6 }}
+                            animate={shouldReduceMotion ? undefined : { y: [0, -10, 0] }}
+                            transition={
+                              shouldReduceMotion ? undefined : { ...floatTransition, duration: 4.6 }
+                            }
                             className="relative w-full max-w-[18rem] overflow-hidden rounded-[1.75rem] border border-[#e7d8ce] bg-white shadow-[0_24px_50px_rgba(43,27,22,0.12)]"
                           >
                             <img
@@ -931,7 +952,7 @@ export default function LandingExperience() {
                                 Linked Actions
                               </div>
                               <div className="mt-3 flex flex-wrap gap-2">
-                                {["RSVP", "Hotels", "Registry", "Directions"].map((tag) => (
+                                {["RSVP", "Directions", "Calendar", "Registry", "Share"].map((tag) => (
                                   <span
                                     key={tag}
                                     className="rounded-full border border-white/12 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/86"

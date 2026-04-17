@@ -13,28 +13,38 @@ import type { CSSProperties } from "react";
 
 // Minimal font footprint: rely on system stacks set in globals.css (.font-vars).
 const fontVarsClass = "font-vars";
+const siteUrl = (
+  process.env.NEXT_PUBLIC_BASE_URL ||
+  process.env.NEXTAUTH_URL ||
+  process.env.PUBLIC_BASE_URL ||
+  "https://envitefy.com"
+).replace(/\/+$/, "");
 
 export const metadata: Metadata = {
   // Title must match Google OAuth consent screen app name exactly: "Envitefy"
-  title: "Envitefy | Snap + Gymnastics",
+  metadataBase: new URL(siteUrl),
+  title: "Envitefy | Event Pages, Invitations & RSVPs",
   description:
-    "Envitefy focuses on Snap for flyer capture and Gymnastics for meet pages and logistics.",
+    "Create invitation designs, live cards, hosted event pages, RSVPs, registry links, schedules, and gymnastics meet pages from uploads or from scratch.",
   keywords: [
-    "snap flyer to calendar",
+    "event page builder",
+    "event invitation maker",
+    "live card invitations",
+    "hosted event page",
+    "RSVP event page",
+    "registry links for invitations",
+    "event page with maps and calendar",
+    "wedding weekend website",
+    "birthday invitation with RSVP",
+    "school event page",
+    "community event page",
     "gymnastics meet page",
     "gymnastics meet planning",
-    "event capture app",
-    "flyer to event app",
-    "calendar event capture",
-    "shareable meet page",
-    "gymnastics schedule page",
-    "event page for parents",
-    "meet logistics page",
+    "flyer to event page",
+    "invite to event page",
+    "pdf to event page",
     "OCR event capture",
-    "photo to calendar event",
-    "gymnastics family scheduling",
-    "Envitefy snap",
-    "Envitefy gymnastics",
+    "Envitefy",
   ],
   manifest: "/manifest.webmanifest?v=v8",
   other: {
@@ -73,20 +83,27 @@ export const metadata: Metadata = {
     title: "Envitefy",
   },
   openGraph: {
-    title: "Envitefy - Snap + Gymnastics",
+    title: "Envitefy | Event Pages, Invitations & RSVPs",
     description:
-      "Snap flyers and invites into clean event details, or create polished gymnastics meet pages and logistics.",
-    url: "https://envitefy.com",
+      "Create invitation designs, live cards, hosted event pages, RSVPs, registry links, schedules, and gymnastics meet pages from uploads or from scratch.",
+    url: siteUrl,
     siteName: "Envitefy",
     images: [
       {
-        url: "https://envitefy.com/og-default.jpg",
+        url: `${siteUrl}/og-default.jpg`,
         width: 1200,
         height: 630,
         alt: "Envitefy thumbnail",
       },
     ],
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Envitefy | Event Pages, Invitations & RSVPs",
+    description:
+      "Create invitation designs, live cards, hosted event pages, RSVPs, registry links, schedules, and gymnastics meet pages from uploads or from scratch.",
+    images: [`${siteUrl}/og-default.jpg`],
   },
 };
 
@@ -119,7 +136,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <title>Envitefy | Snap + Gymnastics</title>
+        <title>Envitefy | Event Pages, Invitations & RSVPs</title>
         <Script
           id="ld-website"
           type="application/ld+json"
@@ -129,11 +146,10 @@ export default async function RootLayout({
             "@context": "https://schema.org",
             "@type": "WebSite",
             name: "Envitefy",
-            url: "https://envitefy.com",
+            url: siteUrl,
             potentialAction: {
               "@type": "SearchAction",
-              target:
-                "https://www.google.com/search?q=site%3Aenvitefy.com+{search_term_string}",
+              target: `https://www.google.com/search?q=site%3A${new URL(siteUrl).hostname}+{search_term_string}`,
               "query-input": "required name=search_term_string",
             },
           })}
@@ -147,8 +163,8 @@ export default async function RootLayout({
             "@context": "https://schema.org",
             "@type": "Organization",
             name: "Envitefy",
-            url: "https://envitefy.com",
-            logo: "https://envitefy.com/Logo_stacked.png",
+            url: siteUrl,
+            logo: `${siteUrl}/Logo_stacked.png`,
           })}
         </Script>
       </head>

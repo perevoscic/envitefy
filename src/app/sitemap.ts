@@ -19,6 +19,7 @@ const staticEntries: StaticEntry[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/snap", priority: 0.9, changeFrequency: "weekly" },
   { path: "/gymnastics", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/studio", priority: 0.8, changeFrequency: "weekly" },
   { path: "/how-it-works", priority: 0.7, changeFrequency: "monthly" },
   { path: "/who-its-for", priority: 0.6, changeFrequency: "monthly" },
   { path: "/faq", priority: 0.6, changeFrequency: "monthly" },
