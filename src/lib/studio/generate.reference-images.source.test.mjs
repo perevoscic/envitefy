@@ -22,11 +22,13 @@ test("studio generation fails image creation when any attached reference photo c
     source,
     /if \(requestedRefCount > 0 && referenceImages\.length !== requestedRefCount\) \{/,
   );
+  assert.match(source, /function buildReferenceImageError\(provider:/);
   assert.match(source, /code: "reference_images_unavailable"/);
   assert.match(
     source,
     /The invite was not generated because attached reference photos could not be used\./,
   );
+  assert.match(source, /errors\.image = buildReferenceImageError\(provider\);/);
   assert.doesNotMatch(source, /The artwork was created without them\./);
 });
 

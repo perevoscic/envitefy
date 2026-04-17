@@ -3,21 +3,42 @@ import {
   generateInvitationImageWithGemini,
   generateStudioLiveCardWithGemini,
 } from "@/lib/studio/gemini";
+import {
+  editInvitationImageWithOpenAi,
+  generateInvitationImageWithOpenAi,
+  generateStudioLiveCardWithOpenAi,
+} from "@/lib/studio/openai";
+import { resolveStudioProvider } from "@/lib/studio/provider";
 import { buildInvitationImagePrompt, buildLiveCardPrompt } from "@/lib/studio/prompts";
 import { resolveStudioReferenceImages } from "@/lib/studio/reference-image-url";
 import type {
   StudioGenerateRequest,
   StudioGenerateResponse,
   StudioLiveCardMetadata,
+  StudioProvider,
 } from "@/lib/studio/types";
 
 function uniqueWarnings(list: string[]): string[] {
   return Array.from(new Set(list.map((item) => item.trim()).filter(Boolean)));
 }
 
+function buildReferenceImageError(provider: StudioProvider): NonNullable<
+  StudioGenerateResponse["errors"]
+>["image"] {
+  return {
+    code: "reference_images_unavailable",
+    message:
+      "The invite was not generated because attached reference photos could not be used. Re-upload the photos and try again.",
+    retryable: true,
+    provider,
+    status: 400,
+  };
+}
+
 export async function generateStudioInvitation(
   request: StudioGenerateRequest,
 ): Promise<StudioGenerateResponse> {
+  const provider = resolveStudioProvider();
   const mode = request.mode || "both";
   const surface = request.surface || (mode === "both" || mode === "text" ? "page" : "image");
   const warnings: string[] = [];
@@ -31,7 +52,10 @@ export async function generateStudioInvitation(
 
   if (wantsText) {
     const textPrompt = buildLiveCardPrompt(request.event, request.guidance);
-    const textResult = await generateStudioLiveCardWithGemini(textPrompt);
+    const textResult =
+      provider === "openai"
+        ? await generateStudioLiveCardWithOpenAi(textPrompt)
+        : await generateStudioLiveCardWithGemini(textPrompt);
     warnings.push(...textResult.warnings);
     if (textResult.ok) {
       liveCard = textResult.liveCard;
@@ -46,14 +70,7 @@ export async function generateStudioInvitation(
     const requestedRefCount = request.event.referenceImageUrls?.length ?? 0;
     const referenceImages = await resolveStudioReferenceImages(request.event.referenceImageUrls);
     if (requestedRefCount > 0 && referenceImages.length !== requestedRefCount) {
-      errors.image = {
-        code: "reference_images_unavailable",
-        message:
-          "The invite was not generated because attached reference photos could not be used. Re-upload the photos and try again.",
-        retryable: true,
-        provider: "gemini",
-        status: 400,
-      };
+      errors.image = buildReferenceImageError(provider);
     } else {
       const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard, {
         surface,
@@ -61,15 +78,26 @@ export async function generateStudioInvitation(
         referenceImageCount: referenceImages.length,
       });
       const imageResult = request.imageEdit?.sourceImageDataUrl
-        ? await editInvitationImageWithGemini(
-            imagePrompt,
-            request.imageEdit.sourceImageDataUrl,
-            referenceImages.length > 0 ? referenceImages : undefined,
-          )
-        : await generateInvitationImageWithGemini(
-            imagePrompt,
-            referenceImages.length > 0 ? referenceImages : undefined,
-          );
+        ? provider === "openai"
+          ? await editInvitationImageWithOpenAi(
+              imagePrompt,
+              request.imageEdit.sourceImageDataUrl,
+              referenceImages.length > 0 ? referenceImages : undefined,
+            )
+          : await editInvitationImageWithGemini(
+              imagePrompt,
+              request.imageEdit.sourceImageDataUrl,
+              referenceImages.length > 0 ? referenceImages : undefined,
+            )
+        : provider === "openai"
+          ? await generateInvitationImageWithOpenAi(
+              imagePrompt,
+              referenceImages.length > 0 ? referenceImages : undefined,
+            )
+          : await generateInvitationImageWithGemini(
+              imagePrompt,
+              referenceImages.length > 0 ? referenceImages : undefined,
+            );
       warnings.push(...imageResult.warnings);
       if (imageResult.ok) {
         imageDataUrl = imageResult.imageDataUrl;

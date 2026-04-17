@@ -187,6 +187,10 @@ function isGameDayOccasion(event: StudioEventDetails): boolean {
   return getOccasionType(event) === "game_day";
 }
 
+function isFieldTripOccasion(event: StudioEventDetails): boolean {
+  return getOccasionType(event) === "field_trip";
+}
+
 function isPosterFirstLiveCardOccasion(event: StudioEventDetails): boolean {
   return getOccasionType(event) !== "general";
 }
@@ -276,6 +280,8 @@ function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
       "- themeStyle should describe the school-event version of the theme, not only the raw setting.",
       "- Prioritize landmark or venue realism, believable camera angles, and documentary credibility over impossible architecture or theme-park stylization.",
       "- Let student age group, destination type, teacher or docent presence, and organized outing cues shape the scene so it reads like a real school trip.",
+      "- Frame the concept as an upcoming educational visit or discovery day, not as a souvenir, tourism ad, or retrospective memory piece.",
+      "- When no user photos are supplied, avoid making one specific posed student group feel like the authors of the invitation; keep the artwork destination-led and broadly representative of the future outing.",
     ];
   }
 
@@ -330,6 +336,7 @@ function buildPosterFirstInvitationCopyRules(event: StudioEventDetails): string[
         "- For field trips or school days, make the event title, school outing name, or destination title the main invitation hierarchy first. Use the user idea as a supporting activity or discovery line.",
         "- Make the wording feel like a real organized school outing with field-trip planning, museum or exhibit cues, student group activity, and teacher or chaperone context instead of a generic brochure headline.",
         "- Keep the copy documentary and destination-led rather than promotional, cinematic, or tourist-brochure-like.",
+        "- Phrase the invite like an upcoming visit, not like the pictured students already hosted, designed, or commemorated the event.",
       ];
     case "game_day":
       return [
@@ -643,6 +650,7 @@ export function buildInvitationImagePrompt(
   const isEditingExistingImage = options?.editingExistingImage === true;
   const refCount = Math.max(0, Math.min(6, options?.referenceImageCount ?? 0));
   const wedding = isWeddingOccasion(event);
+  const fieldTrip = isFieldTripOccasion(event);
   const realismRequested = hasRealismIntent(event, guidance);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   const pageSurface = surface === "page";
@@ -733,6 +741,13 @@ export function buildInvitationImagePrompt(
                 ]
               : []),
           "- Layout: photo-forward hero acceptable (couple portrait, soft florals, foil-line accents, circular or arch masks). Overall look should match boutique invitation suites, not a meme or social sticker pack.",
+        ]
+      : []),
+    ...(fieldTrip
+      ? [
+          "- Field trip / school outing invitation: make the artwork read as a future organized visit, discovery day, or school excursion rather than a souvenir poster from a completed trip.",
+          "- If no user photos are supplied, avoid making one tightly posed identifiable student group the dominant hero. Prefer destination-led composition, guide-led discovery moments, or broader documentary school-trip staging.",
+          "- Do not imply that the depicted students designed, printed, or are personally presenting the invitation. Any people shown should read as general participants in the outing, not as the authors of the card.",
         ]
       : []),
     ...(gameDay

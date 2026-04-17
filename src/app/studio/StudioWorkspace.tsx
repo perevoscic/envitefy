@@ -1615,7 +1615,7 @@ export default function StudioWorkspace() {
                   </p>
                   <h2
                     id="studio-delete-live-card-title"
-                    className="font-[family-name:var(--font-playfair),Georgia,serif] text-[1.9rem] leading-none tracking-[-0.03em] text-white"
+                    className="font-[family-name:var(--font-playfair),Georgia,serif] text-[1.9rem] leading-none tracking-[-0.03em] !text-white"
                   >
                     Delete live card?
                   </h2>

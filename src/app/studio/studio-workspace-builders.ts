@@ -400,7 +400,7 @@ function buildStudioThemeFramingGuidance(details: EventDetails) {
     Housewarming:
       "Interpret the user's theme words as a housewarming celebration version of that idea, with welcoming home-party decor, hosting details, and lived-in gathering cues instead of generic scenery. Let the home style and hosting style shape the scene so it feels like a real gathering instead of an empty real-estate rendering.",
     "Field Trip/Day":
-      "Interpret the user's theme words as a school-event or field-trip invitation version of that idea, with organized group-activity cues, age-appropriate school styling, and event-planning details instead of generic scenery. Prioritize destination realism, believable architecture, and documentary school-trip credibility over theme-park stylization.",
+      "Interpret the user's theme words as a school-event or field-trip invitation version of that idea, with organized group-activity cues, age-appropriate school styling, and event-planning details instead of generic scenery. Prioritize destination realism, believable architecture, and documentary school-trip credibility over theme-park stylization. Frame it as an upcoming educational visit rather than a souvenir or tourism poster, and avoid making one specific student group feel like they authored the invite unless reference photos were provided.",
     "Game Day":
       "Interpret the user's theme words as a real game-day invitation version of that idea, with matchup energy, stadium or arena atmosphere, crowd cues, pep-rally or game-night styling, and sports-event presentation instead of generic sports photography or a random action shot. When team, opponent, or school colors are present, use them to make the scene feel specific without inventing logos, mascots, or branded signage.",
     "Custom Invite":
@@ -496,6 +496,7 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
     "Field Trip/Day": [
       "Prioritize believable architecture, destination realism, and documentary group-activity staging.",
       "Use teacher or docent cues, age-appropriate students, and organized outing energy so the image reads as a real school event.",
+      "Keep the concept future-facing and destination-led; do not imply that the pictured students designed, printed, or are personally presenting the invitation.",
     ],
     "Game Day": [
       "Use the provided sport details to steer the field, court, arena, rink, or ballpark atmosphere without inventing branding.",

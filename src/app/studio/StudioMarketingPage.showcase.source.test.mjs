@@ -30,7 +30,14 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   );
   assert.match(source, /const scrollToShowcaseIndex = \(index: number\) => \{/);
   assert.match(source, /setShowcaseOverlayIndex\(null\);/);
-  assert.match(source, /const handleShowcaseCardClick = \(index: number\) => \{/);
+  assert.match(
+    source,
+    /const handleShowcaseCardClick = \(index: number, event\?: React\.MouseEvent<HTMLDivElement>\) => \{/,
+  );
+  assert.match(
+    source,
+    /target\.closest\("\[data-live-card-trigger\], \[data-live-card-panel\], button, a"\)/,
+  );
   assert.match(source, /if \(index !== activeIndex\) \{\s*scrollToShowcaseIndex\(index\);/);
   assert.match(
     source,
@@ -41,7 +48,11 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
     source,
     /className="no-scrollbar flex items-start gap-6 overflow-x-auto scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,
   );
-  assert.match(source, /onClick=\{\(\) => handleShowcaseCardClick\(index\)\}/);
+  assert.match(source, /onClick=\{\(event\) => handleShowcaseCardClick\(index, event\)\}/);
+  assert.doesNotMatch(
+    source,
+    /typeof navigator\.canShare === "function"\s*&&\s*!navigator\.canShare\(candidate as ShareData\)/,
+  );
   assert.match(
     source,
     /className="w-\[min\(300px,calc\(100vw-4rem\)\)\] shrink-0 snap-center cursor-pointer"/,

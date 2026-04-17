@@ -25,6 +25,7 @@ import {
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
+import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 
 export type LiveCardActiveTab =
@@ -112,6 +113,10 @@ function readString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeComparableText(value: string) {
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 function formatDate(dateStr: string) {
   if (!dateStr || !dateStr.includes("-")) return dateStr;
   const [year, month, day] = dateStr.split("-");
@@ -136,14 +141,68 @@ function getRegistryText(details: LiveCardEventDetails | null | undefined) {
   }
 }
 
-function buildGoogleCalendarUrl(title: string, invitationData?: LiveCardInvitationData | null) {
+function buildLiveCardCalendarIcsUrl(title: string, invitationData?: LiveCardInvitationData | null) {
   const details = invitationData?.eventDetails;
-  const eventDate = readString(details?.eventDate).replace(/-/g, "");
+  const eventDate = readString(details?.eventDate);
   if (!eventDate) return "";
-  const location = encodeURIComponent(readString(details?.location));
-  const description = encodeURIComponent(readString(invitationData?.description));
-  const encodedTitle = encodeURIComponent(title);
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&details=${description}&location=${location}&dates=${eventDate}/${eventDate}`;
+
+  let start = readString(details?.startTime)
+    ? new Date(`${eventDate}T${readString(details?.startTime)}`)
+    : new Date(`${eventDate}T14:00`);
+
+  if (Number.isNaN(start.getTime())) {
+    start = new Date(eventDate);
+  }
+  if (Number.isNaN(start.getTime())) return "";
+
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+  const params = new URLSearchParams();
+  params.set("title", title || "Event");
+  params.set("start", start.toISOString());
+  params.set("end", end.toISOString());
+
+  const location = readString(details?.location) || readString(details?.venueName);
+  const description =
+    readString(invitationData?.description) || readString(details?.detailsDescription);
+
+  if (location) params.set("location", location);
+  if (description) params.set("description", description);
+  params.set("disposition", "inline");
+
+  return `/api/ics?${params.toString()}`;
+}
+
+function openDefaultCalendarApp(href: string) {
+  if (typeof window === "undefined" || !href) return;
+
+  const absoluteHref = /^https?:\/\//i.test(href) ? href : new URL(href, window.location.origin).href;
+  const webcalHref = absoluteHref.replace(/^https?:\/\//i, "webcal://");
+  let settled = false;
+
+  const cleanup = () => {
+    settled = true;
+    window.clearTimeout(timer);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+  };
+  const onVisibilityChange = () => {
+    if (document.visibilityState === "hidden") {
+      cleanup();
+    }
+  };
+  const timer = window.setTimeout(() => {
+    if (settled) return;
+    cleanup();
+    openAppleCalendarIcs(absoluteHref);
+  }, 700);
+
+  document.addEventListener("visibilitychange", onVisibilityChange);
+
+  try {
+    window.location.href = webcalHref;
+  } catch {
+    cleanup();
+    openAppleCalendarIcs(absoluteHref);
+  }
 }
 
 function accentClassForRsvpChoice(choice: "yes" | "no" | "maybe") {
@@ -231,6 +290,12 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const details = invitationData?.eventDetails || null;
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
   const categorySupportsRsvp = supportsStudioCategoryRsvp(readString(details?.category));
+  const detailsDescription = readString(details?.detailsDescription);
+  const secondaryDescription = readString(invitationData?.description) || readString(details?.message);
+  const shouldRenderSecondaryDescription =
+    shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
+    !!secondaryDescription &&
+    normalizeComparableText(secondaryDescription) !== normalizeComparableText(detailsDescription);
   const rsvpContact = readString(details?.rsvpContact);
   const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
   const effectiveShareUrl =
@@ -363,7 +428,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.96 }}
               data-live-card-panel
-              className="pointer-events-auto absolute bottom-32 left-2 right-2 z-50 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl sm:left-4 sm:right-4 md:left-6 md:right-6"
+              className="pointer-events-auto absolute bottom-32 left-1/2 z-50 w-[calc(100%-1rem)] max-w-[22rem] -translate-x-1/2 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl sm:w-[calc(100%-2rem)]"
             >
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -473,25 +538,22 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         </p>
                       </div>
                     ) : null}
-                    {readString(details?.detailsDescription) ? (
+                    {detailsDescription ? (
                       <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                           {props.showExtendedDetails ? "Description" : "Event details"}
                         </p>
                         <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
-                          {readString(details?.detailsDescription)}
+                          {detailsDescription}
                         </p>
                       </div>
                     ) : null}
-                    {shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
-                    (readString(invitationData?.description) || readString(details?.message)) ? (
+                    {shouldRenderSecondaryDescription ? (
                       <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                           Description
                         </p>
-                        <p className="mt-1 text-sm text-neutral-900">
-                          {readString(invitationData?.description) || readString(details?.message)}
-                        </p>
+                        <p className="mt-1 text-sm text-neutral-900">{secondaryDescription}</p>
                       </div>
                     ) : null}
                     {props.showExtendedDetails ? renderExtraDetailFields(details) : null}
@@ -505,19 +567,21 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     </p>
                     <p className="text-xs text-neutral-500">{readString(details?.location)}</p>
                     {readString(details?.location) ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          window.open(
-                            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(readString(details?.location))}`,
-                            "_blank",
-                          )
-                        }
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 py-2 text-xs font-bold text-white"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        Open in Maps
-                      </button>
+                      <div className="mt-4 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open(
+                              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(readString(details?.location))}`,
+                              "_blank",
+                            )
+                          }
+                          className="inline-flex w-auto items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Open in Maps
+                        </button>
+                      </div>
                     ) : null}
                   </>
                 ) : null}
@@ -533,17 +597,21 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           )
                         : "Date TBD"}
                     </p>
-                    {buildGoogleCalendarUrl(props.title, invitationData) ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          window.open(buildGoogleCalendarUrl(props.title, invitationData), "_blank")
-                        }
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white"
-                      >
-                        <CalendarDays className="h-3 w-3" />
-                        Add to Google Calendar
-                      </button>
+                    {buildLiveCardCalendarIcsUrl(props.title, invitationData) ? (
+                      <div className="mt-4 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openDefaultCalendarApp(
+                              buildLiveCardCalendarIcsUrl(props.title, invitationData),
+                            )
+                          }
+                          className="inline-flex w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white"
+                        >
+                          <CalendarDays className="h-3 w-3" />
+                          Add to Calendar
+                        </button>
+                      </div>
                     ) : null}
                   </>
                 ) : null}
