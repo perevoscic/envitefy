@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode, SetStateAction } from "react";
 import { Tabs, type ITab } from "@/components/ui/tabs-1";
 import type { StudioWorkspaceView } from "../studio-types";
 
@@ -21,23 +21,19 @@ export function StudioWorkspaceShell({
   onRetryLibrarySync,
   children,
 }: StudioWorkspaceShellProps) {
-  const [selected, setSelected] = useState<string>(activeView);
-
-  useEffect(() => {
-    setSelected(activeView);
-  }, [activeView]);
-
-  useEffect(() => {
-    if (selected === activeView) return;
-    if (selected === "create" || selected === "library") {
-      onViewChange(selected);
-    }
-  }, [activeView, onViewChange, selected]);
-
   const tabs: ITab[] = [
     { title: "Create", value: "create" },
     { title: "Library", value: "library" },
   ];
+
+  const handleSelectedChange = (nextValue: SetStateAction<string>) => {
+    const resolved =
+      typeof nextValue === "function" ? nextValue(activeView) : nextValue;
+    if (resolved === activeView) return;
+    if (resolved === "create" || resolved === "library") {
+      onViewChange(resolved);
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F5F2EF] text-[#1A1A1A] selection:bg-[#e7d9c8]">
@@ -62,7 +58,12 @@ export function StudioWorkspaceShell({
       <main className="relative mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-8 lg:px-12 lg:py-14">
         <div className="mx-auto mb-10 max-w-[1400px]">
           <div className="w-fit">
-            <Tabs selected={selected} setSelected={setSelected} tabs={tabs} variant="primary" />
+            <Tabs
+              selected={activeView}
+              setSelected={handleSelectedChange}
+              tabs={tabs}
+              variant="primary"
+            />
           </div>
         </div>
 

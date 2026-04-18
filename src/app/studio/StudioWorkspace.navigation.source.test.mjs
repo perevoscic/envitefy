@@ -26,6 +26,10 @@ test("studio workspace splits create and library at the top level and uses query
   );
   assert.match(shell, /Create/);
   assert.match(shell, /Library/);
+  assert.match(shell, /selected=\{activeView\}/);
+  assert.match(shell, /setSelected=\{handleSelectedChange\}/);
+  assert.doesNotMatch(shell, /const \[selected, setSelected\] = useState<string>\(activeView\)/);
+  assert.doesNotMatch(shell, /useEffect\(\(\) => \{\s*setSelected\(activeView\);/);
   assert.match(createFlow, /label: "Type"/);
   assert.match(createFlow, /label: "Details"/);
   assert.match(createFlow, /label: "Editor"/);
