@@ -279,7 +279,8 @@ export default function HeroTopNav({
 
           <div
             className={cx(
-              "nav-chrome-menu-card pointer-events-auto relative ml-auto mt-2 w-full max-w-[20rem] p-3",
+              "nav-chrome-menu-card relative ml-auto mt-2 w-full max-w-[20rem] p-3",
+              mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none",
               isDarkGlass
                 ? "theme-glass-menu rounded-[1.75rem] border border-white/12 shadow-[0_24px_54px_rgba(0,0,0,0.26)]"
                 : "rounded-[1.75rem]",
