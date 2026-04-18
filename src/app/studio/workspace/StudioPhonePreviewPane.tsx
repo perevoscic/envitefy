@@ -115,13 +115,13 @@ export function StudioPhonePreviewPane({
   const suggestions = getSuggestions(details.category);
 
   return (
-    <div className="studio-phone-stage relative flex h-full w-full flex-col items-center justify-center gap-5 lg:translate-x-6">
+    <div className="studio-phone-stage relative flex w-full flex-col items-center justify-start gap-4 pb-4 lg:h-full lg:justify-center lg:gap-5 lg:pb-0 lg:translate-x-6">
       <div
-        className="relative flex min-h-0 w-full flex-1 items-center justify-center"
+        className="relative flex w-full items-start justify-center lg:min-h-0 lg:flex-1 lg:items-center"
         role="region"
         aria-label="Live card phone preview"
       >
-        <div className="studio-phone-frame relative aspect-[9/16] h-full max-h-[min(82vh,620px)] w-auto max-w-full overflow-hidden rounded-[3rem] border-[10px] border-[var(--studio-ink,#1A1A1A)] bg-[var(--studio-paper,#f7f2ec)] shadow-[0_36px_80px_rgba(31,18,52,0.18)]">
+        <div className="studio-phone-frame relative aspect-[9/16] w-full max-w-[min(100%,340px)] overflow-hidden rounded-[3rem] border-[10px] border-[var(--studio-ink,#1A1A1A)] bg-[var(--studio-paper,#f7f2ec)] shadow-[0_36px_80px_rgba(31,18,52,0.18)] lg:h-full lg:w-auto lg:max-h-[min(82vh,620px)] lg:max-w-full">
           <div className="absolute left-1/2 top-3 z-20 h-1.5 w-20 -translate-x-1/2 rounded-full bg-[var(--studio-ink,#1A1A1A)]/80" />
 
           {isGenerating && !hasPreview ? (
