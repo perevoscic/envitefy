@@ -25,6 +25,7 @@ import ScenicBackground, {
   useActiveScene,
 } from "@/components/marketing/ScenicBackground";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
+import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import styles from "./GymnasticsLanding.module.css";
 import GymnasticsLandingFaq from "./GymnasticsLandingFaq";
@@ -230,6 +231,15 @@ const whyStats = [
   { value: "0", label: "app installs required" },
 ] as const;
 
+const gymnasticsHeroNavLinks = buildMarketingHeroNav("gymnastics", [
+  { label: "Features", href: "#features" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Preview", href: "#preview" },
+  { label: "Use cases", href: "#use-cases" },
+  { label: "Why Envitefy", href: "#why-envitefy" },
+  { label: "FAQ", href: "#faq" },
+]);
+
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
@@ -320,16 +330,7 @@ export default function GymnasticsLanding() {
     >
       <ScenicBackground scene={activeScene} scenes={GYMNASTICS_SCENES} />
       <HeroTopNav
-        navLinks={[
-          { label: "Studio", href: "/studio" },
-          { label: "Features", href: "#features" },
-          { label: "How it works", href: "#how-it-works" },
-          { label: "Preview", href: "#preview" },
-          { label: "Use cases", href: "#use-cases" },
-          { label: "Why Envitefy", href: "#why-envitefy" },
-          { label: "FAQ", href: "#faq" },
-          { label: "Snap", href: "/snap" },
-        ]}
+        navLinks={gymnasticsHeroNavLinks}
         variant="glass-dark"
         primaryCtaLabel="Start Your Meet Page"
         authenticatedPrimaryHref="/event/gymnastics"

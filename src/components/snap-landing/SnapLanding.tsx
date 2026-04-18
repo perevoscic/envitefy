@@ -20,6 +20,7 @@ import ScenicBackground, {
   useActiveScene,
 } from "@/components/marketing/ScenicBackground";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
+import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
 const SNAP_SCENE_ORDER = [
@@ -210,6 +211,12 @@ const glassPanelClass =
 
 const snapSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";
 const snapHashAnchorClass = "hash-anchor-below-fixed-nav";
+
+const snapHeroNavLinks = buildMarketingHeroNav("snap", [
+  { label: "How It Works", href: "#how-it-works" },
+  { label: "Use Cases", href: "#use-cases" },
+  { label: "FAQ", href: "#faq" },
+]);
 
 function CtaButton({
   label,
@@ -652,13 +659,7 @@ export default function SnapLanding() {
       <ScenicBackground scene={activeScene} scenes={SNAP_SCENES} />
 
       <HeroTopNav
-        navLinks={[
-          { label: "Studio", href: "/studio" },
-          { label: "Gymnastics", href: "/gymnastics" },
-          { label: "How It Works", href: "#how-it-works" },
-          { label: "Use Cases", href: "#use-cases" },
-          { label: "FAQ", href: "#faq" },
-        ]}
+        navLinks={snapHeroNavLinks}
         variant="glass-dark"
         primaryCtaLabel="Snap Your First Invite"
         authenticatedPrimaryHref="/event"

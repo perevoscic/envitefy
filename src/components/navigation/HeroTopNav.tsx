@@ -354,6 +354,7 @@ export default function HeroTopNav({
                       >
                         <LoginForm
                           variant="inline"
+                          inlineTone={isDarkGlass ? "dark" : "light"}
                           showGoogleAuth={false}
                           successRedirectUrl={loginSuccessRedirectUrl}
                           onSwitchMode={() => {

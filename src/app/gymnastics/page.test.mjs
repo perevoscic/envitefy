@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { buildMarketingHeroNav } from "../../components/navigation/marketing-hero-nav.mjs";
 
 const repoRoot = process.cwd();
 
@@ -11,13 +12,32 @@ test("/gymnastics renders the shared hero nav without duplicating the current pa
   const page = readSource("src/app/gymnastics/page.tsx");
   const gymnasticsLanding = readSource("src/components/gymnastics-landing/GymnasticsLanding.tsx");
   const gymnasticsFaq = readSource("src/components/gymnastics-landing/GymnasticsLandingFaq.tsx");
+  const navLabels = buildMarketingHeroNav("gymnastics", [
+    { label: "Features", href: "#features" },
+    { label: "How it works", href: "#how-it-works" },
+    { label: "Preview", href: "#preview" },
+    { label: "Use cases", href: "#use-cases" },
+    { label: "Why Envitefy", href: "#why-envitefy" },
+    { label: "FAQ", href: "#faq" },
+  ]).map((link) => link.label);
 
   assert.match(page, /<GymnasticsLanding \/>/);
   assert.match(gymnasticsLanding, /<ScenicBackground/);
   assert.match(gymnasticsLanding, /useActiveScene\(GYMNASTICS_SCENE_ORDER, "hero"\)/);
   assert.match(gymnasticsLanding, /<HeroTopNav/);
+  assert.match(gymnasticsLanding, /buildMarketingHeroNav\("gymnastics", \[/);
+  assert.deepEqual(navLabels, [
+    "Home",
+    "Studio",
+    "Snap",
+    "Features",
+    "How it works",
+    "Preview",
+    "Use cases",
+    "Why Envitefy",
+    "FAQ",
+  ]);
   assert.match(gymnasticsLanding, /variant="glass-dark"/);
-  assert.match(gymnasticsLanding, /label: "Snap", href: "\/snap"/);
   assert.match(gymnasticsLanding, /label: "Features", href: "#features"/);
   assert.match(gymnasticsLanding, /label: "How it works", href: "#how-it-works"/);
   assert.match(gymnasticsLanding, /label: "Preview", href: "#preview"/);

@@ -30,6 +30,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
+import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
   type LiveCardActiveTab,
@@ -134,6 +135,14 @@ const activeButtons: ActionItem[] = [
     colorClassName: "bg-slate-100 text-slate-600",
   },
 ];
+
+const studioMarketingHeroNavLinks = buildMarketingHeroNav("studio", [
+  { label: "Create in Studio", href: "#features" },
+  { label: "Built to be Clicked", href: "#actions" },
+  { label: "Made for Real Events", href: "#use-cases" },
+  { label: "How It Works", href: "#how-it-works" },
+  { label: "Live Card Showcase", href: "#showcase" },
+]);
 
 function createMarketingInvitationData({
   title,
@@ -1141,13 +1150,7 @@ export default function StudioMarketingPage() {
     <>
       <div className="min-h-screen overflow-x-hidden bg-white text-slate-900 selection:bg-[#ddd6fe] selection:text-[#4c1d95]">
         <HeroTopNav
-          navLinks={[
-            { label: "Create in Studio", href: "#features" },
-            { label: "Built to be Clicked", href: "#actions" },
-            { label: "Made for Real Events", href: "#use-cases" },
-            { label: "How It Works", href: "#how-it-works" },
-            { label: "Live Card Showcase", href: "#showcase" },
-          ]}
+          navLinks={studioMarketingHeroNavLinks}
           primaryCtaLabel="Start in Studio"
           authenticatedPrimaryHref="/"
           brandHref="/"

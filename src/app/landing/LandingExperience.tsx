@@ -23,6 +23,7 @@ import Link from "next/link";
 import { type ReactNode, useEffect, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
+import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import styles from "./LandingExperience.module.css";
 import LandingFaq from "./sections/LandingFaq";
@@ -258,6 +259,14 @@ const rsvpHighlights = [
   "Venue details and directions on the same event page",
 ] as const;
 
+const landingHeroNavLinks = buildMarketingHeroNav("landing", [
+  { label: "Features", href: "#what-you-can-snap" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Why it works", href: "#use-cases" },
+  { label: "RSVP", href: "#rsvp-calendar" },
+  { label: "FAQ", href: "#faq" },
+]);
+
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
@@ -414,16 +423,7 @@ export default function LandingExperience() {
         className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-hidden bg-[#f8f5ff] text-[#2b1b16] selection:bg-[#c98f6b]/30 selection:text-[#2b1b16]`}
       >
         <HeroTopNav
-          navLinks={[
-            { label: "Studio", href: "/studio" },
-            { label: "Snap", href: "/snap" },
-            { label: "Gymnastics", href: "/gymnastics" },
-            { label: "Features", href: "#what-you-can-snap" },
-            { label: "How it works", href: "#how-it-works" },
-            { label: "Why it works", href: "#use-cases" },
-            { label: "RSVP", href: "#rsvp-calendar" },
-            { label: "FAQ", href: "#faq" },
-          ]}
+          navLinks={landingHeroNavLinks}
           variant="glass-dark"
           authenticatedPrimaryHref="/event"
           loginSuccessRedirectUrl="/event"

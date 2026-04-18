@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { buildMarketingHeroNav } from "../../components/navigation/marketing-hero-nav.mjs";
 
 const repoRoot = process.cwd();
 
@@ -11,9 +12,22 @@ const readSource = (relativePath) =>
 test("/snap renders the new landing component with key sections", () => {
   const page = readSource("src/app/snap/page.tsx");
   const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
+  const navLabels = buildMarketingHeroNav("snap", [
+    { label: "How It Works", href: "#how-it-works" },
+    { label: "Use Cases", href: "#use-cases" },
+    { label: "FAQ", href: "#faq" },
+  ]).map((link) => link.label);
 
   assert.match(page, /<SnapLanding \/>/);
-  assert.match(snapLanding, /label: "Gymnastics", href: "\/gymnastics"/);
+  assert.match(snapLanding, /buildMarketingHeroNav\("snap", \[/);
+  assert.deepEqual(navLabels, [
+    "Home",
+    "Studio",
+    "Gymnastics",
+    "How It Works",
+    "Use Cases",
+    "FAQ",
+  ]);
   assert.match(snapLanding, /Stop sharing screenshots\./);
   assert.match(snapLanding, /Start sharing events\./);
   assert.match(snapLanding, /id="snap"/);

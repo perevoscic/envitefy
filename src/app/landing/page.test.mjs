@@ -57,10 +57,12 @@ test("landing page renders the new dedicated landing experience component", () =
 
 test("landing preserves auth-aware nav behavior and snap-first CTA wiring", () => {
   const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
+  const navHelper = readSource("src/components/navigation/marketing-hero-nav.mjs");
   const heroTopNav = readSource("src/components/navigation/HeroTopNav.tsx");
   const conditionalFooter = readSource("src/components/ConditionalFooter.tsx");
 
   assert.match(landingExperience, /<HeroTopNav/);
+  assert.match(landingExperience, /buildMarketingHeroNav\("landing", \[/);
   assert.match(landingExperience, /openAuth\("login"\)/);
   assert.match(landingExperience, /openAuth\("signup"\)/);
   assert.match(landingExperience, /mode=\{authMode\}/);
@@ -68,7 +70,9 @@ test("landing preserves auth-aware nav behavior and snap-first CTA wiring", () =
   assert.match(landingExperience, /signupSource="snap"/);
   assert.match(landingExperience, /successRedirectUrl="\/event"/);
   assert.match(landingExperience, /allowSignupSwitch=\{false\}/);
-  assert.match(landingExperience, /label: "Snap", href: "\/snap"/);
+  assert.match(navHelper, /label: "Studio", href: "\/studio"/);
+  assert.match(navHelper, /label: "Snap", href: "\/snap"/);
+  assert.match(navHelper, /label: "Gymnastics", href: "\/gymnastics"/);
   assert.match(landingExperience, /label: "FAQ", href: "#faq"/);
   assert.match(landingExperience, /href="\/snap"/);
   assert.match(landingExperience, /href="\/gymnastics"/);

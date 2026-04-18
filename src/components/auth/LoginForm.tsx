@@ -14,6 +14,7 @@ export type LoginFormProps = {
   successRedirectUrl?: string;
   variant?: "default" | "inline";
   showGoogleAuth?: boolean;
+  inlineTone?: "dark" | "light";
 };
 
 export default function LoginForm({
@@ -22,8 +23,10 @@ export default function LoginForm({
   successRedirectUrl = "/",
   variant = "default",
   showGoogleAuth = true,
+  inlineTone = "dark",
 }: LoginFormProps) {
   const isInline = variant === "inline";
+  const isInlineLight = isInline && inlineTone === "light";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -195,13 +198,19 @@ export default function LoginForm({
         <p
           className={cx(
             "text-center text-sm text-muted-foreground",
-            isInline && "text-[11px] leading-4 tracking-tight whitespace-nowrap text-white/76",
+            isInline &&
+              (isInlineLight
+                ? "text-[11px] leading-4 tracking-tight whitespace-nowrap text-[#7c6aa8]"
+                : "text-[11px] leading-4 tracking-tight whitespace-nowrap text-white/76"),
           )}
         >
           Having trouble signing in?{" "}
           <Link
             href="/forgot"
-            className={cx("text-secondary hover:underline", isInline && "text-white")}
+            className={cx(
+              "text-secondary hover:underline",
+              isInline && (isInlineLight ? "text-[#6a57eb]" : "text-white"),
+            )}
           >
             Reset password
           </Link>
@@ -212,7 +221,12 @@ export default function LoginForm({
           <button
             type="button"
             onClick={() => onSwitchMode("signup")}
-            className="nav-chrome-motion h-11 rounded-full border border-white/20 bg-transparent px-5 text-sm font-semibold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.06]"
+            className={cx(
+              "nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+              isInlineLight
+                ? "border border-[#d9cef8] bg-[#f7f2ff] text-[#6a57eb] shadow-[0_12px_28px_rgba(99,81,159,0.08)] hover:bg-[#efe6ff]"
+                : "border border-white/20 bg-transparent text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.06]",
+            )}
           >
             Sign up
           </button>
