@@ -49,7 +49,10 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingShowcase, /const showcaseSwipeStateRef = useRef<\{/);
   assert.match(landingShowcase, /const suppressShowcaseClickRef = useRef\(false\);/);
   assert.match(landingShowcase, /const handleShowcasePointerDown = \(\s*index: number,\s*event: React\.PointerEvent<HTMLDivElement>,/);
-  assert.match(landingShowcase, /if \(!event\.isPrimary \|\| event\.pointerType === "mouse"\) return;/);
+  assert.match(
+    landingShowcase,
+    /if \(!event\.isPrimary \|\| event\.pointerType === "mouse" \|\| event\.pointerType === "touch"\) return;/,
+  );
   assert.match(landingShowcase, /const handleShowcasePointerMove = \(event: React\.PointerEvent<HTMLDivElement>\) => \{/);
   assert.match(landingShowcase, /const deltaX = event\.clientX - swipeState\.startX;/);
   assert.match(landingShowcase, /const deltaY = event\.clientY - swipeState\.startY;/);
@@ -68,7 +71,7 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingShowcase, /event\?\.stopPropagation\(\);/);
   assert.match(
     landingShowcase,
-    /gap-4 overflow-x-auto scroll-smooth px-\[max\(1\.25rem,calc\(50vw-136px\)\)\] py-8 snap-x snap-mandatory sm:gap-6 sm:px-\[max\(2rem,calc\(50vw-150px\)\)\]/,
+    /touch-pan-x items-start gap-4 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(1\.25rem,calc\(50vw-136px\)\)\] py-8 snap-x snap-mandatory sm:gap-6 sm:px-\[max\(2rem,calc\(50vw-150px\)\)\]/,
   );
   assert.match(
     landingShowcase,

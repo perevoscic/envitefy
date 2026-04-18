@@ -1169,7 +1169,7 @@ export default function StudioMarketingPage() {
     index: number,
     event: React.PointerEvent<HTMLDivElement>,
   ) => {
-    if (!event.isPrimary || event.pointerType === "mouse") return;
+    if (!event.isPrimary || event.pointerType === "mouse" || event.pointerType === "touch") return;
     showcaseSwipeStateRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -1180,6 +1180,9 @@ export default function StudioMarketingPage() {
   };
 
   const handleShowcasePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch") {
+      return;
+    }
     const swipeState = showcaseSwipeStateRef.current;
     if (!swipeState || swipeState.pointerId !== event.pointerId || swipeState.didSwipe) {
       return;
@@ -1692,7 +1695,8 @@ export default function StudioMarketingPage() {
 
                 <div
                   ref={showcaseScrollRef}
-                  className="no-scrollbar flex items-start gap-6 overflow-x-auto scroll-smooth px-[max(2rem,calc(50vw-150px))] py-8 snap-x snap-mandatory"
+                  className="no-scrollbar flex touch-pan-x items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(2rem,calc(50vw-150px))] py-8 snap-x snap-mandatory"
+                  style={{ WebkitOverflowScrolling: "touch" }}
                 >
               {showcaseCards.map((item, index) => (
                 <div
