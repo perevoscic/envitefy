@@ -60,8 +60,8 @@ test("live card modal exposes image edit tools without in-modal text editor", ()
     source,
     /className="absolute bottom-0 right-0 top-0 z-10 flex w-\[min\(22rem,88vw\)\][\s\S]*border-l border-white\/10/,
   );
-  assert.match(editorStep, /Edit current background/);
-  assert.match(editorStep, /Edit current invitation art/);
+  assert.doesNotMatch(editorStep, /Edit current background/);
+  assert.doesNotMatch(editorStep, /Edit current invitation art/);
   assert.match(source, /<LiveCardHeroTextOverlay invitationData=\{activePageRecord\.data\} \/>/);
   assert.match(source, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{activeTab\}/);
   assert.match(surfaceSource, /data-live-card-panel/);
@@ -111,6 +111,7 @@ test("live card library delete asks for confirmation before removal", () => {
   assert.match(workspaceSource, /Keep live card/);
   assert.match(workspaceSource, /Delete live card/);
   assert.match(librarySource, /deleteMedia: \(item: MediaItem\) => void;/);
-  assert.match(librarySource, /onClick=\{\(\) => deleteMedia\(item\)\}/);
+  assert.match(librarySource, /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*deleteMedia\(item\);\s*\}\}/s);
+  assert.doesNotMatch(librarySource, /onClickCapture=\{\(event\) => event\.stopPropagation\(\)\}/);
   assert.doesNotMatch(workspaceSource, /window\.confirm\(confirmMessage\)/);
 });

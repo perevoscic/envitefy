@@ -11,7 +11,7 @@ export const STORAGE_KEY = STUDIO_LIBRARY_STORAGE_KEY;
 export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
   Birthday: [
     {
-      label: "Birthday Person's Name",
+      label: "Person's Name",
       key: "name",
       type: "text",
       placeholder: "e.g. Lara",
@@ -392,10 +392,10 @@ export type StudioCompactCategoryFormConfig = {
 };
 
 export const STUDIO_COMPACT_RSVP_CONTACT_FIELD: FieldConfig = {
-  label: "RSVP Phone or Email",
+  label: "RSVP",
   key: "rsvpContact",
   type: "text",
-  placeholder: "e.g. 555-123-4567 or hello@example.com",
+  placeholder: "Phone or Email",
   required: true,
 };
 

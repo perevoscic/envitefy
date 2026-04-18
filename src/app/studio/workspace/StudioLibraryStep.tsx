@@ -166,6 +166,7 @@ export function StudioLibraryStep({
                 {libraryVisibleItems.map((item) => {
                   const title = getLibraryTitle(item);
                   const primaryActionLabel = getLibraryPrimaryActionLabel(item);
+                  const canTapToOpen = isMobile && item.status !== "loading";
 
                   return (
                     <motion.div
@@ -174,8 +175,13 @@ export function StudioLibraryStep({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.92 }}
-                      whileHover={{ y: -8, transition: { duration: 0.28 } }}
-                      className={studioLibraryCardClass}
+                      whileHover={
+                        isMobile ? undefined : { y: -8, transition: { duration: 0.28 } }
+                      }
+                      onClick={canTapToOpen ? () => openLibraryItem(item) : undefined}
+                      className={`${studioLibraryCardClass} ${
+                        canTapToOpen ? "cursor-pointer" : ""
+                      }`}
                     >
                       <div className="relative w-full overflow-hidden rounded-[20px] bg-[#edf1f5] aspect-[2/3] sm:aspect-[9/16]">
                         {item.status === "loading" ? (
@@ -200,7 +206,10 @@ export function StudioLibraryStep({
                               </p>
                               <button
                                 type="button"
-                                onClick={() => openLiveCardEditor(item)}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openLiveCardEditor(item);
+                                }}
                                 className="rounded-full bg-[#111111] px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-black"
                               >
                                 Open Editor
@@ -219,10 +228,14 @@ export function StudioLibraryStep({
                             {item.type === "page" ? (
                               <LiveCardHeroTextOverlay invitationData={item.data} />
                             ) : null}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[linear-gradient(180deg,rgba(17,24,39,0.16),rgba(17,24,39,0.58))] opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
+                            {!isMobile ? (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[linear-gradient(180deg,rgba(17,24,39,0.16),rgba(17,24,39,0.58))] opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
                               <button
                                 type="button"
-                                onClick={() => openLibraryItem(item)}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openLibraryItem(item);
+                                }}
                                 className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#111111] shadow-[0_14px_34px_rgba(15,23,42,0.18)] transition-transform hover:scale-[1.02]"
                               >
                                 {item.type === "page" ? (
@@ -235,7 +248,10 @@ export function StudioLibraryStep({
                               <div className="flex items-center gap-3">
                                 <button
                                   type="button"
-                                  onClick={() => editLibraryItem(item)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    editLibraryItem(item);
+                                  }}
                                   className={studioLibraryGhostIconButtonClass}
                                   title={item.type === "page" ? "Edit card image" : "Edit"}
                                 >
@@ -243,7 +259,10 @@ export function StudioLibraryStep({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => downloadMedia(item)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    downloadMedia(item);
+                                  }}
                                   className={studioLibraryGhostIconButtonClass}
                                   title="Download"
                                 >
@@ -251,7 +270,10 @@ export function StudioLibraryStep({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => void shareMedia(item)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    void shareMedia(item);
+                                  }}
                                   disabled={sharingId === item.id}
                                   className={studioLibraryGhostIconButtonClass}
                                   title={sharingId === item.id ? "Creating share link" : "Share"}
@@ -265,13 +287,17 @@ export function StudioLibraryStep({
                                   )}
                                 </button>
                               </div>
-                            </div>
+                              </div>
+                            ) : null}
                           </>
                         )}
 
                         <button
                           type="button"
-                          onClick={() => deleteMedia(item)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            deleteMedia(item);
+                          }}
                           className="absolute left-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/8 bg-white/82 text-[#ef4444] shadow-[0_10px_24px_rgba(15,23,42,0.12)] backdrop-blur-md transition-all hover:scale-105 hover:bg-white"
                           title="Delete from library"
                           aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}

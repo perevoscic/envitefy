@@ -45,6 +45,19 @@ function usesIconInput(fieldKey: keyof EventDetails) {
   return fieldKey === "location";
 }
 
+function usesCompactDatePlaceholderOverlay(field: SupportedField, details: EventDetails) {
+  return field.key === "eventDate" && field.type === "date" && details.category !== "Wedding";
+}
+
+function getCompactDatePlaceholderClass(
+  field: SupportedField,
+  details: EventDetails,
+  isEmptyValue: boolean,
+) {
+  if (!usesCompactDatePlaceholderOverlay(field, details) || !isEmptyValue) return "";
+  return "[&::-webkit-datetime-edit]:text-transparent [&::-webkit-datetime-edit-fields-wrapper]:text-transparent [&::-webkit-datetime-edit-month-field]:text-transparent [&::-webkit-datetime-edit-day-field]:text-transparent [&::-webkit-datetime-edit-year-field]:text-transparent [&::-webkit-datetime-edit-text]:text-transparent";
+}
+
 export function StudioFieldGrid({
   details,
   setDetails,
@@ -127,8 +140,8 @@ export function StudioFieldGrid({
                   placeholder={field.type === "text" ? "" : field.placeholder}
                   className={
                     usesIconInput(field.key)
-                      ? `${iconInputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
-                      : `${inputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
+                      ? `${iconInputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)] ${getCompactDatePlaceholderClass(field, details, isEmptyValue)}`
+                      : `${inputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)] ${getCompactDatePlaceholderClass(field, details, isEmptyValue)}`
                   }
                   value={String(value)}
                   onChange={(event) =>
@@ -145,6 +158,11 @@ export function StudioFieldGrid({
                     }`}
                   >
                     {field.placeholder}
+                  </span>
+                ) : null}
+                {usesCompactDatePlaceholderOverlay(field, details) && isEmptyValue ? (
+                  <span className="pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[rgba(26,26,26,0.1)] transition-opacity group-focus-within:opacity-0">
+                    mm/dd
                   </span>
                 ) : null}
               </div>

@@ -15,6 +15,9 @@ test("studio optional media row keeps the flyer and photo guidance copy", () => 
     /We will preserve an uploaded invite's visual direction and add live-card buttons, or use/,
   );
   assert.match(source, /photo\(s\) to design the invitation around them\./);
-  assert.match(source, /Upload flyer/);
-  assert.match(source, /Upload photo\(s\)/);
+  assert.match(source, /grid grid-cols-2 gap-3 lg:col-span-6 lg:grid-cols-2/);
+  assert.match(source, /flyerActive \? "Replace" : "Flyer"/);
+  assert.match(source, /subjectPhotos\.length > 0 \? "Photo\(s\)" : "Photo\(s\)"/);
+  assert.doesNotMatch(source, /Upload flyer/);
+  assert.doesNotMatch(source, /Upload photo\(s\)/);
 });

@@ -1,22 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { Dispatch, SetStateAction } from "react";
-import type { StudioCreateStep } from "../studio-types";
-import type { EventDetails } from "../studio-workspace-types";
+import type { EventDetails, InviteCategory } from "../studio-workspace-types";
 import { StudioCategoryGrid } from "./StudioCategoryGrid";
 import { STUDIO_CATEGORY_TILES } from "./studio-category-tile-data";
 
 type StudioCategoryStepProps = {
   details: EventDetails;
-  setDetails: Dispatch<SetStateAction<EventDetails>>;
-  setCreateStep: (step: StudioCreateStep) => void;
+  onSelectCategory: (category: InviteCategory) => void;
 };
 
 export function StudioCategoryStep({
   details,
-  setDetails,
-  setCreateStep,
+  onSelectCategory,
 }: StudioCategoryStepProps) {
   return (
     <motion.div
@@ -24,7 +20,7 @@ export function StudioCategoryStep({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="mx-auto w-full max-w-[1380px] px-2 sm:px-4 lg:px-6"
+      className="mx-auto w-full max-w-[1380px] px-0 sm:px-4 lg:px-6"
     >
       <div className="relative overflow-visible">
         <div className="absolute left-6 top-8 h-40 w-40 rounded-full bg-[#eee4ff]/65 blur-3xl" />
@@ -52,13 +48,7 @@ export function StudioCategoryStep({
             <StudioCategoryGrid
               categories={STUDIO_CATEGORY_TILES}
               selectedCategory={details.category}
-              onSelect={(categoryName) => {
-                setDetails((prev) => ({
-                  ...prev,
-                  category: categoryName,
-                }));
-                setCreateStep("details");
-              }}
+              onSelect={onSelectCategory}
             />
           </div>
         </div>

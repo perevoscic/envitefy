@@ -80,7 +80,7 @@ export function StudioOptionalMediaRow({
           </p>
           </div>
 
-          <div className="lg:col-span-3">
+          <div className="grid grid-cols-2 gap-3 lg:col-span-6 lg:grid-cols-2">
             <button
               type="button"
               onClick={() => flyerInputRef.current?.click()}
@@ -88,11 +88,8 @@ export function StudioOptionalMediaRow({
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d8cdc0] bg-[#fdfaf6] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#1A1A1A] transition-colors hover:bg-white disabled:opacity-50"
             >
               <Upload className="h-4 w-4" />
-              {flyerActive ? "Replace flyer" : "Upload flyer"}
+              {flyerActive ? "Replace" : "Flyer"}
             </button>
-          </div>
-
-          <div className="lg:col-span-3">
             <button
               type="button"
               onClick={() => subjectPhotoInputRef.current?.click()}
@@ -100,7 +97,7 @@ export function StudioOptionalMediaRow({
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d8cdc0] bg-[#fdfaf6] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#1A1A1A] transition-colors hover:bg-white disabled:opacity-50"
             >
               <Upload className="h-4 w-4" />
-              {subjectPhotos.length > 0 ? "Add photo(s)" : "Upload photo(s)"}
+              {subjectPhotos.length > 0 ? "Photo(s)" : "Photo(s)"}
             </button>
           </div>
         </div>

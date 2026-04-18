@@ -47,6 +47,7 @@ export type EventDetails = {
   colors: string;
   style: string;
   visualPreferences: string;
+  imageFinishPreset: string;
   subjectTransformMode: StudioSubjectTransformMode;
   likenessStrength: StudioLikenessStrength;
   visualStyleMode: StudioVisualStyleMode;

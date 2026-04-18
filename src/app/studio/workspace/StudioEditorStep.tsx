@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import {
+  ArrowLeft,
   ChevronRight,
   Image as ImageIcon,
   Layout,
@@ -11,7 +12,11 @@ import {
 import type { Dispatch, SetStateAction } from "react";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface from "@/components/studio/StudioLiveCardActionSurface";
-import { clean, formatDate, getStudioShareTitle } from "../studio-workspace-builders";
+import {
+  getStudioImageFinishPresets,
+  resolveStudioImageFinishPreset,
+} from "@/lib/studio/image-finish-presets";
+import { getStudioShareTitle } from "../studio-workspace-builders";
 import {
   studioWorkspaceMediaBadgeClass,
   studioWorkspaceMediaCardClass,
@@ -49,16 +54,15 @@ type StudioEditorStepProps = {
   currentProjectPreviewShareUrl: string;
   isGenerating: boolean;
   isEditingLiveCard: boolean;
-  editingLiveCardHeroTextMode: unknown;
-  editPrompt: string;
-  setEditPrompt: Dispatch<SetStateAction<string>>;
+  isMobileViewport: boolean;
+  mobilePane: "composer" | "preview";
   sharingId: string | null;
   copySuccess: boolean;
   generateMedia: (type: MediaType) => void;
   saveCurrentProjectToLibrary: () => void;
+  showPromptComposer: () => void;
+  showPreviewPane: () => void;
   shareCurrentProject: () => void;
-  downloadCurrentProject: () => void;
-  clearCurrentProject: () => void;
   openCurrentImage: () => void;
   handleMediaImageLoadError: (item: MediaItem) => void;
 };
@@ -81,22 +85,27 @@ export function StudioEditorStep({
   currentProjectPreviewShareUrl,
   isGenerating,
   isEditingLiveCard,
-  editingLiveCardHeroTextMode,
-  editPrompt,
-  setEditPrompt,
+  isMobileViewport,
+  mobilePane,
   sharingId,
   copySuccess,
   generateMedia,
   saveCurrentProjectToLibrary,
+  showPromptComposer,
+  showPreviewPane,
   shareCurrentProject,
-  downloadCurrentProject,
-  clearCurrentProject,
   openCurrentImage,
   handleMediaImageLoadError,
 }: StudioEditorStepProps) {
   const shellClass = studioWorkspaceShellClass;
   const mediaCardClass = studioWorkspaceMediaCardClass;
   const mediaBadgeClass = studioWorkspaceMediaBadgeClass;
+  const imageFinishPresets = getStudioImageFinishPresets(details.category);
+  const selectedImageFinishPreset = resolveStudioImageFinishPreset(
+    details.category,
+    details.imageFinishPreset,
+  );
+  const hasPreview = Boolean(currentProjectWithVisualDraft);
 
   return (
     <motion.div
@@ -104,10 +113,41 @@ export function StudioEditorStep({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="mr-auto grid max-w-[1440px] gap-8 lg:grid-cols-[380px_minmax(0,1fr)] xl:gap-10"
+      className="mr-auto max-w-[1440px] overflow-hidden"
     >
-      <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-        <div className="space-y-6 lg:pt-[5.25rem]">
+      {isMobileViewport ? (
+        <div className="mb-5 flex items-center gap-4 border-b border-[#ddd5cb] pb-px lg:hidden">
+          <button
+            type="button"
+            onClick={showPromptComposer}
+            className={`border-b-[4px] pb-3 text-[11px] font-semibold uppercase leading-none tracking-[0.24em] transition-colors ${
+              mobilePane === "composer"
+                ? "border-[#1A1A1A] text-[#1A1A1A]"
+                : "border-transparent text-[#8C7B65]/55 hover:text-[#8C7B65]"
+            }`}
+          >
+            Editor
+          </button>
+          <button
+            type="button"
+            onClick={showPreviewPane}
+            disabled={!hasPreview}
+            className={`border-b-[4px] pb-3 text-[11px] font-semibold uppercase leading-none tracking-[0.24em] transition-colors ${
+              mobilePane === "preview"
+                ? "border-[#1A1A1A] text-[#1A1A1A]"
+                : "border-transparent text-[#8C7B65]/55 hover:text-[#8C7B65]"
+            } ${!hasPreview ? "cursor-not-allowed opacity-40 hover:text-[#8C7B65]/55" : ""}`}
+          >
+            Preview
+          </button>
+        </div>
+      ) : null}
+      <div
+        className="flex w-[200%] gap-0 transition-transform duration-500 ease-out lg:grid lg:w-auto lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-8 xl:gap-10"
+        style={isMobileViewport ? { transform: mobilePane === "preview" ? "translateX(-50%)" : "translateX(0)" } : undefined}
+      >
+      <aside className="w-1/2 shrink-0 space-y-6 pr-4 lg:sticky lg:top-24 lg:w-auto lg:self-start lg:pr-0">
+        <div className="space-y-6">
           <div className={`${shellClass} space-y-3`}>
             <label className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
               {studioIdeaLabel}
@@ -120,10 +160,47 @@ export function StudioEditorStep({
                 setDetails((prev) => ({ ...prev, theme: event.target.value }))
               }
             />
-            <p className="text-sm leading-7 text-[#6B5E4E]">
-              Describe your invitation in your own words. We&apos;ll generate it for you.
-            </p>
           </div>
+
+          {imageFinishPresets.length > 0 ? (
+            <div className="space-y-4 rounded-[1.75rem] border border-[#d8cdc0]/85 bg-[#fbf8f4] p-5">
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
+                  Image Finish (Optional).
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {imageFinishPresets.map((preset) => {
+                  const active = selectedImageFinishPreset?.label === preset.label;
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          imageFinishPreset: active ? "" : preset.label,
+                        }))
+                      }
+                      className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-colors ${
+                        active
+                          ? "border-[#1A1A1A] bg-[#1A1A1A] text-[#F5F2EF]"
+                          : "border-[#d8cdc0] bg-white text-[#5F5345] hover:border-[#8C7B65]"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedImageFinishPreset ? (
+                <p className="text-sm leading-6 text-[#6B5E4E]">
+                  {selectedImageFinishPreset.description}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {showStudioCreativeControls ? (
             <div className="space-y-4 rounded-[1.75rem] border border-[#d8cdc0]/85 bg-[#fbf8f4] p-5">
@@ -206,21 +283,6 @@ export function StudioEditorStep({
           ) : null}
 
           <div className="space-y-3 pt-6">
-            {isEditingLiveCard ? (
-              <div className="rounded-[1.5rem] border border-[#d8cdc0]/85 bg-[#fbf8f4] p-4">
-                <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
-                  {editingLiveCardHeroTextMode === "image"
-                    ? "Edit current invitation art"
-                    : "Edit current background"}
-                </label>
-                <textarea
-                  placeholder="e.g. soften the gold lighting, simplify the florals, and keep the same composition"
-                  className="min-h-[120px] w-full resize-none border-0 border-b border-[#1A1A1A]/18 bg-transparent px-0 py-2 font-[var(--font-playfair)] text-2xl text-[#1A1A1A] transition-colors focus:border-[#1A1A1A] focus:outline-none focus:ring-0 [&::placeholder]:text-[rgba(26,26,26,0.1)] [&::placeholder]:italic [&::placeholder]:opacity-100"
-                  value={editPrompt}
-                  onChange={(event) => setEditPrompt(event.target.value)}
-                />
-              </div>
-            ) : null}
             <div className="space-y-3">
               <button
                 onClick={() => generateMedia("page")}
@@ -246,10 +308,20 @@ export function StudioEditorStep({
         </div>
       </aside>
 
-      <section className="space-y-8">
+      <section className="w-1/2 shrink-0 space-y-8 pl-4 lg:w-auto lg:pl-0">
         {currentProjectWithVisualDraft ? (
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className={`flex ${isMobileViewport ? "items-center justify-between gap-3" : "flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"}`}>
             <div className="flex flex-wrap items-center gap-3">
+              {isMobileViewport ? (
+                <button
+                  type="button"
+                  onClick={showPromptComposer}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d8cdc0] bg-[#fbf8f4] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#1A1A1A] transition-all hover:-translate-y-0.5 hover:bg-[#fffdf9]"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back To Prompt
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={saveCurrentProjectToLibrary}
@@ -261,39 +333,13 @@ export function StudioEditorStep({
               >
                 {currentProjectSaveLabel}
               </button>
-              <button
-                type="button"
-                onClick={shareCurrentProject}
-                disabled={
-                  currentProjectWithVisualDraft.status !== "ready" ||
-                  sharingId === currentProjectWithVisualDraft.id
-                }
-                className="inline-flex items-center justify-center rounded-full border border-[#d8cdc0] bg-[#fbf8f4] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#1A1A1A] transition-all hover:-translate-y-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                {sharingId === currentProjectWithVisualDraft.id ? "Sharing..." : "Share"}
-              </button>
-              <button
-                type="button"
-                onClick={downloadCurrentProject}
-                disabled={!currentProjectWithVisualDraft.url}
-                className="inline-flex items-center justify-center rounded-full border border-[#d8cdc0] bg-[#fbf8f4] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#1A1A1A] transition-all hover:-translate-y-0.5 hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                Download
-              </button>
-              <button
-                type="button"
-                onClick={clearCurrentProject}
-                className="inline-flex items-center justify-center rounded-full border border-[#e6d7c7] bg-[#fffaf4] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#7a5e47] transition-all hover:-translate-y-0.5 hover:bg-[#fffdf9]"
-              >
-                {currentProjectHasUnsavedChanges ? "Discard" : "Clear Studio"}
-              </button>
             </div>
           </div>
         ) : null}
 
         {currentProjectWithVisualDraft ? (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,25rem)_16rem] xl:justify-center">
-            <div className={`${mediaCardClass} overflow-hidden`}>
+          <div className="flex justify-center">
+            <div className={`${mediaCardClass} w-full max-w-[25rem] overflow-hidden`}>
               <div
                 className={`relative mx-auto flex items-center justify-center overflow-hidden bg-[#efe7dc] ${
                   currentProjectWithVisualDraft.details.orientation === "portrait"
@@ -388,45 +434,9 @@ export function StudioEditorStep({
                 </div>
               </div>
             </div>
-
-            <div className={`${shellClass} space-y-4 self-start`}>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8C7B65]">
-                  Current Project
-                </p>
-                <h3 className="mt-2 font-[var(--font-playfair)] text-3xl tracking-[-0.03em] text-[#1A1A1A]">
-                  {getStudioShareTitle(currentProjectWithVisualDraft)}
-                </h3>
-              </div>
-              <div className="space-y-3 text-sm text-[#6B5E4E]">
-                <p>{currentProjectWithVisualDraft.details.category}</p>
-                {currentProjectWithVisualDraft.details.eventDate ? (
-                  <p>{formatDate(currentProjectWithVisualDraft.details.eventDate)}</p>
-                ) : null}
-                {clean(currentProjectWithVisualDraft.details.location) ? (
-                  <p>{clean(currentProjectWithVisualDraft.details.location)}</p>
-                ) : null}
-              </div>
-              <div className="space-y-3 border-t border-[#1A1A1A]/8 pt-4 text-sm leading-7 text-[#6B5E4E]">
-                <p>
-                  Save this project to keep it in Library. If you clear Studio without saving, it
-                  will be discarded.
-                </p>
-                {currentProjectWithVisualDraft.type === "image" ? (
-                  <button
-                    type="button"
-                    onClick={openCurrentImage}
-                    className="inline-flex items-center gap-2 text-sm font-medium text-[#1A1A1A] underline decoration-[#8C7B65]/50 underline-offset-4"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                    Open current image
-                  </button>
-                ) : null}
-              </div>
-            </div>
           </div>
         ) : (
-          <div className="flex min-h-[304px] items-center justify-center rounded-[2rem] border border-dashed border-[#d8cdc0] bg-[#fbf8f4] px-8 py-12 text-center shadow-[0_20px_55px_rgba(49,32,17,0.05)] lg:mt-[5.25rem]">
+          <div className="flex min-h-[304px] items-center justify-center rounded-[2rem] border border-dashed border-[#d8cdc0] bg-[#fbf8f4] px-8 py-12 text-center shadow-[0_20px_55px_rgba(49,32,17,0.05)]">
             <div className="max-w-xl">
               <div className="mb-6 inline-flex rounded-full bg-[#f0e7db] p-6 shadow-[0_10px_24px_rgba(49,32,17,0.08)]">
                 <WandSparkles className="h-12 w-12 text-[#8C7B65]" />
@@ -442,6 +452,7 @@ export function StudioEditorStep({
           </div>
         )}
       </section>
+      </div>
     </motion.div>
   );
 }

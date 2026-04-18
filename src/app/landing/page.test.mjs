@@ -11,6 +11,8 @@ const readSource = (relativePath) =>
 test("landing page renders the new dedicated landing experience component", () => {
   const page = readSource("src/app/landing/page.tsx");
   const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
+  const landingShowcase = readSource("src/components/landing/LandingLiveCardShowcase.tsx");
+  const landingSnapshots = readSource("src/components/landing/landing-live-card-snapshots.ts");
   const landingStyles = readSource("src/app/landing/LandingExperience.module.css");
   const landingFaq = readSource("src/app/landing/sections/LandingFaq.tsx");
   const gymnasticsIndex = landingExperience.indexOf('id="gymnastics"');
@@ -20,6 +22,7 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(page, /<LandingExperience \/>/);
   assert.match(landingExperience, /id="landing-hero"/);
   assert.match(landingExperience, /id="snap"/);
+  assert.match(landingExperience, /<LandingLiveCardShowcase \/>/);
   assert.match(landingExperience, /id="gymnastics"/);
   assert.match(landingExperience, /id="what-you-can-snap"/);
   assert.match(landingExperience, /id="how-it-works"/);
@@ -30,6 +33,30 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingExperience, /styles\.gymnasticsSportsScanBeam/);
   assert.match(landingExperience, /styles\.gymnasticsSportsConnector/);
   assert.match(landingExperience, /styles\.gymnasticsSportsPhoneShell/);
+  assert.match(landingShowcase, /id="showcase"/);
+  assert.match(landingShowcase, /Live Card Showcase/);
+  assert.match(landingShowcase, /Open live card/);
+  assert.match(
+    landingShowcase,
+    /import \{ landingLiveCardSnapshots \} from "@\/components\/landing\/landing-live-card-snapshots";/,
+  );
+  assert.match(
+    landingShowcase,
+    /const showcaseCards: ShowcaseCardItem\[] = landingLiveCardSnapshots\.map\(\(snapshot\) => \(\{/,
+  );
+  assert.match(landingShowcase, /positions=\{preview\.positions\}/);
+  assert.match(landingShowcase, /interactive \? "pointer-events-auto" : "pointer-events-none"/);
+  assert.match(landingShowcase, /interactive=\{activeIndex === index\}/);
+  assert.match(landingShowcase, /import \{ resolveNativeShareData \} from "@\/utils\/native-share";/);
+  assert.match(landingShowcase, /const nativeShareData = resolveNativeShareData\(sharePayload\);/);
+  assert.doesNotMatch(landingShowcase, /for \(const candidate of shareCandidates\)/);
+  assert.doesNotMatch(landingShowcase, /await navigator\.share\(candidate\);/);
+  assert.doesNotMatch(landingShowcase, /createMarketingInvitationData/);
+  assert.doesNotMatch(landingShowcase, /Mila Turns 8/);
+  assert.doesNotMatch(landingShowcase, /\/api\/blob\/event-media\//);
+  assert.doesNotMatch(landingSnapshots, /\/api\/blob\/event-media\//);
+  assert.match(landingSnapshots, /\/images\/landing\/live-cards\//);
+  assert.equal((landingSnapshots.match(/"id": "/g) || []).length, 13);
   assert.match(landingStyles, /\.gymnasticsSportsPdfCard\s*\{/);
   assert.match(landingStyles, /\.gymnasticsSportsScanBeam\s*\{/);
   assert.match(landingStyles, /\.gymnasticsSportsConnectorPulse\s*\{/);
@@ -50,8 +77,8 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.notStrictEqual(gymnasticsIndex, -1);
   assert.notStrictEqual(snapTransformIndex, -1);
   assert.ok(
-    gymnasticsIndex < snapTransformIndex,
-    'expected `id="gymnastics"` to appear before `id="what-you-can-snap"`',
+    snapTransformIndex < gymnasticsIndex,
+    'expected `id="gymnastics"` to appear after `id="what-you-can-snap"`',
   );
 });
 

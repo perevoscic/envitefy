@@ -36,6 +36,7 @@ import StudioLiveCardActionSurface, {
   type LiveCardActiveTab,
   type LiveCardInvitationData,
 } from "@/components/studio/StudioLiveCardActionSurface";
+import { resolveNativeShareData } from "@/utils/native-share";
 
 type FeatureItem = {
   icon: LucideIcon;
@@ -806,35 +807,11 @@ function StudioMarketingLiveCard({
         preview.invitationData.description || preview.invitationData.subtitle || `${preview.title} on Envitefy Studio`,
       url: resolvedShareUrl,
     };
-    const shareCandidates = [
-      sharePayload,
-      { title: preview.title, url: resolvedShareUrl },
-      { url: resolvedShareUrl },
-      { text: resolvedShareUrl },
-    ];
 
     try {
-      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-        let shared = false;
-
-        for (const candidate of shareCandidates) {
-          try {
-            await navigator.share(candidate);
-            shared = true;
-            break;
-          } catch (error) {
-            if (
-              error instanceof DOMException &&
-              (error.name === "AbortError" || error.name === "NotAllowedError")
-            ) {
-              throw error;
-            }
-          }
-        }
-
-        if (!shared) {
-          throw new Error("Native share is unavailable for the current payload.");
-        }
+      const nativeShareData = resolveNativeShareData(sharePayload);
+      if (nativeShareData) {
+        await navigator.share(nativeShareData);
       } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(resolvedShareUrl);
       } else {
@@ -1148,7 +1125,7 @@ export default function StudioMarketingPage() {
 
   return (
     <>
-      <div className="min-h-screen overflow-x-hidden bg-white text-slate-900 selection:bg-[#ddd6fe] selection:text-[#4c1d95]">
+      <div className="min-h-screen overflow-x-clip bg-white text-slate-900 selection:bg-[#ddd6fe] selection:text-[#4c1d95]">
         <HeroTopNav
           navLinks={studioMarketingHeroNavLinks}
           primaryCtaLabel="Start in Studio"
@@ -1578,7 +1555,10 @@ export default function StudioMarketingPage() {
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col gap-6">
                 <div>
-                  <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+                  <h2
+                    className="text-5xl font-extrabold leading-[0.9] tracking-tight text-slate-900 sm:text-6xl lg:text-[5.25rem]"
+                    style={{ fontFamily: '"Outfit", "Inter", ui-sans-serif, system-ui, sans-serif' }}
+                  >
                     Live Card Showcase
                   </h2>
                   <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base lg:text-lg">

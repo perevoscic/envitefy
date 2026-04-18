@@ -1,4 +1,5 @@
 import type { LiveCardRsvpChoice } from "@/lib/live-card-rsvp";
+import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 import {
   type StudioGenerateApiResponse,
   type StudioGenerateMode,
@@ -541,6 +542,18 @@ export function getStudioEventYear(details: EventDetails): string {
   return match?.[1] || "";
 }
 
+function shouldIncludeStudioEventYear(details: EventDetails): boolean {
+  return details.category === "Wedding";
+}
+
+function formatStudioPromptDate(details: EventDetails): string {
+  const rawDate = getStudioEventDate(details);
+  if (shouldIncludeStudioEventYear(details)) return rawDate;
+  const match = rawDate.match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if (!match) return rawDate;
+  return `${match[1]}/${match[2]}`;
+}
+
 function formatVisibleCardTime(timeValue: string): string {
   const trimmed = clean(timeValue);
   if (!trimmed) return "";
@@ -585,6 +598,13 @@ export function buildStudioRequest(
       : "";
   const visualDirection = buildStudioVisualDirection(details);
   const categoryGuardrails = buildStudioCategoryGuardrails(details);
+  const imageFinishPreset = resolveStudioImageFinishPreset(
+    details.category,
+    details.imageFinishPreset,
+  );
+  const imageFinishPresetDirection = imageFinishPreset
+    ? `Selected image finish preset: ${imageFinishPreset.label}. Apply a ${imageFinishPreset.label} finish with ${imageFinishPreset.description}.`
+    : "";
   const studioGuardrails =
     "Preserve exact spelling from the event details when visible wording is baked into the generated invitation image. For live cards, the invitation text should feel like part of the designed image itself, not a detached app overlay. Keep the copy concentrated in the upper and middle portions of the card. Keep the lower zone decorative and art-led rather than empty or separated, but never place visible text, faux buttons, icons, chips, circles, bars, or device chrome in the bottom action-button area. Keep the top edge decorative too: no status bar, carrier text, clock text, battery icons, notches, camera cutouts, or phone chrome.";
   return {
@@ -594,7 +614,7 @@ export function buildStudioRequest(
       title: getDisplayTitle(details),
       category: details.category,
       occasion: pickFirst(details.occasion, details.category),
-      eventYear: getStudioEventYear(details) || null,
+      eventYear: shouldIncludeStudioEventYear(details) ? getStudioEventYear(details) || null : null,
       hostName:
         pickFirst(
           categorySupportsRsvp ? details.rsvpName : "",
@@ -616,7 +636,7 @@ export function buildStudioRequest(
         [baseDescription, refinement ? `Edit request: ${refinement}` : "", guestPhotoHint]
           .filter(Boolean)
           .join(" ") || null,
-      date: getStudioEventDate(details) || null,
+      date: formatStudioPromptDate(details) || null,
       startTime: getStudioEventStartTime(details) || null,
       endTime: getStudioEventEndTime(details) || null,
       timezone:
@@ -646,7 +666,13 @@ export function buildStudioRequest(
           details.category === "Birthday" ? "Playful and polished" : "Warm and elevated",
         ) || null,
       style:
-        [visualDirection, categoryGuardrails, refinement, studioGuardrails]
+        [
+          visualDirection,
+          categoryGuardrails,
+          imageFinishPresetDirection,
+          refinement,
+          studioGuardrails,
+        ]
           .filter(Boolean)
           .join(". ") || null,
       audience: pickFirst(details.invitedWho, details.audience, "Guests") || null,
@@ -655,6 +681,7 @@ export function buildStudioRequest(
         (details.category === "Game Day"
           ? "Deep navy, bright stadium lights, crisp white, and bold gold accents"
           : null),
+      imageFinishPreset: imageFinishPreset?.label,
       includeEmoji: true,
       subjectTransformMode:
         sanitizedGuestImageUrls.length > 0 ? "premium_makeover" : undefined,

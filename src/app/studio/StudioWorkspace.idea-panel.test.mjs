@@ -7,9 +7,10 @@ function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("studio step uses a single category-specific idea panel instead of presets", () => {
+test("studio step keeps the category-specific idea panel and adds image finish presets", () => {
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
   const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
+  const presetSource = readSource("src/lib/studio/image-finish-presets.ts");
 
   assert.match(workspace, /const studioIdeaLabel = getStudioIdeaLabel\(details\.category\);/);
   assert.match(
@@ -21,11 +22,21 @@ test("studio step uses a single category-specific idea panel instead of presets"
   assert.match(editorStep, /value=\{details\.theme\}/);
   assert.match(
     editorStep,
+    /import \{\s*getStudioImageFinishPresets,\s*resolveStudioImageFinishPreset,\s*\} from "@\/lib\/studio\/image-finish-presets";/,
+  );
+  assert.match(editorStep, /const imageFinishPresets = getStudioImageFinishPresets\(details\.category\);/);
+  assert.match(editorStep, /Image Finish/);
+  assert.match(editorStep, /imageFinishPreset: active \? "" : preset\.label,/);
+  assert.match(editorStep, /selectedImageFinishPreset\.description/);
+  assert.match(
+    editorStep,
     /setDetails\(\(prev\) => \(\{ \.\.\.prev, theme: event\.target\.value \}\)\)/,
   );
-  assert.doesNotMatch(editorStep, /\bPresets\b/);
   assert.doesNotMatch(editorStep, /Custom Visual Idea/);
   assert.doesNotMatch(editorStep, /No presets for this category yet/);
+  assert.match(presetSource, /Birthday:/);
+  assert.match(presetSource, /"Game Day":/);
+  assert.match(presetSource, /Wedding:/);
 });
 
 test("studio idea copy uses cleaned category-specific wording", () => {

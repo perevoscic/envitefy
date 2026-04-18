@@ -96,23 +96,19 @@ export function StudioCategoryTile({
         <div className={`absolute inset-0 ${overlayClassByStrength[category.overlayStrength]}`} />
       </div>
 
-      <div className="absolute inset-0 flex flex-col justify-between p-8">
-        <div />
-
-        <div className="flex items-end justify-between gap-4">
-          <div className="max-w-[280px] space-y-2">
-            <p
-              className="font-[var(--font-josefin-sans)] text-[1rem] font-bold uppercase tracking-[0.13em] leading-none !text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-[1.08rem] lg:text-[1.16rem]"
-            >
-              {category.name}
-            </p>
-            <p
-              id={descriptionId}
-              className="hidden max-w-[280px] text-sm leading-relaxed text-white/80 sm:block"
-            >
-              {category.description}
-            </p>
-          </div>
+      <div className="absolute inset-0 flex flex-col justify-end pl-3 pr-4 pb-3 pt-10 text-left sm:p-8">
+        <div className="w-full max-w-[280px] space-y-2 self-start">
+          <p
+            className="font-[var(--font-josefin-sans)] text-[1rem] font-bold uppercase tracking-[0.13em] leading-none !text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-[1.08rem] lg:text-[1.16rem]"
+          >
+            {category.name}
+          </p>
+          <p
+            id={descriptionId}
+            className="hidden max-w-[280px] text-sm leading-relaxed text-left text-white/80 sm:block"
+          >
+            {category.description}
+          </p>
         </div>
       </div>
 

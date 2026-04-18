@@ -5,7 +5,9 @@ import {
   ChevronRight,
   Download,
   Loader2,
+  Pencil,
   PanelLeft,
+  Share2,
   Trash2,
   WandSparkles,
   X,
@@ -13,6 +15,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface from "@/components/studio/StudioLiveCardActionSurface";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
@@ -21,6 +24,7 @@ import {
   uploadMediaFile,
   validateClientUploadFile,
 } from "@/utils/media-upload-client";
+import { resolveNativeShareData } from "@/utils/native-share";
 import type { StudioCreateStep, StudioWorkspaceView } from "./studio-types";
 import { requestStudioGeneration } from "./studio-workspace-api";
 import {
@@ -371,6 +375,9 @@ async function parseStudioFlyerDetails(file: File): Promise<{
 
 const STUDIO_MOBILE_TOP_CHROME = "3rem + max(0.5rem, env(safe-area-inset-top, 0px)) + 0.75rem";
 const STUDIO_MOBILE_BOTTOM_CHROME = "max(0.75rem, env(safe-area-inset-bottom, 0px)) + 0.5rem";
+const STUDIO_MOBILE_ACTION_BAR_CLEARANCE = "5.5rem";
+const STUDIO_MOBILE_CARD_TOP_OFFSET = "2rem";
+const STUDIO_EDITOR_MOBILE_BREAKPOINT = "(max-width: 767px)";
 
 export default function StudioWorkspace() {
   const router = useRouter();
@@ -402,15 +409,15 @@ export default function StudioWorkspace() {
   const [studioVisualDraft, setStudioVisualDraft] = useState<StudioVisualDraft | null>(null);
   const [isLiveCardToolsDrawerOpen, setIsLiveCardToolsDrawerOpen] = useState(false);
   const [isDesktopLiveCardViewport, setIsDesktopLiveCardViewport] = useState(false);
+  const [isMobileEditorViewport, setIsMobileEditorViewport] = useState(false);
+  const [mobileEditorPane, setMobileEditorPane] = useState<"composer" | "preview">("composer");
   const [isFlyerUploading, setIsFlyerUploading] = useState(false);
   const [isSubjectPhotoUploading, setIsSubjectPhotoUploading] = useState(false);
   const [flyerUploadError, setFlyerUploadError] = useState<string | null>(null);
   const [subjectPhotoUploadError, setSubjectPhotoUploadError] = useState<string | null>(null);
   const liveCardHistoryEntryActiveRef = useRef(false);
   const editingMediaItem = currentProject;
-
   const isEditingLiveCard = editingMediaItem?.type === "page";
-  const editingLiveCardHeroTextMode = editingMediaItem?.data?.heroTextMode;
 
   const activePageRecord = useMemo(
     () =>
@@ -435,11 +442,7 @@ export default function StudioWorkspace() {
       serializeStudioMediaItem(savedCurrentProject)
     );
   }, [currentProjectWithVisualDraft, savedCurrentProject]);
-  const currentProjectSaveLabel = !savedCurrentProject
-    ? "Save to Library"
-    : currentProjectHasUnsavedChanges
-      ? "Save Changes"
-      : "Saved to Library";
+  const currentProjectSaveLabel = "Save to Library";
   const studioPreviewShareUrl = useMemo(() => {
     const path = activePageRecord?.sharePath;
     return path?.startsWith("/card/") ? getAbsoluteShareUrl(path) : "";
@@ -451,14 +454,14 @@ export default function StudioWorkspace() {
   const studioLiveCardModalStyle = isDesktopLiveCardViewport
     ? undefined
     : {
-        paddingTop: `calc(${STUDIO_MOBILE_TOP_CHROME} + 0.25rem)`,
-        paddingBottom: `calc(${STUDIO_MOBILE_BOTTOM_CHROME})`,
+        paddingTop: `calc(${STUDIO_MOBILE_TOP_CHROME} + ${STUDIO_MOBILE_CARD_TOP_OFFSET} + 0.25rem)`,
+        paddingBottom: `calc(${STUDIO_MOBILE_BOTTOM_CHROME} + ${STUDIO_MOBILE_ACTION_BAR_CLEARANCE})`,
       };
   const studioLiveCardFrameStyle = isDesktopLiveCardViewport
     ? undefined
     : {
-        maxHeight: `calc(100dvh - (${STUDIO_MOBILE_TOP_CHROME}) - (${STUDIO_MOBILE_BOTTOM_CHROME}))`,
-        width: `min(100%, calc((100dvh - (${STUDIO_MOBILE_TOP_CHROME}) - (${STUDIO_MOBILE_BOTTOM_CHROME})) * 9 / 16))`,
+        maxHeight: `calc(100dvh - (${STUDIO_MOBILE_TOP_CHROME}) - (${STUDIO_MOBILE_BOTTOM_CHROME}) - (${STUDIO_MOBILE_ACTION_BAR_CLEARANCE}))`,
+        width: `min(100%, calc((100dvh - (${STUDIO_MOBILE_TOP_CHROME}) - (${STUDIO_MOBILE_BOTTOM_CHROME}) - (${STUDIO_MOBILE_ACTION_BAR_CLEARANCE})) * 9 / 16))`,
       };
   const studioLiveCardControlTop = isDesktopLiveCardViewport
     ? undefined
@@ -539,8 +542,40 @@ export default function StudioWorkspace() {
   }, [currentProject?.id]);
 
   useEffect(() => {
+    if (!details.imageFinishPreset) return;
+    if (resolveStudioImageFinishPreset(details.category, details.imageFinishPreset)) return;
+    setDetails((prev) =>
+      prev.imageFinishPreset &&
+      !resolveStudioImageFinishPreset(prev.category, prev.imageFinishPreset)
+        ? { ...prev, imageFinishPreset: "" }
+        : prev,
+    );
+  }, [details.category, details.imageFinishPreset]);
+
+  useEffect(() => {
     setActiveTab("none");
   }, [activePageRecord?.id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia(STUDIO_EDITOR_MOBILE_BREAKPOINT);
+    const syncMobileEditorViewport = () => {
+      const matches = mediaQuery.matches;
+      setIsMobileEditorViewport(matches);
+      if (!matches) {
+        setMobileEditorPane("composer");
+      }
+    };
+
+    syncMobileEditorViewport();
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncMobileEditorViewport);
+      return () => mediaQuery.removeEventListener("change", syncMobileEditorViewport);
+    }
+    mediaQuery.addListener(syncMobileEditorViewport);
+    return () => mediaQuery.removeListener(syncMobileEditorViewport);
+  }, []);
 
   useEffect(() => {
     if (!deleteConfirmationItem) return;
@@ -855,6 +890,7 @@ export default function StudioWorkspace() {
 
   function clearCurrentProject(options?: { resetDetails?: boolean }) {
     setCurrentProject(null);
+    setMobileEditorPane("composer");
     setEditPrompt("");
     setIsEditPanelOpen(false);
     setStudioVisualDraft(null);
@@ -883,19 +919,36 @@ export default function StudioWorkspace() {
   }
 
   function saveWorkingProject(project: MediaItem | null) {
-    if (!project) return;
-    const nextProject = applyStudioVisualDraft(project, studioVisualDraft);
+    if (!project) return null;
+    const nextProject = prepareProjectForLibrarySave(project);
     setCurrentProject(nextProject);
     upsertLibraryItem(nextProject);
     setStudioVisualDraft((prev) => (prev?.itemId === nextProject.id ? null : prev));
     setEditPrompt("");
     setIsEditPanelOpen(false);
     setIsDesignMode(false);
+    return nextProject;
   }
 
   function saveCurrentProjectToLibrary() {
     if (!currentProject || currentProject.status !== "ready") return;
     saveWorkingProject(currentProject);
+  }
+
+  function prepareProjectForLibrarySave(project: MediaItem): MediaItem {
+    const nextProject = applyStudioVisualDraft(project, studioVisualDraft);
+    const existingSavedProject = mediaList.find((item) => item.id === nextProject.id);
+    if (!existingSavedProject) return nextProject;
+    if (serializeStudioMediaItem(nextProject) === serializeStudioMediaItem(existingSavedProject)) {
+      return nextProject;
+    }
+    return {
+      ...nextProject,
+      id: createId(),
+      createdAt: new Date().toISOString(),
+      publishedEventId: undefined,
+      sharePath: undefined,
+    };
   }
 
   function getMediaPreviewUrl(item: MediaItem) {
@@ -969,37 +1022,54 @@ export default function StudioWorkspace() {
     navigateWorkspace("create", "editor");
   }
 
-  async function ensurePublicSharePath(item: MediaItem): Promise<string> {
+  function getReusablePublicSharePath(item: MediaItem): string | null {
     const isCurrentProjectItem = currentProject?.id === item.id;
     const workingItem =
       isCurrentProjectItem && currentProjectWithVisualDraft
         ? currentProjectWithVisualDraft
         : getProjectItem(item.id) || item;
+
     if (
       workingItem.sharePath?.startsWith("/card/") &&
       (!isCurrentProjectItem || !currentProjectHasUnsavedChanges)
     ) {
       return workingItem.sharePath;
     }
+
+    return null;
+  }
+
+  async function ensurePublicSharePath(item: MediaItem): Promise<string> {
+    const isCurrentProjectItem = currentProject?.id === item.id;
+    const workingItem =
+      isCurrentProjectItem && currentProjectWithVisualDraft
+        ? currentProjectWithVisualDraft
+        : getProjectItem(item.id) || item;
+    const reusableSharePath = getReusablePublicSharePath(item);
+    if (reusableSharePath) {
+      return reusableSharePath;
+    }
     if (workingItem.status !== "ready") {
       throw new Error("This invite must finish generating before it can be shared.");
     }
 
-    if (isCurrentProjectItem) {
-      saveWorkingProject(workingItem);
-    }
+    const shareableWorkingItem = isCurrentProjectItem
+      ? (saveWorkingProject(workingItem) ?? workingItem)
+      : workingItem;
 
     const persistedImageUrl = await persistImageMediaValue({
-      value: workingItem.url,
-      fileName: `${buildEventSlug(getStudioShareTitle(workingItem)) || "studio-invite"}.png`,
+      value: shareableWorkingItem.url,
+      fileName: `${buildEventSlug(getStudioShareTitle(shareableWorkingItem)) || "studio-invite"}.png`,
     });
 
-    let publishItem = workingItem;
-    if (workingItem.data?.eventDetails) {
-      const eventDetails = await persistGuestImageUrlsForPublish(workingItem.data.eventDetails);
+    let publishItem = shareableWorkingItem;
+    if (shareableWorkingItem.data?.eventDetails) {
+      const eventDetails = await persistGuestImageUrlsForPublish(
+        shareableWorkingItem.data.eventDetails,
+      );
       publishItem = {
-        ...workingItem,
-        data: { ...workingItem.data, eventDetails },
+        ...shareableWorkingItem,
+        data: { ...shareableWorkingItem.data, eventDetails },
       };
     }
 
@@ -1050,7 +1120,8 @@ export default function StudioWorkspace() {
   async function shareMedia(item: MediaItem) {
     try {
       setSharingId(item.id);
-      const sharePath = await ensurePublicSharePath(item);
+      const reusableSharePath = getReusablePublicSharePath(item);
+      const sharePath = reusableSharePath ?? (await ensurePublicSharePath(item));
       const shareUrl = getAbsoluteShareUrl(sharePath);
       const shareItem =
         currentProject?.id === item.id && currentProjectWithVisualDraft
@@ -1066,8 +1137,11 @@ export default function StudioWorkspace() {
         url: shareUrl,
       };
 
-      if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share(shareData);
+      const nativeShareData = reusableSharePath
+        ? resolveNativeShareData(shareData)
+        : null;
+      if (nativeShareData) {
+        await navigator.share(nativeShareData);
       } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl);
       } else if (typeof window !== "undefined") {
@@ -1143,6 +1217,9 @@ export default function StudioWorkspace() {
     setIsGenerating(true);
     setActiveTab("none");
     setCurrentProject(loadingItem);
+    if (isMobileEditorViewport) {
+      setMobileEditorPane("preview");
+    }
 
     try {
       const response = await requestStudioGeneration(
@@ -1170,6 +1247,9 @@ export default function StudioWorkspace() {
 
       setCurrentProject(nextItem);
       setEditPrompt("");
+      if (isMobileEditorViewport) {
+        setMobileEditorPane("preview");
+      }
       navigateWorkspace("create", "editor");
     } catch (error) {
       const errorMessage =
@@ -1437,12 +1517,23 @@ export default function StudioWorkspace() {
     navigateWorkspace("create", "type");
   }
 
+  function handleCategorySelect(category: InviteCategory) {
+    setDetails((prev) => ({
+      ...prev,
+      category,
+    }));
+    setMobileEditorPane("composer");
+    navigateWorkspace("create", "details");
+  }
+
   function openDetailsStep() {
+    setMobileEditorPane("composer");
     navigateWorkspace("create", "details");
   }
 
   function openEditorStep() {
     if (!formValid) return;
+    setMobileEditorPane("composer");
     navigateWorkspace("create", "editor");
   }
 
@@ -1453,15 +1544,6 @@ export default function StudioWorkspace() {
   function openLibraryPage(item: MediaItem | null) {
     setPreviewOrigin(item ? "library" : null);
     setActivePage(item);
-  }
-
-  function clearEditorWithConfirm() {
-    if (
-      !currentProjectHasUnsavedChanges ||
-      confirmDiscardCurrentProject("Discard the current Studio project?")
-    ) {
-      clearCurrentProject();
-    }
   }
 
   return (
@@ -1484,15 +1566,14 @@ export default function StudioWorkspace() {
             typeContent={
               <StudioCategoryStep
                 details={details}
-                setDetails={setDetails}
-                setCreateStep={setCreateStep}
+                onSelectCategory={handleCategorySelect}
               />
             }
             detailsContent={
               <StudioFormStep
                 details={details}
                 setDetails={setDetails}
-                setCreateStep={setCreateStep}
+                onOpenEditorStep={openEditorStep}
                 isFormValid={formValid}
                 editingId={currentProject?.id ?? null}
                 onUploadFlyer={handleUploadFlyer}
@@ -1524,22 +1605,18 @@ export default function StudioWorkspace() {
                 currentProjectPreviewShareUrl={currentProjectPreviewShareUrl}
                 isGenerating={isGenerating}
                 isEditingLiveCard={isEditingLiveCard}
-                editingLiveCardHeroTextMode={editingLiveCardHeroTextMode}
-                editPrompt={editPrompt}
-                setEditPrompt={setEditPrompt}
+                isMobileViewport={isMobileEditorViewport}
+                mobilePane={mobileEditorPane}
                 sharingId={sharingId}
                 copySuccess={copySuccess}
                 generateMedia={generateMedia}
                 saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
+                showPromptComposer={() => setMobileEditorPane("composer")}
+                showPreviewPane={() => setMobileEditorPane("preview")}
                 shareCurrentProject={() => {
                   if (!currentProjectWithVisualDraft) return;
                   void shareMedia(currentProjectWithVisualDraft);
                 }}
-                downloadCurrentProject={() => {
-                  if (!currentProjectWithVisualDraft) return;
-                  downloadMedia(currentProjectWithVisualDraft);
-                }}
-                clearCurrentProject={clearEditorWithConfirm}
                 openCurrentImage={() => {
                   if (!currentProjectWithVisualDraft) return;
                   setSelectedImage(currentProjectWithVisualDraft);
@@ -1742,6 +1819,13 @@ export default function StudioWorkspace() {
             style={studioLiveCardModalStyle}
           >
             <button
+              type="button"
+              aria-label="Close live card preview"
+              onClick={() => closeLiveCardFullscreen()}
+              className="absolute inset-0"
+            />
+
+            <button
               onClick={() => closeLiveCardFullscreen()}
               className="absolute right-4 top-4 z-[7010] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30 md:right-8 md:top-8"
             >
@@ -1812,7 +1896,7 @@ export default function StudioWorkspace() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-[#8C7B65]/20 aspect-[9/16]"
+              className="relative z-[7005] w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-[#8C7B65]/20 aspect-[9/16]"
               style={studioLiveCardFrameStyle}
             >
               <img
@@ -1860,6 +1944,48 @@ export default function StudioWorkspace() {
                 registryHelperText={activePageRecord.data.interactiveMetadata.shareNote}
               />
             </motion.div>
+
+            {!isDesktopLiveCardViewport ? (
+              <div
+                className="fixed left-1/2 z-[7010] flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/12 bg-white/14 px-3 py-2 shadow-[0_18px_50px_rgba(0,0,0,0.38)] backdrop-blur-xl md:hidden"
+                style={{ bottom: `calc(${STUDIO_MOBILE_BOTTOM_CHROME} + 0.25rem)` }}
+              >
+                <button
+                  type="button"
+                  onClick={() => openLiveCardImageEdit(activePageRecord)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105"
+                  aria-label="Edit live card"
+                  title="Edit"
+                >
+                  <Pencil className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadMedia(activePageRecord)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105"
+                  aria-label="Download live card"
+                  title="Download"
+                >
+                  <Download className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void shareMedia(activePageRecord)}
+                  disabled={sharingId === activePageRecord.id}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105 disabled:cursor-wait disabled:opacity-80"
+                  aria-label={sharingId === activePageRecord.id ? "Creating share link" : "Share live card"}
+                  title={sharingId === activePageRecord.id ? "Creating share link" : "Share"}
+                >
+                  {sharingId === activePageRecord.id ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : copySuccess ? (
+                    <Share2 className="h-5 w-5 text-emerald-600" />
+                  ) : (
+                    <Share2 className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            ) : null}
           </motion.div>
         ) : null}
       </AnimatePresence>

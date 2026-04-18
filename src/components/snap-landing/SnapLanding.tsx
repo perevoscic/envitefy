@@ -655,7 +655,7 @@ export default function SnapLanding() {
   };
 
   return (
-    <div className="relative z-[1] isolate min-h-screen overflow-x-hidden bg-transparent font-sans text-white selection:bg-white/20 selection:text-white">
+    <div className="relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent font-sans text-white selection:bg-white/20 selection:text-white">
       <ScenicBackground scene={activeScene} scenes={SNAP_SCENES} />
 
       <HeroTopNav

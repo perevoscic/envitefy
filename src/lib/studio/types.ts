@@ -41,6 +41,7 @@ export type StudioGenerationGuidance = {
   style?: string | null;
   audience?: string | null;
   colorPalette?: string | null;
+  imageFinishPreset?: string | null;
   includeEmoji?: boolean | null;
   subjectTransformMode?: StudioSubjectTransformMode | null;
   likenessStrength?: StudioLikenessStrength | null;
@@ -218,6 +219,7 @@ function normalizeGuidance(value: unknown): StudioGenerationGuidance | undefined
     style: safeNullableString((value as any).style),
     audience: safeNullableString((value as any).audience),
     colorPalette: safeNullableString((value as any).colorPalette),
+    imageFinishPreset: safeNullableString((value as any).imageFinishPreset),
     includeEmoji:
       typeof (value as any).includeEmoji === "boolean" ? (value as any).includeEmoji : null,
     subjectTransformMode:

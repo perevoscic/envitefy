@@ -70,8 +70,17 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   );
   assert.match(
     source,
-    /style:\s*\[visualDirection, categoryGuardrails, refinement, studioGuardrails\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
+    /const imageFinishPreset = resolveStudioImageFinishPreset\(\s*details\.category,\s*details\.imageFinishPreset,\s*\);/s,
   );
+  assert.match(
+    source,
+    /const imageFinishPresetDirection = imageFinishPreset\s*\?\s*`Selected image finish preset: \$\{imageFinishPreset\.label\}\. Apply a \$\{imageFinishPreset\.label\} finish with \$\{imageFinishPreset\.description\}\.`\s*:\s*"";/s,
+  );
+  assert.match(
+    source,
+    /style:\s*\[\s*visualDirection,\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*refinement,\s*studioGuardrails,\s*\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
+  );
+  assert.match(source, /imageFinishPreset:\s*imageFinishPreset\?\.label,/);
 });
 
 test("studio prompt sources require baked-in invitation text while keeping the bottom action zone clear", () => {
@@ -97,6 +106,14 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   assert.match(
     promptSource,
     /Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay\./,
+  );
+  assert.match(
+    promptSource,
+    /Selected image finish preset: \$\{imageFinishPreset\.label\} - \$\{imageFinishPreset\.description\}\./,
+  );
+  assert.match(
+    promptSource,
+    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's core idea\./,
   );
   assert.match(
     promptSource,
@@ -202,6 +219,7 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   );
   assert.match(promptSource, /line\("Age or Milestone", event\.ageOrMilestone\)/);
   assert.match(promptSource, /line\("User Idea", event\.userIdea\)/);
+  assert.match(promptSource, /line\("Image Finish Preset", imageFinishPreset\?\.label\)/);
   assert.match(
     promptSource,
     /Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome\./,

@@ -326,7 +326,7 @@ export default function GymnasticsLanding() {
 
   return (
     <div
-      className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-hidden bg-transparent text-white selection:bg-white/20 selection:text-white`}
+      className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent text-white selection:bg-white/20 selection:text-white`}
     >
       <ScenicBackground scene={activeScene} scenes={GYMNASTICS_SCENES} />
       <HeroTopNav

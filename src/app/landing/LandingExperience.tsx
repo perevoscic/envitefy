@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import { type ReactNode, useEffect, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import LandingLiveCardShowcase from "@/components/landing/LandingLiveCardShowcase";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
@@ -420,7 +421,7 @@ export default function LandingExperience() {
   return (
     <>
       <div
-        className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-hidden bg-[#f8f5ff] text-[#2b1b16] selection:bg-[#c98f6b]/30 selection:text-[#2b1b16]`}
+        className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-clip bg-[#f8f5ff] text-[#2b1b16] selection:bg-[#c98f6b]/30 selection:text-[#2b1b16]`}
       >
         <HeroTopNav
           navLinks={landingHeroNavLinks}
@@ -661,155 +662,7 @@ export default function LandingExperience() {
           </motion.header>
         </section>
 
-        <section
-          id="gymnastics"
-          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
-        >
-          <motion.div
-            variants={sectionReveal}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="mx-auto max-w-7xl"
-          >
-            <div
-              className={cx(
-                styles.gymnasticsShell,
-                "relative isolate overflow-hidden px-5 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-10",
-              )}
-            >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -right-20 -top-16 h-80 w-80 rounded-full bg-[#8b5cf6]/22 blur-[100px]"
-              />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#22d3ee]/18 blur-[90px]"
-              />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute left-1/2 top-1/2 h-[min(100%,28rem)] w-[min(100%,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7c3aed]/[0.06] blur-3xl"
-              />
-
-              <div className="relative z-[1] space-y-10">
-                <div className="relative overflow-hidden rounded-[1.75rem] border border-white/12 bg-gradient-to-br from-[#251447] via-[#1a0d2e] to-[#0f081c] px-6 py-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] sm:rounded-[2rem] sm:px-9 sm:py-11">
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_15%_-20%,rgba(124,58,237,0.55),transparent_55%)]" />
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_90%_100%,rgba(14,165,233,0.2),transparent_50%)]" />
-
-                  <div className="relative">
-                    <span className="inline-flex items-center rounded-full border border-white/18 bg-white/[0.08] px-4 py-2 text-[0.68rem] font-extrabold uppercase tracking-[0.26em] text-white/88 shadow-[0_12px_32px_rgba(0,0,0,0.2)] backdrop-blur-md">
-                      Gymnastics · Meet pages
-                    </span>
-
-                    <h2
-                      className={cx(
-                        styles.headline,
-                        "mt-7 max-w-[22ch] text-[1.85rem] font-extrabold leading-[1.08] tracking-tight text-white sm:max-w-none sm:text-4xl lg:text-[2.65rem] lg:leading-[1.05]",
-                      )}
-                    >
-                      Weekend logistics,{" "}
-                      <span className="bg-gradient-to-r from-[#c4b5fd] via-[#7dd3fc] to-[#5eead4] bg-clip-text text-transparent">
-                        one calm link
-                      </span>
-                      <span className="text-white/95">.</span>
-                    </h2>
-
-                    <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/72 sm:text-lg sm:leading-8">
-                      Stop re-explaining parking, hotels, and last-minute changes across group
-                      threads. Envitefy turns the packet into a single mobile hub parents actually
-                      open.
-                    </p>
-
-                    <div className="mt-8 flex flex-wrap gap-2.5">
-                      {[
-                        { label: "Packet → polished page", icon: FileText },
-                        { label: "Update once, everyone sees it", icon: Zap },
-                        { label: "Built for gym families", icon: Users },
-                      ].map((chip) => {
-                        const ChipIcon = chip.icon;
-                        return (
-                          <span
-                            key={chip.label}
-                            className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-3.5 py-2 text-[0.8rem] font-semibold text-white/88 backdrop-blur-sm"
-                          >
-                            <ChipIcon className="h-3.5 w-3.5 shrink-0 text-[#a5b4fc]" />
-                            {chip.label}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="mb-5 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
-                    <h3
-                      className={cx(
-                        styles.headline,
-                        "text-xl font-bold tracking-tight text-[#1f1533] sm:text-2xl",
-                      )}
-                    >
-                      What your meet hub can carry
-                    </h3>
-                    <p className="max-w-md text-sm leading-relaxed text-[#5c4d6e] sm:text-right sm:text-[0.9rem]">
-                      Mix and match sections—families get one place to scan before they hit the
-                      venue.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-                    {gymnasticsFeatures.map((feature) => {
-                      const FeatureIcon = feature.icon;
-                      return (
-                      <motion.div
-                        key={feature.title}
-                        initial={false}
-                        whileHover={{ y: -5 }}
-                        transition={{ duration: 0.22, ease: "easeOut" }}
-                        className="group relative overflow-hidden rounded-2xl border border-[#e4daf7] bg-white/95 p-5 shadow-[0_14px_40px_rgba(31,21,51,0.06)] transition-[box-shadow,border-color] duration-300 hover:border-[#c4b5fd]/80 hover:shadow-[0_22px_56px_rgba(124,58,237,0.14)]"
-                      >
-                        <div
-                          aria-hidden
-                          className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-[#ede9fe] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                        />
-                        <div className="relative flex gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#7c3aed]/12 to-[#0ea5e9]/10 text-[#5b21b6] shadow-inner ring-1 ring-[#7c3aed]/10">
-                            <FeatureIcon className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h4
-                              className={cx(
-                                styles.headline,
-                                "text-[1.05rem] font-bold text-[#1f1533]",
-                              )}
-                            >
-                              {feature.title}
-                            </h4>
-                            <p className="mt-1.5 text-sm leading-relaxed text-[#5c4d6e]">
-                              {feature.desc}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-center text-sm font-medium text-[#5c4d6e] sm:text-left">
-                      Ready to ship a page for your next meet?
-                    </p>
-                    <PrimaryAction
-                      href="/gymnastics"
-                      label="Explore gymnastics meet pages"
-                      className="!w-full !bg-[#7c3aed] !shadow-[0_22px_56px_rgba(124,58,237,0.38)] hover:!scale-[1.01] hover:!bg-[#6d28d9] sm:!w-auto"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </section>
+        <LandingLiveCardShowcase />
 
         <section
           id="what-you-can-snap"
@@ -1216,6 +1069,156 @@ export default function LandingExperience() {
               </motion.div>
             </div>
           </div>
+        </section>
+
+        <section
+          id="gymnastics"
+          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
+        >
+          <motion.div
+            variants={sectionReveal}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="mx-auto max-w-7xl"
+          >
+            <div
+              className={cx(
+                styles.gymnasticsShell,
+                "relative isolate overflow-hidden px-5 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-10",
+              )}
+            >
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-20 -top-16 h-80 w-80 rounded-full bg-[#8b5cf6]/22 blur-[100px]"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#22d3ee]/18 blur-[90px]"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-1/2 h-[min(100%,28rem)] w-[min(100%,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7c3aed]/[0.06] blur-3xl"
+              />
+
+              <div className="relative z-[1] space-y-10">
+                <div className="relative overflow-hidden rounded-[1.75rem] border border-white/12 bg-gradient-to-br from-[#251447] via-[#1a0d2e] to-[#0f081c] px-6 py-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] sm:rounded-[2rem] sm:px-9 sm:py-11">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_15%_-20%,rgba(124,58,237,0.55),transparent_55%)]" />
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_90%_100%,rgba(14,165,233,0.2),transparent_50%)]" />
+
+                  <div className="relative">
+                    <span className="inline-flex items-center rounded-full border border-white/18 bg-white/[0.08] px-4 py-2 text-[0.68rem] font-extrabold uppercase tracking-[0.26em] text-white/88 shadow-[0_12px_32px_rgba(0,0,0,0.2)] backdrop-blur-md">
+                      Gymnastics · Meet pages
+                    </span>
+
+                    <h2
+                      className={cx(
+                        styles.headline,
+                        "mt-7 max-w-[22ch] text-[1.85rem] font-extrabold leading-[1.08] tracking-tight text-white sm:max-w-none sm:text-4xl lg:text-[2.65rem] lg:leading-[1.05]",
+                      )}
+                    >
+                      Weekend logistics,{" "}
+                      <span className="bg-gradient-to-r from-[#c4b5fd] via-[#7dd3fc] to-[#5eead4] bg-clip-text text-transparent">
+                        one calm link
+                      </span>
+                      <span className="text-white/95">.</span>
+                    </h2>
+
+                    <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/72 sm:text-lg sm:leading-8">
+                      Stop re-explaining parking, hotels, and last-minute changes across group
+                      threads. Envitefy turns the packet into a single mobile hub parents actually
+                      open.
+                    </p>
+
+                    <div className="mt-8 flex flex-wrap gap-2.5">
+                      {[
+                        { label: "Packet → polished page", icon: FileText },
+                        { label: "Update once, everyone sees it", icon: Zap },
+                        { label: "Built for gym families", icon: Users },
+                      ].map((chip) => {
+                        const ChipIcon = chip.icon;
+                        return (
+                          <span
+                            key={chip.label}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-3.5 py-2 text-[0.8rem] font-semibold text-white/88 backdrop-blur-sm"
+                          >
+                            <ChipIcon className="h-3.5 w-3.5 shrink-0 text-[#a5b4fc]" />
+                            {chip.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-5 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+                    <h3
+                      className={cx(
+                        styles.headline,
+                        "text-xl font-bold tracking-tight text-[#1f1533] sm:text-2xl",
+                      )}
+                    >
+                      What your meet hub can carry
+                    </h3>
+                    <p className="max-w-md text-sm leading-relaxed text-[#5c4d6e] sm:text-right sm:text-[0.9rem]">
+                      Mix and match sections—families get one place to scan before they hit the
+                      venue.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
+                    {gymnasticsFeatures.map((feature) => {
+                      const FeatureIcon = feature.icon;
+                      return (
+                        <motion.div
+                          key={feature.title}
+                          initial={false}
+                          whileHover={{ y: -5 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          className="group relative overflow-hidden rounded-2xl border border-[#e4daf7] bg-white/95 p-5 shadow-[0_14px_40px_rgba(31,21,51,0.06)] transition-[box-shadow,border-color] duration-300 hover:border-[#c4b5fd]/80 hover:shadow-[0_22px_56px_rgba(124,58,237,0.14)]"
+                        >
+                          <div
+                            aria-hidden
+                            className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-[#ede9fe] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                          />
+                          <div className="relative flex gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#7c3aed]/12 to-[#0ea5e9]/10 text-[#5b21b6] shadow-inner ring-1 ring-[#7c3aed]/10">
+                              <FeatureIcon className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h4
+                                className={cx(
+                                  styles.headline,
+                                  "text-[1.05rem] font-bold text-[#1f1533]",
+                                )}
+                              >
+                                {feature.title}
+                              </h4>
+                              <p className="mt-1.5 text-sm leading-relaxed text-[#5c4d6e]">
+                                {feature.desc}
+                              </p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-center text-sm font-medium text-[#5c4d6e] sm:text-left">
+                      Ready to ship a page for your next meet?
+                    </p>
+                    <PrimaryAction
+                      href="/gymnastics"
+                      label="Explore gymnastics meet pages"
+                      className="!w-full !bg-[#7c3aed] !shadow-[0_22px_56px_rgba(124,58,237,0.38)] hover:!scale-[1.01] hover:!bg-[#6d28d9] sm:!w-auto"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </section>
 
         <section

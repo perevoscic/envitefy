@@ -49,10 +49,11 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
     /className="no-scrollbar flex items-start gap-6 overflow-x-auto scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,
   );
   assert.match(source, /onClick=\{\(event\) => handleShowcaseCardClick\(index, event\)\}/);
-  assert.doesNotMatch(
-    source,
-    /typeof navigator\.canShare === "function"\s*&&\s*!navigator\.canShare\(candidate as ShareData\)/,
-  );
+  assert.match(source, /import \{ resolveNativeShareData \} from "@\/utils\/native-share";/);
+  assert.match(source, /const nativeShareData = resolveNativeShareData\(sharePayload\);/);
+  assert.match(source, /await navigator\.share\(nativeShareData\);/);
+  assert.doesNotMatch(source, /for \(const candidate of shareCandidates\)/);
+  assert.doesNotMatch(source, /await navigator\.share\(candidate\);/);
   assert.match(
     source,
     /className="w-\[min\(300px,calc\(100vw-4rem\)\)\] shrink-0 snap-center cursor-pointer"/,

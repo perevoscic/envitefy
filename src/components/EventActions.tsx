@@ -6,6 +6,7 @@ import { findFirstEmail } from "@/utils/contact";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { resolveNativeShareData } from "@/utils/native-share";
 import { useSession } from "next-auth/react";
 
 try {
@@ -558,12 +559,9 @@ export default function EventActions({
       const url =
         absoluteUrl ||
         (typeof window !== "undefined" ? window.location.href : "");
-      if (
-        typeof navigator !== "undefined" &&
-        "share" in navigator &&
-        typeof navigator.share === "function"
-      ) {
-        await navigator.share({ title: shareTitle, url });
+      const nativeShareData = resolveNativeShareData({ title: shareTitle, url });
+      if (nativeShareData) {
+        await navigator.share(nativeShareData);
         return;
       }
       await navigator.clipboard.writeText(url);

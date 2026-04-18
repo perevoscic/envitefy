@@ -4,6 +4,7 @@ import type {
   StudioGenerateSurface,
   StudioLiveCardMetadata,
 } from "@/lib/studio/types";
+import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 
 const CARD_SCHEDULE_EXAMPLE = "Saturday May 23rd at 12:00 PM";
 const CARD_SCHEDULE_DATE_ONLY_EXAMPLE = "Saturday May 23rd";
@@ -656,6 +657,10 @@ export function buildInvitationImagePrompt(
   const pageSurface = surface === "page";
   const gameDay = isGameDayOccasion(event);
   const approvedVisibleCopy = buildApprovedVisibleCopySection(event, liveCard);
+  const imageFinishPreset = resolveStudioImageFinishPreset(
+    event.category || event.occasion,
+    guidance?.imageFinishPreset,
+  );
   return [
     isEditingExistingImage
       ? "Edit the provided invitation artwork image."
@@ -668,6 +673,12 @@ export function buildInvitationImagePrompt(
         ]
       : []),
     "Style requirements:",
+    ...(imageFinishPreset
+      ? [
+          `- Selected image finish preset: ${imageFinishPreset.label} - ${imageFinishPreset.description}.`,
+          "- Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's core idea.",
+        ]
+      : []),
     "- High-quality vertical invitation card composition (9:16 mobile card).",
     "- Create one single seamless full-bleed invitation image with one unified continuous scene from top to bottom.",
     "- This is a finished invitation poster image, not a screenshot and not an app UI mockup.",
@@ -874,6 +885,7 @@ export function buildInvitationImagePrompt(
     line("Visual Style", guidance?.style),
     line("Audience", guidance?.audience),
     line("Color Palette", guidance?.colorPalette),
+    line("Image Finish Preset", imageFinishPreset?.label),
     line("Subject Treatment", refCount > 0 ? humanizeSubjectTransformMode(guidance) : "Not requested"),
     line("Likeness Strength", refCount > 0 ? humanizeLikenessStrength(guidance) : "Default"),
     line("Render Style Mode", refCount > 0 ? humanizeVisualStyleMode(guidance) : "Default"),

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const fs = require("node:fs/promises");
 const path = require("path");
 const { chromium } = require("playwright");
 
@@ -19,8 +20,7 @@ const CATEGORY_FIXTURES = [
       "Event Date": "2026-05-23",
       "Start Time": "12:00",
       "Location / Address": "AMC Boulevard 10, Franklin, TN",
-      "Event description":
-        "Join Lara for a polished movie-party birthday with cat-themed treats, popcorn towers, and a private screening feel.",
+      "Event description": "Lara's fun movie birthday",
     },
     prompt: "dinosaurs theme at the adventure park",
   },
@@ -34,8 +34,7 @@ const CATEGORY_FIXTURES = [
       "Event Date": "2026-09-18",
       "Start Time": "19:00",
       "Location / Address": "Panther Stadium, 800 Victory Lane, Austin, TX",
-      "Event description":
-        "A high-energy home game with student section turnout, gates opening early, and bold matchup graphics.",
+      "Event description": "Big home game tonight",
     },
     prompt: "friday night football under the lights, blue and gold",
   },
@@ -48,8 +47,7 @@ const CATEGORY_FIXTURES = [
       "Event Date": "2026-10-10",
       "Start Time": "16:30",
       "Location / Address": "The Conservatory, 125 Garden Terrace, Charleston, SC",
-      "Event description":
-        "Celebrate an elegant garden ceremony followed by dinner, candlelight, and dancing under the glass atrium.",
+      "Event description": "Garden wedding with dinner",
     },
     prompt: "elegant garden wedding with white flowers and candles",
   },
@@ -62,8 +60,7 @@ const CATEGORY_FIXTURES = [
       "Event Date": "2026-08-08",
       "Start Time": "11:00",
       "Location / Address": "Willow House, 44 Magnolia Street, Savannah, GA",
-      "Event description":
-        "A floral brunch shower with champagne, fresh pastries, and soft garden-party details for Madeline.",
+      "Event description": "Brunch shower for Madeline",
     },
     prompt: "bridal shower garden brunch with blush flowers",
   },
@@ -76,8 +73,7 @@ const CATEGORY_FIXTURES = [
       "Event Date": "2026-07-19",
       "Start Time": "13:00",
       "Location / Address": "Olive Room, 212 Harbor Avenue, Tampa, FL",
-      "Event description":
-        "A warm baby shower with florals, gifting tables, soft blue details, and a welcoming family atmosphere.",
+      "Event description": "Baby shower for Elena",
     },
     prompt: "baby shower with soft blue balloons and teddy bears",
   },
@@ -90,8 +86,7 @@ const CATEGORY_FIXTURES = [
       "Event Date": "2026-04-30",
       "Start Time": "08:15",
       "Location / Address": "Lincoln Memorial, 2 Lincoln Memorial Circle NW, Washington, DC",
-      "Event description":
-        "A school field trip in Washington, DC focused on civic landmarks, history, and a polished class outing at the Lincoln Memorial.",
+      "Event description": "Class trip to Lincoln Memorial",
     },
     prompt:
       "photorealistic school field trip at the Lincoln Memorial in Washington DC, documentary-style, natural student group, civic landmark, realistic lighting",
@@ -105,8 +100,7 @@ const CATEGORY_FIXTURES = [
       "Event Date": "2026-06-14",
       "Start Time": "18:30",
       "Location / Address": "The Marlowe Room, 17 Crescent Avenue, Chicago, IL",
-      "Event description":
-        "A silver-anniversary dinner with candlelit toasts, live jazz, and a romantic evening with close friends.",
+      "Event description": "25th anniversary dinner party",
     },
     prompt: "25th anniversary dinner with candles and roses",
   },
@@ -120,8 +114,7 @@ const CATEGORY_FIXTURES = [
       "Event Date": "2026-05-16",
       "Start Time": "15:00",
       "Location / Address": "58 Cedar Park Drive, Nashville, TN",
-      "Event description":
-        "A modern open-house gathering with snacks, music, and a relaxed neighborhood welcome.",
+      "Event description": "Come see our new home",
     },
     prompt: "modern housewarming party at our new home",
   },
@@ -134,8 +127,7 @@ const CATEGORY_FIXTURES = [
       "Event Date": "2026-11-05",
       "Start Time": "18:00",
       "Location / Address": "Pier 9 Loft, 90 Harbor Way, Seattle, WA",
-      "Event description":
-        "A bespoke appreciation event for collaborators and partners with drinks, short remarks, and gallery-style ambiance.",
+      "Event description": "Thank you night for partners",
     },
     prompt: "founder appreciation night in a modern loft",
   },
@@ -147,6 +139,7 @@ function parseArgs(argv) {
     edgeProfileDirectory: null,
     edgeUserDataDir: DEFAULT_EDGE_USER_DATA_DIR,
     headed: false,
+    resetProgress: false,
     storageState: null,
     slowMo: 0,
     timeoutMs: DEFAULT_TIMEOUT_MS,
@@ -176,6 +169,10 @@ function parseArgs(argv) {
     }
     if (arg === "--headed") {
       options.headed = true;
+      continue;
+    }
+    if (arg === "--reset-progress") {
+      options.resetProgress = true;
       continue;
     }
     if (arg === "--slow-mo") {
@@ -210,6 +207,7 @@ Options:
   --edge-user-data-dir <dir>
                           Edge user data directory. Default: ${DEFAULT_EDGE_USER_DATA_DIR || "not detected"}
   --headed                Run with a visible browser window.
+  --reset-progress        Ignore saved progress and run a fresh set for this account.
   --slow-mo <ms>          Slow actions for easier observation.
   --timeout-ms <ms>       Per-generation wait timeout. Default: ${DEFAULT_TIMEOUT_MS}
   --help                  Show this message.
@@ -222,6 +220,54 @@ function escapeRegex(value) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function sanitizeSegment(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "default";
+}
+
+function buildFixtureSignature() {
+  return JSON.stringify(
+    CATEGORY_FIXTURES.map((fixture) => ({
+      category: fixture.category,
+      fields: fixture.fields,
+      prompt: fixture.prompt,
+    })),
+  );
+}
+
+function getProgressFilePath(email, baseUrl) {
+  const account = sanitizeSegment(email);
+  const target = sanitizeSegment(baseUrl.replace(/^https?:\/\//i, ""));
+  return path.join(process.cwd(), "qa-artifacts", `studio-live-card-progress-${account}-${target}.json`);
+}
+
+async function loadProgress(progressPath, fixtureSignature, resetProgress) {
+  if (resetProgress) {
+    await fs.rm(progressPath, { force: true }).catch(() => {});
+    return { completedCategories: [] };
+  }
+
+  try {
+    const raw = await fs.readFile(progressPath, "utf8");
+    const parsed = JSON.parse(raw);
+    if (parsed?.fixtureSignature !== fixtureSignature) {
+      return { completedCategories: [] };
+    }
+    return {
+      completedCategories: Array.isArray(parsed?.completedCategories) ? parsed.completedCategories : [],
+    };
+  } catch {
+    return { completedCategories: [] };
+  }
+}
+
+async function saveProgress(progressPath, payload) {
+  await fs.mkdir(path.dirname(progressPath), { recursive: true });
+  await fs.writeFile(progressPath, JSON.stringify(payload, null, 2) + "\n", "utf8");
 }
 
 async function readSession(page, baseUrl) {
@@ -326,9 +372,13 @@ async function waitForSaveReady(page, timeoutMs) {
 async function waitForSavedState(page, timeoutMs) {
   const startedAt = Date.now();
   const savedButtons = page.getByRole("button", { name: /^Saved to Library$/i });
+  const savedStatus = page.getByText(/^SAVED$/i).first();
   while (Date.now() - startedAt < timeoutMs) {
     const savedButton = await findVisibleEnabledButton(savedButtons);
     if (savedButton) {
+      return;
+    }
+    if ((await savedStatus.count()) > 0 && (await savedStatus.isVisible())) {
       return;
     }
     await sleep(500);
@@ -345,21 +395,7 @@ async function countLibraryLiveCards(page, baseUrl) {
   return openButtons.count();
 }
 
-async function waitForLibraryCount(page, baseUrl, minimumCount, timeoutMs) {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < timeoutMs) {
-    const count = await countLibraryLiveCards(page, baseUrl);
-    if (count >= minimumCount) {
-      return count;
-    }
-    await sleep(1500);
-  }
-  throw new Error(
-    `Timed out waiting for the library count to reach ${minimumCount} after ${timeoutMs}ms.`,
-  );
-}
-
-async function createLiveCard(page, baseUrl, fixture, timeoutMs, expectedLibraryCount) {
+async function createLiveCard(page, baseUrl, fixture, timeoutMs) {
   await goToTypeStep(page, baseUrl);
   await clickVisibleEnabledButton(
     page.getByRole("button", { name: `Select ${fixture.category}` }),
@@ -388,7 +424,8 @@ async function createLiveCard(page, baseUrl, fixture, timeoutMs, expectedLibrary
 
   const saveButton = await waitForSaveReady(page, timeoutMs);
   await saveButton.click();
-  return waitForLibraryCount(page, baseUrl, expectedLibraryCount, 45000);
+  await waitForSavedState(page, 45000);
+  return countLibraryLiveCards(page, baseUrl);
 }
 
 async function verifyLibrary(page, baseUrl) {
@@ -428,20 +465,39 @@ async function main() {
 
   try {
     const email = await ensureAuthenticated(page, options.baseUrl);
+    const fixtureSignature = buildFixtureSignature();
+    const progressPath = getProgressFilePath(email, options.baseUrl);
+    const progress = await loadProgress(progressPath, fixtureSignature, options.resetProgress);
+    const completedCategories = new Set(progress.completedCategories);
+    const pendingFixtures = CATEGORY_FIXTURES.filter(
+      (fixture) => !completedCategories.has(fixture.category),
+    );
+
     console.log(`Authenticated as ${email}`);
+    console.log(`Progress file: ${progressPath}`);
+
+    if (pendingFixtures.length === 0) {
+      console.log("This account already completed the current 9-card set. Nothing to do.");
+      return;
+    }
 
     let libraryCount = await verifyLibrary(page, options.baseUrl);
     console.log(`Library starts with ${libraryCount} live card item(s).`);
+    if (completedCategories.size > 0) {
+      console.log(`Resuming run. Already completed: ${[...completedCategories].join(", ")}.`);
+    }
 
-    for (const fixture of CATEGORY_FIXTURES) {
+    for (const fixture of pendingFixtures) {
       console.log(`Creating ${fixture.category}...`);
-      libraryCount = await createLiveCard(
-        page,
-        options.baseUrl,
-        fixture,
-        options.timeoutMs,
-        libraryCount + 1,
-      );
+      libraryCount = await createLiveCard(page, options.baseUrl, fixture, options.timeoutMs);
+      completedCategories.add(fixture.category);
+      await saveProgress(progressPath, {
+        email,
+        baseUrl: options.baseUrl,
+        fixtureSignature,
+        completedCategories: [...completedCategories],
+        updatedAt: new Date().toISOString(),
+      });
       console.log(`Saved ${fixture.category}. Library now shows ${libraryCount} item(s).`);
     }
 

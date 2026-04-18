@@ -7,7 +7,7 @@ function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("studio category step uses editorial tiles and advances on tile click", () => {
+test("studio category step uses editorial tiles and forwards tile clicks through the workspace handler", () => {
   const stepSource = readSource("src/app/studio/workspace/StudioCategoryStep.tsx");
 
   assert.match(stepSource, /import \{ StudioCategoryGrid \} from "\.\/StudioCategoryGrid";/);
@@ -20,10 +20,10 @@ test("studio category step uses editorial tiles and advances on tile click", () 
   assert.doesNotMatch(stepSource, /Pick the invite style that best fits your event/);
   assert.doesNotMatch(stepSource, /Not sure yet\?/);
   assert.doesNotMatch(stepSource, /Get inspiration/);
-  assert.match(
-    stepSource,
-    /onSelect=\{\(categoryName\) => \{[\s\S]*setDetails\(\(prev\) => \(\{[\s\S]*category: categoryName,[\s\S]*\}\)\);[\s\S]*setStep\("form"\);[\s\S]*\}\}/,
-  );
+  assert.match(stepSource, /onSelectCategory: \(category: InviteCategory\) => void;/);
+  assert.match(stepSource, /onSelect=\{onSelectCategory\}/);
+  assert.doesNotMatch(stepSource, /setDetails\(/);
+  assert.doesNotMatch(stepSource, /setCreateStep\(/);
 });
 
 test("studio category tiles are image-backed and layout-driven", () => {

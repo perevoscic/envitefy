@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { type Dispatch, type SetStateAction } from "react";
-import type { StudioCreateStep } from "../studio-types";
 import {
   DETAILS_DESCRIPTION_PLACEHOLDER,
   SHARED_BASICS,
@@ -17,7 +16,7 @@ import { StudioOptionalMediaRow } from "./StudioOptionalMediaRow";
 export type StudioFormStepProps = {
   details: EventDetails;
   setDetails: Dispatch<SetStateAction<EventDetails>>;
-  setCreateStep: (step: StudioCreateStep) => void;
+  onOpenEditorStep: () => void;
   isFormValid: boolean;
   editingId: string | null;
   onUploadFlyer: (file: File) => Promise<void>;
@@ -33,7 +32,7 @@ export type StudioFormStepProps = {
 export function StudioFormStep({
   details,
   setDetails,
-  setCreateStep,
+  onOpenEditorStep,
   isFormValid,
   editingId,
   onUploadFlyer,
@@ -52,6 +51,17 @@ export function StudioFormStep({
   const sharedPrimaryFields = SHARED_BASICS.filter((field) =>
     ["eventDate", "startTime", "location"].includes(field.key),
   );
+  const isBirthday = details.category === "Birthday";
+  const birthdayMobileTopRowFields = primaryCategoryFields.filter((field) =>
+    ["name", "age"].includes(field.key),
+  );
+  const birthdayMobileSecondRowFields = primaryCategoryFields.filter(
+    (field) => field.key === "rsvpContact",
+  );
+  const birthdayMobileDateTimeFields = sharedPrimaryFields.filter((field) =>
+    ["eventDate", "startTime"].includes(field.key),
+  );
+  const birthdayMobileLocationFields = sharedPrimaryFields.filter((field) => field.key === "location");
 
   return (
     <motion.div
@@ -64,25 +74,83 @@ export function StudioFormStep({
       <div className={`${shellClass} space-y-12`}>
         <div className="space-y-12 pt-6 md:pt-8">
           {primaryCategoryFields.length ? (
-            <div className="space-y-4">
-              <StudioFieldGrid
-                details={details}
-                setDetails={setDetails}
-                fields={primaryCategoryFields}
-                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
-              />
-            </div>
+            isBirthday ? (
+              <>
+                <div className="space-y-4 md:hidden">
+                  <StudioFieldGrid
+                    details={details}
+                    setDetails={setDetails}
+                    fields={birthdayMobileTopRowFields}
+                    columnsClassName="grid grid-cols-2 gap-x-6 gap-y-8"
+                  />
+                </div>
+                <div className="space-y-4 md:hidden">
+                  <StudioFieldGrid
+                    details={details}
+                    setDetails={setDetails}
+                    fields={birthdayMobileSecondRowFields}
+                    columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                  />
+                </div>
+                <div className="hidden space-y-4 md:block">
+                  <StudioFieldGrid
+                    details={details}
+                    setDetails={setDetails}
+                    fields={primaryCategoryFields}
+                    columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <StudioFieldGrid
+                  details={details}
+                  setDetails={setDetails}
+                  fields={primaryCategoryFields}
+                  columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
+                />
+              </div>
+            )
           ) : null}
 
           {sharedPrimaryFields.length ? (
-            <div className="space-y-4">
-              <StudioFieldGrid
-                details={details}
-                setDetails={setDetails}
-                fields={sharedPrimaryFields}
-                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
-              />
-            </div>
+            isBirthday ? (
+              <>
+                <div className="space-y-4 md:hidden">
+                  <StudioFieldGrid
+                    details={details}
+                    setDetails={setDetails}
+                    fields={birthdayMobileDateTimeFields}
+                    columnsClassName="grid grid-cols-2 gap-x-6 gap-y-8"
+                  />
+                </div>
+                <div className="space-y-4 md:hidden">
+                  <StudioFieldGrid
+                    details={details}
+                    setDetails={setDetails}
+                    fields={birthdayMobileLocationFields}
+                    columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                  />
+                </div>
+                <div className="hidden space-y-4 md:block">
+                  <StudioFieldGrid
+                    details={details}
+                    setDetails={setDetails}
+                    fields={sharedPrimaryFields}
+                    columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <StudioFieldGrid
+                  details={details}
+                  setDetails={setDetails}
+                  fields={sharedPrimaryFields}
+                  columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
+                />
+              </div>
+            )
           ) : null}
 
           {secondaryCategoryFields.length ? (
@@ -132,7 +200,8 @@ export function StudioFormStep({
           </p>
         </div>
         <button
-          onClick={() => setCreateStep("editor")}
+          type="button"
+          onClick={onOpenEditorStep}
           disabled={!isFormValid}
           className="flex items-center justify-center gap-3 bg-[#1A1A1A] px-10 py-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#F5F2EF] shadow-[0_24px_48px_rgba(26,26,26,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#262626] disabled:cursor-not-allowed disabled:opacity-50"
         >

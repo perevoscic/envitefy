@@ -22,7 +22,11 @@ test("studio live-card builders preserve local invitation data and default gener
   assert.match(source, /if \(options\?\.existingItemType === "page"\) return "page";/);
   assert.match(source, /return "page";/);
   assert.match(source, /case "Game Day":\s*return "sport events";/);
-  assert.match(source, /eventYear: getStudioEventYear\(details\) \|\| null,/);
+  assert.match(
+    source,
+    /eventYear: shouldIncludeStudioEventYear\(details\) \? getStudioEventYear\(details\) \|\| null : null,/,
+  );
+  assert.match(source, /date: formatStudioPromptDate\(details\) \|\| null,/);
   assert.match(source, /export function refreshLiveCardInvitationData\(/);
   assert.match(source, /const title = clean\(previous\?\.title\) \|\| getDisplayTitle\(details\);/);
   assert.match(

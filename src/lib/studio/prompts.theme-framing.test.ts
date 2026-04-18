@@ -306,6 +306,82 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   assert.doesNotMatch(prompt, /Legible typography with editorial hierarchy/);
 });
 
+test("studio invitation image prompt applies selected image finish presets to standalone images", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Ava After Dark",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Ava",
+      userIdea: "city rooftop party",
+      links: [],
+    },
+    {
+      imageFinishPreset: "Golden Glow",
+      style:
+        "Highest-priority visual direction from the user: city rooftop party. Treat the user's words as the theme of the invitation.",
+    },
+    null,
+    { surface: "image" },
+  );
+
+  assert.match(prompt, /Selected image finish preset: Golden Glow - warm light, elegant celebration\./);
+  assert.match(
+    prompt,
+    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's core idea\./,
+  );
+  assert.match(prompt, /Image Finish Preset: Golden Glow/);
+});
+
+test("studio invitation image prompt applies selected image finish presets to live-card rasters only when present", () => {
+  const pagePrompt = buildInvitationImagePrompt(
+    {
+      title: "Championship Night",
+      category: "Game Day",
+      occasion: "Game Day",
+      sportType: "Basketball",
+      teamName: "West High",
+      opponentName: "Central",
+      userIdea: "playoff energy",
+      links: [],
+    },
+    {
+      imageFinishPreset: "Victory Night",
+      style:
+        "Highest-priority visual direction from the user: playoff energy. Treat the user's words as the theme of the invitation.",
+    },
+    null,
+    { surface: "page" },
+  );
+
+  const imagePromptWithoutPreset = buildInvitationImagePrompt(
+    {
+      title: "Championship Night",
+      category: "Game Day",
+      occasion: "Game Day",
+      sportType: "Basketball",
+      teamName: "West High",
+      opponentName: "Central",
+      userIdea: "playoff energy",
+      links: [],
+    },
+    {
+      style:
+        "Highest-priority visual direction from the user: playoff energy. Treat the user's words as the theme of the invitation.",
+    },
+    null,
+    { surface: "page" },
+  );
+
+  assert.match(
+    pagePrompt,
+    /Selected image finish preset: Victory Night - cinematic, competitive atmosphere\./,
+  );
+  assert.match(pagePrompt, /Image Finish Preset: Victory Night/);
+  assert.doesNotMatch(imagePromptWithoutPreset, /Selected image finish preset:/);
+  assert.match(imagePromptWithoutPreset, /Image Finish Preset: Not provided/);
+});
+
 test("studio invitation image prompt keeps game day imagery grounded in provided sports context", () => {
   const prompt = buildInvitationImagePrompt(
     {

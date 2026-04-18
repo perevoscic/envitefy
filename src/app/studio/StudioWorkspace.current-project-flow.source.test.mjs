@@ -19,13 +19,22 @@ test("studio workspace separates the current project from the saved library", ()
   assert.match(source, /function confirmDiscardCurrentProject\(/);
   assert.match(source, /setCurrentProject\(loadingItem\);/);
   assert.match(source, /setCurrentProject\(nextItem\);/);
-  assert.match(source, /saveWorkingProject\(workingItem\);/);
+  assert.match(
+    source,
+    /const shareableWorkingItem = isCurrentProjectItem\s*\?\s*\(saveWorkingProject\(workingItem\) \?\? workingItem\)\s*:\s*workingItem;/s,
+  );
   assert.match(source, /upsertLibraryItem\(syncedItem\);/);
   assert.match(source, /clearCurrentProject\(\{ resetDetails: true \}\);/);
-  assert.match(editorStep, /Save this project to keep it in Library\./);
   assert.match(editorStep, /No current project yet/);
   assert.match(source, /const currentProjectSaveLabel = /);
-  assert.match(editorStep, /Discard/);
+  assert.match(editorStep, /\{currentProjectSaveLabel\}/);
+  assert.doesNotMatch(editorStep, /Current Project/);
+  assert.doesNotMatch(editorStep, /Save this project to keep it in Library\./);
+  assert.doesNotMatch(editorStep, /Discard/);
+  assert.match(source, /function prepareProjectForLibrarySave\(project: MediaItem\): MediaItem/);
+  assert.match(source, /id: createId\(\),/);
+  assert.match(source, /publishedEventId: undefined,/);
+  assert.match(source, /sharePath: undefined,/);
 
   assert.match(libraryStep, /setActivePage: \(item: MediaItem \| null\) => void;/);
   assert.match(libraryStep, /function openLibraryItem\(item: MediaItem\)/);
