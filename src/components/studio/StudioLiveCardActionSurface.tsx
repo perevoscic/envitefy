@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
+import { CalendarIconApple, CalendarIconGoogle, CalendarIconOutlook } from "@/components/CalendarIcons";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardRsvpOutboundHref,
@@ -25,6 +26,7 @@ import {
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
+import { buildCalendarLinks } from "@/utils/calendar-links";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 
@@ -141,10 +143,15 @@ function getRegistryText(details: LiveCardEventDetails | null | undefined) {
   }
 }
 
-function buildLiveCardCalendarIcsUrl(title: string, invitationData?: LiveCardInvitationData | null) {
+function resolveLiveCardCalendarMeta(invitationData?: LiveCardInvitationData | null): {
+  startIso: string;
+  endIso: string;
+  location: string;
+  description: string;
+} | null {
   const details = invitationData?.eventDetails;
   const eventDate = readString(details?.eventDate);
-  if (!eventDate) return "";
+  if (!eventDate) return null;
 
   let start = readString(details?.startTime)
     ? new Date(`${eventDate}T${readString(details?.startTime)}`)
@@ -153,23 +160,34 @@ function buildLiveCardCalendarIcsUrl(title: string, invitationData?: LiveCardInv
   if (Number.isNaN(start.getTime())) {
     start = new Date(eventDate);
   }
-  if (Number.isNaN(start.getTime())) return "";
+  if (Number.isNaN(start.getTime())) return null;
 
   const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
-  const params = new URLSearchParams();
-  params.set("title", title || "Event");
-  params.set("start", start.toISOString());
-  params.set("end", end.toISOString());
-
   const location = readString(details?.location) || readString(details?.venueName);
   const description =
     readString(invitationData?.description) || readString(details?.detailsDescription);
 
-  if (location) params.set("location", location);
-  if (description) params.set("description", description);
-  params.set("disposition", "inline");
+  return {
+    startIso: start.toISOString(),
+    endIso: end.toISOString(),
+    location,
+    description,
+  };
+}
 
-  return `/api/ics?${params.toString()}`;
+function buildLiveCardCalendarLinks(title: string, invitationData?: LiveCardInvitationData | null) {
+  const calendarMeta = resolveLiveCardCalendarMeta(invitationData);
+  if (!calendarMeta) return null;
+  return buildCalendarLinks({
+    title: title || "Event",
+    description: calendarMeta.description,
+    location: calendarMeta.location,
+    startIso: calendarMeta.startIso,
+    endIso: calendarMeta.endIso,
+    allDay: false,
+    reminders: null,
+    recurrence: null,
+  });
 }
 
 function openDefaultCalendarApp(href: string) {
@@ -288,6 +306,10 @@ function renderExtraDetailFields(details: LiveCardEventDetails | null | undefine
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
+  const calendarLinks = useMemo(
+    () => buildLiveCardCalendarLinks(props.title, invitationData),
+    [props.title, invitationData],
+  );
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
   const categorySupportsRsvp = supportsStudioCategoryRsvp(readString(details?.category));
   const detailsDescription = readString(details?.detailsDescription);
@@ -597,20 +619,37 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           )
                         : "Date TBD"}
                     </p>
-                    {buildLiveCardCalendarIcsUrl(props.title, invitationData) ? (
-                      <div className="mt-4 flex justify-center">
+                    {calendarLinks ? (
+                      <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                         <button
                           type="button"
-                          onClick={() =>
-                            openDefaultCalendarApp(
-                              buildLiveCardCalendarIcsUrl(props.title, invitationData),
-                            )
-                          }
-                          className="inline-flex w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white"
+                          onClick={() => openDefaultCalendarApp(calendarLinks.appleInline)}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 shadow-sm transition hover:border-neutral-400 hover:bg-neutral-50"
+                          aria-label="Open in Apple Calendar"
+                          title="Apple Calendar"
                         >
-                          <CalendarDays className="h-3 w-3" />
-                          Add to Calendar
+                          <CalendarIconApple className="h-4 w-4" />
                         </button>
+                        <a
+                          href={calendarLinks.google}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 shadow-sm transition hover:border-neutral-400 hover:bg-neutral-50"
+                          aria-label="Open in Google Calendar"
+                          title="Google Calendar"
+                        >
+                          <CalendarIconGoogle className="h-4 w-4" />
+                        </a>
+                        <a
+                          href={calendarLinks.outlook}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 shadow-sm transition hover:border-neutral-400 hover:bg-neutral-50"
+                          aria-label="Open in Outlook Calendar"
+                          title="Outlook Calendar"
+                        >
+                          <CalendarIconOutlook className="h-4 w-4" />
+                        </a>
                       </div>
                     ) : null}
                   </>
