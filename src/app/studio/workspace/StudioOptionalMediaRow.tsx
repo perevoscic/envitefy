@@ -85,19 +85,19 @@ export function StudioOptionalMediaRow({
               type="button"
               onClick={() => flyerInputRef.current?.click()}
               disabled={isFlyerUploading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d8cdc0] bg-[#fdfaf6] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#1A1A1A] transition-colors hover:bg-white disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--studio-card-border,#d8cdc0)] bg-[var(--studio-paper-soft,#ece2ff)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink,#1A1A1A)] transition-colors hover:border-[var(--studio-brand,#7c5cd1)] hover:bg-[color:rgba(124,92,209,0.18)] disabled:opacity-50"
             >
-              <Upload className="h-4 w-4" />
+              <Upload className="h-4 w-4 text-[var(--studio-brand,#7c5cd1)]" />
               {flyerActive ? "Replace" : "Flyer"}
             </button>
             <button
               type="button"
               onClick={() => subjectPhotoInputRef.current?.click()}
               disabled={isSubjectPhotoUploading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#d8cdc0] bg-[#fdfaf6] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#1A1A1A] transition-colors hover:bg-white disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--studio-card-border,#d8cdc0)] bg-[var(--studio-paper-soft,#ece2ff)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink,#1A1A1A)] transition-colors hover:border-[var(--studio-brand,#7c5cd1)] hover:bg-[color:rgba(124,92,209,0.18)] disabled:opacity-50"
             >
-              <Upload className="h-4 w-4" />
-              {subjectPhotos.length > 0 ? "Photo(s)" : "Photo(s)"}
+              <Upload className="h-4 w-4 text-[var(--studio-brand,#7c5cd1)]" />
+              + Photo(s)
             </button>
           </div>
         </div>

@@ -72,7 +72,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "850-960-1214",
+        "rsvpContact": "555-0107",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",
@@ -131,7 +131,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "Private screening feel"
         ],
         "shareNote": "Share the adventure with Lara’s birthday crew.",
-        "rsvpMessage": "Please RSVP to 850-960-1214"
+        "rsvpMessage": "Please RSVP to 555-0107"
       }
     },
     "positions": {
@@ -352,7 +352,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "wedding@collinsporter.com",
+        "rsvpContact": "garden-vows@example.com",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",
@@ -411,7 +411,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "Charleston, SC"
         ],
         "shareNote": "Share this elegant invitation with your closest guests.",
-        "rsvpMessage": "Kindly reply to wedding@collinsporter.com"
+        "rsvpMessage": "Kindly reply to garden-vows@example.com"
       }
     },
     "positions": {
@@ -492,7 +492,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "sofia@example.com",
+        "rsvpContact": "garden-brunch@example.com",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",
@@ -552,7 +552,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "Savannah, GA"
         ],
         "shareNote": "Share this invite with fellow guests and keep the celebration close.",
-        "rsvpMessage": "Please RSVP to sofia@example.com"
+        "rsvpMessage": "Please RSVP to garden-brunch@example.com"
       }
     },
     "positions": {
@@ -633,7 +633,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "elena.shower@example.com",
+        "rsvpContact": "beary-shower@example.com",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",
@@ -693,7 +693,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "Gifts and well wishes welcome"
         ],
         "shareNote": "Share the joy with family and friends",
-        "rsvpMessage": "Please RSVP to elena.shower@example.com"
+        "rsvpMessage": "Please RSVP to beary-shower@example.com"
       }
     },
     "positions": {
@@ -774,7 +774,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "mrs.harper@school.org",
+        "rsvpContact": "discovery-day@example.com",
         "teacherName": "Mrs. Harper",
         "ticketsLink": "",
         "whatToBring": "",
@@ -834,7 +834,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "Lincoln Memorial"
         ],
         "shareNote": "Share with parents and chaperones.",
-        "rsvpMessage": "Please reply to mrs.harper@school.org."
+        "rsvpMessage": "Please reply to discovery-day@example.com."
       }
     },
     "positions": {
@@ -915,7 +915,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "hello@carterhome.com",
+        "rsvpContact": "housewarming@example.com",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",
@@ -974,7 +974,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "Neighborhood friends invited"
         ],
         "shareNote": "Share with friends and neighbors who would love a warm new-home welcome.",
-        "rsvpMessage": "Please RSVP to hello@carterhome.com"
+        "rsvpMessage": "Please RSVP to housewarming@example.com"
       }
     },
     "positions": {
@@ -1055,7 +1055,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "events@northshorecreative.com",
+        "rsvpContact": "appreciation-night@example.com",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",
@@ -1114,7 +1114,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "Gallery-style ambiance in a loft setting"
         ],
         "shareNote": "Invite fellow collaborators and partners to join the evening.",
-        "rsvpMessage": "Please RSVP to events@northshorecreative.com"
+        "rsvpMessage": "Please RSVP to appreciation-night@example.com"
       }
     },
     "positions": {
@@ -1195,7 +1195,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "850-960-1214",
+        "rsvpContact": "555-0142",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",
@@ -1254,7 +1254,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "Movie birthday fun"
         ],
         "shareNote": "Send this card to guests and get them ready for Lara’s big day.",
-        "rsvpMessage": "Please RSVP with a quick call to 850-960-1214."
+        "rsvpMessage": "Please RSVP with a quick call to 555-0142."
       }
     },
     "positions": {
@@ -1475,7 +1475,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "wedding@collinsporter.com",
+        "rsvpContact": "garden-candlelight@example.com",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",
@@ -1534,7 +1534,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "The Conservatory, Charleston"
         ],
         "shareNote": "A beautiful evening to share with loved ones.",
-        "rsvpMessage": "Kindly reply to wedding@collinsporter.com"
+        "rsvpMessage": "Kindly reply to garden-candlelight@example.com"
       }
     },
     "positions": {
@@ -1615,7 +1615,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "sofia@example.com",
+        "rsvpContact": "blush-brunch@example.com",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",
@@ -1674,7 +1674,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
           "Your presence is the best gift."
         ],
         "shareNote": "Share this elegant shower invite with guests who will celebrate Madeline.",
-        "rsvpMessage": "Kindly RSVP to sofia@example.com"
+        "rsvpMessage": "Kindly RSVP to blush-brunch@example.com"
       }
     },
     "positions": {
@@ -1755,7 +1755,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "isMilestone": false,
         "orientation": "portrait",
         "parkingInfo": "",
-        "rsvpContact": "elena.shower@example.com",
+        "rsvpContact": "baby-shower@example.com",
         "teacherName": "",
         "ticketsLink": "",
         "whatToBring": "",

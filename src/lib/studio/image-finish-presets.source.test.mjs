@@ -7,7 +7,7 @@ function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("studio image finish preset registry covers every category with five premium presets", () => {
+test("studio image finish preset registry covers every category with expanded premium presets", () => {
   const source = readSource("src/lib/studio/image-finish-presets.ts");
 
   assert.match(source, /export const STUDIO_IMAGE_FINISH_PRESETS:/);
@@ -29,6 +29,19 @@ test("studio image finish preset registry covers every category with five premiu
   assert.match(source, /label: "Classic Gold", description: "timeless and celebratory"/);
   assert.match(source, /label: "Urban Nest", description: "stylish, contemporary, upbeat"/);
   assert.match(source, /label: "Vibrant Celebration", description: "colorful, lively, adaptable"/);
+  assert.match(source, /label: "Space Quest"/);
+  assert.match(source, /label: "Unicorn Dust"/);
+  assert.match(source, /label: "Superhero Comic"/);
+  assert.match(source, /label: "Safari Explorer"/);
+  assert.match(source, /label: "Dino Jungle"/);
+  assert.match(source, /label: "Tailgate Glow"/);
+  assert.match(source, /label: "Coastal Elopement"/);
+  assert.match(source, /label: "Cottage Romance"/);
+  assert.match(source, /label: "Little Safari"/);
+  assert.match(source, /label: "Museum Wonder"/);
+  assert.match(source, /label: "Silver Milestone"/);
+  assert.match(source, /label: "Garden Patio"/);
+  assert.match(source, /label: "Retro Throwback"/);
   assert.match(source, /export function getStudioImageFinishPresets\(/);
   assert.match(source, /export function resolveStudioImageFinishPreset\(/);
 });

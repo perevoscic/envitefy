@@ -9,17 +9,16 @@ function readSource(relPath) {
 
 test("studio tab keeps a single current project instead of paging the saved library", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
-  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
+  const phonePane = readSource("src/app/studio/workspace/StudioPhonePreviewPane.tsx");
 
   assert.match(source, /const \[currentProject, setCurrentProject\] = useState<MediaItem \| null>\(null\);/);
   assert.match(source, /const currentProjectWithVisualDraft = useMemo\(/);
   assert.match(source, /const currentProjectHasUnsavedChanges = useMemo\(/);
   assert.match(source, /const currentProjectSaveLabel = /);
-  assert.match(editorStep, /No current project yet/);
+  assert.match(phonePane, /Studio Assistant/);
   assert.match(source, /Save to Library/);
-  assert.doesNotMatch(editorStep, /Discard/);
-  assert.doesNotMatch(editorStep, /Current Project/);
-  assert.doesNotMatch(editorStep, /Save this project to keep it in Library\./);
+  assert.doesNotMatch(phonePane, /Discard/);
+  assert.doesNotMatch(phonePane, /Save this project to keep it in Library\./);
 
   assert.doesNotMatch(source, /function getStudioGalleryItemsPerPage\(viewportWidth: number\)/);
   assert.doesNotMatch(source, /const \[studioGalleryPage, setStudioGalleryPage\] = useState\(0\);/);

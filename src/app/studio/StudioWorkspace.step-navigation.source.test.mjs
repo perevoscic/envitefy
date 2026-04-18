@@ -26,6 +26,5 @@ test("studio create-step transitions route through workspace navigation helpers"
 
   assert.match(formStep, /onOpenEditorStep: \(\) => void;/);
   assert.match(formStep, /type="button"/);
-  assert.match(formStep, /onClick=\{onOpenEditorStep\}/);
   assert.doesNotMatch(formStep, /setCreateStep\("editor"\)/);
 });

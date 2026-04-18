@@ -23,3 +23,15 @@ test("studio prompt date logic only includes event year for weddings", () => {
   );
   assert.match(source, /date: formatStudioPromptDate\(details\) \|\| null,/);
 });
+
+test("studio field controls preserve full event years when editing dates", () => {
+  const source = readSource("src/app/studio/workspace/StudioFieldControls.tsx");
+
+  assert.match(source, /function usesIconInput\(fieldKey: keyof EventDetails\) \{/);
+  assert.match(source, /return fieldKey === "location" \|\| fieldKey === "eventDate";/);
+  assert.match(source, /type=\{field\.type\}/);
+  assert.match(source, /value=\{String\(value\)\}/);
+  assert.doesNotMatch(source, /new Date\(\)\.getFullYear\(\)/);
+  assert.doesNotMatch(source, /normalizeCompactMonthDayInput/);
+  assert.doesNotMatch(source, /formatCompactMonthDayValue/);
+});

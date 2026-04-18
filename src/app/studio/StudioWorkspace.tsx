@@ -54,14 +54,15 @@ import type {
   ActiveTab,
   ButtonPosition,
   EventDetails,
+  FieldConfig,
   InviteCategory,
   MediaItem,
   MediaType,
+  SharedFieldConfig,
 } from "./studio-workspace-types";
 import { isRecord, STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
 import { StudioCategoryStep } from "./workspace/StudioCategoryStep";
 import { StudioCreateFlow } from "./workspace/StudioCreateFlow";
-import { StudioEditorStep } from "./workspace/StudioEditorStep";
 import { StudioFormStep } from "./workspace/StudioFormStep";
 import { StudioLibraryStep } from "./workspace/StudioLibraryStep";
 import { StudioWorkspaceShell } from "./workspace/StudioWorkspaceShell";
@@ -121,7 +122,7 @@ function parseStudioWorkspaceView(value: string | null): StudioWorkspaceView {
 }
 
 function parseStudioCreateStep(value: string | null): StudioCreateStep {
-  if (value === "details" || value === "editor") return value;
+  if (value === "details" || value === "editor") return "details";
   return "type";
 }
 
@@ -467,8 +468,16 @@ export default function StudioWorkspace() {
     ? undefined
     : `calc(${STUDIO_MOBILE_TOP_CHROME} + 0.25rem)`;
   const formValid = useMemo(() => {
+    const isRequiredFieldComplete = (field: FieldConfig | SharedFieldConfig) => {
+      const value = clean(String(inputValue(details[field.key])));
+      if (!value) return false;
+      if (field.key === "eventDate" && details.category !== "Wedding") {
+        return /^\d{4}-\d{2}-\d{2}$/.test(value);
+      }
+      return true;
+    };
     const missingShared = SHARED_BASICS.filter(
-      (field) => field.required && !clean(String(inputValue(details[field.key]))),
+      (field) => field.required && !isRequiredFieldComplete(field),
     );
     if (missingShared.length > 0) return false;
     if (supportsStudioCategoryRsvp(details.category) && !clean(details.rsvpContact)) return false;
@@ -478,7 +487,7 @@ export default function StudioWorkspace() {
     }
 
     const missingCategory = (CATEGORY_FIELDS[details.category] || []).filter(
-      (field) => field.required && !clean(String(inputValue(details[field.key]))),
+      (field) => field.required && !isRequiredFieldComplete(field),
     );
     return missingCategory.length === 0;
   }, [details]);
@@ -486,11 +495,7 @@ export default function StudioWorkspace() {
   const navigateWorkspace = useCallback(
     (nextView: StudioWorkspaceView, nextCreateStep?: StudioCreateStep) => {
       const resolvedCreateStep: StudioCreateStep | null =
-        nextView === "create"
-          ? nextCreateStep === "editor" && !formValid
-            ? "details"
-            : (nextCreateStep ?? createStep)
-          : null;
+        nextView === "create" ? (nextCreateStep ?? createStep) : null;
 
       setView((current) => (current === nextView ? current : nextView));
       if (resolvedCreateStep) {
@@ -509,27 +514,18 @@ export default function StudioWorkspace() {
       if (next === current) return;
       router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
     },
-    [createStep, formValid, pathname, router, searchParams],
+    [createStep, pathname, router, searchParams],
   );
 
   useEffect(() => {
     const nextView = parseStudioWorkspaceView(searchParams.get("view"));
     const stepParam = searchParams.get("step");
     const nextCreateStep = stepParam ? parseStudioCreateStep(stepParam) : null;
-    const safeCreateStep =
-      nextCreateStep === "editor" && !formValid ? "details" : nextCreateStep;
-
     setView((current) => (current === nextView ? current : nextView));
-    if (nextView === "create" && safeCreateStep) {
-      setCreateStep((current) => (current === safeCreateStep ? current : safeCreateStep));
+    if (nextView === "create" && nextCreateStep) {
+      setCreateStep((current) => (current === nextCreateStep ? current : nextCreateStep));
     }
-  }, [formValid, searchParams]);
-
-  useEffect(() => {
-    if (view === "create" && createStep === "editor" && !formValid) {
-      navigateWorkspace("create", "details");
-    }
-  }, [createStep, formValid, navigateWorkspace, view]);
+  }, [searchParams]);
 
   useEffect(() => {
     setEditPrompt("");
@@ -596,7 +592,7 @@ export default function StudioWorkspace() {
       setIsDesignMode(false);
       setIsLiveCardToolsDrawerOpen(false);
       if (previewOrigin === "create") {
-        navigateWorkspace("create", "editor");
+        navigateWorkspace("create", "details");
       } else {
         navigateWorkspace("library");
       }
@@ -1019,7 +1015,7 @@ export default function StudioWorkspace() {
     setActiveTab("none");
     setIsDesignMode(false);
     setPreviewOrigin("create");
-    navigateWorkspace("create", "editor");
+    navigateWorkspace("create", "details");
   }
 
   function getReusablePublicSharePath(item: MediaItem): string | null {
@@ -1250,7 +1246,7 @@ export default function StudioWorkspace() {
       if (isMobileEditorViewport) {
         setMobileEditorPane("preview");
       }
-      navigateWorkspace("create", "editor");
+      navigateWorkspace("create", "details");
     } catch (error) {
       const errorMessage =
         error instanceof Error && error.message.trim()
@@ -1526,15 +1522,9 @@ export default function StudioWorkspace() {
     navigateWorkspace("create", "details");
   }
 
-  function openDetailsStep() {
+  function openEditorStep() {
     setMobileEditorPane("composer");
     navigateWorkspace("create", "details");
-  }
-
-  function openEditorStep() {
-    if (!formValid) return;
-    setMobileEditorPane("composer");
-    navigateWorkspace("create", "editor");
   }
 
   function handleWorkspaceViewChange(nextView: StudioWorkspaceView) {
@@ -1559,10 +1549,7 @@ export default function StudioWorkspace() {
           <StudioCreateFlow
             createStep={createStep}
             details={details}
-            isFormValid={formValid}
             onOpenTypeStep={openTypeStep}
-            onOpenDetailsStep={openDetailsStep}
-            onOpenEditorStep={openEditorStep}
             typeContent={
               <StudioCategoryStep
                 details={details}
@@ -1584,12 +1571,6 @@ export default function StudioWorkspace() {
                 isSubjectPhotoUploading={isSubjectPhotoUploading}
                 flyerUploadError={flyerUploadError}
                 subjectPhotoUploadError={subjectPhotoUploadError}
-              />
-            }
-            editorContent={
-              <StudioEditorStep
-                details={details}
-                setDetails={setDetails}
                 studioIdeaLabel={studioIdeaLabel}
                 studioIdeaPlaceholder={studioIdeaPlaceholder}
                 showStudioCreativeControls={showStudioCreativeControls}

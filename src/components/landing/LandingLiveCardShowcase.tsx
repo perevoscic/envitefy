@@ -10,10 +10,12 @@ import StudioLiveCardActionSurface, {
   type LiveCardInvitationData,
 } from "@/components/studio/StudioLiveCardActionSurface";
 import { landingLiveCardSnapshots } from "@/components/landing/landing-live-card-snapshots";
+import { buildLandingShowcasePath } from "@/lib/landing-showcase";
 import { resolveNativeShareData } from "@/utils/native-share";
 
 type ShowcaseCardItem = {
   id: string;
+  sharePath: string;
   title: string;
   preview: StudioMarketingCardConfig;
 };
@@ -39,6 +41,7 @@ function cx(...parts: Array<string | false | null | undefined>) {
 
 const showcaseCards: ShowcaseCardItem[] = landingLiveCardSnapshots.map((snapshot) => ({
   id: snapshot.id,
+  sharePath: buildLandingShowcasePath(snapshot.slug),
   title: snapshot.title,
   preview: {
     title: snapshot.title,
@@ -51,6 +54,7 @@ const showcaseCards: ShowcaseCardItem[] = landingLiveCardSnapshots.map((snapshot
 
 function StudioMarketingLiveCard({
   preview,
+  sharePath,
   className,
   compactChrome = false,
   showcaseMode = false,
@@ -61,6 +65,7 @@ function StudioMarketingLiveCard({
   showcaseOverlay,
 }: {
   preview: StudioMarketingCardConfig;
+  sharePath: string;
   className?: string;
   compactChrome?: boolean;
   showcaseMode?: boolean;
@@ -80,18 +85,17 @@ function StudioMarketingLiveCard({
   const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
 
   useEffect(() => {
-    setShareUrl(`${window.location.origin}/studio?showcase=${encodeURIComponent(preview.title)}`);
+    setShareUrl(`${window.location.origin}${sharePath}`);
 
     return () => {
       if (shareResetTimeoutRef.current) {
         window.clearTimeout(shareResetTimeoutRef.current);
       }
     };
-  }, [preview.title]);
+  }, [sharePath]);
 
   const handleShare = async () => {
-    const resolvedShareUrl =
-      shareUrl || `${window.location.origin}/studio?showcase=${encodeURIComponent(preview.title)}`;
+    const resolvedShareUrl = shareUrl || `${window.location.origin}${sharePath}`;
     if (!resolvedShareUrl) return;
 
     if (shareResetTimeoutRef.current) {
@@ -201,6 +205,23 @@ export default function LandingLiveCardShowcase() {
   const showcaseScrollRef = useRef<HTMLDivElement | null>(null);
   const showcaseCardsRef = useRef<HTMLElement[]>([]);
   const showcaseCardCentersRef = useRef<number[]>([]);
+  const showcaseSwipeStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    index: number;
+    didSwipe: boolean;
+  } | null>(null);
+  const suppressShowcaseClickRef = useRef(false);
+  const suppressShowcaseClickTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (suppressShowcaseClickTimeoutRef.current) {
+        window.clearTimeout(suppressShowcaseClickTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const node = showcaseScrollRef.current;
@@ -355,6 +376,20 @@ export default function LandingLiveCardShowcase() {
   };
 
   const handleShowcaseCardClick = (index: number, event?: MouseEvent<HTMLDivElement>) => {
+    if (suppressShowcaseClickRef.current) {
+      event?.preventDefault();
+      event?.stopPropagation();
+      suppressShowcaseClickRef.current = false;
+      return;
+    }
+
+    if (index !== activeIndex) {
+      event?.preventDefault();
+      event?.stopPropagation();
+      scrollToShowcaseIndex(index);
+      return;
+    }
+
     const target = event?.target;
     if (
       target instanceof HTMLElement &&
@@ -363,11 +398,65 @@ export default function LandingLiveCardShowcase() {
       return;
     }
 
-    if (index !== activeIndex) {
-      scrollToShowcaseIndex(index);
+    event?.preventDefault();
+    event?.stopPropagation();
+    setShowcaseOverlayIndex((current) => (current === index ? null : index));
+  };
+
+  const suppressShowcaseClick = () => {
+    suppressShowcaseClickRef.current = true;
+    if (suppressShowcaseClickTimeoutRef.current) {
+      window.clearTimeout(suppressShowcaseClickTimeoutRef.current);
+    }
+    suppressShowcaseClickTimeoutRef.current = window.setTimeout(() => {
+      suppressShowcaseClickRef.current = false;
+      suppressShowcaseClickTimeoutRef.current = null;
+    }, 280);
+  };
+
+  const handleShowcasePointerDown = (
+    index: number,
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (!event.isPrimary || event.pointerType === "mouse") return;
+    showcaseSwipeStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      index,
+      didSwipe: false,
+    };
+  };
+
+  const handleShowcasePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const swipeState = showcaseSwipeStateRef.current;
+    if (!swipeState || swipeState.pointerId !== event.pointerId || swipeState.didSwipe) {
       return;
     }
-    setShowcaseOverlayIndex((current) => (current === index ? null : index));
+
+    const deltaX = event.clientX - swipeState.startX;
+    const deltaY = event.clientY - swipeState.startY;
+    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    swipeState.didSwipe = true;
+    suppressShowcaseClick();
+    scrollToShowcaseIndex(swipeState.index + (deltaX < 0 ? 1 : -1));
+  };
+
+  const clearShowcaseSwipeState = (event?: React.PointerEvent<HTMLDivElement>) => {
+    const swipeState = showcaseSwipeStateRef.current;
+    if (!swipeState) return;
+    if (event && swipeState.pointerId !== event.pointerId) return;
+    showcaseSwipeStateRef.current = null;
+  };
+
+  const handleShowcaseClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!suppressShowcaseClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressShowcaseClickRef.current = false;
   };
 
   const scrollShowcase = (direction: "left" | "right") => {
@@ -430,15 +519,20 @@ export default function LandingLiveCardShowcase() {
 
             <div
               ref={showcaseScrollRef}
-              className="no-scrollbar flex items-start gap-6 overflow-x-auto scroll-smooth px-[max(2rem,calc(50vw-150px))] py-8 snap-x snap-mandatory"
+              className="no-scrollbar flex items-start gap-4 overflow-x-auto scroll-smooth px-[max(1.25rem,calc(50vw-136px))] py-8 snap-x snap-mandatory sm:gap-6 sm:px-[max(2rem,calc(50vw-150px))]"
             >
               {showcaseCards.map((item, index) => (
                 <div
                   key={item.id}
+                  onClickCapture={handleShowcaseClickCapture}
                   onClick={(event) => handleShowcaseCardClick(index, event)}
+                  onPointerDownCapture={(event) => handleShowcasePointerDown(index, event)}
+                  onPointerMoveCapture={handleShowcasePointerMove}
+                  onPointerUpCapture={clearShowcaseSwipeState}
+                  onPointerCancelCapture={clearShowcaseSwipeState}
                   data-showcase-card
                   data-showcase-card-index={index}
-                  className="w-[min(300px,calc(100vw-4rem))] shrink-0 snap-center cursor-pointer"
+                  className="w-[min(272px,calc(100vw-5.5rem))] shrink-0 snap-center cursor-pointer sm:w-[min(300px,calc(100vw-4rem))]"
                 >
                   <div
                     className={cx(
@@ -450,6 +544,7 @@ export default function LandingLiveCardShowcase() {
                   >
                     <StudioMarketingLiveCard
                       preview={item.preview}
+                      sharePath={item.sharePath}
                       compactChrome
                       showcaseMode
                       interactive={activeIndex === index}
@@ -527,6 +622,7 @@ export default function LandingLiveCardShowcase() {
             >
               <StudioMarketingLiveCard
                 preview={showcaseCards[fullscreenShowcaseIndex].preview}
+                sharePath={showcaseCards[fullscreenShowcaseIndex].sharePath}
                 activeTab={fullscreenActiveTab}
                 onActiveTabChange={setFullscreenActiveTab}
                 className="rounded-[3rem] shadow-2xl shadow-black/40"

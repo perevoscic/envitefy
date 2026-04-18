@@ -42,15 +42,15 @@ test("studio form step uses the editorial layout without the old optional panel 
   assert.doesNotMatch(source, /Host Contact/);
   assert.doesNotMatch(source, /RSVP Deadline/);
 
-  assert.match(source, /Event description/);
+  assert.match(source, /Invitation Idea & Details/);
   assert.match(source, /StudioOptionalMediaRow/);
-  assert.match(source, /space-y-12 pt-6 md:pt-8/);
+  assert.match(source, /space-y-12 pt-2 md:pt-4/);
   assert.match(source, /STUDIO_COMPACT_CATEGORY_FORM_CONFIG/);
   assert.match(source, /const formConfig = STUDIO_COMPACT_CATEGORY_FORM_CONFIG\[details\.category\];/);
   assert.match(source, /const primaryCategoryFields = formConfig\.primaryFields;/);
   assert.match(source, /const secondaryCategoryFields = formConfig\.secondaryFields \|\| \[\];/);
   assert.match(source, /const sharedPrimaryFields = SHARED_BASICS\.filter/);
-  assert.match(source, /Responses typically within 48 hours\./);
+  assert.doesNotMatch(source, /Responses typically within 48 hours/);
 });
 
 test("studio workspace no longer threads optional panel state into the form step", () => {

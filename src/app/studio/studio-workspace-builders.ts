@@ -292,7 +292,14 @@ export function getStudioIdeaLabel(category: InviteCategory) {
   return `Enter Your ${STUDIO_IDEA_CATEGORY_LABELS[category]} Idea`;
 }
 
+const STUDIO_IDEA_CATEGORY_PLACEHOLDERS: Partial<Record<InviteCategory, string>> = {
+  Birthday:
+    "e.g. A birthday design with super heroes and dinos. Will Pizza and Drinks and alot of fun to serve!",
+};
+
 export function getStudioIdeaPlaceholder(category: InviteCategory) {
+  const override = STUDIO_IDEA_CATEGORY_PLACEHOLDERS[category];
+  if (override) return override;
   const label = STUDIO_IDEA_CATEGORY_LABELS[category];
   return `e.g. A ${label.toLowerCase()} design with the colors, mood, and details you want...`;
 }

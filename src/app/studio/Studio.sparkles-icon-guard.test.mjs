@@ -11,8 +11,8 @@ function readSource(relPath) {
 test("studio workspace sources do not reference lucide Sparkles icon (use WandSparkles)", () => {
   const files = [
     "src/app/studio/StudioWorkspace.tsx",
-    "src/app/studio/workspace/StudioEditorStep.tsx",
     "src/app/studio/workspace/StudioFormStep.tsx",
+    "src/app/studio/workspace/StudioPhonePreviewPane.tsx",
     "src/app/studio/studio-workspace-field-config.ts",
     "src/app/studio/error.tsx",
     "src/app/studio/StudioMarketingPage.tsx",
@@ -22,7 +22,7 @@ test("studio workspace sources do not reference lucide Sparkles icon (use WandSp
     const src = readSource(rel);
     if (
       rel.includes("StudioWorkspace") ||
-      rel.includes("StudioEditorStep") ||
+      rel.includes("StudioPhonePreviewPane") ||
       rel.includes("StudioFormStep") ||
       rel.includes("error.tsx") ||
       rel.includes("StudioMarketingPage")
@@ -33,7 +33,7 @@ test("studio workspace sources do not reference lucide Sparkles icon (use WandSp
     if (
       rel.includes("StudioFormStep") ||
       rel.includes("StudioWorkspace") ||
-      rel.includes("StudioEditorStep")
+      rel.includes("StudioPhonePreviewPane")
     ) {
       assert.doesNotMatch(
         src,

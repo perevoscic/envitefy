@@ -20,7 +20,6 @@ export const STUDIO_LIBRARY_STORAGE_KEY = "envitefy_media";
 export const STUDIO_CREATE_STEPS: Array<{ id: StudioCreateStep; label: string }> = [
   { id: "type", label: "Type" },
   { id: "details", label: "Details" },
-  { id: "editor", label: "Editor" },
 ];
 
 export const STUDIO_WORKSPACE_VIEWS: Array<{ id: StudioWorkspaceView; label: string }> = [

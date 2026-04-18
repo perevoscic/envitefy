@@ -9,29 +9,28 @@ function readSource(relPath) {
 
 test("studio sidebar only shows creative controls for subject-photo flows", () => {
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
-  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
+  const formStep = readSource("src/app/studio/workspace/StudioFormStep.tsx");
 
   assert.match(workspace, /const showStudioCreativeControls = hasStudioSubjectReferencePhotos\(details\);/);
-  assert.match(editorStep, /Creative Upgrade/);
-  assert.match(editorStep, /Likeness Strength/);
-  assert.match(editorStep, /Visual Style/);
+  assert.match(formStep, /Creative Upgrade/);
+  assert.match(formStep, /Likeness Strength/);
+  assert.match(formStep, /Visual Style/);
   assert.match(
-    editorStep,
+    formStep,
     /subjectTransformMode:\s*"premium_makeover"/,
   );
-  assert.match(editorStep, /\{showStudioCreativeControls \? \(/);
-  assert.doesNotMatch(editorStep, /Transform Subject/);
+  assert.match(formStep, /\{showStudioCreativeControls \? \(/);
+  assert.doesNotMatch(formStep, /Transform Subject/);
 });
 
 test("studio preview shows the final live card inline instead of an open-live-card CTA", () => {
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
-  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
+  const phonePane = readSource("src/app/studio/workspace/StudioPhonePreviewPane.tsx");
 
-  assert.match(editorStep, /<LiveCardHeroTextOverlay invitationData=\{currentProjectWithVisualDraft\.data\} \/>/);
+  assert.match(phonePane, /<LiveCardHeroTextOverlay\s+invitationData=\{currentProjectWithVisualDraft\.data\}/);
   assert.match(workspace, /const \[currentProjectPreviewTab, setCurrentProjectPreviewTab\] = useState<ActiveTab>\("none"\);/);
-  assert.match(editorStep, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{currentProjectPreviewTab\}/);
-  assert.match(editorStep, /aspect-\[9\/16\] w-full/);
-  assert.doesNotMatch(editorStep, /aspect-\[9\/16\] w-full max-w-\[23rem\]/);
-  assert.doesNotMatch(editorStep, /Open Live Card/);
-  assert.doesNotMatch(editorStep, /Open current live card/);
+  assert.match(phonePane, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{currentProjectPreviewTab\}/);
+  assert.match(phonePane, /aspect-\[9\/16\]/);
+  assert.doesNotMatch(phonePane, /Open Live Card/);
+  assert.doesNotMatch(phonePane, /Open current live card/);
 });

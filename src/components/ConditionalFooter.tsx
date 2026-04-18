@@ -27,6 +27,12 @@ const isStudioCardSharePath = (pathname: string) => {
   return segments.length === 2 && segments[0] === "card";
 };
 
+const isLandingShowcasePath = (pathname: string) => {
+  const normalized = pathname.replace(/\/+$/, "");
+  const segments = normalized.split("/").filter(Boolean);
+  return segments.length === 2 && segments[0] === "showcase";
+};
+
 type ConditionalFooterProps = {
   serverSession?: any;
 };
@@ -38,6 +44,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
 
   const isEventShare = pathname && isEventSharePath(pathname);
   const isStudioCardShare = pathname && isStudioCardSharePath(pathname);
+  const isLandingShowcase = pathname && isLandingShowcasePath(pathname);
   const hasNoSession = serverSession === null || (!serverSession && status === "unauthenticated");
 
   let isInIframe = false;
@@ -54,7 +61,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
     return null;
   }
 
-  if ((isEventShare && hasNoSession) || isStudioCardShare) {
+  if ((isEventShare && hasNoSession) || isStudioCardShare || isLandingShowcase) {
     return null;
   }
 

@@ -46,7 +46,34 @@ test("landing page renders the new dedicated landing experience component", () =
   );
   assert.match(landingShowcase, /positions=\{preview\.positions\}/);
   assert.match(landingShowcase, /interactive \? "pointer-events-auto" : "pointer-events-none"/);
+  assert.match(landingShowcase, /const showcaseSwipeStateRef = useRef<\{/);
+  assert.match(landingShowcase, /const suppressShowcaseClickRef = useRef\(false\);/);
+  assert.match(landingShowcase, /const handleShowcasePointerDown = \(\s*index: number,\s*event: React\.PointerEvent<HTMLDivElement>,/);
+  assert.match(landingShowcase, /if \(!event\.isPrimary \|\| event\.pointerType === "mouse"\) return;/);
+  assert.match(landingShowcase, /const handleShowcasePointerMove = \(event: React\.PointerEvent<HTMLDivElement>\) => \{/);
+  assert.match(landingShowcase, /const deltaX = event\.clientX - swipeState\.startX;/);
+  assert.match(landingShowcase, /const deltaY = event\.clientY - swipeState\.startY;/);
+  assert.match(landingShowcase, /scrollToShowcaseIndex\(swipeState\.index \+ \(deltaX < 0 \? 1 : -1\)\);/);
+  assert.match(landingShowcase, /onPointerDownCapture=\{\(event\) => handleShowcasePointerDown\(index, event\)\}/);
+  assert.match(landingShowcase, /onPointerMoveCapture=\{handleShowcasePointerMove\}/);
+  assert.match(landingShowcase, /onPointerUpCapture=\{clearShowcaseSwipeState\}/);
+  assert.match(landingShowcase, /onPointerCancelCapture=\{clearShowcaseSwipeState\}/);
+  assert.match(landingShowcase, /onClickCapture=\{handleShowcaseClickCapture\}/);
   assert.match(landingShowcase, /interactive=\{activeIndex === index\}/);
+  assert.match(
+    landingShowcase,
+    /if \(index !== activeIndex\) \{\s*event\?\.preventDefault\(\);\s*event\?\.stopPropagation\(\);\s*scrollToShowcaseIndex\(index\);\s*return;\s*\}\s*\n\s*const target = event\?\.target;/,
+  );
+  assert.match(landingShowcase, /event\?\.preventDefault\(\);/);
+  assert.match(landingShowcase, /event\?\.stopPropagation\(\);/);
+  assert.match(
+    landingShowcase,
+    /gap-4 overflow-x-auto scroll-smooth px-\[max\(1\.25rem,calc\(50vw-136px\)\)\] py-8 snap-x snap-mandatory sm:gap-6 sm:px-\[max\(2rem,calc\(50vw-150px\)\)\]/,
+  );
+  assert.match(
+    landingShowcase,
+    /w-\[min\(272px,calc\(100vw-5\.5rem\)\)\] shrink-0 snap-center cursor-pointer sm:w-\[min\(300px,calc\(100vw-4rem\)\)\]/,
+  );
   assert.match(landingShowcase, /import \{ resolveNativeShareData \} from "@\/utils\/native-share";/);
   assert.match(landingShowcase, /const nativeShareData = resolveNativeShareData\(sharePayload\);/);
   assert.doesNotMatch(landingShowcase, /for \(const candidate of shareCandidates\)/);
@@ -55,7 +82,14 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.doesNotMatch(landingShowcase, /Mila Turns 8/);
   assert.doesNotMatch(landingShowcase, /\/api\/blob\/event-media\//);
   assert.doesNotMatch(landingSnapshots, /\/api\/blob\/event-media\//);
+  assert.doesNotMatch(landingSnapshots, /850-960-1214/);
+  assert.doesNotMatch(landingSnapshots, /wedding@collinsporter\.com/);
+  assert.doesNotMatch(landingSnapshots, /mrs\.harper@school\.org/);
+  assert.doesNotMatch(landingSnapshots, /hello@carterhome\.com/);
+  assert.doesNotMatch(landingSnapshots, /events@northshorecreative\.com/);
   assert.match(landingSnapshots, /\/images\/landing\/live-cards\//);
+  assert.match(landingSnapshots, /garden-vows@example\.com/);
+  assert.match(landingSnapshots, /555-0107/);
   assert.equal((landingSnapshots.match(/"id": "/g) || []).length, 13);
   assert.match(landingStyles, /\.gymnasticsSportsPdfCard\s*\{/);
   assert.match(landingStyles, /\.gymnasticsSportsScanBeam\s*\{/);

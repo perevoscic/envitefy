@@ -28,7 +28,7 @@ test("shared card route prefers the public-safe cover image url", () => {
   );
 });
 
-test("shared card page uses a full-viewport live-card canvas for public shares", () => {
+test("shared card page keeps public shares in a centered live-card frame", () => {
   const conditionalFooter = readSource("src/components/ConditionalFooter.tsx");
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
@@ -39,10 +39,17 @@ test("shared card page uses a full-viewport live-card canvas for public shares",
   assert.match(conditionalFooter, /if \(\(isEventShare && hasNoSession\) \|\| isStudioCardShare\) \{/);
   assert.match(sharedPageSource, /Created by Envitefy Studio/);
   assert.match(sharedPageSource, /href="\/studio"/);
-  assert.match(sharedPageSource, /relative min-h-\[100dvh\] w-full overflow-hidden bg-neutral-950/);
-  assert.match(sharedPageSource, /<main className="relative z-0 min-h-\[100dvh\]">/);
-  assert.match(sharedPageSource, /relative min-h-\[100dvh\] w-full overflow-hidden/);
-  assert.match(sharedPageSource, /absolute right-4 top-\[max\(0\.75rem,env\(safe-area-inset-top\)\)\] z-30/);
+  assert.match(sharedPageSource, /relative flex min-h-\[100dvh\] w-full flex-col bg-neutral-950/);
+  assert.match(sharedPageSource, /<main className="relative z-0 flex min-h-0 flex-1 flex-col">/);
+  assert.match(
+    sharedPageSource,
+    /const cardFrameWidth =\s*"min\(calc\(100vw - 2rem\), calc\(\(100dvh - 6\.5rem - env\(safe-area-inset-top, 0px\) - env\(safe-area-inset-bottom, 0px\)\) \* 9 \/ 16\)\)";/,
+  );
+  assert.match(
+    sharedPageSource,
+    /relative mx-auto aspect-\[9\/16\] overflow-hidden rounded-\[3rem\]/,
+  );
+  assert.match(sharedPageSource, /style=\{\{ width: cardFrameWidth \}\}/);
   assert.match(sharedPageSource, /object-cover/);
   assert.match(sharedPageSource, /LiveCardHeroTextOverlay/);
   assert.match(
@@ -57,9 +64,6 @@ test("shared card page uses a full-viewport live-card canvas for public shares",
     surfaceSource,
     /grid w-full min-w-0 grid-flow-col auto-cols-fr[\s\S]*md:gap-3/,
   );
-  assert.doesNotMatch(sharedPageSource, /aspect-\[9\/16\]/);
-  assert.doesNotMatch(sharedPageSource, /rounded-\[3rem\]/);
-  assert.doesNotMatch(sharedPageSource, /max-h-\[calc\(100dvh-5\.5rem\)\]/);
   assert.match(mainWrapperSource, /isStudioCardShare/);
   assert.match(mainWrapperSource, /paddingTop = isStudioCardShare\s*\?\s*"0px"/);
 });
@@ -93,6 +97,9 @@ test("poster-first shared cards keep floating controls with overlay studio credi
     surfaceSource,
     /max-md:min-h-\[min\(14svh,4rem\)\] min-h-\[min\(8svh,2\.4rem\)\] md:min-h-\[min\(6svh,2rem\)\]/,
   );
-  assert.match(sharedPageSource, /absolute right-4 top-\[max\(0\.75rem,env\(safe-area-inset-top\)\)\] z-30/);
-  assert.doesNotMatch(sharedPageSource, /<footer className="shrink-0 border-t border-white\/10 bg-neutral-950 px-4 py-3 text-center">/);
+  assert.match(sharedPageSource, /<div className="shrink-0 px-4 py-3 text-center">/);
+  assert.doesNotMatch(
+    sharedPageSource,
+    /absolute right-4 top-\[max\(0\.75rem,env\(safe-area-inset-top\)\)\] z-30/,
+  );
 });

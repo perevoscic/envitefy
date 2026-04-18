@@ -31,4 +31,11 @@ test("studio marketing page uses the shared guest hero nav ordering", () => {
     "How It Works",
     "Live Card Showcase",
   ]);
+  assert.match(studioMarketingPage, /interactive = true,/);
+  assert.match(studioMarketingPage, /interactive \? "pointer-events-auto" : "pointer-events-none"/);
+  assert.match(studioMarketingPage, /interactive=\{activeIndex === index\}/);
+  assert.match(
+    studioMarketingPage,
+    /if \(index !== activeIndex\) \{\s*event\?\.preventDefault\(\);\s*event\?\.stopPropagation\(\);\s*scrollToShowcaseIndex\(index\);\s*return;\s*\}\s*\n\s*const target = event\?\.target;/,
+  );
 });

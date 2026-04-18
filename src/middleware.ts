@@ -55,12 +55,18 @@ const isStudioCardSharePath = (pathname: string) => {
   return /^\/card\/[^/]+$/.test(normalized);
 };
 
+const isLandingShowcasePath = (pathname: string) => {
+  const normalized = stripTrailingSlash(pathname);
+  return /^\/showcase\/[^/]+$/.test(normalized);
+};
+
 const isAllowedForUnauth = (pathname: string) => {
   const normalized = stripTrailingSlash(pathname);
   if (PUBLIC_UNAUTH_PATHS.has(normalized)) return true;
   if (isEventSharePath(normalized)) return true;
   if (isSmartSignupSharePath(normalized)) return true;
   if (isStudioCardSharePath(normalized)) return true;
+  if (isLandingShowcasePath(normalized)) return true;
   return false;
 };
 

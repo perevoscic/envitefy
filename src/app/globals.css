@@ -1931,3 +1931,39 @@ h5 {
 :root[data-theme="thanksgiving-dark"] .calendar-icon-microsoft {
   filter: invert(100%);
 }
+
+/* Studio shell scoped tokens — lavender/purple palette + serif typography for the
+   prototype Details/Editor experience. Apply via the .studio-shell class. */
+.studio-shell {
+  --studio-paper: #f6f1ff;
+  --studio-paper-soft: #ece2ff;
+  --studio-ink: #1c1530;
+  --studio-ink-soft: #6f5e8c;
+  --studio-brand: #7c5cd1;
+  --studio-brand-soft: rgba(124, 92, 209, 0.18);
+  --studio-card-border: rgba(124, 92, 209, 0.22);
+  --studio-card-shadow: 0 24px 60px rgba(31, 18, 52, 0.12);
+}
+
+.studio-shell .studio-form-card {
+  background-color: rgba(255, 255, 255, 0.94);
+  border-color: var(--studio-card-border);
+  box-shadow: var(--studio-card-shadow);
+}
+
+.studio-shell .studio-suggestion-chip {
+  border-color: var(--studio-card-border);
+  background-color: rgba(255, 255, 255, 0.7);
+  color: var(--studio-ink);
+}
+
+.studio-shell .studio-suggestion-chip:hover {
+  background-color: #ffffff;
+}
+
+.studio-shell .studio-finish-chip[aria-pressed="true"] {
+  background-color: var(--studio-brand);
+  border-color: var(--studio-brand);
+  color: #ffffff;
+}
+

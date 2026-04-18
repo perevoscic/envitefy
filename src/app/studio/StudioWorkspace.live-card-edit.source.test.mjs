@@ -39,7 +39,7 @@ test("live card updates reuse the current image in the studio generation request
 
 test("live card modal exposes image edit tools without in-modal text editor", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
-  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
+  const editorStep = readSource("src/app/studio/workspace/StudioFormStep.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
   assert.match(source, /function openLiveCardImageEdit\(item: MediaItem\)/);

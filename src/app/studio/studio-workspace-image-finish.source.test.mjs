@@ -7,9 +7,9 @@ function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("studio workspace request and editor source wire image finish presets through state and prompt guidance", () => {
+test("studio workspace request and form source wire image finish presets through state and prompt guidance", () => {
   const builders = readSource("src/app/studio/studio-workspace-builders.ts");
-  const editor = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
+  const editor = readSource("src/app/studio/workspace/StudioFormStep.tsx");
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
   const sanitize = readSource("src/app/studio/studio-workspace-sanitize.ts");
   const types = readSource("src/app/studio/studio-workspace-types.ts");

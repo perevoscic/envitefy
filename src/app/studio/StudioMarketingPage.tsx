@@ -754,6 +754,7 @@ function StudioMarketingLiveCard({
   className,
   compactChrome = false,
   showcaseMode = false,
+  interactive = true,
   imageLoading = "lazy",
   imageFetchPriority = "auto",
   activeTab,
@@ -764,6 +765,7 @@ function StudioMarketingLiveCard({
   className?: string;
   compactChrome?: boolean;
   showcaseMode?: boolean;
+  interactive?: boolean;
   imageLoading?: "eager" | "lazy";
   imageFetchPriority?: "high" | "low" | "auto";
   activeTab?: LiveCardActiveTab;
@@ -866,7 +868,13 @@ function StudioMarketingLiveCard({
       />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_26%,rgba(0,0,0,0.28)_100%)]" />
       <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
-      <div className={cx("absolute inset-0", compactChrome && "origin-bottom scale-[0.88]")}>
+      <div
+        className={cx(
+          "absolute inset-0",
+          compactChrome && "origin-bottom scale-[0.88]",
+          interactive ? "pointer-events-auto" : "pointer-events-none",
+        )}
+      >
         <StudioLiveCardActionSurface
           title={preview.title}
           invitationData={preview.invitationData}
@@ -945,11 +953,28 @@ export default function StudioMarketingPage() {
   const showcaseScrollRef = useRef<HTMLDivElement | null>(null);
   const showcaseCardsRef = useRef<HTMLElement[]>([]);
   const showcaseCardCentersRef = useRef<number[]>([]);
+  const showcaseSwipeStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    index: number;
+    didSwipe: boolean;
+  } | null>(null);
+  const suppressShowcaseClickRef = useRef(false);
+  const suppressShowcaseClickTimeoutRef = useRef<number | null>(null);
 
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
+
+  useEffect(() => {
+    return () => {
+      if (suppressShowcaseClickTimeoutRef.current) {
+        window.clearTimeout(suppressShowcaseClickTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const node = showcaseScrollRef.current;
@@ -1104,6 +1129,20 @@ export default function StudioMarketingPage() {
   };
 
   const handleShowcaseCardClick = (index: number, event?: React.MouseEvent<HTMLDivElement>) => {
+    if (suppressShowcaseClickRef.current) {
+      event?.preventDefault();
+      event?.stopPropagation();
+      suppressShowcaseClickRef.current = false;
+      return;
+    }
+
+    if (index !== activeIndex) {
+      event?.preventDefault();
+      event?.stopPropagation();
+      scrollToShowcaseIndex(index);
+      return;
+    }
+
     const target = event?.target;
     if (
       target instanceof HTMLElement &&
@@ -1112,11 +1151,63 @@ export default function StudioMarketingPage() {
       return;
     }
 
-    if (index !== activeIndex) {
-      scrollToShowcaseIndex(index);
+    setShowcaseOverlayIndex((current) => (current === index ? null : index));
+  };
+
+  const suppressShowcaseClick = () => {
+    suppressShowcaseClickRef.current = true;
+    if (suppressShowcaseClickTimeoutRef.current) {
+      window.clearTimeout(suppressShowcaseClickTimeoutRef.current);
+    }
+    suppressShowcaseClickTimeoutRef.current = window.setTimeout(() => {
+      suppressShowcaseClickRef.current = false;
+      suppressShowcaseClickTimeoutRef.current = null;
+    }, 280);
+  };
+
+  const handleShowcasePointerDown = (
+    index: number,
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (!event.isPrimary || event.pointerType === "mouse") return;
+    showcaseSwipeStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      index,
+      didSwipe: false,
+    };
+  };
+
+  const handleShowcasePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const swipeState = showcaseSwipeStateRef.current;
+    if (!swipeState || swipeState.pointerId !== event.pointerId || swipeState.didSwipe) {
       return;
     }
-    setShowcaseOverlayIndex((current) => (current === index ? null : index));
+
+    const deltaX = event.clientX - swipeState.startX;
+    const deltaY = event.clientY - swipeState.startY;
+    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    swipeState.didSwipe = true;
+    suppressShowcaseClick();
+    scrollToShowcaseIndex(swipeState.index + (deltaX < 0 ? 1 : -1));
+  };
+
+  const clearShowcaseSwipeState = (event?: React.PointerEvent<HTMLDivElement>) => {
+    const swipeState = showcaseSwipeStateRef.current;
+    if (!swipeState) return;
+    if (event && swipeState.pointerId !== event.pointerId) return;
+    showcaseSwipeStateRef.current = null;
+  };
+
+  const handleShowcaseClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!suppressShowcaseClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressShowcaseClickRef.current = false;
   };
 
   const scrollShowcase = (direction: "left" | "right") => {
@@ -1603,14 +1694,19 @@ export default function StudioMarketingPage() {
                   ref={showcaseScrollRef}
                   className="no-scrollbar flex items-start gap-6 overflow-x-auto scroll-smooth px-[max(2rem,calc(50vw-150px))] py-8 snap-x snap-mandatory"
                 >
-                  {showcaseCards.map((item, index) => (
-                    <div
-                      key={item.title}
-                      onClick={(event) => handleShowcaseCardClick(index, event)}
-                      data-showcase-card
-                      data-showcase-card-index={index}
-                      className="w-[min(300px,calc(100vw-4rem))] shrink-0 snap-center cursor-pointer"
-                    >
+              {showcaseCards.map((item, index) => (
+                <div
+                  key={item.title}
+                  onClickCapture={handleShowcaseClickCapture}
+                  onClick={(event) => handleShowcaseCardClick(index, event)}
+                  onPointerDownCapture={(event) => handleShowcasePointerDown(index, event)}
+                  onPointerMoveCapture={handleShowcasePointerMove}
+                  onPointerUpCapture={clearShowcaseSwipeState}
+                  onPointerCancelCapture={clearShowcaseSwipeState}
+                  data-showcase-card
+                  data-showcase-card-index={index}
+                  className="w-[min(300px,calc(100vw-4rem))] shrink-0 snap-center cursor-pointer"
+                >
                       <div
                         className={cx(
                           "rounded-[2.2rem] shadow-[0_28px_60px_rgba(15,23,42,0.12),0_12px_28px_rgba(15,23,42,0.08),0_1px_0_rgba(255,255,255,0.7)_inset] transition-all duration-700 ease-out",
@@ -1623,6 +1719,7 @@ export default function StudioMarketingPage() {
                           preview={item.preview}
                           compactChrome
                           showcaseMode
+                          interactive={activeIndex === index}
                           imageLoading="lazy"
                           showcaseOverlay={
                             showcaseOverlayIndex === index && activeIndex === index ? (

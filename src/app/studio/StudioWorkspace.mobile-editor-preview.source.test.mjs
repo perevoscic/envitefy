@@ -9,7 +9,7 @@ function readSource(relPath) {
 
 test("studio editor shifts mobile users from prompt composer to preview after generation", () => {
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
-  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
+  const formStep = readSource("src/app/studio/workspace/StudioFormStep.tsx");
 
   assert.match(workspace, /const STUDIO_EDITOR_MOBILE_BREAKPOINT = "\(max-width: 767px\)";/);
   assert.match(
@@ -19,8 +19,7 @@ test("studio editor shifts mobile users from prompt composer to preview after ge
   assert.match(workspace, /setMobileEditorPane\("preview"\);/);
   assert.match(workspace, /showPromptComposer=\{\(\) => setMobileEditorPane\("composer"\)\}/);
   assert.match(workspace, /showPreviewPane=\{\(\) => setMobileEditorPane\("preview"\)\}/);
-  assert.match(editorStep, /transform: mobilePane === "preview" \? "translateX\(-50%\)" : "translateX\(0\)"/);
-  assert.match(editorStep, />\s*Editor\s*</);
-  assert.match(editorStep, />\s*Preview\s*</);
-  assert.match(editorStep, /Back To Prompt/);
+  assert.match(formStep, /transform:\s*\n?\s*mobilePane === "preview" \? "translateX\(-50%\)" : "translateX\(0\)"/);
+  assert.match(formStep, />\s*Editor\s*</);
+  assert.match(formStep, />\s*Preview\s*</);
 });

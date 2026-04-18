@@ -10,7 +10,7 @@ function readSource(relPath) {
 test("studio workspace separates the current project from the saved library", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
   const libraryStep = readSource("src/app/studio/workspace/StudioLibraryStep.tsx");
-  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
+  const phonePane = readSource("src/app/studio/workspace/StudioPhonePreviewPane.tsx");
 
   assert.match(source, /function upsertLibraryItem\(item: MediaItem\)/);
   assert.match(source, /function saveWorkingProject\(project: MediaItem \| null\)/);
@@ -25,12 +25,11 @@ test("studio workspace separates the current project from the saved library", ()
   );
   assert.match(source, /upsertLibraryItem\(syncedItem\);/);
   assert.match(source, /clearCurrentProject\(\{ resetDetails: true \}\);/);
-  assert.match(editorStep, /No current project yet/);
+  assert.match(phonePane, /Studio Assistant/);
   assert.match(source, /const currentProjectSaveLabel = /);
-  assert.match(editorStep, /\{currentProjectSaveLabel\}/);
-  assert.doesNotMatch(editorStep, /Current Project/);
-  assert.doesNotMatch(editorStep, /Save this project to keep it in Library\./);
-  assert.doesNotMatch(editorStep, /Discard/);
+  assert.match(phonePane, /\{currentProjectSaveLabel\}/);
+  assert.doesNotMatch(phonePane, /Save this project to keep it in Library\./);
+  assert.doesNotMatch(phonePane, /Discard/);
   assert.match(source, /function prepareProjectForLibrarySave\(project: MediaItem\): MediaItem/);
   assert.match(source, /id: createId\(\),/);
   assert.match(source, /publishedEventId: undefined,/);

@@ -7,9 +7,9 @@ function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("studio step keeps the category-specific idea panel and adds image finish presets", () => {
+test("studio details step keeps the combined idea panel and adds image finish presets", () => {
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
-  const editorStep = readSource("src/app/studio/workspace/StudioEditorStep.tsx");
+  const formStep = readSource("src/app/studio/workspace/StudioFormStep.tsx");
   const presetSource = readSource("src/lib/studio/image-finish-presets.ts");
 
   assert.match(workspace, /const studioIdeaLabel = getStudioIdeaLabel\(details\.category\);/);
@@ -17,23 +17,23 @@ test("studio step keeps the category-specific idea panel and adds image finish p
     workspace,
     /const studioIdeaPlaceholder = getStudioIdeaPlaceholder\(details\.category\);/,
   );
-  assert.match(editorStep, /<label[\s\S]*\{studioIdeaLabel\}[\s\S]*<\/label>/);
-  assert.match(editorStep, /placeholder=\{studioIdeaPlaceholder\}/);
-  assert.match(editorStep, /value=\{details\.theme\}/);
+  assert.match(formStep, /Invitation Idea & Details/);
+  assert.match(formStep, /placeholder=\{studioIdeaPlaceholder\}/);
+  assert.match(formStep, /value=\{ideaValue\}/);
   assert.match(
-    editorStep,
+    formStep,
     /import \{\s*getStudioImageFinishPresets,\s*resolveStudioImageFinishPreset,\s*\} from "@\/lib\/studio\/image-finish-presets";/,
   );
-  assert.match(editorStep, /const imageFinishPresets = getStudioImageFinishPresets\(details\.category\);/);
-  assert.match(editorStep, /Image Finish/);
-  assert.match(editorStep, /imageFinishPreset: active \? "" : preset\.label,/);
-  assert.match(editorStep, /selectedImageFinishPreset\.description/);
+  assert.match(formStep, /const imageFinishPresets = getStudioImageFinishPresets\(details\.category\);/);
+  assert.match(formStep, /Image Finish/);
+  assert.match(formStep, /imageFinishPreset: active \? "" : preset\.label,/);
+  assert.match(formStep, /selectedImageFinishPreset\.description/);
   assert.match(
-    editorStep,
-    /setDetails\(\(prev\) => \(\{ \.\.\.prev, theme: event\.target\.value \}\)\)/,
+    formStep,
+    /theme: value,\s*detailsDescription: value,/,
   );
-  assert.doesNotMatch(editorStep, /Custom Visual Idea/);
-  assert.doesNotMatch(editorStep, /No presets for this category yet/);
+  assert.doesNotMatch(formStep, /Custom Visual Idea/);
+  assert.doesNotMatch(formStep, /No presets for this category yet/);
   assert.match(presetSource, /Birthday:/);
   assert.match(presetSource, /"Game Day":/);
   assert.match(presetSource, /Wedding:/);

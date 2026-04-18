@@ -7,7 +7,7 @@ import type {
 
 export type StudioWorkspaceView = "create" | "library";
 
-export type StudioCreateStep = "type" | "details" | "editor";
+export type StudioCreateStep = "type" | "details";
 
 export type StudioCategoryId =
   | "birthday"

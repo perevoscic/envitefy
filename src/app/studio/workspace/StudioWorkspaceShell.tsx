@@ -36,8 +36,8 @@ export function StudioWorkspaceShell({
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#F5F2EF] text-[#1A1A1A] selection:bg-[#e7d9c8]">
-      <div className="pointer-events-none absolute -left-[180px] -top-[180px] h-[430px] w-[430px] rounded-full border border-[#8C7B65]/10" />
+    <div className="studio-shell relative min-h-screen overflow-hidden bg-[#f4f1fb] text-[#1A1A1A] selection:bg-[#e3d7fb] lg:flex lg:h-screen lg:flex-col">
+      <div className="pointer-events-none absolute -left-[180px] -top-[180px] h-[430px] w-[430px] rounded-full border border-[#bda8df]/14" />
 
       {showLibrarySyncError && librarySyncError ? (
         <div
@@ -55,8 +55,8 @@ export function StudioWorkspaceShell({
         </div>
       ) : null}
 
-      <main className="relative mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-8 lg:px-12 lg:py-14">
-        <div className="mx-auto mb-10 max-w-[1400px]">
+      <main className="relative mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-8 lg:flex lg:h-full lg:min-h-0 lg:flex-1 lg:flex-col lg:pl-12 lg:pr-4 lg:pb-0 lg:pt-8">
+        <div className="mb-8 max-w-[1400px]">
           <div className="w-fit">
             <Tabs
               selected={activeView}
@@ -67,10 +67,12 @@ export function StudioWorkspaceShell({
           </div>
         </div>
 
-        {children}
+        <div className="lg:min-h-0 lg:flex-1">
+          {children}
+        </div>
       </main>
 
-      <div className="pointer-events-none fixed left-1/2 top-0 -z-10 h-[600px] w-[1000px] -translate-x-1/2 bg-[#8C7B65]/6 blur-[120px]" />
+      <div className="pointer-events-none fixed left-1/2 top-0 -z-10 h-[600px] w-[1000px] -translate-x-1/2 bg-[#d9cdf6]/28 blur-[120px]" />
     </div>
   );
 }

@@ -28,11 +28,13 @@ test("studio workspace splits create and library at the top level and uses query
   assert.match(shell, /Library/);
   assert.match(shell, /selected=\{activeView\}/);
   assert.match(shell, /setSelected=\{handleSelectedChange\}/);
+  assert.match(shell, /<div className="lg:min-h-0 lg:flex-1">/);
+  assert.doesNotMatch(shell, /<div className="lg:flex lg:min-h-0 lg:flex-1">/);
   assert.doesNotMatch(shell, /const \[selected, setSelected\] = useState<string>\(activeView\)/);
   assert.doesNotMatch(shell, /useEffect\(\(\) => \{\s*setSelected\(activeView\);/);
   assert.match(createFlow, /if \(createStep === "type"\) \{/);
   assert.match(createFlow, /return <>\{typeContent\}<\/>;/);
-  assert.match(createFlow, /label: "Details"/);
-  assert.match(createFlow, /label: "Editor"/);
+  assert.doesNotMatch(createFlow, /label: "Editor"/);
   assert.doesNotMatch(createFlow, /label: "Studio"/);
+  assert.doesNotMatch(createFlow, /Every exceptional journey/);
 });

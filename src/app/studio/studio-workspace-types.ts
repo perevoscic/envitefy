@@ -165,6 +165,10 @@ export type FieldConfig = {
   options?: string[];
   placeholder?: string;
   required?: boolean;
+  maxLength?: number;
+  inputMode?: "text" | "numeric" | "decimal" | "tel" | "email" | "url" | "search" | "none";
+  /** When true, the rendered input is constrained to a smaller, auto-like width inside its grid cell. */
+  compact?: boolean;
 };
 
 export type SharedFieldConfig = {

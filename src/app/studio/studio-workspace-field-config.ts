@@ -17,7 +17,16 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
       placeholder: "e.g. Lara",
       required: true,
     },
-    { label: "Age Turning", key: "age", type: "text", placeholder: "e.g. 7", required: true },
+    {
+      label: "Age Turning",
+      key: "age",
+      type: "text",
+      placeholder: "e.g. 7",
+      required: true,
+      maxLength: 6,
+      inputMode: "numeric",
+      compact: true,
+    },
     { label: "Birthday Theme", key: "theme", type: "text", placeholder: "e.g. Movie Cats" },
     {
       label: "Who Is Invited",

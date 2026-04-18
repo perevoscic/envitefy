@@ -34,6 +34,20 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
     source,
     /const handleShowcaseCardClick = \(index: number, event\?: React\.MouseEvent<HTMLDivElement>\) => \{/,
   );
+  assert.match(source, /const showcaseSwipeStateRef = useRef<\{/);
+  assert.match(source, /const suppressShowcaseClickRef = useRef\(false\);/);
+  assert.match(
+    source,
+    /const handleShowcasePointerDown = \(\s*index: number,\s*event: React\.PointerEvent<HTMLDivElement>,/,
+  );
+  assert.match(source, /if \(!event\.isPrimary \|\| event\.pointerType === "mouse"\) return;/);
+  assert.match(
+    source,
+    /const handleShowcasePointerMove = \(event: React\.PointerEvent<HTMLDivElement>\) => \{/,
+  );
+  assert.match(source, /const deltaX = event\.clientX - swipeState\.startX;/);
+  assert.match(source, /const deltaY = event\.clientY - swipeState\.startY;/);
+  assert.match(source, /scrollToShowcaseIndex\(swipeState\.index \+ \(deltaX < 0 \? 1 : -1\)\);/);
   assert.match(
     source,
     /target\.closest\("\[data-live-card-trigger\], \[data-live-card-panel\], button, a"\)/,
@@ -44,6 +58,11 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
     /setShowcaseOverlayIndex\(\(current\) => \(current === index \? null : index\)\);/,
   );
   assert.match(source, /data-showcase-card/);
+  assert.match(source, /onClickCapture=\{handleShowcaseClickCapture\}/);
+  assert.match(source, /onPointerDownCapture=\{\(event\) => handleShowcasePointerDown\(index, event\)\}/);
+  assert.match(source, /onPointerMoveCapture=\{handleShowcasePointerMove\}/);
+  assert.match(source, /onPointerUpCapture=\{clearShowcaseSwipeState\}/);
+  assert.match(source, /onPointerCancelCapture=\{clearShowcaseSwipeState\}/);
   assert.match(
     source,
     /className="no-scrollbar flex items-start gap-6 overflow-x-auto scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,

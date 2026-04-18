@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { inputValue } from "../studio-workspace-builders";
 import type { EventDetails, FieldConfig, SharedFieldConfig } from "../studio-workspace-types";
@@ -33,6 +33,11 @@ type StudioTextAreaFieldProps = {
 };
 
 function renderFieldIcon(fieldKey: keyof EventDetails) {
+  if (fieldKey === "eventDate") {
+    return (
+      <Calendar className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1A1A1A] transition-colors group-focus-within:text-[#1A1A1A]" />
+    );
+  }
   if (fieldKey === "location") {
     return (
       <MapPin className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C7B65]/55 transition-colors group-focus-within:text-[#1A1A1A]" />
@@ -42,20 +47,7 @@ function renderFieldIcon(fieldKey: keyof EventDetails) {
 }
 
 function usesIconInput(fieldKey: keyof EventDetails) {
-  return fieldKey === "location";
-}
-
-function usesCompactDatePlaceholderOverlay(field: SupportedField, details: EventDetails) {
-  return field.key === "eventDate" && field.type === "date" && details.category !== "Wedding";
-}
-
-function getCompactDatePlaceholderClass(
-  field: SupportedField,
-  details: EventDetails,
-  isEmptyValue: boolean,
-) {
-  if (!usesCompactDatePlaceholderOverlay(field, details) || !isEmptyValue) return "";
-  return "[&::-webkit-datetime-edit]:text-transparent [&::-webkit-datetime-edit-fields-wrapper]:text-transparent [&::-webkit-datetime-edit-month-field]:text-transparent [&::-webkit-datetime-edit-day-field]:text-transparent [&::-webkit-datetime-edit-year-field]:text-transparent [&::-webkit-datetime-edit-text]:text-transparent";
+  return fieldKey === "location" || fieldKey === "eventDate";
 }
 
 export function StudioFieldGrid({
@@ -133,23 +125,39 @@ export function StudioFieldGrid({
                 </span>
               </label>
             ) : (
-              <div className="group relative">
+              <div
+                className={`group relative ${
+                  "compact" in field && field.compact ? "max-w-[7.5rem]" : ""
+                }`}
+              >
                 {renderFieldIcon(field.key)}
                 <input
                   type={field.type}
                   placeholder={field.type === "text" ? "" : field.placeholder}
+                  inputMode={"inputMode" in field ? field.inputMode : undefined}
+                  maxLength={"maxLength" in field ? field.maxLength : undefined}
                   className={
                     usesIconInput(field.key)
-                      ? `${iconInputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)] ${getCompactDatePlaceholderClass(field, details, isEmptyValue)}`
-                      : `${inputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)] ${getCompactDatePlaceholderClass(field, details, isEmptyValue)}`
+                      ? `${iconInputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
+                      : `${inputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                   }
                   value={String(value)}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const isNumericOnly =
+                      "inputMode" in field && field.inputMode === "numeric";
+                    const maxLen = "maxLength" in field ? field.maxLength : undefined;
+                    let nextValue = event.target.value;
+                    if (isNumericOnly) {
+                      nextValue = nextValue.replace(/\D+/g, "");
+                    }
+                    if (typeof maxLen === "number") {
+                      nextValue = nextValue.slice(0, maxLen);
+                    }
                     setDetails((prev) => ({
                       ...prev,
-                      [field.key]: event.target.value,
-                    }))
-                  }
+                      [field.key]: nextValue,
+                    }));
+                  }}
                 />
                 {field.type === "text" && isEmptyValue && field.placeholder ? (
                   <span
@@ -158,11 +166,6 @@ export function StudioFieldGrid({
                     }`}
                   >
                     {field.placeholder}
-                  </span>
-                ) : null}
-                {usesCompactDatePlaceholderOverlay(field, details) && isEmptyValue ? (
-                  <span className="pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[rgba(26,26,26,0.1)] transition-opacity group-focus-within:opacity-0">
-                    mm/dd
                   </span>
                 ) : null}
               </div>
