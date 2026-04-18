@@ -522,7 +522,7 @@ export default function LandingLiveCardShowcase() {
 
             <div
               ref={showcaseScrollRef}
-              className="no-scrollbar flex touch-pan-x items-start gap-4 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1.25rem,calc(50vw-136px))] py-8 snap-x snap-mandatory sm:gap-6 sm:px-[max(2rem,calc(50vw-150px))]"
+              className="no-scrollbar flex touch-auto items-start gap-4 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1.25rem,calc(50vw-136px))] py-8 snap-x snap-mandatory sm:gap-6 sm:px-[max(2rem,calc(50vw-150px))]"
               style={{ WebkitOverflowScrolling: "touch" }}
             >
               {showcaseCards.map((item, index) => (

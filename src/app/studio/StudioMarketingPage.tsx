@@ -1695,7 +1695,7 @@ export default function StudioMarketingPage() {
 
                 <div
                   ref={showcaseScrollRef}
-                  className="no-scrollbar flex touch-pan-x items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(2rem,calc(50vw-150px))] py-8 snap-x snap-mandatory"
+                  className="no-scrollbar flex touch-auto items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(2rem,calc(50vw-150px))] py-8 snap-x snap-mandatory"
                   style={{ WebkitOverflowScrolling: "touch" }}
                 >
               {showcaseCards.map((item, index) => (
