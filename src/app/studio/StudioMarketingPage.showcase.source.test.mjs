@@ -40,7 +40,10 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
     source,
     /const handleShowcasePointerDown = \(\s*index: number,\s*event: React\.PointerEvent<HTMLDivElement>,/,
   );
-  assert.match(source, /if \(!event\.isPrimary \|\| event\.pointerType === "mouse"\) return;/);
+  assert.match(
+    source,
+    /if \(!event\.isPrimary \|\| event\.pointerType === "mouse" \|\| event\.pointerType === "touch"\) return;/,
+  );
   assert.match(
     source,
     /const handleShowcasePointerMove = \(event: React\.PointerEvent<HTMLDivElement>\) => \{/,
@@ -52,7 +55,10 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
     source,
     /target\.closest\("\[data-live-card-trigger\], \[data-live-card-panel\], button, a"\)/,
   );
-  assert.match(source, /if \(index !== activeIndex\) \{\s*scrollToShowcaseIndex\(index\);/);
+  assert.match(
+    source,
+    /if \(index !== activeIndex\) \{\s*event\?\.preventDefault\(\);\s*event\?\.stopPropagation\(\);\s*scrollToShowcaseIndex\(index\);\s*return;\s*\}/,
+  );
   assert.match(
     source,
     /setShowcaseOverlayIndex\(\(current\) => \(current === index \? null : index\)\);/,
@@ -65,7 +71,7 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.match(source, /onPointerCancelCapture=\{clearShowcaseSwipeState\}/);
   assert.match(
     source,
-    /className="no-scrollbar flex items-start gap-6 overflow-x-auto scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,
+    /className="no-scrollbar flex touch-pan-x items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,
   );
   assert.match(source, /onClick=\{\(event\) => handleShowcaseCardClick\(index, event\)\}/);
   assert.match(source, /import \{ resolveNativeShareData \} from "@\/utils\/native-share";/);
@@ -95,6 +101,6 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.match(source, /md:inline-flex/);
   assert.match(
     source,
-    /<StudioMarketingLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+imageLoading="lazy"\s+showcaseOverlay=/,
+    /<StudioMarketingLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading="lazy"\s+showcaseOverlay=/,
   );
 });

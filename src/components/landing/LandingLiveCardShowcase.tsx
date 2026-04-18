@@ -418,7 +418,7 @@ export default function LandingLiveCardShowcase() {
     index: number,
     event: React.PointerEvent<HTMLDivElement>,
   ) => {
-    if (!event.isPrimary || event.pointerType === "mouse") return;
+    if (!event.isPrimary || event.pointerType === "mouse" || event.pointerType === "touch") return;
     showcaseSwipeStateRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -429,6 +429,9 @@ export default function LandingLiveCardShowcase() {
   };
 
   const handleShowcasePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch") {
+      return;
+    }
     const swipeState = showcaseSwipeStateRef.current;
     if (!swipeState || swipeState.pointerId !== event.pointerId || swipeState.didSwipe) {
       return;
@@ -519,7 +522,8 @@ export default function LandingLiveCardShowcase() {
 
             <div
               ref={showcaseScrollRef}
-              className="no-scrollbar flex items-start gap-4 overflow-x-auto scroll-smooth px-[max(1.25rem,calc(50vw-136px))] py-8 snap-x snap-mandatory sm:gap-6 sm:px-[max(2rem,calc(50vw-150px))]"
+              className="no-scrollbar flex touch-pan-x items-start gap-4 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1.25rem,calc(50vw-136px))] py-8 snap-x snap-mandatory sm:gap-6 sm:px-[max(2rem,calc(50vw-150px))]"
+              style={{ WebkitOverflowScrolling: "touch" }}
             >
               {showcaseCards.map((item, index) => (
                 <div
