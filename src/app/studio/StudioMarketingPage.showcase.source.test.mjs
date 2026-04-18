@@ -71,7 +71,7 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.match(source, /onPointerCancelCapture=\{clearShowcaseSwipeState\}/);
   assert.match(
     source,
-    /className="no-scrollbar flex touch-pan-x items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,
+    /className="no-scrollbar flex touch-auto items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,
   );
   assert.match(source, /onClick=\{\(event\) => handleShowcaseCardClick\(index, event\)\}/);
   assert.match(source, /import \{ resolveNativeShareData \} from "@\/utils\/native-share";/);

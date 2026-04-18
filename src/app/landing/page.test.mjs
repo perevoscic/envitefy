@@ -71,7 +71,7 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingShowcase, /event\?\.stopPropagation\(\);/);
   assert.match(
     landingShowcase,
-    /touch-pan-x items-start gap-4 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(1\.25rem,calc\(50vw-136px\)\)\] py-8 snap-x snap-mandatory sm:gap-6 sm:px-\[max\(2rem,calc\(50vw-150px\)\)\]/,
+    /touch-auto items-start gap-4 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(1\.25rem,calc\(50vw-136px\)\)\] py-8 snap-x snap-mandatory sm:gap-6 sm:px-\[max\(2rem,calc\(50vw-150px\)\)\]/,
   );
   assert.match(
     landingShowcase,
