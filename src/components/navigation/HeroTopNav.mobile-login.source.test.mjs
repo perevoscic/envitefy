@@ -16,6 +16,7 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
   assert.match(source, /if \(!mobileMenuOpen\) {\s*setMobileLoginExpanded\(false\);/s);
   assert.match(source, /onClick=\{\(\) => setMobileLoginExpanded\(\(value\) => !value\)\}/);
   assert.match(source, /id="hero-top-nav-mobile-login"/);
+  assert.match(source, /mobileMenuOpen \? "pointer-events-auto" : "pointer-events-none"/);
   assert.match(source, /<LoginForm\s+variant="inline"/);
   assert.match(source, /inlineTone=\{isDarkGlass \? "dark" : "light"\}/);
   assert.match(source, /showGoogleAuth=\{false\}/);
