@@ -47,12 +47,16 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   );
   assert.match(source, /const deltaX = event\.clientX - swipeState\.startX;/);
   assert.match(source, /const deltaY = event\.clientY - swipeState\.startY;/);
-  assert.match(source, /scrollToShowcaseIndex\(swipeState\.index \+ \(deltaX < 0 \? 1 : -1\)\);/);
+  assert.match(source, /suppressShowcaseClick\(\);/);
+  assert.doesNotMatch(source, /scrollToShowcaseIndex\(swipeState\.index \+ \(deltaX < 0 \? 1 : -1\)\);/);
   assert.match(
     source,
     /target\.closest\("\[data-live-card-trigger\], \[data-live-card-panel\], button, a"\)/,
   );
-  assert.match(source, /if \(index !== activeIndex\) \{\s*scrollToShowcaseIndex\(index\);/);
+  assert.match(
+    source,
+    /if \(index !== activeIndex\) \{\s*event\?\.preventDefault\(\);\s*event\?\.stopPropagation\(\);\s*scrollToShowcaseIndex\(index\);\s*return;\s*\}/,
+  );
   assert.match(
     source,
     /setShowcaseOverlayIndex\(\(current\) => \(current === index \? null : index\)\);/,
@@ -75,7 +79,7 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.doesNotMatch(source, /await navigator\.share\(candidate\);/);
   assert.match(
     source,
-    /className="w-\[min\(300px,calc\(100vw-4rem\)\)\] shrink-0 snap-center cursor-pointer"/,
+    /className="w-\[min\(300px,calc\(100vw-4rem\)\)\] shrink-0 snap-center cursor-pointer touch-pan-y"/,
   );
   assert.match(source, /activeIndex === index\s*\?\s*"scale-100 opacity-100 blur-0"/);
   assert.match(source, /:\s*"scale-\[0\.85\] opacity-40 blur-\[2px\]"/);
@@ -95,6 +99,6 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.match(source, /md:inline-flex/);
   assert.match(
     source,
-    /<StudioMarketingLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+imageLoading="lazy"\s+showcaseOverlay=/,
+    /<StudioMarketingLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading="lazy"\s+showcaseOverlay=/,
   );
 });

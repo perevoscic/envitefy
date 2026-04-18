@@ -248,10 +248,10 @@ export default function HeroTopNav({
 
         <div
           id="hero-top-nav-mobile"
-          className={`pointer-events-none absolute right-0 top-[calc(100%-0.55rem)] z-10 w-full pt-0 transition-[opacity,transform] duration-300 lg:hidden ${
+          className={`pointer-events-none absolute right-0 top-[calc(100%-0.55rem)] z-10 w-full pt-0 transition-[opacity,transform,visibility] duration-300 lg:hidden ${
             mobileMenuOpen
-              ? "translate-y-0 opacity-100"
-              : "-translate-y-2 opacity-0"
+              ? "visible translate-y-0 opacity-100"
+              : "invisible -translate-y-2 opacity-0"
           }`}
         >
           <div
@@ -279,7 +279,8 @@ export default function HeroTopNav({
 
           <div
             className={cx(
-              "nav-chrome-menu-card pointer-events-auto relative ml-auto mt-2 w-full max-w-[20rem] p-3",
+              "nav-chrome-menu-card relative ml-auto mt-2 w-full max-w-[20rem] p-3",
+              mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none",
               isDarkGlass
                 ? "theme-glass-menu rounded-[1.75rem] border border-white/12 shadow-[0_24px_54px_rgba(0,0,0,0.26)]"
                 : "rounded-[1.75rem]",

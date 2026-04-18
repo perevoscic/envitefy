@@ -1193,7 +1193,6 @@ export default function StudioMarketingPage() {
 
     swipeState.didSwipe = true;
     suppressShowcaseClick();
-    scrollToShowcaseIndex(swipeState.index + (deltaX < 0 ? 1 : -1));
   };
 
   const clearShowcaseSwipeState = (event?: React.PointerEvent<HTMLDivElement>) => {
@@ -1705,7 +1704,7 @@ export default function StudioMarketingPage() {
                   onPointerCancelCapture={clearShowcaseSwipeState}
                   data-showcase-card
                   data-showcase-card-index={index}
-                  className="w-[min(300px,calc(100vw-4rem))] shrink-0 snap-center cursor-pointer"
+                  className="w-[min(300px,calc(100vw-4rem))] shrink-0 snap-center cursor-pointer touch-pan-y"
                 >
                       <div
                         className={cx(

@@ -442,7 +442,6 @@ export default function LandingLiveCardShowcase() {
 
     swipeState.didSwipe = true;
     suppressShowcaseClick();
-    scrollToShowcaseIndex(swipeState.index + (deltaX < 0 ? 1 : -1));
   };
 
   const clearShowcaseSwipeState = (event?: React.PointerEvent<HTMLDivElement>) => {
@@ -532,7 +531,7 @@ export default function LandingLiveCardShowcase() {
                   onPointerCancelCapture={clearShowcaseSwipeState}
                   data-showcase-card
                   data-showcase-card-index={index}
-                  className="w-[min(272px,calc(100vw-5.5rem))] shrink-0 snap-center cursor-pointer sm:w-[min(300px,calc(100vw-4rem))]"
+                  className="w-[min(272px,calc(100vw-5.5rem))] shrink-0 snap-center cursor-pointer touch-pan-y sm:w-[min(300px,calc(100vw-4rem))]"
                 >
                   <div
                     className={cx(

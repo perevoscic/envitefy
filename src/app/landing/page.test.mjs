@@ -53,7 +53,11 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingShowcase, /const handleShowcasePointerMove = \(event: React\.PointerEvent<HTMLDivElement>\) => \{/);
   assert.match(landingShowcase, /const deltaX = event\.clientX - swipeState\.startX;/);
   assert.match(landingShowcase, /const deltaY = event\.clientY - swipeState\.startY;/);
-  assert.match(landingShowcase, /scrollToShowcaseIndex\(swipeState\.index \+ \(deltaX < 0 \? 1 : -1\)\);/);
+  assert.match(landingShowcase, /suppressShowcaseClick\(\);/);
+  assert.doesNotMatch(
+    landingShowcase,
+    /scrollToShowcaseIndex\(swipeState\.index \+ \(deltaX < 0 \? 1 : -1\)\);/,
+  );
   assert.match(landingShowcase, /onPointerDownCapture=\{\(event\) => handleShowcasePointerDown\(index, event\)\}/);
   assert.match(landingShowcase, /onPointerMoveCapture=\{handleShowcasePointerMove\}/);
   assert.match(landingShowcase, /onPointerUpCapture=\{clearShowcaseSwipeState\}/);
@@ -72,7 +76,7 @@ test("landing page renders the new dedicated landing experience component", () =
   );
   assert.match(
     landingShowcase,
-    /w-\[min\(272px,calc\(100vw-5\.5rem\)\)\] shrink-0 snap-center cursor-pointer sm:w-\[min\(300px,calc\(100vw-4rem\)\)\]/,
+    /w-\[min\(272px,calc\(100vw-5\.5rem\)\)\] shrink-0 snap-center cursor-pointer touch-pan-y sm:w-\[min\(300px,calc\(100vw-4rem\)\)\]/,
   );
   assert.match(landingShowcase, /import \{ resolveNativeShareData \} from "@\/utils\/native-share";/);
   assert.match(landingShowcase, /const nativeShareData = resolveNativeShareData\(sharePayload\);/);
