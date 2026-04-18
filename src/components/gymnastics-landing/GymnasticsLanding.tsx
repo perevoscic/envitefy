@@ -333,6 +333,7 @@ export default function GymnasticsLanding() {
         variant="glass-dark"
         primaryCtaLabel="Start Your Meet Page"
         authenticatedPrimaryHref="/event/gymnastics"
+        loginSuccessRedirectUrl="/event/gymnastics"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
       />

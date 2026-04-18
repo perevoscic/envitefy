@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import LoginForm from "@/components/auth/LoginForm";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 
@@ -18,6 +19,7 @@ type HeroTopNavProps = {
   authenticatedPrimaryHref: string;
   brandHref?: string;
   dashboardHref?: string;
+  loginSuccessRedirectUrl?: string;
   onGuestLoginAction: () => void;
   onGuestPrimaryAction: () => void;
   variant?: "default" | "glass-dark";
@@ -64,12 +66,14 @@ export default function HeroTopNav({
   authenticatedPrimaryHref,
   brandHref = "/landing",
   dashboardHref = "/",
+  loginSuccessRedirectUrl = dashboardHref,
   onGuestLoginAction,
   onGuestPrimaryAction,
   variant = "default",
 }: HeroTopNavProps) {
   const { status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileLoginExpanded, setMobileLoginExpanded] = useState(false);
   const isDarkGlass = variant === "glass-dark";
 
   useEffect(() => {
@@ -84,6 +88,31 @@ export default function HeroTopNav({
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      setMobileLoginExpanded(false);
+    }
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      setMobileLoginExpanded(false);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (!mobileLoginExpanded || typeof window === "undefined") return;
+
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById("hero-top-nav-mobile-login")
+        ?.querySelector<HTMLInputElement>("#login-email-input")
+        ?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [mobileLoginExpanded]);
 
   return (
     <header
@@ -219,15 +248,38 @@ export default function HeroTopNav({
 
         <div
           id="hero-top-nav-mobile"
-          className={`pointer-events-none absolute right-0 top-full z-10 w-full pt-4 transition-[opacity,transform] duration-300 lg:hidden ${
+          className={`pointer-events-none absolute right-0 top-[calc(100%-0.55rem)] z-10 w-full pt-0 transition-[opacity,transform] duration-300 lg:hidden ${
             mobileMenuOpen
               ? "translate-y-0 opacity-100"
               : "-translate-y-2 opacity-0"
           }`}
         >
           <div
+            aria-hidden="true"
             className={cx(
-              "nav-chrome-menu-card pointer-events-auto ml-auto w-full max-w-[20rem] p-3",
+              "pointer-events-none absolute right-5 top-0 h-10 w-[8.75rem]",
+              !mobileMenuOpen && "opacity-0",
+            )}
+          >
+            <div
+              className={cx(
+                "absolute inset-x-0 bottom-0 h-8 rounded-[1.35rem] border shadow-[0_16px_34px_rgba(11,6,24,0.12)] backdrop-blur-[18px]",
+                isDarkGlass
+                  ? "border-white/10 bg-[linear-gradient(180deg,rgba(21,12,41,0.86),rgba(21,12,41,0.72))]"
+                  : "border-[rgba(120,104,197,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,244,255,0.9))]",
+              )}
+            />
+            <div
+              className={cx(
+                "absolute left-4 right-4 top-1 h-5 rounded-b-full blur-md",
+                isDarkGlass ? "bg-white/10" : "bg-white/70",
+              )}
+            />
+          </div>
+
+          <div
+            className={cx(
+              "nav-chrome-menu-card pointer-events-auto relative ml-auto mt-2 w-full max-w-[20rem] p-3",
               isDarkGlass
                 ? "theme-glass-menu rounded-[1.75rem] border border-white/12 shadow-[0_24px_54px_rgba(0,0,0,0.26)]"
                 : "rounded-[1.75rem]",
@@ -266,21 +318,58 @@ export default function HeroTopNav({
                   Dashboard
                 </Link>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onGuestLoginAction();
-                  }}
-                  className={cx(
-                    "mt-2 nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
-                    isDarkGlass
-                      ? `${glassGhostLoginClass} self-end`
-                      : lightNavPillClass,
-                  )}
-                >
-                  Login
-                </button>
+                <>
+                  <button
+                    type="button"
+                    aria-expanded={mobileLoginExpanded}
+                    aria-controls="hero-top-nav-mobile-login"
+                    onClick={() => setMobileLoginExpanded((value) => !value)}
+                    className={cx(
+                      "mt-2 self-end nav-chrome-motion rounded-2xl px-6 py-3 text-center text-sm font-semibold transition",
+                      isDarkGlass
+                        ? glassGhostLoginClass
+                        : lightNavPillClass,
+                    )}
+                  >
+                    Login
+                  </button>
+
+                  <div
+                    id="hero-top-nav-mobile-login"
+                    className={cx(
+                      "grid w-full transition-[grid-template-rows,opacity,margin] duration-300 ease-out",
+                      mobileLoginExpanded
+                        ? "mt-3 grid-rows-[1fr] opacity-100"
+                        : "mt-0 grid-rows-[0fr] opacity-0",
+                    )}
+                  >
+                    <div className="overflow-hidden">
+                      <div
+                        className={cx(
+                          "rounded-[1.35rem] px-4 py-4",
+                          isDarkGlass
+                            ? "border border-white/10 bg-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                            : "border border-[#e7dcff] bg-white/92 shadow-[0_18px_44px_rgba(89,70,171,0.12)]",
+                        )}
+                      >
+                        <LoginForm
+                          variant="inline"
+                          showGoogleAuth={false}
+                          successRedirectUrl={loginSuccessRedirectUrl}
+                          onSwitchMode={() => {
+                            setMobileLoginExpanded(false);
+                            setMobileMenuOpen(false);
+                            onGuestPrimaryAction();
+                          }}
+                          onSuccess={() => {
+                            setMobileLoginExpanded(false);
+                            setMobileMenuOpen(false);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
 
               {status === "authenticated" ? (
@@ -301,10 +390,11 @@ export default function HeroTopNav({
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
+                    setMobileLoginExpanded(false);
                     onGuestPrimaryAction();
                   }}
                   className={cx(
-                    "cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                    "mt-3 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
                     isDarkGlass
                       ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.24)]"
                       : "nav-chrome-pill-primary text-white",

@@ -1151,6 +1151,7 @@ export default function StudioMarketingPage() {
           primaryCtaLabel="Start in Studio"
           authenticatedPrimaryHref="/"
           brandHref="/"
+          loginSuccessRedirectUrl="/studio"
           onGuestLoginAction={() => openAuth("login")}
           onGuestPrimaryAction={() => openAuth("signup")}
         />

@@ -662,6 +662,7 @@ export default function SnapLanding() {
         variant="glass-dark"
         primaryCtaLabel="Snap Your First Invite"
         authenticatedPrimaryHref="/event"
+        loginSuccessRedirectUrl="/event"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
       />

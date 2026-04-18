@@ -20,7 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
@@ -37,6 +37,21 @@ const sectionReveal: Variants = {
     transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
   },
 };
+
+const scrollReveal: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const scrollRevealViewport = {
+  once: true,
+  amount: 0.08,
+  margin: "0px 0px -8% 0px",
+} as const;
 
 const floatTransition: Transition = {
   duration: 5,
@@ -373,11 +388,25 @@ function PhoneShell({ children, className }: { children: ReactNode; className?: 
 export default function LandingExperience() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+  const disableHeavyLandingMotion = shouldReduceMotion || isSmallScreen;
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    const syncIsSmallScreen = () => setIsSmallScreen(mediaQuery.matches);
+
+    syncIsSmallScreen();
+    mediaQuery.addEventListener("change", syncIsSmallScreen);
+
+    return () => mediaQuery.removeEventListener("change", syncIsSmallScreen);
+  }, []);
 
   return (
     <>
@@ -388,7 +417,7 @@ export default function LandingExperience() {
           navLinks={[
             { label: "Studio", href: "/studio" },
             { label: "Snap", href: "/snap" },
-            { label: "Gymnastics", href: "#gymnastics" },
+            { label: "Gymnastics", href: "/gymnastics" },
             { label: "Features", href: "#what-you-can-snap" },
             { label: "How it works", href: "#how-it-works" },
             { label: "Why it works", href: "#use-cases" },
@@ -397,6 +426,7 @@ export default function LandingExperience() {
           ]}
           variant="glass-dark"
           authenticatedPrimaryHref="/event"
+          loginSuccessRedirectUrl="/event"
           onGuestLoginAction={() => openAuth("login")}
           onGuestPrimaryAction={() => openAuth("signup")}
         />
@@ -785,35 +815,42 @@ export default function LandingExperience() {
           id="what-you-can-snap"
           className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
         >
-          <motion.div
-            variants={sectionReveal}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="mx-auto max-w-7xl"
-          >
+          <div className="mx-auto max-w-7xl">
             <div className={cx(styles.surfacePanel, "rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
-              <SectionIntro
-                eyebrow="One Studio. Infinite Ways to Host."
-                title={
-                  <>
-                    Design once.
-                    <br />
-                    <span className={styles.textGradient}>Deliver every guest-facing surface.</span>
-                  </>
-                }
-                description="Create polished invitation artwork, live cards, hosted event hubs, and mobile-ready guest experiences from the same studio workflow."
-                align="center"
-              />
+              <motion.div
+                variants={scrollReveal}
+                initial="hidden"
+                whileInView="visible"
+                viewport={scrollRevealViewport}
+              >
+                <SectionIntro
+                  eyebrow="One Studio. Infinite Ways to Host."
+                  title={
+                    <>
+                      Design once.
+                      <br />
+                      <span className={styles.textGradient}>Deliver every guest-facing surface.</span>
+                    </>
+                  }
+                  description="Create polished invitation artwork, live cards, hosted event hubs, and mobile-ready guest experiences from the same studio workflow."
+                  align="center"
+                />
+              </motion.div>
 
-              <div className="mt-14 grid gap-8 lg:grid-cols-2">
+              <motion.div
+                variants={scrollReveal}
+                initial="hidden"
+                whileInView="visible"
+                viewport={scrollRevealViewport}
+                className="mt-10 grid gap-6 lg:mt-14 lg:grid-cols-2 lg:gap-8"
+              >
                 {comparisonCards.map((card, index) => (
                   <motion.div
                     key={card.title}
                     whileHover={{ y: -8 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
                     className={cx(
-                      "relative overflow-hidden rounded-[2.75rem] border border-black/5 p-8 shadow-[0_26px_80px_rgba(43,27,22,0.08)]",
+                      "relative overflow-hidden rounded-[2.25rem] border border-black/5 p-6 shadow-[0_24px_68px_rgba(43,27,22,0.08)] sm:rounded-[2.5rem] sm:p-8",
                       card.surfaceClassName,
                     )}
                   >
@@ -833,39 +870,42 @@ export default function LandingExperience() {
                         <h3
                           className={cx(
                             styles.headline,
-                            "mt-6 text-4xl font-extrabold leading-tight",
+                            "mt-5 text-[2rem] font-extrabold leading-[1.05] sm:mt-6 sm:text-4xl",
                             card.titleClassName,
                           )}
                         >
                           {card.title}
                         </h3>
-                        <p className={cx("mt-5 max-w-xl text-lg leading-8", card.bodyClassName)}>
+                        <p className={cx("mt-4 max-w-xl text-base leading-7 sm:mt-5 sm:text-lg sm:leading-8", card.bodyClassName)}>
                           {card.description}
                         </p>
                       </div>
 
-                      <div className="relative mt-auto pt-10">
+                      <div className="relative mt-8 pt-2 sm:mt-auto sm:pt-10">
                         <div
                           className={cx(
                             "mx-auto overflow-hidden",
                             card.imageFrameClassName,
+                            "max-w-[260px] sm:max-w-[320px]",
                           )}
                         >
                           <img
                             src={card.image}
                             alt={card.imageAlt}
+                            loading="lazy"
+                            decoding="async"
                             className={cx(
                               "h-full w-full transition-transform duration-700 hover:scale-105",
                               card.imageClassName,
                             )}
                           />
                         </div>
-                        <div className="mt-5 flex flex-wrap justify-center gap-3">
+                        <div className="mt-4 flex flex-wrap justify-center gap-3 sm:mt-5">
                           {card.tags.map((tag) => (
                             <span
                               key={tag}
                               className={cx(
-                                "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold shadow-[0_18px_40px_rgba(43,27,22,0.12)]",
+                                "inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold shadow-[0_18px_40px_rgba(43,27,22,0.12)] sm:px-5 sm:py-3",
                                 card.accentClassName,
                               )}
                             >
@@ -878,13 +918,19 @@ export default function LandingExperience() {
                     </div>
                   </motion.div>
                 ))}
-              </div>
+              </motion.div>
 
-              <div className="mt-16 grid gap-12 lg:grid-cols-[minmax(320px,540px)_minmax(0,1fr)] lg:items-center">
+              <motion.div
+                variants={scrollReveal}
+                initial="hidden"
+                whileInView="visible"
+                viewport={scrollRevealViewport}
+                className="mt-12 grid gap-10 lg:mt-16 lg:grid-cols-[minmax(320px,540px)_minmax(0,1fr)] lg:items-center lg:gap-12"
+              >
                 <div className="order-2 lg:order-1">
-                  <div className="relative overflow-hidden rounded-[2.75rem] bg-[#1f1838] p-3 shadow-[0_36px_100px_-28px_rgba(24,16,51,0.5)]">
-                    <div className="rounded-[2.25rem] bg-white p-6">
-                      <div className="mb-8 flex items-center justify-between border-b border-[#efe4db] pb-5">
+                  <div className="relative overflow-hidden rounded-[2.25rem] bg-[#1f1838] p-3 shadow-[0_36px_100px_-28px_rgba(24,16,51,0.5)] sm:rounded-[2.75rem]">
+                    <div className="rounded-[2rem] bg-white p-5 sm:rounded-[2.25rem] sm:p-6">
+                      <div className="mb-6 flex items-center justify-between border-b border-[#efe4db] pb-4 sm:mb-8 sm:pb-5">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c98f6b] text-white">
                             <Layout className="h-5 w-5" />
@@ -900,7 +946,7 @@ export default function LandingExperience() {
                         </div>
                       </div>
 
-                      <div className="flex gap-6">
+                      <div className="flex gap-4 sm:gap-6">
                         <div className="hidden w-1/3 space-y-4 md:block">
                           <div className="space-y-2">
                             <div className="h-2 w-1/2 rounded bg-[#f1e7de]" />
@@ -920,34 +966,38 @@ export default function LandingExperience() {
                           </div>
                         </div>
 
-                        <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-[2rem] border border-[#efe4db] bg-[#fbf7f2] p-6">
+                        <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-[1.7rem] border border-[#efe4db] bg-[#fbf7f2] p-4 sm:rounded-[2rem] sm:p-6">
                           <motion.div
-                            animate={shouldReduceMotion ? undefined : { y: [0, -10, 0] }}
+                            animate={disableHeavyLandingMotion ? undefined : { y: [0, -8, 0] }}
                             transition={
-                              shouldReduceMotion ? undefined : { ...floatTransition, duration: 4.6 }
+                              disableHeavyLandingMotion
+                                ? undefined
+                                : { ...floatTransition, duration: 3.8 }
                             }
-                            className="relative w-full max-w-[18rem] overflow-hidden rounded-[1.75rem] border border-[#e7d8ce] bg-white shadow-[0_24px_50px_rgba(43,27,22,0.12)]"
+                            className="relative w-full max-w-[15rem] overflow-hidden rounded-[1.5rem] border border-[#e7d8ce] bg-white shadow-[0_24px_50px_rgba(43,27,22,0.12)] sm:max-w-[18rem] sm:rounded-[1.75rem]"
                           >
                             <img
                               src="/images/studio/editor-preview.webp"
                               alt="Studio editor invitation preview"
+                              loading="lazy"
+                              decoding="async"
                               className="h-full w-full object-cover"
                             />
                             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(243,225,212,0.92)_0%,rgba(243,225,212,0.48)_16%,rgba(243,225,212,0)_34%),linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0.18)_100%)]" />
-                            <div className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-1 ring-inset ring-white/58" />
-                            <div className="absolute inset-x-4 top-4 rounded-[1.35rem] bg-white/88 px-4 py-3 shadow-[0_18px_36px_rgba(43,27,22,0.12)] backdrop-blur">
+                            <div className="pointer-events-none absolute inset-0 rounded-[1.5rem] ring-1 ring-inset ring-white/58 sm:rounded-[1.75rem]" />
+                            <div className="absolute inset-x-3 top-3 rounded-[1.15rem] bg-white/88 px-3 py-2.5 shadow-[0_18px_36px_rgba(43,27,22,0.12)] backdrop-blur sm:inset-x-4 sm:top-4 sm:rounded-[1.35rem] sm:px-4 sm:py-3">
                               <div className="inline-flex items-center gap-2 rounded-full bg-[#f8efe7] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[#8c6149]">
                                 <WandSparkles className="h-3.5 w-3.5" />
                                 Invitation Canvas
                               </div>
-                              <p className={cx(styles.headline, "mt-2 text-lg font-bold text-[#2b1b16]")}>
+                              <p className={cx(styles.headline, "mt-2 text-base font-bold text-[#2b1b16] sm:text-lg")}>
                                 Wedding Weekend
                               </p>
                               <p className="mt-1 text-xs leading-5 text-[#6a5549]">
                                 Coordinated print design with live event actions ready to publish.
                               </p>
                             </div>
-                            <div className="absolute inset-x-4 bottom-4 rounded-[1.35rem] bg-[#201939]/82 p-4 text-white shadow-[0_18px_36px_rgba(24,16,51,0.26)] backdrop-blur">
+                            <div className="absolute inset-x-3 bottom-3 rounded-[1.15rem] bg-[#201939]/82 p-3 text-white shadow-[0_18px_36px_rgba(24,16,51,0.26)] backdrop-blur sm:inset-x-4 sm:bottom-4 sm:rounded-[1.35rem] sm:p-4">
                               <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/66">
                                 Linked Actions
                               </div>
@@ -964,7 +1014,7 @@ export default function LandingExperience() {
                             </div>
                           </motion.div>
 
-                          <div className="absolute bottom-5 right-5 flex gap-3">
+                          <div className="absolute bottom-4 right-4 flex gap-3 sm:bottom-5 sm:right-5">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c98f6b] text-white shadow-lg shadow-[#c98f6b]/30">
                               <Share2 className="h-5 w-5" />
                             </div>
@@ -990,22 +1040,22 @@ export default function LandingExperience() {
                     description="Configure the presentation layer, connect guest actions, and publish a page that is ready for attendance, directions, hotel links, registry links, and live updates."
                   />
 
-                  <div className="mt-10 space-y-6">
+                  <div className="mt-8 space-y-5 sm:mt-10 sm:space-y-6">
                     {studioFeatures.map((feature) => (
-                      <div key={feature.title} className="flex gap-5">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#efe4db] bg-white shadow-lg">
-                          <feature.icon className="h-6 w-6 text-[#c98f6b]" />
+                      <div key={feature.title} className="flex gap-4 sm:gap-5">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#efe4db] bg-white shadow-lg sm:h-14 sm:w-14">
+                          <feature.icon className="h-5 w-5 text-[#c98f6b] sm:h-6 sm:w-6" />
                         </div>
                         <div>
                           <h3
                             className={cx(
                               styles.headline,
-                              "text-xl font-bold text-[#2b1b16]",
+                              "text-lg font-bold text-[#2b1b16] sm:text-xl",
                             )}
                           >
                             {feature.title}
                           </h3>
-                          <p className="mt-2 text-base leading-7 text-[#6a5549]">
+                          <p className="mt-2 text-[0.98rem] leading-7 text-[#6a5549] sm:text-base">
                             {feature.desc}
                           </p>
                         </div>
@@ -1016,12 +1066,18 @@ export default function LandingExperience() {
                   <PrimaryAction
                     onClick={() => openAuth("signup")}
                     label="Start Creating"
-                    className="mt-10"
+                    className="mt-8 sm:mt-10"
                   />
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="mt-16 overflow-hidden rounded-[2.75rem] bg-[#211936] px-6 py-10 text-white shadow-[0_36px_100px_-28px_rgba(24,16,51,0.46)] sm:px-8 lg:px-10 lg:py-12">
+              <motion.div
+                variants={scrollReveal}
+                initial="hidden"
+                whileInView="visible"
+                viewport={scrollRevealViewport}
+                className="mt-12 overflow-hidden rounded-[2.25rem] bg-[#211936] px-5 py-8 text-white shadow-[0_36px_100px_-28px_rgba(24,16,51,0.46)] sm:mt-16 sm:rounded-[2.75rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12"
+              >
                 <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
                   <div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-[#f3dccd]">
@@ -1087,16 +1143,22 @@ export default function LandingExperience() {
                         <img
                           src="/images/landing/snap-phone-lara.webp"
                           alt="Flyer scan preview"
+                          loading="lazy"
+                          decoding="async"
                           className="h-full w-full object-cover"
                         />
                         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,8,18,0.06)_0%,rgba(10,8,18,0.24)_100%)]" />
                         <motion.div
-                          animate={{ top: ["0%", "100%", "0%"] }}
-                          transition={{
-                            duration: 4,
-                            repeat: Number.POSITIVE_INFINITY,
-                            ease: "linear",
-                          }}
+                          animate={disableHeavyLandingMotion ? undefined : { top: ["0%", "100%", "0%"] }}
+                          transition={
+                            disableHeavyLandingMotion
+                              ? undefined
+                              : {
+                                  duration: 4,
+                                  repeat: Number.POSITIVE_INFINITY,
+                                  ease: "linear",
+                                }
+                          }
                           className="absolute left-0 right-0 h-1.5 bg-[#c98f6b] shadow-[0_0_30px_rgba(201,143,107,0.95)]"
                         />
 
@@ -1151,9 +1213,9 @@ export default function LandingExperience() {
                     </PhoneShell>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
-          </motion.div>
+          </div>
         </section>
 
         <section
@@ -1306,8 +1368,8 @@ export default function LandingExperience() {
                     whileHover={{ y: -8 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
                     className={cx(
-                      "group relative overflow-hidden rounded-[2.25rem] shadow-[0_22px_70px_rgba(43,27,22,0.08)]",
-                      item.large ? "md:col-span-2 aspect-video" : "aspect-[3/4]",
+                      "group relative h-[15rem] overflow-hidden rounded-[2.25rem] shadow-[0_22px_70px_rgba(43,27,22,0.08)] sm:h-[18rem] md:h-[24rem] lg:h-[28rem]",
+                      item.large ? "md:col-span-2" : "",
                     )}
                   >
                     <img

@@ -4,17 +4,26 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { FormEvent, useState } from "react";
 
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
+
 export type LoginFormProps = {
   onSuccess?: () => void;
   onSwitchMode?: (mode: "login" | "signup") => void;
   successRedirectUrl?: string;
+  variant?: "default" | "inline";
+  showGoogleAuth?: boolean;
 };
 
 export default function LoginForm({
   onSuccess,
   onSwitchMode,
   successRedirectUrl = "/",
+  variant = "default",
+  showGoogleAuth = true,
 }: LoginFormProps) {
+  const isInline = variant === "inline";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -63,57 +72,64 @@ export default function LoginForm({
     <form
       id="login-form"
       name="login"
-      className="space-y-3"
+      className={cx("space-y-3", isInline && "space-y-2.5")}
       onSubmit={onEmailSubmit}
       autoComplete="on"
       method="post"
       action="#"
     >
-      <button
-        type="button"
-        onClick={onGoogleSignIn}
-        disabled={submitting}
-        className="btn btn-outline w-full justify-center gap-3"
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 18 18"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M17.64 9.20443C17.64 8.56625 17.5827 7.95262 17.4764 7.36353H9V10.8449H13.8436C13.635 11.9699 13.0009 12.9231 12.0477 13.5613V15.8194H14.9564C16.6582 14.2526 17.64 11.9453 17.64 9.20443Z"
-            fill="#4285F4"
-          />
-          <path
-            d="M8.99976 18C11.4298 18 13.467 17.1941 14.9561 15.8195L12.0475 13.5613C11.2416 14.1013 10.2107 14.4204 8.99976 14.4204C6.65567 14.4204 4.67158 12.8372 3.96385 10.71H0.957031V13.0418C2.43794 15.9831 5.48158 18 8.99976 18Z"
-            fill="#34A853"
-          />
-          <path
-            d="M3.96409 10.7098C3.78409 10.1698 3.68182 9.59301 3.68182 8.99983C3.68182 8.40664 3.78409 7.82983 3.96409 7.28983V4.95801H0.957273C0.347727 6.17301 0 7.54755 0 8.99983C0 10.4521 0.347727 11.8266 0.957273 13.0416L3.96409 10.7098Z"
-            fill="#FBBC05"
-          />
-          <path
-            d="M8.99976 3.57955C10.3211 3.57955 11.5075 4.03364 12.4402 4.92545L15.0216 2.34409C13.4629 0.891818 11.4257 0 8.99976 0C5.48158 0 2.43794 2.01682 0.957031 4.95818L3.96385 7.29C4.67158 5.16273 6.65567 3.57955 8.99976 3.57955Z"
-            fill="#EA4335"
-          />
-        </svg>
-        Sign in with Google
-      </button>
+      {showGoogleAuth ? (
+        <>
+          <button
+            type="button"
+            onClick={onGoogleSignIn}
+            disabled={submitting}
+            className="btn btn-outline w-full justify-center gap-3"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M17.64 9.20443C17.64 8.56625 17.5827 7.95262 17.4764 7.36353H9V10.8449H13.8436C13.635 11.9699 13.0009 12.9231 12.0477 13.5613V15.8194H14.9564C16.6582 14.2526 17.64 11.9453 17.64 9.20443Z"
+                fill="#4285F4"
+              />
+              <path
+                d="M8.99976 18C11.4298 18 13.467 17.1941 14.9561 15.8195L12.0475 13.5613C11.2416 14.1013 10.2107 14.4204 8.99976 14.4204C6.65567 14.4204 4.67158 12.8372 3.96385 10.71H0.957031V13.0418C2.43794 15.9831 5.48158 18 8.99976 18Z"
+                fill="#34A853"
+              />
+              <path
+                d="M3.96409 10.7098C3.78409 10.1698 3.68182 9.59301 3.68182 8.99983C3.68182 8.40664 3.78409 7.82983 3.96409 7.28983V4.95801H0.957273C0.347727 6.17301 0 7.54755 0 8.99983C0 10.4521 0.347727 11.8266 0.957273 13.0416L3.96409 10.7098Z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M8.99976 3.57955C10.3211 3.57955 11.5075 4.03364 12.4402 4.92545L15.0216 2.34409C13.4629 0.891818 11.4257 0 8.99976 0C5.48158 0 2.43794 2.01682 0.957031 4.95818L3.96385 7.29C4.67158 5.16273 6.65567 3.57955 8.99976 3.57955Z"
+                fill="#EA4335"
+              />
+            </svg>
+            Sign in with Google
+          </button>
 
-      <div className="relative flex items-center gap-3 my-4">
-        <div className="flex-1 h-px bg-border"></div>
-        <span className="text-sm text-muted-foreground">or</span>
-        <div className="flex-1 h-px bg-border"></div>
-      </div>
+          <div className="relative my-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border"></div>
+            <span className="text-sm text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border"></div>
+          </div>
+        </>
+      ) : null}
 
       <input
         id="login-email-input"
         name="email"
         type="email"
         autoComplete="username"
-        className="w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
+        className={cx(
+          "w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]",
+          isInline && "border-white/16 bg-white/92 shadow-[inset_0_1px_2px_rgba(15,8,29,0.06)]",
+        )}
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -126,9 +142,12 @@ export default function LoginForm({
           type={showPassword ? "text" : "password"}
           autoComplete="current-password"
           data-form-type="login"
-          className={`w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition${
-            message ? " input-error" : ""
-          }${shake ? " input-shake" : ""}`}
+          className={cx(
+            "w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]",
+            isInline && "border-white/16 bg-white/92 shadow-[inset_0_1px_2px_rgba(15,8,29,0.06)]",
+            message && "input-error",
+            shake && "input-shake",
+          )}
           placeholder="Password"
           value={password}
           onChange={(e) => {
@@ -173,27 +192,67 @@ export default function LoginForm({
         </button>
       </div>
       <div className="text-right">
-        <p className="text-center text-sm text-muted-foreground">
+        <p
+          className={cx(
+            "text-center text-sm text-muted-foreground",
+            isInline && "text-[11px] leading-4 tracking-tight whitespace-nowrap text-white/76",
+          )}
+        >
           Having trouble signing in?{" "}
-          <Link href="/forgot" className="text-secondary hover:underline">
+          <Link
+            href="/forgot"
+            className={cx("text-secondary hover:underline", isInline && "text-white")}
+          >
             Reset password
           </Link>
         </p>
       </div>
-      <button type="submit" disabled={submitting} className="btn btn-primary w-full justify-center">
-        {submitting ? "Signing in..." : "Sign in"}
-      </button>
-      <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account yet?{" "}
+      {isInline && onSwitchMode ? (
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => onSwitchMode("signup")}
+            className="nav-chrome-motion h-11 rounded-full border border-white/20 bg-transparent px-5 text-sm font-semibold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.06]"
+          >
+            Sign up
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="cta-shell nav-chrome-motion h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
+          >
+            {submitting ? "Signing in..." : "Sign in"}
+          </button>
+        </div>
+      ) : (
         <button
-          type="button"
-          onClick={() => onSwitchMode?.("signup")}
-          className="text-secondary hover:underline"
+          type="submit"
+          disabled={submitting}
+          className={cx(
+            "w-full justify-center",
+            isInline
+              ? "cta-shell nav-chrome-motion h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
+              : "btn btn-primary",
+          )}
         >
-          Sign up
+          {submitting ? "Signing in..." : "Sign in"}
         </button>
-      </p>
-      {message && <p className="text-sm text-error font-medium">{message}</p>}
+      )}
+      {onSwitchMode && !isInline ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Don&apos;t have an account yet?{" "}
+          <button
+            type="button"
+            onClick={() => onSwitchMode("signup")}
+            className="text-secondary hover:underline"
+          >
+            Sign up
+          </button>
+        </p>
+      ) : null}
+      {message ? (
+        <p className={cx("text-sm font-medium text-error", isInline && "text-[#ffd7d7]")}>{message}</p>
+      ) : null}
     </form>
   );
 }

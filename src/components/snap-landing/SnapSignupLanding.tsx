@@ -370,6 +370,7 @@ export default function SnapSignupLanding() {
           { label: "FAQ", href: "#faq" },
         ]}
         authenticatedPrimaryHref="/event"
+        loginSuccessRedirectUrl="/event"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
       />
