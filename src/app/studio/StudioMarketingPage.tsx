@@ -1629,7 +1629,7 @@ export default function StudioMarketingPage() {
 
                 <div
                   ref={showcaseScrollRef}
-                  className="no-scrollbar flex touch-auto items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-0 py-8 snap-x snap-mandatory sm:px-[max(2rem,calc(50vw-150px))]"
+                  className="no-scrollbar flex touch-auto items-start gap-4 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1.25rem,calc(50vw-136px))] py-8 snap-x snap-mandatory sm:gap-6 sm:px-[max(2rem,calc(50vw-150px))]"
                   style={{ WebkitOverflowScrolling: "touch" }}
                 >
               {showcaseCards.map((item, index) => (
@@ -1644,7 +1644,7 @@ export default function StudioMarketingPage() {
                   data-showcase-card
                   data-showcase-card-index={index}
                   data-showcase-active={activeIndex === index ? "true" : "false"}
-                  className="w-screen shrink-0 snap-center cursor-pointer sm:w-[min(300px,calc(100vw-4rem))]"
+                  className="w-[min(272px,calc(100vw-5.5rem))] shrink-0 snap-center cursor-pointer sm:w-[min(300px,calc(100vw-4rem))]"
                 >
                       <div
                         className={cx(
