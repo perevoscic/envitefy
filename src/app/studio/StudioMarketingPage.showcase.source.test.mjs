@@ -102,7 +102,7 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.match(source, /onPointerCancelCapture=\{clearFullscreenSwipeState\}/);
   assert.match(
     source,
-    /className="no-scrollbar flex touch-auto items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,
+    /className="no-scrollbar flex touch-auto items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-0 py-8 snap-x snap-mandatory sm:px-\[max\(2rem,calc\(50vw-150px\)\)\]"/,
   );
   assert.doesNotMatch(source, /w-\[calc\(50%-150px\)\] shrink-0/);
   assert.match(source, /data-showcase-active=\{activeIndex === index \? "true" : "false"\}/);
@@ -110,7 +110,7 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.match(source, /import StudioShowcaseLiveCard from "@\/components\/studio\/StudioShowcaseLiveCard";/);
   assert.match(
     source,
-    /className="w-\[min\(300px,calc\(100vw-4rem\)\)\] shrink-0 snap-center cursor-pointer"/,
+    /className="w-screen shrink-0 snap-center cursor-pointer sm:w-\[min\(300px,calc\(100vw-4rem\)\)\]"/,
   );
   assert.match(source, /activeIndex === index\s*\?\s*"scale-100 opacity-100 blur-0"/);
   assert.match(source, /:\s*"scale-\[0\.85\] opacity-40 blur-\[2px\]"/);
