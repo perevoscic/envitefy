@@ -31,19 +31,6 @@ type Option<T extends string> = {
   label: string;
 };
 
-const STUDIO_IMAGE_FINISH_BUTTON_COLORS: Record<string, string> = {
-  "Playful Pastels": "#2563eb",
-  "Candy Pop": "#475569",
-  "Golden Glow": "#16a34a",
-  "Confetti Dream": "#dc2626",
-  "Neon Party": "#ca8a04",
-  "Space Quest": "#0891b2",
-  "Unicorn Dust": "#7c3aed",
-  "Superhero Comic": "#0f172a",
-  "Safari Explorer": "#6366f1",
-  "Dino Jungle": "#0d9488",
-};
-
 export type StudioFormStepProps = {
   details: EventDetails;
   setDetails: Dispatch<SetStateAction<EventDetails>>;
@@ -276,8 +263,6 @@ export function StudioFormStep({
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                     {imageFinishPresets.map((preset) => {
                       const active = selectedImageFinishPreset?.label === preset.label;
-                      const backgroundColor =
-                        STUDIO_IMAGE_FINISH_BUTTON_COLORS[preset.label] || "var(--studio-brand,#1A1A1A)";
                       return (
                         <motion.button
                           key={preset.label}
@@ -291,11 +276,10 @@ export function StudioFormStep({
                               imageFinishPreset: active ? "" : preset.label,
                             }))
                           }
-                          style={{ backgroundColor }}
-                          className={`studio-finish-chip flex min-h-[60px] w-full items-center justify-center px-4 text-center text-[12px] font-semibold uppercase leading-tight tracking-[0.05em] text-white shadow-sm transition-shadow ${
+                          className={`studio-finish-chip flex min-h-[60px] w-full items-center justify-center rounded-[1.1rem] border px-4 text-center text-[12px] font-semibold uppercase leading-tight tracking-[0.05em] transition-all ${
                             active
-                              ? "ring-2 ring-[#0f172a]/60 ring-offset-2 ring-offset-[#f7edf7] shadow-[0_10px_25px_-5px_rgba(15,23,42,0.28)]"
-                              : "ring-1 ring-black/5 hover:shadow-[0_8px_20px_-6px_rgba(15,23,42,0.18)]"
+                              ? "border-[var(--studio-brand,#1A1A1A)] bg-[var(--studio-brand,#1A1A1A)] text-white shadow-[0_20px_50px_rgba(124,92,209,0.28)] ring-2 ring-[var(--studio-brand,#1A1A1A)]/18 ring-offset-2 ring-offset-[#f7edf7]"
+                              : "border-[var(--studio-card-border,#d8cdc0)] bg-white text-[var(--studio-ink,#5F5345)] shadow-[0_12px_30px_rgba(124,92,209,0.12)] hover:-translate-y-0.5 hover:border-[var(--studio-brand,#8C7B65)] hover:bg-[color:rgba(124,92,209,0.08)]"
                           }`}
                         >
                           {preset.label}

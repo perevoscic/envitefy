@@ -662,14 +662,14 @@ export default function SnapLanding() {
         navLinks={snapHeroNavLinks}
         variant="glass-dark"
         primaryCtaLabel="Snap Your First Invite"
-        authenticatedPrimaryHref="/event"
-        loginSuccessRedirectUrl="/event"
+        authenticatedPrimaryHref="/"
+        loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
       />
 
       <Hero
-        primaryHref={isAuthenticated ? "/event" : undefined}
+        primaryHref={isAuthenticated ? "/" : undefined}
         onPrimaryAction={() => openAuth("signup")}
       />
       <TrustBar />
@@ -689,7 +689,7 @@ export default function SnapLanding() {
         onModeChange={setAuthMode}
         signupSource="snap"
         allowSignupSwitch={false}
-        successRedirectUrl="/event"
+        successRedirectUrl="/"
       />
     </div>
   );

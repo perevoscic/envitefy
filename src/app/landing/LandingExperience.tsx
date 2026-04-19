@@ -426,8 +426,8 @@ export default function LandingExperience() {
         <HeroTopNav
           navLinks={landingHeroNavLinks}
           variant="glass-dark"
-          authenticatedPrimaryHref="/event"
-          loginSuccessRedirectUrl="/event"
+          authenticatedPrimaryHref="/"
+          loginSuccessRedirectUrl="/"
           onGuestLoginAction={() => openAuth("login")}
           onGuestPrimaryAction={() => openAuth("signup")}
         />
@@ -1530,7 +1530,7 @@ export default function LandingExperience() {
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
         signupSource="snap"
-        successRedirectUrl="/event"
+        successRedirectUrl="/"
         allowSignupSwitch={false}
       />
     </>

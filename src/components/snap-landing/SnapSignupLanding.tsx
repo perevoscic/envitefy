@@ -351,7 +351,7 @@ export default function SnapSignupLanding() {
 
   const renderPrimaryCta = (label: string, light = false) =>
     isAuthenticated ? (
-      <PrimaryButton href="/event" light={light}>
+      <PrimaryButton href="/" light={light}>
         {label}
       </PrimaryButton>
     ) : (
@@ -369,8 +369,8 @@ export default function SnapSignupLanding() {
           { label: "Features", href: "#features" },
           { label: "FAQ", href: "#faq" },
         ]}
-        authenticatedPrimaryHref="/event"
-        loginSuccessRedirectUrl="/event"
+        authenticatedPrimaryHref="/"
+        loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
       />
@@ -784,7 +784,7 @@ export default function SnapSignupLanding() {
         onModeChange={setAuthMode}
         signupSource="snap"
         allowSignupSwitch={false}
-        successRedirectUrl="/event"
+        successRedirectUrl="/"
       />
     </main>
   );

@@ -70,9 +70,9 @@ test("/gymnastics keeps gymnastics signup and launch wiring", () => {
   assert.match(gymnasticsLanding, /onGuestLoginAction=\{\(\) => openAuth\("login"\)\}/);
   assert.match(gymnasticsLanding, /onGuestPrimaryAction=\{\(\) => openAuth\("signup"\)\}/);
   assert.match(gymnasticsLanding, /signupSource="gymnastics"/);
-  assert.match(gymnasticsLanding, /successRedirectUrl="\/event\/gymnastics"/);
+  assert.match(gymnasticsLanding, /successRedirectUrl="\/"/);
   assert.match(gymnasticsLanding, /allowSignupSwitch=\{false\}/);
-  assert.match(gymnasticsLanding, /href=\{isAuthenticated \? "\/event\/gymnastics" : undefined\}/);
+  assert.match(gymnasticsLanding, /href=\{isAuthenticated \? "\/" : undefined\}/);
   assert.match(
     gymnasticsLanding,
     /onClick=\{isAuthenticated \? undefined : \(\) => openAuth\("signup"\)\}/,
