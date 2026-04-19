@@ -196,18 +196,16 @@ export function StudioFormStep({
         </div>
       ) : null}
 
-      <div
-        className="flex w-[200%] gap-0 transition-transform duration-500 ease-out lg:h-full lg:min-h-0 lg:w-full lg:overflow-hidden"
-        style={
-          isMobileViewport
-            ? {
-                transform:
-                  mobilePane === "preview" ? "translateX(-50%)" : "translateX(0)",
-              }
-            : undefined
-        }
-      >
-        <section className="w-1/2 shrink-0 space-y-8 pr-4 lg:flex lg:h-full lg:min-h-0 lg:w-auto lg:flex-1 lg:flex-col lg:overflow-y-auto lg:px-0 lg:pr-8 lg:[scrollbar-gutter:stable]">
+      <div className="lg:flex lg:h-full lg:min-h-0 lg:w-full lg:overflow-hidden">
+        <section
+          className={`space-y-8 lg:flex lg:h-full lg:min-h-0 lg:w-auto lg:flex-1 lg:flex-col lg:overflow-y-auto lg:px-0 lg:pr-8 lg:[scrollbar-gutter:stable] ${
+            isMobileViewport
+              ? mobilePane === "composer"
+                ? "w-full pr-0"
+                : "hidden"
+              : "w-1/2 shrink-0 pr-4"
+          }`}
+        >
           <div className="w-full max-w-4xl">
           <div className="studio-form-card rounded-[2rem] border p-6 sm:p-8 lg:flex lg:min-h-full lg:flex-1 lg:flex-col lg:p-10">
             <div className="space-y-12 pt-2 md:pt-4 lg:flex lg:min-h-full lg:flex-1 lg:flex-col">
@@ -469,7 +467,15 @@ export function StudioFormStep({
           </div>
         </section>
 
-        <aside className="w-1/2 shrink-0 pl-4 lg:flex lg:h-full lg:min-h-0 lg:w-[500px] lg:shrink-0 lg:items-center lg:justify-center lg:border-l lg:border-[#ddd5cb]/70 lg:bg-transparent lg:pl-8 lg:pr-4 lg:pb-14 lg:pt-8">
+        <aside
+          className={`lg:flex lg:h-full lg:min-h-0 lg:w-[500px] lg:shrink-0 lg:items-center lg:justify-center lg:border-l lg:border-[#ddd5cb]/70 lg:bg-transparent lg:pl-8 lg:pr-4 lg:pb-14 lg:pt-8 ${
+            isMobileViewport
+              ? mobilePane === "preview"
+                ? "w-full pl-0"
+                : "hidden"
+              : "w-1/2 shrink-0 pl-4"
+          }`}
+        >
           <StudioPhonePreviewPane
             details={details}
             currentProjectWithVisualDraft={currentProjectWithVisualDraft}
