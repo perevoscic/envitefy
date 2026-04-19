@@ -74,3 +74,18 @@ test("/snap includes the updated social-proof and CTA copy", () => {
   assert.match(snapLanding, /Ready to clear the/);
   assert.match(snapLanding, /Get Started Free/);
 });
+
+test("/snap public auth flows redirect authenticated users to home", () => {
+  const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
+  const snapSignupLanding = readSource("src/components/snap-landing/SnapSignupLanding.tsx");
+
+  assert.match(snapLanding, /authenticatedPrimaryHref="\/"/);
+  assert.match(snapLanding, /loginSuccessRedirectUrl="\/"/);
+  assert.match(snapLanding, /primaryHref=\{isAuthenticated \? "\/" : undefined\}/);
+  assert.match(snapLanding, /successRedirectUrl="\/"/);
+
+  assert.match(snapSignupLanding, /authenticatedPrimaryHref="\/"/);
+  assert.match(snapSignupLanding, /loginSuccessRedirectUrl="\/"/);
+  assert.match(snapSignupLanding, /<PrimaryButton href="\/" light=\{light\}>/);
+  assert.match(snapSignupLanding, /successRedirectUrl="\/"/);
+});

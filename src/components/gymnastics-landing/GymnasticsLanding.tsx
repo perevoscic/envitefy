@@ -333,8 +333,8 @@ export default function GymnasticsLanding() {
         navLinks={gymnasticsHeroNavLinks}
         variant="glass-dark"
         primaryCtaLabel="Start Your Meet Page"
-        authenticatedPrimaryHref="/event/gymnastics"
-        loginSuccessRedirectUrl="/event/gymnastics"
+        authenticatedPrimaryHref="/"
+        loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
       />
@@ -370,7 +370,7 @@ export default function GymnasticsLanding() {
                 <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-start">
                   <CtaButton
                     label="Start Your Meet Page"
-                    href={isAuthenticated ? "/event/gymnastics" : undefined}
+                    href={isAuthenticated ? "/" : undefined}
                     onClick={isAuthenticated ? undefined : () => openAuth("signup")}
                   />
                   <CtaButton label="See How It Works" href="#how-it-works" light />
@@ -694,7 +694,7 @@ export default function GymnasticsLanding() {
             <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
               <CtaButton
                 label="Start Your Meet Page"
-                href={isAuthenticated ? "/event/gymnastics" : undefined}
+                href={isAuthenticated ? "/" : undefined}
                 onClick={isAuthenticated ? undefined : () => openAuth("signup")}
               />
               <CtaButton label="See Snap" href="/snap" light />
@@ -712,7 +712,7 @@ export default function GymnasticsLanding() {
         onModeChange={setAuthMode}
         signupSource="gymnastics"
         allowSignupSwitch={false}
-        successRedirectUrl="/event/gymnastics"
+        successRedirectUrl="/"
       />
     </div>
   );

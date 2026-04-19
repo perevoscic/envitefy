@@ -132,7 +132,7 @@ test("landing preserves auth-aware nav behavior and snap-first CTA wiring", () =
   assert.match(landingExperience, /mode=\{authMode\}/);
   assert.match(landingExperience, /onModeChange=\{setAuthMode\}/);
   assert.match(landingExperience, /signupSource="snap"/);
-  assert.match(landingExperience, /successRedirectUrl="\/event"/);
+  assert.match(landingExperience, /successRedirectUrl="\/"/);
   assert.match(landingExperience, /allowSignupSwitch=\{false\}/);
   assert.match(navHelper, /label: "Studio", href: "\/studio"/);
   assert.match(navHelper, /label: "Snap", href: "\/snap"/);
