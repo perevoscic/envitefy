@@ -1596,7 +1596,7 @@ export default function StudioMarketingPage() {
               </div>
             </div>
 
-            <div className="relative left-1/2 mt-12 w-screen -translate-x-1/2 px-4 py-4 sm:px-6 lg:px-8">
+            <div className="relative left-1/2 mt-12 w-screen -translate-x-1/2 px-0 py-4 sm:px-6 lg:px-8">
               <div className="relative group/carousel">
                 <button
                   type="button"
@@ -1629,7 +1629,7 @@ export default function StudioMarketingPage() {
 
                 <div
                   ref={showcaseScrollRef}
-                  className="no-scrollbar flex touch-auto items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(2rem,calc(50vw-150px))] py-8 snap-x snap-mandatory"
+                  className="no-scrollbar flex touch-auto items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-0 py-8 snap-x snap-mandatory sm:px-[max(2rem,calc(50vw-150px))]"
                   style={{ WebkitOverflowScrolling: "touch" }}
                 >
               {showcaseCards.map((item, index) => (
@@ -1644,7 +1644,7 @@ export default function StudioMarketingPage() {
                   data-showcase-card
                   data-showcase-card-index={index}
                   data-showcase-active={activeIndex === index ? "true" : "false"}
-                  className="w-[min(300px,calc(100vw-4rem))] shrink-0 snap-center cursor-pointer"
+                  className="w-screen shrink-0 snap-center cursor-pointer sm:w-[min(300px,calc(100vw-4rem))]"
                 >
                       <div
                         className={cx(
