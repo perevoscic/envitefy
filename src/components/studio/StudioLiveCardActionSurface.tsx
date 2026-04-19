@@ -445,8 +445,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const shouldHideClosedRailLabels = props.showcaseMode;
   const useExpandedActionButtons = !props.showcaseMode;
   const actionRailClassName = isActionRailClosed
-    ? `grid min-w-0 grid-flow-col auto-cols-fr items-stretch ${
-        props.showcaseMode ? "w-full gap-2 px-2" : "w-full gap-3 px-1"
+    ? `flex min-w-0 items-stretch justify-between gap-0 ${
+        props.showcaseMode ? "w-full px-2" : "w-full px-1"
       }`
     : "grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch gap-1 md:gap-3";
 
@@ -742,7 +742,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                   >
                     <div
                       className={`rounded-full border backdrop-blur-md transition-all duration-200 ${
-                        useExpandedActionButtons ? "p-3 md:p-4" : "p-2.5 md:p-3"
+                        useExpandedActionButtons
+                          ? "p-3 md:p-4"
+                          : props.showcaseMode
+                            ? "p-2 md:p-2.5"
+                            : "p-2.5 md:p-3"
                       } ${
                         posterFirstHeroCard
                           ? isPressed
@@ -754,7 +758,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       } ${props.isDesignMode ? "ring-2 ring-[#c9b49a]" : ""}`}
                     >
                       <Icon
-                        className={`${useExpandedActionButtons ? "h-6 w-6 md:h-7 md:w-7" : "h-5 w-5 md:h-6 md:w-6"} ${
+                        className={`${
+                          useExpandedActionButtons
+                            ? "h-6 w-6 md:h-7 md:w-7"
+                            : props.showcaseMode
+                              ? "h-4 w-4 md:h-5 md:w-5"
+                              : "h-5 w-5 md:h-6 md:w-6"
+                        } ${
                           isPending
                             ? "animate-spin text-white"
                             : button.key === "share" && shareState === "success"

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useContext, createContext } from "react";
-import { Calendar, Clock, MapPin, Navigation, Share2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Navigation, Share2, X } from "lucide-react";
 import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
 import EventMap from "../EventMap";
 import AppleCalendarLink from "../AppleCalendarLink";
@@ -148,6 +148,7 @@ type BirthdayRendererChrome = {
   venueText?: string | null;
   locationText?: string | null;
   userRsvpResponse?: string | null;
+  onHeroImageOpen?: (imageUrl: string) => void;
 };
 
 type RsvpIntent = Exclude<RsvpResponse, null>;
@@ -169,6 +170,7 @@ export default function BirthdayRenderer({
   const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<RsvpIntent | null>(null);
   const [userRsvpResponse, setUserRsvpResponse] = useState<string | null>(null);
+  const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!eventId) return;
@@ -191,6 +193,25 @@ export default function BirthdayRenderer({
     window.addEventListener("rsvp-submitted", handler);
     return () => window.removeEventListener("rsvp-submitted", handler);
   }, [eventId]);
+
+  useEffect(() => {
+    if (!lightboxImageUrl) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setLightboxImageUrl(null);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [lightboxImageUrl]);
 
   // Normalize theme config from the template object
   const theme: ThemeConfig = {
@@ -245,6 +266,7 @@ export default function BirthdayRenderer({
             venueText,
             locationText,
             userRsvpResponse,
+            onHeroImageOpen: setLightboxImageUrl,
           },
         )}
 
@@ -275,6 +297,31 @@ export default function BirthdayRenderer({
             }}
           />
         )}
+
+        {lightboxImageUrl ? (
+          <div
+            className="fixed inset-0 z-[140] flex items-center justify-center bg-black/80 p-4 sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Full-size invite image"
+            onClick={() => setLightboxImageUrl(null)}
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxImageUrl(null)}
+              className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white backdrop-blur transition hover:bg-white/18 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+              aria-label="Close image preview"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <img
+              src={lightboxImageUrl}
+              alt={event.headlineTitle || "Event invite image"}
+              className="max-h-[90vh] max-w-[92vw] rounded-[1.5rem] object-contain shadow-[0_28px_90px_rgba(0,0,0,0.45)]"
+              onClick={(event) => event.stopPropagation()}
+            />
+          </div>
+        ) : null}
       </div>
     </UserRsvpContext.Provider>
   );
@@ -1918,6 +1965,7 @@ function EditorialFeatureLayout({
   const rsvpEnabled = Boolean(event.rsvpEnabled && onRsvpClick);
   const heroImage = chrome?.heroImageUrl || theme.decorations?.heroImage || theme.heroImage;
   const useUploadedFlyerHero = Boolean(chrome?.heroImageUrl);
+  const canOpenUploadedHero = Boolean(useUploadedFlyerHero && heroImage && chrome?.onHeroImageOpen);
 
   return (
     <div
@@ -1971,9 +2019,25 @@ function EditorialFeatureLayout({
             />
             {heroImage ? (
               useUploadedFlyerHero ? (
-                <div className="relative z-10 mx-auto aspect-square w-full max-w-[440px] overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_70px_rgba(120,110,160,0.2)] ring-1 ring-white/70">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (heroImage && chrome?.onHeroImageOpen) {
+                      chrome.onHeroImageOpen(heroImage);
+                    }
+                  }}
+                  className={`group relative z-10 mx-auto aspect-square w-full max-w-[440px] overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_70px_rgba(120,110,160,0.2)] ring-1 ring-white/70 ${
+                    canOpenUploadedHero
+                      ? "cursor-zoom-in text-left transition-transform duration-200 hover:scale-[1.01] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/80"
+                      : ""
+                  }`}
+                  aria-label="Open invite image full size"
+                >
                   <img src={heroImage} alt={theme.name} className="h-full w-full object-cover" />
-                </div>
+                  <span className="pointer-events-none absolute inset-x-4 bottom-4 rounded-full bg-black/55 px-3 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                    Open full size
+                  </span>
+                </button>
               ) : (
                 <img src={heroImage} alt={theme.name} className="h-full w-full object-cover" />
               )

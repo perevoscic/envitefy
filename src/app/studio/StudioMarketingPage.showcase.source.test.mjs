@@ -104,6 +104,8 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
     source,
     /className="no-scrollbar flex touch-auto items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,
   );
+  assert.doesNotMatch(source, /w-\[calc\(50%-150px\)\] shrink-0/);
+  assert.match(source, /data-showcase-active=\{activeIndex === index \? "true" : "false"\}/);
   assert.match(source, /onClick=\{\(event\) => handleShowcaseCardClick\(index, event\)\}/);
   assert.match(source, /import StudioShowcaseLiveCard from "@\/components\/studio\/StudioShowcaseLiveCard";/);
   assert.match(

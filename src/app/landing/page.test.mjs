@@ -122,6 +122,8 @@ test("landing page renders the new dedicated landing experience component", () =
     landingShowcase,
     /touch-auto items-start gap-4 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(1\.25rem,calc\(50vw-136px\)\)\] py-8 snap-x snap-mandatory sm:gap-6 sm:px-\[max\(2rem,calc\(50vw-150px\)\)\]/,
   );
+  assert.doesNotMatch(landingShowcase, /w-\[calc\(50%-136px\)\] shrink-0 sm:w-\[calc\(50%-150px\)\]/);
+  assert.match(landingShowcase, /data-showcase-active=\{activeIndex === index \? "true" : "false"\}/);
   assert.match(
     landingShowcase,
     /w-\[min\(272px,calc\(100vw-5\.5rem\)\)\] shrink-0 snap-center cursor-pointer sm:w-\[min\(300px,calc\(100vw-4rem\)\)\]/,

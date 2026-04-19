@@ -6,6 +6,12 @@ import { type MouseEvent, useEffect, useRef, useState } from "react";
 import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import { type LiveCardActiveTab } from "@/components/studio/StudioLiveCardActionSurface";
 import {
+  clampShowcaseIndex,
+  getCenteredShowcaseScrollLeft,
+  getClosestShowcaseIndex,
+  getShowcaseCardCenters,
+} from "@/lib/showcase-carousel";
+import {
   landingShowcasePreviews,
   type StudioShowcasePreview,
 } from "@/lib/studio/showcase-previews";
@@ -78,7 +84,7 @@ export default function LandingLiveCardShowcase() {
     const syncShowcaseMeasurements = () => {
       const cards = Array.from(node.querySelectorAll<HTMLElement>("[data-showcase-card]"));
       showcaseCardsRef.current = cards;
-      showcaseCardCentersRef.current = cards.map((card) => card.offsetLeft + card.offsetWidth / 2);
+      showcaseCardCentersRef.current = getShowcaseCardCenters(cards);
     };
 
     const syncShowcaseState = () => {
@@ -112,17 +118,11 @@ export default function LandingLiveCardShowcase() {
         setCanScrollRight(nextCanScrollRight);
       }
 
-      const containerCenter = node.scrollLeft + node.clientWidth / 2;
-      let nextActiveIndex = 0;
-      let closestDistance = Number.POSITIVE_INFINITY;
-
-      for (const [index, cardCenter] of showcaseCardCentersRef.current.entries()) {
-        const distance = Math.abs(cardCenter - containerCenter);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          nextActiveIndex = index;
-        }
-      }
+      const nextActiveIndex = getClosestShowcaseIndex(
+        showcaseCardCentersRef.current,
+        node.scrollLeft,
+        node.clientWidth,
+      );
 
       if (activeIndexValue !== nextActiveIndex) {
         activeIndexValue = nextActiveIndex;
@@ -195,15 +195,18 @@ export default function LandingLiveCardShowcase() {
     const cards = showcaseCardsRef.current;
     if (cards.length === 0) return;
 
-    const nextIndex = Math.max(0, Math.min(index, cards.length - 1));
-    const card = cards[nextIndex];
-    const targetLeft = card.offsetLeft - (node.clientWidth - card.offsetWidth) / 2;
-    const maxScrollLeft = Math.max(node.scrollWidth - node.clientWidth, 0);
+    const nextIndex = clampShowcaseIndex(index, cards.length);
+    const targetLeft = getCenteredShowcaseScrollLeft({
+      index: nextIndex,
+      cards,
+      clientWidth: node.clientWidth,
+      scrollWidth: node.scrollWidth,
+    });
 
     setShowcaseOverlayIndex(null);
     setActiveIndex(nextIndex);
     node.scrollTo({
-      left: Math.min(Math.max(targetLeft, 0), maxScrollLeft),
+      left: targetLeft,
       behavior: "smooth",
     });
   };
@@ -434,6 +437,7 @@ export default function LandingLiveCardShowcase() {
                   onPointerCancelCapture={clearShowcaseSwipeState}
                   data-showcase-card
                   data-showcase-card-index={index}
+                  data-showcase-active={activeIndex === index ? "true" : "false"}
                   className="w-[min(272px,calc(100vw-5.5rem))] shrink-0 snap-center cursor-pointer sm:w-[min(300px,calc(100vw-4rem))]"
                 >
                   <div
