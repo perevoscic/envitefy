@@ -66,11 +66,11 @@ test("live card modal exposes image edit tools without in-modal text editor", ()
   assert.match(source, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{activeTab\}/);
   assert.match(surfaceSource, /data-live-card-panel/);
   assert.match(surfaceSource, /data-live-card-trigger/);
-  assert.match(
-    surfaceSource,
-    /const actionRailClassName = isActionRailClosed\s*\?\s*`flex min-w-0 items-stretch justify-between gap-0 \$\{\s*props\.showcaseMode \? "w-full px-2" : "w-full px-1"\s*\}`/,
-  );
+  assert.match(surfaceSource, /import \{ getLiveCardRailLayout \} from "@\/lib\/live-card-rail-layout";/);
+  assert.match(surfaceSource, /const showcaseRailLayout = getLiveCardRailLayout\(\{/);
+  assert.match(surfaceSource, /data-live-card-rail-layout=\{showcaseRailLayout\}/);
   assert.doesNotMatch(surfaceSource, /inline-flex w-fit max-w-\[calc\(100%-0\.25rem\)\]/);
+  assert.doesNotMatch(surfaceSource, /justify-between gap-0/);
 
   assert.doesNotMatch(source, /LiveCardTextEditor/);
   assert.doesNotMatch(source, />\s*Edit Text\s*</);

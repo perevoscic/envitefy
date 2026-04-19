@@ -20,6 +20,7 @@ import { useEffect, useMemo } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
 import { CalendarIconApple, CalendarIconGoogle, CalendarIconOutlook } from "@/components/CalendarIcons";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
+import { getLiveCardRailLayout } from "@/lib/live-card-rail-layout";
 import {
   buildLiveCardRsvpOutboundHref,
   LIVE_CARD_RSVP_CHOICES,
@@ -444,11 +445,23 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const isActionRailClosed = props.activeTab === "none";
   const shouldHideClosedRailLabels = props.showcaseMode;
   const useExpandedActionButtons = !props.showcaseMode;
-  const actionRailClassName = isActionRailClosed
-    ? `flex min-w-0 items-stretch justify-between gap-0 ${
-        props.showcaseMode ? "w-full px-2" : "w-full px-1"
-      }`
-    : "grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch gap-1 md:gap-3";
+  const showcaseRailLayout = getLiveCardRailLayout({
+    showcaseMode: props.showcaseMode,
+    isClosed: isActionRailClosed,
+    buttonCount: buttonConfigs.length,
+  });
+  const actionRailWrapperClassName =
+    showcaseRailLayout === "cluster" ? "flex w-full justify-center px-2" : "w-full";
+  const actionRailClassName =
+    showcaseRailLayout === "cluster"
+      ? "grid w-fit max-w-full grid-flow-col auto-cols-max items-stretch justify-center gap-1.5 sm:gap-2"
+      : showcaseRailLayout === "spread"
+        ? "grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch justify-items-center gap-0 px-1.5"
+        : isActionRailClosed
+          ? `grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch ${
+              props.showcaseMode ? "gap-2 px-2" : "gap-3 px-1"
+            }`
+          : "grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch gap-1 md:gap-3";
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2">
@@ -705,91 +718,96 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               : "pb-[max(0.35rem,calc(env(safe-area-inset-bottom)+0.15rem))]"
           }`}
         >
-          <div className={actionRailClassName}>
-            {buttonConfigs.map((button) => {
-              const Icon = button.icon;
-              const position = props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
-              const isPressed =
-                button.key === "share"
-                  ? shareState === "success"
-                  : props.activeTab === button.key;
-              const isPending = button.key === "share" && shareState === "pending";
-              return (
-                <motion.div
-                  key={button.key}
-                  drag={Boolean(props.onDragEnd) && props.isDesignMode}
-                  dragMomentum={false}
-                  onDragEnd={(_, info: PanInfo) =>
-                    props.onDragEnd?.(button.key, {
-                      x: position.x + info.offset.x,
-                      y: position.y + info.offset.y,
-                    })
-                  }
-                  style={{ x: position.x, y: position.y }}
-                  className={`pointer-events-auto min-w-0 ${isActionRailClosed ? "shrink-0" : "w-full"}`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!props.isDesignMode) button.onClick();
-                    }}
-                    disabled={isPending}
-                    aria-pressed={button.key === "share" ? undefined : isPressed}
-                    data-live-card-trigger
-                    className={`group flex min-w-0 flex-col items-center justify-start gap-1 py-1 transition-transform duration-150 active:scale-[0.97] md:gap-2 ${
-                      isActionRailClosed ? "w-auto px-0" : "h-full w-full px-0.5"
-                    } ${props.isDesignMode ? "cursor-move" : ""}`}
+          <div
+            className={actionRailWrapperClassName}
+            data-live-card-rail-layout={showcaseRailLayout}
+          >
+            <div className={actionRailClassName}>
+              {buttonConfigs.map((button) => {
+                const Icon = button.icon;
+                const position = props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
+                const isPressed =
+                  button.key === "share"
+                    ? shareState === "success"
+                    : props.activeTab === button.key;
+                const isPending = button.key === "share" && shareState === "pending";
+                return (
+                  <motion.div
+                    key={button.key}
+                    drag={Boolean(props.onDragEnd) && props.isDesignMode}
+                    dragMomentum={false}
+                    onDragEnd={(_, info: PanInfo) =>
+                      props.onDragEnd?.(button.key, {
+                        x: position.x + info.offset.x,
+                        y: position.y + info.offset.y,
+                      })
+                    }
+                    style={{ x: position.x, y: position.y }}
+                    className={`pointer-events-auto min-w-0 ${isActionRailClosed ? "shrink-0" : "w-full"}`}
                   >
-                    <div
-                      className={`rounded-full border backdrop-blur-md transition-all duration-200 ${
-                        useExpandedActionButtons
-                          ? "p-3 md:p-4"
-                          : props.showcaseMode
-                            ? "p-2 md:p-2.5"
-                            : "p-2.5 md:p-3"
-                      } ${
-                        posterFirstHeroCard
-                          ? isPressed
-                            ? "translate-y-0.5 border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
-                            : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] group-hover:-translate-y-0.5 group-hover:border-white/42 group-hover:bg-white/24"
-                          : isPressed
-                            ? "translate-y-0.5 border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
-                            : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] group-hover:-translate-y-0.5 group-hover:border-white/45 group-hover:bg-white/22"
-                      } ${props.isDesignMode ? "ring-2 ring-[#c9b49a]" : ""}`}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!props.isDesignMode) button.onClick();
+                      }}
+                      disabled={isPending}
+                      aria-pressed={button.key === "share" ? undefined : isPressed}
+                      data-live-card-trigger
+                      className={`group flex min-w-0 flex-col items-center justify-start gap-1 py-1 transition-transform duration-150 active:scale-[0.97] md:gap-2 ${
+                        isActionRailClosed ? "w-auto px-0" : "h-full w-full px-0.5"
+                      } ${props.isDesignMode ? "cursor-move" : ""}`}
                     >
-                      <Icon
-                        className={`${
+                      <div
+                        className={`rounded-full border backdrop-blur-md transition-all duration-200 ${
                           useExpandedActionButtons
-                            ? "h-6 w-6 md:h-7 md:w-7"
+                            ? "p-3 md:p-4"
                             : props.showcaseMode
-                              ? "h-4 w-4 md:h-5 md:w-5"
-                              : "h-5 w-5 md:h-6 md:w-6"
+                              ? "p-2 md:p-2.5"
+                              : "p-2.5 md:p-3"
                         } ${
-                          isPending
-                            ? "animate-spin text-white"
-                            : button.key === "share" && shareState === "success"
-                              ? "text-emerald-600"
-                              : isPressed
-                                ? "text-neutral-950"
-                                : "text-white"
+                          posterFirstHeroCard
+                            ? isPressed
+                              ? "translate-y-0.5 border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
+                              : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] group-hover:-translate-y-0.5 group-hover:border-white/42 group-hover:bg-white/24"
+                            : isPressed
+                              ? "translate-y-0.5 border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
+                              : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] group-hover:-translate-y-0.5 group-hover:border-white/45 group-hover:bg-white/22"
+                        } ${props.isDesignMode ? "ring-2 ring-[#c9b49a]" : ""}`}
+                      >
+                        <Icon
+                          className={`${
+                            useExpandedActionButtons
+                              ? "h-6 w-6 md:h-7 md:w-7"
+                              : props.showcaseMode
+                                ? "h-4 w-4 md:h-5 md:w-5"
+                                : "h-5 w-5 md:h-6 md:w-6"
+                          } ${
+                            isPending
+                              ? "animate-spin text-white"
+                              : button.key === "share" && shareState === "success"
+                                ? "text-emerald-600"
+                                : isPressed
+                                  ? "text-neutral-950"
+                                  : "text-white"
+                          }`}
+                        />
+                      </div>
+                      <span
+                        className={`max-w-full truncate text-center text-[8px] font-bold uppercase leading-tight tracking-[0.14em] text-white drop-shadow-md sm:text-[9px] md:text-[10px] ${
+                          shouldHideClosedRailLabels
+                            ? "hidden"
+                            : isActionRailClosed
+                              ? "inline"
+                              : "max-[360px]:hidden"
                         }`}
-                      />
-                    </div>
-                    <span
-                      className={`max-w-full truncate text-center text-[8px] font-bold uppercase leading-tight tracking-[0.14em] text-white drop-shadow-md sm:text-[9px] md:text-[10px] ${
-                        shouldHideClosedRailLabels
-                          ? "hidden"
-                          : isActionRailClosed
-                            ? "inline"
-                            : "max-[360px]:hidden"
-                      }`}
-                    >
-                      {button.label}
-                    </span>
-                  </button>
-                </motion.div>
-              );
-            })}
+                      >
+                        {button.label}
+                      </span>
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
