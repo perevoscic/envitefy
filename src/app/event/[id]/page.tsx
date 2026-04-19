@@ -1457,6 +1457,15 @@ export default async function EventPage({
           style={headerUserStyle}
         >
           {headerImageUrl && <div style={headerOverlayStyle} />}
+          {isOcrEvent && headerImageUrl ? (
+            <ThumbnailModal
+              src={headerImageUrl}
+              alt={`${title} invitation`}
+              showPreviewImage={false}
+              hintLabel="Open full image"
+              className="absolute inset-0 z-30 rounded-2xl bg-transparent"
+            />
+          ) : null}
           {/* Profile image should anchor to the header section bounds (not inner wrapper) */}
           {profileImageUrl && (
             <div
