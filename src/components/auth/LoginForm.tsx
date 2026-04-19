@@ -11,6 +11,7 @@ function cx(...parts: Array<string | false | null | undefined>) {
 export type LoginFormProps = {
   onSuccess?: () => void;
   onSwitchMode?: (mode: "login" | "signup") => void;
+  onInlineCancel?: () => void;
   successRedirectUrl?: string;
   variant?: "default" | "inline";
   showGoogleAuth?: boolean;
@@ -20,6 +21,7 @@ export type LoginFormProps = {
 export default function LoginForm({
   onSuccess,
   onSwitchMode,
+  onInlineCancel,
   successRedirectUrl = "/",
   variant = "default",
   showGoogleAuth = true,
@@ -194,7 +196,7 @@ export default function LoginForm({
           </svg>
         </button>
       </div>
-      <div className="text-right">
+      <div className={cx("text-right", isInline && "space-y-0.5")}>
         <p
           className={cx(
             "text-center text-sm text-muted-foreground",
@@ -215,12 +217,38 @@ export default function LoginForm({
             Reset password
           </Link>
         </p>
+        <p
+          className={cx(
+            "text-center text-sm text-muted-foreground",
+            isInlineLight
+              ? "text-[11px] leading-4 tracking-tight text-[#7c6aa8]"
+              : "text-[11px] leading-4 tracking-tight text-white/76",
+          )}
+        >
+          Don&apos;t have an account?{" "}
+          <button
+            type="button"
+            onClick={() => onSwitchMode("signup")}
+            className={cx(
+              "font-semibold hover:underline",
+              isInlineLight ? "text-[#6a57eb]" : "text-white",
+            )}
+          >
+            Sign up
+          </button>
+        </p>
       </div>
       {isInline && onSwitchMode ? (
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => onSwitchMode("signup")}
+            onClick={() => {
+              if (onInlineCancel) {
+                onInlineCancel();
+                return;
+              }
+              onSwitchMode("signup");
+            }}
             className={cx(
               "nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
               isInlineLight
@@ -228,7 +256,7 @@ export default function LoginForm({
                 : "border border-white/20 bg-transparent text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.06]",
             )}
           >
-            Sign up
+            {onInlineCancel ? "Cancel" : "Sign up"}
           </button>
           <button
             type="submit"

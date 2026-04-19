@@ -258,6 +258,16 @@ function formatOcrIsoToInputTime(value: string, timezone: string): string {
   }
 }
 
+function isValidMonthDayInput(value: string): boolean {
+  const match = value.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (!match) return false;
+  const month = Number.parseInt(match[1] || "", 10);
+  const day = Number.parseInt(match[2] || "", 10);
+  if (!Number.isInteger(month) || !Number.isInteger(day)) return false;
+  const candidate = new Date(Date.UTC(2024, month - 1, day));
+  return candidate.getUTCMonth() === month - 1 && candidate.getUTCDate() === day;
+}
+
 function extractStudioTitleHints(title: string, category: InviteCategory): Partial<EventDetails> {
   const normalizedTitle = clean(title);
   if (!normalizedTitle) return {};
@@ -479,8 +489,11 @@ export default function StudioWorkspace() {
     const isRequiredFieldComplete = (field: FieldConfig | SharedFieldConfig) => {
       const value = clean(String(inputValue(details[field.key])));
       if (!value) return false;
-      if (field.key === "eventDate" && details.category !== "Wedding") {
-        return /^\d{4}-\d{2}-\d{2}$/.test(value);
+      if (field.key === "eventDate") {
+        if (details.category === "Wedding") {
+          return /^\d{4}-\d{2}-\d{2}$/.test(value);
+        }
+        return /^\d{4}-\d{2}-\d{2}$/.test(value) || isValidMonthDayInput(value);
       }
       return true;
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar, Clock3, MapPin } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { inputValue } from "../studio-workspace-builders";
 import type { EventDetails, FieldConfig, SharedFieldConfig } from "../studio-workspace-types";
@@ -32,22 +32,61 @@ type StudioTextAreaFieldProps = {
   id?: string;
 };
 
-function renderFieldIcon(fieldKey: keyof EventDetails) {
-  if (fieldKey === "eventDate") {
-    return (
-      <Calendar className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1A1A1A] transition-colors group-focus-within:text-[#1A1A1A]" />
-    );
-  }
+const studioMutedFieldIconClass =
+  "pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C7B65]/55";
+
+function renderFieldIcon(fieldKey: keyof EventDetails, renderedInputType: string) {
   if (fieldKey === "location") {
     return (
-      <MapPin className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C7B65]/55 transition-colors group-focus-within:text-[#1A1A1A]" />
+      <MapPin className={studioMutedFieldIconClass} />
     );
+  }
+  if (fieldKey === "eventDate" || renderedInputType === "date") {
+    return (
+      <Calendar className={studioMutedFieldIconClass} />
+    );
+  }
+  if (renderedInputType === "time") {
+    return <Clock3 className={studioMutedFieldIconClass} />;
   }
   return null;
 }
 
-function usesIconInput(fieldKey: keyof EventDetails) {
-  return fieldKey === "location" || fieldKey === "eventDate";
+function usesIconInput(fieldKey: keyof EventDetails, renderedInputType: string) {
+  return (
+    fieldKey === "location" ||
+    fieldKey === "eventDate" ||
+    renderedInputType === "date" ||
+    renderedInputType === "time"
+  );
+}
+
+function usesNativePickerIndicator(renderedInputType: string) {
+  return renderedInputType === "date" || renderedInputType === "time";
+}
+
+function isMonthDayOnlyEventDateField(details: EventDetails, fieldKey: keyof EventDetails) {
+  return fieldKey === "eventDate" && details.category !== "Wedding";
+}
+
+function normalizeStudioMonthDayInput(value: string): string {
+  const trimmed = value.replace(/[^\d/]/g, "").slice(0, 5);
+  const slashMatch = trimmed.match(/^(\d{1,2})(?:\/(\d{0,2}))?$/);
+  if (slashMatch) {
+    const month = slashMatch[1] || "";
+    const day = slashMatch[2] || "";
+    return day || trimmed.includes("/") ? `${month}/${day}` : month;
+  }
+  const digits = trimmed.replace(/\D+/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+function formatStudioMonthDayValue(value: string): string {
+  const trimmed = String(value ?? "").trim();
+  const isoMatch = trimmed.match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if (isoMatch) return `${isoMatch[1]}/${isoMatch[2]}`;
+  return normalizeStudioMonthDayInput(trimmed);
 }
 
 export function StudioFieldGrid({
@@ -66,9 +105,24 @@ export function StudioFieldGrid({
   return (
     <div className={columnsClassName}>
       {visibleFields.map((field) => {
+        const isMonthDayOnlyField = isMonthDayOnlyEventDateField(details, field.key);
         const showRequiredMark = Boolean(field.required);
-        const value = inputValue(details[field.key]);
-        const isEmptyValue = String(value ?? "").trim() === "";
+        const rawValue = String(inputValue(details[field.key]) ?? "");
+        const renderedInputType = isMonthDayOnlyField ? "text" : field.type;
+        const renderedPlaceholder = isMonthDayOnlyField ? "mm/dd" : field.placeholder;
+        const renderedInputMode = isMonthDayOnlyField
+          ? "numeric"
+          : "inputMode" in field
+            ? field.inputMode
+            : undefined;
+        const hidesNativePickerIndicator = usesNativePickerIndicator(renderedInputType);
+        const renderedMaxLength = isMonthDayOnlyField
+          ? 5
+          : "maxLength" in field
+            ? field.maxLength
+            : undefined;
+        const value = isMonthDayOnlyField ? formatStudioMonthDayValue(rawValue) : rawValue;
+        const isEmptyValue = value.trim() === "";
         return (
           <div
             key={field.key}
@@ -130,28 +184,36 @@ export function StudioFieldGrid({
                   "compact" in field && field.compact ? "max-w-[7.5rem]" : ""
                 }`}
               >
-                {renderFieldIcon(field.key)}
+                {renderFieldIcon(field.key, renderedInputType)}
                 <input
-                  type={field.type}
-                  placeholder={field.type === "text" ? "" : field.placeholder}
-                  inputMode={"inputMode" in field ? field.inputMode : undefined}
-                  maxLength={"maxLength" in field ? field.maxLength : undefined}
+                  type={renderedInputType}
+                  placeholder={renderedInputType === "text" ? "" : renderedPlaceholder}
+                  inputMode={renderedInputMode}
+                  maxLength={renderedMaxLength}
                   className={
-                    usesIconInput(field.key)
-                      ? `${iconInputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
+                    usesIconInput(field.key, renderedInputType)
+                      ? `${iconInputClass} ${
+                          hidesNativePickerIndicator
+                            ? "appearance-none [&::-webkit-calendar-picker-indicator]:pointer-events-none [&::-webkit-calendar-picker-indicator]:opacity-0"
+                            : ""
+                        } ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                       : `${inputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                   }
-                  value={String(value)}
+                  style={
+                    hidesNativePickerIndicator
+                      ? { WebkitAppearance: "none", appearance: "none" }
+                      : undefined
+                  }
+                  value={value}
                   onChange={(event) => {
-                    const isNumericOnly =
-                      "inputMode" in field && field.inputMode === "numeric";
-                    const maxLen = "maxLength" in field ? field.maxLength : undefined;
                     let nextValue = event.target.value;
-                    if (isNumericOnly) {
+                    if (isMonthDayOnlyField) {
+                      nextValue = normalizeStudioMonthDayInput(nextValue);
+                    } else if ("inputMode" in field && field.inputMode === "numeric") {
                       nextValue = nextValue.replace(/\D+/g, "");
                     }
-                    if (typeof maxLen === "number") {
-                      nextValue = nextValue.slice(0, maxLen);
+                    if (typeof renderedMaxLength === "number") {
+                      nextValue = nextValue.slice(0, renderedMaxLength);
                     }
                     setDetails((prev) => ({
                       ...prev,
@@ -159,13 +221,13 @@ export function StudioFieldGrid({
                     }));
                   }}
                 />
-                {field.type === "text" && isEmptyValue && field.placeholder ? (
+                {renderedInputType === "text" && isEmptyValue && renderedPlaceholder ? (
                   <span
                     className={`pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[rgba(26,26,26,0.1)] transition-opacity group-focus-within:opacity-0 ${
-                      usesIconInput(field.key) ? "right-8" : "right-0"
+                      usesIconInput(field.key, renderedInputType) ? "right-8" : "right-0"
                     }`}
                   >
-                    {field.placeholder}
+                    {renderedPlaceholder}
                   </span>
                 ) : null}
               </div>

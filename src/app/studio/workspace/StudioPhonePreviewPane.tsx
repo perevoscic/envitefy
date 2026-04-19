@@ -1,9 +1,11 @@
 "use client";
 
-import { Image as ImageIcon, Layout, Loader2, WandSparkles } from "lucide-react";
+import { Image as ImageIcon, Layout, Loader2 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
+import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import StudioLiveCardActionSurface from "@/components/studio/StudioLiveCardActionSurface";
+import { getStudioCategoryShowcasePreview } from "@/lib/studio/showcase-previews";
 import { getStudioShareTitle } from "../studio-workspace-builders";
 import type {
   ActiveTab,
@@ -28,149 +30,7 @@ type StudioPhonePreviewPaneProps = {
   shareCurrentProject: () => void;
   openCurrentImage: () => void;
   handleMediaImageLoadError: (item: MediaItem) => void;
-  onSuggestionPick?: (suggestion: string) => void;
 };
-
-type StudioShowcaseCard = {
-  title: string;
-  category: EventDetails["category"] | "Custom Invite";
-  source: "landing" | "studio";
-  imageUrl: string;
-};
-
-const SUGGESTION_LIBRARY: Record<string, string[]> = {
-  Birthday: [
-    "Space quest with shimmering planets and astronaut helmets",
-    "Backyard unicorn parade with iridescent confetti and tulle",
-    "Comic-book superhero panels in candy-bright pop colors",
-    "Safari expedition tent with golden savanna sunset",
-  ],
-  Wedding: [
-    "Garden estate with climbing roses and string lights",
-    "Editorial coastal elopement on a cliffside at golden hour",
-    "Vintage veil with antique lace and heirloom stationery",
-    "Modern monochrome ceremony with crisp architectural lines",
-  ],
-  "Bridal Shower": [
-    "Garden brunch with mimosa bar and pastel florals",
-    "Parisian tea service with tiered desserts",
-    "Tropical bridal pool day with hibiscus brights",
-    "Cottage romance with hand-tied bouquets and lace",
-  ],
-  "Baby Shower": [
-    "Soft cloud nursery with twinkling stars",
-    "Little safari with woven rattles and friendly animals",
-    "Woodland hush with foxes, bunnies, and forest greens",
-    "Sweet sherbet pastels with airy paper garlands",
-  ],
-  Anniversary: [
-    "Romantic candlelight dinner under a chandelier",
-    "Silver milestone evening with crystal and confetti",
-    "Vintage romance gallery with sepia photographs",
-    "Garden vow renewal at golden hour",
-  ],
-  Housewarming: [
-    "Cozy modern living room with golden-hour glow",
-    "Garden patio with string lights and potted greens",
-    "Loft industrial open house with edison bulbs",
-    "Mid-century evening with walnut warmth and mustard accents",
-  ],
-  "Field Trip/Day": [
-    "Sunny museum quest with curious explorers",
-    "Trail trek with backpacks and leafy canopy",
-    "Hands-on science lab with bright beakers",
-    "City discovery with skyline backdrops",
-  ],
-  "Game Day": [
-    "Friday night stadium lights with team pennants",
-    "Tailgate sunset with grills and team colors",
-    "Halftime hype with marching band brass",
-    "Championship gold confetti and trophy glow",
-  ],
-  "Custom Invite": [
-    "Modern minimal soiree with bold typography",
-    "Festival pop with layered patterns and crowd energy",
-    "Hand-drawn charm with watercolor washes",
-    "Luxe noir after-hours with gold foil",
-  ],
-};
-
-const STUDIO_PHONE_SHOWCASE_CARDS: StudioShowcaseCard[] = [
-  {
-    title: "Garden Vows",
-    category: "Wedding",
-    source: "landing",
-    imageUrl: "/images/landing/live-cards/garden-vows.webp",
-  },
-  {
-    title: "Wedding Weekend",
-    category: "Wedding",
-    source: "studio",
-    imageUrl: "/images/studio/invite-wedding-weekend.webp",
-  },
-  {
-    title: "Lara’s 7th Dino-Quest",
-    category: "Birthday",
-    source: "landing",
-    imageUrl: "/images/landing/live-cards/lara-s-7th-dino-quest.webp",
-  },
-  {
-    title: "Birthday Bash",
-    category: "Birthday",
-    source: "studio",
-    imageUrl: "/images/studio/invite-birthday-bash.webp",
-  },
-  {
-    title: "Elena’s Baby Shower",
-    category: "Baby Shower",
-    source: "landing",
-    imageUrl: "/images/landing/live-cards/elena-s-baby-shower.webp",
-  },
-  {
-    title: "Blush Brunch Shower",
-    category: "Bridal Shower",
-    source: "landing",
-    imageUrl: "/images/landing/live-cards/blush-brunch-shower.webp",
-  },
-  {
-    title: "Friday Night Lights",
-    category: "Game Day",
-    source: "landing",
-    imageUrl: "/images/landing/live-cards/friday-night-lights-a.webp",
-  },
-  {
-    title: "School Event",
-    category: "Field Trip/Day",
-    source: "studio",
-    imageUrl: "/images/studio/invite-school-event.webp",
-  },
-  {
-    title: "Founder Appreciation Night",
-    category: "Custom Invite",
-    source: "landing",
-    imageUrl: "/images/landing/live-cards/founder-appreciation-night.webp",
-  },
-  {
-    title: "Team Offsite",
-    category: "Custom Invite",
-    source: "studio",
-    imageUrl: "/images/studio/invite-team-offsite.webp",
-  },
-];
-
-function getShowcaseCards(category: EventDetails["category"]): StudioShowcaseCard[] {
-  const cardsForCategory = STUDIO_PHONE_SHOWCASE_CARDS.filter(
-    (card) => card.category === category,
-  );
-  if (cardsForCategory.length > 0) {
-    return cardsForCategory;
-  }
-  return STUDIO_PHONE_SHOWCASE_CARDS.filter((card) => card.category === "Custom Invite");
-}
-
-function getSuggestions(category: EventDetails["category"]): string[] {
-  return SUGGESTION_LIBRARY[category] ?? SUGGESTION_LIBRARY["Custom Invite"];
-}
 
 export function StudioPhonePreviewPane({
   details,
@@ -189,11 +49,9 @@ export function StudioPhonePreviewPane({
   shareCurrentProject,
   openCurrentImage,
   handleMediaImageLoadError,
-  onSuggestionPick,
 }: StudioPhonePreviewPaneProps) {
   const hasPreview = Boolean(currentProjectWithVisualDraft);
-  const suggestions = getSuggestions(details.category);
-  const showcaseCards = getShowcaseCards(details.category);
+  const showcasePreview = getStudioCategoryShowcasePreview(details.category);
 
   return (
     <div className="studio-phone-stage relative flex w-full flex-col items-center justify-start gap-4 pb-4 lg:h-full lg:justify-center lg:gap-5 lg:pb-0 lg:translate-x-6">
@@ -311,58 +169,12 @@ export function StudioPhonePreviewPane({
               </div>
             </div>
           ) : (
-            <div className="studio-assistant-empty flex h-full w-full flex-col items-center justify-center gap-5 px-6 py-10 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[var(--studio-brand,#7c5cd1)]/30 bg-white/85 shadow-[0_18px_44px_rgba(124,92,209,0.18)]">
-                <WandSparkles className="h-7 w-7 text-[var(--studio-brand,#7c5cd1)]" />
-              </div>
-              <div className="space-y-2">
-                <p className="font-[var(--font-playfair)] text-2xl leading-tight text-[var(--studio-ink,#1A1A1A)]">
-                  Studio Assistant
-                </p>
-                <p className="text-xs leading-relaxed text-[var(--studio-ink-soft,#6f5e8c)]">
-                  Pick a spark or describe your idea, then generate to see it come to life inside this phone.
-                </p>
-              </div>
-              <ul className="grid w-full gap-2 text-left">
-                {suggestions.slice(0, 4).map((suggestion) => (
-                  <li key={suggestion}>
-                    <button
-                      type="button"
-                      onClick={() => onSuggestionPick?.(suggestion)}
-                      className="w-full rounded-2xl border border-[var(--studio-brand,#7c5cd1)]/22 bg-white/75 px-3 py-2 text-[11px] leading-snug text-[var(--studio-ink,#1A1A1A)] transition-all hover:-translate-y-0.5 hover:border-[var(--studio-brand,#7c5cd1)]/45 hover:bg-white"
-                    >
-                      {suggestion}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <div className="w-full space-y-2 pt-1">
-                <p className="px-1 text-[9px] font-semibold uppercase tracking-[0.22em] text-[var(--studio-ink-soft,#6f5e8c)]">
-                  Live card examples ({details.category})
-                </p>
-                <ul className="grid grid-cols-2 gap-2">
-                  {showcaseCards.slice(0, 2).map((card) => (
-                    <li key={card.title} className="group">
-                      <div className="overflow-hidden rounded-2xl border border-[var(--studio-brand,#7c5cd1)]/20 bg-white/70 shadow-[0_10px_26px_rgba(31,18,52,0.1)]">
-                        <img
-                          src={card.imageUrl}
-                          alt={`${card.title} live card preview`}
-                          className="aspect-[3/4] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        />
-                        <div className="space-y-0.5 px-2.5 py-2">
-                          <p className="line-clamp-1 text-[10px] font-semibold text-[var(--studio-ink,#1A1A1A)]">
-                            {card.title}
-                          </p>
-                          <p className="text-[8px] uppercase tracking-[0.18em] text-[var(--studio-ink-soft,#6f5e8c)]">
-                            {card.source}
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <StudioShowcaseLiveCard
+              preview={showcasePreview}
+              className="h-full w-full rounded-none border-0 bg-transparent shadow-none aspect-auto"
+              imageLoading="eager"
+              imageFetchPriority="high"
+            />
           )}
         </div>
       </div>

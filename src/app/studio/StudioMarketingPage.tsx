@@ -31,12 +31,12 @@ import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
-import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
-import StudioLiveCardActionSurface, {
+import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
+import {
   type LiveCardActiveTab,
   type LiveCardInvitationData,
 } from "@/components/studio/StudioLiveCardActionSurface";
-import { resolveNativeShareData } from "@/utils/native-share";
+import type { StudioShowcasePreview } from "@/lib/studio/showcase-previews";
 
 type FeatureItem = {
   icon: LucideIcon;
@@ -61,12 +61,8 @@ type ShowcaseCardItem = {
   preview: StudioMarketingCardConfig;
 };
 
-type StudioMarketingCardConfig = {
-  title: string;
-  imageUrl: string;
+type StudioMarketingCardConfig = StudioShowcasePreview & {
   wideImageUrl?: string;
-  invitationData: LiveCardInvitationData;
-  initialActiveTab?: LiveCardActiveTab;
 };
 
 const revealIn = {
@@ -212,9 +208,14 @@ function createMarketingInvitationData({
   };
 }
 
+function buildStudioMarketingShowcasePath(title: string) {
+  return `/studio?showcase=${encodeURIComponent(title)}`;
+}
+
 const heroPreview: StudioMarketingCardConfig = {
   title: "Summer Gala 2026",
   imageUrl: "/images/studio/invite-hero-gala.webp",
+  sharePath: buildStudioMarketingShowcasePath("Summer Gala 2026"),
   invitationData: createMarketingInvitationData({
     title: "Summer Gala 2026",
     subtitle: "Cocktails, live music, and a black-tie night under the lights.",
@@ -239,6 +240,7 @@ const birthdayPreview: StudioMarketingCardConfig = {
   title: "Mila Turns 8",
   imageUrl: "/images/studio/invite-birthday-bash.webp",
   wideImageUrl: "/images/marketing/use-case-birthday.webp",
+  sharePath: buildStudioMarketingShowcasePath("Mila Turns 8"),
   invitationData: createMarketingInvitationData({
     title: "Mila Turns 8",
     subtitle: "Cupcakes, confetti, and a full afternoon of birthday fun.",
@@ -262,6 +264,7 @@ const weddingPreview: StudioMarketingCardConfig = {
   title: "Elena & Marcus",
   imageUrl: "/images/studio/invite-wedding-weekend.webp",
   wideImageUrl: "/images/marketing/use-case-wedding.webp",
+  sharePath: buildStudioMarketingShowcasePath("Elena & Marcus"),
   invitationData: createMarketingInvitationData({
     title: "Elena & Marcus",
     subtitle: "A full wedding weekend with RSVP, registry, hotel, and timeline details.",
@@ -287,6 +290,7 @@ const babyPreview: StudioMarketingCardConfig = {
   title: "Baby Bloom Shower",
   imageUrl: "/images/studio/invite-baby-shower.webp",
   wideImageUrl: "/images/marketing/use-case-baby.webp",
+  sharePath: buildStudioMarketingShowcasePath("Baby Bloom Shower"),
   invitationData: createMarketingInvitationData({
     title: "Baby Bloom Shower",
     subtitle: "Registry, venue notes, and host contact wrapped into one guest-ready card.",
@@ -312,6 +316,7 @@ const schoolPreview: StudioMarketingCardConfig = {
   title: "Spring Field Day",
   imageUrl: "/images/studio/invite-school-event.webp",
   wideImageUrl: "/images/marketing/use-case-school.webp",
+  sharePath: buildStudioMarketingShowcasePath("Spring Field Day"),
   invitationData: createMarketingInvitationData({
     title: "Spring Field Day",
     subtitle: "Parents get timing, campus location, and reminders without a PDF hunt.",
@@ -335,6 +340,7 @@ const communityPreview: StudioMarketingCardConfig = {
   title: "Neighborhood Night Market",
   imageUrl: "/images/marketing/use-case-community.webp",
   wideImageUrl: "/images/marketing/use-case-community.webp",
+  sharePath: buildStudioMarketingShowcasePath("Neighborhood Night Market"),
   invitationData: createMarketingInvitationData({
     title: "Neighborhood Night Market",
     subtitle: "A shareable card for maps, vendor details, and evening updates.",
@@ -357,6 +363,7 @@ const teamPreview: StudioMarketingCardConfig = {
   title: "Studio Team Offsite",
   imageUrl: "/images/studio/invite-team-offsite.webp",
   wideImageUrl: "/images/marketing/use-case-team.webp",
+  sharePath: buildStudioMarketingShowcasePath("Studio Team Offsite"),
   invitationData: createMarketingInvitationData({
     title: "Studio Team Offsite",
     subtitle: "A clean live card for agendas, location, and internal team logistics.",
@@ -379,6 +386,7 @@ const teamPreview: StudioMarketingCardConfig = {
 const showcaseBirthdayPreview: StudioMarketingCardConfig = {
   title: "Lara's Dino-Adventure",
   imageUrl: "/api/blob/event-media/upload-9f766086-693e-45aa-9813-bfe97f095651/header/display.webp",
+  sharePath: buildStudioMarketingShowcasePath("Lara's Dino-Adventure"),
   invitationData: createMarketingInvitationData({
     title: "Lara's Dino-Adventure",
     subtitle: "A Prehistoric Celebration 🦖",
@@ -400,6 +408,7 @@ const showcaseBirthdayPreview: StudioMarketingCardConfig = {
 const showcaseGameDayPreview: StudioMarketingCardConfig = {
   title: "Panther Game Night",
   imageUrl: "/api/blob/event-media/upload-8cc5fc5f-deb5-4083-a3a2-daeb53602a51/header/display.webp",
+  sharePath: buildStudioMarketingShowcasePath("Panther Game Night"),
   invitationData: createMarketingInvitationData({
     title: "Panther Game Night",
     subtitle: "PANTHERS VS TIGERS",
@@ -420,6 +429,7 @@ const showcaseGameDayPreview: StudioMarketingCardConfig = {
 const showcaseBridalPreview: StudioMarketingCardConfig = {
   title: "Madeline's Garden Brunch",
   imageUrl: "/api/blob/event-media/upload-c23c3d9e-45b5-4822-a8c8-b8892289de3e/header/display.webp",
+  sharePath: buildStudioMarketingShowcasePath("Madeline's Garden Brunch"),
   invitationData: createMarketingInvitationData({
     title: "Madeline's Garden Brunch",
     subtitle: "Bridal Shower Brunch",
@@ -441,6 +451,7 @@ const showcaseBridalPreview: StudioMarketingCardConfig = {
 const showcaseBabyPreview: StudioMarketingCardConfig = {
   title: "Elena's Blue Bear Shower",
   imageUrl: "/api/blob/event-media/upload-66ac676d-ad60-4391-b974-ec67199cbe77/header/display.webp",
+  sharePath: buildStudioMarketingShowcasePath("Elena's Blue Bear Shower"),
   invitationData: createMarketingInvitationData({
     title: "Elena's Blue Bear Shower",
     subtitle: "A Celebration for a Little One 🧸",
@@ -462,6 +473,7 @@ const showcaseBabyPreview: StudioMarketingCardConfig = {
 const showcaseAnniversaryPreview: StudioMarketingCardConfig = {
   title: "Silver Anniversary Soirée",
   imageUrl: "/api/blob/event-media/upload-767b4cbd-a67b-43b4-8339-1b2afe60016b/header/display.webp",
+  sharePath: buildStudioMarketingShowcasePath("Silver Anniversary Soirée"),
   invitationData: createMarketingInvitationData({
     title: "Silver Anniversary Soirée",
     subtitle: "Our 25th Anniversary Dinner",
@@ -483,6 +495,7 @@ const showcaseAnniversaryPreview: StudioMarketingCardConfig = {
 const showcaseMuseumPreview: StudioMarketingCardConfig = {
   title: "Museum Discovery Day",
   imageUrl: "/api/blob/event-media/upload-b9b6e1f6-f6bc-47a2-b036-2088b8366e47/header/display.webp",
+  sharePath: buildStudioMarketingShowcasePath("Museum Discovery Day"),
   invitationData: createMarketingInvitationData({
     title: "Museum Discovery Day",
     subtitle: "A Science Museum Field Trip 🚀",
@@ -749,148 +762,6 @@ function MockPhoneFrame({
   );
 }
 
-function StudioMarketingLiveCard({
-  preview,
-  className,
-  compactChrome = false,
-  showcaseMode = false,
-  interactive = true,
-  imageLoading = "lazy",
-  imageFetchPriority = "auto",
-  activeTab,
-  onActiveTabChange,
-  showcaseOverlay,
-}: {
-  preview: StudioMarketingCardConfig;
-  className?: string;
-  compactChrome?: boolean;
-  showcaseMode?: boolean;
-  interactive?: boolean;
-  imageLoading?: "eager" | "lazy";
-  imageFetchPriority?: "high" | "low" | "auto";
-  activeTab?: LiveCardActiveTab;
-  onActiveTabChange?: (tab: LiveCardActiveTab) => void;
-  showcaseOverlay?: React.ReactNode;
-}) {
-  const [internalActiveTab, setInternalActiveTab] = useState<LiveCardActiveTab>(
-    preview.initialActiveTab || "none",
-  );
-  const [shareState, setShareState] = useState<"idle" | "pending" | "success">("idle");
-  const shareResetTimeoutRef = useRef<number | null>(null);
-  const [shareUrl, setShareUrl] = useState("");
-  const resolvedActiveTab = activeTab ?? internalActiveTab;
-  const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
-
-  useEffect(() => {
-    setShareUrl(`${window.location.origin}/studio?showcase=${encodeURIComponent(preview.title)}`);
-
-    return () => {
-      if (shareResetTimeoutRef.current) {
-        window.clearTimeout(shareResetTimeoutRef.current);
-      }
-    };
-  }, [preview.title]);
-
-  const handleShare = async () => {
-    const resolvedShareUrl =
-      shareUrl || `${window.location.origin}/studio?showcase=${encodeURIComponent(preview.title)}`;
-    if (!resolvedShareUrl) return;
-
-    if (shareResetTimeoutRef.current) {
-      window.clearTimeout(shareResetTimeoutRef.current);
-      shareResetTimeoutRef.current = null;
-    }
-
-    setShareState("pending");
-
-    const sharePayload = {
-      title: preview.title,
-      text:
-        preview.invitationData.description || preview.invitationData.subtitle || `${preview.title} on Envitefy Studio`,
-      url: resolvedShareUrl,
-    };
-
-    try {
-      const nativeShareData = resolveNativeShareData(sharePayload);
-      if (nativeShareData) {
-        await navigator.share(nativeShareData);
-      } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(resolvedShareUrl);
-      } else {
-        window.prompt("Copy this link", resolvedShareUrl);
-      }
-
-      setShareState("success");
-      shareResetTimeoutRef.current = window.setTimeout(() => {
-        setShareState("idle");
-        shareResetTimeoutRef.current = null;
-      }, 1800);
-    } catch (error) {
-      if (
-        error instanceof DOMException &&
-        (error.name === "AbortError" || error.name === "NotAllowedError")
-      ) {
-        setShareState("idle");
-        return;
-      }
-
-      try {
-        if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(resolvedShareUrl);
-          setShareState("success");
-          shareResetTimeoutRef.current = window.setTimeout(() => {
-            setShareState("idle");
-            shareResetTimeoutRef.current = null;
-          }, 1800);
-          return;
-        }
-      } catch {}
-
-      setShareState("idle");
-    }
-  };
-
-  return (
-    <div
-      className={cx(
-        "relative aspect-[9/16] overflow-hidden rounded-[2.2rem] border border-white/10 bg-neutral-950 shadow-[0_28px_80px_rgba(15,23,42,0.32)]",
-        showcaseMode && "border-slate-300/70 bg-transparent shadow-none",
-        className,
-      )}
-    >
-      <img
-        src={preview.imageUrl}
-        alt={preview.title}
-        loading={imageLoading}
-        fetchPriority={imageFetchPriority}
-        decoding="async"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_26%,rgba(0,0,0,0.28)_100%)]" />
-      <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
-      <div
-        className={cx(
-          "absolute inset-0",
-          compactChrome && "origin-bottom scale-[0.88]",
-          interactive ? "pointer-events-auto" : "pointer-events-none",
-        )}
-      >
-        <StudioLiveCardActionSurface
-          title={preview.title}
-          invitationData={preview.invitationData}
-          activeTab={resolvedActiveTab}
-          onActiveTabChange={handleActiveTabChange}
-          onShare={handleShare}
-          shareUrl={shareUrl}
-          fallbackShareUrlToWindowLocation={false}
-          shareState={shareState}
-        />
-      </div>
-      {showcaseOverlay}
-    </div>
-  );
-}
-
 function StudioMarketingUseCasePreview({
   preview,
   imageLoading = "lazy",
@@ -958,6 +829,12 @@ export default function StudioMarketingPage() {
     startX: number;
     startY: number;
     index: number;
+    didSwipe: boolean;
+  } | null>(null);
+  const fullscreenSwipeStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
     didSwipe: boolean;
   } | null>(null);
   const suppressShowcaseClickRef = useRef(false);
@@ -1128,6 +1005,16 @@ export default function StudioMarketingPage() {
     setFullscreenShowcaseIndex(index);
   };
 
+  const navigateFullscreenShowcase = (direction: "left" | "right") => {
+    if (fullscreenShowcaseIndex === null || showcaseCards.length === 0) return;
+    const step = direction === "left" ? -1 : 1;
+    const nextIndex =
+      (fullscreenShowcaseIndex + step + showcaseCards.length) % showcaseCards.length;
+    setFullscreenActiveTab("none");
+    setFullscreenShowcaseIndex(nextIndex);
+    scrollToShowcaseIndex(nextIndex);
+  };
+
   const handleShowcaseCardClick = (index: number, event?: React.MouseEvent<HTMLDivElement>) => {
     if (suppressShowcaseClickRef.current) {
       event?.preventDefault();
@@ -1213,6 +1100,50 @@ export default function StudioMarketingPage() {
     suppressShowcaseClickRef.current = false;
   };
 
+  const handleFullscreenPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || event.pointerType === "mouse") return;
+    const target = event.target;
+    if (
+      target instanceof HTMLElement &&
+      target.closest("[data-live-card-trigger], [data-live-card-panel], button, a")
+    ) {
+      return;
+    }
+    fullscreenSwipeStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      didSwipe: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleFullscreenPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const swipeState = fullscreenSwipeStateRef.current;
+    if (!swipeState || swipeState.pointerId !== event.pointerId || swipeState.didSwipe) {
+      return;
+    }
+
+    const deltaX = event.clientX - swipeState.startX;
+    const deltaY = event.clientY - swipeState.startY;
+    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    swipeState.didSwipe = true;
+    navigateFullscreenShowcase(deltaX < 0 ? "right" : "left");
+  };
+
+  const clearFullscreenSwipeState = (event?: React.PointerEvent<HTMLDivElement>) => {
+    const swipeState = fullscreenSwipeStateRef.current;
+    if (!swipeState) return;
+    if (event && swipeState.pointerId !== event.pointerId) return;
+    if (event?.currentTarget.hasPointerCapture(swipeState.pointerId)) {
+      event.currentTarget.releasePointerCapture(swipeState.pointerId);
+    }
+    fullscreenSwipeStateRef.current = null;
+  };
+
   const scrollShowcase = (direction: "left" | "right") => {
     scrollToShowcaseIndex(activeIndex + (direction === "left" ? -1 : 1));
   };
@@ -1278,7 +1209,7 @@ export default function StudioMarketingPage() {
                 className="relative"
               >
                 <MockPhoneFrame className="lg:mr-0">
-                  <StudioMarketingLiveCard
+                  <StudioShowcaseLiveCard
                     preview={heroPreview}
                     className="rounded-[2rem]"
                     imageLoading="eager"
@@ -1524,7 +1455,7 @@ export default function StudioMarketingPage() {
 
                 <div className="relative">
                   <div className="rotate-2 rounded-[2.5rem] border border-slate-200 bg-slate-50 p-4 shadow-xl">
-                    <StudioMarketingLiveCard
+                    <StudioShowcaseLiveCard
                       preview={babyPreview}
                       className="rounded-[2rem] shadow-inner"
                       imageLoading="lazy"
@@ -1544,7 +1475,7 @@ export default function StudioMarketingPage() {
                 <div className="order-2 lg:order-1">
                   <div className="relative">
                     <div className="mx-auto max-w-[320px] rounded-[2.5rem] border border-white/20 bg-white/10 p-4 shadow-2xl backdrop-blur-md lg:mx-0">
-                      <StudioMarketingLiveCard
+                      <StudioShowcaseLiveCard
                         preview={weddingPreview}
                         className="rounded-[2rem]"
                         imageLoading="lazy"
@@ -1719,7 +1650,7 @@ export default function StudioMarketingPage() {
                             : "scale-[0.85] opacity-40 blur-[2px]",
                         )}
                       >
-                        <StudioMarketingLiveCard
+                        <StudioShowcaseLiveCard
                           preview={item.preview}
                           compactChrome
                           showcaseMode
@@ -1836,9 +1767,13 @@ export default function StudioMarketingPage() {
               exit={{ scale: 0.94, y: 24 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
               className="relative w-full max-w-md"
+              onPointerDownCapture={handleFullscreenPointerDown}
+              onPointerMoveCapture={handleFullscreenPointerMove}
+              onPointerUpCapture={clearFullscreenSwipeState}
+              onPointerCancelCapture={clearFullscreenSwipeState}
               onClick={(event) => event.stopPropagation()}
             >
-              <StudioMarketingLiveCard
+              <StudioShowcaseLiveCard
                 preview={showcaseCards[fullscreenShowcaseIndex].preview}
                 activeTab={fullscreenActiveTab}
                 onActiveTabChange={setFullscreenActiveTab}

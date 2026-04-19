@@ -6,7 +6,7 @@ import {
   type StudioGenerateRequest,
   type StudioGenerateSurface,
 } from "@/lib/studio/types";
-import { formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
+import { formatMonthDayOrdinalEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 import {
   EMPTY_POSITIONS,
   getStudioDefaultCallToAction,
@@ -294,7 +294,7 @@ export function getStudioIdeaLabel(category: InviteCategory) {
 
 const STUDIO_IDEA_CATEGORY_PLACEHOLDERS: Partial<Record<InviteCategory, string>> = {
   Birthday:
-    "e.g. A birthday design with super heroes and dinos. Will Pizza and Drinks and alot of fun to serve!",
+    "e.g. A birthday design with super heroes and dinos. We will have pizza and sodas and a lot of fun!",
 };
 
 export function getStudioIdeaPlaceholder(category: InviteCategory) {
@@ -549,6 +549,38 @@ export function getStudioEventYear(details: EventDetails): string {
   return match?.[1] || "";
 }
 
+function inferStudioMonthDayIsoDate(value: string, now = new Date()): string {
+  const trimmed = readString(value);
+  if (!trimmed) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+
+  const monthDayMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (!monthDayMatch) return trimmed;
+
+  const month = Number.parseInt(monthDayMatch[1] || "", 10);
+  const day = Number.parseInt(monthDayMatch[2] || "", 10);
+  if (!Number.isInteger(month) || !Number.isInteger(day)) return trimmed;
+
+  const currentYear = now.getFullYear();
+  const candidateThisYear = new Date(Date.UTC(currentYear, month - 1, day));
+  if (
+    candidateThisYear.getUTCFullYear() !== currentYear ||
+    candidateThisYear.getUTCMonth() !== month - 1 ||
+    candidateThisYear.getUTCDate() !== day
+  ) {
+    return trimmed;
+  }
+
+  const paddedMonth = String(month).padStart(2, "0");
+  const paddedDay = String(day).padStart(2, "0");
+  const todayKey = `${currentYear}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate(),
+  ).padStart(2, "0")}`;
+  const candidateKey = `${currentYear}-${paddedMonth}-${paddedDay}`;
+  const resolvedYear = candidateKey < todayKey ? currentYear + 1 : currentYear;
+  return `${resolvedYear}-${paddedMonth}-${paddedDay}`;
+}
+
 function shouldIncludeStudioEventYear(details: EventDetails): boolean {
   return details.category === "Wedding";
 }
@@ -567,10 +599,22 @@ function formatVisibleCardTime(timeValue: string): string {
   return trimmed.replace(/\s*([AaPp][Mm])$/, (_, meridiem: string) => ` ${meridiem.toUpperCase()}`);
 }
 
+function formatStudioVisibleDate(details: EventDetails): string {
+  if (shouldIncludeStudioEventYear(details)) {
+    return formatWeekdayMonthDayOrdinalEn(getStudioEventDate(details), {
+      includeComma: false,
+    });
+  }
+  const rawDate = formatStudioPromptDate(details);
+  const match = rawDate.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (!match) return rawDate;
+  return formatMonthDayOrdinalEn(
+    `2000-${String(match[1] || "").padStart(2, "0")}-${String(match[2] || "").padStart(2, "0")}`,
+  );
+}
+
 export function buildDeterministicScheduleLine(details: EventDetails): string {
-  const date = formatWeekdayMonthDayOrdinalEn(getStudioEventDate(details), {
-    includeComma: false,
-  });
+  const date = formatStudioVisibleDate(details);
   const time = formatVisibleCardTime(getStudioEventStartTime(details));
   if (date && time) return `${date} at ${time}`;
   return date;
@@ -833,7 +877,11 @@ export function toIsoFromLocalDateTime(dateValue: string, timeValue?: string): s
 }
 
 export function getStudioEventDate(details: EventDetails): string {
-  return readString(details.eventDate) || readString(details.ceremonyDate);
+  const eventDate = readString(details.eventDate);
+  if (eventDate) {
+    return details.category === "Wedding" ? eventDate : inferStudioMonthDayIsoDate(eventDate);
+  }
+  return readString(details.ceremonyDate);
 }
 
 export function getStudioEventStartTime(details: EventDetails): string {

@@ -38,15 +38,18 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingShowcase, /Open live card/);
   assert.match(
     landingShowcase,
-    /import \{ landingLiveCardSnapshots \} from "@\/components\/landing\/landing-live-card-snapshots";/,
+    /import StudioShowcaseLiveCard from "@\/components\/studio\/StudioShowcaseLiveCard";/,
   );
   assert.match(
     landingShowcase,
-    /const showcaseCards: ShowcaseCardItem\[] = landingLiveCardSnapshots\.map\(\(snapshot\) => \(\{/,
+    /landingShowcasePreviews,\s+type StudioShowcasePreview,/,
   );
-  assert.match(landingShowcase, /positions=\{preview\.positions\}/);
-  assert.match(landingShowcase, /interactive \? "pointer-events-auto" : "pointer-events-none"/);
+  assert.match(
+    landingShowcase,
+    /const showcaseCards: ShowcaseCardItem\[] = landingShowcasePreviews\.map\(\(preview\) => \(\{/,
+  );
   assert.match(landingShowcase, /const showcaseSwipeStateRef = useRef<\{/);
+  assert.match(landingShowcase, /const fullscreenSwipeStateRef = useRef<\{/);
   assert.match(landingShowcase, /const suppressShowcaseClickRef = useRef\(false\);/);
   assert.match(landingShowcase, /const handleShowcasePointerDown = \(\s*index: number,\s*event: React\.PointerEvent<HTMLDivElement>,/);
   assert.match(
@@ -62,6 +65,52 @@ test("landing page renders the new dedicated landing experience component", () =
   assert.match(landingShowcase, /onPointerUpCapture=\{clearShowcaseSwipeState\}/);
   assert.match(landingShowcase, /onPointerCancelCapture=\{clearShowcaseSwipeState\}/);
   assert.match(landingShowcase, /onClickCapture=\{handleShowcaseClickCapture\}/);
+  assert.match(
+    landingShowcase,
+    /const navigateFullscreenShowcase = \(direction: "left" \| "right"\) => \{/,
+  );
+  assert.match(
+    landingShowcase,
+    /const nextIndex =\s*\(fullscreenShowcaseIndex \+ step \+ showcaseCards\.length\) % showcaseCards\.length;/,
+  );
+  assert.match(landingShowcase, /setFullscreenActiveTab\("none"\);/);
+  assert.match(landingShowcase, /scrollToShowcaseIndex\(nextIndex\);/);
+  assert.match(
+    landingShowcase,
+    /const handleFullscreenPointerDown = \(event: React\.PointerEvent<HTMLDivElement>\) => \{/,
+  );
+  assert.match(
+    landingShowcase,
+    /if \(!event\.isPrimary \|\| event\.pointerType === "mouse"\) return;/,
+  );
+  assert.match(
+    landingShowcase,
+    /target\.closest\("\[data-live-card-trigger\], \[data-live-card-panel\], button, a"\)/,
+  );
+  assert.match(
+    landingShowcase,
+    /const handleFullscreenPointerMove = \(event: React\.PointerEvent<HTMLDivElement>\) => \{/,
+  );
+  assert.match(
+    landingShowcase,
+    /navigateFullscreenShowcase\(deltaX < 0 \? "right" : "left"\);/,
+  );
+  assert.match(
+    landingShowcase,
+    /onPointerDownCapture=\{handleFullscreenPointerDown\}/,
+  );
+  assert.match(
+    landingShowcase,
+    /onPointerMoveCapture=\{handleFullscreenPointerMove\}/,
+  );
+  assert.match(
+    landingShowcase,
+    /onPointerUpCapture=\{clearFullscreenSwipeState\}/,
+  );
+  assert.match(
+    landingShowcase,
+    /onPointerCancelCapture=\{clearFullscreenSwipeState\}/,
+  );
   assert.match(landingShowcase, /interactive=\{activeIndex === index\}/);
   assert.match(
     landingShowcase,
@@ -77,10 +126,10 @@ test("landing page renders the new dedicated landing experience component", () =
     landingShowcase,
     /w-\[min\(272px,calc\(100vw-5\.5rem\)\)\] shrink-0 snap-center cursor-pointer sm:w-\[min\(300px,calc\(100vw-4rem\)\)\]/,
   );
-  assert.match(landingShowcase, /import \{ resolveNativeShareData \} from "@\/utils\/native-share";/);
-  assert.match(landingShowcase, /const nativeShareData = resolveNativeShareData\(sharePayload\);/);
-  assert.doesNotMatch(landingShowcase, /for \(const candidate of shareCandidates\)/);
-  assert.doesNotMatch(landingShowcase, /await navigator\.share\(candidate\);/);
+  assert.match(
+    landingShowcase,
+    /<StudioShowcaseLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading="lazy"\s+showcaseOverlay=/,
+  );
   assert.doesNotMatch(landingShowcase, /createMarketingInvitationData/);
   assert.doesNotMatch(landingShowcase, /Mila Turns 8/);
   assert.doesNotMatch(landingShowcase, /\/api\/blob\/event-media\//);

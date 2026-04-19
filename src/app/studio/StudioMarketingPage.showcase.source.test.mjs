@@ -35,6 +35,7 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
     /const handleShowcaseCardClick = \(index: number, event\?: React\.MouseEvent<HTMLDivElement>\) => \{/,
   );
   assert.match(source, /const showcaseSwipeStateRef = useRef<\{/);
+  assert.match(source, /const fullscreenSwipeStateRef = useRef<\{/);
   assert.match(source, /const suppressShowcaseClickRef = useRef\(false\);/);
   assert.match(
     source,
@@ -71,14 +72,40 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.match(source, /onPointerCancelCapture=\{clearShowcaseSwipeState\}/);
   assert.match(
     source,
+    /const navigateFullscreenShowcase = \(direction: "left" \| "right"\) => \{/,
+  );
+  assert.match(
+    source,
+    /const nextIndex =\s*\(fullscreenShowcaseIndex \+ step \+ showcaseCards\.length\) % showcaseCards\.length;/,
+  );
+  assert.match(source, /setFullscreenActiveTab\("none"\);/);
+  assert.match(source, /scrollToShowcaseIndex\(nextIndex\);/);
+  assert.match(
+    source,
+    /const handleFullscreenPointerDown = \(event: React\.PointerEvent<HTMLDivElement>\) => \{/,
+  );
+  assert.match(
+    source,
+    /if \(!event\.isPrimary \|\| event\.pointerType === "mouse"\) return;/,
+  );
+  assert.match(
+    source,
+    /const handleFullscreenPointerMove = \(event: React\.PointerEvent<HTMLDivElement>\) => \{/,
+  );
+  assert.match(
+    source,
+    /navigateFullscreenShowcase\(deltaX < 0 \? "right" : "left"\);/,
+  );
+  assert.match(source, /onPointerDownCapture=\{handleFullscreenPointerDown\}/);
+  assert.match(source, /onPointerMoveCapture=\{handleFullscreenPointerMove\}/);
+  assert.match(source, /onPointerUpCapture=\{clearFullscreenSwipeState\}/);
+  assert.match(source, /onPointerCancelCapture=\{clearFullscreenSwipeState\}/);
+  assert.match(
+    source,
     /className="no-scrollbar flex touch-auto items-start gap-6 overflow-x-auto overscroll-x-contain scroll-smooth px-\[max\(2rem,calc\(50vw-150px\)\)\] py-8 snap-x snap-mandatory"/,
   );
   assert.match(source, /onClick=\{\(event\) => handleShowcaseCardClick\(index, event\)\}/);
-  assert.match(source, /import \{ resolveNativeShareData \} from "@\/utils\/native-share";/);
-  assert.match(source, /const nativeShareData = resolveNativeShareData\(sharePayload\);/);
-  assert.match(source, /await navigator\.share\(nativeShareData\);/);
-  assert.doesNotMatch(source, /for \(const candidate of shareCandidates\)/);
-  assert.doesNotMatch(source, /await navigator\.share\(candidate\);/);
+  assert.match(source, /import StudioShowcaseLiveCard from "@\/components\/studio\/StudioShowcaseLiveCard";/);
   assert.match(
     source,
     /className="w-\[min\(300px,calc\(100vw-4rem\)\)\] shrink-0 snap-center cursor-pointer"/,
@@ -101,6 +128,6 @@ test("studio marketing showcase uses a centered active-card carousel", () => {
   assert.match(source, /md:inline-flex/);
   assert.match(
     source,
-    /<StudioMarketingLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading="lazy"\s+showcaseOverlay=/,
+    /<StudioShowcaseLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading="lazy"\s+showcaseOverlay=/,
   );
 });

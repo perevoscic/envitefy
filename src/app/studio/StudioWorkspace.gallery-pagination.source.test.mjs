@@ -15,7 +15,8 @@ test("studio tab keeps a single current project instead of paging the saved libr
   assert.match(source, /const currentProjectWithVisualDraft = useMemo\(/);
   assert.match(source, /const currentProjectHasUnsavedChanges = useMemo\(/);
   assert.match(source, /const currentProjectSaveLabel = /);
-  assert.match(phonePane, /Studio Assistant/);
+  assert.match(phonePane, /getStudioCategoryShowcasePreview\(details\.category\)/);
+  assert.match(phonePane, /<StudioShowcaseLiveCard/);
   assert.match(source, /Save to Library/);
   assert.doesNotMatch(phonePane, /Discard/);
   assert.doesNotMatch(phonePane, /Save this project to keep it in Library\./);

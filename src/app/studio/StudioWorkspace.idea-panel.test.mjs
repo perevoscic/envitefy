@@ -42,6 +42,10 @@ test("studio details step keeps the combined idea panel and adds image finish pr
 test("studio idea copy uses cleaned category-specific wording", () => {
   const builders = readSource("src/app/studio/studio-workspace-builders.ts");
 
+  assert.match(
+    builders,
+    /"e\.g\. A birthday design with super heroes and dinos\. We will have pizza and sodas and a lot of fun!"/,
+  );
   assert.match(builders, /"Field Trip\/Day": "Field Trip"/);
   assert.match(builders, /"Game Day": "Game Day"/);
   assert.match(builders, /"Custom Invite": "Custom Invite"/);

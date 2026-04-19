@@ -385,12 +385,13 @@ function PhoneShell({ children, className }: { children: ReactNode; className?: 
   return (
     <div
       className={cx(
-        "relative rounded-[3.5rem] border-[4px] border-[#18181b] bg-black p-1 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)]",
+        "relative isolate overflow-hidden rounded-[3.5rem] border-[4px] border-[#18181b] bg-black p-1 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)]",
         className,
       )}
     >
       <div className="absolute left-1/2 top-3 z-30 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />
       <div className="h-full overflow-hidden rounded-[3.2rem] bg-white">{children}</div>
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 h-1.5 w-24 -translate-x-1/2 rounded-full bg-black/85" />
     </div>
   );
 }
@@ -553,64 +554,64 @@ export default function LandingExperience() {
                   transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
                   className="relative"
                 >
-                  <PhoneShell className="mx-auto aspect-[9/19.5] max-w-[320px]">
+                  <PhoneShell className="mx-auto aspect-[9/18.1] max-w-[264px] sm:aspect-[9/19.5] sm:max-w-[320px]">
                     <div className="relative flex h-full flex-col">
-                      <div className="relative h-64 overflow-hidden bg-[#c98f6b]">
+                      <div className="relative h-44 overflow-hidden bg-[#c98f6b] sm:h-64">
                         <img
                           src="/images/marketing/landing-hero-live-card.webp"
                           alt="Birthday event preview"
                           className="h-full w-full object-cover opacity-90"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-                        <div className="absolute bottom-7 left-6 text-white">
-                          <h3 className={cx(styles.headline, "text-3xl font-extrabold")}>
+                        <div className="absolute bottom-4 left-4 text-white sm:bottom-7 sm:left-6">
+                          <h3 className={cx(styles.headline, "text-[1.65rem] font-extrabold sm:text-3xl")}>
                             Leo&apos;s 5th Birthday
                           </h3>
-                          <p className="mt-1 text-sm text-white/72">
+                          <p className="mt-0.5 text-[0.78rem] text-white/72 sm:mt-1 sm:text-sm">
                             Superhero Adventure Party
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex-1 space-y-7 p-7">
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c98f6b]/12 text-[#c98f6b]">
-                            <Calendar className="h-6 w-6" />
+                      <div className="flex-1 space-y-3.5 p-3.5 sm:space-y-7 sm:p-7">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#c98f6b]/12 text-[#c98f6b] sm:h-12 sm:w-12">
+                            <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />
                           </div>
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#9f8f85]">
                               Date & Time
                             </p>
-                            <p className="mt-1 text-base font-bold text-[#2b1b16]">
+                            <p className="mt-0.5 text-[0.9rem] font-bold leading-5 text-[#2b1b16] sm:mt-1 sm:text-base">
                               Saturday, Dec 12 @ 2:00 PM
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c98f6b]/12 text-[#c98f6b]">
-                            <MapPin className="h-6 w-6" />
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#c98f6b]/12 text-[#c98f6b] sm:h-12 sm:w-12">
+                            <MapPin className="h-5 w-5 sm:h-6 sm:w-6" />
                           </div>
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#9f8f85]">
                               Location
                             </p>
-                            <p className="mt-1 text-base font-bold text-[#2b1b16]">
+                            <p className="mt-0.5 text-[0.9rem] font-bold leading-5 text-[#2b1b16] sm:mt-1 sm:text-base">
                               The Adventure Park, Hall B
                             </p>
                           </div>
                         </div>
 
-                        <div className="space-y-3 pt-2">
+                        <div className="space-y-2 pt-0 sm:space-y-3 sm:pt-2">
                           <button
                             type="button"
-                            className="w-full rounded-2xl bg-[#c98f6b] py-4 text-sm font-bold text-white shadow-[0_22px_50px_rgba(201,143,107,0.28)]"
+                            className="w-full rounded-2xl bg-[#c98f6b] py-2.5 text-[0.92rem] font-bold text-white shadow-[0_22px_50px_rgba(201,143,107,0.28)] sm:py-4 sm:text-sm"
                           >
                             RSVP Now
                           </button>
                           <button
                             type="button"
-                            className="w-full rounded-2xl border border-[#f0e4dc] bg-[#faf7f2] py-4 text-sm font-bold text-[#6b4c3f]"
+                            className="w-full rounded-2xl border border-[#f0e4dc] bg-[#faf7f2] py-2.5 text-[0.92rem] font-bold text-[#6b4c3f] sm:py-4 sm:text-sm"
                           >
                             Get Directions
                           </button>

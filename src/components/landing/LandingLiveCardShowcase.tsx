@@ -2,30 +2,18 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
-import StudioLiveCardActionSurface, {
-  type LiveCardActiveTab,
-  type LiveCardButtonPositions,
-  type LiveCardInvitationData,
-} from "@/components/studio/StudioLiveCardActionSurface";
-import { landingLiveCardSnapshots } from "@/components/landing/landing-live-card-snapshots";
-import { buildLandingShowcasePath } from "@/lib/landing-showcase";
-import { resolveNativeShareData } from "@/utils/native-share";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
+import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
+import { type LiveCardActiveTab } from "@/components/studio/StudioLiveCardActionSurface";
+import {
+  landingShowcasePreviews,
+  type StudioShowcasePreview,
+} from "@/lib/studio/showcase-previews";
 
 type ShowcaseCardItem = {
   id: string;
-  sharePath: string;
   title: string;
-  preview: StudioMarketingCardConfig;
-};
-
-type StudioMarketingCardConfig = {
-  title: string;
-  imageUrl: string;
-  invitationData: LiveCardInvitationData;
-  positions?: LiveCardButtonPositions;
-  initialActiveTab?: LiveCardActiveTab;
+  preview: StudioShowcasePreview;
 };
 
 const revealIn = {
@@ -39,161 +27,11 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
-const showcaseCards: ShowcaseCardItem[] = landingLiveCardSnapshots.map((snapshot) => ({
-  id: snapshot.id,
-  sharePath: buildLandingShowcasePath(snapshot.slug),
-  title: snapshot.title,
-  preview: {
-    title: snapshot.title,
-    imageUrl: snapshot.imageUrl,
-    invitationData: snapshot.invitationData,
-    positions: snapshot.positions,
-    initialActiveTab: snapshot.initialActiveTab,
-  },
-}));
-
-function StudioMarketingLiveCard({
+const showcaseCards: ShowcaseCardItem[] = landingShowcasePreviews.map((preview) => ({
+  id: preview.id,
+  title: preview.title,
   preview,
-  sharePath,
-  className,
-  compactChrome = false,
-  showcaseMode = false,
-  interactive = true,
-  imageLoading = "lazy",
-  activeTab,
-  onActiveTabChange,
-  showcaseOverlay,
-}: {
-  preview: StudioMarketingCardConfig;
-  sharePath: string;
-  className?: string;
-  compactChrome?: boolean;
-  showcaseMode?: boolean;
-  interactive?: boolean;
-  imageLoading?: "eager" | "lazy";
-  activeTab?: LiveCardActiveTab;
-  onActiveTabChange?: (tab: LiveCardActiveTab) => void;
-  showcaseOverlay?: ReactNode;
-}) {
-  const [internalActiveTab, setInternalActiveTab] = useState<LiveCardActiveTab>(
-    preview.initialActiveTab || "none",
-  );
-  const [shareState, setShareState] = useState<"idle" | "pending" | "success">("idle");
-  const shareResetTimeoutRef = useRef<number | null>(null);
-  const [shareUrl, setShareUrl] = useState("");
-  const resolvedActiveTab = activeTab ?? internalActiveTab;
-  const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
-
-  useEffect(() => {
-    setShareUrl(`${window.location.origin}${sharePath}`);
-
-    return () => {
-      if (shareResetTimeoutRef.current) {
-        window.clearTimeout(shareResetTimeoutRef.current);
-      }
-    };
-  }, [sharePath]);
-
-  const handleShare = async () => {
-    const resolvedShareUrl = shareUrl || `${window.location.origin}${sharePath}`;
-    if (!resolvedShareUrl) return;
-
-    if (shareResetTimeoutRef.current) {
-      window.clearTimeout(shareResetTimeoutRef.current);
-      shareResetTimeoutRef.current = null;
-    }
-
-    setShareState("pending");
-
-    const sharePayload = {
-      title: preview.title,
-      text:
-        preview.invitationData.description ||
-        preview.invitationData.subtitle ||
-        `${preview.title} on Envitefy Studio`,
-      url: resolvedShareUrl,
-    };
-
-    try {
-      const nativeShareData = resolveNativeShareData(sharePayload);
-      if (nativeShareData) {
-        await navigator.share(nativeShareData);
-      } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(resolvedShareUrl);
-      } else {
-        window.prompt("Copy this link", resolvedShareUrl);
-      }
-
-      setShareState("success");
-      shareResetTimeoutRef.current = window.setTimeout(() => {
-        setShareState("idle");
-        shareResetTimeoutRef.current = null;
-      }, 1800);
-    } catch (error) {
-      if (
-        error instanceof DOMException &&
-        (error.name === "AbortError" || error.name === "NotAllowedError")
-      ) {
-        setShareState("idle");
-        return;
-      }
-
-      try {
-        if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(resolvedShareUrl);
-          setShareState("success");
-          shareResetTimeoutRef.current = window.setTimeout(() => {
-            setShareState("idle");
-            shareResetTimeoutRef.current = null;
-          }, 1800);
-          return;
-        }
-      } catch {}
-
-      setShareState("idle");
-    }
-  };
-
-  return (
-    <div
-      className={cx(
-        "relative aspect-[9/16] overflow-hidden rounded-[2.2rem] border border-white/10 bg-neutral-950 shadow-[0_28px_80px_rgba(15,23,42,0.32)]",
-        showcaseMode && "border-slate-300/70 bg-transparent shadow-none",
-        className,
-      )}
-    >
-      <img
-        src={preview.imageUrl}
-        alt={preview.title}
-        loading={imageLoading}
-        decoding="async"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_26%,rgba(0,0,0,0.28)_100%)]" />
-      <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
-      <div
-        className={cx(
-          "absolute inset-0",
-          compactChrome && "origin-bottom scale-[0.88]",
-          interactive ? "pointer-events-auto" : "pointer-events-none",
-        )}
-      >
-        <StudioLiveCardActionSurface
-          title={preview.title}
-          invitationData={preview.invitationData}
-          positions={preview.positions}
-          activeTab={resolvedActiveTab}
-          onActiveTabChange={handleActiveTabChange}
-          onShare={handleShare}
-          shareUrl={shareUrl}
-          fallbackShareUrlToWindowLocation={false}
-          shareState={shareState}
-        />
-      </div>
-      {showcaseOverlay}
-    </div>
-  );
-}
+}));
 
 export default function LandingLiveCardShowcase() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -210,6 +48,12 @@ export default function LandingLiveCardShowcase() {
     startX: number;
     startY: number;
     index: number;
+    didSwipe: boolean;
+  } | null>(null);
+  const fullscreenSwipeStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
     didSwipe: boolean;
   } | null>(null);
   const suppressShowcaseClickRef = useRef(false);
@@ -375,6 +219,16 @@ export default function LandingLiveCardShowcase() {
     setFullscreenShowcaseIndex(index);
   };
 
+  const navigateFullscreenShowcase = (direction: "left" | "right") => {
+    if (fullscreenShowcaseIndex === null || showcaseCards.length === 0) return;
+    const step = direction === "left" ? -1 : 1;
+    const nextIndex =
+      (fullscreenShowcaseIndex + step + showcaseCards.length) % showcaseCards.length;
+    setFullscreenActiveTab("none");
+    setFullscreenShowcaseIndex(nextIndex);
+    scrollToShowcaseIndex(nextIndex);
+  };
+
   const handleShowcaseCardClick = (index: number, event?: MouseEvent<HTMLDivElement>) => {
     if (suppressShowcaseClickRef.current) {
       event?.preventDefault();
@@ -462,6 +316,50 @@ export default function LandingLiveCardShowcase() {
     suppressShowcaseClickRef.current = false;
   };
 
+  const handleFullscreenPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || event.pointerType === "mouse") return;
+    const target = event.target;
+    if (
+      target instanceof HTMLElement &&
+      target.closest("[data-live-card-trigger], [data-live-card-panel], button, a")
+    ) {
+      return;
+    }
+    fullscreenSwipeStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      didSwipe: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleFullscreenPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const swipeState = fullscreenSwipeStateRef.current;
+    if (!swipeState || swipeState.pointerId !== event.pointerId || swipeState.didSwipe) {
+      return;
+    }
+
+    const deltaX = event.clientX - swipeState.startX;
+    const deltaY = event.clientY - swipeState.startY;
+    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    swipeState.didSwipe = true;
+    navigateFullscreenShowcase(deltaX < 0 ? "right" : "left");
+  };
+
+  const clearFullscreenSwipeState = (event?: React.PointerEvent<HTMLDivElement>) => {
+    const swipeState = fullscreenSwipeStateRef.current;
+    if (!swipeState) return;
+    if (event && swipeState.pointerId !== event.pointerId) return;
+    if (event?.currentTarget.hasPointerCapture(swipeState.pointerId)) {
+      event.currentTarget.releasePointerCapture(swipeState.pointerId);
+    }
+    fullscreenSwipeStateRef.current = null;
+  };
+
   const scrollShowcase = (direction: "left" | "right") => {
     scrollToShowcaseIndex(activeIndex + (direction === "left" ? -1 : 1));
   };
@@ -546,9 +444,8 @@ export default function LandingLiveCardShowcase() {
                         : "scale-[0.85] opacity-40 blur-[2px]",
                     )}
                   >
-                    <StudioMarketingLiveCard
+                    <StudioShowcaseLiveCard
                       preview={item.preview}
-                      sharePath={item.sharePath}
                       compactChrome
                       showcaseMode
                       interactive={activeIndex === index}
@@ -622,11 +519,14 @@ export default function LandingLiveCardShowcase() {
               exit={{ scale: 0.94, y: 24 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
               className="relative w-full max-w-md"
+              onPointerDownCapture={handleFullscreenPointerDown}
+              onPointerMoveCapture={handleFullscreenPointerMove}
+              onPointerUpCapture={clearFullscreenSwipeState}
+              onPointerCancelCapture={clearFullscreenSwipeState}
               onClick={(event) => event.stopPropagation()}
             >
-              <StudioMarketingLiveCard
+              <StudioShowcaseLiveCard
                 preview={showcaseCards[fullscreenShowcaseIndex].preview}
-                sharePath={showcaseCards[fullscreenShowcaseIndex].sharePath}
                 activeTab={fullscreenActiveTab}
                 onActiveTabChange={setFullscreenActiveTab}
                 className="rounded-[3rem] shadow-2xl shadow-black/40"

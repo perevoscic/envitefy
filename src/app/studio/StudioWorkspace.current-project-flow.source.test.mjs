@@ -25,7 +25,8 @@ test("studio workspace separates the current project from the saved library", ()
   );
   assert.match(source, /upsertLibraryItem\(syncedItem\);/);
   assert.match(source, /clearCurrentProject\(\{ resetDetails: true \}\);/);
-  assert.match(phonePane, /Studio Assistant/);
+  assert.match(phonePane, /getStudioCategoryShowcasePreview\(details\.category\)/);
+  assert.match(phonePane, /<StudioShowcaseLiveCard/);
   assert.match(source, /const currentProjectSaveLabel = /);
   assert.match(phonePane, /\{currentProjectSaveLabel\}/);
   assert.doesNotMatch(phonePane, /Save this project to keep it in Library\./);

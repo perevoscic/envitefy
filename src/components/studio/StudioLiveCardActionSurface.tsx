@@ -97,6 +97,7 @@ type StudioLiveCardActionSurfaceProps = {
   onShare?: () => void;
   shareState?: LiveCardShareState;
   isDesignMode?: boolean;
+  showcaseMode?: boolean;
   onDragEnd?: (key: LiveCardButtonKey, position: LiveCardButtonPosition) => void;
   showExtendedDetails?: boolean;
   registryHelperText?: string | null;
@@ -440,8 +441,17 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     ],
   );
 
+  const isActionRailClosed = props.activeTab === "none";
+  const shouldHideClosedRailLabels = isActionRailClosed && props.showcaseMode;
+  const useExpandedActionButtons = !props.showcaseMode;
+  const actionRailClassName = isActionRailClosed
+    ? `flex min-w-0 items-stretch justify-between gap-0 ${
+        props.showcaseMode ? "w-[calc(100%+1.25rem)] -ml-[0.625rem] px-0" : "w-full px-1"
+      }`
+    : "grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch gap-1 md:gap-3";
+
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col px-1 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2">
+    <div className="pointer-events-none absolute inset-0 flex flex-col px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2">
       <div className="flex h-full min-h-0 flex-col justify-end">
         <AnimatePresence initial={false}>
           {props.activeTab !== "none" && props.activeTab !== "share" ? (
@@ -695,7 +705,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               : "pb-[max(0.35rem,calc(env(safe-area-inset-bottom)+0.15rem))]"
           }`}
         >
-          <div className="grid w-full min-w-0 grid-flow-col auto-cols-fr items-end gap-1.5 md:gap-3">
+          <div className={actionRailClassName}>
             {buttonConfigs.map((button) => {
               const Icon = button.icon;
               const position = props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
@@ -716,7 +726,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     })
                   }
                   style={{ x: position.x, y: position.y }}
-                  className="pointer-events-auto min-w-0"
+                  className={`pointer-events-auto min-w-0 ${isActionRailClosed ? "shrink-0" : "w-full"}`}
                 >
                   <button
                     type="button"
@@ -726,12 +736,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     disabled={isPending}
                     aria-pressed={button.key === "share" ? undefined : isPressed}
                     data-live-card-trigger
-                    className={`group flex w-full min-w-0 flex-col items-center gap-1 transition-transform duration-150 active:scale-[0.97] md:gap-2 ${
-                      props.isDesignMode ? "cursor-move" : ""
-                    }`}
+                    className={`group flex min-w-0 flex-col items-center justify-start gap-0.5 py-1 transition-transform duration-150 active:scale-[0.97] md:gap-2 ${
+                      isActionRailClosed ? "w-auto px-0" : "h-full w-full px-0.5"
+                    } ${props.isDesignMode ? "cursor-move" : ""}`}
                   >
                     <div
-                      className={`rounded-full border p-2 backdrop-blur-md transition-all duration-200 md:p-3 ${
+                      className={`rounded-full border backdrop-blur-md transition-all duration-200 ${
+                        useExpandedActionButtons ? "p-2.5 md:p-3.5" : "p-2 md:p-3"
+                      } ${
                         posterFirstHeroCard
                           ? isPressed
                             ? "translate-y-0.5 border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
@@ -742,7 +754,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       } ${props.isDesignMode ? "ring-2 ring-[#c9b49a]" : ""}`}
                     >
                       <Icon
-                        className={`h-4 w-4 md:h-5 md:w-5 ${
+                        className={`${useExpandedActionButtons ? "h-5 w-5 md:h-6 md:w-6" : "h-4 w-4 md:h-5 md:w-5"} ${
                           isPending
                             ? "animate-spin text-white"
                             : button.key === "share" && shareState === "success"
@@ -753,7 +765,15 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         }`}
                       />
                     </div>
-                    <span className="max-w-full truncate text-center text-[7px] font-bold uppercase leading-tight tracking-tight text-white drop-shadow-md sm:text-[8px] sm:tracking-wider md:text-[9px] md:tracking-widest">
+                    <span
+                      className={`max-w-full truncate text-center text-[7px] font-bold uppercase leading-tight tracking-tight text-white drop-shadow-md sm:text-[8px] sm:tracking-wider md:text-[9px] md:tracking-widest ${
+                        shouldHideClosedRailLabels
+                          ? "hidden"
+                          : isActionRailClosed
+                            ? "hidden md:inline"
+                            : "max-[380px]:hidden"
+                      }`}
+                    >
                       {button.label}
                     </span>
                   </button>

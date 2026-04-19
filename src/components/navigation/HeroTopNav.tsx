@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LoginForm from "@/components/auth/LoginForm";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
@@ -74,7 +74,11 @@ export default function HeroTopNav({
   const { status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileLoginExpanded, setMobileLoginExpanded] = useState(false);
+  const mobileMenuCardRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuToggleRef = useRef<HTMLButtonElement | null>(null);
   const isDarkGlass = variant === "glass-dark";
+  const showMobileGuestActions =
+    status !== "authenticated" && !mobileLoginExpanded;
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -85,8 +89,21 @@ export default function HeroTopNav({
       }
     };
 
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (mobileMenuCardRef.current?.contains(target)) return;
+      if (mobileMenuToggleRef.current?.contains(target)) return;
+      setMobileMenuOpen(false);
+      setMobileLoginExpanded(false);
+    };
+
     document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
   }, [mobileMenuOpen]);
 
   useEffect(() => {
@@ -223,6 +240,7 @@ export default function HeroTopNav({
             </div>
 
             <button
+              ref={mobileMenuToggleRef}
               type="button"
               className={cx(
                 "nav-chrome-motion inline-flex h-11 w-11 items-center justify-center shadow-sm lg:hidden",
@@ -278,6 +296,7 @@ export default function HeroTopNav({
           </div>
 
           <div
+            ref={mobileMenuCardRef}
             className={cx(
               "nav-chrome-menu-card relative ml-auto mt-2 w-full max-w-[20rem] p-3",
               mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none",
@@ -287,7 +306,7 @@ export default function HeroTopNav({
             )}
           >
             <nav
-              className="flex flex-col items-end gap-1 text-right"
+              className="flex flex-col items-end gap-0.5 text-right"
               aria-label="Hero navigation"
             >
               {navLinks.map((link) => (
@@ -296,7 +315,7 @@ export default function HeroTopNav({
                   href={link.href}
                   label={link.label}
                   className={cx(
-                    "nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
+                    "nav-chrome-motion w-full rounded-2xl px-4 py-2.5 text-right text-sm font-semibold transition",
                     isDarkGlass
                       ? "text-white hover:bg-white/[0.06]"
                       : lightNavPillClass,
@@ -309,7 +328,7 @@ export default function HeroTopNav({
                 <Link
                   href={dashboardHref}
                   className={cx(
-                    "nav-chrome-motion mt-2 w-full rounded-2xl px-4 py-3 text-right text-sm font-semibold transition",
+                    "nav-chrome-motion mt-1.5 w-full rounded-2xl px-4 py-2.5 text-right text-sm font-semibold transition",
                     isDarkGlass
                       ? "text-white hover:bg-white/[0.06]"
                       : lightNavPillClass,
@@ -320,20 +339,22 @@ export default function HeroTopNav({
                 </Link>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    aria-expanded={mobileLoginExpanded}
-                    aria-controls="hero-top-nav-mobile-login"
-                    onClick={() => setMobileLoginExpanded((value) => !value)}
-                    className={cx(
-                      "mt-2 self-end nav-chrome-motion rounded-2xl px-6 py-3 text-center text-sm font-semibold transition",
-                      isDarkGlass
-                        ? glassGhostLoginClass
-                        : lightNavPillClass,
-                    )}
-                  >
-                    Login
-                  </button>
+                  {showMobileGuestActions ? (
+                    <button
+                      type="button"
+                      aria-expanded={mobileLoginExpanded}
+                      aria-controls="hero-top-nav-mobile-login"
+                      onClick={() => setMobileLoginExpanded((value) => !value)}
+                      className={cx(
+                        "mt-1.5 self-end nav-chrome-motion rounded-2xl px-6 py-2.5 text-center text-sm font-semibold transition",
+                        isDarkGlass
+                          ? glassGhostLoginClass
+                          : lightNavPillClass,
+                      )}
+                    >
+                      Login
+                    </button>
+                  ) : null}
 
                   <div
                     id="hero-top-nav-mobile-login"
@@ -358,6 +379,7 @@ export default function HeroTopNav({
                           inlineTone={isDarkGlass ? "dark" : "light"}
                           showGoogleAuth={false}
                           successRedirectUrl={loginSuccessRedirectUrl}
+                          onInlineCancel={() => setMobileLoginExpanded(false)}
                           onSwitchMode={() => {
                             setMobileLoginExpanded(false);
                             setMobileMenuOpen(false);
@@ -378,7 +400,7 @@ export default function HeroTopNav({
                 <Link
                   href={authenticatedPrimaryHref}
                   className={cx(
-                    "cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                    "mt-1.5 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
                     isDarkGlass
                       ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.24)]"
                       : "nav-chrome-pill-primary text-white",
@@ -387,7 +409,7 @@ export default function HeroTopNav({
                 >
                   <AnimatedButtonLabel label={primaryCtaLabel} />
                 </Link>
-              ) : (
+              ) : showMobileGuestActions ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -396,7 +418,7 @@ export default function HeroTopNav({
                     onGuestPrimaryAction();
                   }}
                   className={cx(
-                    "mt-3 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                    "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
                     isDarkGlass
                       ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.24)]"
                       : "nav-chrome-pill-primary text-white",
@@ -404,7 +426,7 @@ export default function HeroTopNav({
                 >
                   <AnimatedButtonLabel label={primaryCtaLabel} />
                 </button>
-              )}
+              ) : null}
             </nav>
           </div>
         </div>

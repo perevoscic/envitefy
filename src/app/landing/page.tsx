@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { landingFaqItems } from "./faq-data";
 import LandingExperience from "./LandingExperience";
@@ -44,6 +44,10 @@ export const metadata: Metadata = {
       "Create live cards, invitation designs, hosted event pages, RSVP links, registry links, schedules, and gymnastics meet pages from a photo, PDF, flyer, or studio workflow.",
     images: ["https://envitefy.com/og-default.jpg"],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1d1534",
 };
 
 export default async function LandingPage() {

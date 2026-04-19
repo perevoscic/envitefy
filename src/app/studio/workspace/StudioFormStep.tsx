@@ -121,6 +121,20 @@ export function StudioFormStep({
     ["eventDate", "startTime", "location"].includes(field.key),
   );
   const isBirthday = details.category === "Birthday";
+  const mobileBirthdayLeadFields =
+    isMobileViewport && isBirthday
+      ? primaryCategoryFields.filter((field) => ["name", "age"].includes(field.key))
+      : primaryCategoryFields;
+  const mobileBirthdayTrailingFields =
+    isMobileViewport && isBirthday
+      ? primaryCategoryFields.filter((field) => !["name", "age"].includes(field.key))
+      : [];
+  const mobileSharedLeadFields = isMobileViewport
+    ? sharedPrimaryFields.filter((field) => ["eventDate", "startTime"].includes(field.key))
+    : sharedPrimaryFields;
+  const mobileSharedTrailingFields = isMobileViewport
+    ? sharedPrimaryFields.filter((field) => !["eventDate", "startTime"].includes(field.key))
+    : [];
   const imageFinishPresets = getStudioImageFinishPresets(details.category);
   const selectedImageFinishPreset = resolveStudioImageFinishPreset(
     details.category,
@@ -198,27 +212,65 @@ export function StudioFormStep({
             <div className="space-y-12 pt-2 md:pt-4 lg:flex lg:min-h-full lg:flex-1 lg:flex-col">
               {primaryCategoryFields.length ? (
                 <div className="space-y-4">
-                  <StudioFieldGrid
-                    details={details}
-                    setDetails={setDetails}
-                    fields={primaryCategoryFields}
-                    columnsClassName={
-                      isBirthday
-                        ? "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.6fr)]"
-                        : "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
-                    }
-                  />
+                  {isMobileViewport && isBirthday ? (
+                    <div className="space-y-8">
+                      <StudioFieldGrid
+                        details={details}
+                        setDetails={setDetails}
+                        fields={mobileBirthdayLeadFields}
+                        columnsClassName="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-x-6 gap-y-8"
+                      />
+                      {mobileBirthdayTrailingFields.length ? (
+                        <StudioFieldGrid
+                          details={details}
+                          setDetails={setDetails}
+                          fields={mobileBirthdayTrailingFields}
+                          columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                        />
+                      ) : null}
+                    </div>
+                  ) : (
+                    <StudioFieldGrid
+                      details={details}
+                      setDetails={setDetails}
+                      fields={primaryCategoryFields}
+                      columnsClassName={
+                        isBirthday
+                          ? "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.6fr)]"
+                          : "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
+                      }
+                    />
+                  )}
                 </div>
               ) : null}
 
               {sharedPrimaryFields.length ? (
                 <div className="space-y-4">
-                  <StudioFieldGrid
-                    details={details}
-                    setDetails={setDetails}
-                    fields={sharedPrimaryFields}
-                    columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
-                  />
+                  {isMobileViewport ? (
+                    <div className="space-y-8">
+                      <StudioFieldGrid
+                        details={details}
+                        setDetails={setDetails}
+                        fields={mobileSharedLeadFields}
+                        columnsClassName="grid grid-cols-2 gap-x-6 gap-y-8"
+                      />
+                      {mobileSharedTrailingFields.length ? (
+                        <StudioFieldGrid
+                          details={details}
+                          setDetails={setDetails}
+                          fields={mobileSharedTrailingFields}
+                          columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                        />
+                      ) : null}
+                    </div>
+                  ) : (
+                    <StudioFieldGrid
+                      details={details}
+                      setDetails={setDetails}
+                      fields={sharedPrimaryFields}
+                      columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
+                    />
+                  )}
                 </div>
               ) : null}
 
@@ -244,7 +296,7 @@ export function StudioFormStep({
                   id="studio-idea-and-details"
                   rows={3}
                   placeholder={studioIdeaPlaceholder}
-                  className="font-[var(--font-playfair)] min-h-[96px] w-full resize-none border-0 border-b border-[var(--studio-ink,#1A1A1A)]/18 bg-transparent px-0 py-2 text-2xl text-[var(--studio-ink,#1A1A1A)] transition-colors focus:border-[var(--studio-ink,#1A1A1A)] focus:outline-none focus:ring-0 [&::placeholder]:italic [&::placeholder]:text-[rgba(28,21,48,0.18)]"
+                  className="font-[var(--font-playfair)] min-h-[96px] w-full resize-none border-0 border-b border-[var(--studio-ink,#1A1A1A)]/18 bg-transparent px-0 py-2 text-[1.65rem] leading-[1.35] text-[var(--studio-ink,#1A1A1A)] transition-colors focus:border-[var(--studio-ink,#1A1A1A)] focus:outline-none focus:ring-0 sm:text-2xl [&::placeholder]:text-[1.2rem] [&::placeholder]:italic [&::placeholder]:leading-[1.3] [&::placeholder]:text-[rgba(28,21,48,0.18)] sm:[&::placeholder]:text-[1.5rem]"
                   value={ideaValue}
                   onChange={(event) => updateIdeaText(event.target.value)}
                 />
@@ -477,7 +529,6 @@ export function StudioFormStep({
             shareCurrentProject={shareCurrentProject}
             openCurrentImage={openCurrentImage}
             handleMediaImageLoadError={handleMediaImageLoadError}
-            onSuggestionPick={(suggestion) => updateIdeaText(suggestion)}
           />
         </aside>
       </div>
