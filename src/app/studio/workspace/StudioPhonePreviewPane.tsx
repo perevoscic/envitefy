@@ -31,6 +31,13 @@ type StudioPhonePreviewPaneProps = {
   onSuggestionPick?: (suggestion: string) => void;
 };
 
+type StudioShowcaseCard = {
+  title: string;
+  category: EventDetails["category"] | "Custom Invite";
+  source: "landing" | "studio";
+  imageUrl: string;
+};
+
 const SUGGESTION_LIBRARY: Record<string, string[]> = {
   Birthday: [
     "Space quest with shimmering planets and astronaut helmets",
@@ -88,6 +95,79 @@ const SUGGESTION_LIBRARY: Record<string, string[]> = {
   ],
 };
 
+const STUDIO_PHONE_SHOWCASE_CARDS: StudioShowcaseCard[] = [
+  {
+    title: "Garden Vows",
+    category: "Wedding",
+    source: "landing",
+    imageUrl: "/images/landing/live-cards/garden-vows.webp",
+  },
+  {
+    title: "Wedding Weekend",
+    category: "Wedding",
+    source: "studio",
+    imageUrl: "/images/studio/invite-wedding-weekend.webp",
+  },
+  {
+    title: "Lara’s 7th Dino-Quest",
+    category: "Birthday",
+    source: "landing",
+    imageUrl: "/images/landing/live-cards/lara-s-7th-dino-quest.webp",
+  },
+  {
+    title: "Birthday Bash",
+    category: "Birthday",
+    source: "studio",
+    imageUrl: "/images/studio/invite-birthday-bash.webp",
+  },
+  {
+    title: "Elena’s Baby Shower",
+    category: "Baby Shower",
+    source: "landing",
+    imageUrl: "/images/landing/live-cards/elena-s-baby-shower.webp",
+  },
+  {
+    title: "Blush Brunch Shower",
+    category: "Bridal Shower",
+    source: "landing",
+    imageUrl: "/images/landing/live-cards/blush-brunch-shower.webp",
+  },
+  {
+    title: "Friday Night Lights",
+    category: "Game Day",
+    source: "landing",
+    imageUrl: "/images/landing/live-cards/friday-night-lights-a.webp",
+  },
+  {
+    title: "School Event",
+    category: "Field Trip/Day",
+    source: "studio",
+    imageUrl: "/images/studio/invite-school-event.webp",
+  },
+  {
+    title: "Founder Appreciation Night",
+    category: "Custom Invite",
+    source: "landing",
+    imageUrl: "/images/landing/live-cards/founder-appreciation-night.webp",
+  },
+  {
+    title: "Team Offsite",
+    category: "Custom Invite",
+    source: "studio",
+    imageUrl: "/images/studio/invite-team-offsite.webp",
+  },
+];
+
+function getShowcaseCards(category: EventDetails["category"]): StudioShowcaseCard[] {
+  const cardsForCategory = STUDIO_PHONE_SHOWCASE_CARDS.filter(
+    (card) => card.category === category,
+  );
+  if (cardsForCategory.length > 0) {
+    return cardsForCategory;
+  }
+  return STUDIO_PHONE_SHOWCASE_CARDS.filter((card) => card.category === "Custom Invite");
+}
+
 function getSuggestions(category: EventDetails["category"]): string[] {
   return SUGGESTION_LIBRARY[category] ?? SUGGESTION_LIBRARY["Custom Invite"];
 }
@@ -113,6 +193,7 @@ export function StudioPhonePreviewPane({
 }: StudioPhonePreviewPaneProps) {
   const hasPreview = Boolean(currentProjectWithVisualDraft);
   const suggestions = getSuggestions(details.category);
+  const showcaseCards = getShowcaseCards(details.category);
 
   return (
     <div className="studio-phone-stage relative flex w-full flex-col items-center justify-start gap-4 pb-4 lg:h-full lg:justify-center lg:gap-5 lg:pb-0 lg:translate-x-6">
@@ -255,6 +336,32 @@ export function StudioPhonePreviewPane({
                   </li>
                 ))}
               </ul>
+              <div className="w-full space-y-2 pt-1">
+                <p className="px-1 text-[9px] font-semibold uppercase tracking-[0.22em] text-[var(--studio-ink-soft,#6f5e8c)]">
+                  Live card examples ({details.category})
+                </p>
+                <ul className="grid grid-cols-2 gap-2">
+                  {showcaseCards.slice(0, 2).map((card) => (
+                    <li key={card.title} className="group">
+                      <div className="overflow-hidden rounded-2xl border border-[var(--studio-brand,#7c5cd1)]/20 bg-white/70 shadow-[0_10px_26px_rgba(31,18,52,0.1)]">
+                        <img
+                          src={card.imageUrl}
+                          alt={`${card.title} live card preview`}
+                          className="aspect-[3/4] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        />
+                        <div className="space-y-0.5 px-2.5 py-2">
+                          <p className="line-clamp-1 text-[10px] font-semibold text-[var(--studio-ink,#1A1A1A)]">
+                            {card.title}
+                          </p>
+                          <p className="text-[8px] uppercase tracking-[0.18em] text-[var(--studio-ink-soft,#6f5e8c)]">
+                            {card.source}
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           )}
         </div>

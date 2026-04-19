@@ -276,10 +276,10 @@ export function StudioFormStep({
                               imageFinishPreset: active ? "" : preset.label,
                             }))
                           }
-                          className={`studio-finish-chip flex min-h-[60px] w-full items-center justify-center rounded-[1.1rem] border px-4 text-center text-[12px] font-semibold uppercase leading-tight tracking-[0.05em] text-white transition-all ${
+                          className={`studio-finish-chip flex min-h-[60px] w-full items-center justify-center rounded-[1.1rem] border px-4 text-center text-[12px] font-semibold uppercase leading-tight tracking-[0.05em] transition-all ${
                             active
-                              ? "border-[var(--studio-brand,#1A1A1A)] bg-[var(--studio-brand,#1A1A1A)] shadow-[0_20px_50px_rgba(124,92,209,0.32)] ring-2 ring-[var(--studio-brand,#1A1A1A)]/20 ring-offset-2 ring-offset-[#f7edf7]"
-                              : "border-[var(--studio-brand,#1A1A1A)]/70 bg-[var(--studio-brand,#1A1A1A)] shadow-[0_16px_38px_rgba(124,92,209,0.24)] hover:-translate-y-0.5 hover:border-[var(--studio-brand,#1A1A1A)] hover:shadow-[0_20px_46px_rgba(124,92,209,0.28)]"
+                              ? "border-[var(--studio-brand,#1A1A1A)] bg-[var(--studio-brand,#1A1A1A)] text-white shadow-[0_20px_50px_rgba(124,92,209,0.28)] ring-2 ring-[var(--studio-brand,#1A1A1A)]/18 ring-offset-2 ring-offset-[#f7edf7]"
+                              : "border-[var(--studio-card-border,#d8cdc0)] bg-white text-[var(--studio-ink,#5F5345)] shadow-[0_12px_30px_rgba(124,92,209,0.12)] hover:-translate-y-0.5 hover:border-[var(--studio-brand,#8C7B65)] hover:bg-[color:rgba(124,92,209,0.08)]"
                           }`}
                         >
                           {preset.label}
