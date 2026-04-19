@@ -126,6 +126,10 @@ function parseStudioCreateStep(value: string | null): StudioCreateStep {
   return "type";
 }
 
+function parseStudioCategoryParam(value: string | null): InviteCategory | null {
+  return normalizeStudioParsedCategory(value);
+}
+
 function mergeStudioButtonPositions(item: MediaItem): NonNullable<MediaItem["positions"]> {
   return { ...EMPTY_POSITIONS, ...item.positions };
 }
@@ -391,7 +395,11 @@ export default function StudioWorkspace() {
   const [createStep, setCreateStep] = useState<StudioCreateStep>(() =>
     parseStudioCreateStep(searchParams.get("step")),
   );
-  const [details, setDetails] = useState<EventDetails>(createInitialDetails);
+  const [details, setDetails] = useState<EventDetails>(() => {
+    const initial = createInitialDetails();
+    const parsedCategory = parseStudioCategoryParam(searchParams.get("category"));
+    return parsedCategory ? { ...initial, category: parsedCategory } : initial;
+  });
   const { mediaList, setMediaList, librarySyncError, retryLibrarySync } = useStudioMediaLibrary();
   const [currentProject, setCurrentProject] = useState<MediaItem | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -493,9 +501,14 @@ export default function StudioWorkspace() {
   }, [details]);
 
   const navigateWorkspace = useCallback(
-    (nextView: StudioWorkspaceView, nextCreateStep?: StudioCreateStep) => {
+    (
+      nextView: StudioWorkspaceView,
+      nextCreateStep?: StudioCreateStep,
+      nextCategory?: InviteCategory,
+    ) => {
       const resolvedCreateStep: StudioCreateStep | null =
         nextView === "create" ? (nextCreateStep ?? createStep) : null;
+      const resolvedCategory = nextCategory ?? details.category;
 
       setView((current) => (current === nextView ? current : nextView));
       if (resolvedCreateStep) {
@@ -506,24 +519,32 @@ export default function StudioWorkspace() {
       params.set("view", nextView);
       if (nextView === "create" && resolvedCreateStep) {
         params.set("step", resolvedCreateStep);
+        params.set("category", resolvedCategory);
       } else {
         params.delete("step");
+        params.delete("category");
       }
       const next = params.toString();
       const current = searchParams.toString();
       if (next === current) return;
       router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
     },
-    [createStep, pathname, router, searchParams],
+    [createStep, details.category, pathname, router, searchParams],
   );
 
   useEffect(() => {
     const nextView = parseStudioWorkspaceView(searchParams.get("view"));
     const stepParam = searchParams.get("step");
     const nextCreateStep = stepParam ? parseStudioCreateStep(stepParam) : null;
+    const nextCategory = parseStudioCategoryParam(searchParams.get("category"));
     setView((current) => (current === nextView ? current : nextView));
     if (nextView === "create" && nextCreateStep) {
       setCreateStep((current) => (current === nextCreateStep ? current : nextCreateStep));
+    }
+    if (nextView === "create" && nextCategory) {
+      setDetails((current) =>
+        current.category === nextCategory ? current : { ...current, category: nextCategory },
+      );
     }
   }, [searchParams]);
 
@@ -1519,7 +1540,7 @@ export default function StudioWorkspace() {
       category,
     }));
     setMobileEditorPane("composer");
-    navigateWorkspace("create", "details");
+    navigateWorkspace("create", "details", category);
   }
 
   function openEditorStep() {
