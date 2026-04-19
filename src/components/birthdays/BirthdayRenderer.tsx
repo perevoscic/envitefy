@@ -2205,6 +2205,17 @@ function EditorialFeatureLayout({
 
         <footer className="border-t border-white/70 px-1 pt-6 text-center text-sm text-slate-500">
           <p>Snapped with Envitefy.</p>
+          <p>
+            Snap your now.{" "}
+            <a
+              href="https://envitefy.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline decoration-2 underline-offset-2"
+            >
+              envitefy.com
+            </a>
+          </p>
         </footer>
       </main>
     </div>
@@ -2280,6 +2291,17 @@ function Footer({
       </div>
 
       <p className="text-sm opacity-60">Snapped with Envitefy.</p>
+      <p className="text-sm opacity-60">
+        Snap your now.{" "}
+        <a
+          href="https://envitefy.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold underline decoration-2 underline-offset-2"
+        >
+          envitefy.com
+        </a>
+      </p>
     </footer>
   );
 }
