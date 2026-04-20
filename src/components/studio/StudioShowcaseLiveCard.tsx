@@ -17,6 +17,7 @@ type StudioShowcaseLiveCardProps = {
   className?: string;
   compactChrome?: boolean;
   showcaseMode?: boolean;
+  buttonChromeSize?: "default" | "compact";
   interactive?: boolean;
   imageLoading?: "eager" | "lazy";
   imageFetchPriority?: "high" | "low" | "auto";
@@ -30,6 +31,7 @@ export default function StudioShowcaseLiveCard({
   className,
   compactChrome = false,
   showcaseMode = false,
+  buttonChromeSize = "default",
   interactive = true,
   imageLoading = "lazy",
   imageFetchPriority = "auto",
@@ -166,6 +168,7 @@ export default function StudioShowcaseLiveCard({
           fallbackShareUrlToWindowLocation={false}
           shareState={shareState}
           showcaseMode={showcaseMode}
+          buttonChromeSize={buttonChromeSize}
         />
       </div>
       {showcaseOverlay}

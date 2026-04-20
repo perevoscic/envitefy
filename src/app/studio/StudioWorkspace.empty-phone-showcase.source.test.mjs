@@ -13,6 +13,7 @@ test("studio phone empty state renders one category-driven showcase live card", 
 
   assert.match(phonePane, /const showcasePreview = getStudioCategoryShowcasePreview\(details\.category\);/);
   assert.match(phonePane, /<StudioShowcaseLiveCard/);
+  assert.match(phonePane, /buttonChromeSize="compact"/);
   assert.doesNotMatch(phonePane, /showcaseCards\.slice\(0,\s*2\)/);
   assert.doesNotMatch(phonePane, /Studio Assistant/);
   assert.doesNotMatch(phonePane, /Live card examples \(/);

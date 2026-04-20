@@ -171,6 +171,7 @@ export function StudioPhonePreviewPane({
           ) : (
             <StudioShowcaseLiveCard
               preview={showcasePreview}
+              buttonChromeSize="compact"
               className="h-full w-full rounded-none border-0 bg-transparent shadow-none aspect-auto"
               imageLoading="eager"
               imageFetchPriority="high"
