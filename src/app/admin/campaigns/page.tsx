@@ -210,9 +210,11 @@ export default function CampaignsPage() {
           buttonText: buttonText || undefined,
           buttonUrl: buttonUrl || undefined,
           audienceFilter: {
-            // Test mode has priority; next is All users; else specific plans
-            plans: isTest ? [] : isAll ? undefined : selectedPlans,
             testEmail: isTest ? testEmail : undefined,
+            minScans: undefined,
+            maxScans: undefined,
+            lastActiveAfter: undefined,
+            lastActiveBefore: undefined,
           },
         }),
       });
@@ -698,7 +700,7 @@ ${socialIconsHtml}
                   type="url"
                   value={buttonUrl}
                   onChange={(e) => setButtonUrl(e.target.value)}
-                  placeholder="https://envitefy.com/subscription"
+                  placeholder="https://envitefy.com/create-event"
                   className="w-full px-4 py-2 bg-white border border-[#d8d0f3] rounded-lg text-[#483a74] placeholder:text-[#9a8fc0] focus:outline-none focus:ring-2 focus:ring-[#baa9ea]/55 focus:border-[#9b86df]"
                 />
               </div>
@@ -710,7 +712,7 @@ ${socialIconsHtml}
                 Audience <span className="text-red-500">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
-                {["test", "all", "free", "monthly", "yearly", "FF"].map(
+                {["test", "all"].map(
                   (plan) => (
                     <button
                       key={plan}
@@ -730,13 +732,7 @@ ${socialIconsHtml}
                         ? "📧 Individual"
                         : plan === "all"
                           ? "All users"
-                          : plan === "free"
-                            ? "Free Trial"
-                            : plan === "monthly"
-                              ? "Monthly Plan"
-                              : plan === "yearly"
-                                ? "Yearly Plan"
-                                : "Lifetime (FF)"}
+                          : plan}
                     </button>
                   ),
                 )}
@@ -804,13 +800,7 @@ ${socialIconsHtml}
                       .map((p) =>
                         p === "all"
                           ? "All users"
-                          : p === "free"
-                            ? "Free Trial"
-                            : p === "monthly"
-                              ? "Monthly"
-                              : p === "yearly"
-                                ? "Yearly"
-                                : "Lifetime",
+                          : p,
                       )
                       .join(", ") || "your selection"}
                   </p>

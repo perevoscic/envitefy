@@ -59,10 +59,6 @@ PGSSL_DISABLE_VERIFY=true
 # or
 PGSSL_CA_BASE64=
 
-# Stripe
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 APP_URL=http://localhost:3001
 ```
 
@@ -180,8 +176,7 @@ curl -X POST http://localhost:3000/api/outlook/insert \
 ### User + Provider
 
 - Provider status: `GET /api/calendars` → `{ google, microsoft, apple }`.
-- Profile: `GET/PUT /api/user/profile` → read/update names, preferred provider, subscription plan.
-- Subscription: `GET/PUT /api/user/subscription`.
+- Profile: `GET/PUT /api/user/profile` → read/update names and preferred provider.
 - History: `GET/POST /api/history`, `GET/PATCH/DELETE /api/history/[id]`.
 
 ### Health + Debug

@@ -277,19 +277,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Protect subscription pages when not signed in
-  const protectedPrefixes = ["/subscription"];
-  for (const prefix of protectedPrefixes) {
-    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
-      if (!authState.hasSession) {
-        const url = req.nextUrl.clone();
-        url.pathname = "/";
-        return redirectWithMarker(url, 302);
-      }
-      break;
-    }
-  }
-
   return ok();
 }
 

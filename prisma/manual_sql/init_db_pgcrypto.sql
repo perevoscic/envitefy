@@ -14,13 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Ensure column exists if table pre-existed without it
 ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider varchar(32);
--- Ensure subscription_plan column exists
-ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan varchar(32);
--- Track if a user has ever been on a paid plan
-ALTER TABLE users ADD COLUMN IF NOT EXISTS ever_paid boolean;
-ALTER TABLE users ALTER COLUMN ever_paid SET DEFAULT false;
--- Add credits column to store purchased/earned credits
-ALTER TABLE users ADD COLUMN IF NOT EXISTS credits integer;
 -- Studio workspace library (JSON); also ensured at runtime via db.ensureOnce
 ALTER TABLE users ADD COLUMN IF NOT EXISTS studio_library jsonb;
 -- Remove legacy scans_remaining column if present
@@ -140,47 +133,6 @@ CREATE INDEX IF NOT EXISTS idx_event_shares_recipient_status
 CREATE INDEX IF NOT EXISTS idx_event_shares_owner_event
   ON event_shares(owner_user_id, event_id);
 
--- Promo codes (gift codes for subscriptions or credits)
-CREATE TABLE IF NOT EXISTS promo_codes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code text UNIQUE NOT NULL,
-  amount_cents integer NOT NULL,
-  currency varchar(10) NOT NULL DEFAULT 'USD',
-  created_by_email text,
-  recipient_name text,
-  recipient_email text,
-  message text,
-  -- Optional metadata about the gift units
-  quantity integer,
-  period varchar(16), -- 'months' | 'years'
-  expires_at timestamptz(6),
-  redeemed_at timestamptz(6),
-  redeemed_by_email text,
-  stripe_payment_intent_id text,
-  stripe_checkout_session_id text,
-  stripe_charge_id text,
-  stripe_refund_id text,
-  revoked_at timestamptz(6),
-  metadata jsonb,
-  created_at timestamptz(6) DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_promo_codes_created_at ON promo_codes(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_promo_codes_recipient_email ON promo_codes(recipient_email);
-CREATE INDEX IF NOT EXISTS idx_promo_codes_redeemed_at ON promo_codes(redeemed_at);
-
--- Add user subscription expiration to support gifted months
-ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at timestamptz(6);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id varchar(255);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id varchar(255);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_status varchar(64);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_price_id varchar(255);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_current_period_end timestamptz(6);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_cancel_at_period_end boolean;
-ALTER TABLE users ALTER COLUMN stripe_cancel_at_period_end SET DEFAULT false;
-CREATE INDEX IF NOT EXISTS idx_users_stripe_customer_id ON users(stripe_customer_id);
-CREATE INDEX IF NOT EXISTS idx_users_stripe_subscription_id ON users(stripe_subscription_id);
-
 -- Admin flag and lightweight usage metrics
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean;
 ALTER TABLE users ALTER COLUMN is_admin SET DEFAULT false;
@@ -211,53 +163,5 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS feature_visibility jsonb;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS primary_signup_source text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS product_scopes text[];
 ALTER TABLE users ALTER COLUMN product_scopes SET DEFAULT ARRAY['snap']::text[];
-
--- Ensure promo_codes has new Stripe linkage columns when upgrading
-ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS stripe_payment_intent_id text;
-ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS stripe_checkout_session_id text;
-ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS stripe_charge_id text;
-ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS stripe_refund_id text;
-ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS revoked_at timestamptz(6);
-ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS metadata jsonb;
-CREATE INDEX IF NOT EXISTS idx_promo_codes_stripe_payment_intent ON promo_codes(stripe_payment_intent_id);
-CREATE INDEX IF NOT EXISTS idx_promo_codes_stripe_checkout ON promo_codes(stripe_checkout_session_id);
-CREATE INDEX IF NOT EXISTS idx_promo_codes_revoked_at ON promo_codes(revoked_at);
-
--- Gift orders are created before payment and fulfilled after Stripe webhook confirmation
-CREATE TABLE IF NOT EXISTS gift_orders (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  stripe_checkout_session_id text UNIQUE,
-  stripe_payment_intent_id text,
-  stripe_customer_id text,
-  purchaser_email text,
-  purchaser_name text,
-  recipient_name text,
-  recipient_email text,
-  message text,
-  quantity integer NOT NULL,
-  period varchar(16) NOT NULL,
-  amount_cents integer NOT NULL,
-  currency varchar(10) NOT NULL DEFAULT 'USD',
-  status varchar(32) NOT NULL DEFAULT 'pending', -- pending | paid | fulfilled | failed | refunded
-  promo_code_id uuid REFERENCES promo_codes(id),
-  metadata jsonb,
-  created_at timestamptz(6) DEFAULT now(),
-  updated_at timestamptz(6) DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_gift_orders_status ON gift_orders(status);
-CREATE INDEX IF NOT EXISTS idx_gift_orders_payment_intent ON gift_orders(stripe_payment_intent_id);
-CREATE INDEX IF NOT EXISTS idx_gift_orders_checkout_session ON gift_orders(stripe_checkout_session_id);
-
--- Store processed Stripe webhook events for idempotency/debugging
-CREATE TABLE IF NOT EXISTS stripe_webhook_events (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id text UNIQUE NOT NULL,
-  type text NOT NULL,
-  payload jsonb NOT NULL,
-  created_at timestamptz(6) DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_stripe_webhook_events_created_at ON stripe_webhook_events(created_at DESC);
 
 

@@ -13,7 +13,6 @@ model users {
   first_name         String?          @db.VarChar(255)
   last_name          String?          @db.VarChar(255)
   preferred_provider String?          @db.VarChar(32)
-  subscription_plan  String?          @db.VarChar(32)
   feature_visibility Json?
   primary_signup_source String?
   product_scopes      String[]

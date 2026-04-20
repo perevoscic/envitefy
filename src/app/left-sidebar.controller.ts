@@ -8,12 +8,6 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  clearProfileCache,
-  PROFILE_CACHE_TTL_MS,
-  readProfileCache,
-  writeProfileCache,
-} from "@/utils/profileCache";
 import { buildEventPath } from "@/utils/event-url";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
@@ -44,7 +38,6 @@ import {
   normalizeCalendarProvider,
   SIDEBAR_WIDTH_REM,
   SidebarPage,
-  SubscriptionPlan,
 } from "./left-sidebar.model";
 
 const MOBILE_SIDEBAR_SCROLL_LOCK_CLASS = "sidebar-mobile-open";
@@ -124,9 +117,6 @@ export type LeftSidebarControllerViewModel = {
     colorClass: string;
     bgClass: string;
   }>;
-  showCreditsShell: boolean;
-  creditsAreKnown: boolean;
-  creditsValue: number;
   asideRef: RefObject<HTMLDivElement | null>;
   eventSidebarRef: RefObject<HTMLDivElement | null>;
   menuRef: RefObject<HTMLDivElement | null>;
@@ -219,7 +209,6 @@ export function useLeftSidebarController({
     if (typeof window === "undefined") return false;
     return window.matchMedia("(min-width: 1024px)").matches;
   });
-  const [credits, setCredits] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(
     Boolean((session?.user as any)?.isAdmin)
   );
@@ -598,13 +587,6 @@ export function useLeftSidebarController({
       }
     };
 
-    const applyProfile = (
-      plan: SubscriptionPlan,
-      creditsValue: number | null
-    ) => {
-      setCredits(plan === "FF" ? Number.POSITIVE_INFINITY : creditsValue);
-    };
-
     async function loadProfile() {
       try {
         const response = await fetch("/api/user/profile", {
@@ -614,27 +596,6 @@ export function useLeftSidebarController({
         const json = await response.json().catch(() => ({}));
         if (!response.ok) return;
         if (!ignore) {
-          const planRaw = json.subscriptionPlan;
-          const plan =
-            planRaw === "freemium" ||
-            planRaw === "free" ||
-            planRaw === "monthly" ||
-            planRaw === "yearly" ||
-            planRaw === "FF"
-              ? planRaw
-              : null;
-          const nextCredits =
-            plan === "FF"
-              ? Number.POSITIVE_INFINITY
-              : typeof json.credits === "number"
-                ? (json.credits as number)
-                : null;
-          applyProfile(plan, nextCredits === Number.POSITIVE_INFINITY ? null : nextCredits);
-          writeProfileCache(
-            profileEmailRef.current || profileEmail,
-            plan,
-            nextCredits
-          );
           if (typeof json.isAdmin === "boolean") {
             setIsAdmin(json.isAdmin);
           }
@@ -672,24 +633,9 @@ export function useLeftSidebarController({
     };
 
     if (status === "authenticated") {
-      const cached = readProfileCache(profileEmailRef.current || profileEmail);
-      const hasFreshCache =
-        Boolean(cached) &&
-        Date.now() - cached.timestamp < PROFILE_CACHE_TTL_MS;
       setIsAdmin(Boolean((session?.user as any)?.isAdmin));
       setProfilePrimarySignupSource(null);
       setProfileLoaded(true);
-      if (cached) {
-        applyProfile(cached.plan, cached.credits);
-        if (hasFreshCache) {
-          return () => {
-            ignore = true;
-            cancelScheduledLoad();
-          };
-        }
-      } else {
-        setCredits(null);
-      }
       if (primarySignupSource === "legacy") {
         void loadProfile();
         return () => {
@@ -700,12 +646,10 @@ export function useLeftSidebarController({
       scheduleProfileLoad();
     } else if (status === "unauthenticated") {
       cancelScheduledLoad();
-      clearProfileCache(profileEmailRef.current || profileEmail);
       profileEmailRef.current = null;
       savedCalendarProviderRef.current = "__unset";
       setProfilePrimarySignupSource(null);
       setProfileLoaded(true);
-      setCredits(null);
     }
 
     return () => {
@@ -752,12 +696,6 @@ export function useLeftSidebarController({
   useEffect(() => {
     setIsAdmin(Boolean((session?.user as any)?.isAdmin));
   }, [session?.user]);
-
-  const showCreditsShell = false;
-  const creditsAreKnown =
-    profileLoaded && typeof credits === "number" && credits >= 0;
-  const creditsValue =
-    typeof credits === "number" && credits >= 0 ? credits : 0;
 
   const collapseSidebarOnTouch = useCallback(() => {
     try {
@@ -1354,9 +1292,6 @@ export function useLeftSidebarController({
     userTitleLabel,
     userEmail,
     footerMenuItems,
-    showCreditsShell,
-    creditsAreKnown,
-    creditsValue,
     asideRef,
     eventSidebarRef,
     menuRef,

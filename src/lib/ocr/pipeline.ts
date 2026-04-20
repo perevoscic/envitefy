@@ -4,7 +4,7 @@ import sharp from "sharp";
 import { authOptions } from "@/lib/auth";
 import { normalizeBirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { corsJson } from "@/lib/cors";
-import { incrementCreditsByEmail, incrementUserScanCounters } from "@/lib/db";
+import { incrementUserScanCounters } from "@/lib/db";
 import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 import {
   clampTimeoutMs,
@@ -1413,24 +1413,11 @@ export async function handleOcrRequest(request: Request) {
       birthdayAge: llmImage?.birthdayAge,
     });
 
-    const requestOrigin = new URL(request.url).origin;
-    const requestCookie = request.headers.get("cookie") || "";
     void (async () => {
       try {
         const session = await getServerSession(authOptions);
         const email = session?.user?.email as string | undefined;
         if (!email) return;
-        try {
-          const profileRes = await fetch(`${requestOrigin}/api/user/profile`, {
-            headers: { cookie: requestCookie },
-          } as any).catch(() => null);
-          const plan = profileRes?.ok ? (await profileRes.json().catch(() => ({}))).subscriptionPlan : null;
-          if (!plan || plan === "free") {
-            await incrementCreditsByEmail(email, -1);
-          }
-        } catch {
-          await incrementCreditsByEmail(email, -1);
-        }
         try {
           await incrementUserScanCounters({ email, category });
         } catch {}

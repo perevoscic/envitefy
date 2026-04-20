@@ -39,7 +39,7 @@ Google OAuth authentication has been successfully integrated into your Envitefy 
 
 - Added "Continue with Google" button
 - Added divider with "or" text
-- Redirects to subscription page after successful Google sign-up
+- Redirects into the authenticated app after successful Google sign-up
 
 ### 4. Documentation
 
@@ -71,8 +71,6 @@ NEXTAUTH_URL=http://localhost:3001  # or your production URL
    - `email` from Google
    - `first_name` and `last_name` from Google profile
    - `password_hash = NULL`
-   - `subscription_plan = "freemium"`
-   - `credits = 3`
 5. User is signed in and redirected
 
 ### Existing User with Same Email
@@ -104,7 +102,6 @@ NEXTAUTH_URL=http://localhost:3001  # or your production URL
 - [ ] Sign up with email/password (existing functionality)
 - [ ] Sign in with email/password (existing functionality)
 - [ ] Verify user profile shows correct name from Google
-- [ ] Verify new users get 3 free credits
 - [ ] Verify users are redirected to correct pages after auth
 
 ## Google Cloud Console Setup

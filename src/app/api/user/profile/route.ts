@@ -5,10 +5,7 @@ import {
   updateUserNamesByEmail,
   getUserByEmail,
   updatePreferredProviderByEmail,
-  getSubscriptionPlanByEmail,
-  updateSubscriptionPlanByEmail,
 } from "@/lib/db";
-import { sendSubscriptionChangeEmail } from "@/lib/email";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -17,22 +14,11 @@ export async function GET() {
   }
   const email = session.user.email as string;
   const user = await getUserByEmail(email);
-  // Reuse the user row instead of issuing extra point-lookups on the critical path.
-  const responsePlan = user?.subscription_plan || "freemium";
-  const rawCredits = user?.credits;
-  const creditsValue =
-    responsePlan === "FF"
-      ? null
-      : responsePlan === "free" || responsePlan === "freemium"
-      ? (Number.isFinite(rawCredits as any) ? (rawCredits as number) : 0)
-      : null;
   return NextResponse.json({
     email: user?.email || email,
     firstName: user?.first_name || null,
     lastName: user?.last_name || null,
     preferredProvider: user?.preferred_provider || null,
-    subscriptionPlan: responsePlan,
-    credits: creditsValue,
     name: session.user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
     isAdmin: Boolean(user?.is_admin),
     primarySignupSource: user?.primary_signup_source || "legacy",
@@ -91,47 +77,12 @@ export async function PUT(req: Request) {
       updatedUser = await updatePreferredProviderByEmail({ email, preferredProvider });
     }
 
-    // Track subscription plan changes for email notification
-    const oldPlan = typeof body.subscriptionPlan !== "undefined" ? (await getSubscriptionPlanByEmail(email)) || "free" : null;
-    
-    if (typeof body.subscriptionPlan !== "undefined") {
-      const rawPlan = body.subscriptionPlan == null ? null : String(body.subscriptionPlan);
-      const norm =
-        rawPlan &&
-        (rawPlan === "freemium" ||
-          rawPlan === "free" ||
-          rawPlan === "monthly" ||
-          rawPlan === "yearly" ||
-          rawPlan === "FF")
-          ? (rawPlan as any)
-          : null;
-      await updateSubscriptionPlanByEmail({ email, plan: norm });
-    }
-    const nextPlan = (await getSubscriptionPlanByEmail(email)) || null;
-    
-    // Send subscription change email if plan changed
-    if (oldPlan && nextPlan && oldPlan !== nextPlan) {
-      try {
-        const user = await getUserByEmail(email);
-        const userName = user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || null : null;
-        await sendSubscriptionChangeEmail({
-          toEmail: email,
-          userName,
-          oldPlan,
-          newPlan: nextPlan,
-        });
-      } catch (emailErr) {
-        // Log but don't fail the request if email fails
-        console.error("[profile] Failed to send subscription change email:", emailErr);
-      }
-    }
     return NextResponse.json({
       ok: true,
       email: updatedUser.email,
       firstName: updatedUser.first_name,
       lastName: updatedUser.last_name,
       preferredProvider: updatedUser.preferred_provider || null,
-      subscriptionPlan: nextPlan,
       primarySignupSource: updatedUser.primary_signup_source || "legacy",
       productScopes: Array.isArray(updatedUser.product_scopes)
         ? updatedUser.product_scopes

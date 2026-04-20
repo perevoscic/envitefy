@@ -4,7 +4,6 @@ import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { corsJson, corsPreflight } from "@/lib/cors";
 import {
   deleteEventHistoryById,
-  incrementCreditsByEmail,
   incrementUserScanCounters,
   insertEventHistory,
   upsertEventHistoryInputBlob,
@@ -352,7 +351,6 @@ async function handleLegacyIngest(request: Request) {
     const session = await getServerSession(authOptions);
     const email = session?.user?.email as string | undefined;
     if (email) {
-      await incrementCreditsByEmail(email, -1);
       try {
         await incrementUserScanCounters({ email, category });
       } catch {}

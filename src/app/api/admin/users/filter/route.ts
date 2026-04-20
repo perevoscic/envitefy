@@ -47,7 +47,7 @@ export async function GET(req: Request) {
     if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
-    const view = searchParams.get("view") as "all" | "paid" | "ff" | "scans" | "shares" | null;
+    const view = searchParams.get("view") as "all" | "scans" | "shares" | null;
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const cursor = searchParams.get("cursor");
 
@@ -65,12 +65,6 @@ export async function GET(req: Request) {
     switch (view) {
       case "all":
         whereClause = "1=1";
-        break;
-      case "paid":
-        whereClause = "subscription_plan in ('monthly', 'yearly')";
-        break;
-      case "ff":
-        whereClause = "subscription_plan = 'FF'";
         break;
       case "scans":
         orderClause = "order by scans_total desc nulls last, id desc";
@@ -103,8 +97,7 @@ export async function GET(req: Request) {
     }
 
     const sql = `
-      select id, email, first_name, last_name, subscription_plan, ever_paid,
-             credits, created_at, scans_total, shares_sent,
+      select id, email, first_name, last_name, created_at, scans_total, shares_sent,
              scans_birthdays, scans_weddings, scans_sport_events,
              scans_appointments, scans_doctor_appointments, scans_play_days,
              scans_general_events, scans_car_pool
@@ -140,4 +133,3 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: String(err?.message || err || "unknown error") }, { status: 500 });
   }
 }
-

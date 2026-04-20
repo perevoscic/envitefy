@@ -21,14 +21,12 @@ type Overview = {
   totalUsers: number;
   totalEvents: number;
   totalShares: number;
-  usersPaid: number;
-  usersFF: number;
   totalScans: number;
   eventsByCategory: EventCategoryTotals;
   scansByCategory: EventCategoryTotals;
 };
 
-type StatView = "all" | "paid" | "ff" | "scans" | "shares" | null;
+type StatView = "all" | "scans" | "shares" | null;
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -159,8 +157,6 @@ export default function AdminPage() {
 
   function getActiveViewTitle(): string {
     if (activeStatView === "all") return "All Users";
-    if (activeStatView === "paid") return "Paid Users";
-    if (activeStatView === "ff") return "FF Lifetime Users";
     if (activeStatView === "scans") return "Users by Total Scans";
     if (activeStatView === "shares") return "Users by Shares Sent";
     return "User Search";
@@ -343,13 +339,9 @@ export default function AdminPage() {
                   ? `Showing ${
                       activeStatView === "all"
                         ? "all users"
-                        : activeStatView === "paid"
-                          ? "paid users"
-                          : activeStatView === "ff"
-                            ? "FF lifetime users"
-                            : activeStatView === "scans"
-                              ? "users sorted by total scans"
-                              : "users sorted by shares sent"
+                          : activeStatView === "scans"
+                            ? "users sorted by total scans"
+                            : "users sorted by shares sent"
                     }`
                   : "Search for users by email, first name, or last name"}
               </p>

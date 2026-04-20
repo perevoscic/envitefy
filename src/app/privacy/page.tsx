@@ -39,10 +39,6 @@ export default function PrivacyPage() {
                       calendar events on your behalf.
                     </li>
                     <li>
-                      Payments: subscriptions are handled by Stripe; we
-                      don&apos;t store full card numbers.
-                    </li>
-                    <li>
                       Usage data: basic logs and device info to keep the service
                       secure and reliable.
                     </li>
@@ -65,7 +61,6 @@ export default function PrivacyPage() {
                     <li>
                       Operate, secure, troubleshoot, and improve the product.
                     </li>
-                    <li>Process payments and manage subscriptions.</li>
                     <li>
                       Communicate about your account, features, and support.
                     </li>
@@ -91,9 +86,6 @@ export default function PrivacyPage() {
                     <li>
                       Calendar providers: your favorite calendar service when
                       you connect and ask us to create events.
-                    </li>
-                    <li>
-                      Payments: Stripe for checkout, billing, and receipts.
                     </li>
                     <li>
                       Service providers: hosting and infrastructure to run the

@@ -56,20 +56,6 @@ export default function TermsPage() {
 
                 <section>
                   <h2 className="text-xl font-semibold text-foreground">
-                    Subscriptions &amp; billing
-                  </h2>
-                  <p className="mt-2">
-                    Paid plans are processed by Stripe. Prices and features are
-                    shown in the app. You can manage or cancel your subscription
-                    in the billing portal. Some changes may take effect at the
-                    next billing period. Taxes may apply. Refunds, when
-                    applicable, are handled per our policies and Stripe&apos;s
-                    processes.
-                  </p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-foreground">
                     Calendar integrations
                   </h2>
                   <p className="mt-2">
@@ -77,7 +63,7 @@ export default function TermsPage() {
                     authorize us to create events on your behalf using their
                     APIs. You can disconnect at any time in settings or with the
                     providers directly. We are not affiliated with Google,
-                    Microsoft, Apple, or Stripe.
+                    Microsoft, or Apple.
                   </p>
                 </section>
 

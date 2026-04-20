@@ -29,14 +29,6 @@ export type CompactNavItem = {
   badge?: number;
 };
 
-export type SubscriptionPlan =
-  | "freemium"
-  | "free"
-  | "monthly"
-  | "yearly"
-  | "FF"
-  | null;
-
 export type HistoryRow = {
   id: string;
   title: string;

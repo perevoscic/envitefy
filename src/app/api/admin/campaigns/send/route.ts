@@ -8,7 +8,6 @@ import { getUserByEmail, query } from "@/lib/db";
 import { sendBulkEmail } from "@/lib/resend";
 
 interface AudienceFilter {
-  plans?: string[] | undefined; // ["free", "monthly", "yearly", "FF"] or undefined for ALL
   minScans?: number | null;
   maxScans?: number | null;
   lastActiveAfter?: string | null; // ISO date
@@ -90,13 +89,6 @@ export async function POST(req: NextRequest) {
       const whereConditions: string[] = ["email IS NOT NULL"];
       const queryParams: any[] = [];
       let paramIndex = 1;
-
-      // If plans is provided and non-empty, filter by plans; otherwise, ALL users
-      if (Array.isArray(audienceFilter.plans) && audienceFilter.plans.length > 0) {
-        whereConditions.push(`subscription_plan = ANY($${paramIndex})`);
-        queryParams.push(audienceFilter.plans);
-        paramIndex++;
-      }
 
     if (
       typeof audienceFilter.minScans === "number" &&
@@ -251,4 +243,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

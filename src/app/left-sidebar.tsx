@@ -895,9 +895,6 @@ function FooterProfileMenu({
   profileInitials,
   userTitleLabel,
   userEmail,
-  showCreditsShell,
-  creditsAreKnown,
-  creditsValue,
   footerMenuItems,
   isCompact,
 }: {
@@ -909,9 +906,6 @@ function FooterProfileMenu({
   profileInitials: string;
   userTitleLabel: string;
   userEmail?: string;
-  showCreditsShell: boolean;
-  creditsAreKnown: boolean;
-  creditsValue: number;
   footerMenuItems: Array<{
     href: string;
     label: string;
@@ -957,11 +951,6 @@ function FooterProfileMenu({
                 </div>
               ) : null}
             </div>
-            {showCreditsShell && creditsAreKnown ? (
-              <span className="shrink-0 inline-flex items-center rounded-md bg-[#7f67ff] px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                {creditsValue}
-              </span>
-            ) : null}
           </div>
           <span className="pr-1 text-[#8a80df]" aria-hidden="true">
             <ChevronRight size={16} />
@@ -1355,9 +1344,6 @@ export default function LeftSidebar() {
                 profileInitials={viewModel.profileInitials}
                 userTitleLabel={viewModel.userTitleLabel}
                 userEmail={viewModel.userEmail}
-                showCreditsShell={viewModel.showCreditsShell}
-                creditsAreKnown={viewModel.creditsAreKnown}
-                creditsValue={viewModel.creditsValue}
                 footerMenuItems={viewModel.footerMenuItems}
                 isCompact={viewModel.isCompact}
               />
