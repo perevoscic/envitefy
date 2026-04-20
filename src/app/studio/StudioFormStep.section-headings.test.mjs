@@ -42,9 +42,11 @@ test("studio form step uses the editorial layout without the old optional panel 
   assert.doesNotMatch(source, /Host Contact/);
   assert.doesNotMatch(source, /RSVP Deadline/);
 
-  assert.match(source, /Invitation Idea & Details/);
+  assert.match(source, /Event Details/);
+  assert.match(source, /Design Idea/);
+  assert.doesNotMatch(source, /Invitation Idea & Details/);
   assert.match(source, /StudioOptionalMediaRow/);
-  assert.match(source, /space-y-12 pt-2 md:pt-4/);
+  assert.match(source, /space-y-10/);
   assert.match(source, /STUDIO_COMPACT_CATEGORY_FORM_CONFIG/);
   assert.match(source, /const formConfig = STUDIO_COMPACT_CATEGORY_FORM_CONFIG\[details\.category\];/);
   assert.match(source, /const primaryCategoryFields = formConfig\.primaryFields;/);

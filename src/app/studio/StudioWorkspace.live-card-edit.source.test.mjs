@@ -37,20 +37,24 @@ test("live card updates reuse the current image in the studio generation request
   );
 });
 
-test("live card modal exposes image edit tools without in-modal text editor", () => {
+test("live card modal hides preview-only image edit and design controls without in-modal text editor", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
   const editorStep = readSource("src/app/studio/workspace/StudioFormStep.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
   assert.match(source, /function openLiveCardImageEdit\(item: MediaItem\)/);
   assert.match(source, /function renderEditImagePanel\(\s*item: MediaItem,/);
-  assert.match(source, /renderEditImagePanel\(page,\s*\{\s*layout:\s*"liveCardTools"\s*\}\)/);
-  assert.match(source, /renderLiveCardPreviewTools\(activePageRecord\)/);
+  assert.match(
+    source,
+    /const liveCardPreviewTools = renderLiveCardPreviewTools\(activePageRecord\);/,
+  );
+  assert.doesNotMatch(source, /renderEditImagePanel\(page,\s*\{\s*layout:\s*"liveCardTools"\s*\}\)/);
   assert.match(source, /openLiveCardImageEdit=\{openLiveCardImageEdit\}/);
   assert.match(source, /const STUDIO_MOBILE_TOP_CHROME = /);
   assert.match(source, /style=\{studioLiveCardModalStyle\}/);
   assert.match(source, /style=\{studioLiveCardFrameStyle\}/);
-  assert.match(source, /className="fixed right-3 z-\[7015\]/);
+  assert.match(source, /!isLiveCardToolsDrawerOpen && liveCardPreviewTools \?/);
+  assert.match(source, /isLiveCardToolsDrawerOpen && liveCardPreviewTools \?/);
   assert.match(
     source,
     /style=\{studioLiveCardControlTop \? \{ top: studioLiveCardControlTop \} : undefined\}/,
@@ -64,6 +68,7 @@ test("live card modal exposes image edit tools without in-modal text editor", ()
   assert.doesNotMatch(editorStep, /Edit current invitation art/);
   assert.match(source, /<LiveCardHeroTextOverlay invitationData=\{activePageRecord\.data\} \/>/);
   assert.match(source, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{activeTab\}/);
+  assert.doesNotMatch(source, />\s*Design Mode\s*</);
   assert.match(surfaceSource, /data-live-card-panel/);
   assert.match(surfaceSource, /data-live-card-trigger/);
   assert.match(surfaceSource, /import \{ getLiveCardRailLayout \} from "@\/lib\/live-card-rail-layout";/);

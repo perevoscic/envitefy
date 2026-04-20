@@ -12,7 +12,7 @@ import {
   getFallbackThumbnail,
   resolveStudioCallToAction,
   resolveStudioRsvpMessage,
-  getStudioThemeLine,
+  buildStudioSubtitleFallback,
   getThemeColors,
   pickFirst,
 } from "./studio-workspace-builders";
@@ -348,7 +348,7 @@ export function sanitizeInvitationData(
 
   return {
     title: readString(value.title) || getDisplayTitle(fallbackDetails),
-    subtitle: readString(value.subtitle) || getStudioThemeLine(fallbackDetails),
+    subtitle: readString(value.subtitle) || buildStudioSubtitleFallback(fallbackDetails),
     description:
       readString(value.description) ||
       buildDescription(fallbackDetails) ||

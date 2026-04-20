@@ -53,6 +53,7 @@ export type EventDetails = {
   visualStyleMode: StudioVisualStyleMode;
   name: string;
   age: string;
+  /** User-entered Design Idea that drives visual direction and maps to `event.userIdea`. */
   theme: string;
   invitedWho: string;
   dressCode: string;

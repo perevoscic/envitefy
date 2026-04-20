@@ -154,6 +154,34 @@ export function getStudioThemeLine(details: EventDetails) {
   return pickFirst(buildDescription(details), details.theme, details.category);
 }
 
+export function buildStudioSubtitleFallback(details: EventDetails) {
+  if (details.category === "Birthday") {
+    return pickFirst(details.activityNote, details.calloutText, "Join us to celebrate.");
+  }
+  if (details.category === "Wedding") {
+    return pickFirst(details.activityNote, "Save the date.");
+  }
+  if (details.category === "Baby Shower") {
+    return pickFirst(details.activityNote, "Join us for a sweet celebration.");
+  }
+  if (details.category === "Bridal Shower") {
+    return pickFirst(details.activityNote, "Join us for a bridal shower.");
+  }
+  if (details.category === "Anniversary") {
+    return pickFirst(details.activityNote, "Celebrate with us.");
+  }
+  if (details.category === "Housewarming") {
+    return pickFirst(details.activityNote, "Join us for a housewarming.");
+  }
+  if (details.category === "Field Trip/Day") {
+    return pickFirst(details.activityNote, "Get ready for our school outing.");
+  }
+  if (details.category === "Game Day") {
+    return pickFirst(buildGameDayMatchup(details), details.activityNote, "Game day is here.");
+  }
+  return pickFirst(details.activityNote, details.calloutText, "You're invited.");
+}
+
 export function hasStudioSubjectReferencePhotos(details: EventDetails) {
   return (
     details.sourceMediaMode === "subjectPhotos" &&
@@ -288,20 +316,29 @@ export const STUDIO_IDEA_CATEGORY_LABELS: Record<InviteCategory, string> = {
   "Custom Invite": "Custom Invite",
 };
 
-export function getStudioIdeaLabel(category: InviteCategory) {
-  return `Enter Your ${STUDIO_IDEA_CATEGORY_LABELS[category]} Idea`;
-}
-
-const STUDIO_IDEA_CATEGORY_PLACEHOLDERS: Partial<Record<InviteCategory, string>> = {
+const STUDIO_DESIGN_IDEA_CATEGORY_PLACEHOLDERS: Partial<Record<InviteCategory, string>> = {
   Birthday:
-    "e.g. A birthday design with super heroes and dinos. We will have pizza and sodas and a lot of fun!",
+    "e.g. A bold superhero-and-dino party with comic-book energy, bright primaries, and playful lighting.",
 };
 
-export function getStudioIdeaPlaceholder(category: InviteCategory) {
-  const override = STUDIO_IDEA_CATEGORY_PLACEHOLDERS[category];
+export function getStudioDesignIdeaPlaceholder(category: InviteCategory) {
+  const override = STUDIO_DESIGN_IDEA_CATEGORY_PLACEHOLDERS[category];
   if (override) return override;
   const label = STUDIO_IDEA_CATEGORY_LABELS[category];
-  return `e.g. A ${label.toLowerCase()} design with the colors, mood, and details you want...`;
+  return `e.g. A ${label.toLowerCase()} invite with the colors, mood, texture, and visual direction you want...`;
+}
+
+export function getStudioEventDetailsPlaceholder(category: InviteCategory) {
+  if (category === "Birthday") {
+    return "e.g. Join us for pizza, cake, arcade games, and birthday fun after the structured details above.";
+  }
+  if (category === "Wedding") {
+    return "e.g. Dinner and dancing follow the ceremony. Cocktail attire encouraged.";
+  }
+  if (category === "Game Day") {
+    return "e.g. Gates open at 6:00 PM. Wear blue and gold and arrive early for parking.";
+  }
+  return "e.g. Add anything guests should know beyond the structured fields above.";
 }
 
 export function getThemeColors(details: EventDetails) {
@@ -421,15 +458,21 @@ function buildStudioThemeFramingGuidance(details: EventDetails) {
 export function buildStudioVisualDirection(details: EventDetails) {
   const customIdea = clean(details.theme);
   const extraPreferences = clean(details.visualPreferences);
+  const eventDetails = clean(details.detailsDescription);
   const combinedDirection = [customIdea, extraPreferences].filter(Boolean).join(". ");
   const instructions: string[] = [];
 
   if (combinedDirection) {
     instructions.push(`Highest-priority visual direction from the user: ${combinedDirection}.`);
     instructions.push(
-      "Treat the user's words as the theme of the invitation, while still expressing the selected category clearly.",
+      "Treat the Design Idea as the theme of the invitation, while still expressing the selected category clearly.",
     );
     instructions.push(buildStudioThemeFramingGuidance(details));
+    if (eventDetails) {
+      instructions.push(
+        "Use Event Details only as supporting context for guest-facing specificity, invitation copy, and factual grounding. Do not let Event Details override the Design Idea.",
+      );
+    }
   }
 
   if (
@@ -755,7 +798,7 @@ export function buildInvitationData(
     title: liveCard?.title || invitation?.title,
     subtitle:
       invitation?.subtitle ||
-      getStudioThemeLine(details),
+      buildStudioSubtitleFallback(details),
     description:
       liveCard?.description ||
       invitation?.openingLine ||
@@ -804,7 +847,7 @@ export function refreshLiveCardInvitationData(
     buildDescription(details) ||
     "Celebrate together with a beautifully designed invitation.";
   const title = clean(previous?.title) || getDisplayTitle(details);
-  const subtitle = clean(previous?.subtitle) || getStudioThemeLine(details);
+  const subtitle = clean(previous?.subtitle) || buildStudioSubtitleFallback(details);
   const scheduleLine = clean(previous?.scheduleLine) || buildDeterministicScheduleLine(details);
   const locationLine = clean(previous?.locationLine) || buildDeterministicLocationLine(details);
   const callToAction = resolveStudioCallToAction(

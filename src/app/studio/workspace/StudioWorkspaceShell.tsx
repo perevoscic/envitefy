@@ -36,7 +36,7 @@ export function StudioWorkspaceShell({
   };
 
   return (
-    <div className="studio-shell relative min-h-screen overflow-hidden bg-[#f4f1fb] text-[#1A1A1A] selection:bg-[#e3d7fb] lg:flex lg:h-screen lg:flex-col">
+    <div className="studio-shell relative min-h-screen overflow-x-hidden bg-[#f4f1fb] text-[#1A1A1A] selection:bg-[#e3d7fb] lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
       <div className="pointer-events-none absolute -left-[180px] -top-[180px] h-[430px] w-[430px] rounded-full border border-[#bda8df]/14" />
 
       {showLibrarySyncError && librarySyncError ? (

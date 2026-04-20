@@ -11,10 +11,12 @@ test("studio workspace separates the current project from the saved library", ()
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
   const libraryStep = readSource("src/app/studio/workspace/StudioLibraryStep.tsx");
   const phonePane = readSource("src/app/studio/workspace/StudioPhonePreviewPane.tsx");
+  const formStep = readSource("src/app/studio/workspace/StudioFormStep.tsx");
 
   assert.match(source, /function upsertLibraryItem\(item: MediaItem\)/);
   assert.match(source, /function saveWorkingProject\(project: MediaItem \| null\)/);
   assert.match(source, /function saveCurrentProjectToLibrary\(\)/);
+  assert.match(source, /function saveCurrentProjectAsImageToLibrary\(\)/);
   assert.match(source, /function clearCurrentProject\(options\?: \{ resetDetails\?: boolean \}\)/);
   assert.match(source, /function confirmDiscardCurrentProject\(/);
   assert.match(source, /setCurrentProject\(loadingItem\);/);
@@ -27,11 +29,21 @@ test("studio workspace separates the current project from the saved library", ()
   assert.match(source, /clearCurrentProject\(\{ resetDetails: true \}\);/);
   assert.match(phonePane, /getStudioCategoryShowcasePreview\(details\.category\)/);
   assert.match(phonePane, /<StudioShowcaseLiveCard/);
+  assert.match(phonePane, /openCurrentLiveCardFullscreen: \(\) => void;/);
+  assert.match(phonePane, /buttonChromeSize="compact"/);
+  assert.match(formStep, /openCurrentLiveCardFullscreen: \(\) => void;/);
+  assert.match(formStep, /openCurrentLiveCardFullscreen=\{openCurrentLiveCardFullscreen\}/);
   assert.match(source, /const currentProjectSaveLabel = /);
+  assert.match(source, /const currentProjectSaveImageLabel = /);
   assert.match(phonePane, /\{currentProjectSaveLabel\}/);
+  assert.match(phonePane, /\{currentProjectSaveImageLabel\}/);
   assert.doesNotMatch(phonePane, /Save this project to keep it in Library\./);
   assert.doesNotMatch(phonePane, /Discard/);
   assert.match(source, /function prepareProjectForLibrarySave\(project: MediaItem\): MediaItem/);
+  assert.match(
+    source,
+    /const imageItem: MediaItem = \{[\s\S]*type: "image",[\s\S]*url: imageUrl,[\s\S]*\};/,
+  );
   assert.match(source, /id: createId\(\),/);
   assert.match(source, /publishedEventId: undefined,/);
   assert.match(source, /sharePath: undefined,/);

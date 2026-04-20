@@ -15,7 +15,11 @@ test("studio builders frame birthday themes as birthday-party concepts", () => {
   assert.match(source, /balloons, cake, candles, wrapped gifts, themed desserts/);
   assert.match(
     source,
-    /Treat the user's words as the theme of the invitation, while still expressing the selected category clearly\./,
+    /Treat the Design Idea as the theme of the invitation, while still expressing the selected category clearly\./,
+  );
+  assert.match(
+    source,
+    /Use Event Details only as supporting context for guest-facing specificity, invitation copy, and factual grounding\. Do not let Event Details override the Design Idea\./,
   );
 });
 

@@ -22,7 +22,8 @@ function renderCoreCreativeInputs(event: StudioEventDetails): string {
   return [
     "Core creative inputs:",
     line("Selected Event Type", event.category || event.occasion),
-    line("User Idea", event.userIdea),
+    line("Design Idea", event.userIdea),
+    line("Event Details", event.description),
     line("Honoree / Couple / Main Person", event.honoreeName),
     line("Sport", event.sportType),
     line("Team / Host", event.teamName),
@@ -298,56 +299,56 @@ function buildPosterFirstInvitationCopyRules(event: StudioEventDetails): string[
   switch (getOccasionType(event)) {
     case "birthday":
       return [
-        "- For birthdays, when Honoree Name and Age or Milestone are available, make the main invitation title center on that person's name and milestone first. Use the user idea as a short subtitle, theme line, or mood line instead of the dominant birthday headline.",
+        "- For birthdays, when Honoree Name and Age or Milestone are available, make the main invitation title center on that person's name and milestone first. If helpful, distill the Design Idea into a polished guest-facing mood line instead of turning raw Design Idea wording into the dominant birthday headline.",
         "- Make the wording feel like a real birthday invitation with party decor, hosted-event energy, and celebration cues instead of a themed scene description alone.",
         "- When venue type or party format is clear, let it influence the supporting line so the copy sounds like an actual hosted birthday plan rather than generic theme words.",
       ];
     case "wedding":
       return [
-        "- For weddings, make the couple names, wedding title, or save-the-date identity the main invitation hierarchy first. Treat the user idea as the romantic mood or stationery direction rather than the only headline.",
+        "- For weddings, make the couple names, wedding title, or save-the-date identity the main invitation hierarchy first. Treat the Design Idea as romantic mood or stationery direction, not raw subtitle copy to repeat verbatim.",
         "- Make the wording feel like a real wedding invitation with ceremony, reception, romance, and premium stationery cues instead of a venue mood board alone.",
         "- If the event wording points to a ceremony, reception, dinner, or wedding weekend, make the scope explicit and credible instead of mixing several unsupported wedding formats together.",
       ];
     case "baby_shower":
       return [
-        "- For baby showers, make the honoree name, baby name, or baby shower title the main invitation hierarchy first. Use the user idea as a supporting theme line or mood cue.",
+        "- For baby showers, make the honoree name, baby name, or baby shower title the main invitation hierarchy first. If needed, distill the Design Idea into a guest-facing mood cue rather than repeating raw Design Idea wording.",
         "- Make the wording feel like a real baby shower invitation with shower decor, balloons, favors, dessert-table styling, and welcoming hosted-celebration cues instead of generic pastel scenery.",
         "- Keep the supporting line focused on one or two motifs or palette cues instead of listing every prop or mascot in the room.",
       ];
     case "bridal_shower":
       return [
-        "- For bridal showers, make the bride's name or bridal shower title the main invitation hierarchy first. Use the user idea as a supporting brunch, floral, tea-party, or shower mood line.",
+        "- For bridal showers, make the bride's name or bridal shower title the main invitation hierarchy first. If needed, distill the Design Idea into a guest-facing brunch, floral, tea-party, or shower mood line rather than quoting it.",
         "- Make the wording feel like a real bridal shower invitation with bride-focused celebration, brunch or tea cues, florals, and gift-table energy instead of generic garden scenery.",
         "- Favor polished shower language that sounds hosted and premium rather than collage-like or overdescriptive.",
       ];
     case "anniversary":
       return [
-        "- For anniversaries, make the couple names, anniversary title, or milestone year the main invitation hierarchy first. Use the user idea as a supporting mood line or dinner-party direction.",
+        "- For anniversaries, make the couple names, anniversary title, or milestone year the main invitation hierarchy first. If needed, distill the Design Idea into a guest-facing mood line or dinner-party direction rather than repeating raw prompt fragments.",
         "- Make the wording feel like a real anniversary celebration with candles, dinner, roses, toasts, dancing, and couple-centered event cues instead of only a romantic scene.",
         "- When a milestone year implies silver, gold, or another traditional anniversary cue, let that appear in the wording only if supported by the event details.",
       ];
     case "housewarming":
       return [
-        "- For housewarmings, make the host names, housewarming title, or new-home identity the main invitation hierarchy first. Use the user idea as a supporting home-party mood line.",
+        "- For housewarmings, make the host names, housewarming title, or new-home identity the main invitation hierarchy first. If needed, distill the Design Idea into a guest-facing home-party mood line rather than quoting it.",
         "- Make the wording feel like a real housewarming with welcoming hosted-gathering cues, home-tour energy, table styling, drinks, and lived-in hospitality instead of an empty real-estate interior.",
         "- Let the supporting line suggest gathering warmth, food, drinks, music, or neighborhood welcome when the details support it.",
       ];
     case "field_trip":
       return [
-        "- For field trips or school days, make the event title, school outing name, or destination title the main invitation hierarchy first. Use the user idea as a supporting activity or discovery line.",
+        "- For field trips or school days, make the event title, school outing name, or destination title the main invitation hierarchy first. If needed, distill the Design Idea into a guest-facing activity or discovery line rather than repeating raw prompt fragments.",
         "- Make the wording feel like a real organized school outing with field-trip planning, museum or exhibit cues, student group activity, and teacher or chaperone context instead of a generic brochure headline.",
         "- Keep the copy documentary and destination-led rather than promotional, cinematic, or tourist-brochure-like.",
         "- Phrase the invite like an upcoming visit, not like the pictured students already hosted, designed, or commemorated the event.",
       ];
     case "game_day":
       return [
-        "- For Game Day, make the matchup, team, or game-day title the main invitation hierarchy first. Use the user idea as a supporting energy or atmosphere line.",
+        "- For Game Day, make the matchup, team, or game-day title the main invitation hierarchy first. If needed, distill the Design Idea into a guest-facing energy or atmosphere line rather than repeating raw prompt fragments.",
         "- Make the wording feel like a real game-day invite or attendance card with stadium energy, crowd cues, arrival-night information, and sport-specific framing instead of a generic sports poster or season recap.",
         "- When team, opponent, league, or school-color cues are available, use them to make the copy feel specific without inventing slogans, mascots, or branded phrasing.",
       ];
     case "custom_invite":
       return [
-        "- For custom invites, make the event title, honoree, or host identity the main invitation hierarchy first. Use the user idea as a supporting mood line rather than letting it replace the event identity.",
+        "- For custom invites, make the event title, honoree, or host identity the main invitation hierarchy first. If needed, distill the Design Idea into a guest-facing mood line rather than letting raw prompt wording replace the event identity.",
         "- Make the wording feel like a real hosted invitation with celebration decor, event styling, and invitation intent instead of a bare loft, venue, or mood-board scene.",
         "- Let the event purpose do more work than the venue aesthetic so appreciation nights, launches, dinners, and socials do not collapse into generic networking copy.",
       ];
@@ -386,7 +387,11 @@ export function buildInvitationTextPrompt(
     `- \`scheduleLine\` is for visible date/time only. Prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}. Keep venue/location on the next line or separate field, not inside \`scheduleLine\`.`,
     "- Visible card schedule/date lines should omit the year unless the user explicitly typed year wording that must be preserved.",
     "- Build the invitation around the selected event type first.",
-    "- Treat the user's idea as the primary creative concept when one is provided.",
+    "- Treat the Design Idea as the primary creative concept when one is provided.",
+    "- Treat Event Details as supporting context for specificity and copy, not as a replacement for the Design Idea.",
+    "- Design Idea is private art direction, not default visible invitation copy.",
+    "- Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear.",
+    "- If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of printing it as guest-facing copy.",
     "- If an age or milestone is provided, incorporate it naturally into the invitation concept or copy when helpful.",
     "- Preserve the exact spelling of names, titles, venues, and event words from the provided details.",
     "- Double-check every visible word for spelling before returning JSON.",
@@ -396,7 +401,7 @@ export function buildInvitationTextPrompt(
     ...(posterFirstLiveCard
       ? [
           "- Keep the invitation hierarchy short, cinematic, and poster-ready rather than reading like flat form fields.",
-          "- Treat the user prompt/theme as the dominant art direction for the wording and mood.",
+          "- Treat the Design Idea as the dominant art direction for the wording and mood.",
           "- Make the wording read unmistakably as a hosted celebration invitation, not just a description of a place, backdrop, or scene.",
           "- Bring celebration energy into the copy with event-oriented language, invitation intent, and occasion cues.",
           "- Never add the year to schedule/date wording unless the user's custom wording explicitly includes that year.",
@@ -426,8 +431,8 @@ export function buildInvitationTextPrompt(
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
-    line("User Idea", event.userIdea),
-    line("Description", event.description),
+    line("Design Idea", event.userIdea),
+    line("Event Details", event.description),
     line("Date", event.date),
     line("Start Time", event.startTime),
     line("End Time", event.endTime),
@@ -508,8 +513,12 @@ export function buildLiveCardPrompt(
     "- Prefer fewer words over crowded copy.",
     `- \`invitation.scheduleLine\` is for visible date/time only. Prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}. Keep venue/location on \`invitation.locationLine\`, not inside \`invitation.scheduleLine\`.`,
     "- Visible card schedule/date lines should omit the year unless the user explicitly typed year wording that must be preserved.",
-    "- Build the live card around the selected event type first, then express the user's idea through that celebration type.",
-    "- Treat the user's idea as the main creative concept when one is provided.",
+    "- Build the live card around the selected event type first, then express the Design Idea through that celebration type.",
+    "- Treat the Design Idea as the main creative concept when one is provided.",
+    "- Treat Event Details as supporting context for specificity and copy, not as a replacement for the Design Idea.",
+    "- Design Idea is private art direction, not default visible invitation copy.",
+    "- Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear.",
+    "- If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of printing it as guest-facing copy.",
     "- If an age or milestone is provided, work it into the copy or concept naturally when it adds clarity.",
     "- Treat explicit user visual instructions as the highest-priority requirement.",
     "- Do not replace a literal user request with a cuter or more whimsical version of the theme.",
@@ -517,7 +526,7 @@ export function buildLiveCardPrompt(
     ...(posterFirstLiveCard
       ? [
           "- For live cards, write short cinematic invitation copy with a poster-like hierarchy instead of flat form-field phrasing.",
-          "- Treat the user's prompt/theme as the dominant art direction for the copy and invitation mood.",
+          "- Treat the Design Idea as the dominant art direction for the copy and invitation mood.",
           "- Make the result read first as a real celebration invite for this event type, not simply a stylish scene description.",
           "- Bring clear party / celebration / hosted-event energy into the concept and invitation copy.",
           "- Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy.",
@@ -564,8 +573,8 @@ export function buildLiveCardPrompt(
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
-    line("User Idea", event.userIdea),
-    line("Description", event.description),
+    line("Design Idea", event.userIdea),
+    line("Event Details", event.description),
     line("Date", event.date),
     line("Start Time", event.startTime),
     line("End Time", event.endTime),
@@ -676,7 +685,7 @@ export function buildInvitationImagePrompt(
     ...(imageFinishPreset
       ? [
           `- Selected image finish preset: ${imageFinishPreset.label} - ${imageFinishPreset.description}.`,
-          "- Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's core idea.",
+          "- Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's Design Idea.",
         ]
       : []),
     "- High-quality vertical invitation card composition (9:16 mobile card).",
@@ -783,8 +792,12 @@ export function buildInvitationImagePrompt(
           "- Preserve the composition, subject placement, lighting, and background art as much as possible while applying the edit.",
         ]
       : []),
-    "- Build the artwork around the selected event type first, then express the user's idea through that celebration type.",
-    "- Treat the user's idea as the main visual concept when one is provided.",
+    "- Build the artwork around the selected event type first, then express the Design Idea through that celebration type.",
+    "- Treat the Design Idea as the main visual concept when one is provided.",
+    "- Let Event Details sharpen specificity and approved wording, but do not let them replace the Design Idea.",
+    "- Design Idea is private art direction, not default visible invitation copy in the artwork.",
+    "- Never print raw Design Idea wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy.",
+    "- If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text.",
     ...(pageSurface && isEditingExistingImage
       ? []
       : [
@@ -859,8 +872,8 @@ export function buildInvitationImagePrompt(
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
-    line("User Idea", event.userIdea),
-    line("Description", event.description),
+    line("Design Idea", event.userIdea),
+    line("Event Details", event.description),
     line("Date", event.date),
     line("Venue", event.venueName),
     line("Broadcast / Stream", event.broadcastInfo),

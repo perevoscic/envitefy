@@ -24,9 +24,19 @@ test("studio live-card prompt keeps birthday themes tied to the celebration type
   assert.match(prompt, /Theme words must be interpreted through the selected event type/);
   assert.match(prompt, /Core creative inputs:/);
   assert.match(prompt, /Selected Event Type: Birthday/);
-  assert.match(prompt, /User Idea: Jurassic Park/);
+  assert.match(prompt, /Design Idea: Jurassic Park/);
+  assert.match(prompt, /Event Details: Jurassic Park theme/);
   assert.match(prompt, /Age or Milestone: 7/);
-  assert.match(prompt, /Treat the user's idea as the main creative concept when one is provided\./);
+  assert.match(prompt, /Treat the Design Idea as the main creative concept when one is provided\./);
+  assert.match(
+    prompt,
+    /Treat Event Details as supporting context for specificity and copy, not as a replacement for the Design Idea\./,
+  );
+  assert.match(prompt, /Design Idea is private art direction, not default visible invitation copy\./);
+  assert.match(
+    prompt,
+    /Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear\./,
+  );
   assert.match(
     prompt,
     /Jurassic Park should become a Jurassic Park birthday party, not just jungle foliage and dinosaurs\./,
@@ -53,11 +63,64 @@ test("studio invitation image prompt keeps custom themes invitation-ready", () =
   assert.match(prompt, /Theme words must be interpreted through the selected event type/);
   assert.match(
     prompt,
-    /Build the artwork around the selected event type first, then express the user's idea through that celebration type\./,
+    /Build the artwork around the selected event type first, then express the Design Idea through that celebration type\./,
   );
-  assert.match(prompt, /Treat the user's idea as the main visual concept when one is provided\./);
+  assert.match(prompt, /Treat the Design Idea as the main visual concept when one is provided\./);
+  assert.match(
+    prompt,
+    /Let Event Details sharpen specificity and approved wording, but do not let them replace the Design Idea\./,
+  );
+  assert.match(
+    prompt,
+    /Never print raw Design Idea wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy\./,
+  );
   assert.match(prompt, /Keep the final concept invitation-ready and celebration-oriented/);
   assert.match(prompt, /themeStyle should describe the invitation-ready version of the concept/);
+});
+
+test("studio prompts treat raw design-idea fragments as visual direction instead of printed copy", () => {
+  const liveCardPrompt = buildLiveCardPrompt(
+    {
+      title: "Lara Turns 7",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Lara",
+      ageOrMilestone: "7",
+      userIdea: "realistic festive cats at the movie",
+      description: "We are going to watch a movie, then lunch",
+      links: [],
+    },
+    {
+      style:
+        "Highest-priority visual direction from the user: realistic festive cats at the movie. Treat the user's words as the theme of the invitation.",
+    },
+  );
+
+  const imagePrompt = buildInvitationImagePrompt(
+    {
+      title: "Lara Turns 7",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Lara",
+      ageOrMilestone: "7",
+      userIdea: "realistic festive cats at the movie",
+      description: "We are going to watch a movie, then lunch",
+      links: [],
+    },
+    {
+      style:
+        "Highest-priority visual direction from the user: realistic festive cats at the movie. Treat the user's words as the theme of the invitation.",
+    },
+  );
+
+  assert.match(
+    liveCardPrompt,
+    /If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of printing it as guest-facing copy\./,
+  );
+  assert.match(
+    imagePrompt,
+    /If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text\./,
+  );
 });
 
 test("studio baked-text invitation prompts give every non-birthday-wedding category explicit invitation guidance", () => {
@@ -267,7 +330,8 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   );
 
   assert.match(prompt, /Core creative inputs:/);
-  assert.match(prompt, /User Idea: modern race car/);
+  assert.match(prompt, /Design Idea: modern race car/);
+  assert.match(prompt, /Event Details: Modern race car theme/);
   assert.match(prompt, /Age or Milestone: 9/);
   assert.match(
     prompt,
@@ -328,7 +392,7 @@ test("studio invitation image prompt applies selected image finish presets to st
   assert.match(prompt, /Selected image finish preset: Golden Glow - warm light, elegant celebration\./);
   assert.match(
     prompt,
-    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's core idea\./,
+    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's Design Idea\./,
   );
   assert.match(prompt, /Image Finish Preset: Golden Glow/);
 });

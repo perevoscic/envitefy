@@ -66,18 +66,19 @@ export function StudioOptionalMediaRow({
   const subjectPhotoHasDetail = Boolean(subjectPhotos.length > 0 || subjectPhotoUploadError);
 
   return (
-    <div className="space-y-4 border-t border-[#1A1A1A]/8 pt-8">
-      <div className="space-y-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65]">
+    <div className="space-y-5 border-t border-[#eef2f7] pt-8">
+      <div className="space-y-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#96a6c5]">
           Optional image source
         </p>
 
         <div className="grid gap-4 lg:grid-cols-12 lg:items-start">
-          <div className="lg:col-span-6">
-          <p className="max-w-3xl text-sm leading-7 text-[#6B5E4E]">
-            We will preserve an uploaded invite's visual direction and add live-card buttons, or use
-            photo(s) to design the invitation around them.
-          </p>
+          <div className="space-y-2 lg:col-span-6">
+            <p className="max-w-3xl text-[13px] leading-8 text-[#4d5565]">
+              Flyer parsing fills Event Details when possible and can preserve the invite&apos;s
+              visual direction. Add a Design Idea if you want to steer the look further, or use
+              photo(s) to design the invitation around them.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 lg:col-span-6 lg:grid-cols-2">
@@ -85,19 +86,19 @@ export function StudioOptionalMediaRow({
               type="button"
               onClick={() => flyerInputRef.current?.click()}
               disabled={isFlyerUploading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--studio-card-border,#d8cdc0)] bg-[var(--studio-paper-soft,#ece2ff)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink,#1A1A1A)] transition-colors hover:border-[var(--studio-brand,#7c5cd1)] hover:bg-[color:rgba(124,92,209,0.18)] disabled:opacity-50"
+              className="inline-flex min-h-[2.95rem] w-full items-center justify-center gap-2 rounded-full border border-[#2f3440] bg-white px-4 py-3 text-[10px] font-medium uppercase tracking-[0.34em] text-[#2b303b] transition-colors hover:bg-[#fafbfc] disabled:opacity-50"
             >
-              <Upload className="h-4 w-4 text-[var(--studio-brand,#7c5cd1)]" />
+              <Upload className="h-4 w-4 text-[#2b303b]" />
               {flyerActive ? "Replace" : "Flyer"}
             </button>
             <button
               type="button"
               onClick={() => subjectPhotoInputRef.current?.click()}
               disabled={isSubjectPhotoUploading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--studio-card-border,#d8cdc0)] bg-[var(--studio-paper-soft,#ece2ff)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink,#1A1A1A)] transition-colors hover:border-[var(--studio-brand,#7c5cd1)] hover:bg-[color:rgba(124,92,209,0.18)] disabled:opacity-50"
+              className="inline-flex min-h-[2.95rem] w-full items-center justify-center gap-2 rounded-full border border-[#2f3440] bg-white px-4 py-3 text-[10px] font-medium uppercase tracking-[0.34em] text-[#2b303b] transition-colors hover:bg-[#fafbfc] disabled:opacity-50"
             >
-              <Upload className="h-4 w-4 text-[var(--studio-brand,#7c5cd1)]" />
-              + Photo(s)
+              <Upload className="h-4 w-4 text-[#2b303b]" />
+              Photos
             </button>
           </div>
         </div>
@@ -107,7 +108,7 @@ export function StudioOptionalMediaRow({
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div>
             {flyerPreviewUrl ? (
-              <div className="overflow-hidden rounded-[1.25rem] border border-[#e3d6c8] bg-[#f4ede4]">
+              <div className="overflow-hidden rounded-[1.25rem] border border-[#e7edf7] bg-[#f7faff]">
                 <img
                   src={flyerPreviewUrl}
                   alt={details.sourceFlyerName || "Uploaded flyer preview"}
@@ -117,7 +118,7 @@ export function StudioOptionalMediaRow({
             ) : null}
 
             {clean(details.sourceFlyerName) ? (
-              <p className="mt-3 truncate text-sm italic text-[#8C7B65]">{details.sourceFlyerName}</p>
+              <p className="mt-3 truncate text-sm italic text-[#7f8dab]">{details.sourceFlyerName}</p>
             ) : null}
 
             {flyerUploadError ? (
@@ -128,7 +129,7 @@ export function StudioOptionalMediaRow({
               <button
                 type="button"
                 onClick={onRemoveFlyer}
-                className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#ead9cd] bg-transparent px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8C7B65] transition-colors hover:bg-[#f9f2eb]"
+                className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#e2e8f4] bg-transparent px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7f8dab] transition-colors hover:bg-[#f7faff]"
               >
                 <Trash2 className="h-4 w-4" />
                 Remove
@@ -142,7 +143,7 @@ export function StudioOptionalMediaRow({
                 {subjectPhotos.map((url, index) => (
                   <div
                     key={`${url}-${index}`}
-                    className="group relative overflow-hidden rounded-[1rem] border border-[#e3d6c8] bg-[#f4ede4]"
+                    className="group relative overflow-hidden rounded-[1rem] border border-[#e7edf7] bg-[#f7faff]"
                   >
                     <img
                       src={url}

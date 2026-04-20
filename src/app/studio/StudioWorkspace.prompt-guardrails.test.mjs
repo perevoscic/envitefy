@@ -29,7 +29,11 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   );
   assert.match(
     source,
-    /Treat the user's words as the theme of the invitation, while still expressing the selected category clearly\./,
+    /Treat the Design Idea as the theme of the invitation, while still expressing the selected category clearly\./,
+  );
+  assert.match(
+    source,
+    /Use Event Details only as supporting context for guest-facing specificity, invitation copy, and factual grounding\. Do not let Event Details override the Design Idea\./,
   );
   assert.match(
     source,
@@ -113,7 +117,7 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   );
   assert.match(
     promptSource,
-    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's core idea\./,
+    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's Design Idea\./,
   );
   assert.match(
     promptSource,
@@ -211,14 +215,31 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   assert.match(promptSource, /Core creative inputs:/);
   assert.match(
     promptSource,
-    /Treat the user's idea as the main visual concept when one is provided\./,
+    /Treat the Design Idea as the main visual concept when one is provided\./,
+  );
+  assert.match(
+    promptSource,
+    /Let Event Details sharpen specificity and approved wording, but do not let them replace the Design Idea\./,
+  );
+  assert.match(
+    promptSource,
+    /Design Idea is private art direction, not default visible invitation copy\./,
+  );
+  assert.match(
+    promptSource,
+    /Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear\./,
+  );
+  assert.match(
+    promptSource,
+    /Never print raw Design Idea wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy\./,
   );
   assert.match(
     promptSource,
     /Visible invitation text is required in the final raster for page\/live-card images, but keep it sparse, readable, and intentionally designed\./,
   );
   assert.match(promptSource, /line\("Age or Milestone", event\.ageOrMilestone\)/);
-  assert.match(promptSource, /line\("User Idea", event\.userIdea\)/);
+  assert.match(promptSource, /line\("Design Idea", event\.userIdea\)/);
+  assert.match(promptSource, /line\("Event Details", event\.description\)/);
   assert.match(promptSource, /line\("Image Finish Preset", imageFinishPreset\?\.label\)/);
   assert.match(
     promptSource,

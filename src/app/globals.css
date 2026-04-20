@@ -484,30 +484,30 @@
 }
 
 .studio-editorial-field::placeholder {
-  color: rgba(26, 26, 26, 0.1);
+  color: #d9dfe9;
   opacity: 1;
   font-style: italic;
 }
 
 .studio-editorial-field[type="date"].studio-editorial-empty,
 .studio-editorial-field[type="time"].studio-editorial-empty {
-  color: rgba(26, 26, 26, 0.1);
+  color: #d9dfe9;
 }
 
 .studio-editorial-field[type="date"].studio-editorial-empty::-webkit-datetime-edit,
 .studio-editorial-field[type="time"].studio-editorial-empty::-webkit-datetime-edit {
-  color: rgba(26, 26, 26, 0.1);
+  color: #d9dfe9;
   font-style: italic;
 }
 
 .studio-editorial-field[type="date"].studio-editorial-filled,
 .studio-editorial-field[type="time"].studio-editorial-filled {
-  color: #1a1a1a;
+  color: #262b36;
 }
 
 .studio-editorial-field[type="date"].studio-editorial-filled::-webkit-datetime-edit,
 .studio-editorial-field[type="time"].studio-editorial-filled::-webkit-datetime-edit {
-  color: #1a1a1a;
+  color: #262b36;
   font-style: normal;
 }
 
@@ -1966,4 +1966,3 @@ h5 {
   border-color: var(--studio-brand);
   color: #ffffff;
 }
-

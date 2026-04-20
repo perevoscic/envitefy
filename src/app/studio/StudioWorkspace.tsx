@@ -34,8 +34,8 @@ import {
   createId,
   getAbsoluteShareUrl,
   getFallbackThumbnail,
-  getStudioIdeaLabel,
-  getStudioIdeaPlaceholder,
+  getStudioDesignIdeaPlaceholder,
+  getStudioEventDetailsPlaceholder,
   getStudioShareTitle,
   hasStudioSubjectReferencePhotos,
   inferBirthdayGenderFromName,
@@ -507,6 +507,10 @@ export default function StudioWorkspace() {
       return true;
     }
 
+    if (!clean(details.detailsDescription) || !clean(details.theme)) {
+      return false;
+    }
+
     const missingCategory = (CATEGORY_FIELDS[details.category] || []).filter(
       (field) => field.required && !isRequiredFieldComplete(field),
     );
@@ -754,7 +758,7 @@ export default function StudioWorkspace() {
 
       if (parseResult.status !== "fulfilled") {
         setFlyerUploadError(
-          "Flyer uploaded, but details could not be read. Fill the fields manually if needed.",
+          "Flyer uploaded, but Event Details could not be read. Add Event Details manually, and add a Design Idea if you want to steer the look.",
         );
       }
     } catch (error) {
@@ -963,6 +967,24 @@ export default function StudioWorkspace() {
   function saveCurrentProjectToLibrary() {
     if (!currentProject || currentProject.status !== "ready") return;
     saveWorkingProject(currentProject);
+  }
+
+  function saveCurrentProjectAsImageToLibrary() {
+    if (!currentProjectWithVisualDraft || currentProjectWithVisualDraft.status !== "ready") return;
+    const imageUrl = clean(currentProjectDisplayUrl);
+    if (!imageUrl) return;
+
+    const imageItem: MediaItem = {
+      id: createId(),
+      type: "image",
+      url: imageUrl,
+      theme: `${getStudioShareTitle(currentProjectWithVisualDraft)} Image`,
+      status: "ready",
+      details: currentProjectWithVisualDraft.details,
+      createdAt: new Date().toISOString(),
+    };
+
+    upsertLibraryItem(imageItem);
   }
 
   function prepareProjectForLibrarySave(project: MediaItem): MediaItem {
@@ -1480,63 +1502,40 @@ export default function StudioWorkspace() {
       studioVisualDraft?.itemId === page.id &&
       studioVisualDraftDiffersFromSaved(savedPage, studioVisualDraft);
 
-    return (
-      <>
-        {renderEditImagePanel(page, { layout: "liveCardTools" })}
+    if (!showVisualSaveBar) return null;
 
-        <div className="pointer-events-auto flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-              Design Mode
-            </p>
-          </div>
+    return (
+      <div className="pointer-events-auto rounded-2xl border border-amber-300/45 bg-amber-500/15 px-4 py-3 backdrop-blur-md">
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-100/95">
+          Unsaved image or layout
+        </p>
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            aria-pressed={isDesignMode}
-            aria-label={isDesignMode ? "Turn off design mode" : "Turn on design mode"}
-            onClick={() => setIsDesignMode((prev) => !prev)}
-            className={`relative h-7 w-14 rounded-full transition-all ${isDesignMode ? "bg-[#8C7B65]" : "bg-neutral-700"}`}
+            onClick={() => discardStudioVisualDraft()}
+            className="rounded-full border border-white/25 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
           >
-            <motion.div
-              animate={{ x: isDesignMode ? 28 : 4 }}
-              className="absolute top-1 h-5 w-5 rounded-full bg-white shadow-lg"
-            />
+            Discard
+          </button>
+          <button
+            type="button"
+            onClick={() => commitStudioVisualDraft(page)}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-100"
+          >
+            Save changes
           </button>
         </div>
-
-        {showVisualSaveBar ? (
-          <div className="pointer-events-auto rounded-2xl border border-amber-300/45 bg-amber-500/15 px-4 py-3 backdrop-blur-md">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-100/95">
-              Unsaved image or layout
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => discardStudioVisualDraft()}
-                className="rounded-full border border-white/25 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-              >
-                Discard
-              </button>
-              <button
-                type="button"
-                onClick={() => commitStudioVisualDraft(page)}
-                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-100"
-              >
-                Save changes
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </>
+      </div>
     );
   }
 
-  const studioIdeaLabel = getStudioIdeaLabel(details.category);
-  const studioIdeaPlaceholder = getStudioIdeaPlaceholder(details.category);
+  const studioDesignIdeaPlaceholder = getStudioDesignIdeaPlaceholder(details.category);
+  const studioEventDetailsPlaceholder = getStudioEventDetailsPlaceholder(details.category);
   const showStudioCreativeControls = hasStudioSubjectReferencePhotos(details);
   const currentProjectDisplayUrl = currentProjectWithVisualDraft
     ? getStudioImageDisplayUrl(currentProjectWithVisualDraft)
     : "";
+  const currentProjectSaveImageLabel = "Save Image Only";
 
   function openTypeStep() {
     if (!confirmDiscardCurrentProject("Discard the current Studio project and switch categories?")) {
@@ -1568,6 +1567,14 @@ export default function StudioWorkspace() {
   function openLibraryPage(item: MediaItem | null) {
     setPreviewOrigin(item ? "library" : null);
     setActivePage(item);
+  }
+
+  function openCurrentLiveCardFullscreen() {
+    if (!currentProjectWithVisualDraft?.data || currentProjectWithVisualDraft.type !== "page") return;
+    const fullscreenTarget = currentProject ?? currentProjectWithVisualDraft;
+    setPreviewOrigin("create");
+    setActivePage(fullscreenTarget);
+    setActiveTab("none");
   }
 
   return (
@@ -1605,8 +1612,8 @@ export default function StudioWorkspace() {
                 isSubjectPhotoUploading={isSubjectPhotoUploading}
                 flyerUploadError={flyerUploadError}
                 subjectPhotoUploadError={subjectPhotoUploadError}
-                studioIdeaLabel={studioIdeaLabel}
-                studioIdeaPlaceholder={studioIdeaPlaceholder}
+                studioDesignIdeaPlaceholder={studioDesignIdeaPlaceholder}
+                studioEventDetailsPlaceholder={studioEventDetailsPlaceholder}
                 showStudioCreativeControls={showStudioCreativeControls}
                 likenessOptions={STUDIO_LIKENESS_OPTIONS}
                 visualStyleOptions={STUDIO_VISUAL_STYLE_OPTIONS}
@@ -1614,6 +1621,7 @@ export default function StudioWorkspace() {
                 currentProjectDisplayUrl={currentProjectDisplayUrl}
                 currentProjectHasUnsavedChanges={currentProjectHasUnsavedChanges}
                 currentProjectSaveLabel={currentProjectSaveLabel}
+                currentProjectSaveImageLabel={currentProjectSaveImageLabel}
                 savedCurrentProject={savedCurrentProject}
                 currentProjectPreviewTab={currentProjectPreviewTab}
                 setCurrentProjectPreviewTab={setCurrentProjectPreviewTab}
@@ -1626,6 +1634,8 @@ export default function StudioWorkspace() {
                 copySuccess={copySuccess}
                 generateMedia={generateMedia}
                 saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
+                saveCurrentProjectAsImageToLibrary={saveCurrentProjectAsImageToLibrary}
+                openCurrentLiveCardFullscreen={openCurrentLiveCardFullscreen}
                 showPromptComposer={() => setMobileEditorPane("composer")}
                 showPreviewPane={() => setMobileEditorPane("preview")}
                 shareCurrentProject={() => {
@@ -1744,7 +1754,6 @@ export default function StudioWorkspace() {
                     type="button"
                     onClick={confirmDeleteMedia}
                     className="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#ef4444,#dc2626)] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(220,38,38,0.32)] transition-transform hover:scale-[1.01]"
-                    autoFocus
                   >
                     Delete live card
                   </button>
@@ -1826,6 +1835,10 @@ export default function StudioWorkspace() {
 
       <AnimatePresence>
         {activePageRecord?.data ? (
+          (() => {
+            const liveCardPreviewTools = renderLiveCardPreviewTools(activePageRecord);
+
+            return (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1847,7 +1860,7 @@ export default function StudioWorkspace() {
               <X className="h-6 w-6" />
             </button>
 
-            {!isLiveCardToolsDrawerOpen ? (
+            {!isLiveCardToolsDrawerOpen && liveCardPreviewTools ? (
               <button
                 type="button"
                 aria-label="Open studio tools"
@@ -1859,12 +1872,14 @@ export default function StudioWorkspace() {
               </button>
             ) : null}
 
-            <div className="absolute right-4 top-20 z-[7010] hidden max-h-[calc(100dvh-6rem)] w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 overflow-y-auto overscroll-contain md:right-8 md:top-24 md:flex">
-              {renderLiveCardPreviewTools(activePageRecord)}
-            </div>
+            {liveCardPreviewTools ? (
+              <div className="absolute right-4 top-20 z-[7010] hidden max-h-[calc(100dvh-6rem)] w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 overflow-y-auto overscroll-contain md:right-8 md:top-24 md:flex">
+                {liveCardPreviewTools}
+              </div>
+            ) : null}
 
             <AnimatePresence>
-              {isLiveCardToolsDrawerOpen ? (
+              {isLiveCardToolsDrawerOpen && liveCardPreviewTools ? (
                 <motion.div
                   key="live-card-tools-drawer"
                   initial={{ opacity: 0 }}
@@ -1900,7 +1915,7 @@ export default function StudioWorkspace() {
                       </button>
                     </div>
                     <div className="flex min-h-0 flex-1 flex-col gap-3">
-                      {renderLiveCardPreviewTools(activePageRecord)}
+                      {liveCardPreviewTools}
                     </div>
                   </motion.aside>
                 </motion.div>
@@ -2002,6 +2017,8 @@ export default function StudioWorkspace() {
               </div>
             ) : null}
           </motion.div>
+            );
+          })()
         ) : null}
       </AnimatePresence>
 

@@ -45,8 +45,9 @@ test("studio live-card builders preserve local invitation data and default gener
   assert.match(source, /title: liveCard\?\.title \|\| invitation\?\.title,/);
   assert.match(
     source,
-    /subtitle:\s*invitation\?\.subtitle\s*\|\|\s*getStudioThemeLine\(details\),/s,
+    /subtitle:\s*invitation\?\.subtitle\s*\|\|\s*buildStudioSubtitleFallback\(details\),/s,
   );
+  assert.match(source, /export function buildStudioSubtitleFallback\(details: EventDetails\)/);
   assert.match(
     source,
     /callToAction:\s*resolveStudioCallToAction\(\s*details,\s*liveCard\?\.interactiveMetadata\.ctaLabel,\s*invitation\?\.callToAction,\s*details\.calloutText,\s*\),/s,

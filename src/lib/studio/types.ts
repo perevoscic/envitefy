@@ -19,7 +19,9 @@ export type StudioEventDetails = {
   broadcastInfo?: string | null;
   parkingInfo?: string | null;
   ageOrMilestone?: string | null;
+  /** Design Idea from Studio; mapped from `EventDetails.theme`. */
   userIdea?: string | null;
+  /** Event Details from Studio; mapped from `EventDetails.detailsDescription`. */
   description?: string | null;
   date?: string | null;
   startTime?: string | null;

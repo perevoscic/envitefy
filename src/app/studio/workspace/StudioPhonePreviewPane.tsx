@@ -19,6 +19,7 @@ type StudioPhonePreviewPaneProps = {
   currentProjectDisplayUrl: string;
   currentProjectHasUnsavedChanges: boolean;
   currentProjectSaveLabel: string;
+  currentProjectSaveImageLabel: string;
   savedCurrentProject: MediaItem | null;
   currentProjectPreviewTab: ActiveTab;
   setCurrentProjectPreviewTab: Dispatch<SetStateAction<ActiveTab>>;
@@ -27,6 +28,8 @@ type StudioPhonePreviewPaneProps = {
   sharingId: string | null;
   copySuccess: boolean;
   saveCurrentProjectToLibrary: () => void;
+  saveCurrentProjectAsImageToLibrary: () => void;
+  openCurrentLiveCardFullscreen: () => void;
   shareCurrentProject: () => void;
   openCurrentImage: () => void;
   handleMediaImageLoadError: (item: MediaItem) => void;
@@ -38,6 +41,7 @@ export function StudioPhonePreviewPane({
   currentProjectDisplayUrl,
   currentProjectHasUnsavedChanges,
   currentProjectSaveLabel,
+  currentProjectSaveImageLabel,
   savedCurrentProject,
   currentProjectPreviewTab,
   setCurrentProjectPreviewTab,
@@ -46,6 +50,8 @@ export function StudioPhonePreviewPane({
   sharingId,
   copySuccess,
   saveCurrentProjectToLibrary,
+  saveCurrentProjectAsImageToLibrary,
+  openCurrentLiveCardFullscreen,
   shareCurrentProject,
   openCurrentImage,
   handleMediaImageLoadError,
@@ -60,7 +66,8 @@ export function StudioPhonePreviewPane({
         role="region"
         aria-label="Live card phone preview"
       >
-        <div className="studio-phone-frame relative aspect-[9/16] w-full max-w-[min(100%,340px)] overflow-hidden rounded-[3rem] border-[10px] border-[var(--studio-ink,#1A1A1A)] bg-[var(--studio-paper,#f7f2ec)] shadow-[0_36px_80px_rgba(31,18,52,0.18)] lg:h-full lg:w-auto lg:max-h-[min(82vh,620px)] lg:max-w-full">
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 mx-auto h-[78%] w-[72%] -translate-y-1/2 rounded-[3.5rem] bg-[radial-gradient(circle,_rgba(255,255,255,0.52)_0%,_rgba(251,226,238,0.42)_38%,_rgba(245,198,222,0.2)_62%,_transparent_82%)] blur-[28px]" />
+        <div className="studio-phone-frame group relative aspect-[9/16] w-full max-w-[min(100%,340px)] overflow-hidden rounded-[3rem] border-[10px] border-[var(--studio-ink,#1A1A1A)] bg-[var(--studio-paper,#f7f2ec)] shadow-[0_28px_70px_rgba(255,255,255,0.18),0_42px_90px_rgba(240,192,220,0.18),0_36px_80px_rgba(31,18,52,0.16)] lg:h-full lg:w-auto lg:max-h-[min(82vh,620px)] lg:max-w-full">
           <div className="absolute left-1/2 top-3 z-20 h-1.5 w-20 -translate-x-1/2 rounded-full bg-[var(--studio-ink,#1A1A1A)]/80" />
 
           {isGenerating && !hasPreview ? (
@@ -133,10 +140,21 @@ export function StudioPhonePreviewPane({
                               : "idle"
                         }
                         showExtendedDetails
+                        buttonChromeSize="compact"
                         registryHelperText={
                           currentProjectWithVisualDraft.data?.interactiveMetadata?.shareNote
                         }
                       />
+                      <div className="pointer-events-none absolute inset-0 z-20 hidden items-center justify-center lg:flex">
+                        <button
+                          type="button"
+                          onClick={openCurrentLiveCardFullscreen}
+                          className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-white/96 px-5 py-3 text-sm font-medium text-[#1A1A1A] shadow-[0_14px_34px_rgba(49,32,17,0.18)] opacity-0 transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
+                        >
+                          <Layout className="h-4 w-4" />
+                          Open live card
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <button
@@ -180,18 +198,42 @@ export function StudioPhonePreviewPane({
         </div>
       </div>
       {hasPreview && currentProjectWithVisualDraft ? (
-        <div className="flex w-full max-w-[22rem] items-center justify-center">
-          <button
-            type="button"
-            onClick={saveCurrentProjectToLibrary}
-            disabled={
-              currentProjectWithVisualDraft.status !== "ready" ||
-              (!currentProjectHasUnsavedChanges && Boolean(savedCurrentProject))
-            }
-            className="inline-flex items-center justify-center rounded-full bg-[var(--studio-ink,#1A1A1A)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--studio-paper,#F5F2EF)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            {currentProjectSaveLabel}
-          </button>
+        <div className="flex w-full max-w-[20rem] flex-col items-center justify-center gap-2">
+          {currentProjectWithVisualDraft.type === "page" ? (
+            <div className="grid w-full grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={saveCurrentProjectAsImageToLibrary}
+                disabled={currentProjectWithVisualDraft.status !== "ready"}
+                className="inline-flex min-h-8.5 w-full items-center justify-center rounded-full border border-[var(--studio-card-border,#d8cdc0)] bg-white/96 px-2.5 py-1.5 text-[8px] font-semibold uppercase tracking-[0.24em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_10px_20px_rgba(15,23,42,0.1)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {currentProjectSaveImageLabel}
+              </button>
+              <button
+                type="button"
+                onClick={saveCurrentProjectToLibrary}
+                disabled={
+                  currentProjectWithVisualDraft.status !== "ready" ||
+                  (!currentProjectHasUnsavedChanges && Boolean(savedCurrentProject))
+                }
+                className="inline-flex min-h-8.5 w-full items-center justify-center rounded-full bg-[var(--studio-ink,#1A1A1A)] px-2.5 py-1.5 text-[8px] font-semibold uppercase tracking-[0.24em] text-[var(--studio-paper,#F5F2EF)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {currentProjectSaveLabel}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={saveCurrentProjectToLibrary}
+              disabled={
+                currentProjectWithVisualDraft.status !== "ready" ||
+                (!currentProjectHasUnsavedChanges && Boolean(savedCurrentProject))
+              }
+              className="inline-flex min-h-10 w-full items-center justify-center rounded-full bg-[var(--studio-ink,#1A1A1A)] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-[var(--studio-paper,#F5F2EF)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {currentProjectSaveLabel}
+            </button>
+          )}
         </div>
       ) : null}
     </div>

@@ -33,7 +33,7 @@ type StudioTextAreaFieldProps = {
 };
 
 const studioMutedFieldIconClass =
-  "pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C7B65]/55";
+  "pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#c8d2e2]";
 
 function renderFieldIcon(fieldKey: keyof EventDetails, renderedInputType: string) {
   if (fieldKey === "location") {
@@ -223,7 +223,7 @@ export function StudioFieldGrid({
                 />
                 {renderedInputType === "text" && isEmptyValue && renderedPlaceholder ? (
                   <span
-                    className={`pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[rgba(26,26,26,0.1)] transition-opacity group-focus-within:opacity-0 ${
+                    className={`pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[#d9dfe9] transition-opacity group-focus-within:opacity-0 ${
                       usesIconInput(field.key, renderedInputType) ? "right-8" : "right-0"
                     }`}
                   >

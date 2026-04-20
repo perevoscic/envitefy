@@ -1,8 +1,22 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ChevronDown, ChevronRight, Image as ImageIcon, Layout, Loader2 } from "lucide-react";
-import { type Dispatch, type SetStateAction, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Layout,
+  Loader2,
+  Wand2,
+  X,
+} from "lucide-react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   getStudioImageFinishPresets,
   resolveStudioImageFinishPreset,
@@ -45,8 +59,8 @@ export type StudioFormStepProps = {
   isSubjectPhotoUploading: boolean;
   flyerUploadError: string | null;
   subjectPhotoUploadError: string | null;
-  studioIdeaLabel: string;
-  studioIdeaPlaceholder: string;
+  studioDesignIdeaPlaceholder: string;
+  studioEventDetailsPlaceholder: string;
   showStudioCreativeControls: boolean;
   likenessOptions: Array<Option<StudioLikenessStrength>>;
   visualStyleOptions: Array<Option<StudioVisualStyleMode>>;
@@ -54,6 +68,7 @@ export type StudioFormStepProps = {
   currentProjectDisplayUrl: string;
   currentProjectHasUnsavedChanges: boolean;
   currentProjectSaveLabel: string;
+  currentProjectSaveImageLabel: string;
   savedCurrentProject: MediaItem | null;
   currentProjectPreviewTab: ActiveTab;
   setCurrentProjectPreviewTab: Dispatch<SetStateAction<ActiveTab>>;
@@ -66,12 +81,18 @@ export type StudioFormStepProps = {
   copySuccess: boolean;
   generateMedia: (type: MediaType) => void;
   saveCurrentProjectToLibrary: () => void;
+  saveCurrentProjectAsImageToLibrary: () => void;
+  openCurrentLiveCardFullscreen: () => void;
   showPromptComposer: () => void;
   showPreviewPane: () => void;
   shareCurrentProject: () => void;
   openCurrentImage: () => void;
   handleMediaImageLoadError: (item: MediaItem) => void;
 };
+
+function stylePickerLabel(label: string | null | undefined) {
+  return label ? label.toUpperCase() : "CHOOSE A STYLE (OPTIONAL)";
+}
 
 export function StudioFormStep({
   details,
@@ -87,8 +108,8 @@ export function StudioFormStep({
   isSubjectPhotoUploading,
   flyerUploadError,
   subjectPhotoUploadError,
-  studioIdeaLabel,
-  studioIdeaPlaceholder,
+  studioDesignIdeaPlaceholder,
+  studioEventDetailsPlaceholder,
   showStudioCreativeControls,
   likenessOptions,
   visualStyleOptions,
@@ -96,6 +117,7 @@ export function StudioFormStep({
   currentProjectDisplayUrl,
   currentProjectHasUnsavedChanges,
   currentProjectSaveLabel,
+  currentProjectSaveImageLabel,
   savedCurrentProject,
   currentProjectPreviewTab,
   setCurrentProjectPreviewTab,
@@ -108,8 +130,10 @@ export function StudioFormStep({
   copySuccess,
   generateMedia,
   saveCurrentProjectToLibrary,
+  saveCurrentProjectAsImageToLibrary,
+  openCurrentLiveCardFullscreen,
   showPromptComposer,
-  showPreviewPane,
+  showPreviewPane: _showPreviewPane,
   shareCurrentProject,
   openCurrentImage,
   handleMediaImageLoadError,
@@ -140,10 +164,12 @@ export function StudioFormStep({
     details.category,
     details.imageFinishPreset,
   );
-  const hasPreview = Boolean(currentProjectWithVisualDraft);
-  const ideaValue = details.theme || details.detailsDescription || "";
+  const flyerProvidesVisualDirection =
+    details.sourceMediaMode === "flyer" && details.sourceFlyerUrl.trim().length > 0;
 
   const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [showStylePicker, setShowStylePicker] = useState(false);
+  const stylePickerRef = useRef<HTMLDivElement | null>(null);
   const allCategoryFields: FieldConfig[] = CATEGORY_FIELDS[details.category] || [];
   const renderedKeys = new Set<string>([
     ...primaryCategoryFields.map((f) => f.key),
@@ -152,14 +178,362 @@ export function StudioFormStep({
   const moreDetailFields = isBirthday
     ? []
     : allCategoryFields.filter((field) => !renderedKeys.has(field.key));
+  const liveCardActionLabel = isEditingLiveCard
+    ? "Update Live Card"
+    : editingId
+      ? "Regenerate Live Card"
+      : "Preview Live Card";
 
-  function updateIdeaText(value: string) {
+  useEffect(() => {
+    if (!showStylePicker || isMobileViewport || typeof window === "undefined") return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!stylePickerRef.current?.contains(event.target as Node)) {
+        setShowStylePicker(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    return () => window.removeEventListener("mousedown", handlePointerDown);
+  }, [isMobileViewport, showStylePicker]);
+
+  function updateEventDetailsText(value: string) {
     setDetails((prev) => ({
       ...prev,
-      theme: value,
       detailsDescription: value,
     }));
   }
+
+  function updateDesignIdeaText(value: string) {
+    setDetails((prev) => ({
+      ...prev,
+      theme: value,
+    }));
+  }
+
+  function updateImageFinishPreset(label: string) {
+    setDetails((prev) => ({
+      ...prev,
+      imageFinishPreset: prev.imageFinishPreset === label ? "" : label,
+    }));
+    setShowStylePicker(false);
+  }
+
+  const stylePickerButton = (
+    <div className="relative" ref={stylePickerRef}>
+      <button
+        type="button"
+        aria-expanded={showStylePicker}
+        aria-label="Choose visual style"
+        onClick={() => setShowStylePicker((prev) => !prev)}
+        className="flex min-h-14 w-full items-center justify-between rounded-[1rem] border border-[#e6ebf2] bg-white px-5 py-4 text-left text-[12px] font-semibold uppercase tracking-[0.02em] text-[#23345a] transition-all hover:border-[#dbe2ec] hover:bg-white"
+      >
+        <div className="flex items-center gap-3">
+          <Wand2 className="h-4 w-4 text-[#d1d9e6]" />
+          <span>{stylePickerLabel(selectedImageFinishPreset?.label)}</span>
+        </div>
+        <ChevronRight
+          className={`h-4 w-4 text-[#d0d8e6] transition-transform ${showStylePicker ? "rotate-90" : ""}`}
+        />
+      </button>
+
+      {!isMobileViewport ? (
+        <AnimatePresence>
+          {showStylePicker ? (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              className="absolute left-0 right-0 top-[calc(100%+0.65rem)] z-30 rounded-[1.25rem] border border-[#e8edf4] bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+            >
+              <div className="grid grid-cols-2 gap-2">
+                {imageFinishPresets.map((preset) => {
+                  const active = selectedImageFinishPreset?.label === preset.label;
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => updateImageFinishPreset(preset.label)}
+                      className={`flex min-h-[76px] flex-col items-center justify-center rounded-[1.1rem] border px-4 py-3 text-center transition-all ${
+                        active
+                          ? "border-[#5b43f2] bg-[#5b43f2] text-white shadow-[0_12px_24px_rgba(91,67,242,0.18)]"
+                          : "border-[#eef2f7] bg-[#fbfcfe] text-[#70819f] hover:border-[#e1e8f1] hover:bg-white"
+                      }`}
+                    >
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.02em]">
+                        {preset.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      ) : null}
+    </div>
+  );
+
+  const sharedFormContent = (
+    <div className="space-y-10">
+      {isMobileViewport ? (
+        <div className="space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8ea0c4]">
+            The Basics
+          </p>
+        </div>
+      ) : null}
+
+      {primaryCategoryFields.length ? (
+        <div className="space-y-4">
+          {isMobileViewport && isBirthday ? (
+            <div className="space-y-8">
+              <StudioFieldGrid
+                details={details}
+                setDetails={setDetails}
+                fields={mobileBirthdayLeadFields}
+                columnsClassName="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-x-6 gap-y-8"
+              />
+              {mobileBirthdayTrailingFields.length ? (
+                <StudioFieldGrid
+                  details={details}
+                  setDetails={setDetails}
+                  fields={mobileBirthdayTrailingFields}
+                  columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                />
+              ) : null}
+            </div>
+          ) : (
+            <StudioFieldGrid
+              details={details}
+              setDetails={setDetails}
+              fields={primaryCategoryFields}
+              columnsClassName={
+                isBirthday
+                  ? "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.6fr)]"
+                  : "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
+              }
+            />
+          )}
+        </div>
+      ) : null}
+
+      {sharedPrimaryFields.length ? (
+        <div className="space-y-4">
+          {isMobileViewport ? (
+            <div className="space-y-8">
+              <StudioFieldGrid
+                details={details}
+                setDetails={setDetails}
+                fields={mobileSharedLeadFields}
+                columnsClassName="grid grid-cols-2 gap-x-6 gap-y-8"
+              />
+              {mobileSharedTrailingFields.length ? (
+                <StudioFieldGrid
+                  details={details}
+                  setDetails={setDetails}
+                  fields={mobileSharedTrailingFields}
+                  columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                />
+              ) : null}
+            </div>
+          ) : (
+            <StudioFieldGrid
+              details={details}
+              setDetails={setDetails}
+              fields={sharedPrimaryFields}
+              columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
+            />
+          )}
+        </div>
+      ) : null}
+
+      {secondaryCategoryFields.length ? (
+        <div className="space-y-4">
+          <StudioFieldGrid
+            details={details}
+            setDetails={setDetails}
+            fields={secondaryCategoryFields}
+            columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
+          />
+        </div>
+      ) : null}
+
+      <div className="space-y-4 pt-2">
+        <div className="space-y-3 rounded-[1.35rem] border border-[#eef2f7] bg-[#fcfdff] px-5 py-4">
+          <div className="space-y-1">
+            <label className={studioWorkspaceFieldLabelClass} htmlFor="studio-event-details">
+              Event Details
+            </label>
+            <p className="text-sm leading-7 text-[#707b8e]">
+              What guests should know beyond the structured fields above.
+            </p>
+          </div>
+          <textarea
+            id="studio-event-details"
+            rows={3}
+            placeholder={studioEventDetailsPlaceholder}
+            className="min-h-[108px] w-full resize-none border-0 border-b border-[#dde5f1] bg-transparent px-0 py-2 font-[var(--font-playfair)] text-[1.7rem] leading-[1.35] text-[#262b36] transition-colors focus:border-[#c8d3e6] focus:outline-none focus:ring-0 sm:text-[1.95rem] [&::placeholder]:text-[1.2rem] [&::placeholder]:italic [&::placeholder]:leading-[1.35] [&::placeholder]:text-[#d9dfe9] sm:[&::placeholder]:text-[1.55rem]"
+            value={details.detailsDescription}
+            onChange={(event) => updateEventDetailsText(event.target.value)}
+          />
+        </div>
+
+        <div className="space-y-3 rounded-[1.35rem] border border-[#eef2f7] bg-[#fcfdff] px-5 py-4">
+          <div className="space-y-1">
+            <label className={studioWorkspaceFieldLabelClass} htmlFor="studio-design-idea">
+              Design Idea
+            </label>
+            <p className="text-sm leading-7 text-[#707b8e]">
+              {flyerProvidesVisualDirection
+                ? "Describe the visual/theme direction for the invite. Flyer uploads can leave this blank if the flyer already sets the look."
+                : "Describe the visual/theme direction for the invite."}
+            </p>
+          </div>
+          <textarea
+            id="studio-design-idea"
+            rows={3}
+            placeholder={studioDesignIdeaPlaceholder}
+            className="min-h-[108px] w-full resize-none border-0 border-b border-[#dde5f1] bg-transparent px-0 py-2 font-[var(--font-playfair)] text-[1.7rem] leading-[1.35] text-[#262b36] transition-colors focus:border-[#c8d3e6] focus:outline-none focus:ring-0 sm:text-[1.95rem] [&::placeholder]:text-[1.2rem] [&::placeholder]:italic [&::placeholder]:leading-[1.35] [&::placeholder]:text-[#d9dfe9] sm:[&::placeholder]:text-[1.55rem]"
+            value={details.theme}
+            onChange={(event) => updateDesignIdeaText(event.target.value)}
+          />
+        </div>
+
+        <p className="text-[11px] uppercase tracking-[0.18em] text-[#96a6c5]">
+          <span className="mr-1 text-[#b8c2d4]">*</span>
+          {flyerProvidesVisualDirection
+            ? "Event Details required. Design Idea optional when a flyer is uploaded."
+            : "Event Details and Design Idea required."}
+        </p>
+      </div>
+
+      {imageFinishPresets.length > 0 ? (
+        <div className="space-y-3 border-t border-[#eef2f7] pt-7">
+          <label className={studioWorkspaceFieldLabelClass}>Visual Style</label>
+          {stylePickerButton}
+        </div>
+      ) : null}
+
+      {showStudioCreativeControls ? (
+        <div className="space-y-5 rounded-[1.5rem] border border-[#eef2f7] bg-[#fcfdff] p-5 sm:p-6">
+          <div className="space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#96a6c5]">
+              Creative Upgrade
+            </p>
+            <p className="text-sm leading-7 text-[#707b8e]">
+              Use these controls when you want the uploaded person transformed into the theme
+              instead of simply blended into the scene.
+            </p>
+          </div>
+
+          <div className="space-y-5 border-t border-[#eef2f7] pt-5">
+            <div className="space-y-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#96a6c5]">
+                Likeness Strength
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {likenessOptions.map((option) => {
+                  const active = details.likenessStrength === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          likenessStrength: option.value,
+                          subjectTransformMode: "premium_makeover",
+                        }))
+                      }
+                      className={`rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+                        active
+                          ? "border-[#262b36] bg-[#262b36] text-white"
+                          : "border-[#e1e7f1] bg-white text-[#6f7c93] hover:border-[#d4dce8]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#96a6c5]">
+                Visual Style
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {visualStyleOptions.map((option) => {
+                  const active = details.visualStyleMode === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          visualStyleMode: option.value,
+                          subjectTransformMode: "premium_makeover",
+                        }))
+                      }
+                      className={`rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+                        active
+                          ? "border-[#262b36] bg-[#262b36] text-white"
+                          : "border-[#e1e7f1] bg-white text-[#6f7c93] hover:border-[#d4dce8]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {moreDetailFields.length ? (
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => setShowMoreDetails((prev) => !prev)}
+            className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#96a6c5] transition-colors hover:text-[#262b36]"
+            aria-expanded={showMoreDetails}
+          >
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform ${showMoreDetails ? "rotate-180" : ""}`}
+            />
+            More details
+          </button>
+          {showMoreDetails ? (
+            <div className="space-y-4 pt-3">
+              <StudioFieldGrid
+                details={details}
+                setDetails={setDetails}
+                fields={moreDetailFields}
+                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2"
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <StudioOptionalMediaRow
+        details={details}
+        onUploadFlyer={onUploadFlyer}
+        onRemoveFlyer={onRemoveFlyer}
+        onUploadSubjectPhotos={onUploadSubjectPhotos}
+        onRemoveSubjectPhoto={onRemoveSubjectPhoto}
+        isFlyerUploading={isFlyerUploading}
+        isSubjectPhotoUploading={isSubjectPhotoUploading}
+        flyerUploadError={flyerUploadError}
+        subjectPhotoUploadError={subjectPhotoUploadError}
+      />
+    </div>
+  );
 
   return (
     <motion.div
@@ -169,369 +543,169 @@ export function StudioFormStep({
       exit={{ opacity: 0, x: 20 }}
       className="mr-auto max-w-[1440px] lg:h-full lg:max-w-none"
     >
-      {isMobileViewport ? (
-        <div className="mb-5 flex items-center gap-4 border-b border-[#ddd5cb] pb-px lg:hidden">
-          <button
-            type="button"
-            onClick={showPromptComposer}
-            className={`border-b-[4px] pb-3 text-[11px] font-semibold uppercase leading-none tracking-[0.24em] transition-colors ${
-              mobilePane === "composer"
-                ? "border-[var(--studio-ink,#1A1A1A)] text-[var(--studio-ink,#1A1A1A)]"
-                : "border-transparent text-[#8C7B65]/55 hover:text-[#8C7B65]"
-            }`}
-          >
-            Editor
-          </button>
-          <button
-            type="button"
-            onClick={showPreviewPane}
-            disabled={!hasPreview && !isGenerating}
-            className={`border-b-[4px] pb-3 text-[11px] font-semibold uppercase leading-none tracking-[0.24em] transition-colors ${
-              mobilePane === "preview"
-                ? "border-[var(--studio-ink,#1A1A1A)] text-[var(--studio-ink,#1A1A1A)]"
-                : "border-transparent text-[#8C7B65]/55 hover:text-[#8C7B65]"
-            } ${!hasPreview && !isGenerating ? "cursor-not-allowed opacity-40 hover:text-[#8C7B65]/55" : ""}`}
-          >
-            Preview
-          </button>
-        </div>
-      ) : null}
-
-      <div className="lg:flex lg:h-full lg:min-h-0 lg:w-full lg:overflow-hidden">
+      <div className="overflow-hidden rounded-[2rem] border border-[#eef2f7] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.04)] lg:flex lg:h-full lg:min-h-0 lg:w-full lg:rounded-none lg:border-0 lg:shadow-none">
         <section
-          className={`space-y-8 lg:flex lg:h-full lg:min-h-0 lg:w-auto lg:flex-1 lg:flex-col lg:overflow-y-auto lg:px-0 lg:pr-8 lg:[scrollbar-gutter:stable] ${
+          className={`relative flex min-h-0 flex-1 flex-col bg-white ${
             isMobileViewport
               ? mobilePane === "composer"
-                ? "w-full pr-0"
+                ? "w-full"
                 : "hidden"
-              : "w-1/2 shrink-0 pr-4"
+              : "border-r border-[#eff3f8]"
           }`}
         >
-          <div className="w-full max-w-4xl">
-          <div className="studio-form-card rounded-[2rem] border p-6 sm:p-8 lg:flex lg:min-h-full lg:flex-1 lg:flex-col lg:p-10">
-            <div className="space-y-12 pt-2 md:pt-4 lg:flex lg:min-h-full lg:flex-1 lg:flex-col">
-              {primaryCategoryFields.length ? (
-                <div className="space-y-4">
-                  {isMobileViewport && isBirthday ? (
-                    <div className="space-y-8">
-                      <StudioFieldGrid
-                        details={details}
-                        setDetails={setDetails}
-                        fields={mobileBirthdayLeadFields}
-                        columnsClassName="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-x-6 gap-y-8"
-                      />
-                      {mobileBirthdayTrailingFields.length ? (
-                        <StudioFieldGrid
-                          details={details}
-                          setDetails={setDetails}
-                          fields={mobileBirthdayTrailingFields}
-                          columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
-                        />
-                      ) : null}
-                    </div>
-                  ) : (
-                    <StudioFieldGrid
-                      details={details}
-                      setDetails={setDetails}
-                      fields={primaryCategoryFields}
-                      columnsClassName={
-                        isBirthday
-                          ? "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.6fr)]"
-                          : "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
-                      }
-                    />
-                  )}
-                </div>
-              ) : null}
+          <div className="flex-1 overflow-y-auto px-6 pb-32 pt-7 sm:px-8 lg:px-8 lg:pb-10 lg:pt-10">
+            {sharedFormContent}
+          </div>
 
-              {sharedPrimaryFields.length ? (
-                <div className="space-y-4">
-                  {isMobileViewport ? (
-                    <div className="space-y-8">
-                      <StudioFieldGrid
-                        details={details}
-                        setDetails={setDetails}
-                        fields={mobileSharedLeadFields}
-                        columnsClassName="grid grid-cols-2 gap-x-6 gap-y-8"
-                      />
-                      {mobileSharedTrailingFields.length ? (
-                        <StudioFieldGrid
-                          details={details}
-                          setDetails={setDetails}
-                          fields={mobileSharedTrailingFields}
-                          columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
-                        />
-                      ) : null}
-                    </div>
-                  ) : (
-                    <StudioFieldGrid
-                      details={details}
-                      setDetails={setDetails}
-                      fields={sharedPrimaryFields}
-                      columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
-                    />
-                  )}
-                </div>
-              ) : null}
+          <div className="hidden border-t border-[#eff3f8] bg-white px-6 py-5 lg:flex lg:justify-end lg:px-8">
+            <button
+              type="button"
+              onClick={() => generateMedia("page")}
+              disabled={!isFormValid || isGenerating}
+              className="inline-flex min-h-14 w-auto min-w-[16rem] items-center justify-center gap-3 rounded-[1rem] bg-[#131b33] px-8 text-[11px] font-semibold uppercase tracking-[0.14em] text-white shadow-[0_22px_40px_rgba(19,27,51,0.18)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Layout className="h-5 w-5" />
+              )}
+              {liveCardActionLabel}
+            </button>
+          </div>
 
-              {secondaryCategoryFields.length ? (
-                <div className="space-y-4">
-                  <StudioFieldGrid
-                    details={details}
-                    setDetails={setDetails}
-                    fields={secondaryCategoryFields}
-                    columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
-                  />
-                </div>
-              ) : null}
-
-              <div className="space-y-3">
-                <label
-                  className={studioWorkspaceFieldLabelClass}
-                  htmlFor="studio-idea-and-details"
-                >
-                  Invitation Idea & Details
-                </label>
-                <textarea
-                  id="studio-idea-and-details"
-                  rows={3}
-                  placeholder={studioIdeaPlaceholder}
-                  className="font-[var(--font-playfair)] min-h-[96px] w-full resize-none border-0 border-b border-[var(--studio-ink,#1A1A1A)]/18 bg-transparent px-0 py-2 text-[1.65rem] leading-[1.35] text-[var(--studio-ink,#1A1A1A)] transition-colors focus:border-[var(--studio-ink,#1A1A1A)] focus:outline-none focus:ring-0 sm:text-2xl [&::placeholder]:text-[1.2rem] [&::placeholder]:italic [&::placeholder]:leading-[1.3] [&::placeholder]:text-[rgba(28,21,48,0.18)] sm:[&::placeholder]:text-[1.5rem]"
-                  value={ideaValue}
-                  onChange={(event) => updateIdeaText(event.target.value)}
-                />
-                <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--studio-ink-soft,#8C7B65)]">
-                  <span className="mr-1 text-[var(--studio-ink,#1A1A1A)]/35">*</span> Required fields
-                </p>
-              </div>
-
-              {imageFinishPresets.length > 0 ? (
-                <div className="space-y-4 rounded-[1.25rem] border border-[#e8d8e8] bg-[#f7edf7] p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)] sm:p-7">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink-soft,#8C7B65)]">
-                      Image Finish (Optional)
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                    {imageFinishPresets.map((preset) => {
-                      const active = selectedImageFinishPreset?.label === preset.label;
-                      return (
-                        <motion.button
-                          key={preset.label}
-                          type="button"
-                          aria-pressed={active}
-                          whileHover={{ opacity: 0.92, y: -1 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() =>
-                            setDetails((prev) => ({
-                              ...prev,
-                              imageFinishPreset: active ? "" : preset.label,
-                            }))
-                          }
-                          className={`studio-finish-chip flex min-h-[60px] w-full items-center justify-center rounded-[0.45rem] border px-4 text-center text-[12px] font-semibold uppercase leading-tight tracking-[0.05em] text-white transition-all ${
-                            active
-                              ? "border-[var(--studio-brand,#7c5cd1)] bg-[var(--studio-brand,#7c5cd1)] shadow-[0_10px_24px_rgba(124,92,209,0.24)] ring-2 ring-[var(--studio-brand,#7c5cd1)]/22 ring-offset-2 ring-offset-[#f7edf7]"
-                              : "border-[#8e78d8] bg-[var(--studio-brand,#7c5cd1)] shadow-[0_8px_20px_rgba(124,92,209,0.16)] hover:-translate-y-0.5 hover:border-[#7b63cf] hover:bg-[#8366d7] hover:shadow-[0_10px_24px_rgba(124,92,209,0.22)]"
-                          }`}
-                        >
-                          {preset.label}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                  {selectedImageFinishPreset ? (
-                    <p className="text-sm leading-6 text-[var(--studio-ink-soft,#6B5E4E)]">
-                      {selectedImageFinishPreset.description}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {showStudioCreativeControls ? (
-                <div className="space-y-4 rounded-[1.75rem] border border-[var(--studio-card-border,#d8cdc0)] bg-[var(--studio-paper-soft,#fbf8f4)] p-5">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink-soft,#8C7B65)]">
-                      Creative Upgrade
-                    </p>
-                    <p className="text-sm leading-7 text-[var(--studio-ink-soft,#6B5E4E)]">
-                      Use these controls when you want the uploaded person transformed into the theme
-                      instead of simply blended into the scene.
-                    </p>
-                  </div>
-
-                  <div className="space-y-4 border-t border-[var(--studio-ink,#1A1A1A)]/8 pt-4">
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink-soft,#8C7B65)]">
-                        Likeness Strength
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {likenessOptions.map((option) => {
-                          const active = details.likenessStrength === option.value;
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              aria-pressed={active}
-                              onClick={() =>
-                                setDetails((prev) => ({
-                                  ...prev,
-                                  likenessStrength: option.value,
-                                  subjectTransformMode: "premium_makeover",
-                                }))
-                              }
-                              className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-colors ${
-                                active
-                                  ? "border-[var(--studio-brand,#1A1A1A)] bg-[var(--studio-brand,#1A1A1A)] text-white"
-                                  : "border-[var(--studio-card-border,#d8cdc0)] bg-white text-[var(--studio-ink,#5F5345)] hover:border-[var(--studio-brand,#8C7B65)]"
-                              }`}
-                            >
-                              {option.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink-soft,#8C7B65)]">
-                        Visual Style
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {visualStyleOptions.map((option) => {
-                          const active = details.visualStyleMode === option.value;
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              aria-pressed={active}
-                              onClick={() =>
-                                setDetails((prev) => ({
-                                  ...prev,
-                                  visualStyleMode: option.value,
-                                  subjectTransformMode: "premium_makeover",
-                                }))
-                              }
-                              className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-colors ${
-                                active
-                                  ? "border-[var(--studio-brand,#1A1A1A)] bg-[var(--studio-brand,#1A1A1A)] text-white"
-                                  : "border-[var(--studio-card-border,#d8cdc0)] bg-white text-[var(--studio-ink,#5F5345)] hover:border-[var(--studio-brand,#8C7B65)]"
-                              }`}
-                            >
-                              {option.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {moreDetailFields.length ? (
-                <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowMoreDetails((prev) => !prev)}
-                    className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink-soft,#8C7B65)] transition-colors hover:text-[var(--studio-ink,#1A1A1A)]"
-                    aria-expanded={showMoreDetails}
-                  >
-                    <ChevronDown
-                      className={`h-3.5 w-3.5 transition-transform ${
-                        showMoreDetails ? "rotate-180" : ""
-                      }`}
-                    />
-                    More details
-                  </button>
-                  {showMoreDetails ? (
-                    <div className="space-y-4 pt-3">
-                      <StudioFieldGrid
-                        details={details}
-                        setDetails={setDetails}
-                        fields={moreDetailFields}
-                        columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2"
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-
-              <div className="space-y-7 pt-4 lg:mt-auto">
-                <StudioOptionalMediaRow
-                  details={details}
-                  onUploadFlyer={onUploadFlyer}
-                  onRemoveFlyer={onRemoveFlyer}
-                  onUploadSubjectPhotos={onUploadSubjectPhotos}
-                  onRemoveSubjectPhoto={onRemoveSubjectPhoto}
-                  isFlyerUploading={isFlyerUploading}
-                  isSubjectPhotoUploading={isSubjectPhotoUploading}
-                  flyerUploadError={flyerUploadError}
-                  subjectPhotoUploadError={subjectPhotoUploadError}
-                />
-
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => generateMedia("image")}
-                      disabled={!isFormValid || isGenerating}
-                      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[var(--studio-card-border,#d8cdc0)] bg-white text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_12px_30px_rgba(124,92,209,0.12)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <ImageIcon className="h-5 w-5" />
-                      Generate Image
-                      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => generateMedia("page")}
-                      disabled={!isFormValid || isGenerating}
-                      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-[var(--studio-brand,#1A1A1A)] px-6 text-[10px] font-semibold uppercase tracking-[0.28em] text-white shadow-[0_20px_50px_rgba(124,92,209,0.28)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isGenerating ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <Layout className="h-5 w-5" />
-                      )}
-                      {isEditingLiveCard ? "Update Invitation" : editingId ? "Regenerate Live Card" : "Create Live Card"}
-                      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {isMobileViewport ? (
+            <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#edf1f7] bg-white/95 px-5 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-xl">
+              <button
+                type="button"
+                onClick={() => generateMedia("page")}
+                disabled={!isFormValid || isGenerating}
+                className="flex min-h-14 w-full items-center justify-center gap-3 rounded-[1.15rem] bg-[#563df0] px-6 text-[11px] font-semibold uppercase tracking-[0.05em] text-white shadow-[0_24px_40px_rgba(86,61,240,0.28)] transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4.5 w-4.5" />
+                )}
+                {liveCardActionLabel}
+              </button>
             </div>
-          </div>
-          </div>
+          ) : null}
         </section>
 
         <aside
-          className={`lg:flex lg:h-full lg:min-h-0 lg:w-[500px] lg:shrink-0 lg:items-center lg:justify-center lg:border-l lg:border-[#ddd5cb]/70 lg:bg-transparent lg:pl-8 lg:pr-4 lg:pb-14 lg:pt-8 ${
+          className={`relative min-h-0 ${
             isMobileViewport
               ? mobilePane === "preview"
-                ? "w-full pl-0"
+                ? "flex w-full flex-col bg-[#121a34]"
                 : "hidden"
-              : "w-1/2 shrink-0 pl-4"
+              : "flex w-1/2 shrink-0 flex-col bg-[#121a34]"
           }`}
         >
-          <StudioPhonePreviewPane
-            details={details}
-            currentProjectWithVisualDraft={currentProjectWithVisualDraft}
-            currentProjectDisplayUrl={currentProjectDisplayUrl}
-            currentProjectHasUnsavedChanges={currentProjectHasUnsavedChanges}
-            currentProjectSaveLabel={currentProjectSaveLabel}
-            savedCurrentProject={savedCurrentProject}
-            currentProjectPreviewTab={currentProjectPreviewTab}
-            setCurrentProjectPreviewTab={setCurrentProjectPreviewTab}
-            currentProjectPreviewShareUrl={currentProjectPreviewShareUrl}
-            isGenerating={isGenerating}
-            sharingId={sharingId}
-            copySuccess={copySuccess}
-            saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
-            shareCurrentProject={shareCurrentProject}
-            openCurrentImage={openCurrentImage}
-            handleMediaImageLoadError={handleMediaImageLoadError}
-          />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(116,132,216,0.15),_transparent_42%),radial-gradient(circle,_rgba(255,255,255,0.06)_1px,_transparent_1px)] [background-size:100%_100%,26px_26px]" />
+
+          {isMobileViewport ? (
+            <div className="relative z-10 flex items-center justify-between px-5 pb-2 pt-5">
+              <button
+                type="button"
+                onClick={showPromptComposer}
+                className="inline-flex items-center gap-2 rounded-full border border-white/18 bg-white/10 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+              {imageFinishPresets.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setShowStylePicker(true)}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/18 bg-white/10 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md"
+                >
+                  <Wand2 className="h-4 w-4" />
+                  Style
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="relative z-10 flex flex-1 items-center justify-center px-5 py-8 lg:px-8 lg:py-10">
+            <StudioPhonePreviewPane
+              details={details}
+              currentProjectWithVisualDraft={currentProjectWithVisualDraft}
+              currentProjectDisplayUrl={currentProjectDisplayUrl}
+              currentProjectHasUnsavedChanges={currentProjectHasUnsavedChanges}
+              currentProjectSaveLabel={currentProjectSaveLabel}
+              currentProjectSaveImageLabel={currentProjectSaveImageLabel}
+              savedCurrentProject={savedCurrentProject}
+              currentProjectPreviewTab={currentProjectPreviewTab}
+              setCurrentProjectPreviewTab={setCurrentProjectPreviewTab}
+              currentProjectPreviewShareUrl={currentProjectPreviewShareUrl}
+              isGenerating={isGenerating}
+              sharingId={sharingId}
+              copySuccess={copySuccess}
+              saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
+              saveCurrentProjectAsImageToLibrary={saveCurrentProjectAsImageToLibrary}
+              openCurrentLiveCardFullscreen={openCurrentLiveCardFullscreen}
+              shareCurrentProject={shareCurrentProject}
+              openCurrentImage={openCurrentImage}
+              handleMediaImageLoadError={handleMediaImageLoadError}
+            />
+          </div>
         </aside>
       </div>
+
+      <AnimatePresence>
+        {isMobileViewport && showStylePicker ? (
+          <>
+            <motion.button
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowStylePicker(false)}
+              className="fixed inset-0 z-40 bg-[#0e152c]/52 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 26, stiffness: 280 }}
+              className="fixed inset-x-0 bottom-0 z-50 rounded-t-[2.6rem] bg-white px-6 pb-[calc(1.75rem+env(safe-area-inset-bottom,0px))] pt-5 shadow-[0_-30px_70px_rgba(15,23,42,0.22)]"
+            >
+              <div className="mx-auto mb-8 h-1.5 w-14 rounded-full bg-[#d9e0ec]" />
+              <div className="mb-8 flex items-center justify-between">
+                <h3 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-[#1b2740]">
+                  Select Style
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowStylePicker(false)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f2f5fa] text-[#93a2c0]"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {imageFinishPresets.map((preset) => {
+                  const active = selectedImageFinishPreset?.label === preset.label;
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => updateImageFinishPreset(preset.label)}
+                      className={`flex min-h-[84px] items-center justify-center rounded-[1.2rem] border px-4 text-center text-[11px] font-semibold uppercase tracking-[0.02em] transition-all ${
+                        active
+                          ? "border-[#5a43f1] bg-[#5a43f1] text-white shadow-[0_14px_28px_rgba(90,67,241,0.22)]"
+                          : "border-[#e7edf6] bg-[#f8faff] text-[#6d80a4]"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
     </motion.div>
   );
 }
