@@ -64,7 +64,9 @@ import { isRecord, STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
 import { StudioCategoryStep } from "./workspace/StudioCategoryStep";
 import { StudioCreateFlow } from "./workspace/StudioCreateFlow";
 import { StudioFormStep } from "./workspace/StudioFormStep";
+import { StudioIdeaComposer } from "./workspace/StudioIdeaComposer";
 import { StudioLibraryStep } from "./workspace/StudioLibraryStep";
+import { StudioMobilePreviewStep } from "./workspace/StudioMobilePreviewStep";
 import { StudioWorkspaceShell } from "./workspace/StudioWorkspaceShell";
 import { useStudioMediaLibrary } from "./workspace/useStudioMediaLibrary";
 
@@ -122,6 +124,7 @@ function parseStudioWorkspaceView(value: string | null): StudioWorkspaceView {
 }
 
 function parseStudioCreateStep(value: string | null): StudioCreateStep {
+  if (value === "preview") return "preview";
   if (value === "details" || value === "editor") return "details";
   return "type";
 }
@@ -423,13 +426,21 @@ export default function StudioWorkspace() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
+  const [ideaComposerDraft, setIdeaComposerDraft] = useState("");
+  const [isIdeaComposerOpen, setIsIdeaComposerOpen] = useState(false);
   const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
   const [studioVisualDraft, setStudioVisualDraft] = useState<StudioVisualDraft | null>(null);
   const [isLiveCardToolsDrawerOpen, setIsLiveCardToolsDrawerOpen] = useState(false);
   const [isDesktopLiveCardViewport, setIsDesktopLiveCardViewport] = useState(false);
-  const [isMobileEditorViewport, setIsMobileEditorViewport] = useState(false);
-  const [mobileEditorPane, setMobileEditorPane] = useState<"composer" | "preview">("composer");
+  const [isMobileEditorViewport, setIsMobileEditorViewport] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia(STUDIO_EDITOR_MOBILE_BREAKPOINT).matches
+      : false,
+  );
+  const [hasResolvedMobileEditorViewport, setHasResolvedMobileEditorViewport] = useState(
+    () => typeof window !== "undefined",
+  );
   const [isFlyerUploading, setIsFlyerUploading] = useState(false);
   const [isSubjectPhotoUploading, setIsSubjectPhotoUploading] = useState(false);
   const [flyerUploadError, setFlyerUploadError] = useState<string | null>(null);
@@ -591,11 +602,8 @@ export default function StudioWorkspace() {
 
     const mediaQuery = window.matchMedia(STUDIO_EDITOR_MOBILE_BREAKPOINT);
     const syncMobileEditorViewport = () => {
-      const matches = mediaQuery.matches;
-      setIsMobileEditorViewport(matches);
-      if (!matches) {
-        setMobileEditorPane("composer");
-      }
+      setIsMobileEditorViewport(mediaQuery.matches);
+      setHasResolvedMobileEditorViewport(true);
     };
 
     syncMobileEditorViewport();
@@ -606,6 +614,12 @@ export default function StudioWorkspace() {
     mediaQuery.addListener(syncMobileEditorViewport);
     return () => mediaQuery.removeListener(syncMobileEditorViewport);
   }, []);
+
+  useEffect(() => {
+    if (!hasResolvedMobileEditorViewport) return;
+    if (view !== "create" || createStep !== "preview" || isMobileEditorViewport) return;
+    navigateWorkspace("create", "details");
+  }, [createStep, hasResolvedMobileEditorViewport, isMobileEditorViewport, navigateWorkspace, view]);
 
   useEffect(() => {
     if (!deleteConfirmationItem) return;
@@ -920,7 +934,6 @@ export default function StudioWorkspace() {
 
   function clearCurrentProject(options?: { resetDetails?: boolean }) {
     setCurrentProject(null);
-    setMobileEditorPane("composer");
     setEditPrompt("");
     setIsEditPanelOpen(false);
     setStudioVisualDraft(null);
@@ -1221,8 +1234,15 @@ export default function StudioWorkspace() {
     });
   }
 
-  async function generateMedia(type: MediaType) {
-    const currentDetails = { ...details };
+  async function generateMedia(
+    type: MediaType,
+    options?: {
+      overrideDetails?: EventDetails;
+      mobileFailureStep?: StudioCreateStep;
+      editSourcePrompt?: string;
+    },
+  ) {
+    const currentDetails = { ...(options?.overrideDetails ?? details) };
     const targetId = currentProject?.id ?? createId();
     const existingItem = currentProject;
     const generationSurface = resolveStudioGenerationSurface(currentDetails, type, {
@@ -1248,7 +1268,7 @@ export default function StudioWorkspace() {
     setActiveTab("none");
     setCurrentProject(loadingItem);
     if (isMobileEditorViewport) {
-      setMobileEditorPane("preview");
+      navigateWorkspace("create", "preview");
     }
 
     try {
@@ -1256,7 +1276,9 @@ export default function StudioWorkspace() {
         currentDetails,
         type === "page" ? "both" : "image",
         generationSurface,
-        sourceImageDataUrl ? editPrompt : undefined,
+        sourceImageDataUrl
+          ? (options && "editSourcePrompt" in options ? options.editSourcePrompt : editPrompt)
+          : undefined,
         sourceImageDataUrl || undefined,
       );
       const generatedDetails = response.preparedDetails || currentDetails;
@@ -1278,9 +1300,10 @@ export default function StudioWorkspace() {
       setCurrentProject(nextItem);
       setEditPrompt("");
       if (isMobileEditorViewport) {
-        setMobileEditorPane("preview");
+        navigateWorkspace("create", "preview");
+      } else {
+        navigateWorkspace("create", "details");
       }
-      navigateWorkspace("create", "details");
     } catch (error) {
       const errorMessage =
         error instanceof Error && error.message.trim()
@@ -1293,6 +1316,9 @@ export default function StudioWorkspace() {
         url: existingItem?.url || getFallbackThumbnail(currentDetails),
         errorMessage,
       });
+      if (isMobileEditorViewport) {
+        navigateWorkspace("create", options?.mobileFailureStep ?? "details");
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -1534,14 +1560,60 @@ export default function StudioWorkspace() {
   const studioIdeaLabel = getStudioIdeaLabel(details.category);
   const studioIdeaPlaceholder = getStudioIdeaPlaceholder(details.category);
   const showStudioCreativeControls = hasStudioSubjectReferencePhotos(details);
+  const currentIdeaText = clean(details.theme) || clean(details.detailsDescription);
+  const ideaActionLabel = currentIdeaText ? "Change Theme" : "Edit Idea";
   const currentProjectDisplayUrl = currentProjectWithVisualDraft
     ? getStudioImageDisplayUrl(currentProjectWithVisualDraft)
     : "";
+
+  useEffect(() => {
+    setIdeaComposerDraft(currentIdeaText);
+  }, [currentIdeaText]);
+
+  function openIdeaComposer() {
+    setIdeaComposerDraft(currentIdeaText);
+    setIsIdeaComposerOpen(true);
+  }
+
+  function closeIdeaComposer() {
+    setIsIdeaComposerOpen(false);
+  }
+
+  function openEventDetailsFromIdeaComposer() {
+    setIsIdeaComposerOpen(false);
+    navigateWorkspace("create", "details");
+  }
+
+  async function submitIdeaComposer() {
+    const nextIdea = clean(ideaComposerDraft);
+    if (!nextIdea) {
+      if (typeof window !== "undefined") {
+        window.alert("Add a short idea or theme first.");
+      }
+      return;
+    }
+
+    const nextDetails = {
+      ...details,
+      theme: nextIdea,
+      detailsDescription: nextIdea,
+    };
+
+    setDetails(nextDetails);
+    setIdeaComposerDraft(nextIdea);
+    setIsIdeaComposerOpen(false);
+    await generateMedia(currentProjectWithVisualDraft?.type === "image" ? "image" : "page", {
+      overrideDetails: nextDetails,
+      mobileFailureStep: "preview",
+      editSourcePrompt: undefined,
+    });
+  }
 
   function openTypeStep() {
     if (!confirmDiscardCurrentProject("Discard the current Studio project and switch categories?")) {
       return;
     }
+    setIsIdeaComposerOpen(false);
     clearCurrentProject({ resetDetails: true });
     setPreviewOrigin(null);
     navigateWorkspace("create", "type");
@@ -1552,16 +1624,16 @@ export default function StudioWorkspace() {
       ...prev,
       category,
     }));
-    setMobileEditorPane("composer");
     navigateWorkspace("create", "details", category);
   }
 
-  function openEditorStep() {
-    setMobileEditorPane("composer");
+  function openDetailsStep() {
+    setIsIdeaComposerOpen(false);
     navigateWorkspace("create", "details");
   }
 
   function handleWorkspaceViewChange(nextView: StudioWorkspaceView) {
+    setIsIdeaComposerOpen(false);
     navigateWorkspace(nextView);
   }
 
@@ -1573,17 +1645,24 @@ export default function StudioWorkspace() {
   return (
     <>
       <StudioWorkspaceShell
-      activeView={view}
-      onViewChange={handleWorkspaceViewChange}
-      librarySyncError={librarySyncError}
-      showLibrarySyncError={sessionStatus === "authenticated"}
-      onRetryLibrarySync={retryLibrarySync}
+        activeView={view}
+        onViewChange={handleWorkspaceViewChange}
+        librarySyncError={librarySyncError}
+        showLibrarySyncError={sessionStatus === "authenticated"}
+        onRetryLibrarySync={retryLibrarySync}
+        shellMode={
+          view === "create" && createStep === "preview" && isMobileEditorViewport
+            ? "immersive-mobile-preview"
+            : "full"
+        }
       >
         {view === "create" ? (
           <StudioCreateFlow
             createStep={createStep}
             details={details}
+            isMobileViewport={isMobileEditorViewport}
             onOpenTypeStep={openTypeStep}
+            onOpenDetailsStep={openDetailsStep}
             typeContent={
               <StudioCategoryStep
                 details={details}
@@ -1594,7 +1673,7 @@ export default function StudioWorkspace() {
               <StudioFormStep
                 details={details}
                 setDetails={setDetails}
-                onOpenEditorStep={openEditorStep}
+                onOpenTypeStep={openTypeStep}
                 isFormValid={formValid}
                 editingId={currentProject?.id ?? null}
                 onUploadFlyer={handleUploadFlyer}
@@ -1621,13 +1700,22 @@ export default function StudioWorkspace() {
                 isGenerating={isGenerating}
                 isEditingLiveCard={isEditingLiveCard}
                 isMobileViewport={isMobileEditorViewport}
-                mobilePane={mobileEditorPane}
                 sharingId={sharingId}
                 copySuccess={copySuccess}
                 generateMedia={generateMedia}
+                desktopIdeaComposer={
+                  currentProject || isGenerating ? (
+                    <StudioIdeaComposer
+                      mode="panel"
+                      value={ideaComposerDraft}
+                      onChange={setIdeaComposerDraft}
+                      onSubmit={() => void submitIdeaComposer()}
+                      onOpenEventDetails={openDetailsStep}
+                      isSubmitting={isGenerating}
+                    />
+                  ) : null
+                }
                 saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
-                showPromptComposer={() => setMobileEditorPane("composer")}
-                showPreviewPane={() => setMobileEditorPane("preview")}
                 shareCurrentProject={() => {
                   if (!currentProjectWithVisualDraft) return;
                   void shareMedia(currentProjectWithVisualDraft);
@@ -1637,6 +1725,47 @@ export default function StudioWorkspace() {
                   setSelectedImage(currentProjectWithVisualDraft);
                 }}
                 handleMediaImageLoadError={handleMediaImageLoadError}
+              />
+            }
+            previewContent={
+              <StudioMobilePreviewStep
+                details={details}
+                currentProjectWithVisualDraft={currentProjectWithVisualDraft}
+                currentProjectDisplayUrl={currentProjectDisplayUrl}
+                currentProjectHasUnsavedChanges={currentProjectHasUnsavedChanges}
+                currentProjectSaveLabel={currentProjectSaveLabel}
+                savedCurrentProject={savedCurrentProject}
+                currentProjectPreviewTab={currentProjectPreviewTab}
+                setCurrentProjectPreviewTab={setCurrentProjectPreviewTab}
+                currentProjectPreviewShareUrl={currentProjectPreviewShareUrl}
+                isGenerating={isGenerating}
+                sharingId={sharingId}
+                copySuccess={copySuccess}
+                saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
+                shareCurrentProject={() => {
+                  if (!currentProjectWithVisualDraft) return;
+                  void shareMedia(currentProjectWithVisualDraft);
+                }}
+                openCurrentImage={() => {
+                  if (!currentProjectWithVisualDraft) return;
+                  setSelectedImage(currentProjectWithVisualDraft);
+                }}
+                handleMediaImageLoadError={handleMediaImageLoadError}
+                onOpenDetailsStep={openDetailsStep}
+                onOpenIdeaComposer={openIdeaComposer}
+                ideaActionLabel={ideaActionLabel}
+                ideaComposerSheet={
+                  <StudioIdeaComposer
+                    mode="sheet"
+                    isOpen={isIdeaComposerOpen}
+                    value={ideaComposerDraft}
+                    onChange={setIdeaComposerDraft}
+                    onSubmit={() => void submitIdeaComposer()}
+                    onOpenEventDetails={openEventDetailsFromIdeaComposer}
+                    isSubmitting={isGenerating}
+                    onClose={closeIdeaComposer}
+                  />
+                }
               />
             }
           />
@@ -1744,7 +1873,6 @@ export default function StudioWorkspace() {
                     type="button"
                     onClick={confirmDeleteMedia}
                     className="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#ef4444,#dc2626)] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(220,38,38,0.32)] transition-transform hover:scale-[1.01]"
-                    autoFocus
                   >
                     Delete live card
                   </button>
@@ -1842,7 +1970,8 @@ export default function StudioWorkspace() {
 
             <button
               onClick={() => closeLiveCardFullscreen()}
-              className="absolute right-4 top-4 z-[7010] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30 md:right-8 md:top-8"
+              className="absolute right-4 z-[7010] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30 md:right-8 md:top-8"
+              style={studioLiveCardControlTop ? { top: studioLiveCardControlTop } : undefined}
             >
               <X className="h-6 w-6" />
             </button>

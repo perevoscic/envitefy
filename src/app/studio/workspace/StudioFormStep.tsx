@@ -1,8 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ChevronDown, ChevronRight, Image as ImageIcon, Layout, Loader2 } from "lucide-react";
-import { type Dispatch, type SetStateAction, useState } from "react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Image as ImageIcon,
+  Layout,
+  Loader2,
+} from "lucide-react";
+import { type Dispatch, type ReactNode, type SetStateAction, useState } from "react";
 import {
   getStudioImageFinishPresets,
   resolveStudioImageFinishPreset,
@@ -34,7 +41,7 @@ type Option<T extends string> = {
 export type StudioFormStepProps = {
   details: EventDetails;
   setDetails: Dispatch<SetStateAction<EventDetails>>;
-  onOpenEditorStep: () => void;
+  onOpenTypeStep: () => void;
   isFormValid: boolean;
   editingId: string | null;
   onUploadFlyer: (file: File) => Promise<void>;
@@ -61,13 +68,11 @@ export type StudioFormStepProps = {
   isGenerating: boolean;
   isEditingLiveCard: boolean;
   isMobileViewport: boolean;
-  mobilePane: "composer" | "preview";
   sharingId: string | null;
   copySuccess: boolean;
   generateMedia: (type: MediaType) => void;
+  desktopIdeaComposer?: ReactNode;
   saveCurrentProjectToLibrary: () => void;
-  showPromptComposer: () => void;
-  showPreviewPane: () => void;
   shareCurrentProject: () => void;
   openCurrentImage: () => void;
   handleMediaImageLoadError: (item: MediaItem) => void;
@@ -76,7 +81,7 @@ export type StudioFormStepProps = {
 export function StudioFormStep({
   details,
   setDetails,
-  onOpenEditorStep: _onOpenEditorStep,
+  onOpenTypeStep,
   isFormValid,
   editingId,
   onUploadFlyer,
@@ -103,13 +108,11 @@ export function StudioFormStep({
   isGenerating,
   isEditingLiveCard,
   isMobileViewport,
-  mobilePane,
   sharingId,
   copySuccess,
   generateMedia,
+  desktopIdeaComposer,
   saveCurrentProjectToLibrary,
-  showPromptComposer,
-  showPreviewPane,
   shareCurrentProject,
   openCurrentImage,
   handleMediaImageLoadError,
@@ -140,7 +143,6 @@ export function StudioFormStep({
     details.category,
     details.imageFinishPreset,
   );
-  const hasPreview = Boolean(currentProjectWithVisualDraft);
   const ideaValue = details.theme || details.detailsDescription || "";
 
   const [showMoreDetails, setShowMoreDetails] = useState(false);
@@ -161,51 +163,70 @@ export function StudioFormStep({
     }));
   }
 
+  const generateImageButton = (
+    <button
+      type="button"
+      onClick={() => generateMedia("image")}
+      disabled={!isFormValid || isGenerating}
+      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[var(--studio-card-border,#d8cdc0)] bg-white text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_12px_30px_rgba(124,92,209,0.12)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <ImageIcon className="h-5 w-5" />
+      Generate Image
+      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
+    </button>
+  );
+
+  const generateLiveCardButton = (
+    <button
+      type="button"
+      onClick={() => generateMedia("page")}
+      disabled={!isFormValid || isGenerating}
+      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-[var(--studio-brand,#1A1A1A)] px-6 text-[10px] font-semibold uppercase tracking-[0.28em] text-white shadow-[0_20px_50px_rgba(124,92,209,0.28)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {isGenerating ? (
+        <Loader2 className="h-5 w-5 animate-spin" />
+      ) : (
+        <Layout className="h-5 w-5" />
+      )}
+      {isEditingLiveCard ? "Update Invitation" : editingId ? "Regenerate Live Card" : "Create Live Card"}
+      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
+    </button>
+  );
+
   return (
     <motion.div
       key="form"
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="mr-auto max-w-[1440px] lg:h-full lg:max-w-none"
+      className={`mr-auto max-w-[1440px] lg:h-full lg:max-w-none ${isMobileViewport ? "w-full max-w-none" : ""}`}
     >
       {isMobileViewport ? (
-        <div className="mb-5 flex items-center gap-4 border-b border-[#ddd5cb] pb-px lg:hidden">
-          <button
-            type="button"
-            onClick={showPromptComposer}
-            className={`border-b-[4px] pb-3 text-[11px] font-semibold uppercase leading-none tracking-[0.24em] transition-colors ${
-              mobilePane === "composer"
-                ? "border-[var(--studio-ink,#1A1A1A)] text-[var(--studio-ink,#1A1A1A)]"
-                : "border-transparent text-[#8C7B65]/55 hover:text-[#8C7B65]"
-            }`}
-          >
-            Editor
-          </button>
-          <button
-            type="button"
-            onClick={showPreviewPane}
-            disabled={!hasPreview && !isGenerating}
-            className={`border-b-[4px] pb-3 text-[11px] font-semibold uppercase leading-none tracking-[0.24em] transition-colors ${
-              mobilePane === "preview"
-                ? "border-[var(--studio-ink,#1A1A1A)] text-[var(--studio-ink,#1A1A1A)]"
-                : "border-transparent text-[#8C7B65]/55 hover:text-[#8C7B65]"
-            } ${!hasPreview && !isGenerating ? "cursor-not-allowed opacity-40 hover:text-[#8C7B65]/55" : ""}`}
-          >
-            Preview
-          </button>
+        <div className="-mx-6 mb-6 border-b border-[#ddd5cb] bg-[#f4f1fb]/95 px-6 pb-4 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] backdrop-blur-xl sm:-mx-8 sm:px-8 lg:hidden">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onOpenTypeStep}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#d8cdc0] bg-white/90 text-[var(--studio-ink,#1A1A1A)] shadow-[0_10px_24px_rgba(31,18,52,0.08)] transition-colors hover:bg-white"
+              aria-label="Back to invite types"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8C7B65]">
+                {details.category}
+              </p>
+              <p className="truncate text-sm font-semibold text-[var(--studio-ink,#1A1A1A)]">
+                Details
+              </p>
+            </div>
+          </div>
         </div>
       ) : null}
 
       <div className="lg:flex lg:h-full lg:min-h-0 lg:w-full lg:overflow-hidden">
         <section
-          className={`space-y-8 lg:flex lg:h-full lg:min-h-0 lg:w-auto lg:flex-1 lg:flex-col lg:overflow-y-auto lg:px-0 lg:pr-8 lg:[scrollbar-gutter:stable] ${
-            isMobileViewport
-              ? mobilePane === "composer"
-                ? "w-full pr-0"
-                : "hidden"
-              : "w-1/2 shrink-0 pr-4"
-          }`}
+          className={`space-y-8 lg:flex lg:h-full lg:min-h-0 lg:w-auto lg:flex-1 lg:flex-col lg:overflow-y-auto lg:px-0 lg:pr-8 lg:[scrollbar-gutter:stable] ${isMobileViewport ? "w-full pr-0 pb-[calc(env(safe-area-inset-bottom,0px)+7.5rem)]" : "w-1/2 shrink-0 pr-4"}`}
         >
           <div className="w-full max-w-4xl">
           <div className="studio-form-card rounded-[2rem] border p-6 sm:p-8 lg:flex lg:min-h-full lg:flex-1 lg:flex-col lg:p-10">
@@ -295,6 +316,7 @@ export function StudioFormStep({
                 <textarea
                   id="studio-idea-and-details"
                   rows={3}
+                  data-studio-idea-label={studioIdeaLabel}
                   placeholder={studioIdeaPlaceholder}
                   className="font-[var(--font-playfair)] min-h-[96px] w-full resize-none border-0 border-b border-[var(--studio-ink,#1A1A1A)]/18 bg-transparent px-0 py-2 text-[1.65rem] leading-[1.35] text-[var(--studio-ink,#1A1A1A)] transition-colors focus:border-[var(--studio-ink,#1A1A1A)] focus:outline-none focus:ring-0 sm:text-2xl [&::placeholder]:text-[1.2rem] [&::placeholder]:italic [&::placeholder]:leading-[1.3] [&::placeholder]:text-[rgba(28,21,48,0.18)] sm:[&::placeholder]:text-[1.5rem]"
                   value={ideaValue}
@@ -469,33 +491,12 @@ export function StudioFormStep({
                 />
 
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => generateMedia("image")}
-                      disabled={!isFormValid || isGenerating}
-                      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[var(--studio-card-border,#d8cdc0)] bg-white text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_12px_30px_rgba(124,92,209,0.12)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <ImageIcon className="h-5 w-5" />
-                      Generate Image
-                      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => generateMedia("page")}
-                      disabled={!isFormValid || isGenerating}
-                      className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-[var(--studio-brand,#1A1A1A)] px-6 text-[10px] font-semibold uppercase tracking-[0.28em] text-white shadow-[0_20px_50px_rgba(124,92,209,0.28)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isGenerating ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <Layout className="h-5 w-5" />
-                      )}
-                      {isEditingLiveCard ? "Update Invitation" : editingId ? "Regenerate Live Card" : "Create Live Card"}
-                      <ChevronRight className="h-4 w-4 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
-                    </button>
-                  </div>
+                  {!isMobileViewport ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {generateImageButton}
+                      {generateLiveCardButton}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -503,35 +504,43 @@ export function StudioFormStep({
           </div>
         </section>
 
-        <aside
-          className={`lg:flex lg:h-full lg:min-h-0 lg:w-[500px] lg:shrink-0 lg:items-center lg:justify-center lg:border-l lg:border-[#ddd5cb]/70 lg:bg-transparent lg:pl-8 lg:pr-4 lg:pb-14 lg:pt-8 ${
-            isMobileViewport
-              ? mobilePane === "preview"
-                ? "w-full pl-0"
-                : "hidden"
-              : "w-1/2 shrink-0 pl-4"
-          }`}
-        >
-          <StudioPhonePreviewPane
-            details={details}
-            currentProjectWithVisualDraft={currentProjectWithVisualDraft}
-            currentProjectDisplayUrl={currentProjectDisplayUrl}
-            currentProjectHasUnsavedChanges={currentProjectHasUnsavedChanges}
-            currentProjectSaveLabel={currentProjectSaveLabel}
-            savedCurrentProject={savedCurrentProject}
-            currentProjectPreviewTab={currentProjectPreviewTab}
-            setCurrentProjectPreviewTab={setCurrentProjectPreviewTab}
-            currentProjectPreviewShareUrl={currentProjectPreviewShareUrl}
-            isGenerating={isGenerating}
-            sharingId={sharingId}
-            copySuccess={copySuccess}
-            saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
-            shareCurrentProject={shareCurrentProject}
-            openCurrentImage={openCurrentImage}
-            handleMediaImageLoadError={handleMediaImageLoadError}
-          />
+        <aside className="hidden w-1/2 shrink-0 pl-4 lg:flex lg:h-full lg:min-h-0 lg:w-[500px] lg:shrink-0 lg:justify-center lg:border-l lg:border-[#ddd5cb]/70 lg:bg-transparent lg:pl-8 lg:pr-4 lg:pb-14 lg:pt-8">
+          <div className="flex h-full w-full max-w-[380px] flex-col items-center gap-5">
+            <StudioPhonePreviewPane
+              details={details}
+              currentProjectWithVisualDraft={currentProjectWithVisualDraft}
+              currentProjectDisplayUrl={currentProjectDisplayUrl}
+              currentProjectHasUnsavedChanges={currentProjectHasUnsavedChanges}
+              currentProjectSaveLabel={currentProjectSaveLabel}
+              savedCurrentProject={savedCurrentProject}
+              currentProjectPreviewTab={currentProjectPreviewTab}
+              setCurrentProjectPreviewTab={setCurrentProjectPreviewTab}
+              currentProjectPreviewShareUrl={currentProjectPreviewShareUrl}
+              isGenerating={isGenerating}
+              sharingId={sharingId}
+              copySuccess={copySuccess}
+              saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
+              shareCurrentProject={shareCurrentProject}
+              openCurrentImage={openCurrentImage}
+              handleMediaImageLoadError={handleMediaImageLoadError}
+            />
+            {desktopIdeaComposer ? (
+              <div className="w-full">
+                {desktopIdeaComposer}
+              </div>
+            ) : null}
+          </div>
         </aside>
       </div>
+
+      {isMobileViewport ? (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#ddd5cb] bg-[#f4f1fb]/96 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-4 backdrop-blur-xl lg:hidden">
+          <div className="mx-auto grid w-full max-w-xl grid-cols-2 gap-3">
+            {generateImageButton}
+            {generateLiveCardButton}
+          </div>
+        </div>
+      ) : null}
     </motion.div>
   );
 }

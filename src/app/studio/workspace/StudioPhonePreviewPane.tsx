@@ -30,6 +30,8 @@ type StudioPhonePreviewPaneProps = {
   shareCurrentProject: () => void;
   openCurrentImage: () => void;
   handleMediaImageLoadError: (item: MediaItem) => void;
+  showSaveButton?: boolean;
+  showImageOpenButton?: boolean;
 };
 
 export function StudioPhonePreviewPane({
@@ -49,6 +51,8 @@ export function StudioPhonePreviewPane({
   shareCurrentProject,
   openCurrentImage,
   handleMediaImageLoadError,
+  showSaveButton = true,
+  showImageOpenButton = true,
 }: StudioPhonePreviewPaneProps) {
   const hasPreview = Boolean(currentProjectWithVisualDraft);
   const showcasePreview = getStudioCategoryShowcasePreview(details.category);
@@ -138,7 +142,7 @@ export function StudioPhonePreviewPane({
                         }
                       />
                     </>
-                  ) : (
+                  ) : showImageOpenButton ? (
                     <button
                       type="button"
                       onClick={openCurrentImage}
@@ -147,7 +151,8 @@ export function StudioPhonePreviewPane({
                       <ImageIcon className="h-4 w-4" />
                       View Full Image
                     </button>
-                  )}
+                  ) : null}
+                  
                 </>
               )}
 
@@ -178,7 +183,7 @@ export function StudioPhonePreviewPane({
           )}
         </div>
       </div>
-      {hasPreview && currentProjectWithVisualDraft ? (
+      {showSaveButton && hasPreview && currentProjectWithVisualDraft ? (
         <div className="flex w-full max-w-[22rem] items-center justify-center">
           <button
             type="button"

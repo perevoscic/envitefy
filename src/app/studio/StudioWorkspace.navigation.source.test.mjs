@@ -16,6 +16,7 @@ test("studio workspace splits create and library at the top level and uses query
   assert.match(workspace, /const \[createStep, setCreateStep\] = useState<StudioCreateStep>/);
   assert.match(workspace, /parseStudioWorkspaceView\(searchParams\.get\("view"\)\)/);
   assert.match(workspace, /parseStudioCreateStep\(searchParams\.get\("step"\)\)/);
+  assert.match(workspace, /if \(value === "preview"\) return "preview";/);
   assert.match(workspace, /const navigateWorkspace = useCallback\(/);
   assert.match(workspace, /params\.set\("view", nextView\);/);
   assert.match(workspace, /params\.set\("step", resolvedCreateStep\);/);
@@ -26,6 +27,7 @@ test("studio workspace splits create and library at the top level and uses query
   );
   assert.match(shell, /Create/);
   assert.match(shell, /Library/);
+  assert.match(shell, /shellMode\?: "full" \| "immersive-mobile-preview";/);
   assert.match(shell, /selected=\{activeView\}/);
   assert.match(shell, /setSelected=\{handleSelectedChange\}/);
   assert.match(shell, /<div className="lg:min-h-0 lg:flex-1">/);
@@ -34,6 +36,8 @@ test("studio workspace splits create and library at the top level and uses query
   assert.doesNotMatch(shell, /useEffect\(\(\) => \{\s*setSelected\(activeView\);/);
   assert.match(createFlow, /if \(createStep === "type"\) \{/);
   assert.match(createFlow, /return <>\{typeContent\}<\/>;/);
+  assert.match(createFlow, /previewContent: ReactNode;/);
+  assert.match(createFlow, /\{createStep === "preview" \? previewContent : null\}/);
   assert.doesNotMatch(createFlow, /label: "Editor"/);
   assert.doesNotMatch(createFlow, /label: "Studio"/);
   assert.doesNotMatch(createFlow, /Every exceptional journey/);

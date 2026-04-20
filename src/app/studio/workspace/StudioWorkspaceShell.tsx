@@ -10,6 +10,7 @@ type StudioWorkspaceShellProps = {
   librarySyncError: string | null;
   showLibrarySyncError: boolean;
   onRetryLibrarySync: () => void;
+  shellMode?: "full" | "immersive-mobile-preview";
   children: ReactNode;
 };
 
@@ -19,8 +20,10 @@ export function StudioWorkspaceShell({
   librarySyncError,
   showLibrarySyncError,
   onRetryLibrarySync,
+  shellMode = "full",
   children,
 }: StudioWorkspaceShellProps) {
+  const isImmersiveMobilePreview = shellMode === "immersive-mobile-preview";
   const tabs: ITab[] = [
     { title: "Create", value: "create" },
     { title: "Library", value: "library" },
@@ -55,17 +58,25 @@ export function StudioWorkspaceShell({
         </div>
       ) : null}
 
-      <main className="relative mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-8 lg:flex lg:h-full lg:min-h-0 lg:flex-1 lg:flex-col lg:pl-12 lg:pr-4 lg:pb-0 lg:pt-8">
-        <div className="mb-8 max-w-[1400px]">
-          <div className="w-fit">
-            <Tabs
-              selected={activeView}
-              setSelected={handleSelectedChange}
-              tabs={tabs}
-              variant="primary"
-            />
+      <main
+        className={
+          isImmersiveMobilePreview
+            ? "relative min-h-[100dvh] w-full"
+            : "relative mx-auto w-full max-w-[1600px] px-6 py-10 sm:px-8 lg:flex lg:h-full lg:min-h-0 lg:flex-1 lg:flex-col lg:pl-12 lg:pr-4 lg:pb-0 lg:pt-8"
+        }
+      >
+        {!isImmersiveMobilePreview ? (
+          <div className="mb-8 max-w-[1400px]">
+            <div className="w-fit">
+              <Tabs
+                selected={activeView}
+                setSelected={handleSelectedChange}
+                tabs={tabs}
+                variant="primary"
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="lg:min-h-0 lg:flex-1">
           {children}

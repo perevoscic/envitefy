@@ -24,7 +24,7 @@ test("live card updates reuse the current image in the studio generation request
   );
   assert.match(
     source,
-    /requestStudioGeneration\(\s*currentDetails,\s*type === "page" \? "both" : "image",\s*generationSurface,\s*sourceImageDataUrl \? editPrompt : undefined,\s*sourceImageDataUrl \|\| undefined,\s*\)/,
+    /requestStudioGeneration\(\s*currentDetails,\s*type === "page" \? "both" : "image",\s*generationSurface,\s*sourceImageDataUrl[\s\S]*editPrompt[\s\S]*sourceImageDataUrl \|\| undefined,\s*\)/,
   );
   assert.match(
     source,

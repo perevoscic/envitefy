@@ -11,6 +11,7 @@ test("studio workspace separates the current project from the saved library", ()
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
   const libraryStep = readSource("src/app/studio/workspace/StudioLibraryStep.tsx");
   const phonePane = readSource("src/app/studio/workspace/StudioPhonePreviewPane.tsx");
+  const previewStep = readSource("src/app/studio/workspace/StudioMobilePreviewStep.tsx");
 
   assert.match(source, /function upsertLibraryItem\(item: MediaItem\)/);
   assert.match(source, /function saveWorkingProject\(project: MediaItem \| null\)/);
@@ -31,6 +32,10 @@ test("studio workspace separates the current project from the saved library", ()
   assert.match(phonePane, /\{currentProjectSaveLabel\}/);
   assert.doesNotMatch(phonePane, /Save this project to keep it in Library\./);
   assert.doesNotMatch(phonePane, /Discard/);
+  assert.match(source, /<StudioMobilePreviewStep/);
+  assert.match(previewStep, /showSaveButton=\{false\}/);
+  assert.doesNotMatch(previewStep, /openLiveCardEditor/);
+  assert.doesNotMatch(previewStep, /setActivePage/);
   assert.match(source, /function prepareProjectForLibrarySave\(project: MediaItem\): MediaItem/);
   assert.match(source, /id: createId\(\),/);
   assert.match(source, /publishedEventId: undefined,/);

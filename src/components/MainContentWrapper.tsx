@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { SIDEBAR_WIDTH_REM } from "@/app/left-sidebar.model";
 import { useEffect, useState } from "react";
 
@@ -22,11 +22,17 @@ export function MainContentWrapper({
   className?: string;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isDesktop, setIsDesktop] = useState(false);
 
   const normalizedPath = (pathname || "").replace(/\/+$/, "");
   const pathSegments = normalizedPath.split("/").filter(Boolean);
   const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
+  const isImmersiveStudioPreview =
+    pathSegments.length === 1 &&
+    pathSegments[0] === "studio" &&
+    searchParams.get("view") === "create" &&
+    searchParams.get("step") === "preview";
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -42,6 +48,8 @@ export function MainContentWrapper({
 
   const paddingTop = isStudioCardShare
     ? "0px"
+    : isImmersiveStudioPreview
+      ? "0px"
     : !isDesktop && isAuthenticated
       ? MOBILE_TOPBAR_PT
       : "max(0px, env(safe-area-inset-top))";

@@ -1044,6 +1044,14 @@ export default function LeftSidebar() {
   if (!viewModel.isReady) return null;
   if (viewModel.isEmbeddedEditMode) return null;
 
+  const normalizedPath = (pathname || "").replace(/\/+$/, "");
+  const pathSegments = normalizedPath.split("/").filter(Boolean);
+  const isImmersiveStudioPreview =
+    pathSegments.length === 1 &&
+    pathSegments[0] === "studio" &&
+    searchParams.get("view") === "create" &&
+    searchParams.get("step") === "preview";
+
   const panelTransitionStyle: CSSProperties = {
     transition:
       "transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease-in-out",
@@ -1087,7 +1095,7 @@ export default function LeftSidebar() {
 
   return (
     <>
-      {!viewModel.isOpen ? (
+      {!viewModel.isOpen && !isImmersiveStudioPreview ? (
         <header
           className={`fixed inset-x-0 top-0 z-[6500] px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
             viewModel.showMobileTopBar
