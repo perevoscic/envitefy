@@ -19,6 +19,7 @@ type StudioFieldGridProps = {
   fields: SupportedField[];
   requiredOnly?: boolean;
   columnsClassName?: string;
+  isMobileViewport?: boolean;
 };
 
 type StudioTextAreaFieldProps = {
@@ -89,12 +90,42 @@ function formatStudioMonthDayValue(value: string): string {
   return normalizeStudioMonthDayInput(trimmed);
 }
 
+function fieldWidthClass(field: SupportedField) {
+  if (field.key === "eventDate") return "max-w-[7.35rem] sm:max-w-[8rem]";
+  if (field.key === "startTime") return "max-w-[8.6rem] sm:max-w-[9rem]";
+  if ("compact" in field && field.compact) return "max-w-[7.5rem]";
+  return "";
+}
+
+function formatStudioMonthDayPickerValue(value: string): string {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return "";
+  const isoMatch = trimmed.match(/^\d{4}-\d{2}-\d{2}$/);
+  if (isoMatch) return trimmed;
+  const monthDayMatch = formatStudioMonthDayValue(trimmed).match(/^(\d{2})\/(\d{2})$/);
+  if (!monthDayMatch) return "";
+  return `${new Date().getFullYear()}-${monthDayMatch[1]}-${monthDayMatch[2]}`;
+}
+
+function openNativePicker(input: HTMLInputElement) {
+  const pickerInput = input as HTMLInputElement & {
+    showPicker?: () => void;
+  };
+  if (typeof pickerInput.showPicker !== "function") return;
+  try {
+    pickerInput.showPicker();
+  } catch {
+    // Some browsers reject showPicker unless it follows a trusted gesture.
+  }
+}
+
 export function StudioFieldGrid({
   details,
   setDetails,
   fields,
   requiredOnly = false,
   columnsClassName = "grid grid-cols-1 gap-x-6 gap-y-7 md:grid-cols-2 lg:grid-cols-3",
+  isMobileViewport = false,
 }: StudioFieldGridProps) {
   const fieldLabelClass = studioWorkspaceFieldLabelClass;
   const inputClass = studioWorkspaceInputClass;
@@ -108,7 +139,7 @@ export function StudioFieldGrid({
         const isMonthDayOnlyField = isMonthDayOnlyEventDateField(details, field.key);
         const showRequiredMark = Boolean(field.required);
         const rawValue = String(inputValue(details[field.key]) ?? "");
-        const renderedInputType = isMonthDayOnlyField ? "text" : field.type;
+        const renderedInputType = isMonthDayOnlyField && !isMobileViewport ? "text" : field.type;
         const renderedPlaceholder = isMonthDayOnlyField ? "mm/dd" : field.placeholder;
         const renderedInputMode = isMonthDayOnlyField
           ? "numeric"
@@ -121,7 +152,11 @@ export function StudioFieldGrid({
           : "maxLength" in field
             ? field.maxLength
             : undefined;
-        const value = isMonthDayOnlyField ? formatStudioMonthDayValue(rawValue) : rawValue;
+        const value = isMonthDayOnlyField
+          ? renderedInputType === "date"
+            ? formatStudioMonthDayPickerValue(rawValue)
+            : formatStudioMonthDayValue(rawValue)
+          : rawValue;
         const isEmptyValue = value.trim() === "";
         return (
           <div
@@ -179,11 +214,7 @@ export function StudioFieldGrid({
                 </span>
               </label>
             ) : (
-              <div
-                className={`group relative ${
-                  "compact" in field && field.compact ? "max-w-[7.5rem]" : ""
-                }`}
-              >
+              <div className={`group relative ${fieldWidthClass(field)}`}>
                 {renderFieldIcon(field.key, renderedInputType)}
                 <input
                   type={renderedInputType}
@@ -196,7 +227,7 @@ export function StudioFieldGrid({
                           hidesNativePickerIndicator
                             ? "appearance-none [&::-webkit-calendar-picker-indicator]:pointer-events-none [&::-webkit-calendar-picker-indicator]:opacity-0"
                             : ""
-                        } ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
+                        } ${renderedInputType === "time" ? "pr-6 text-[1.65rem] sm:text-2xl" : ""} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                       : `${inputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                   }
                   style={
@@ -205,10 +236,29 @@ export function StudioFieldGrid({
                       : undefined
                   }
                   value={value}
+                  onClick={(event) => {
+                    if (
+                      isMobileViewport &&
+                      (renderedInputType === "date" || renderedInputType === "time")
+                    ) {
+                      openNativePicker(event.currentTarget);
+                    }
+                  }}
+                  onFocus={(event) => {
+                    if (
+                      isMobileViewport &&
+                      (renderedInputType === "date" || renderedInputType === "time")
+                    ) {
+                      openNativePicker(event.currentTarget);
+                    }
+                  }}
                   onChange={(event) => {
                     let nextValue = event.target.value;
                     if (isMonthDayOnlyField) {
-                      nextValue = normalizeStudioMonthDayInput(nextValue);
+                      nextValue =
+                        renderedInputType === "date"
+                          ? formatStudioMonthDayValue(nextValue)
+                          : normalizeStudioMonthDayInput(nextValue);
                     } else if ("inputMode" in field && field.inputMode === "numeric") {
                       nextValue = nextValue.replace(/\D+/g, "");
                     }

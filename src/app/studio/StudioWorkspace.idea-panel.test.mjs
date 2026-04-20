@@ -22,6 +22,7 @@ test("studio details step splits Event Details and Design Idea while keeping ima
   );
   assert.match(formStep, /Event Details/);
   assert.match(formStep, /Design Idea/);
+  assert.match(formStep, /What guests should know\./);
   assert.match(formStep, /placeholder=\{studioEventDetailsPlaceholder\}/);
   assert.match(formStep, /placeholder=\{studioDesignIdeaPlaceholder\}/);
   assert.match(formStep, /value=\{details\.detailsDescription\}/);
@@ -57,7 +58,7 @@ test("studio details copy uses separate placeholders for Event Details and Desig
   );
   assert.match(
     builders,
-    /"e\.g\. Join us for pizza, cake, arcade games, and birthday fun after the structured details above\."/,
+    /"e\.g\. Join us for pizza, cake, arcade games, and birthday fun\."/,
   );
   assert.match(builders, /"Field Trip\/Day": "Field Trip"/);
   assert.match(builders, /"Game Day": "Game Day"/);
@@ -68,7 +69,7 @@ test("studio details copy uses separate placeholders for Event Details and Desig
   );
   assert.match(
     builders,
-    /return "e\.g\. Add anything guests should know beyond the structured fields above\.";/,
+    /return "e\.g\. Add anything guests should know\.";/,
   );
 });
 

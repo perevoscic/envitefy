@@ -413,6 +413,7 @@ export default function StudioWorkspace() {
   const { mediaList, setMediaList, librarySyncError, retryLibrarySync } = useStudioMediaLibrary();
   const [currentProject, setCurrentProject] = useState<MediaItem | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationNote, setGenerationNote] = useState<string | null>(null);
   const [activePage, setActivePage] = useState<MediaItem | null>(null);
   const [previewOrigin, setPreviewOrigin] = useState<StudioWorkspaceView | null>(null);
   const [selectedImage, setSelectedImage] = useState<MediaItem | null>(null);
@@ -610,6 +611,32 @@ export default function StudioWorkspace() {
     mediaQuery.addListener(syncMobileEditorViewport);
     return () => mediaQuery.removeListener(syncMobileEditorViewport);
   }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const shouldHideMobileTopbar =
+      view === "create" &&
+      isMobileEditorViewport &&
+      mobileEditorPane === "preview" &&
+      !activePageRecord;
+    const root = document.documentElement;
+
+    if (shouldHideMobileTopbar) {
+      root.dataset.mobileTopbarHidden = "true";
+      root.style.setProperty("--app-mobile-topbar-offset", "0px");
+    } else if (root.dataset.mobileTopbarHidden === "true") {
+      delete root.dataset.mobileTopbarHidden;
+      root.style.removeProperty("--app-mobile-topbar-offset");
+    }
+
+    return () => {
+      if (root.dataset.mobileTopbarHidden === "true") {
+        delete root.dataset.mobileTopbarHidden;
+      }
+      root.style.removeProperty("--app-mobile-topbar-offset");
+    };
+  }, [activePageRecord, isMobileEditorViewport, mobileEditorPane, view]);
 
   useEffect(() => {
     if (!deleteConfirmationItem) return;
@@ -1267,6 +1294,7 @@ export default function StudioWorkspace() {
     };
 
     setIsGenerating(true);
+    setGenerationNote(null);
     setActiveTab("none");
     setCurrentProject(loadingItem);
     if (isMobileEditorViewport) {
@@ -1281,6 +1309,7 @@ export default function StudioWorkspace() {
         sourceImageDataUrl ? editPrompt : undefined,
         sourceImageDataUrl || undefined,
       );
+      setGenerationNote(response.themeNormalization?.note || null);
       const generatedDetails = response.preparedDetails || currentDetails;
       const rawUrl =
         response.imageDataUrl || existingItem?.url || getFallbackThumbnail(currentDetails);
@@ -1304,6 +1333,7 @@ export default function StudioWorkspace() {
       }
       navigateWorkspace("create", "details");
     } catch (error) {
+      setGenerationNote(null);
       const errorMessage =
         error instanceof Error && error.message.trim()
           ? error.message.trim()
@@ -1340,6 +1370,7 @@ export default function StudioWorkspace() {
 
     try {
       setApplyingEditId(item.id);
+      setGenerationNote(null);
       const response = await requestStudioGeneration(
         savedItem.details,
         "image",
@@ -1347,6 +1378,7 @@ export default function StudioWorkspace() {
         prompt,
         sourceImageDataUrl,
       );
+      setGenerationNote(response.themeNormalization?.note || null);
 
       const rawEditUrl = response.imageDataUrl || savedItem.url;
       const persistedEditUrl = await persistStudioLibraryImageUrl(
@@ -1372,6 +1404,7 @@ export default function StudioWorkspace() {
         };
       });
     } catch (error) {
+      setGenerationNote(null);
       console.error("[studio] image edit failed", error);
       if (typeof window !== "undefined") {
         const message =
@@ -1627,6 +1660,7 @@ export default function StudioWorkspace() {
                 setCurrentProjectPreviewTab={setCurrentProjectPreviewTab}
                 currentProjectPreviewShareUrl={currentProjectPreviewShareUrl}
                 isGenerating={isGenerating}
+                generationNote={generationNote}
                 isEditingLiveCard={isEditingLiveCard}
                 isMobileViewport={isMobileEditorViewport}
                 mobilePane={mobileEditorPane}

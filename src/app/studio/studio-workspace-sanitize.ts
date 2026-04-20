@@ -4,6 +4,7 @@ import {
   normalizeLiveCardMetadata,
   type StudioGenerateApiResponse,
   type StudioGenerationError,
+  type StudioThemeNormalization,
 } from "@/lib/studio/types";
 import {
   buildDeterministicScheduleLine,
@@ -31,6 +32,27 @@ import {
 } from "./studio-workspace-utils";
 
 export { STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
+
+function normalizeStudioThemeNormalization(value: unknown): StudioThemeNormalization | null {
+  if (!isRecord(value)) return null;
+  const riskLevel = readString(value.riskLevel);
+  if (riskLevel !== "safe" && riskLevel !== "rewrite" && riskLevel !== "block") return null;
+  const visualMotifs = Array.isArray(value.visualMotifs)
+    ? value.visualMotifs.map(readString).filter(Boolean).slice(0, 8)
+    : [];
+  const paletteHints = Array.isArray(value.paletteHints)
+    ? value.paletteHints.map(readString).filter(Boolean).slice(0, 8)
+    : [];
+
+  return {
+    riskLevel,
+    originalTheme: readNullableString(value.originalTheme) || null,
+    normalizedTheme: readNullableString(value.normalizedTheme) || null,
+    visualMotifs,
+    paletteHints,
+    note: readNullableString(value.note) || null,
+  };
+}
 
 function isLoopbackHostname(hostname: string): boolean {
   const normalized = hostname.trim().toLowerCase();
@@ -534,6 +556,7 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
     typeof value.imageDataUrl === "string" && value.imageDataUrl.startsWith("data:image/")
       ? value.imageDataUrl
       : null;
+  const themeNormalization = normalizeStudioThemeNormalization(value.themeNormalization);
   const warnings = Array.isArray(value.warnings)
     ? value.warnings.map(readString).filter(Boolean).slice(0, 8)
     : [];
@@ -557,6 +580,7 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
       liveCard: null,
       invitation: null,
       imageDataUrl: null,
+      themeNormalization,
       warnings,
       errors,
     };
@@ -570,6 +594,7 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
     liveCard,
     invitation: invitation || liveCard?.invitation || null,
     imageDataUrl,
+    themeNormalization,
     warnings,
     errors,
   };

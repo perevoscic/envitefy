@@ -34,13 +34,24 @@ test("studio field controls switch non-wedding dates to month/day entry", () => 
   assert.match(source, /renderedInputType === "date"/);
   assert.match(source, /renderedInputType === "time"/);
   assert.match(source, /function usesNativePickerIndicator\(renderedInputType: string\) \{/);
-  assert.match(source, /\[&::\-webkit-calendar-picker-indicator\]:opacity-0/);
+  assert.match(source, /\[&::-webkit-calendar-picker-indicator\]:opacity-0/);
   assert.match(source, /WebkitAppearance: "none", appearance: "none"/);
   assert.match(source, /function isMonthDayOnlyEventDateField/);
-  assert.match(source, /const renderedInputType = isMonthDayOnlyField \? "text" : field\.type;/);
+  assert.match(
+    source,
+    /const renderedInputType = isMonthDayOnlyField && !isMobileViewport \? "text" : field\.type;/,
+  );
   assert.match(source, /const renderedPlaceholder = isMonthDayOnlyField \? "mm\/dd" : field\.placeholder;/);
   assert.match(source, /function normalizeStudioMonthDayInput/);
   assert.match(source, /function formatStudioMonthDayValue/);
+  assert.match(source, /function formatStudioMonthDayPickerValue/);
+  assert.match(source, /new Date\(\)\.getFullYear\(\)/);
+  assert.match(source, /function openNativePicker\(input: HTMLInputElement\) \{/);
+  assert.match(source, /showPicker/);
+  assert.match(
+    source,
+    /renderedInputType === "date"\s*\?\s*formatStudioMonthDayPickerValue\(rawValue\)\s*:\s*formatStudioMonthDayValue\(rawValue\)/,
+  );
 });
 
 test("studio workspace only requires a full year for wedding event dates", () => {

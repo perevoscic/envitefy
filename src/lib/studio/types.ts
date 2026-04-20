@@ -4,6 +4,7 @@ export type StudioProvider = "gemini" | "openai";
 export type StudioSubjectTransformMode = "default" | "premium_makeover";
 export type StudioLikenessStrength = "strict" | "balanced" | "creative";
 export type StudioVisualStyleMode = "photoreal" | "editorial_cinematic" | "playful_stylized";
+export type StudioThemeNormalizationRisk = "safe" | "rewrite" | "block";
 
 export type StudioEventDetails = {
   title: string;
@@ -41,6 +42,7 @@ export type StudioEventDetails = {
 export type StudioGenerationGuidance = {
   tone?: string | null;
   style?: string | null;
+  visualPreferences?: string | null;
   audience?: string | null;
   colorPalette?: string | null;
   imageFinishPreset?: string | null;
@@ -48,6 +50,15 @@ export type StudioGenerationGuidance = {
   subjectTransformMode?: StudioSubjectTransformMode | null;
   likenessStrength?: StudioLikenessStrength | null;
   visualStyleMode?: StudioVisualStyleMode | null;
+};
+
+export type StudioThemeNormalization = {
+  riskLevel: StudioThemeNormalizationRisk;
+  originalTheme: string | null;
+  normalizedTheme: string | null;
+  visualMotifs: string[];
+  paletteHints: string[];
+  note?: string | null;
 };
 
 export type StudioLiveCardPalette = {
@@ -108,6 +119,7 @@ export type StudioGenerateResponse = {
   liveCard: StudioLiveCardMetadata | null;
   invitation: StudioInvitationText | null;
   imageDataUrl: string | null;
+  themeNormalization?: StudioThemeNormalization | null;
   warnings: string[];
   errors?: {
     text?: StudioGenerationError;
@@ -121,6 +133,7 @@ export type StudioGenerateFailureResponse = {
   liveCard: null;
   invitation: null;
   imageDataUrl: null;
+  themeNormalization?: StudioThemeNormalization | null;
   warnings: string[];
   errors: {
     text?: StudioGenerationError;
@@ -219,6 +232,7 @@ function normalizeGuidance(value: unknown): StudioGenerationGuidance | undefined
   return {
     tone: safeNullableString((value as any).tone),
     style: safeNullableString((value as any).style),
+    visualPreferences: safeNullableString((value as any).visualPreferences),
     audience: safeNullableString((value as any).audience),
     colorPalette: safeNullableString((value as any).colorPalette),
     imageFinishPreset: safeNullableString((value as any).imageFinishPreset),

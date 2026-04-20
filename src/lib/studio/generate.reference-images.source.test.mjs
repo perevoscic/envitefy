@@ -12,11 +12,11 @@ test("studio generation fails image creation when any attached reference photo c
 
   assert.match(
     source,
-    /const requestedRefCount = request\.event\.referenceImageUrls\?\.length \?\? 0;/,
+    /const requestedRefCount = normalizedRequest\.event\.referenceImageUrls\?\.length \?\? 0;/,
   );
   assert.match(
     source,
-    /const referenceImages = await resolveStudioReferenceImages\(request\.event\.referenceImageUrls\);/,
+    /const referenceImages = await resolveStudioReferenceImages\(\s*normalizedRequest\.event\.referenceImageUrls,\s*\);/s,
   );
   assert.match(
     source,
@@ -35,9 +35,15 @@ test("studio generation fails image creation when any attached reference photo c
 test("studio image generation passes background-only image prompt options without poster text flags", () => {
   const source = readSource("src/lib/studio/generate.ts");
 
-  assert.match(source, /const imagePrompt = buildInvitationImagePrompt\(request\.event, request\.guidance, liveCard, \{/);
+  assert.match(
+    source,
+    /const imagePrompt = buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,\s*\{/s,
+  );
   assert.match(source, /surface,/);
-  assert.match(source, /editingExistingImage: Boolean\(request\.imageEdit\?\.sourceImageDataUrl\),/);
+  assert.match(
+    source,
+    /editingExistingImage: Boolean\(normalizedRequest\.imageEdit\?\.sourceImageDataUrl\),/,
+  );
   assert.match(source, /referenceImageCount: referenceImages\.length,/);
   assert.match(source, /mode === "both"/);
   assert.match(
@@ -46,4 +52,28 @@ test("studio image generation passes background-only image prompt options withou
   );
   assert.doesNotMatch(source, /posterTextInImage/);
   assert.doesNotMatch(source, /isPosterFirstBirthdayOrWedding/);
+});
+
+test("studio generation normalizes risky themes before prompt building and returns metadata", () => {
+  const source = readSource("src/lib/studio/generate.ts");
+
+  assert.match(
+    source,
+    /import \{\s*applyStudioThemeNormalization,\s*normalizeStudioTheme,\s*\} from "@\/lib\/studio\/theme-normalization";/s,
+  );
+  assert.match(
+    source,
+    /const themeNormalization = await normalizeStudioTheme\(\{\s*provider,\s*event: request\.event,\s*guidance: request\.guidance,\s*\}\);/s,
+  );
+  assert.match(
+    source,
+    /const normalizedRequest =\s*themeNormalization\.riskLevel === "block"\s*\?\s*request\s*:\s*applyStudioThemeNormalization\(request, themeNormalization\);/s,
+  );
+  assert.match(source, /buildLiveCardPrompt\(normalizedRequest\.event, normalizedRequest\.guidance\)/);
+  assert.match(
+    source,
+    /buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,/s,
+  );
+  assert.match(source, /themeNormalization,/);
+  assert.match(source, /code: "policy_blocked"/);
 });

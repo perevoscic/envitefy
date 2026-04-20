@@ -43,7 +43,7 @@ export function MainContentWrapper({
   const paddingTop = isStudioCardShare
     ? "0px"
     : !isDesktop && isAuthenticated
-      ? MOBILE_TOPBAR_PT
+      ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
       : "max(0px, env(safe-area-inset-top))";
 
   const shellBgClass = isStudioCardShare

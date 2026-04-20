@@ -82,7 +82,11 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   );
   assert.match(
     source,
-    /style:\s*\[\s*visualDirection,\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*refinement,\s*studioGuardrails,\s*\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
+    /visualPreferences:\s*clean\(details\.visualPreferences\)\s*\|\|\s*null,/,
+  );
+  assert.match(
+    source,
+    /style:\s*\[\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*refinement,\s*studioGuardrails,\s*\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
   );
   assert.match(source, /imageFinishPreset:\s*imageFinishPreset\?\.label,/);
 });

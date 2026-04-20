@@ -10,6 +10,8 @@ function readSource(relPath) {
 test("studio sidebar only shows creative controls for subject-photo flows", () => {
   const workspace = readSource("src/app/studio/StudioWorkspace.tsx");
   const formStep = readSource("src/app/studio/workspace/StudioFormStep.tsx");
+  const mediaSectionIndex = formStep.indexOf("<StudioOptionalMediaRow");
+  const creativeUpgradeIndex = formStep.indexOf("Creative Upgrade");
 
   assert.match(workspace, /const showStudioCreativeControls = hasStudioSubjectReferencePhotos\(details\);/);
   assert.match(formStep, /Creative Upgrade/);
@@ -20,6 +22,9 @@ test("studio sidebar only shows creative controls for subject-photo flows", () =
     /subjectTransformMode:\s*"premium_makeover"/,
   );
   assert.match(formStep, /\{showStudioCreativeControls \? \(/);
+  assert.notEqual(mediaSectionIndex, -1);
+  assert.notEqual(creativeUpgradeIndex, -1);
+  assert.ok(mediaSectionIndex < creativeUpgradeIndex);
   assert.doesNotMatch(formStep, /Transform Subject/);
 });
 

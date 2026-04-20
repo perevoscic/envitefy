@@ -330,7 +330,7 @@ export function getStudioDesignIdeaPlaceholder(category: InviteCategory) {
 
 export function getStudioEventDetailsPlaceholder(category: InviteCategory) {
   if (category === "Birthday") {
-    return "e.g. Join us for pizza, cake, arcade games, and birthday fun after the structured details above.";
+    return "e.g. Join us for pizza, cake, arcade games, and birthday fun.";
   }
   if (category === "Wedding") {
     return "e.g. Dinner and dancing follow the ceremony. Cocktail attire encouraged.";
@@ -338,7 +338,7 @@ export function getStudioEventDetailsPlaceholder(category: InviteCategory) {
   if (category === "Game Day") {
     return "e.g. Gates open at 6:00 PM. Wear blue and gold and arrive early for parking.";
   }
-  return "e.g. Add anything guests should know beyond the structured fields above.";
+  return "e.g. Add anything guests should know.";
 }
 
 export function getThemeColors(details: EventDetails) {
@@ -690,7 +690,6 @@ export function buildStudioRequest(
     sanitizedGuestImageUrls.length > 0
       ? ` Host provided ${sanitizedGuestImageUrls.length} reference photo(s) for invitation artwork; keep wording warm and personal where it fits.`
       : "";
-  const visualDirection = buildStudioVisualDirection(details);
   const categoryGuardrails = buildStudioCategoryGuardrails(details);
   const imageFinishPreset = resolveStudioImageFinishPreset(
     details.category,
@@ -759,9 +758,9 @@ export function buildStudioRequest(
             : null,
           details.category === "Birthday" ? "Playful and polished" : "Warm and elevated",
         ) || null,
+      visualPreferences: clean(details.visualPreferences) || null,
       style:
         [
-          visualDirection,
           categoryGuardrails,
           imageFinishPresetDirection,
           refinement,

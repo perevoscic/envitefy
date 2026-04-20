@@ -74,6 +74,7 @@ export type StudioFormStepProps = {
   setCurrentProjectPreviewTab: Dispatch<SetStateAction<ActiveTab>>;
   currentProjectPreviewShareUrl: string;
   isGenerating: boolean;
+  generationNote: string | null;
   isEditingLiveCard: boolean;
   isMobileViewport: boolean;
   mobilePane: "composer" | "preview";
@@ -123,6 +124,7 @@ export function StudioFormStep({
   setCurrentProjectPreviewTab,
   currentProjectPreviewShareUrl,
   isGenerating,
+  generationNote,
   isEditingLiveCard,
   isMobileViewport,
   mobilePane,
@@ -293,6 +295,7 @@ export function StudioFormStep({
                 setDetails={setDetails}
                 fields={mobileBirthdayLeadFields}
                 columnsClassName="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-x-6 gap-y-8"
+                isMobileViewport={isMobileViewport}
               />
               {mobileBirthdayTrailingFields.length ? (
                 <StudioFieldGrid
@@ -300,6 +303,7 @@ export function StudioFormStep({
                   setDetails={setDetails}
                   fields={mobileBirthdayTrailingFields}
                   columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                  isMobileViewport={isMobileViewport}
                 />
               ) : null}
             </div>
@@ -313,6 +317,7 @@ export function StudioFormStep({
                   ? "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.6fr)]"
                   : "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
               }
+              isMobileViewport={isMobileViewport}
             />
           )}
         </div>
@@ -326,7 +331,8 @@ export function StudioFormStep({
                 details={details}
                 setDetails={setDetails}
                 fields={mobileSharedLeadFields}
-                columnsClassName="grid grid-cols-2 gap-x-6 gap-y-8"
+                columnsClassName="grid grid-cols-[minmax(0,1fr)_minmax(9.5rem,1.08fr)] gap-x-6 gap-y-8"
+                isMobileViewport={isMobileViewport}
               />
               {mobileSharedTrailingFields.length ? (
                 <StudioFieldGrid
@@ -334,6 +340,7 @@ export function StudioFormStep({
                   setDetails={setDetails}
                   fields={mobileSharedTrailingFields}
                   columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                  isMobileViewport={isMobileViewport}
                 />
               ) : null}
             </div>
@@ -342,7 +349,8 @@ export function StudioFormStep({
               details={details}
               setDetails={setDetails}
               fields={sharedPrimaryFields}
-              columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_9rem_minmax(0,1fr)]"
+              columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_10.75rem_minmax(0,1fr)]"
+              isMobileViewport={isMobileViewport}
             />
           )}
         </div>
@@ -355,6 +363,7 @@ export function StudioFormStep({
             setDetails={setDetails}
             fields={secondaryCategoryFields}
             columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
+            isMobileViewport={isMobileViewport}
           />
         </div>
       ) : null}
@@ -366,7 +375,7 @@ export function StudioFormStep({
               Event Details
             </label>
             <p className="text-sm leading-7 text-[#707b8e]">
-              What guests should know beyond the structured fields above.
+              What guests should know.
             </p>
           </div>
           <textarea
@@ -414,6 +423,45 @@ export function StudioFormStep({
           {stylePickerButton}
         </div>
       ) : null}
+
+      {moreDetailFields.length ? (
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => setShowMoreDetails((prev) => !prev)}
+            className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#96a6c5] transition-colors hover:text-[#262b36]"
+            aria-expanded={showMoreDetails}
+          >
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform ${showMoreDetails ? "rotate-180" : ""}`}
+            />
+            More details
+          </button>
+          {showMoreDetails ? (
+            <div className="space-y-4 pt-3">
+              <StudioFieldGrid
+                details={details}
+                setDetails={setDetails}
+                fields={moreDetailFields}
+                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2"
+                isMobileViewport={isMobileViewport}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <StudioOptionalMediaRow
+        details={details}
+        onUploadFlyer={onUploadFlyer}
+        onRemoveFlyer={onRemoveFlyer}
+        onUploadSubjectPhotos={onUploadSubjectPhotos}
+        onRemoveSubjectPhoto={onRemoveSubjectPhoto}
+        isFlyerUploading={isFlyerUploading}
+        isSubjectPhotoUploading={isSubjectPhotoUploading}
+        flyerUploadError={flyerUploadError}
+        subjectPhotoUploadError={subjectPhotoUploadError}
+      />
 
       {showStudioCreativeControls ? (
         <div className="space-y-5 rounded-[1.5rem] border border-[#eef2f7] bg-[#fcfdff] p-5 sm:p-6">
@@ -494,44 +542,6 @@ export function StudioFormStep({
           </div>
         </div>
       ) : null}
-
-      {moreDetailFields.length ? (
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={() => setShowMoreDetails((prev) => !prev)}
-            className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#96a6c5] transition-colors hover:text-[#262b36]"
-            aria-expanded={showMoreDetails}
-          >
-            <ChevronDown
-              className={`h-3.5 w-3.5 transition-transform ${showMoreDetails ? "rotate-180" : ""}`}
-            />
-            More details
-          </button>
-          {showMoreDetails ? (
-            <div className="space-y-4 pt-3">
-              <StudioFieldGrid
-                details={details}
-                setDetails={setDetails}
-                fields={moreDetailFields}
-                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2"
-              />
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <StudioOptionalMediaRow
-        details={details}
-        onUploadFlyer={onUploadFlyer}
-        onRemoveFlyer={onRemoveFlyer}
-        onUploadSubjectPhotos={onUploadSubjectPhotos}
-        onRemoveSubjectPhoto={onRemoveSubjectPhoto}
-        isFlyerUploading={isFlyerUploading}
-        isSubjectPhotoUploading={isSubjectPhotoUploading}
-        flyerUploadError={flyerUploadError}
-        subjectPhotoUploadError={subjectPhotoUploadError}
-      />
     </div>
   );
 
@@ -623,6 +633,12 @@ export function StudioFormStep({
                   Style
                 </button>
               ) : null}
+            </div>
+          ) : null}
+
+          {generationNote ? (
+            <div className="relative z-10 mx-5 rounded-[1.25rem] border border-white/14 bg-white/10 px-4 py-3 text-sm leading-6 text-white/88 backdrop-blur-md lg:mx-8">
+              {generationNote}
             </div>
           ) : null}
 

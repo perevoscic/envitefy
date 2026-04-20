@@ -11,6 +11,10 @@ import {
 import { resolveStudioProvider } from "@/lib/studio/provider";
 import { buildInvitationImagePrompt, buildLiveCardPrompt } from "@/lib/studio/prompts";
 import { resolveStudioReferenceImages } from "@/lib/studio/reference-image-url";
+import {
+  applyStudioThemeNormalization,
+  normalizeStudioTheme,
+} from "@/lib/studio/theme-normalization";
 import type {
   StudioGenerateRequest,
   StudioGenerateResponse,
@@ -35,12 +39,33 @@ function buildReferenceImageError(provider: StudioProvider): NonNullable<
   };
 }
 
+function buildThemeBlockedError(provider: StudioProvider): NonNullable<
+  StudioGenerateResponse["errors"]
+>["text"] {
+  return {
+    code: "policy_blocked",
+    message: "This theme cannot be used for invitation generation.",
+    retryable: false,
+    provider,
+    status: 400,
+  };
+}
+
 export async function generateStudioInvitation(
   request: StudioGenerateRequest,
 ): Promise<StudioGenerateResponse> {
   const provider = resolveStudioProvider();
   const mode = request.mode || "both";
   const surface = request.surface || (mode === "both" || mode === "text" ? "page" : "image");
+  const themeNormalization = await normalizeStudioTheme({
+    provider,
+    event: request.event,
+    guidance: request.guidance,
+  });
+  const normalizedRequest =
+    themeNormalization.riskLevel === "block"
+      ? request
+      : applyStudioThemeNormalization(request, themeNormalization);
   const warnings: string[] = [];
   let liveCard: StudioLiveCardMetadata | null = null;
   let invitation: StudioGenerateResponse["invitation"] = null;
@@ -50,8 +75,25 @@ export async function generateStudioInvitation(
   const wantsText = mode === "text" || mode === "both";
   const wantsImage = mode === "image" || mode === "both";
 
+  if (themeNormalization.riskLevel === "block") {
+    errors.text = buildThemeBlockedError(provider);
+    if (wantsImage) {
+      errors.image = buildThemeBlockedError(provider);
+    }
+    return {
+      ok: false,
+      mode,
+      liveCard: null,
+      invitation: null,
+      imageDataUrl: null,
+      themeNormalization,
+      warnings: uniqueWarnings(warnings),
+      errors,
+    };
+  }
+
   if (wantsText) {
-    const textPrompt = buildLiveCardPrompt(request.event, request.guidance);
+    const textPrompt = buildLiveCardPrompt(normalizedRequest.event, normalizedRequest.guidance);
     const textResult =
       provider === "openai"
         ? await generateStudioLiveCardWithOpenAi(textPrompt)
@@ -67,26 +109,33 @@ export async function generateStudioInvitation(
   }
 
   if (wantsImage) {
-    const requestedRefCount = request.event.referenceImageUrls?.length ?? 0;
-    const referenceImages = await resolveStudioReferenceImages(request.event.referenceImageUrls);
+    const requestedRefCount = normalizedRequest.event.referenceImageUrls?.length ?? 0;
+    const referenceImages = await resolveStudioReferenceImages(
+      normalizedRequest.event.referenceImageUrls,
+    );
     if (requestedRefCount > 0 && referenceImages.length !== requestedRefCount) {
       errors.image = buildReferenceImageError(provider);
     } else {
-      const imagePrompt = buildInvitationImagePrompt(request.event, request.guidance, liveCard, {
-        surface,
-        editingExistingImage: Boolean(request.imageEdit?.sourceImageDataUrl),
-        referenceImageCount: referenceImages.length,
-      });
-      const imageResult = request.imageEdit?.sourceImageDataUrl
+      const imagePrompt = buildInvitationImagePrompt(
+        normalizedRequest.event,
+        normalizedRequest.guidance,
+        liveCard,
+        {
+          surface,
+          editingExistingImage: Boolean(normalizedRequest.imageEdit?.sourceImageDataUrl),
+          referenceImageCount: referenceImages.length,
+        },
+      );
+      const imageResult = normalizedRequest.imageEdit?.sourceImageDataUrl
         ? provider === "openai"
           ? await editInvitationImageWithOpenAi(
               imagePrompt,
-              request.imageEdit.sourceImageDataUrl,
+              normalizedRequest.imageEdit.sourceImageDataUrl,
               referenceImages.length > 0 ? referenceImages : undefined,
             )
           : await editInvitationImageWithGemini(
               imagePrompt,
-              request.imageEdit.sourceImageDataUrl,
+              normalizedRequest.imageEdit.sourceImageDataUrl,
               referenceImages.length > 0 ? referenceImages : undefined,
             )
         : provider === "openai"
@@ -117,6 +166,7 @@ export async function generateStudioInvitation(
     liveCard,
     invitation,
     imageDataUrl,
+    themeNormalization,
     warnings: uniqueWarnings(warnings),
     errors: hasErrors ? errors : undefined,
   };
