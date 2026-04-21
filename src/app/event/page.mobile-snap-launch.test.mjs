@@ -26,9 +26,12 @@ test("/event upload launch persists the selected file before navigation", () => 
   assert.doesNotMatch(launchCards, /__pendingSnapUpload/);
 });
 
-test("/event launch cards stay in one mobile row and hide helper copy on small screens", () => {
+test("/event launch cards stack on mobile and hide helper copy on small screens", () => {
   const launchCards = readSource("src/app/event/SnapLaunchCards.tsx");
 
-  assert.match(launchCards, /className="mt-10 grid grid-cols-2 gap-3 pb-10 sm:gap-6"/);
-  assert.match(launchCards, /className="mt-2 hidden text-sm text-\[#66677f\] sm:block"/);
+  assert.match(launchCards, /className="mt-10 grid grid-cols-1 gap-3 pb-10 sm:grid-cols-2 sm:gap-6"/);
+  assert.match(launchCards, /min-h-\[180px\]/);
+  assert.match(launchCards, /text-sm text-white\/80 sm:block/);
+  assert.match(launchCards, /src="\/images\/snap\.webp"/);
+  assert.match(launchCards, /src="\/images\/upload\.webp"/);
 });

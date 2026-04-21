@@ -28,7 +28,7 @@ export function StudioCategoryStep({
   return (
     <motion.div
       key="type"
-      initial={{ opacity: 0, y: 20 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       className="mx-auto w-full max-w-[1380px] px-0 pb-10 sm:px-4 sm:pb-12 lg:px-6"
@@ -39,14 +39,14 @@ export function StudioCategoryStep({
         <div className="relative">
           <header className="mb-12 space-y-4 text-center md:mb-16">
             <motion.p
-              initial={{ opacity: 0, y: 10 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8b74c8]/80"
             >
               Choose Your Invite Type
             </motion.p>
             <motion.h2
-              initial={{ opacity: 0, y: 10 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
               className="font-[var(--font-playfair)] text-4xl font-medium tracking-[-0.04em] text-gray-900 md:text-6xl"

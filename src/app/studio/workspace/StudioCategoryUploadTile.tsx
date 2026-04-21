@@ -16,7 +16,7 @@ export function StudioCategoryUploadTile({
   return (
     <motion.button
       type="button"
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={false}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.05 + 0.2 }}
       whileHover={{ scale: 1.01 }}

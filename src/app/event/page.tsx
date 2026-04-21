@@ -22,8 +22,8 @@ export default function EventSnapLandingPage() {
           <div className="inline-flex w-fit items-center rounded-full bg-[#f3f0ff] px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-[#6e5de7] shadow-[0_10px_28px_rgba(124,58,237,0.08)]">
             SMART EVENT TRANSFORMATION
           </div>
-          <h1 className="mt-5 pb-[0.08em] text-[clamp(3.2rem,8vw,5.5rem)] font-semibold leading-[1] tracking-[-0.06em] text-[#151229] [font-family:var(--font-playfair),Georgia,serif]">
-            Snap or upload your
+          <h1 className="mt-5 pb-[0.08em] text-[clamp(1.65rem,8.8vw,2.85rem)] font-semibold leading-[1] tracking-[-0.06em] text-[#151229] [font-family:var(--font-playfair),Georgia,serif] sm:text-[clamp(3.2rem,8vw,5.5rem)]">
+            <span className="inline-block max-w-full whitespace-nowrap">Snap or upload your</span>
             <br />
             <span className="mt-3 inline-block pb-[0.1em] pr-[0.08em] bg-[linear-gradient(135deg,#5c43ff_0%,#8f42ff_55%,#b24cff_100%)] bg-clip-text italic text-transparent">
               flyer or invite

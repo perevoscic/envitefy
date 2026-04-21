@@ -137,7 +137,7 @@ export function StudioLibraryStep({
   return (
     <motion.div
       key="library"
-      initial={{ opacity: 0, y: 20 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       className="mx-auto w-full max-w-[1400px] space-y-8 text-[#111111]"
@@ -156,7 +156,7 @@ export function StudioLibraryStep({
           <section className="min-h-[500px]">
             <AnimatePresence mode="wait">
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
                 className={`grid gap-6 md:gap-8 ${
@@ -172,7 +172,7 @@ export function StudioLibraryStep({
                     <motion.div
                       key={item.id}
                       layout
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.92 }}
                       whileHover={
