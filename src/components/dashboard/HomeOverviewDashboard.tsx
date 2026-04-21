@@ -147,9 +147,10 @@ const CARD_TONE_STYLES: Record<
 type InfoCardProps = {
   label: string;
   value: string;
-  subtext: string;
   icon: LucideIcon;
   tone: CardTone;
+  href?: string | null;
+  external?: boolean;
 };
 
 type CountdownSplitFlapUnitProps = {
@@ -180,12 +181,18 @@ type InvitationEventCardProps = {
   secondaryAction?: InvitationAction | null;
 };
 
-function InfoCard({ label, value, subtext, icon: Icon, tone }: InfoCardProps) {
+function InfoCard({
+  label,
+  value,
+  icon: Icon,
+  tone,
+  href,
+  external = false,
+}: InfoCardProps) {
   const toneStyles = CARD_TONE_STYLES[tone];
-  return (
-    <article
-      className={`group rounded-[32px] border border-slate-100 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-indigo-100 ${toneStyles.shadowClassName}`}
-    >
+  const className = `group block rounded-[32px] border border-slate-100 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-indigo-100 ${toneStyles.shadowClassName}`;
+  const content = (
+    <>
       <div className="mb-4 flex items-start justify-between">
         <div
           className={`flex h-12 w-12 items-center justify-center rounded-2xl ${toneStyles.iconClassName}`}
@@ -196,12 +203,27 @@ function InfoCard({ label, value, subtext, icon: Icon, tone }: InfoCardProps) {
       <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
         {label}
       </p>
-      <p className="text-2xl font-black tracking-tight text-slate-900">
+      <p className="text-[1.35rem] font-black leading-none tracking-tight text-slate-900 sm:text-2xl">
         {value}
       </p>
-      <p className="mt-1 text-[11px] font-semibold text-slate-400">{subtext}</p>
-    </article>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={className}
+        target={external ? "_blank" : undefined}
+        rel={external ? "noreferrer" : undefined}
+        aria-label={`${label}: ${value}`}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return <article className={className}>{content}</article>;
 }
 
 function CountdownFlap({ char }: { char: string }) {
@@ -464,18 +486,28 @@ function InvitationEventCard({
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                   Current Status
                 </p>
-                <p
-                  className={`text-3xl font-black tracking-tight ${statusClassName}`}
+                <div
+                  className={`flex items-start justify-between gap-4 ${
+                    primary ? "md:block" : "sm:block"
+                  }`}
                 >
-                  {statusLabel}
-                </p>
-                <div className="space-y-0.5 opacity-60">
-                  <p className="text-xs font-bold text-slate-900">
-                    {formatLongDate(item.startAt)}
+                  <p
+                    className={`text-3xl font-black tracking-tight leading-none ${statusClassName}`}
+                  >
+                    {statusLabel}
                   </p>
-                  <p className="text-[11px] font-medium text-slate-500">
-                    {formatTimeOnlyRange(item.startAt, item.endAt)}
-                  </p>
+                  <div
+                    className={`space-y-0.5 pt-1 text-right opacity-60 ${
+                      primary ? "md:pt-0 md:text-right" : "sm:pt-0 sm:text-left"
+                    }`}
+                  >
+                    <p className="text-xs font-bold text-slate-900">
+                      {formatLongDate(item.startAt)}
+                    </p>
+                    <p className="text-[11px] font-medium text-slate-500">
+                      {formatTimeOnlyRange(item.startAt, item.endAt)}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -557,10 +589,6 @@ function formatTimeOnlyRange(
     minute: "2-digit",
   }).format(end);
   return `${startTime} - ${endTime}`;
-}
-
-function toMiles(km: number): number {
-  return km * 0.621371;
 }
 
 function eventRelationLabel(
@@ -779,16 +807,9 @@ export default function HomeOverviewDashboard({
   const relationLabel = eventRelationLabel(nextEvent);
   const hasTravelMetrics =
     metrics?.travelMinutes != null || metrics?.travelDistanceKm != null;
-  const travelMiles =
-    metrics?.travelDistanceKm != null
-      ? `${toMiles(metrics.travelDistanceKm).toFixed(1)} mi`
-      : null;
   const travelMissingOrigin =
     enrichMeta?.hasDestination && enrichMeta?.hasOrigin === false;
   const weatherEligible = Boolean(data?.metricsEligibility.weatherEligible);
-  const weatherHasData = Boolean(
-    metrics?.weatherSummary || metrics?.weatherTemp != null,
-  );
   const topKicker = nextEvent
     ? nextEvent.ownership === "invited"
       ? "Upcoming Invitation"
@@ -818,7 +839,6 @@ export default function HomeOverviewDashboard({
     {
       label: "Upcoming",
       value: `${data?.snapshot.upcomingCount30Days ?? 0} Events`,
-      subtext: `${data?.snapshot.upcomingCount7Days ?? 0} in the next week`,
       icon: Calendar,
       tone: "pink",
     },
@@ -831,15 +851,6 @@ export default function HomeOverviewDashboard({
           : travelMissingOrigin
             ? "Add Origin"
             : "Estimate",
-      subtext: metricsLoading
-        ? "Checking route details"
-        : hasTravelMetrics
-          ? travelMiles
-            ? `${travelMiles} from saved origin`
-            : "Drive time is ready"
-          : travelMissingOrigin
-            ? "Save a home location to personalize this"
-            : "Run travel estimate when needed",
       icon: Navigation,
       tone: "sky",
     },
@@ -852,15 +863,20 @@ export default function HomeOverviewDashboard({
           : weatherEligible
             ? "Pending"
             : "72h Window",
-      subtext: metricsLoading
-        ? "Checking latest forecast"
-        : weatherHasData
-          ? metrics?.weatherSummary || "Forecast ready"
-          : weatherEligible
-            ? "Forecast has not loaded yet"
-            : "Forecast appears near the event date",
       icon: CloudSun,
       tone: "amber",
+    },
+    {
+      label: "Directions",
+      value: nextEvent?.mapsUrl
+        ? "Open Route"
+        : nextEvent
+          ? "Add Venue"
+          : "No Event",
+      icon: MapPin,
+      tone: "indigo",
+      href: nextEvent?.mapsUrl || null,
+      external: true,
     },
   ];
 
@@ -979,7 +995,7 @@ export default function HomeOverviewDashboard({
         )}
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4">
         {infoCards.map((card) => (
           <InfoCard key={card.label} {...card} />
         ))}

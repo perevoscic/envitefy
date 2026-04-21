@@ -15,3 +15,11 @@ test("dashboard invitation actions keep mobile buttons on one row", () => {
   );
   assert.match(source, /<div className="flex gap-3 sm:gap-4">/);
 });
+
+test("dashboard overview includes a directions info tile for the next event", () => {
+  const source = readFileSync(new URL("./HomeOverviewDashboard.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /label: "Directions"/);
+  assert.match(source, /href: nextEvent\?\.mapsUrl \|\| null/);
+  assert.match(source, /value: nextEvent\?\.mapsUrl[\s\S]*"Open Route"/);
+});
