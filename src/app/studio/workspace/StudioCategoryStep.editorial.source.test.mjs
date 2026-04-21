@@ -51,8 +51,8 @@ test("studio category step uses editorial tiles and forwards tile clicks through
 
   assert.match(uploadTileSource, /Upload Your Invite/);
   assert.match(uploadTileSource, /Turn an existing invite int a live card/);
-  assert.match(uploadTileSource, /Images, PDFs/);
-  assert.doesNotMatch(uploadTileSource, /imagePath/);
+  assert.doesNotMatch(uploadTileSource, /Images, PDFs/);
+  assert.match(uploadTileSource, /\/studio\/upload-your-own\.webp/);
 });
 
 test("studio category tiles are image-backed and layout-driven", () => {
@@ -86,6 +86,15 @@ test("studio category tiles are image-backed and layout-driven", () => {
   assert.match(gridSource, /"Game Day": "lg:col-start-3 lg:row-start-2"/);
   assert.match(gridSource, /sizeVariant/);
   assert.match(dataSource, /imagePath:/);
+  assert.match(dataSource, /\/studio\/birthday\.webp/);
+  assert.match(dataSource, /\/studio\/game-day\.webp/);
+  assert.match(dataSource, /\/studio\/wedding\.webp/);
+  assert.match(dataSource, /\/studio\/bridal-shower\.webp/);
+  assert.match(dataSource, /\/studio\/baby-shower\.webp/);
+  assert.match(dataSource, /\/studio\/field-trip-day\.webp/);
+  assert.match(dataSource, /\/studio\/anniversary\.webp/);
+  assert.match(dataSource, /\/studio\/housewarming\.webp/);
+  assert.match(dataSource, /\/studio\/custom-invite\.webp/);
   assert.match(dataSource, /sizeVariant: "feature"/);
   assert.match(dataSource, /sizeVariant: "horizontal"/);
   assert.match(dataSource, /sizeVariant: "wide"/);

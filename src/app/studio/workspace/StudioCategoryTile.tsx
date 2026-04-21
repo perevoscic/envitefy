@@ -28,9 +28,9 @@ function hexToRgba(hex: string, alpha: number) {
 }
 
 const overlayClassByStrength = {
-  light: "bg-gradient-to-t from-black/72 via-black/24 to-transparent",
-  medium: "bg-gradient-to-t from-black/80 via-black/34 to-transparent",
-  dark: "bg-gradient-to-t from-black/88 via-black/54 to-black/18",
+  light: "bg-gradient-to-t from-black/56 via-black/16 to-transparent",
+  medium: "bg-gradient-to-t from-black/64 via-black/22 to-transparent",
+  dark: "bg-gradient-to-t from-black/76 via-black/38 to-black/12",
 } as const;
 
 function buildTileStyle(category: StudioCategoryTileDefinition, active: boolean): CSSProperties {

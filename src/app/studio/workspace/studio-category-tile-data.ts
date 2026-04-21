@@ -19,8 +19,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     icon: Cake,
     description: "Celebration Moments",
     badge: "Party",
-    imagePath:
-      "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?q=80&w=2072&auto=format&fit=crop",
+    imagePath: "/studio/birthday.webp",
     themeColor: "#8F6FE8",
     sizeVariant: "wide",
     overlayStrength: "light",
@@ -33,7 +32,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     icon: Trophy,
     description: "Team Spirit Events",
     badge: "Sports",
-    imagePath: "/templates/hero-images/general-sport-hero.jpeg",
+    imagePath: "/studio/game-day.webp",
     themeColor: "#2563EB",
     sizeVariant: "standard",
     overlayStrength: "medium",
@@ -46,8 +45,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     icon: Heart,
     description: "Elegant Wedding Weekends",
     badge: "Featured",
-    imagePath:
-      "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop",
+    imagePath: "/studio/wedding.webp",
     themeColor: "#7C5DD8",
     sizeVariant: "feature",
     overlayStrength: "medium",
@@ -60,8 +58,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     icon: Wine,
     description: "Elegant Shower Gatherings",
     badge: "Bridal",
-    imagePath:
-      "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop",
+    imagePath: "/studio/bridal-shower.webp",
     themeColor: "#A06BD9",
     sizeVariant: "horizontal",
     overlayStrength: "light",
@@ -74,8 +71,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     icon: Baby,
     description: "Welcoming Baby Joy",
     badge: "Baby",
-    imagePath:
-      "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop",
+    imagePath: "/studio/baby-shower.webp",
     themeColor: "#9B7BD9",
     sizeVariant: "standard",
     overlayStrength: "light",
@@ -88,8 +84,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     icon: Bus,
     description: "Learning Adventures",
     badge: "School",
-    imagePath:
-      "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop",
+    imagePath: "/studio/field-trip-day.webp",
     themeColor: "#7F67D3",
     sizeVariant: "standard",
     overlayStrength: "light",
@@ -102,8 +97,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     icon: CalendarHeart,
     description: "Romantic Celebrations",
     badge: "Milestone",
-    imagePath:
-      "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=2070&auto=format&fit=crop",
+    imagePath: "/studio/anniversary.webp",
     themeColor: "#8E6FD4",
     sizeVariant: "standard",
     overlayStrength: "medium",
@@ -116,8 +110,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     icon: Home,
     description: "New Home Gatherings",
     badge: "Home",
-    imagePath:
-      "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=2073&auto=format&fit=crop",
+    imagePath: "/studio/housewarming.webp",
     themeColor: "#7D77C5",
     sizeVariant: "standard",
     overlayStrength: "light",
@@ -130,8 +123,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     icon: WandSparkles,
     description: "Any Occasion Design",
     badge: "Create your own",
-    imagePath:
-      "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=2069&auto=format&fit=crop",
+    imagePath: "/studio/custom-invite.webp",
     themeColor: "#8B5CF6",
     sizeVariant: "standard",
     overlayStrength: "dark",
