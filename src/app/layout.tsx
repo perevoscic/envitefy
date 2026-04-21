@@ -6,6 +6,7 @@ import Providers from "./providers";
 import AppShell from "./AppShell";
 import "./globals.css";
 import { authOptions } from "@/lib/auth";
+import { GOOGLE_ANALYTICS_MEASUREMENT_ID } from "@/lib/google-analytics";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import { themeColorPalette } from "@/lib/theme-color";
 import { Suspense } from "react";
@@ -191,14 +192,15 @@ export default async function RootLayout({
         {/* Google tag (gtag.js) */}
         <Script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=G-3X25SZMRFY"
+          src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GOOGLE_ANALYTICS_MEASUREMENT_ID)}`}
           strategy="afterInteractive"
         />
         <Script id="ga4-init" strategy="afterInteractive">{`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
+          window.gtag = gtag;
           gtag('js', new Date());
-          gtag('config', 'G-3X25SZMRFY');
+          gtag('config', '${GOOGLE_ANALYTICS_MEASUREMENT_ID}', { send_page_view: false });
         `}</Script>
         <Providers session={serverSession}>
           <Suspense fallback={null}>

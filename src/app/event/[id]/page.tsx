@@ -141,7 +141,8 @@ export async function generateMetadata(props: {
   const img = await absoluteUrl(`/event/${encodeURIComponent(awaitedParams.id)}/opengraph-image`);
 
   // Generate canonical URL
-  const url = await absoluteUrl(`/event/${encodeURIComponent(awaitedParams.id)}`);
+  const canonicalPath = row ? buildEventPath(row.id, title) : `/event/${encodeURIComponent(awaitedParams.id)}`;
+  const url = await absoluteUrl(canonicalPath);
 
   if (timing.enabled) {
     console.info("[event-page][metadata]", {

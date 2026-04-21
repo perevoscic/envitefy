@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import Script from "next/script";
+import { landingLiveCardSnapshots } from "@/components/landing/landing-live-card-snapshots";
 import SharedStudioCardPage from "@/components/studio/SharedStudioCardPage";
 import { absoluteUrl } from "@/lib/absolute-url";
 import {
@@ -7,6 +9,10 @@ import {
   normalizeLandingShowcaseValue,
   resolveLandingShowcaseSnapshot,
 } from "@/lib/landing-showcase";
+
+export function generateStaticParams() {
+  return landingLiveCardSnapshots.map((snapshot) => ({ slug: snapshot.slug }));
+}
 
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
@@ -46,6 +52,41 @@ export async function generateMetadata(props: {
   };
 }
 
+function buildShowcaseStructuredData(input: {
+  title: string;
+  description: string;
+  url: string;
+  imageUrl: string;
+  category: string | null;
+  collectionUrl: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: input.title,
+    description: input.description,
+    url: input.url,
+    about: input.category || "Live card showcase",
+    isPartOf: {
+      "@type": "CollectionPage",
+      name: "Envitefy Showcase",
+      url: input.collectionUrl,
+    },
+    primaryImageOfPage: {
+      "@type": "ImageObject",
+      name: `${input.title} preview`,
+      description: input.description,
+      contentUrl: input.imageUrl,
+      url: input.imageUrl,
+      representativeOfPage: true,
+      creator: {
+        "@type": "Organization",
+        name: "Envitefy",
+      },
+    },
+  };
+}
+
 export default async function LandingShowcasePage(props: {
   params: Promise<{ slug: string }>;
 }) {
@@ -57,15 +98,39 @@ export default async function LandingShowcasePage(props: {
     redirect(buildLandingShowcasePath(snapshot.slug));
   }
 
-  const shareUrl = await absoluteUrl(buildLandingShowcasePath(snapshot.slug));
+  const path = buildLandingShowcasePath(snapshot.slug);
+  const shareUrl = await absoluteUrl(path);
+  const collectionUrl = await absoluteUrl("/showcase");
+  const imageUrl = await absoluteUrl(snapshot.imageUrl);
+  const description = snapshot.invitationData.description || "View a showcase live card from Envitefy.";
+  const category =
+    typeof snapshot.invitationData.eventDetails?.category === "string"
+      ? snapshot.invitationData.eventDetails.category
+      : null;
+  const structuredData = buildShowcaseStructuredData({
+    title: snapshot.title,
+    description,
+    url: shareUrl,
+    imageUrl,
+    category,
+    collectionUrl,
+  });
 
   return (
-    <SharedStudioCardPage
-      title={snapshot.title}
-      imageUrl={snapshot.imageUrl}
-      invitationData={snapshot.invitationData as any}
-      positions={snapshot.positions as any}
-      shareUrl={shareUrl}
-    />
+    <>
+      <Script
+        id={`ld-showcase-card-${snapshot.slug}`}
+        type="application/ld+json"
+      >
+        {JSON.stringify(structuredData)}
+      </Script>
+      <SharedStudioCardPage
+        title={snapshot.title}
+        imageUrl={snapshot.imageUrl}
+        invitationData={snapshot.invitationData as any}
+        positions={snapshot.positions as any}
+        shareUrl={shareUrl}
+      />
+    </>
   );
 }

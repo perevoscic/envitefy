@@ -14,6 +14,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
 import GlobalSmartSignup from "./GlobalSmartSignup";
+import GoogleAnalyticsRouteTracker from "@/components/GoogleAnalyticsRouteTracker";
 import PwaInstallToast from "@/components/PwaInstallToast";
 import ThemeColorSync from "@/components/ThemeColorSync";
 import { ThemeKey, ThemeVariant, resolveThemeCssVariables } from "@/themes";
@@ -94,6 +95,7 @@ export default function Providers({
       <SidebarProvider>
         <ThemeProvider>
           <RegisterServiceWorker />
+          <GoogleAnalyticsRouteTracker />
           <PwaInstallToast />
           <ThemeColorSync />
           <GymnasticsDemoDraftClaimListener />

@@ -1,4 +1,6 @@
 import type { MetadataRoute } from "next";
+import { landingLiveCardSnapshots } from "@/components/landing/landing-live-card-snapshots";
+import { buildLandingShowcasePath } from "@/lib/landing-showcase";
 
 type StaticEntry = {
   path: string;
@@ -19,6 +21,7 @@ const staticEntries: StaticEntry[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/snap", priority: 0.9, changeFrequency: "weekly" },
   { path: "/gymnastics", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/showcase", priority: 0.85, changeFrequency: "weekly" },
   { path: "/studio", priority: 0.8, changeFrequency: "weekly" },
   { path: "/how-it-works", priority: 0.7, changeFrequency: "monthly" },
   { path: "/who-its-for", priority: 0.6, changeFrequency: "monthly" },
@@ -30,10 +33,18 @@ const staticEntries: StaticEntry[] = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return staticEntries.map(({ path, priority, changeFrequency }) => ({
+  const staticUrls = staticEntries.map(({ path, priority, changeFrequency }) => ({
     url: `${baseUrl}${path}`,
     lastModified: buildTime,
     changeFrequency,
     priority,
   }));
+  const showcaseUrls = landingLiveCardSnapshots.map((snapshot) => ({
+    url: `${baseUrl}${buildLandingShowcasePath(snapshot.slug)}`,
+    lastModified: buildTime,
+    changeFrequency: "monthly" as const,
+    priority: 0.75,
+  }));
+
+  return [...staticUrls, ...showcaseUrls];
 }

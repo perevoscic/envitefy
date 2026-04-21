@@ -22,6 +22,7 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/forgot",
   "/reset",
   "/snap",
+  "/showcase",
 ]);
 
 const RESERVED_EVENT_PATHS = new Set([
