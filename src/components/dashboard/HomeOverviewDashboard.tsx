@@ -13,6 +13,7 @@ import {
   Navigation,
   type LucideIcon,
 } from "lucide-react";
+import { FlipClock } from "@/components/ui/flip-clock";
 
 type DashboardEventItem = {
   id: string;
@@ -153,11 +154,6 @@ type InfoCardProps = {
   external?: boolean;
 };
 
-type CountdownSplitFlapUnitProps = {
-  value: string;
-  label: string;
-};
-
 type InvitationCardStat = {
   icon: LucideIcon;
   label: string;
@@ -226,118 +222,6 @@ function InfoCard({
   return <article className={className}>{content}</article>;
 }
 
-function CountdownFlap({ char }: { char: string }) {
-  const [displayChar, setDisplayChar] = useState(char);
-  const [nextChar, setNextChar] = useState(char);
-  const [isFlipping, setIsFlipping] = useState(false);
-
-  useEffect(() => {
-    if (char === displayChar) return;
-    setNextChar(char);
-    setIsFlipping(true);
-    const timer = window.setTimeout(() => {
-      setDisplayChar(char);
-      setIsFlipping(false);
-    }, 600);
-    return () => window.clearTimeout(timer);
-  }, [char, displayChar]);
-
-  return (
-    <div className="select-none">
-      <div className="perspective-1000 relative h-14 w-10 md:h-[4.5rem] md:w-[3.4rem]">
-        <div className="absolute inset-0 overflow-hidden rounded-xl border-b-4 border-black/60 bg-zinc-900 text-white shadow-2xl">
-          <div className="absolute top-0 h-1/2 w-full border-b border-black/40 bg-black/30" />
-          <div className="flex h-full items-center justify-center">
-            <span className="font-mono text-[2.35rem] font-black tracking-tighter md:text-[3.35rem]">
-              {nextChar}
-            </span>
-          </div>
-        </div>
-
-        <div
-          className={`preserve-3d absolute inset-0 flex items-center justify-center overflow-hidden rounded-xl border-b-4 border-black/60 bg-zinc-900 text-white transition-transform duration-500 ${
-            isFlipping ? "animate-flap-down" : ""
-          }`}
-          style={{ backfaceVisibility: "hidden", zIndex: isFlipping ? 30 : 10 }}
-        >
-          <div className="absolute top-0 h-1/2 w-full border-b border-black/40 bg-black/30" />
-          <span className="font-mono text-[2.35rem] font-black tracking-tighter md:text-[3.35rem]">
-            {displayChar}
-          </span>
-          <div className="absolute left-0 top-1/2 h-3 w-1 -translate-y-1/2 rounded-r-full bg-black/80 md:h-4 md:w-1.5" />
-          <div className="absolute right-0 top-1/2 h-3 w-1 -translate-y-1/2 rounded-l-full bg-black/80 md:h-4 md:w-1.5" />
-        </div>
-
-        <div className="absolute inset-0 z-[5] flex items-center justify-center overflow-hidden rounded-xl border-b-4 border-black/60 bg-zinc-900 text-white">
-          <div className="absolute top-0 h-1/2 w-full border-b border-black/40 bg-black/30" />
-          <span className="font-mono text-[2.35rem] font-black tracking-tighter md:text-[3.35rem]">
-            {displayChar}
-          </span>
-        </div>
-      </div>
-
-      <style jsx>{`
-        .perspective-1000 {
-          perspective: 1000px;
-        }
-
-        .preserve-3d {
-          transform-style: preserve-3d;
-          transform-origin: center center;
-        }
-
-        @keyframes flap-down {
-          0% {
-            transform: rotateX(0deg);
-          }
-          50% {
-            transform: rotateX(-90deg);
-            opacity: 1;
-          }
-          51% {
-            opacity: 0;
-          }
-          100% {
-            transform: rotateX(-180deg);
-            opacity: 0;
-          }
-        }
-
-        .animate-flap-down {
-          animation: flap-down 0.6s cubic-bezier(0.455, 0.03, 0.515, 0.955)
-            forwards;
-        }
-      `}</style>
-    </div>
-  );
-}
-
-function CountdownSplitFlapUnit({ value, label }: CountdownSplitFlapUnitProps) {
-  const chars = value.padStart(2, "0").split("");
-
-  return (
-    <div className="flex flex-col items-center gap-2 md:gap-3">
-      <div className="flex gap-1.5 md:gap-2">
-        {chars.map((char, index) => (
-          <CountdownFlap key={`${label}-${index}`} char={char} />
-        ))}
-      </div>
-      <p className="font-mono text-[9px] font-bold uppercase tracking-[0.28em] text-zinc-500 md:text-[11px] md:tracking-[0.35em]">
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function CountdownSeparator() {
-  return (
-    <div className="flex translate-y-2.5 flex-col gap-1.5 sm:gap-2">
-      <div className="h-1 w-1 rounded-full bg-zinc-300 sm:h-1.5 sm:w-1.5" />
-      <div className="h-1 w-1 rounded-full bg-zinc-300 sm:h-1.5 sm:w-1.5" />
-    </div>
-  );
-}
-
 function InvitationEventCard({
   item,
   now,
@@ -352,13 +236,13 @@ function InvitationEventCard({
   const statusClassName = getInvitationStatusTextClass(item);
   const countdown = buildCountdownParts(parseSafeDate(item.startAt), now);
   const isInvited = item.ownership === "invited";
-  const primaryButtonClassName = `group/btn inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] px-4 py-4 text-xs font-bold text-white shadow-xl transition-all sm:min-w-[170px] sm:px-8 sm:text-sm ${
+  const primaryButtonClassName = `group/btn inline-flex min-h-[56px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] px-5 py-4 text-sm font-bold text-white shadow-xl transition-all sm:min-h-[60px] sm:min-w-[170px] sm:px-8 sm:text-base ${
     isInvited
       ? "bg-indigo-600 hover:opacity-90"
       : "bg-slate-900 hover:bg-indigo-600"
   }`;
   const secondaryButtonClassName =
-    "inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-4 py-4 text-xs font-bold text-slate-600 transition-all hover:bg-slate-50 sm:min-w-[170px] sm:px-8 sm:text-sm";
+    "inline-flex min-h-[56px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50 sm:min-h-[60px] sm:min-w-[170px] sm:px-8 sm:text-base";
 
   const renderAction = (
     action: InvitationAction,
@@ -457,32 +341,26 @@ function InvitationEventCard({
               className={`flex flex-col gap-8 ${primary ? "md:flex-row md:justify-between" : ""}`}
             >
               {primary ? (
-                <div className="space-y-4">
+                <div className="space-y-4 md:min-w-0 md:flex-1 md:pr-8">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     Countdown
                   </p>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:gap-3">
-                    {[
+                  <FlipClock
+                    units={[
                       { label: "Days", value: countdown.days },
                       { label: "Hours", value: countdown.hours },
                       { label: "Mins", value: countdown.minutes },
-                    ].map((countdownItem, index) => (
-                      <div
-                        key={`${item.id}-${countdownItem.label}`}
-                        className="flex items-start gap-2 sm:gap-2.5 md:gap-4"
-                      >
-                        <CountdownSplitFlapUnit
-                          value={countdownItem.value}
-                          label={countdownItem.label}
-                        />
-                        {index < 2 ? <CountdownSeparator /> : null}
-                      </div>
-                    ))}
-                  </div>
+                    ]}
+                    className="justify-start"
+                  />
                 </div>
               ) : null}
 
-              <div className={`space-y-2 ${primary ? "text-left md:text-right" : "text-left"}`}>
+              <div
+                className={`space-y-2 ${
+                  primary ? "text-left md:w-auto md:shrink-0 md:text-right" : "text-left"
+                }`}
+              >
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                   Current Status
                 </p>
@@ -946,24 +824,14 @@ export default function HomeOverviewDashboard({
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     Countdown
                   </p>
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    {[
+                  <FlipClock
+                    units={[
                       { label: "Days", value: "00" },
                       { label: "Hours", value: "00" },
                       { label: "Mins", value: "00" },
-                    ].map((countdownItem, index) => (
-                      <div
-                        key={countdownItem.label}
-                        className="flex items-start gap-2 sm:gap-2.5 md:gap-4"
-                      >
-                        <CountdownSplitFlapUnit
-                          value={countdownItem.value}
-                          label={countdownItem.label}
-                        />
-                        {index < 2 ? <CountdownSeparator /> : null}
-                      </div>
-                    ))}
-                  </div>
+                    ]}
+                    className="justify-start"
+                  />
                   <div className="space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                       Current Status

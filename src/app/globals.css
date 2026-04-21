@@ -169,6 +169,16 @@
   vertical-align: middle;
 }
 
+.flip-clock-perspective {
+  perspective: 1000px;
+}
+
+.flip-clock-face {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transform-origin: center center;
+}
+
 :root {
   --nav-chrome-ink: #251b47;
   --nav-chrome-muted: #61597c;
