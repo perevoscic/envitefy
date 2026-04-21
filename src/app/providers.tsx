@@ -214,28 +214,15 @@ function RegisterServiceWorker() {
     let idleHandle: number | null = null;
     let controllerCleanup: (() => void) | null = null;
 
-    const setupControllerReload = () => {
+    const setupControllerChangeListener = () => {
       const nav = navigator.serviceWorker;
       if (!nav) return null;
       if (nav.controller) {
-        try {
-          sessionStorage.removeItem("__snap_sw_reloaded__");
-        } catch {
-          // ignore
-        }
         pushDebug("sw already controlling page");
         return null;
       }
-      let alreadyReloaded = false;
-      try {
-        alreadyReloaded =
-          sessionStorage.getItem("__snap_sw_reloaded__") === "1";
-      } catch {
-        // ignore
-      }
-      if (alreadyReloaded) return null;
       const onControllerChange = () => {
-        pushDebug("sw controllerchange -> hard reload");
+        pushDebug("sw controllerchange -> keeping current page state");
         try {
           nav.removeEventListener("controllerchange", onControllerChange);
         } catch {
@@ -243,14 +230,8 @@ function RegisterServiceWorker() {
         }
         if (process.env.NODE_ENV === "production") {
           // eslint-disable-next-line no-console
-          console.info("[sw] controller change detected; reloading");
+          console.info("[sw] controller change detected; keeping current page");
         }
-        try {
-          sessionStorage.setItem("__snap_sw_reloaded__", "1");
-        } catch {
-          // ignore
-        }
-        window.location.reload();
       };
       try {
         nav.addEventListener("controllerchange", onControllerChange);
@@ -286,7 +267,7 @@ function RegisterServiceWorker() {
           scope: "/",
         });
         pushDebug("sw registered", { scope: registration.scope });
-        controllerCleanup = setupControllerReload();
+        controllerCleanup = setupControllerChangeListener();
       } catch (e) {
         // Allow a subsequent attempt (e.g., after load) if registration fails.
         pushDebug("sw registration failed", {
