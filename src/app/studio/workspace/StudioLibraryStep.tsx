@@ -140,7 +140,7 @@ export function StudioLibraryStep({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="mx-auto max-w-[1400px] space-y-8 text-[#111111]"
+      className="mx-auto w-full max-w-[1400px] space-y-8 text-[#111111]"
     >
       {mediaList.length === 0 ? (
         <div className="rounded-[2rem] border border-dashed border-black/10 bg-[#f7f8fb] py-24 text-center shadow-[0_20px_55px_rgba(15,23,42,0.05)]">

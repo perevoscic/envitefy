@@ -51,11 +51,9 @@ export type StudioFormStepProps = {
   onOpenEditorStep: () => void;
   isFormValid: boolean;
   editingId: string | null;
-  onUploadFlyer: (file: File) => Promise<void>;
   onRemoveFlyer: () => void;
   onUploadSubjectPhotos: (files: File[]) => Promise<void>;
   onRemoveSubjectPhoto: (index: number) => void;
-  isFlyerUploading: boolean;
   isSubjectPhotoUploading: boolean;
   flyerUploadError: string | null;
   subjectPhotoUploadError: string | null;
@@ -101,11 +99,9 @@ export function StudioFormStep({
   onOpenEditorStep: _onOpenEditorStep,
   isFormValid,
   editingId,
-  onUploadFlyer,
   onRemoveFlyer,
   onUploadSubjectPhotos,
   onRemoveSubjectPhoto,
-  isFlyerUploading,
   isSubjectPhotoUploading,
   flyerUploadError,
   subjectPhotoUploadError,
@@ -453,11 +449,9 @@ export function StudioFormStep({
 
       <StudioOptionalMediaRow
         details={details}
-        onUploadFlyer={onUploadFlyer}
         onRemoveFlyer={onRemoveFlyer}
         onUploadSubjectPhotos={onUploadSubjectPhotos}
         onRemoveSubjectPhoto={onRemoveSubjectPhoto}
-        isFlyerUploading={isFlyerUploading}
         isSubjectPhotoUploading={isSubjectPhotoUploading}
         flyerUploadError={flyerUploadError}
         subjectPhotoUploadError={subjectPhotoUploadError}

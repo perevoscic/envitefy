@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useRef } from "react";
+import { getUploadAcceptAttribute } from "@/utils/media-upload-client";
 import type { EventDetails, InviteCategory } from "../studio-workspace-types";
 import { StudioCategoryGrid } from "./StudioCategoryGrid";
 import { STUDIO_CATEGORY_TILES } from "./studio-category-tile-data";
@@ -8,19 +10,28 @@ import { STUDIO_CATEGORY_TILES } from "./studio-category-tile-data";
 type StudioCategoryStepProps = {
   details: EventDetails;
   onSelectCategory: (category: InviteCategory) => void;
+  onUploadInvitation: (file: File) => Promise<void>;
+  isInvitationUploading: boolean;
+  invitationUploadError: string | null;
 };
 
 export function StudioCategoryStep({
   details,
   onSelectCategory,
+  onUploadInvitation,
+  isInvitationUploading,
+  invitationUploadError,
 }: StudioCategoryStepProps) {
+  const invitationInputRef = useRef<HTMLInputElement | null>(null);
+  const accept = getUploadAcceptAttribute("attachment");
+
   return (
     <motion.div
       key="type"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="mx-auto w-full max-w-[1380px] px-0 sm:px-4 lg:px-6"
+      className="mx-auto w-full max-w-[1380px] px-0 pb-10 sm:px-4 sm:pb-12 lg:px-6"
     >
       <div className="relative overflow-visible">
         <div className="absolute left-6 top-8 h-40 w-40 rounded-full bg-[#eee4ff]/65 blur-3xl" />
@@ -44,13 +55,33 @@ export function StudioCategoryStep({
             </motion.h2>
           </header>
 
-          <div className="space-y-10">
+          <div className="space-y-6">
             <StudioCategoryGrid
               categories={STUDIO_CATEGORY_TILES}
               selectedCategory={details.category}
               onSelect={onSelectCategory}
+              onUploadAction={() => invitationInputRef.current?.click()}
+              isUploadActionPending={isInvitationUploading}
             />
+
+            {invitationUploadError ? (
+              <p className="text-sm leading-6 text-[#a4564f]">{invitationUploadError}</p>
+            ) : null}
           </div>
+
+          <input
+            ref={invitationInputRef}
+            type="file"
+            accept={accept}
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                void onUploadInvitation(file);
+              }
+              event.target.value = "";
+            }}
+          />
         </div>
       </div>
     </motion.div>

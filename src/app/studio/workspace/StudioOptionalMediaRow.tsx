@@ -8,11 +8,9 @@ import type { EventDetails, InviteCategory } from "../studio-workspace-types";
 
 type StudioOptionalMediaRowProps = {
   details: EventDetails;
-  onUploadFlyer: (file: File) => Promise<void>;
   onRemoveFlyer: () => void;
   onUploadSubjectPhotos: (files: File[]) => Promise<void>;
   onRemoveSubjectPhoto: (index: number) => void;
-  isFlyerUploading: boolean;
   isSubjectPhotoUploading: boolean;
   flyerUploadError: string | null;
   subjectPhotoUploadError: string | null;
@@ -44,16 +42,13 @@ function getSubjectPhotoCopy(category: InviteCategory) {
 
 export function StudioOptionalMediaRow({
   details,
-  onUploadFlyer,
   onRemoveFlyer,
   onUploadSubjectPhotos,
   onRemoveSubjectPhoto,
-  isFlyerUploading,
   isSubjectPhotoUploading,
   flyerUploadError,
   subjectPhotoUploadError,
 }: StudioOptionalMediaRowProps) {
-  const flyerInputRef = useRef<HTMLInputElement | null>(null);
   const subjectPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const accept = getUploadAcceptAttribute("header");
   const subjectPhotoCopy = getSubjectPhotoCopy(details.category);
@@ -75,22 +70,13 @@ export function StudioOptionalMediaRow({
         <div className="grid gap-4 lg:grid-cols-12 lg:items-start">
           <div className="space-y-2 lg:col-span-6">
             <p className="max-w-3xl text-[13px] leading-8 text-[#4d5565]">
-              Flyer parsing fills Event Details when possible and can preserve the invite&apos;s
-              visual direction. Add a Design Idea if you want to steer the look further, or use
-              photo(s) to design the invitation around them.
+              Add photo(s) to design the invitation around the people or subject you&apos;re
+              celebrating. If this live card started from an uploaded invite, that original art
+              stays attached and its extracted Event Details carry through here.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 lg:col-span-6 lg:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => flyerInputRef.current?.click()}
-              disabled={isFlyerUploading}
-              className="inline-flex min-h-[2.95rem] w-full items-center justify-center gap-2 rounded-full border border-[#2f3440] bg-white px-4 py-3 text-[10px] font-medium uppercase tracking-[0.34em] text-[#2b303b] transition-colors hover:bg-[#fafbfc] disabled:opacity-50"
-            >
-              <Upload className="h-4 w-4 text-[#2b303b]" />
-              {flyerActive ? "Replace" : "Flyer"}
-            </button>
+          <div className="grid grid-cols-1 gap-3 lg:col-span-6 lg:grid-cols-1">
             <button
               type="button"
               onClick={() => subjectPhotoInputRef.current?.click()}
@@ -169,20 +155,6 @@ export function StudioOptionalMediaRow({
           </div>
         </div>
       ) : null}
-
-      <input
-        ref={flyerInputRef}
-        type="file"
-        accept={accept}
-        className="hidden"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) {
-            void onUploadFlyer(file);
-          }
-          event.target.value = "";
-        }}
-      />
 
       <input
         ref={subjectPhotoInputRef}

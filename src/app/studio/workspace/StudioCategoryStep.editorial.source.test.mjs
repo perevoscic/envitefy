@@ -9,6 +9,8 @@ function readSource(relPath) {
 
 test("studio category step uses editorial tiles and forwards tile clicks through the workspace handler", () => {
   const stepSource = readSource("src/app/studio/workspace/StudioCategoryStep.tsx");
+  const gridSource = readSource("src/app/studio/workspace/StudioCategoryGrid.tsx");
+  const uploadTileSource = readSource("src/app/studio/workspace/StudioCategoryUploadTile.tsx");
 
   assert.match(stepSource, /import \{ StudioCategoryGrid \} from "\.\/StudioCategoryGrid";/);
   assert.match(
@@ -16,14 +18,41 @@ test("studio category step uses editorial tiles and forwards tile clicks through
     /import \{ STUDIO_CATEGORY_TILES \} from "\.\/studio-category-tile-data";/,
   );
   assert.match(stepSource, /<StudioCategoryGrid/);
+  assert.match(stepSource, /getUploadAcceptAttribute\("attachment"\)/);
+  assert.match(stepSource, /onUploadInvitation: \(file: File\) => Promise<void>;/);
+  assert.match(stepSource, /isInvitationUploading: boolean;/);
+  assert.match(stepSource, /invitationUploadError: string \| null;/);
+  assert.match(stepSource, /onUploadAction=\{\(\) => invitationInputRef\.current\?\.click\(\)\}/);
+  assert.match(stepSource, /isUploadActionPending=\{isInvitationUploading\}/);
+  assert.match(stepSource, /accept=\{accept\}/);
   assert.doesNotMatch(stepSource, /Continue Planning/);
   assert.doesNotMatch(stepSource, /Pick the invite style that best fits your event/);
   assert.doesNotMatch(stepSource, /Not sure yet\?/);
   assert.doesNotMatch(stepSource, /Get inspiration/);
+  assert.doesNotMatch(stepSource, /Have your own invitation\?/);
+  assert.doesNotMatch(stepSource, /Upload it and turn it into a live card\./);
+  assert.doesNotMatch(stepSource, /JPG, PNG, WebP, or PDF/);
+  assert.doesNotMatch(stepSource, /Upload Invitation/);
   assert.match(stepSource, /onSelectCategory: \(category: InviteCategory\) => void;/);
   assert.match(stepSource, /onSelect=\{onSelectCategory\}/);
+  assert.match(stepSource, /void onUploadInvitation\(file\);/);
   assert.doesNotMatch(stepSource, /setDetails\(/);
   assert.doesNotMatch(stepSource, /setCreateStep\(/);
+
+  assert.match(gridSource, /import \{ StudioCategoryUploadTile \} from "\.\/StudioCategoryUploadTile";/);
+  assert.match(gridSource, /onUploadAction: \(\) => void;/);
+  assert.match(gridSource, /isUploadActionPending: boolean;/);
+  assert.match(
+    gridSource,
+    /const EDITORIAL_GRID_COMPOSITION:[\s\S]*"Birthday"[\s\S]*"upload"[\s\S]*"Wedding"[\s\S]*"Bridal Shower"[\s\S]*"Baby Shower"[\s\S]*"Game Day"/,
+  );
+  assert.match(gridSource, /<StudioCategoryUploadTile/);
+  assert.doesNotMatch(gridSource, /index=\{categories\.length\}/);
+
+  assert.match(uploadTileSource, /Upload Your Invite/);
+  assert.match(uploadTileSource, /Turn an existing invite, flyer, or PDF into a live card\./);
+  assert.match(uploadTileSource, /Images, PDFs/);
+  assert.doesNotMatch(uploadTileSource, /imagePath/);
 });
 
 test("studio category tiles are image-backed and layout-driven", () => {
@@ -41,13 +70,20 @@ test("studio category tiles are image-backed and layout-driven", () => {
   assert.match(gridSource, /lg:grid-cols-4/);
   assert.match(gridSource, /Birthday: "row-span-2 sm:row-span-1"/);
   assert.match(gridSource, /Wedding: "row-span-2 sm:row-span-1"/);
-  assert.match(gridSource, /"Baby Shower": "col-span-2 sm:col-span-1 row-span-1"/);
+  assert.doesNotMatch(gridSource, /"Baby Shower": "col-span-2 sm:col-span-1 row-span-1"/);
   assert.doesNotMatch(gridSource, /"Bridal Shower": "row-span-2 sm:row-span-1"/);
-  assert.match(gridSource, /"Game Day": "order-2 sm:order-none"/);
+  assert.match(gridSource, /upload: "order-2 sm:order-none"/);
   assert.match(gridSource, /Wedding: "order-3 sm:order-none"/);
-  assert.match(gridSource, /"Bridal Shower": "order-4 sm:order-none"/);
-  assert.match(gridSource, /"Baby Shower": "order-5 sm:order-none"/);
-  assert.match(gridSource, /"Field Trip\/Day": "order-8 sm:order-none"/);
+  assert.match(gridSource, /"Game Day": "order-4 sm:order-none"/);
+  assert.match(gridSource, /"Bridal Shower": "order-5 sm:order-none"/);
+  assert.match(gridSource, /"Baby Shower": "order-6 sm:order-none"/);
+  assert.match(gridSource, /"Field Trip\/Day": "order-9 sm:order-none"/);
+  assert.match(gridSource, /Birthday: "lg:col-start-1 lg:row-start-1"/);
+  assert.match(gridSource, /upload: "lg:col-start-3 lg:row-start-1"/);
+  assert.match(gridSource, /Wedding: "lg:col-start-4 lg:row-start-1"/);
+  assert.match(gridSource, /"Bridal Shower": "lg:col-start-1 lg:row-start-2"/);
+  assert.match(gridSource, /"Baby Shower": "lg:col-start-2 lg:row-start-2"/);
+  assert.match(gridSource, /"Game Day": "lg:col-start-3 lg:row-start-2"/);
   assert.match(gridSource, /sizeVariant/);
   assert.match(dataSource, /imagePath:/);
   assert.match(dataSource, /sizeVariant: "feature"/);
@@ -78,11 +114,11 @@ test("studio category tiles are image-backed and layout-driven", () => {
   assert.match(dataSource, /name: "Custom Invite"/);
   assert.match(
     dataSource,
-    /name: "Bridal Shower"[\s\S]*name: "Baby Shower"[\s\S]*sizeVariant: "wide"/,
+    /name: "Bridal Shower"[\s\S]*name: "Baby Shower"[\s\S]*sizeVariant: "standard"/,
   );
   assert.match(
     dataSource,
-    /name: "Baby Shower"[\s\S]*sizeVariant: "wide"[\s\S]*name: "Field Trip\/Day"[\s\S]*sizeVariant: "standard"/,
+    /name: "Baby Shower"[\s\S]*sizeVariant: "standard"[\s\S]*name: "Field Trip\/Day"[\s\S]*sizeVariant: "standard"/,
   );
   assert.match(
     dataSource,

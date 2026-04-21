@@ -41,6 +41,7 @@ import {
   inferBirthdayGenderFromName,
   inputValue,
   pickFirst,
+  refreshLiveCardInvitationData,
   resolveStudioGenerationSurface,
 } from "./studio-workspace-builders";
 import {
@@ -342,6 +343,10 @@ function mergeParsedFlyerDetails(
   return next;
 }
 
+function deriveStudioUploadTitle(fileName: string): string {
+  return clean(fileName.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " "));
+}
+
 async function parseStudioFlyerDetails(file: File): Promise<{
   parsedDetails: Partial<EventDetails>;
   parsedCategory: InviteCategory | null;
@@ -431,8 +436,9 @@ export default function StudioWorkspace() {
   const [isDesktopLiveCardViewport, setIsDesktopLiveCardViewport] = useState(false);
   const [isMobileEditorViewport, setIsMobileEditorViewport] = useState(false);
   const [mobileEditorPane, setMobileEditorPane] = useState<"composer" | "preview">("composer");
-  const [isFlyerUploading, setIsFlyerUploading] = useState(false);
+  const [isInvitationUploading, setIsInvitationUploading] = useState(false);
   const [isSubjectPhotoUploading, setIsSubjectPhotoUploading] = useState(false);
+  const [invitationUploadError, setInvitationUploadError] = useState<string | null>(null);
   const [flyerUploadError, setFlyerUploadError] = useState<string | null>(null);
   const [subjectPhotoUploadError, setSubjectPhotoUploadError] = useState<string | null>(null);
   const liveCardHistoryEntryActiveRef = useRef(false);
@@ -727,75 +733,117 @@ export default function StudioWorkspace() {
     );
   }, [details.category, details.gender, details.name]);
 
-  async function handleUploadFlyer(file: File) {
-    const validationError = validateClientUploadFile(file, "header");
-    if (validationError) {
-      setFlyerUploadError(validationError);
+  async function handleCategoryStepUpload(file: File) {
+    if (!confirmDiscardCurrentProject("Discard the current Studio project and upload a new invitation?")) {
       return;
     }
 
-    setIsFlyerUploading(true);
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setInvitationUploadError(validationError);
+      return;
+    }
+
+    setIsInvitationUploading(true);
+    setInvitationUploadError(null);
     setFlyerUploadError(null);
     setSubjectPhotoUploadError(null);
+    setGenerationNote(null);
 
     try {
       const [uploadResult, parseResult] = await Promise.allSettled([
-        uploadMediaFile({ file, usage: "header" }),
+        uploadMediaFile({ file, usage: "attachment" }),
         parseStudioFlyerDetails(file),
       ]);
 
       if (uploadResult.status !== "fulfilled") {
         throw uploadResult.reason instanceof Error
           ? uploadResult.reason
-          : new Error("Unable to upload the flyer.");
+          : new Error("Unable to upload the invitation.");
       }
 
-      const flyerUrl =
+      const previewUrl =
         clean(uploadResult.value.stored.display?.url) ||
+        clean(uploadResult.value.eventMedia.attachment?.previewImageUrl) ||
         clean(uploadResult.value.eventMedia.thumbnail) ||
         "";
-      const flyerPreviewUrl =
-        clean(uploadResult.value.stored.thumb?.url) ||
-        clean(uploadResult.value.stored.display?.url) ||
-        clean(uploadResult.value.eventMedia.thumbnail) ||
-        "";
+      const sourceUrl =
+        clean(uploadResult.value.stored.source?.url) ||
+        clean(uploadResult.value.eventMedia.attachment?.dataUrl) ||
+        previewUrl;
 
-      if (!flyerUrl) {
-        throw new Error("Unable to prepare the uploaded flyer.");
+      if (!previewUrl || !sourceUrl) {
+        throw new Error("Unable to prepare the uploaded invitation.");
       }
 
-      setDetails((prev) => {
-        const nextBase: EventDetails = {
-          ...prev,
-          sourceMediaMode: "flyer",
-          sourceFlyerUrl: flyerUrl,
-          sourceFlyerName: file.name,
-          sourceFlyerPreviewUrl: flyerPreviewUrl || flyerUrl,
-          guestImageUrls: [],
-        };
-        if (parseResult.status !== "fulfilled") {
-          return nextBase;
-        }
-        return mergeParsedFlyerDetails(
-          nextBase,
-          parseResult.value.parsedDetails,
-          parseResult.value.parsedCategory,
-        );
+      const parsedCategory = parseResult.status === "fulfilled" ? parseResult.value.parsedCategory : null;
+      const nextCategory = parsedCategory || "Custom Invite";
+      const uploadTitle = deriveStudioUploadTitle(file.name);
+      const nextBase: EventDetails = {
+        ...createInitialDetails(),
+        category: nextCategory,
+        eventTitle: uploadTitle,
+        sourceMediaMode: "flyer",
+        sourceFlyerUrl: sourceUrl,
+        sourceFlyerName: file.name,
+        sourceFlyerPreviewUrl: previewUrl,
+      };
+      const nextDetails =
+        parseResult.status === "fulfilled"
+          ? mergeParsedFlyerDetails(
+              nextBase,
+              {
+                ...parseResult.value.parsedDetails,
+                eventTitle: clean(parseResult.value.parsedDetails.eventTitle) || uploadTitle,
+              },
+              parseResult.value.parsedCategory,
+            )
+          : nextBase;
+      const nextInvitationData = refreshLiveCardInvitationData(nextDetails, {
+        heroTextMode: "image",
       });
+      const nextItem: MediaItem = {
+        id: createId(),
+        type: "page",
+        url: previewUrl,
+        data: nextInvitationData,
+        theme: pickFirst(nextInvitationData.title, nextDetails.eventTitle, `${nextDetails.category} Invite`),
+        status: "ready",
+        details: nextDetails,
+        createdAt: new Date().toISOString(),
+        positions: { ...EMPTY_POSITIONS },
+      };
+
+      setDetails(nextDetails);
+      upsertLibraryItem(nextItem);
+      setCurrentProject(nextItem);
+      setActivePage(nextItem);
+      setPreviewOrigin("library");
+      setCurrentProjectPreviewTab("none");
+      setActiveTab("none");
+      setMobileEditorPane("composer");
+      setIsDesignMode(false);
+      setIsEditPanelOpen(false);
+      setStudioVisualDraft(null);
+      setSelectedImage(null);
+      setCopySuccess(false);
+      setSharingId(null);
+      setIsLiveCardToolsDrawerOpen(false);
+      navigateWorkspace("library");
 
       if (parseResult.status !== "fulfilled") {
         setFlyerUploadError(
-          "Flyer uploaded, but Event Details could not be read. Add Event Details manually, and add a Design Idea if you want to steer the look.",
+          "Invitation uploaded, but Event Details could not be read. Review the live card and adjust details manually if needed.",
         );
       }
     } catch (error) {
-      setFlyerUploadError(
+      setInvitationUploadError(
         error instanceof Error && clean(error.message)
           ? clean(error.message)
-          : "Unable to upload that flyer right now.",
+          : "Unable to upload that invitation right now.",
       );
     } finally {
-      setIsFlyerUploading(false);
+      setIsInvitationUploading(false);
     }
   }
 
@@ -958,6 +1006,7 @@ export default function StudioWorkspace() {
     setIsLiveCardToolsDrawerOpen(false);
     setActiveTab("none");
     setIsDesignMode(false);
+    setInvitationUploadError(null);
     if (activePage?.id === currentProject?.id) {
       setActivePage(null);
       setPreviewOrigin(null);
@@ -1575,11 +1624,14 @@ export default function StudioWorkspace() {
       return;
     }
     clearCurrentProject({ resetDetails: true });
+    setFlyerUploadError(null);
+    setSubjectPhotoUploadError(null);
     setPreviewOrigin(null);
     navigateWorkspace("create", "type");
   }
 
   function handleCategorySelect(category: InviteCategory) {
+    setInvitationUploadError(null);
     setDetails((prev) => ({
       ...prev,
       category,
@@ -1613,11 +1665,12 @@ export default function StudioWorkspace() {
   return (
     <>
       <StudioWorkspaceShell
-      activeView={view}
-      onViewChange={handleWorkspaceViewChange}
-      librarySyncError={librarySyncError}
-      showLibrarySyncError={sessionStatus === "authenticated"}
-      onRetryLibrarySync={retryLibrarySync}
+        activeView={view}
+        allowDesktopDocumentFlow={view === "create" && createStep === "type"}
+        onViewChange={handleWorkspaceViewChange}
+        librarySyncError={librarySyncError}
+        showLibrarySyncError={sessionStatus === "authenticated"}
+        onRetryLibrarySync={retryLibrarySync}
       >
         {view === "create" ? (
           <StudioCreateFlow
@@ -1628,6 +1681,9 @@ export default function StudioWorkspace() {
               <StudioCategoryStep
                 details={details}
                 onSelectCategory={handleCategorySelect}
+                onUploadInvitation={handleCategoryStepUpload}
+                isInvitationUploading={isInvitationUploading}
+                invitationUploadError={invitationUploadError}
               />
             }
             detailsContent={
@@ -1637,11 +1693,9 @@ export default function StudioWorkspace() {
                 onOpenEditorStep={openEditorStep}
                 isFormValid={formValid}
                 editingId={currentProject?.id ?? null}
-                onUploadFlyer={handleUploadFlyer}
                 onRemoveFlyer={handleRemoveFlyer}
                 onUploadSubjectPhotos={handleUploadSubjectPhotos}
                 onRemoveSubjectPhoto={handleRemoveSubjectPhoto}
-                isFlyerUploading={isFlyerUploading}
                 isSubjectPhotoUploading={isSubjectPhotoUploading}
                 flyerUploadError={flyerUploadError}
                 subjectPhotoUploadError={subjectPhotoUploadError}

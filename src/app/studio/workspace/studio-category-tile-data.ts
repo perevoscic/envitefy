@@ -77,7 +77,7 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     imagePath:
       "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop",
     themeColor: "#9B7BD9",
-    sizeVariant: "wide",
+    sizeVariant: "standard",
     overlayStrength: "light",
     textTone: "dark",
     imagePositionClassName: "object-center",

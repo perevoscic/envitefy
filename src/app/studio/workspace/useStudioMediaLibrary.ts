@@ -55,10 +55,15 @@ export function useStudioMediaLibrary() {
   const [syncRetryTick, setSyncRetryTick] = useState(0);
   const studioHistorySyncAttemptedRef = useRef(new Set<string>());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mediaListRef = useRef<MediaItem[]>([]);
 
   const retryLibrarySync = useCallback(() => {
     setSyncRetryTick((n) => n + 1);
   }, []);
+
+  useEffect(() => {
+    mediaListRef.current = mediaList;
+  }, [mediaList]);
 
   useEffect(() => {
     if (status === "loading") {
@@ -100,7 +105,10 @@ export function useStudioMediaLibrary() {
 
       if (cancelled) return;
 
-      const merged = mergeStudioLibraries(local, server);
+      const merged = mergeStudioLibraries(
+        mergeStudioLibraries(local, mediaListRef.current),
+        server,
+      );
       setMediaList(merged);
 
       if (!getOk) {

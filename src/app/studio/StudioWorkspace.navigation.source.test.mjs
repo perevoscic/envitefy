@@ -28,8 +28,14 @@ test("studio workspace splits create and library at the top level and uses query
   assert.match(shell, /Library/);
   assert.match(shell, /selected=\{activeView\}/);
   assert.match(shell, /setSelected=\{handleSelectedChange\}/);
-  assert.match(shell, /<div className="lg:min-h-0 lg:flex-1">/);
-  assert.doesNotMatch(shell, /<div className="lg:flex lg:min-h-0 lg:flex-1">/);
+  assert.match(workspace, /allowDesktopDocumentFlow=\{view === "create" && createStep === "type"\}/);
+  assert.match(shell, /allowDesktopDocumentFlow\?: boolean;/);
+  assert.match(shell, /allowDesktopDocumentFlow = false/);
+  assert.match(shell, /allowDesktopDocumentFlow \? "" : "lg:h-screen lg:overflow-hidden"/);
+  assert.match(
+    shell,
+    /allowDesktopDocumentFlow[\s\S]*"lg:flex lg:flex-col"[\s\S]*"lg:flex lg:min-h-0 lg:flex-1 lg:flex-col"/,
+  );
   assert.doesNotMatch(shell, /const \[selected, setSelected\] = useState<string>\(activeView\)/);
   assert.doesNotMatch(shell, /useEffect\(\(\) => \{\s*setSelected\(activeView\);/);
   assert.match(createFlow, /if \(createStep === "type"\) \{/);

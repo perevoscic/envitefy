@@ -17,6 +17,7 @@ test("library tab uses infinite scroll batches with an intersection observer sen
   assert.match(source, /const libraryVisibleItems = useMemo\(/);
   assert.match(source, /return mediaList\.slice\(0, visibleCount\);/);
   assert.match(source, /const hasMoreLibraryItems = libraryVisibleItems\.length < mediaList\.length;/);
+  assert.match(source, /className="mx-auto w-full max-w-\[1400px\] space-y-8 text-\[#111111\]"/);
   assert.match(source, /window\.innerWidth < 768/);
   assert.match(source, /grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5/);
   assert.match(source, /new IntersectionObserver\(/);

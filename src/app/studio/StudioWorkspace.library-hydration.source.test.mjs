@@ -16,6 +16,12 @@ test("library hydration restores persisted loading items instead of leaving them
   assert.match(hook, /readLocalStorageItems/);
   assert.match(hook, /\/api\/studio\/library/);
   assert.match(hook, /mergeStudioLibraries/);
+  assert.match(hook, /const mediaListRef = useRef<MediaItem\[\]>\(\[\]\);/);
+  assert.match(hook, /mediaListRef\.current = mediaList;/);
+  assert.match(
+    hook,
+    /const merged = mergeStudioLibraries\(\s*mergeStudioLibraries\(local, mediaListRef\.current\),\s*server,\s*\);/s,
+  );
   assert.match(hook, /putStudioLibraryRemote/);
   assert.match(hook, /canonicalizeLibraryPayloadForCompare/);
   assert.match(remote, /prepareStudioLibraryItemsForRemote/);
