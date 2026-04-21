@@ -96,8 +96,8 @@ export function StudioCategoryTile({
         <div className={`absolute inset-0 ${overlayClassByStrength[category.overlayStrength]}`} />
       </div>
 
-      <div className="absolute inset-0 flex flex-col justify-end pl-3 pr-4 pb-3 pt-10 text-left sm:p-8">
-        <div className="w-full max-w-[280px] space-y-2 self-start">
+      <div className="absolute inset-0 flex flex-col justify-end pl-3 pr-4 pb-3 pt-10 text-left sm:px-8 sm:pb-4 sm:pt-8 lg:pb-3">
+        <div className="w-full max-w-[280px] space-y-2 self-start sm:space-y-1">
           <p
             className="font-[var(--font-josefin-sans)] text-[1rem] font-bold uppercase tracking-[0.13em] leading-none !text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-[1.08rem] lg:text-[1.16rem]"
           >

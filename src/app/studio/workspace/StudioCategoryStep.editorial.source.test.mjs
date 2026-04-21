@@ -50,7 +50,7 @@ test("studio category step uses editorial tiles and forwards tile clicks through
   assert.doesNotMatch(gridSource, /index=\{categories\.length\}/);
 
   assert.match(uploadTileSource, /Upload Your Invite/);
-  assert.match(uploadTileSource, /Turn an existing invite, flyer, or PDF into a live card\./);
+  assert.match(uploadTileSource, /Turn an existing invite int a live card/);
   assert.match(uploadTileSource, /Images, PDFs/);
   assert.doesNotMatch(uploadTileSource, /imagePath/);
 });

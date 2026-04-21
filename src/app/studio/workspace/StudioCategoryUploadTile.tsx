@@ -48,15 +48,8 @@ export function StudioCategoryUploadTile({
           Upload Your Invite
         </p>
         <p className="line-clamp-2 max-w-[12rem] text-[10.5px] leading-[1.25] text-[#625775] sm:max-w-[15rem] sm:text-[13px] sm:leading-[1.35]">
-          Turn an existing invite, flyer, or PDF into a live card.
+          Turn an existing invite int a live card
         </p>
-      </div>
-
-      <div className="relative hidden items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8b74c8] sm:flex">
-        <span>{isUploading ? "Working..." : "Open file"}</span>
-        <span className="transition-transform duration-300 group-hover:translate-x-0.5">
-          {isUploading ? "Please wait" : "Start"}
-        </span>
       </div>
     </motion.button>
   );
