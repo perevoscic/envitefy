@@ -36,26 +36,58 @@ type StudioTextAreaFieldProps = {
 const studioMutedFieldIconBaseClass =
   "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-[#c8d2e2]";
 
-function studioMutedFieldIconClass(fieldKey: keyof EventDetails, renderedInputType: string) {
+function studioMutedFieldIconClass(
+  fieldKey: keyof EventDetails,
+  renderedInputType: string,
+  isMobileViewport: boolean,
+) {
   const positionClass =
-    fieldKey === "eventDate" || renderedInputType === "date" ? "right-3" : "right-0";
+    fieldKey === "eventDate" || renderedInputType === "date"
+      ? isMobileViewport
+        ? "right-0"
+        : "right-3"
+      : "right-0";
   return `${studioMutedFieldIconBaseClass} ${positionClass}`;
 }
 
-function studioPlaceholderRightClass(fieldKey: keyof EventDetails, renderedInputType: string) {
+function studioPlaceholderRightClass(
+  fieldKey: keyof EventDetails,
+  renderedInputType: string,
+  isMobileViewport: boolean,
+) {
   if (!usesIconInput(fieldKey, renderedInputType)) return "right-0";
-  return fieldKey === "eventDate" || renderedInputType === "date" ? "right-7" : "right-8";
+  return fieldKey === "eventDate" || renderedInputType === "date"
+    ? isMobileViewport
+      ? "right-5"
+      : "right-7"
+    : "right-8";
 }
 
-function renderFieldIcon(fieldKey: keyof EventDetails, renderedInputType: string) {
+function renderFieldIcon(
+  fieldKey: keyof EventDetails,
+  renderedInputType: string,
+  isMobileViewport: boolean,
+) {
   if (fieldKey === "location") {
-    return <MapPin className={studioMutedFieldIconClass(fieldKey, renderedInputType)} />;
+    return (
+      <MapPin
+        className={studioMutedFieldIconClass(fieldKey, renderedInputType, isMobileViewport)}
+      />
+    );
   }
   if (fieldKey === "eventDate" || renderedInputType === "date") {
-    return <Calendar className={studioMutedFieldIconClass(fieldKey, renderedInputType)} />;
+    return (
+      <Calendar
+        className={studioMutedFieldIconClass(fieldKey, renderedInputType, isMobileViewport)}
+      />
+    );
   }
   if (renderedInputType === "time") {
-    return <Clock3 className={studioMutedFieldIconClass(fieldKey, renderedInputType)} />;
+    return (
+      <Clock3
+        className={studioMutedFieldIconClass(fieldKey, renderedInputType, isMobileViewport)}
+      />
+    );
   }
   return null;
 }
@@ -97,10 +129,29 @@ function formatStudioMonthDayValue(value: string): string {
   return normalizeStudioMonthDayInput(trimmed);
 }
 
-function fieldWidthClass(field: SupportedField) {
-  if (field.key === "eventDate") return "max-w-[6.6rem] sm:max-w-[7rem]";
-  if (field.key === "startTime") return "max-w-[8.6rem] sm:max-w-[9rem]";
+function fieldWidthClass(field: SupportedField, isMobileViewport: boolean) {
+  if (field.key === "eventDate") {
+    return isMobileViewport ? "max-w-[7.85rem] sm:max-w-[7rem]" : "max-w-[6.6rem] sm:max-w-[7rem]";
+  }
+  if (field.key === "startTime") {
+    return isMobileViewport ? "max-w-[8.3rem] sm:max-w-[9rem]" : "max-w-[8.6rem] sm:max-w-[9rem]";
+  }
   if ("compact" in field && field.compact) return "max-w-[7.5rem]";
+  return "";
+}
+
+function mobileCompactFieldTextClass(
+  fieldKey: keyof EventDetails,
+  renderedInputType: string,
+  isMobileViewport: boolean,
+) {
+  if (!isMobileViewport) return "";
+  if (fieldKey === "eventDate" || renderedInputType === "date") {
+    return "text-[1.4rem] sm:text-2xl";
+  }
+  if (fieldKey === "startTime" || renderedInputType === "time") {
+    return "text-[1.32rem] tracking-[-0.01em] sm:text-2xl sm:tracking-normal";
+  }
   return "";
 }
 
@@ -163,6 +214,11 @@ export function StudioFieldGrid({
           renderedInputType === "time"
             ? iconInputClass.replace("pr-8", "pr-0")
             : iconInputClass;
+        const compactMobileTextClass = mobileCompactFieldTextClass(
+          field.key,
+          renderedInputType,
+          isMobileViewport,
+        );
         const value = isMonthDayOnlyField
           ? renderedInputType === "date"
             ? formatStudioMonthDayPickerValue(rawValue)
@@ -225,8 +281,8 @@ export function StudioFieldGrid({
                 </span>
               </label>
             ) : (
-              <div className={`group relative ${fieldWidthClass(field)}`}>
-                {renderFieldIcon(field.key, renderedInputType)}
+              <div className={`group relative ${fieldWidthClass(field, isMobileViewport)}`}>
+                {renderFieldIcon(field.key, renderedInputType, isMobileViewport)}
                 <input
                   type={renderedInputType}
                   placeholder={renderedInputType === "text" ? "" : renderedPlaceholder}
@@ -238,7 +294,7 @@ export function StudioFieldGrid({
                           hidesNativePickerIndicator
                             ? "appearance-none [&::-webkit-calendar-picker-indicator]:pointer-events-none [&::-webkit-calendar-picker-indicator]:opacity-0"
                             : ""
-                        } ${renderedInputType === "time" ? "text-[1.65rem] sm:text-2xl" : ""} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
+                        } ${compactMobileTextClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                       : `${inputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                   }
                   style={
@@ -284,7 +340,7 @@ export function StudioFieldGrid({
                 />
                 {renderedInputType === "text" && isEmptyValue && renderedPlaceholder ? (
                   <span
-                    className={`pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[#d9dfe9] transition-opacity group-focus-within:opacity-0 ${studioPlaceholderRightClass(field.key, renderedInputType)}`}
+                    className={`pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[#d9dfe9] transition-opacity group-focus-within:opacity-0 ${studioPlaceholderRightClass(field.key, renderedInputType, isMobileViewport)}`}
                   >
                     {renderedPlaceholder}
                   </span>

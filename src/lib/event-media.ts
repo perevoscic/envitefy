@@ -164,7 +164,7 @@ export function isAppOwnedBlobUrl(value: string): boolean {
   }
 }
 
-function extractAppOwnedBlobRef(value: string): string | null {
+export function extractAppOwnedBlobProxyPathname(value: string): string | null {
   try {
     const parsed = new URL(value, "https://envitefy.com");
     if (parsed.pathname.startsWith("/api/blob/")) {
@@ -184,6 +184,12 @@ function extractAppOwnedBlobRef(value: string): string | null {
     }
   } catch {}
 
+  return null;
+}
+
+function extractAppOwnedBlobRef(value: string): string | null {
+  const proxyPathname = extractAppOwnedBlobProxyPathname(value);
+  if (proxyPathname) return proxyPathname;
   return isAppOwnedBlobUrl(value) ? value : null;
 }
 

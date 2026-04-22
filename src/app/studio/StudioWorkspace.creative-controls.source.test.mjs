@@ -38,4 +38,7 @@ test("studio preview shows the final live card inline instead of an open-live-ca
   assert.match(phonePane, /aspect-\[9\/16\]/);
   assert.doesNotMatch(phonePane, /Open Live Card/);
   assert.doesNotMatch(phonePane, /Open current live card/);
+  assert.doesNotMatch(phonePane, /currentProjectHasUnsavedChanges \? "Unsaved" : "Saved"/);
+  assert.doesNotMatch(phonePane, /text-emerald-600/);
+  assert.doesNotMatch(phonePane, /text-sky-600/);
 });

@@ -1,7 +1,10 @@
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
-import { absoluteUrl } from "@/lib/absolute-url";
 import { STUDIO_LIVE_CARD_RESPONSE_SCHEMA } from "@/lib/studio/live-card-schema";
+import {
+  resolveStudioSourceImage,
+  type StudioResolvedSourceImage,
+} from "@/lib/studio/source-image";
 import {
   normalizeLiveCardMetadata,
   type StudioGenerationError,
@@ -25,11 +28,6 @@ type OpenAiTextResult =
 type OpenAiImageResult =
   | { ok: true; imageDataUrl: string; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] };
-
-type InlineStudioImage = {
-  mimeType: string;
-  data: string;
-};
 
 const OPENAI_LIVE_CARD_RESPONSE_FORMAT = {
   type: "json_schema",
@@ -133,37 +131,8 @@ function extensionForMimeType(mimeType: string): string {
   return "png";
 }
 
-async function resolveInlineImageSource(value: string): Promise<InlineStudioImage | null> {
-  const trimmed = value.trim();
-  const match = trimmed.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\r\n]+)$/);
-  if (match) {
-    return {
-      mimeType: match[1],
-      data: match[2].replace(/\s+/g, ""),
-    };
-  }
-
-  const resolvedUrl = trimmed.startsWith("/") ? await absoluteUrl(trimmed) : trimmed;
-  if (!/^https?:\/\//i.test(resolvedUrl)) return null;
-
-  try {
-    const response = await fetch(resolvedUrl);
-    if (!response.ok) return null;
-    const mimeTypeHeader = safeString(response.headers.get("content-type"));
-    const mimeType = mimeTypeHeader.split(";")[0]?.trim() || "image/png";
-    if (!mimeType.startsWith("image/")) return null;
-    const bytes = Buffer.from(await response.arrayBuffer());
-    return {
-      mimeType,
-      data: bytes.toString("base64"),
-    };
-  } catch {
-    return null;
-  }
-}
-
 async function toUploadableImage(
-  image: InlineStudioImage,
+  image: StudioResolvedSourceImage,
   prefix: string,
   index: number,
 ) {
@@ -172,6 +141,12 @@ async function toUploadableImage(
     type: image.mimeType,
   });
 }
+
+export const openAiStudioDeps = {
+  getOpenAiClient,
+  resolveStudioSourceImage,
+  toUploadableImage,
+};
 
 async function postStructuredOpenAiContent(
   model: string,
@@ -220,7 +195,7 @@ async function postStructuredOpenAiContent(
 async function postOpenAiImageGeneration(
   model: string,
   prompt: string,
-  referenceImages?: InlineStudioImage[],
+  referenceImages?: StudioResolvedSourceImage[],
 ): Promise<
   | { ok: true; imageDataUrl: string; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
@@ -329,12 +304,12 @@ async function postOpenAiImageEdit(
   model: string,
   prompt: string,
   sourceImageDataUrl: string,
-  referenceImages?: InlineStudioImage[],
+  referenceImages?: StudioResolvedSourceImage[],
 ): Promise<
   | { ok: true; imageDataUrl: string; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
 > {
-  const sourceImage = await resolveInlineImageSource(sourceImageDataUrl);
+  const sourceImage = await openAiStudioDeps.resolveStudioSourceImage(sourceImageDataUrl);
   if (!sourceImage) {
     return {
       ok: false,
@@ -348,11 +323,11 @@ async function postOpenAiImageEdit(
   }
 
   const uploadables = [
-    await toUploadableImage(sourceImage, "studio-openai-edit-source", 0),
+    await openAiStudioDeps.toUploadableImage(sourceImage, "studio-openai-edit-source", 0),
     ...(
       await Promise.all(
         (referenceImages || []).map((image, index) =>
-          toUploadableImage(image, "studio-openai-edit-reference", index),
+          openAiStudioDeps.toUploadableImage(image, "studio-openai-edit-reference", index),
         ),
       )
     ),
@@ -364,7 +339,7 @@ async function postOpenAiImageEdit(
       : [];
 
   try {
-    const client = getOpenAiClient();
+    const client = openAiStudioDeps.getOpenAiClient();
     const response = await client.images.edit({
       model,
       image: uploadables,
@@ -443,7 +418,7 @@ export async function generateInvitationTextWithOpenAi(prompt: string): Promise<
 
 export async function generateInvitationImageWithOpenAi(
   prompt: string,
-  referenceImages?: InlineStudioImage[],
+  referenceImages?: StudioResolvedSourceImage[],
 ): Promise<OpenAiImageResult> {
   return postOpenAiImageGeneration(resolveImageModel(), prompt, referenceImages);
 }
@@ -451,7 +426,7 @@ export async function generateInvitationImageWithOpenAi(
 export async function editInvitationImageWithOpenAi(
   prompt: string,
   sourceImageDataUrl: string,
-  referenceImages?: InlineStudioImage[],
+  referenceImages?: StudioResolvedSourceImage[],
 ): Promise<OpenAiImageResult> {
   return postOpenAiImageEdit(
     resolveImageEditModel(),

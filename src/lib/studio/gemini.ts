@@ -1,6 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
-import { absoluteUrl } from "@/lib/absolute-url";
 import { STUDIO_LIVE_CARD_RESPONSE_SCHEMA } from "@/lib/studio/live-card-schema";
+import {
+  resolveStudioSourceImage,
+  type StudioResolvedSourceImage,
+} from "@/lib/studio/source-image";
 import {
   normalizeLiveCardMetadata,
   type StudioGenerationError,
@@ -174,36 +177,10 @@ function extractImageDataUrlFromGeminiResponse(response: any): string | null {
   return null;
 }
 
-async function resolveInlineImageSource(
-  value: string,
-): Promise<{ mimeType: string; data: string } | null> {
-  const trimmed = value.trim();
-  const match = trimmed.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\r\n]+)$/);
-  if (match) {
-    return {
-      mimeType: match[1],
-      data: match[2].replace(/\s+/g, ""),
-    };
-  }
-
-  const resolvedUrl = trimmed.startsWith("/") ? await absoluteUrl(trimmed) : trimmed;
-  if (!/^https?:\/\//i.test(resolvedUrl)) return null;
-
-  try {
-    const response = await fetch(resolvedUrl);
-    if (!response.ok) return null;
-    const mimeTypeHeader = safeString(response.headers.get("content-type"));
-    const mimeType = mimeTypeHeader.split(";")[0]?.trim() || "image/png";
-    if (!mimeType.startsWith("image/")) return null;
-    const bytes = Buffer.from(await response.arrayBuffer());
-    return {
-      mimeType,
-      data: bytes.toString("base64"),
-    };
-  } catch {
-    return null;
-  }
-}
+export const geminiStudioDeps = {
+  getGeminiClient,
+  resolveStudioSourceImage,
+};
 
 async function postStructuredGeminiContent(
   model: string,
@@ -244,13 +221,13 @@ async function postGeminiImage(
   model: string,
   prompt: string,
   sourceImageDataUrl?: string,
-  referenceImages?: Array<{ mimeType: string; data: string }>,
+  referenceImages?: StudioResolvedSourceImage[],
 ): Promise<
   | { ok: true; response: any; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
 > {
   const sourceImage = sourceImageDataUrl
-    ? await resolveInlineImageSource(sourceImageDataUrl)
+    ? await geminiStudioDeps.resolveStudioSourceImage(sourceImageDataUrl)
     : null;
   if (sourceImageDataUrl && !sourceImage) {
     return {
@@ -284,7 +261,7 @@ async function postGeminiImage(
   parts.push({ text: prompt });
 
   try {
-    const client = getGeminiClient();
+    const client = geminiStudioDeps.getGeminiClient();
     const response = await client.models.generateContent({
       model,
       contents: [
@@ -354,7 +331,7 @@ export async function generateInvitationTextWithGemini(prompt: string): Promise<
 
 export async function generateInvitationImageWithGemini(
   prompt: string,
-  referenceImages?: Array<{ mimeType: string; data: string }>,
+  referenceImages?: StudioResolvedSourceImage[],
 ): Promise<GeminiImageResult> {
   const result = await postGeminiImage(resolveImageModel(), prompt, undefined, referenceImages);
   if (!result.ok) return result;
@@ -377,7 +354,7 @@ export async function generateInvitationImageWithGemini(
 export async function editInvitationImageWithGemini(
   prompt: string,
   sourceImageDataUrl: string,
-  referenceImages?: Array<{ mimeType: string; data: string }>,
+  referenceImages?: StudioResolvedSourceImage[],
 ): Promise<GeminiImageResult> {
   const result = await postGeminiImage(
     resolveImageEditModel(),

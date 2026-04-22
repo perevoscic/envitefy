@@ -10,11 +10,11 @@ function readSource(relPath) {
 test("studio gemini image prep accepts same-origin relative asset urls for edits", () => {
   const source = readSource("src/lib/studio/gemini.ts");
 
-  assert.match(source, /import \{ absoluteUrl \} from "@\/lib\/absolute-url";/);
   assert.match(
     source,
-    /const resolvedUrl = trimmed\.startsWith\("\/"\) \? await absoluteUrl\(trimmed\) : trimmed;/,
+    /import \{\s*resolveStudioSourceImage,\s*type StudioResolvedSourceImage,\s*\} from "@\/lib\/studio\/source-image";/s,
   );
-  assert.ok(source.includes('if (!/^https?:\\/\\//i.test(resolvedUrl)) return null;'));
-  assert.match(source, /const response = await fetch\(resolvedUrl\);/);
+  assert.match(source, /const sourceImage = sourceImageDataUrl\s*\?\s*await geminiStudioDeps\.resolveStudioSourceImage\(sourceImageDataUrl\)\s*:\s*null;/s);
+  assert.doesNotMatch(source, /absoluteUrl/);
+  assert.doesNotMatch(source, /resolveInlineImageSource/);
 });

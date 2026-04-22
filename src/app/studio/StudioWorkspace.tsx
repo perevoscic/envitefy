@@ -1045,24 +1045,6 @@ export default function StudioWorkspace() {
     saveWorkingProject(currentProject);
   }
 
-  function saveCurrentProjectAsImageToLibrary() {
-    if (!currentProjectWithVisualDraft || currentProjectWithVisualDraft.status !== "ready") return;
-    const imageUrl = clean(currentProjectDisplayUrl);
-    if (!imageUrl) return;
-
-    const imageItem: MediaItem = {
-      id: createId(),
-      type: "image",
-      url: imageUrl,
-      theme: `${getStudioShareTitle(currentProjectWithVisualDraft)} Image`,
-      status: "ready",
-      details: currentProjectWithVisualDraft.details,
-      createdAt: new Date().toISOString(),
-    };
-
-    upsertLibraryItem(imageItem);
-  }
-
   function prepareProjectForLibrarySave(project: MediaItem): MediaItem {
     const nextProject = applyStudioVisualDraft(project, studioVisualDraft);
     const existingSavedProject = mediaList.find((item) => item.id === nextProject.id);
@@ -1617,7 +1599,6 @@ export default function StudioWorkspace() {
   const currentProjectDisplayUrl = currentProjectWithVisualDraft
     ? getStudioImageDisplayUrl(currentProjectWithVisualDraft)
     : "";
-  const currentProjectSaveImageLabel = "Save Image Only";
 
   function openTypeStep() {
     if (!confirmDiscardCurrentProject("Discard the current Studio project and switch categories?")) {
@@ -1708,7 +1689,6 @@ export default function StudioWorkspace() {
                 currentProjectDisplayUrl={currentProjectDisplayUrl}
                 currentProjectHasUnsavedChanges={currentProjectHasUnsavedChanges}
                 currentProjectSaveLabel={currentProjectSaveLabel}
-                currentProjectSaveImageLabel={currentProjectSaveImageLabel}
                 savedCurrentProject={savedCurrentProject}
                 currentProjectPreviewTab={currentProjectPreviewTab}
                 setCurrentProjectPreviewTab={setCurrentProjectPreviewTab}
@@ -1722,7 +1702,6 @@ export default function StudioWorkspace() {
                 copySuccess={copySuccess}
                 generateMedia={generateMedia}
                 saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
-                saveCurrentProjectAsImageToLibrary={saveCurrentProjectAsImageToLibrary}
                 openCurrentLiveCardFullscreen={openCurrentLiveCardFullscreen}
                 showPromptComposer={() => setMobileEditorPane("composer")}
                 showPreviewPane={() => setMobileEditorPane("preview")}

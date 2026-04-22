@@ -66,7 +66,6 @@ export type StudioFormStepProps = {
   currentProjectDisplayUrl: string;
   currentProjectHasUnsavedChanges: boolean;
   currentProjectSaveLabel: string;
-  currentProjectSaveImageLabel: string;
   savedCurrentProject: MediaItem | null;
   currentProjectPreviewTab: ActiveTab;
   setCurrentProjectPreviewTab: Dispatch<SetStateAction<ActiveTab>>;
@@ -80,7 +79,6 @@ export type StudioFormStepProps = {
   copySuccess: boolean;
   generateMedia: (type: MediaType) => void;
   saveCurrentProjectToLibrary: () => void;
-  saveCurrentProjectAsImageToLibrary: () => void;
   openCurrentLiveCardFullscreen: () => void;
   showPromptComposer: () => void;
   showPreviewPane: () => void;
@@ -114,7 +112,6 @@ export function StudioFormStep({
   currentProjectDisplayUrl,
   currentProjectHasUnsavedChanges,
   currentProjectSaveLabel,
-  currentProjectSaveImageLabel,
   savedCurrentProject,
   currentProjectPreviewTab,
   setCurrentProjectPreviewTab,
@@ -128,10 +125,9 @@ export function StudioFormStep({
   copySuccess,
   generateMedia,
   saveCurrentProjectToLibrary,
-  saveCurrentProjectAsImageToLibrary,
   openCurrentLiveCardFullscreen,
   showPromptComposer,
-  showPreviewPane: _showPreviewPane,
+  showPreviewPane,
   shareCurrentProject,
   openCurrentImage,
   handleMediaImageLoadError,
@@ -327,7 +323,7 @@ export function StudioFormStep({
                 details={details}
                 setDetails={setDetails}
                 fields={mobileSharedLeadFields}
-                columnsClassName="grid grid-cols-[minmax(0,1fr)_minmax(9.5rem,1.08fr)] gap-x-6 gap-y-8"
+                columnsClassName="grid grid-cols-[minmax(7.75rem,1.12fr)_minmax(8.15rem,0.94fr)] gap-x-4 gap-y-8"
                 isMobileViewport={isMobileViewport}
               />
               {mobileSharedTrailingFields.length ? (
@@ -554,7 +550,7 @@ export function StudioFormStep({
               ? mobilePane === "composer"
                 ? "w-full"
                 : "hidden"
-              : "border-r border-[#eff3f8]"
+              : "lg:w-3/5 lg:flex-none lg:border-r lg:border-[#eff3f8]"
           }`}
         >
           <div className="flex-1 overflow-y-auto px-6 pb-32 pt-7 sm:px-8 lg:px-8 lg:pb-10 lg:pt-10">
@@ -579,19 +575,29 @@ export function StudioFormStep({
 
           {isMobileViewport ? (
             <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#edf1f7] bg-white/95 px-5 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-xl">
-              <button
-                type="button"
-                onClick={() => generateMedia("page")}
-                disabled={!isFormValid || isGenerating}
-                className="flex min-h-14 w-full items-center justify-center gap-3 rounded-[1.15rem] bg-[#563df0] px-6 text-[11px] font-semibold uppercase tracking-[0.05em] text-white shadow-[0_24px_40px_rgba(86,61,240,0.28)] transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isGenerating ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Wand2 className="h-4.5 w-4.5" />
-                )}
-                {liveCardActionLabel}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => generateMedia("page")}
+                  disabled={!isFormValid || isGenerating}
+                  className="flex min-h-14 shrink-0 items-center justify-center gap-3 rounded-[1.15rem] bg-[#563df0] px-4 text-[11px] font-semibold uppercase tracking-[0.05em] text-white shadow-[0_24px_40px_rgba(86,61,240,0.28)] transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Wand2 className="h-4.5 w-4.5" />
+                  )}
+                  {liveCardActionLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={showPreviewPane}
+                  className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-[1.15rem] border border-[#dfe5f2] bg-white px-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#31415f] shadow-[0_14px_30px_rgba(15,23,42,0.08)] transition-all active:scale-[0.99]"
+                >
+                  <Layout className="h-4 w-4" />
+                  Preview
+                </button>
+              </div>
             </div>
           ) : null}
         </section>
@@ -602,7 +608,7 @@ export function StudioFormStep({
               ? mobilePane === "preview"
                 ? "flex w-full flex-col bg-[#121a34]"
                 : "hidden"
-              : "flex w-1/2 shrink-0 flex-col bg-[#121a34]"
+              : "flex w-2/5 shrink-0 flex-col bg-[#121a34]"
           }`}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(116,132,216,0.15),_transparent_42%),radial-gradient(circle,_rgba(255,255,255,0.06)_1px,_transparent_1px)] [background-size:100%_100%,26px_26px]" />
@@ -643,7 +649,6 @@ export function StudioFormStep({
               currentProjectDisplayUrl={currentProjectDisplayUrl}
               currentProjectHasUnsavedChanges={currentProjectHasUnsavedChanges}
               currentProjectSaveLabel={currentProjectSaveLabel}
-              currentProjectSaveImageLabel={currentProjectSaveImageLabel}
               savedCurrentProject={savedCurrentProject}
               currentProjectPreviewTab={currentProjectPreviewTab}
               setCurrentProjectPreviewTab={setCurrentProjectPreviewTab}
@@ -652,7 +657,6 @@ export function StudioFormStep({
               sharingId={sharingId}
               copySuccess={copySuccess}
               saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
-              saveCurrentProjectAsImageToLibrary={saveCurrentProjectAsImageToLibrary}
               openCurrentLiveCardFullscreen={openCurrentLiveCardFullscreen}
               shareCurrentProject={shareCurrentProject}
               openCurrentImage={openCurrentImage}

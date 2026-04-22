@@ -19,7 +19,6 @@ type StudioPhonePreviewPaneProps = {
   currentProjectDisplayUrl: string;
   currentProjectHasUnsavedChanges: boolean;
   currentProjectSaveLabel: string;
-  currentProjectSaveImageLabel: string;
   savedCurrentProject: MediaItem | null;
   currentProjectPreviewTab: ActiveTab;
   setCurrentProjectPreviewTab: Dispatch<SetStateAction<ActiveTab>>;
@@ -28,7 +27,6 @@ type StudioPhonePreviewPaneProps = {
   sharingId: string | null;
   copySuccess: boolean;
   saveCurrentProjectToLibrary: () => void;
-  saveCurrentProjectAsImageToLibrary: () => void;
   openCurrentLiveCardFullscreen: () => void;
   shareCurrentProject: () => void;
   openCurrentImage: () => void;
@@ -41,7 +39,6 @@ export function StudioPhonePreviewPane({
   currentProjectDisplayUrl,
   currentProjectHasUnsavedChanges,
   currentProjectSaveLabel,
-  currentProjectSaveImageLabel,
   savedCurrentProject,
   currentProjectPreviewTab,
   setCurrentProjectPreviewTab,
@@ -50,7 +47,6 @@ export function StudioPhonePreviewPane({
   sharingId,
   copySuccess,
   saveCurrentProjectToLibrary,
-  saveCurrentProjectAsImageToLibrary,
   openCurrentLiveCardFullscreen,
   shareCurrentProject,
   openCurrentImage,
@@ -58,6 +54,10 @@ export function StudioPhonePreviewPane({
 }: StudioPhonePreviewPaneProps) {
   const hasPreview = Boolean(currentProjectWithVisualDraft);
   const showcasePreview = getStudioCategoryShowcasePreview(details.category);
+  const saveCurrentProjectDisabled =
+    !currentProjectWithVisualDraft ||
+    currentProjectWithVisualDraft.status !== "ready" ||
+    (!currentProjectHasUnsavedChanges && Boolean(savedCurrentProject));
 
   return (
     <div className="studio-phone-stage relative flex w-full flex-col items-center justify-start gap-4 pb-4 lg:h-full lg:justify-center lg:gap-5 lg:pb-0 lg:translate-x-6">
@@ -145,6 +145,14 @@ export function StudioPhonePreviewPane({
                           currentProjectWithVisualDraft.data?.interactiveMetadata?.shareNote
                         }
                       />
+                      <button
+                        type="button"
+                        onClick={saveCurrentProjectToLibrary}
+                        disabled={saveCurrentProjectDisabled}
+                        className="absolute right-3 top-5 z-20 inline-flex min-h-8.5 items-center justify-center rounded-full bg-white/94 px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.22em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_14px_34px_rgba(49,32,17,0.18)] backdrop-blur-md transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {currentProjectSaveLabel}
+                      </button>
                       <div className="pointer-events-none absolute inset-0 z-20 hidden items-center justify-center lg:flex">
                         <button
                           type="button"
@@ -169,22 +177,6 @@ export function StudioPhonePreviewPane({
                 </>
               )}
 
-              <div className="absolute right-3 top-5 z-20 rounded-full border border-white/40 bg-white/90 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink,#1A1A1A)]">
-                {currentProjectHasUnsavedChanges ? "Unsaved" : "Saved"}
-              </div>
-              <div className="absolute left-3 top-5 z-20 inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/90 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink,#1A1A1A)]">
-                {currentProjectWithVisualDraft.type === "page" ? (
-                  <>
-                    <Layout className="h-3 w-3 text-emerald-600" />
-                    Live Card
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon className="h-3 w-3 text-sky-600" />
-                    Image
-                  </>
-                )}
-              </div>
             </div>
           ) : (
             <StudioShowcaseLiveCard
@@ -197,43 +189,16 @@ export function StudioPhonePreviewPane({
           )}
         </div>
       </div>
-      {hasPreview && currentProjectWithVisualDraft ? (
+      {hasPreview && currentProjectWithVisualDraft?.type === "image" ? (
         <div className="flex w-full max-w-[20rem] flex-col items-center justify-center gap-2">
-          {currentProjectWithVisualDraft.type === "page" ? (
-            <div className="grid w-full grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={saveCurrentProjectAsImageToLibrary}
-                disabled={currentProjectWithVisualDraft.status !== "ready"}
-                className="inline-flex min-h-8.5 w-full items-center justify-center rounded-full border border-[var(--studio-card-border,#d8cdc0)] bg-white/96 px-2.5 py-1.5 text-[8px] font-semibold uppercase tracking-[0.24em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_10px_20px_rgba(15,23,42,0.1)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                {currentProjectSaveImageLabel}
-              </button>
-              <button
-                type="button"
-                onClick={saveCurrentProjectToLibrary}
-                disabled={
-                  currentProjectWithVisualDraft.status !== "ready" ||
-                  (!currentProjectHasUnsavedChanges && Boolean(savedCurrentProject))
-                }
-                className="inline-flex min-h-8.5 w-full items-center justify-center rounded-full bg-[var(--studio-ink,#1A1A1A)] px-2.5 py-1.5 text-[8px] font-semibold uppercase tracking-[0.24em] text-[var(--studio-paper,#F5F2EF)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                {currentProjectSaveLabel}
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={saveCurrentProjectToLibrary}
-              disabled={
-                currentProjectWithVisualDraft.status !== "ready" ||
-                (!currentProjectHasUnsavedChanges && Boolean(savedCurrentProject))
-              }
-              className="inline-flex min-h-10 w-full items-center justify-center rounded-full bg-[var(--studio-ink,#1A1A1A)] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-[var(--studio-paper,#F5F2EF)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {currentProjectSaveLabel}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={saveCurrentProjectToLibrary}
+            disabled={saveCurrentProjectDisabled}
+            className="inline-flex min-h-10 w-full items-center justify-center rounded-full bg-[var(--studio-ink,#1A1A1A)] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-[var(--studio-paper,#F5F2EF)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {currentProjectSaveLabel}
+          </button>
         </div>
       ) : null}
     </div>

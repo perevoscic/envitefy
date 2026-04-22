@@ -51,13 +51,26 @@ function buildThemeBlockedError(provider: StudioProvider): NonNullable<
   };
 }
 
+export const studioGenerationDeps = {
+  applyStudioThemeNormalization,
+  editInvitationImageWithGemini,
+  editInvitationImageWithOpenAi,
+  generateInvitationImageWithGemini,
+  generateInvitationImageWithOpenAi,
+  generateStudioLiveCardWithGemini,
+  generateStudioLiveCardWithOpenAi,
+  normalizeStudioTheme,
+  resolveStudioProvider,
+  resolveStudioReferenceImages,
+};
+
 export async function generateStudioInvitation(
   request: StudioGenerateRequest,
 ): Promise<StudioGenerateResponse> {
-  const provider = resolveStudioProvider();
+  const provider = studioGenerationDeps.resolveStudioProvider();
   const mode = request.mode || "both";
   const surface = request.surface || (mode === "both" || mode === "text" ? "page" : "image");
-  const themeNormalization = await normalizeStudioTheme({
+  const themeNormalization = await studioGenerationDeps.normalizeStudioTheme({
     provider,
     event: request.event,
     guidance: request.guidance,
@@ -65,7 +78,7 @@ export async function generateStudioInvitation(
   const normalizedRequest =
     themeNormalization.riskLevel === "block"
       ? request
-      : applyStudioThemeNormalization(request, themeNormalization);
+      : studioGenerationDeps.applyStudioThemeNormalization(request, themeNormalization);
   const warnings: string[] = [];
   let liveCard: StudioLiveCardMetadata | null = null;
   let invitation: StudioGenerateResponse["invitation"] = null;
@@ -96,8 +109,8 @@ export async function generateStudioInvitation(
     const textPrompt = buildLiveCardPrompt(normalizedRequest.event, normalizedRequest.guidance);
     const textResult =
       provider === "openai"
-        ? await generateStudioLiveCardWithOpenAi(textPrompt)
-        : await generateStudioLiveCardWithGemini(textPrompt);
+        ? await studioGenerationDeps.generateStudioLiveCardWithOpenAi(textPrompt)
+        : await studioGenerationDeps.generateStudioLiveCardWithGemini(textPrompt);
     warnings.push(...textResult.warnings);
     if (textResult.ok) {
       liveCard = textResult.liveCard;
@@ -110,7 +123,7 @@ export async function generateStudioInvitation(
 
   if (wantsImage) {
     const requestedRefCount = normalizedRequest.event.referenceImageUrls?.length ?? 0;
-    const referenceImages = await resolveStudioReferenceImages(
+    const referenceImages = await studioGenerationDeps.resolveStudioReferenceImages(
       normalizedRequest.event.referenceImageUrls,
     );
     if (requestedRefCount > 0 && referenceImages.length !== requestedRefCount) {
@@ -128,22 +141,22 @@ export async function generateStudioInvitation(
       );
       const imageResult = normalizedRequest.imageEdit?.sourceImageDataUrl
         ? provider === "openai"
-          ? await editInvitationImageWithOpenAi(
+          ? await studioGenerationDeps.editInvitationImageWithOpenAi(
               imagePrompt,
               normalizedRequest.imageEdit.sourceImageDataUrl,
               referenceImages.length > 0 ? referenceImages : undefined,
             )
-          : await editInvitationImageWithGemini(
+          : await studioGenerationDeps.editInvitationImageWithGemini(
               imagePrompt,
               normalizedRequest.imageEdit.sourceImageDataUrl,
               referenceImages.length > 0 ? referenceImages : undefined,
             )
         : provider === "openai"
-          ? await generateInvitationImageWithOpenAi(
+          ? await studioGenerationDeps.generateInvitationImageWithOpenAi(
               imagePrompt,
               referenceImages.length > 0 ? referenceImages : undefined,
             )
-          : await generateInvitationImageWithGemini(
+          : await studioGenerationDeps.generateInvitationImageWithGemini(
               imagePrompt,
               referenceImages.length > 0 ? referenceImages : undefined,
             );
