@@ -2,7 +2,6 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Activity,
   CheckCircle2,
   Download,
   Image as ImageIcon,
@@ -140,7 +139,7 @@ export function StudioLibraryStep({
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="mx-auto w-full max-w-[1400px] space-y-8 text-[#111111]"
+      className="mx-auto w-full max-w-[1400px] space-y-8 text-[#111111] lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pb-12"
     >
       {mediaList.length === 0 ? (
         <div className="rounded-[2rem] border border-dashed border-black/10 bg-[#f7f8fb] py-24 text-center shadow-[0_20px_55px_rgba(15,23,42,0.05)]">
@@ -298,20 +297,20 @@ export function StudioLibraryStep({
                             event.stopPropagation();
                             deleteMedia(item);
                           }}
-                          className="absolute left-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/8 bg-white/82 text-[#ef4444] shadow-[0_10px_24px_rgba(15,23,42,0.12)] backdrop-blur-md transition-all hover:scale-105 hover:bg-white"
+                          className={`absolute left-3 top-3 z-10 inline-flex items-center justify-center rounded-full border border-black/8 bg-white/82 text-[#ef4444] shadow-[0_10px_24px_rgba(15,23,42,0.12)] backdrop-blur-md transition-all hover:scale-105 hover:bg-white ${
+                            item.type === "page" ? "h-8 w-8" : "h-10 w-10"
+                          }`}
                           title="Delete from library"
                           aria-label={`Delete ${item.type === "page" ? "live card" : "image"} from library`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className={item.type === "page" ? "h-3.5 w-3.5" : "h-4 w-4"} />
                         </button>
 
                         <div className="absolute right-3 top-3 z-10 flex gap-2">
                           <span className={studioLibraryBadgeClass}>
-                            {item.type === "page" ? (
-                              <Activity className="h-3 w-3 text-[#007AFF]" />
-                            ) : (
+                            {item.type === "image" ? (
                               <ImageIcon className="h-3 w-3 text-[#007AFF]" />
-                            )}
+                            ) : null}
                             {item.type === "page" ? "Live Card" : "Image"}
                           </span>
                         </div>
