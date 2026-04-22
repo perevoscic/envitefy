@@ -33,22 +33,29 @@ type StudioTextAreaFieldProps = {
   id?: string;
 };
 
-const studioMutedFieldIconClass =
-  "pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#c8d2e2]";
+const studioMutedFieldIconBaseClass =
+  "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-[#c8d2e2]";
+
+function studioMutedFieldIconClass(fieldKey: keyof EventDetails, renderedInputType: string) {
+  const positionClass =
+    fieldKey === "eventDate" || renderedInputType === "date" ? "right-3" : "right-0";
+  return `${studioMutedFieldIconBaseClass} ${positionClass}`;
+}
+
+function studioPlaceholderRightClass(fieldKey: keyof EventDetails, renderedInputType: string) {
+  if (!usesIconInput(fieldKey, renderedInputType)) return "right-0";
+  return fieldKey === "eventDate" || renderedInputType === "date" ? "right-7" : "right-8";
+}
 
 function renderFieldIcon(fieldKey: keyof EventDetails, renderedInputType: string) {
   if (fieldKey === "location") {
-    return (
-      <MapPin className={studioMutedFieldIconClass} />
-    );
+    return <MapPin className={studioMutedFieldIconClass(fieldKey, renderedInputType)} />;
   }
   if (fieldKey === "eventDate" || renderedInputType === "date") {
-    return (
-      <Calendar className={studioMutedFieldIconClass} />
-    );
+    return <Calendar className={studioMutedFieldIconClass(fieldKey, renderedInputType)} />;
   }
   if (renderedInputType === "time") {
-    return <Clock3 className={studioMutedFieldIconClass} />;
+    return <Clock3 className={studioMutedFieldIconClass(fieldKey, renderedInputType)} />;
   }
   return null;
 }
@@ -91,7 +98,7 @@ function formatStudioMonthDayValue(value: string): string {
 }
 
 function fieldWidthClass(field: SupportedField) {
-  if (field.key === "eventDate") return "max-w-[7.35rem] sm:max-w-[8rem]";
+  if (field.key === "eventDate") return "max-w-[6.6rem] sm:max-w-[7rem]";
   if (field.key === "startTime") return "max-w-[8.6rem] sm:max-w-[9rem]";
   if ("compact" in field && field.compact) return "max-w-[7.5rem]";
   return "";
@@ -152,6 +159,10 @@ export function StudioFieldGrid({
           : "maxLength" in field
             ? field.maxLength
             : undefined;
+        const timeIconInputClass =
+          renderedInputType === "time"
+            ? iconInputClass.replace("pr-8", "pr-0")
+            : iconInputClass;
         const value = isMonthDayOnlyField
           ? renderedInputType === "date"
             ? formatStudioMonthDayPickerValue(rawValue)
@@ -223,11 +234,11 @@ export function StudioFieldGrid({
                   maxLength={renderedMaxLength}
                   className={
                     usesIconInput(field.key, renderedInputType)
-                      ? `${iconInputClass} ${
+                      ? `${timeIconInputClass} ${
                           hidesNativePickerIndicator
                             ? "appearance-none [&::-webkit-calendar-picker-indicator]:pointer-events-none [&::-webkit-calendar-picker-indicator]:opacity-0"
                             : ""
-                        } ${renderedInputType === "time" ? "pr-6 text-[1.65rem] sm:text-2xl" : ""} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
+                        } ${renderedInputType === "time" ? "text-[1.65rem] sm:text-2xl" : ""} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                       : `${inputClass} ${isEmptyValue ? "studio-editorial-empty" : "studio-editorial-filled"} font-[var(--font-playfair)]`
                   }
                   style={
@@ -273,9 +284,7 @@ export function StudioFieldGrid({
                 />
                 {renderedInputType === "text" && isEmptyValue && renderedPlaceholder ? (
                   <span
-                    className={`pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[#d9dfe9] transition-opacity group-focus-within:opacity-0 ${
-                      usesIconInput(field.key, renderedInputType) ? "right-8" : "right-0"
-                    }`}
+                    className={`pointer-events-none absolute left-0 top-1/2 block -translate-y-1/2 overflow-hidden whitespace-nowrap text-ellipsis font-[var(--font-playfair)] text-2xl italic text-[#d9dfe9] transition-opacity group-focus-within:opacity-0 ${studioPlaceholderRightClass(field.key, renderedInputType)}`}
                   >
                     {renderedPlaceholder}
                   </span>

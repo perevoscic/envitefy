@@ -345,7 +345,7 @@ export function StudioFormStep({
               details={details}
               setDetails={setDetails}
               fields={sharedPrimaryFields}
-              columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[11.5rem_10.75rem_minmax(0,1fr)]"
+              columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[8.5rem_9.25rem_minmax(0,1fr)] md:gap-x-4"
               isMobileViewport={isMobileViewport}
             />
           )}

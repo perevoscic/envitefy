@@ -29,6 +29,16 @@ const EXTRACTION_RESPONSE_FORMAT = {
         numberOfFrames: {
           anyOf: [{ type: "integer", minimum: 1, maximum: 24 }, { type: "null" }],
         },
+        characterLock: { type: "string" },
+        outfitLock: { type: "string" },
+        phoneLock: { type: "string" },
+        flyerLock: { type: "string" },
+        accessoryLock: { type: "string" },
+        locationLock: { type: "string" },
+        backgroundAnchors: { type: "string" },
+        screenLock: { type: "string" },
+        composition: { type: "string" },
+        mood: { type: "string" },
         mainCharacterDetails: { type: "string" },
         locationEnvironment: { type: "string" },
         propsKeyObjects: { type: "string" },
@@ -42,6 +52,16 @@ const EXTRACTION_RESPONSE_FORMAT = {
       },
       required: [
         "numberOfFrames",
+        "characterLock",
+        "outfitLock",
+        "phoneLock",
+        "flyerLock",
+        "accessoryLock",
+        "locationLock",
+        "backgroundAnchors",
+        "screenLock",
+        "composition",
+        "mood",
         "mainCharacterDetails",
         "locationEnvironment",
         "propsKeyObjects",
@@ -72,9 +92,10 @@ const FRAME_PLAN_RESPONSE_FORMAT = {
               title: { type: "string" },
               actionBeat: { type: "string" },
               cameraShot: { type: "string" },
-              prompt: { type: "string" },
+              composition: { type: "string" },
+              mood: { type: "string" },
             },
-            required: ["title", "actionBeat", "cameraShot", "prompt"],
+            required: ["title", "actionBeat", "cameraShot", "composition", "mood"],
           },
         },
       },
@@ -91,6 +112,16 @@ Options:
   --job <label>                    Optional run label used in the folder slug
   --frames <n>                    Override frame count
   --camera-format <vertical|horizontal|square>
+  --character-lock <text>
+  --outfit-lock <text>
+  --phone-lock <text>
+  --flyer-lock <text>
+  --accessory-lock <text>
+  --location-lock <text>
+  --background-anchors <text>
+  --screen-lock <text>
+  --composition <text>
+  --mood <text>
   --visual-style <text>
   --main-character-details <text>
   --location-environment <text>
@@ -153,7 +184,7 @@ async function extractSceneSpec(client, model, looseInput) {
       {
         role: "system",
         content:
-          "You extract a partial creative storyboard scene spec from a loose prompt. Fill only what the prompt supports with high confidence. Leave strings empty when unclear. If frame count is not clearly specified, return null. Preserve the user's creative intent.",
+          "You extract a partial creative storyboard scene spec from a loose prompt. Fill only what the prompt supports with high confidence. Prefer continuity lock fields such as character, outfit, props, location, screen style, composition, and mood when present. Leave strings empty when unclear. If frame count is not clearly specified, return null. Preserve the user's creative intent.",
       },
       {
         role: "user",
@@ -170,6 +201,21 @@ async function extractSceneSpec(client, model, looseInput) {
           looseInput.overrides.visualStyle
             ? `User override visual style: ${looseInput.overrides.visualStyle}`
             : "",
+          looseInput.overrides.characterLock
+            ? `User override character lock: ${looseInput.overrides.characterLock}`
+            : "",
+          looseInput.overrides.outfitLock
+            ? `User override outfit lock: ${looseInput.overrides.outfitLock}`
+            : "",
+          looseInput.overrides.phoneLock ? `User override phone lock: ${looseInput.overrides.phoneLock}` : "",
+          looseInput.overrides.flyerLock ? `User override flyer lock: ${looseInput.overrides.flyerLock}` : "",
+          looseInput.overrides.locationLock
+            ? `User override location lock: ${looseInput.overrides.locationLock}`
+            : "",
+          looseInput.overrides.backgroundAnchors
+            ? `User override background anchors: ${looseInput.overrides.backgroundAnchors}`
+            : "",
+          looseInput.overrides.screenLock ? `User override screen lock: ${looseInput.overrides.screenLock}` : "",
         ]
           .filter(Boolean)
           .join("\n"),
@@ -190,7 +236,7 @@ async function buildFramePlan(client, model, sceneSpec) {
       {
         role: "system",
         content:
-          "You are building a frame-by-frame cinematic ad storyboard. Return exactly the requested number of frames. Each frame must feel like the same subject, same world, same campaign, with continuity preserved across wardrobe, environment, props, and tone.",
+          "You are building a frame-by-frame cinematic ad storyboard. Return exactly the requested number of frames. Each frame must feel like the same subject, same world, same campaign, with continuity preserved across character identity, hairstyle, wardrobe, phone, flyer, environment, background anchors, lighting direction, app UI, and premium brand tone. Keep each frame as a single still image concept with no collage, no split image, and no floating text.",
       },
       {
         role: "user",
@@ -198,6 +244,16 @@ async function buildFramePlan(client, model, sceneSpec) {
           "Create a storyboard frame plan for image generation.",
           `Raw prompt: ${materialized.rawPrompt}`,
           `Number of frames: ${materialized.numberOfFrames}`,
+          `Character lock: ${materialized.characterLock}`,
+          `Outfit lock: ${materialized.outfitLock}`,
+          `Phone lock: ${materialized.phoneLock}`,
+          `Flyer lock: ${materialized.flyerLock}`,
+          materialized.accessoryLock ? `Accessory lock: ${materialized.accessoryLock}` : "",
+          `Location lock: ${materialized.locationLock}`,
+          `Background anchors: ${materialized.backgroundAnchors}`,
+          `Screen lock: ${materialized.screenLock}`,
+          `Sequence composition: ${materialized.composition}`,
+          `Sequence mood: ${materialized.mood}`,
           materialized.mainCharacterDetails
             ? `Main character details: ${materialized.mainCharacterDetails}`
             : "",
@@ -210,7 +266,7 @@ async function buildFramePlan(client, model, sceneSpec) {
           `Frame-to-frame changes: ${materialized.frameToFrameChanges}`,
           `Action sequence: ${materialized.actionSequence.join(" | ")}`,
           materialized.extraNotes ? `Extra notes: ${materialized.extraNotes}` : "",
-          "Each frame prompt should describe one standalone still image with strong continuity and no text overlays, no collage, and no contact sheet layout.",
+          "For each frame, return a short title, the exact action beat for that frame, a camera shot label, a frame-specific composition line, and a frame-specific mood line. Do not return full prompt prose.",
         ]
           .filter(Boolean)
           .join("\n"),

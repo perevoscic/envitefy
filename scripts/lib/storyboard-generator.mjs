@@ -3,6 +3,28 @@ import path from "node:path";
 export const DEFAULT_FRAME_COUNT = 10;
 export const DEFAULT_CAMERA_FORMAT = "vertical";
 export const DEFAULT_FRAME_TO_FRAME_CHANGES = "pose, action, camera angle, framing";
+export const DEFAULT_VISUAL_STYLE =
+  "cinematic ad photography, realistic, premium startup commercial, clean modern lifestyle, natural lighting, shallow depth of field, subtle motion realism, polished brand-ad look.";
+export const DEFAULT_CHARACTER_LOCK =
+  "the same young mother in her early 30s, shoulder-length brown hair, natural makeup";
+export const DEFAULT_OUTFIT_LOCK =
+  "the same light beige sweater, blue jeans, white sneakers";
+export const DEFAULT_PHONE_LOCK = "the same black modern smartphone";
+export const DEFAULT_FLYER_LOCK =
+  "the same colorful gymnastics meet flyer with athlete photos, schedule sections, icons, and bold headers";
+export const DEFAULT_LOCATION_LOCK =
+  "the same bright modern gymnastics facility lobby with a bulletin board, wood accents, front desk, pendant light, large window, and soft daylight";
+export const DEFAULT_BACKGROUND_ANCHORS =
+  "bulletin board, wood accents, front desk, pendant light, large window, soft daylight";
+export const DEFAULT_SCREEN_LOCK =
+  "the same clean Envitefy-style mobile event page, modern white interface, simple typography";
+export const DEFAULT_COMPOSITION =
+  "foreground flyer or phone detail, the mother in the midground, and the bright gymnastics lobby anchors in the background";
+export const DEFAULT_MOOD = "focused, modern, warm, premium";
+export const DEFAULT_CONTINUITY_RULE =
+  "This must look like the same ad campaign sequence as the previous frames, keeping the same character, same outfit, same props, same flyer, same environment, same lighting, same branding, and same premium commercial aesthetic.";
+export const DEFAULT_NEGATIVE_PROMPT =
+  "no character change, no wardrobe change, no different location, no different flyer design, no different phone, no split image, no collage, no watermark, no floating text, single frame only.";
 
 function clean(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -102,6 +124,16 @@ export function buildLooseInputFromCli(parsedArgs) {
     rawPrompt,
     overrides: {
       numberOfFrames: parseOptionalInt(parsedArgs.frames || parsedArgs["number-of-frames"]),
+      characterLock: clean(parsedArgs["character-lock"]),
+      outfitLock: clean(parsedArgs["outfit-lock"]),
+      phoneLock: clean(parsedArgs["phone-lock"]),
+      flyerLock: clean(parsedArgs["flyer-lock"]),
+      accessoryLock: clean(parsedArgs["accessory-lock"]),
+      locationLock: clean(parsedArgs["location-lock"]),
+      backgroundAnchors: clean(parsedArgs["background-anchors"]),
+      screenLock: clean(parsedArgs["screen-lock"]),
+      composition: clean(parsedArgs.composition),
+      mood: clean(parsedArgs.mood),
       mainCharacterDetails: clean(parsedArgs["main-character-details"]),
       locationEnvironment: clean(parsedArgs["location-environment"]),
       propsKeyObjects: clean(parsedArgs["props-key-objects"]),
@@ -137,6 +169,25 @@ function pickNumberField(overrideValue, inferredValue, defaultValue) {
   if (inferred != null) return toSourceValue(inferred, "inferred");
 
   return toSourceValue(defaultValue, "default");
+}
+
+function pickLegacyAwareStringField(overrideValues, inferredValues, defaultValue = "") {
+  const overrideList = Array.isArray(overrideValues) ? overrideValues : [overrideValues];
+  for (const value of overrideList) {
+    const cleaned = clean(value);
+    if (cleaned) return toSourceValue(cleaned, "user");
+  }
+
+  const inferredList = Array.isArray(inferredValues) ? inferredValues : [inferredValues];
+  for (const value of inferredList) {
+    const cleaned = clean(value);
+    if (cleaned) return toSourceValue(cleaned, "inferred");
+  }
+
+  const fallback = clean(defaultValue);
+  if (fallback) return toSourceValue(fallback, "default");
+
+  return toSourceValue("", "empty");
 }
 
 function buildDefaultActionSequence(frameCount) {
@@ -191,12 +242,49 @@ export function normalizeSceneSpec(looseInput, inferredSpec = {}) {
     baseActions.length > 0 ? baseActions : buildDefaultActionSequence(frameCount),
     frameCount,
   );
+  const hasLegacyPropsLock = Boolean(
+    clean(looseInput?.overrides?.propsKeyObjects) || clean(inferredSpec.propsKeyObjects),
+  );
   const actionSource =
     overrideActions.length > 0 ? "user" : inferredActions.length > 0 ? "inferred" : "default";
 
   return {
     rawPrompt: clean(looseInput?.rawPrompt),
     numberOfFrames,
+    characterLock: pickLegacyAwareStringField(
+      [looseInput?.overrides?.characterLock, looseInput?.overrides?.mainCharacterDetails],
+      [inferredSpec.characterLock, inferredSpec.mainCharacterDetails],
+      DEFAULT_CHARACTER_LOCK,
+    ),
+    outfitLock: pickStringField(looseInput?.overrides?.outfitLock, inferredSpec.outfitLock, DEFAULT_OUTFIT_LOCK),
+    phoneLock: pickStringField(
+      looseInput?.overrides?.phoneLock,
+      inferredSpec.phoneLock,
+      hasLegacyPropsLock ? "" : DEFAULT_PHONE_LOCK,
+    ),
+    flyerLock: pickStringField(
+      looseInput?.overrides?.flyerLock,
+      inferredSpec.flyerLock,
+      hasLegacyPropsLock ? "" : DEFAULT_FLYER_LOCK,
+    ),
+    accessoryLock: pickStringField(looseInput?.overrides?.accessoryLock, inferredSpec.accessoryLock),
+    locationLock: pickLegacyAwareStringField(
+      [looseInput?.overrides?.locationLock, looseInput?.overrides?.locationEnvironment],
+      [inferredSpec.locationLock, inferredSpec.locationEnvironment],
+      DEFAULT_LOCATION_LOCK,
+    ),
+    backgroundAnchors: pickStringField(
+      looseInput?.overrides?.backgroundAnchors,
+      inferredSpec.backgroundAnchors,
+      DEFAULT_BACKGROUND_ANCHORS,
+    ),
+    screenLock: pickStringField(looseInput?.overrides?.screenLock, inferredSpec.screenLock, DEFAULT_SCREEN_LOCK),
+    composition: pickStringField(
+      looseInput?.overrides?.composition,
+      inferredSpec.composition,
+      DEFAULT_COMPOSITION,
+    ),
+    mood: pickStringField(looseInput?.overrides?.mood, inferredSpec.mood, DEFAULT_MOOD),
     mainCharacterDetails: pickStringField(
       looseInput?.overrides?.mainCharacterDetails,
       inferredSpec.mainCharacterDetails,
@@ -209,7 +297,11 @@ export function normalizeSceneSpec(looseInput, inferredSpec = {}) {
       looseInput?.overrides?.propsKeyObjects,
       inferredSpec.propsKeyObjects,
     ),
-    visualStyle: pickStringField(looseInput?.overrides?.visualStyle, inferredSpec.visualStyle),
+    visualStyle: pickStringField(
+      looseInput?.overrides?.visualStyle,
+      inferredSpec.visualStyle,
+      DEFAULT_VISUAL_STYLE,
+    ),
     cameraFormat: pickStringField(
       looseInput?.overrides?.cameraFormat,
       normalizeCameraFormat(inferredSpec.cameraFormat),
@@ -229,10 +321,20 @@ export function materializeSceneSpec(sceneSpec) {
   return {
     rawPrompt: clean(sceneSpec?.rawPrompt),
     numberOfFrames: sceneSpec?.numberOfFrames?.value ?? DEFAULT_FRAME_COUNT,
+    characterLock: clean(sceneSpec?.characterLock?.value),
+    outfitLock: clean(sceneSpec?.outfitLock?.value),
+    phoneLock: clean(sceneSpec?.phoneLock?.value),
+    flyerLock: clean(sceneSpec?.flyerLock?.value),
+    accessoryLock: clean(sceneSpec?.accessoryLock?.value),
+    locationLock: clean(sceneSpec?.locationLock?.value),
+    backgroundAnchors: clean(sceneSpec?.backgroundAnchors?.value),
+    screenLock: clean(sceneSpec?.screenLock?.value),
+    composition: clean(sceneSpec?.composition?.value),
+    mood: clean(sceneSpec?.mood?.value),
     mainCharacterDetails: clean(sceneSpec?.mainCharacterDetails?.value),
     locationEnvironment: clean(sceneSpec?.locationEnvironment?.value),
     propsKeyObjects: clean(sceneSpec?.propsKeyObjects?.value),
-    visualStyle: clean(sceneSpec?.visualStyle?.value),
+    visualStyle: clean(sceneSpec?.visualStyle?.value) || DEFAULT_VISUAL_STYLE,
     cameraFormat: clean(sceneSpec?.cameraFormat?.value) || DEFAULT_CAMERA_FORMAT,
     frameToFrameChanges:
       clean(sceneSpec?.frameToFrameChanges?.value) || DEFAULT_FRAME_TO_FRAME_CHANGES,
@@ -243,33 +345,90 @@ export function materializeSceneSpec(sceneSpec) {
   };
 }
 
+function buildPropLockLines(materialized) {
+  const lines = [materialized.phoneLock, materialized.flyerLock, materialized.accessoryLock]
+    .map((value) => clean(value))
+    .filter(Boolean);
+
+  if (lines.length > 0) return lines.map((value) => value);
+
+  const legacyProps = clean(materialized.propsKeyObjects);
+  return legacyProps ? [`the same ${legacyProps}`] : [];
+}
+
+export function buildCanonicalFramePrompt(sceneSpec, frameDetails) {
+  const materialized = materializeSceneSpec(sceneSpec);
+  const frameNumber = frameDetails?.frameNumber ?? 1;
+  const actionBeat = clean(frameDetails?.actionBeat) || "hold the moment";
+  const cameraShot = clean(frameDetails?.cameraShot) || `${materialized.cameraFormat} campaign still`;
+  const composition = clean(frameDetails?.composition) || materialized.composition || DEFAULT_COMPOSITION;
+  const mood = clean(frameDetails?.mood) || materialized.mood || DEFAULT_MOOD;
+  const propLines = buildPropLockLines(materialized);
+  const locationLock = clean(materialized.locationLock) || DEFAULT_LOCATION_LOCK;
+  const backgroundAnchors = clean(materialized.backgroundAnchors) || DEFAULT_BACKGROUND_ANCHORS;
+  const screenLock = clean(materialized.screenLock) || DEFAULT_SCREEN_LOCK;
+  const visualStyle = clean(materialized.visualStyle) || DEFAULT_VISUAL_STYLE;
+  const notes = clean(materialized.extraNotes);
+
+  return [
+    `Frame ${frameNumber} of ${materialized.numberOfFrames}, ${materialized.cameraFormat} image.`,
+    "",
+    "SCENE:",
+    actionBeat.endsWith(".") ? actionBeat : `${actionBeat}.`,
+    "",
+    "CHARACTER LOCK:",
+    `${clean(materialized.characterLock) || DEFAULT_CHARACTER_LOCK}`,
+    "",
+    "OUTFIT LOCK:",
+    `${clean(materialized.outfitLock) || DEFAULT_OUTFIT_LOCK}`,
+    "",
+    "PROP LOCK:",
+    ...propLines,
+    "",
+    "LOCATION LOCK:",
+    `${locationLock}`,
+    `The same background anchors: ${backgroundAnchors}.`,
+    "",
+    "SCREEN LOCK:",
+    screenLock.endsWith(".") ? screenLock : `${screenLock}.`,
+    "",
+    "CAMERA:",
+    cameraShot,
+    "",
+    "COMPOSITION:",
+    composition.endsWith(".") ? composition : `${composition}.`,
+    "",
+    "MOOD:",
+    mood.endsWith(".") ? mood : `${mood}.`,
+    "",
+    "CONTINUITY RULE:",
+    DEFAULT_CONTINUITY_RULE,
+    "",
+    "STYLE:",
+    visualStyle,
+    "",
+    "NEGATIVE:",
+    DEFAULT_NEGATIVE_PROMPT,
+    notes ? "" : null,
+    notes ? `Extra notes: ${notes}.` : null,
+  ]
+    .filter((value) => value != null)
+    .join("\n");
+}
+
 export function buildFallbackFramePlan(sceneSpec) {
   const materialized = materializeSceneSpec(sceneSpec);
-  const continuity = [
-    materialized.mainCharacterDetails,
-    materialized.locationEnvironment,
-    materialized.propsKeyObjects,
-    materialized.visualStyle,
-  ]
-    .filter(Boolean)
-    .join("; ");
 
   return materialized.actionSequence.map((actionBeat, index) => ({
     frameNumber: index + 1,
     title: `Frame ${index + 1}`,
     actionBeat,
     cameraShot: `${materialized.cameraFormat} campaign still`,
-    prompt: [
-      `Create frame ${index + 1} of ${materialized.numberOfFrames} for the same visual sequence.`,
-      `Base concept: ${materialized.rawPrompt}.`,
-      continuity ? `Keep continuity with: ${continuity}.` : "",
-      `This frame should show: ${actionBeat}.`,
-      `Frame-to-frame variation should come from ${materialized.frameToFrameChanges}.`,
-      materialized.extraNotes ? `Extra notes: ${materialized.extraNotes}.` : "",
-      "Single cinematic still image, not a collage, not a contact sheet, no text overlay, no watermark.",
-    ]
-      .filter(Boolean)
-      .join(" "),
+    prompt: buildCanonicalFramePrompt(sceneSpec, {
+      frameNumber: index + 1,
+      actionBeat,
+      cameraShot: `${materialized.cameraFormat} campaign still`,
+    }),
   }));
 }
 
@@ -279,13 +438,18 @@ export function normalizeFramePlan(sceneSpec, rawFrames) {
 
   return fallback.map((defaultFrame, index) => {
     const candidate = rawFrames[index] || {};
-    const prompt = clean(candidate.prompt) || defaultFrame.prompt;
     return {
       frameNumber: index + 1,
       title: clean(candidate.title) || defaultFrame.title,
       actionBeat: clean(candidate.actionBeat) || defaultFrame.actionBeat,
       cameraShot: clean(candidate.cameraShot) || defaultFrame.cameraShot,
-      prompt,
+      prompt: buildCanonicalFramePrompt(sceneSpec, {
+        frameNumber: index + 1,
+        actionBeat: clean(candidate.actionBeat) || defaultFrame.actionBeat,
+        cameraShot: clean(candidate.cameraShot) || defaultFrame.cameraShot,
+        composition: clean(candidate.composition),
+        mood: clean(candidate.mood),
+      }),
     };
   });
 }
