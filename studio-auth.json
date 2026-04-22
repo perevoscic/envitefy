@@ -1,0 +1,69 @@
+{
+  "cookies": [
+    {
+      "name": "_ga",
+      "value": "GA1.1.1182929265.1776827345",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1811387385.69501,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "next-auth.csrf-token",
+      "value": "badd307f185e308a590a5cd13297ef39f42461e448a2cd58a8e9026cfb9db623%7Ccc70f83d2839db35e8d3c1ecb3dfd72f029252f6f9a6962ce16f8c997e02c8f2",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "next-auth.callback-url",
+      "value": "http%3A%2F%2Flocalhost%3A3000%2F",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "next-auth.session-token",
+      "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..LeT8r0tncr3DccD0.7Q0IIrBM9uX1jSIFzSElYroDOezfd-nJmTXuXCaFJ8VuXvwb6EkNyBTQ0jtfuZTgHZT6lzRI-_dYdWhFFesRWgCC9LT2LcX94lNGGn_fsx-gbdJ3HweNgM2sDay_YpcnTpbiyqXdQ12O3_x-HzSgdyATexh6KFIh57Qjz7_t-9sRF6BNI99j26Xt23NvYtftKMe65hWqgiYgayiZH_eX0PUtPC4cSVceJYX9DGHyTbzXktDOPmPgyZIP6Dh-oYvvjI0CNNyKLx8yAX45Yj22d8MJOUQDwkaldz-0NNst8DLu6Jkpg1NK-7rejm0GLUQMPv4X74t89cNm0r71z_rEGT1ZhHcD6RFnwl_Fepb1rH_cMRFUf2ByGLc_f1XvmhfvgAnG_9gmGf7E_bTt7r2j86tj9Y2qSXrPSD7zdMS5FJ26jxQa2NwOqkk4OLdht7_cNyLvoKvTc9AF26SbaP8AiX7oaFI_J0VIyXK7O2WNCLUPCO3slSK4KLjrMJUsso-CUK3iSzAdHh9BrmDoBf1YcP5biZT3_UppzPwDvgQQj8EG2u9sSCWzSsKSM_0klffg1Jvp2dxWsHpnlNJlutwyrjt_wC1IacLIf1Bs0VN5sq_PR0B6hyR5-709qaWa.xAvQLEegIkb2sUAiy52e9w",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1779419384.733852,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga_3X25SZMRFY",
+      "value": "GS2.1.s1776827344$o1$g1$t1776827392$j12$l0$h0",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1811387392.446956,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "sidebar:invited-events:past-expanded",
+          "value": "0"
+        },
+        {
+          "name": "sidebar:my-events:past-expanded",
+          "value": "0"
+        }
+      ]
+    }
+  ]
+}
