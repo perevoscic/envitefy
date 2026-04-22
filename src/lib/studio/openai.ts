@@ -67,7 +67,7 @@ function resolveTextModel(): string {
 }
 
 function resolveImageModel(): string {
-  return process.env.STUDIO_OPENAI_IMAGE_MODEL || "gpt-image-1.5";
+  return process.env.STUDIO_OPENAI_IMAGE_MODEL || "gpt-image-2";
 }
 
 function resolveImageEditModel(): string {
@@ -86,8 +86,9 @@ function resolveImageQuality(): "low" | "medium" | "high" | "auto" {
   return "medium";
 }
 
-function resolveImageBackground(): "transparent" | "opaque" | "auto" {
+function resolveImageBackground(model: string): "transparent" | "opaque" | "auto" {
   const raw = safeString(process.env.STUDIO_OPENAI_IMAGE_BACKGROUND).toLowerCase();
+  if (model === "gpt-image-2" && raw === "transparent") return "opaque";
   if (raw === "transparent" || raw === "auto") return raw;
   return "opaque";
 }
@@ -243,7 +244,7 @@ async function postOpenAiImageGeneration(
         prompt,
         size: resolveImageSize(),
         quality: resolveImageQuality(),
-        background: resolveImageBackground(),
+        background: resolveImageBackground(model),
         n: 1,
       });
       const imageData = response.data?.[0]?.b64_json || "";
@@ -286,7 +287,7 @@ async function postOpenAiImageGeneration(
       prompt,
       size: resolveImageSize(),
       quality: resolveImageQuality(),
-      background: resolveImageBackground(),
+      background: resolveImageBackground(model),
       output_format: "png",
       moderation: "auto",
       n: 1,
@@ -370,7 +371,7 @@ async function postOpenAiImageEdit(
       prompt,
       size: resolveImageSize(),
       quality: resolveImageQuality(),
-      background: resolveImageBackground(),
+      background: resolveImageBackground(model),
       n: 1,
     });
     const imageData = response.data?.[0]?.b64_json || "";
