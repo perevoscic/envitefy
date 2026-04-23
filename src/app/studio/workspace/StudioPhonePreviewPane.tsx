@@ -26,7 +26,6 @@ type StudioPhonePreviewPaneProps = {
   isGenerating: boolean;
   sharingId: string | null;
   copySuccess: boolean;
-  isFullscreenPreview?: boolean;
   saveCurrentProjectToLibrary: () => void;
   openCurrentLiveCardFullscreen: () => void;
   shareCurrentProject: () => void;
@@ -47,7 +46,6 @@ export function StudioPhonePreviewPane({
   isGenerating,
   sharingId,
   copySuccess,
-  isFullscreenPreview = false,
   saveCurrentProjectToLibrary,
   openCurrentLiveCardFullscreen,
   shareCurrentProject,
@@ -126,39 +124,35 @@ export function StudioPhonePreviewPane({
                       <LiveCardHeroTextOverlay
                         invitationData={currentProjectWithVisualDraft.data}
                       />
-                      {!isFullscreenPreview ? (
-                        <>
-                          <StudioLiveCardActionSurface
-                            title={getStudioShareTitle(currentProjectWithVisualDraft)}
-                            invitationData={currentProjectWithVisualDraft.data}
-                            activeTab={currentProjectPreviewTab}
-                            onActiveTabChange={setCurrentProjectPreviewTab}
-                            positions={currentProjectWithVisualDraft.positions}
-                            shareUrl={currentProjectPreviewShareUrl}
-                            onShare={shareCurrentProject}
-                            shareState={
-                              sharingId === currentProjectWithVisualDraft.id
-                                ? "pending"
-                                : copySuccess
-                                  ? "success"
-                                  : "idle"
-                            }
-                            showExtendedDetails
-                            buttonChromeSize="compact"
-                            registryHelperText={
-                              currentProjectWithVisualDraft.data?.interactiveMetadata?.shareNote
-                            }
-                          />
-                          <button
-                            type="button"
-                            onClick={saveCurrentProjectToLibrary}
-                            disabled={saveCurrentProjectDisabled}
-                            className="absolute right-3 top-5 z-20 inline-flex min-h-8.5 items-center justify-center rounded-full bg-white/94 px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.22em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_14px_34px_rgba(49,32,17,0.18)] backdrop-blur-md transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-                          >
-                            {currentProjectSaveLabel}
-                          </button>
-                        </>
-                      ) : null}
+                      <StudioLiveCardActionSurface
+                        title={getStudioShareTitle(currentProjectWithVisualDraft)}
+                        invitationData={currentProjectWithVisualDraft.data}
+                        activeTab={currentProjectPreviewTab}
+                        onActiveTabChange={setCurrentProjectPreviewTab}
+                        positions={currentProjectWithVisualDraft.positions}
+                        shareUrl={currentProjectPreviewShareUrl}
+                        onShare={shareCurrentProject}
+                        shareState={
+                          sharingId === currentProjectWithVisualDraft.id
+                            ? "pending"
+                            : copySuccess
+                              ? "success"
+                              : "idle"
+                        }
+                        showExtendedDetails
+                        buttonChromeSize="compact"
+                        registryHelperText={
+                          currentProjectWithVisualDraft.data?.interactiveMetadata?.shareNote
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={saveCurrentProjectToLibrary}
+                        disabled={saveCurrentProjectDisabled}
+                        className="absolute right-3 top-5 z-20 inline-flex min-h-8.5 items-center justify-center rounded-full bg-white/94 px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.22em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_14px_34px_rgba(49,32,17,0.18)] backdrop-blur-md transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {currentProjectSaveLabel}
+                      </button>
                       <div className="pointer-events-none absolute inset-0 z-20 hidden items-center justify-center lg:flex">
                         <button
                           type="button"

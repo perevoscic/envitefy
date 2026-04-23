@@ -646,7 +646,6 @@ export function StudioFormStep({
               isGenerating={isGenerating}
               sharingId={sharingId}
               copySuccess={copySuccess}
-              isFullscreenPreview={isMobileViewport && mobilePane === "preview"}
               saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
               openCurrentLiveCardFullscreen={openCurrentLiveCardFullscreen}
               shareCurrentProject={shareCurrentProject}
