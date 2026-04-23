@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import {
   DEFAULT_CHARACTER_LOCK,
+  DEFAULT_CONTINUITY_CONTRACT,
   DEFAULT_FRAME_COUNT,
   DEFAULT_NEGATIVE_PROMPT,
   DEFAULT_SCREEN_LOCK,
@@ -10,8 +11,10 @@ import {
   alignActionSequence,
   buildFallbackFramePlan,
   buildRunPaths,
+  createFramesManifest,
   normalizeSceneSpec,
   resolveImageSize,
+  resolveRenderDimensions,
 } from "./lib/storyboard-generator.mjs";
 
 test("normalizeSceneSpec defaults to the Envitefy lock values", () => {
@@ -100,6 +103,10 @@ test("buildFallbackFramePlan emits the sectioned lock prompt format", () => {
   const frames = buildFallbackFramePlan(spec);
   assert.equal(frames.length, 2);
   assert.match(frames[0].prompt, /^Frame 1 of 2, vertical image\./);
+  assert.match(
+    frames[0].prompt,
+    new RegExp(DEFAULT_CONTINUITY_CONTRACT.split("\n")[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+  );
   assert.match(frames[0].prompt, /SCENE:/);
   assert.match(frames[0].prompt, /CHARACTER LOCK:/);
   assert.match(frames[0].prompt, /OUTFIT LOCK:/);
@@ -110,6 +117,7 @@ test("buildFallbackFramePlan emits the sectioned lock prompt format", () => {
   assert.match(frames[0].prompt, /MOOD:\ncurious, focused, premium\./);
   assert.match(frames[0].prompt, /notices the flyer/);
   assert.match(frames[1].prompt, /raises her phone to scan it/);
+  assert.match(frames[0].prompt, /Now generate the requested frame using the following fixed continuity details and scene content\./);
   assert.match(frames[0].prompt, new RegExp(DEFAULT_NEGATIVE_PROMPT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 });
 
@@ -129,6 +137,79 @@ test("legacy props input still appears in prop lock when explicit lock fields ar
 
   const [frame] = buildFallbackFramePlan(spec);
   assert.match(frame.prompt, /PROP LOCK:\n(?:.*\n)*the same smartphone and flyer/);
+});
+
+test("frame plans retain composition and mood metadata", () => {
+  const spec = normalizeSceneSpec(
+    {
+      rawPrompt: "a founder reviews the campaign frames",
+      overrides: {
+        numberOfFrames: 1,
+        composition: "phone in the foreground, founder centered, bright studio behind",
+        mood: "confident, polished, premium",
+        actionSequence: ["reviews the frame plan"],
+      },
+      extraNotes: "",
+    },
+    {},
+  );
+
+  const [frame] = buildFallbackFramePlan(spec);
+  assert.equal(frame.composition, "phone in the foreground, founder centered, bright studio behind");
+  assert.equal(frame.mood, "confident, polished, premium");
+});
+
+test("fallback frame plans use conversion roles and varied default shot families", () => {
+  const spec = normalizeSceneSpec(
+    {
+      rawPrompt: "a founder reviews the campaign frames",
+      overrides: {
+        numberOfFrames: 5,
+      },
+      extraNotes: "",
+    },
+    {},
+  );
+
+  const frames = buildFallbackFramePlan(spec);
+  assert.equal(frames[0].persuasionRole, "hook");
+  assert.equal(frames[4].persuasionRole, "product-entry");
+  assert.match(frames[0].cameraShot, /wide environmental hook shot/);
+  assert.match(frames[1].cameraShot, /tight problem-detail insert/);
+  assert.match(frames[2].mustDifferFromPrevious, /change the shot family/i);
+});
+
+test("createFramesManifest includes caption and captioned image placeholders", () => {
+  const spec = normalizeSceneSpec(
+    {
+      rawPrompt: "a founder reviews the campaign frames",
+      overrides: {
+        numberOfFrames: 1,
+        actionSequence: ["reviews the frame plan"],
+      },
+      extraNotes: "",
+    },
+    {},
+  );
+  const runPaths = buildRunPaths("/tmp/envitefy", {
+    timestamp: "20260421-111500",
+    rawPrompt: "review campaign frames",
+  });
+  const manifest = createFramesManifest(runPaths, spec, buildFallbackFramePlan(spec), {
+    textModel: "gpt-5.4-mini",
+    imageModel: "gpt-image-2",
+  });
+
+  assert.equal(manifest.frames[0].captionedImageFile, "images-captioned/frame-01.png");
+  assert.equal(manifest.frames[0].caption.text, "");
+  assert.equal(manifest.frames[0].caption.status, "pending");
+  assert.equal(manifest.frames[0].caption.dirty, true);
+  assert.deepEqual(manifest.renderSize, {
+    width: 1080,
+    height: 1920,
+    aspectRatio: "9:16",
+    cameraFormat: "vertical",
+  });
 });
 
 test("run paths use timestamp-slug folders and prefer job labels for slugs", () => {
@@ -154,4 +235,25 @@ test("resolveImageSize maps camera formats to OpenAI sizes", () => {
   assert.equal(resolveImageSize("vertical"), "1024x1536");
   assert.equal(resolveImageSize("horizontal"), "1536x1024");
   assert.equal(resolveImageSize("square"), "1024x1024");
+});
+
+test("resolveRenderDimensions maps campaign formats to exact output sizes", () => {
+  assert.deepEqual(resolveRenderDimensions("vertical"), {
+    width: 1080,
+    height: 1920,
+    aspectRatio: "9:16",
+    cameraFormat: "vertical",
+  });
+  assert.deepEqual(resolveRenderDimensions("horizontal"), {
+    width: 1920,
+    height: 1080,
+    aspectRatio: "16:9",
+    cameraFormat: "horizontal",
+  });
+  assert.deepEqual(resolveRenderDimensions("square"), {
+    width: 1080,
+    height: 1080,
+    aspectRatio: "1:1",
+    cameraFormat: "square",
+  });
 });

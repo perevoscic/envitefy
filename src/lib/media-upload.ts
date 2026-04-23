@@ -98,6 +98,10 @@ function getImageOutputName(fileName: string): string {
   return `${sanitizePathSegment(stripExtension(fileName)) || "image"}.webp`;
 }
 
+function getOriginalOutputName(fileName: string): string {
+  return sanitizePathSegment(fileName || "image") || "image";
+}
+
 function isPrivateStoreAccessError(error: unknown): boolean {
   return error instanceof Error && PRIVATE_STORE_ACCESS_ERROR.test(error.message);
 }
@@ -304,7 +308,7 @@ async function processImageUpload(params: {
   if (!processed.thumb) {
     throw new Error("Could not generate upload thumbnail");
   }
-  const [display, thumb] = await Promise.all([
+  const [display, thumb, source] = await Promise.all([
     uploadWebpAsset({
       scopeId: params.scopeId,
       usage: params.usage,
@@ -323,17 +327,26 @@ async function processImageUpload(params: {
       height: processed.thumb.height,
       access: "public",
     }),
+    uploadBlobAsset({
+      pathname: `event-media/${params.scopeId}/${params.usage}/${getOriginalOutputName(
+        params.validated.fileName,
+      )}`,
+      bytes: params.validated.bytes,
+      contentType: params.validated.mimeType,
+      access: "public",
+    }),
   ]);
 
   const attachment =
     params.usage === "attachment"
       ? {
-          name: getImageOutputName(params.validated.fileName),
-          type: "image/webp",
-          dataUrl: display.url,
-          sizeBytes: display.sizeBytes,
-          width: display.width,
-          height: display.height,
+          name: params.validated.fileName,
+          type: params.validated.mimeType,
+          dataUrl: source.url,
+          sizeBytes: params.validated.sizeBytes,
+          width: processed.original.width,
+          height: processed.original.height,
+          previewImageUrl: display.url,
           thumbnailUrl: thumb.url,
           storageKind: "blob" as const,
           optimizedFromMimeType: params.validated.mimeType,
@@ -366,6 +379,13 @@ async function processImageUpload(params: {
         width: thumb.width,
         height: thumb.height,
         sizeBytes: thumb.sizeBytes,
+      },
+      source: {
+        url: source.url,
+        mimeType: params.validated.mimeType,
+        sizeBytes: params.validated.sizeBytes,
+        width: processed.original.width,
+        height: processed.original.height,
       },
     },
     eventMedia: {

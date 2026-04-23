@@ -390,6 +390,13 @@ export function ProfileMenu({
                   >
                     <span>Campaigns</span>
                   </Link>
+                  <Link
+                    href="/admin/marketing-campaigns"
+                    onClick={onClose}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
+                  >
+                    <span>Marketing Storyboards</span>
+                  </Link>
                 </div>
               </div>
             )}

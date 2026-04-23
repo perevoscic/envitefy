@@ -1,0 +1,633 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Calendar,
+  CalendarPlus,
+  MapPin,
+  MessageSquare,
+  Sparkles,
+} from "lucide-react";
+
+type CalendarLinks = {
+  google: string;
+  outlook: string;
+  appleInline: string;
+};
+
+type Palette = {
+  background?: string;
+  primary?: string;
+  secondary?: string;
+  accent?: string;
+  text?: string;
+  dominant?: string;
+  themeColor?: string;
+} | null;
+
+type Props = {
+  title: string;
+  honoreeName?: string | null;
+  dateLabel?: string | null;
+  timeLabel?: string | null;
+  location?: string | null;
+  imageUrl?: string | null;
+  shareUrl?: string | null;
+  calendarLinks?: CalendarLinks | null;
+  palette?: Palette;
+  rsvpName?: string | null;
+  rsvpPhone?: string | null;
+  rsvpEmail?: string | null;
+  rsvpUrl?: string | null;
+  planCopy?: string | null;
+  previewMode?: boolean;
+  actions?: ReactNode;
+};
+
+const DEFAULT_PALETTE = {
+  background: "#d6ebee",
+  primary: "#56b8e2",
+  secondary: "#ef7db5",
+  accent: "#72d2f6",
+  text: "#101010",
+};
+
+function hexToRgb(value: string) {
+  const normalized = normalizeHex(value, "#000000").replace(/^#/, "");
+  return {
+    r: Number.parseInt(normalized.slice(0, 2), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+  return `#${[r, g, b]
+    .map((value) => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function mixHex(colorA: string, colorB: string, weightB: number) {
+  const a = hexToRgb(colorA);
+  const b = hexToRgb(colorB);
+  const amount = Math.max(0, Math.min(1, weightB));
+  return rgbToHex(
+    a.r * (1 - amount) + b.r * amount,
+    a.g * (1 - amount) + b.g * amount,
+    a.b * (1 - amount) + b.b * amount,
+  );
+}
+
+function luminance(color: string) {
+  const { r, g, b } = hexToRgb(color);
+  const channel = (value: number) => {
+    const normalized = value / 255;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+function normalizeHex(value: unknown, fallback: string): string {
+  const normalized = String(value || "")
+    .trim()
+    .replace(/^#/, "")
+    .toLowerCase();
+  if (/^[0-9a-f]{6}$/.test(normalized)) return `#${normalized}`;
+  if (/^[0-9a-f]{3}$/.test(normalized)) {
+    return `#${normalized
+      .split("")
+      .map((part) => `${part}${part}`)
+      .join("")}`;
+  }
+  return fallback;
+}
+
+function buildMapsHref(location: string | null | undefined): string | null {
+  const value = String(location || "").trim();
+  if (!value || value === "Location TBD") return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`;
+}
+
+function buildRsvpHref({
+  rsvpUrl,
+  rsvpPhone,
+  rsvpEmail,
+}: Pick<Props, "rsvpUrl" | "rsvpPhone" | "rsvpEmail">): string | null {
+  const url = String(rsvpUrl || "").trim();
+  if (url) return url;
+  const phone = String(rsvpPhone || "")
+    .replace(/[^\d+]/g, "")
+    .trim();
+  if (phone) return `tel:${phone}`;
+  const email = String(rsvpEmail || "").trim();
+  if (email) return `mailto:${email}`;
+  return null;
+}
+
+function extractHonoreeName(title: string, honoreeName?: string | null) {
+  const explicit = String(honoreeName || "").trim();
+  if (explicit) return explicit;
+
+  const trimmedTitle = String(title || "").trim();
+  if (!trimmedTitle) return "birthday star";
+
+  const apostropheIndex = trimmedTitle.indexOf("'s ");
+  if (apostropheIndex > 0) {
+    return trimmedTitle.slice(0, apostropheIndex).trim();
+  }
+
+  const firstLine = trimmedTitle.split(/\n+/)[0]?.trim();
+  return firstLine || "birthday star";
+}
+
+export default function BirthdaySkin({
+  title,
+  honoreeName,
+  dateLabel,
+  timeLabel,
+  location,
+  imageUrl,
+  shareUrl,
+  calendarLinks,
+  palette,
+  rsvpName,
+  rsvpPhone,
+  rsvpEmail,
+  rsvpUrl,
+  planCopy,
+  previewMode = false,
+  actions,
+}: Props) {
+  const [showCalendarMenu, setShowCalendarMenu] = useState(false);
+  const [showImageLightbox, setShowImageLightbox] = useState(false);
+
+  const colors = useMemo(() => {
+    const primary = normalizeHex(palette?.primary, DEFAULT_PALETTE.primary);
+    const accent = normalizeHex(palette?.accent || palette?.themeColor, DEFAULT_PALETTE.accent);
+    const secondary = normalizeHex(palette?.secondary, DEFAULT_PALETTE.secondary);
+    const requestedBackground = normalizeHex(palette?.background, DEFAULT_PALETTE.background);
+    const liftedBackground =
+      luminance(requestedBackground) < 0.68
+        ? mixHex(mixHex(primary, accent, 0.38), "#ffffff", 0.78)
+        : mixHex(requestedBackground, "#ffffff", 0.08);
+
+    return {
+      background: liftedBackground,
+      primary,
+      secondary,
+      accent,
+      text: luminance(liftedBackground) > 0.7 ? "#101010" : normalizeHex(palette?.text, "#ffffff"),
+    };
+  }, [palette]);
+
+  const displayName = extractHonoreeName(title, honoreeName);
+  const displayDate = String(dateLabel || "").trim() || "Date TBD";
+  const displayTime = String(timeLabel || "").trim() || "Time TBD";
+  const displayLocation = String(location || "").trim() || "Location TBD";
+  const directionsHref = buildMapsHref(location);
+  const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail });
+  const displayPlanCopy = "Games, Food & Fun!";
+
+  useEffect(() => {
+    if (previewMode) return;
+    window.scrollTo(0, 0);
+  }, [previewMode]);
+
+  useEffect(() => {
+    if (!showImageLightbox) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowImageLightbox(false);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showImageLightbox]);
+
+  const themeStyle = {
+    ["--theme-primary" as string]: colors.primary,
+    ["--theme-secondary" as string]: colors.secondary,
+    ["--theme-accent" as string]: colors.accent,
+    ["--theme-background" as string]: colors.background,
+    ["--theme-text" as string]: colors.text,
+  };
+
+  return (
+    <motion.div
+      data-skin-id="birthday-skin"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen pb-10 font-sans"
+      style={{
+        ...themeStyle,
+        backgroundColor: "var(--theme-background)",
+        color: "var(--theme-text)",
+      }}
+    >
+      <div className="mx-auto max-w-6xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+5.75rem)] md:px-8 md:pt-8">
+        {actions ? <div className="mb-5 hidden justify-end md:flex">{actions}</div> : null}
+
+        <div className="mb-12 flex max-w-6xl flex-col items-center justify-between gap-8 pt-4 text-center md:flex-row md:items-center md:pt-12 md:text-left">
+          <div className="flex-1 space-y-4 text-center md:text-left">
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: -5 }}
+              className="inline-block rounded-full px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-white shadow-lg"
+              style={{
+                backgroundColor: "var(--theme-accent)",
+                boxShadow: `0 10px 20px -5px ${colors.accent}`,
+              }}
+            >
+              Birthday Bash!
+            </motion.div>
+            <motion.h1
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="serif text-6xl lowercase leading-none tracking-tight md:text-8xl"
+              style={{ color: "var(--theme-text)" }}
+            >
+              {displayName}
+            </motion.h1>
+          </div>
+
+          <motion.button
+            type="button"
+            whileHover={{ rotate: 5, scale: 1.05 }}
+            onClick={() => {
+              if (!imageUrl) return;
+              setShowImageLightbox(true);
+            }}
+            className="group relative block w-full max-w-[300px] rounded-[2.5rem] border-8 border-white bg-white p-3 text-left shadow-2xl transition-all duration-500 disabled:cursor-default"
+            disabled={!imageUrl}
+          >
+            <div
+              className="absolute -right-4 -top-4 z-10 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-xl"
+              style={{ backgroundColor: "var(--theme-primary)" }}
+            >
+              <Sparkles className="h-8 w-8" />
+            </div>
+            <div className="overflow-hidden rounded-[1.8rem] bg-white">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={`${title} invitation`}
+                  className="aspect-[3/4] h-full w-full object-cover transition-all duration-700"
+                />
+              ) : (
+                <div
+                  className="aspect-[3/4] w-full"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, var(--theme-primary) 0%, var(--theme-accent) 100%)",
+                  }}
+                />
+              )}
+            </div>
+          </motion.button>
+        </div>
+
+        <div className="max-w-6xl grid grid-cols-1 gap-6 md:grid-cols-4">
+          <motion.section
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="flex flex-col justify-between rounded-[3rem] border border-black/5 bg-white p-6 shadow-xl transition-shadow hover:shadow-2xl md:col-span-2 md:p-10"
+          >
+            <div className="space-y-8">
+              <InfoBlock
+                icon={<Calendar className="h-8 w-8" />}
+                swatchColor="var(--theme-secondary)"
+                label="Party time"
+                title={displayDate}
+                subtitle={displayTime}
+              />
+
+              <InfoBlock
+                icon={<MapPin className="h-8 w-8" />}
+                swatchColor="var(--theme-accent)"
+                label="The Spot"
+                title="Party Location"
+                subtitle={displayLocation}
+              />
+
+              {(rsvpName || rsvpPhone || rsvpEmail) ? (
+                <InfoBlock
+                  icon={<MessageSquare className="h-8 w-8" />}
+                  swatchColor="var(--theme-primary)"
+                  label="RSVP to"
+                  title={String(rsvpName || rsvpEmail || "Host")}
+                  subtitle={String(rsvpPhone || rsvpEmail || "").trim() || "Contact details available on request"}
+                  divider
+                />
+              ) : null}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!directionsHref || previewMode) return;
+                window.open(directionsHref, "_blank", "noopener,noreferrer");
+              }}
+              disabled={!directionsHref || previewMode}
+              className="mt-12 w-full rounded-[2rem] py-6 text-sm font-bold uppercase tracking-widest text-white transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ backgroundColor: "var(--theme-text)" }}
+            >
+              Get Directions
+            </button>
+          </motion.section>
+
+          <div className="grid grid-cols-2 gap-6 md:col-span-2">
+            <ActionTile
+              icon={<CalendarPlus className="h-10 w-10" />}
+              label="Save to Calendar"
+              backgroundColor="var(--theme-secondary)"
+              onClick={() => setShowCalendarMenu(true)}
+              disabled={!calendarLinks || previewMode}
+            />
+
+            <ActionTile
+              icon={<MessageSquare className="h-10 w-10" />}
+              label="RSVP Now"
+              backgroundColor="var(--theme-primary)"
+              href={directRsvpHref}
+              disabled={!directRsvpHref || previewMode}
+            />
+
+            <motion.section
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="col-span-2 flex items-center justify-between gap-6 rounded-[3rem] border border-black/5 p-7 shadow-sm backdrop-blur-sm md:p-10"
+              style={{
+                backgroundColor: mixHex(colors.background, "#ffffff", 0.35),
+              }}
+            >
+              <div className="space-y-1">
+                <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
+                  Plan of Action
+                </div>
+                <div className="text-2xl font-bold text-black/90">{displayPlanCopy}</div>
+              </div>
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
+                style={{ color: "var(--theme-secondary)" }}
+              >
+                <Sparkles className="h-6 w-6" />
+              </div>
+            </motion.section>
+          </div>
+        </div>
+
+        <div className="mt-20 pb-8 text-center opacity-20 transition-opacity hover:opacity-50">
+          <div className="mx-auto mb-4 h-px w-8 bg-black/20" />
+          <div className="text-[10px] font-black uppercase tracking-[0.5em]">SNAPPED BY ENVITEFY</div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {showCalendarMenu && calendarLinks ? (
+          <div className="fixed inset-0 z-[7100] flex items-center justify-center p-6">
+            <motion.button
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCalendarMenu(false)}
+              className="absolute inset-0 bg-black/75 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.5, y: 100, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.5, y: 100, opacity: 0 }}
+              className="relative w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-2xl"
+              style={{
+                backgroundColor: "#ffffff",
+              }}
+            >
+              <div
+                className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl"
+                style={{
+                  backgroundColor: mixHex(colors.secondary, "#ffffff", 0.84),
+                  color: colors.secondary,
+                }}
+              >
+                <Calendar className="h-10 w-10" />
+              </div>
+              <h3
+                className="serif mb-8 text-2xl font-bold"
+                style={{ color: "var(--theme-text)" }}
+              >
+                Ready to Party?
+              </h3>
+              <div className="space-y-4">
+                <CalendarModalLink
+                  href={calendarLinks.google}
+                  label="Google"
+                  tone={colors.secondary}
+                  onChoose={() => setShowCalendarMenu(false)}
+                />
+                <CalendarModalLink
+                  href={calendarLinks.outlook}
+                  label="Outlook"
+                  tone={colors.primary}
+                  onChoose={() => setShowCalendarMenu(false)}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = calendarLinks.appleInline;
+                    setShowCalendarMenu(false);
+                    if (previewMode || !url) return;
+                    window.open(url, "_blank", "noopener,noreferrer");
+                  }}
+                  className="block w-full rounded-[1.8rem] py-5 text-xs font-bold uppercase tracking-widest text-white transition-transform hover:scale-105"
+                  style={{ backgroundColor: "var(--theme-text)" }}
+                >
+                  ICS File
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCalendarMenu(false)}
+                className="mt-8 text-[10px] font-bold uppercase tracking-widest text-black/30 transition-opacity hover:text-black/70"
+              >
+                Maybe later
+              </button>
+            </motion.div>
+          </div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showImageLightbox && imageUrl ? (
+          <div className="fixed inset-0 z-[7000] flex items-center justify-center px-4 py-6">
+            <motion.button
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              aria-label="Close invitation preview"
+              onClick={() => setShowImageLightbox(false)}
+              className="absolute inset-0 bg-[rgba(18,15,12,0.78)] backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+              className="relative max-h-full w-full max-w-5xl"
+            >
+              <button
+                type="button"
+                onClick={() => setShowImageLightbox(false)}
+                className="absolute right-3 top-3 z-10 rounded-full border border-white/20 bg-black/35 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-white"
+              >
+                Close
+              </button>
+              <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-black/10 shadow-[0_32px_120px_rgba(0,0,0,0.45)]">
+                <img
+                  src={imageUrl}
+                  alt={`${title} invitation full screen`}
+                  className="max-h-[85vh] w-full object-contain"
+                />
+              </div>
+            </motion.div>
+          </div>
+        ) : null}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function InfoBlock({
+  icon,
+  swatchColor,
+  label,
+  title,
+  subtitle,
+  divider = false,
+}: {
+  icon: ReactNode;
+  swatchColor: string;
+  label: string;
+  title: string;
+  subtitle: string;
+  divider?: boolean;
+}) {
+  return (
+    <div className={divider ? "border-t border-black/5 pt-6" : ""}>
+      <div className="flex items-center gap-4 md:gap-6">
+        <div
+          className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-[1.5rem] transition-transform"
+          style={{
+            backgroundColor: `color-mix(in srgb, ${swatchColor} 18%, white)`,
+            color: swatchColor,
+          }}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
+            {label}
+          </div>
+          <div className="text-2xl font-bold text-black/90 md:text-3xl">
+            {title}
+          </div>
+          <div className="text-base text-black/50 md:text-lg">
+            {subtitle}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionTile({
+  icon,
+  label,
+  backgroundColor,
+  onClick,
+  href,
+  disabled = false,
+}: {
+  icon: ReactNode;
+  label: string;
+  backgroundColor: string;
+  onClick?: () => void;
+  href?: string | null;
+  disabled?: boolean;
+}) {
+  const content = (
+    <>
+      <span>{icon}</span>
+      <span className="text-center text-sm font-bold uppercase tracking-tight text-white">
+        {label}
+      </span>
+    </>
+  );
+
+  const className =
+    "flex min-h-[10.5rem] w-full items-center justify-center rounded-[3rem] px-4 py-6 text-white shadow-[0_22px_54px_rgba(59,74,84,0.12)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[12rem] sm:px-5 sm:py-7 md:aspect-square md:min-h-0 md:p-8";
+
+  if (href && !disabled) {
+    return (
+      <a
+        href={href}
+        target={href.startsWith("http") ? "_blank" : undefined}
+        rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+        className={className}
+        style={{ backgroundColor }}
+      >
+        <div className="flex flex-col items-center gap-4">{content}</div>
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={className}
+      style={{ backgroundColor }}
+    >
+      <div className="flex flex-col items-center gap-4">{content}</div>
+    </button>
+  );
+}
+
+function CalendarModalLink({
+  href,
+  label,
+  tone,
+  onChoose,
+}: {
+  href: string;
+  label: string;
+  tone: string;
+  onChoose: () => void;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      onClick={onChoose}
+      className="block w-full rounded-[1.8rem] py-5 text-center text-xs font-bold uppercase tracking-widest text-white transition-transform hover:scale-105"
+      style={{ backgroundColor: tone }}
+    >
+      {label}
+    </a>
+  );
+}

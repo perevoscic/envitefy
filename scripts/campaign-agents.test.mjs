@@ -1,0 +1,47 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  ART_DIRECTION_SYSTEM_PROMPT,
+  BRIEF_RESPONSE_FORMAT,
+  BRIEF_SYSTEM_PROMPT,
+  COORDINATOR_SYSTEM_PROMPT,
+  CREATIVE_QA_RESPONSE_FORMAT,
+  SOCIAL_COPY_RESPONSE_FORMAT,
+  SOCIAL_COPY_SYSTEM_PROMPT,
+} from "./lib/campaign-agents.mjs";
+
+test("brief prompt requires one audience, one pain, one promise, and one proof moment", () => {
+  assert.match(BRIEF_SYSTEM_PROMPT, /one audience, one pain, one product promise, and one proof moment/i);
+  assert.match(BRIEF_SYSTEM_PROMPT, /Do not invent product features/i);
+});
+
+test("art direction and coordinator prompts enforce continuity plus meaningful variation", () => {
+  assert.match(ART_DIRECTION_SYSTEM_PROMPT, /same person, outfit, props, room layout, phone, flyer, lighting, style, and framing baseline/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /No more than two frames may use the same base composition/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /at least four distinct shot families/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /exactly one payoff or CTA frame, and it must be the final frame/i);
+});
+
+test("social copy prompt bans literal filler captions", () => {
+  assert.match(SOCIAL_COPY_SYSTEM_PROMPT, /Ban filler like 'here we go'/i);
+  assert.match(SOCIAL_COPY_SYSTEM_PROMPT, /must persuade rather than label/i);
+  assert.match(SOCIAL_COPY_SYSTEM_PROMPT, /one less task/i);
+});
+
+test("brief, social copy, and creative qa schemas require the new fields", () => {
+  const briefRequired = BRIEF_RESPONSE_FORMAT.json_schema.schema.required;
+  assert.ok(briefRequired.includes("singleAudience"));
+  assert.ok(briefRequired.includes("singlePain"));
+  assert.ok(briefRequired.includes("proofMoment"));
+
+  const socialCopyRequired = SOCIAL_COPY_RESPONSE_FORMAT.json_schema.schema.properties.frames.items.required;
+  assert.ok(socialCopyRequired.includes("captionRole"));
+
+  const creativeQaRequired = CREATIVE_QA_RESPONSE_FORMAT.json_schema.schema.required;
+  assert.ok(creativeQaRequired.includes("framesToRewrite"));
+  assert.ok(creativeQaRequired.includes("framesToCut"));
+  assert.ok(creativeQaRequired.includes("blockedCaptionPatterns"));
+  assert.ok(creativeQaRequired.includes("requiredShotFamilies"));
+  assert.ok(creativeQaRequired.includes("singleFinalPayoffFrame"));
+  assert.ok(creativeQaRequired.includes("rewriteBrief"));
+});

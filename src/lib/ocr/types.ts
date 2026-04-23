@@ -6,6 +6,8 @@ export type EventOcrLlmResult = {
   description?: string;
   category?: string;
   rsvp?: string | null;
+  rsvpUrl?: string | null;
+  rsvpDeadline?: string | null;
   yearVisible?: boolean | null;
   birthdayAudience?: "girl" | "boy" | "neutral" | null;
   birthdaySignals?: string[] | null;

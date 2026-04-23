@@ -17,10 +17,10 @@ export const UPLOAD_LIMITS = {
 } as const;
 
 export const SHARP_UPLOAD_PRESETS = {
-  displayMaxWidth: 1900,
-  displayQuality: 80,
-  thumbWidth: 400,
-  thumbQuality: 60,
+  displayMaxWidth: 2400,
+  displayQuality: 92,
+  thumbWidth: 560,
+  thumbQuality: 76,
 } as const;
 
 export type UploadValidationResult =
@@ -64,6 +64,8 @@ export type UploadResponse = {
       url: string;
       mimeType: string;
       sizeBytes: number;
+      width?: number;
+      height?: number;
       optimizedByQpdf?: boolean;
     };
   };

@@ -188,6 +188,28 @@ export default function AdminPage() {
         <section suppressHydrationWarning>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link
+              href="/admin/marketing-campaigns"
+              className="group relative overflow-hidden rounded-2xl border border-[#dcd4f5] bg-white shadow transition-all hover:shadow-lg"
+            >
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
+                      Marketing Storyboards
+                    </p>
+                    <p className="text-sm text-[#5b4d86]">
+                      Generate and render campaign runs
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
+                    MG
+                  </div>
+                </div>
+              </div>
+              <div className="h-1 bg-gradient-to-r from-[#b9abf5] to-[#775fe4] opacity-80" />
+            </Link>
+
+            <Link
               href="/admin/campaigns"
               className="group relative overflow-hidden rounded-2xl border border-[#dcd4f5] bg-white shadow transition-all hover:shadow-lg"
             >
@@ -229,6 +251,28 @@ export default function AdminPage() {
                 </div>
               </div>
               <div className="h-1 bg-gradient-to-r from-[#b4a4ef] to-[#7b63cf] opacity-80" />
+            </Link>
+
+            <Link
+              href="/admin/marketing-campaigns"
+              className="group relative overflow-hidden rounded-2xl border border-[#dcd4f5] bg-white shadow transition-all hover:shadow-lg"
+            >
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
+                      Marketing Campaigns
+                    </p>
+                    <p className="text-sm text-[#5b4d86]">
+                      Storyboards, captions, and short-form video renders
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c6f1e3] to-[#46bb91] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
+                    MC
+                  </div>
+                </div>
+              </div>
+              <div className="h-1 bg-gradient-to-r from-[#63caa2] to-[#2e9d78] opacity-80" />
             </Link>
           </div>
         </section>

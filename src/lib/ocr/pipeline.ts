@@ -26,6 +26,7 @@ import {
   llmRewriteSmartDescription,
   llmRewriteWedding,
 } from "@/lib/ocr/openai";
+import { inferOcrSkinSelection } from "@/lib/ocr/skin";
 import {
   buildNextOccurrence,
   createEmptyPracticeSchedule,
@@ -42,6 +43,7 @@ import {
   cleanAddressLabel,
   detectCategory,
   detectSpelledTime,
+  extractRsvpDetails,
   extractRsvpCompact,
   improveJoinUsFor,
   inferTimezoneFromAddress,
@@ -592,6 +594,8 @@ export async function handleOcrRequest(request: Request) {
     const cleanDescription = buildCleanDescription(lines, title, addressOnly, parsedText);
 
     let deferredRsvp: string | null = null;
+    let deferredRsvpUrl: string | null = null;
+    let deferredRsvpDeadline: string | null = null;
     let finalTitle = title;
     let finalStart = start;
     let finalEnd = end;
@@ -651,10 +655,12 @@ export async function handleOcrRequest(request: Request) {
       if (typeof llmImage.rsvp === "string" && llmImage.rsvp.trim()) {
         deferredRsvp = llmImage.rsvp.trim();
       }
-    }
-
-    if (!deferredRsvp) {
-      deferredRsvp = extractRsvpCompact(raw, finalDescription);
+      if (typeof llmImage.rsvpUrl === "string" && llmImage.rsvpUrl.trim()) {
+        deferredRsvpUrl = llmImage.rsvpUrl.trim();
+      }
+      if (typeof llmImage.rsvpDeadline === "string" && llmImage.rsvpDeadline.trim()) {
+        deferredRsvpDeadline = llmImage.rsvpDeadline.trim();
+      }
     }
 
     const isBirthdayTitle = /birthday/i.test(finalTitle);
@@ -868,10 +874,6 @@ export async function handleOcrRequest(request: Request) {
     if (!finalVenue) {
       const fallbackVenue = pickVenueLabelForSentence(addressWithVenue, finalDescription, raw);
       if (fallbackVenue) finalVenue = fallbackVenue;
-    }
-
-    if (!deferredRsvp) {
-      deferredRsvp = extractRsvpCompact(raw, finalDescription);
     }
 
     const locationForNarrative = finalVenue
@@ -1124,6 +1126,16 @@ export async function handleOcrRequest(request: Request) {
         extractGuestReminderFromFlyerText(description) ||
         null;
     }
+    const extractedRsvp = extractRsvpDetails(raw, finalDescription);
+    if (!deferredRsvp) {
+      deferredRsvp = extractedRsvp.contact || extractRsvpCompact(raw, finalDescription);
+    }
+    if (!deferredRsvpUrl) {
+      deferredRsvpUrl = extractedRsvp.url;
+    }
+    if (!deferredRsvpDeadline) {
+      deferredRsvpDeadline = extractedRsvp.deadline;
+    }
     const fieldsGuess = {
       title: finalTitle,
       start: toLocalNoZ(finalStart),
@@ -1133,6 +1145,8 @@ export async function handleOcrRequest(request: Request) {
       description,
       timezone: "",
       rsvp: deferredRsvp || null,
+      rsvpUrl: deferredRsvpUrl || null,
+      rsvpDeadline: deferredRsvpDeadline || null,
       goodToKnow: goodToKnowFinal,
     };
 
@@ -1412,6 +1426,29 @@ export async function handleOcrRequest(request: Request) {
       birthdayName: llmImage?.birthdayName,
       birthdayAge: llmImage?.birthdayAge,
     });
+    const ocrSkin =
+      category === "Birthdays" || category === "Weddings"
+        ? await inferOcrSkinSelection({
+            category,
+            imageBytes: ocrBuffer,
+            mimeType: visionMime,
+            ocrText: raw,
+            fieldsGuess: {
+              title: fieldsGuess.title,
+              location: fieldsGuess.location,
+              description: fieldsGuess.description,
+            },
+            birthdayHint:
+              category === "Birthdays"
+                ? {
+                    audience: birthdayTemplateHint.audience,
+                    honoreeName: birthdayTemplateHint.honoreeName,
+                    age: birthdayTemplateHint.age,
+                    themeId: birthdayTemplateHint.themeId,
+                  }
+                : null,
+          })
+        : null;
 
     void (async () => {
       try {
@@ -1448,6 +1485,7 @@ export async function handleOcrRequest(request: Request) {
       events,
       category,
       birthdayTemplateHint,
+      ocrSkin,
       ocrSource,
     };
     if (includeTimings) {

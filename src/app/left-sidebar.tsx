@@ -343,7 +343,7 @@ function RootNavigationPanel({
   const activeRowClass = `${mainActiveAccent.buttonClass} group`;
   const inactiveRowClass = "group";
   const rootRowTextClass =
-    "font-[var(--font-josefin-sans)] text-[0.95rem] font-bold uppercase tracking-[0.13em] leading-none";
+    "min-w-0 flex-1 font-[var(--font-josefin-sans)] text-[0.95rem] font-bold uppercase tracking-[0.13em] leading-none";
   const rootInactiveTextClass = "text-[#beb9e8]";
   const rootActiveTextClass = "text-[#6e59db]";
   const rootHoverTextClass = "group-hover:text-[#aba4e3]";
@@ -540,7 +540,7 @@ function RootNavigationPanel({
             <Users size={17} strokeWidth={1.9} />
           </span>
           <span
-            className={`truncate ${rootRowTextClass} ${
+            className={`truncate ${rootRowTextClass} text-[0.9rem] tracking-[0.08em] ${
               isInvitedEventsActive
                 ? rootActiveTextClass
                 : `${rootInactiveTextClass} ${rootHoverTextClass}`

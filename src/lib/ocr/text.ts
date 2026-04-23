@@ -464,48 +464,147 @@ export function buildFriendlyBirthdaySentence(title: string, location?: string):
   return `${who} Birthday Party${atPart}.`;
 }
 
-export function extractRsvpCompact(rawText: string, fallbackText?: string): string | null {
+export type ExtractedRsvpDetails = {
+  contact: string | null;
+  url: string | null;
+  deadline: string | null;
+};
+
+const RSVP_PHONE_REGEX =
+  /(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/;
+const RSVP_EMAIL_REGEX = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+const RSVP_URL_REGEX =
+  /(?:https?:\/\/[^\s)]+|www\.[^\s)]+|(?:[a-z0-9-]+\.)+(?:com|net|org|io|co|us|info|wedding|events)(?:\/[^\s),;!?]*)?)/i;
+
+function trimRsvpUrl(raw: string | null): string | null {
+  if (!raw) return null;
+  const cleaned = raw.replace(/[)>.,]+$/g, "").trim();
+  if (!cleaned) return null;
+  return /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
+}
+
+function extractRsvpDeadline(text: string): string | null {
+  const patterns = [
+    /\brsvp(?:\s+by)?\s+([A-Z][a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,\s*\d{4})?)/i,
+    /\brespond(?:\s+by)?\s+([A-Z][a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,\s*\d{4})?)/i,
+    /\breply(?:\s+by)?\s+([A-Z][a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,\s*\d{4})?)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    const value = (match?.[1] || "").trim().replace(/[.:,]+$/g, "");
+    if (value) return value;
+  }
+  return null;
+}
+
+function stripRsvpNoise(value: string, deadline: string | null, url: string | null): string {
+  let cleaned = value;
+  if (url) {
+    cleaned = cleaned.replace(url, " ");
+    cleaned = cleaned.replace(url.replace(/^https?:\/\//i, ""), " ");
+  }
+  if (deadline) {
+    const escapedDeadline = deadline.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    cleaned = cleaned.replace(new RegExp(`\\b(?:rsvp|respond|reply)?\\s*by\\s+${escapedDeadline}`, "i"), " ");
+    cleaned = cleaned.replace(new RegExp(escapedDeadline, "i"), " ");
+  }
+  cleaned = cleaned
+    .replace(/\brsvp\b\s*:?\s*/gi, " ")
+    .replace(/\bat\s*:?\s*/gi, " ")
+    .replace(/\b(?:respond|reply)\b\s*:?\s*/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return cleaned.replace(/^[,;:. -]+|[,;:. -]+$/g, "").trim();
+}
+
+export function extractRsvpDetails(rawText: string, fallbackText?: string): ExtractedRsvpDetails {
   try {
     const text = [rawText || "", fallbackText || ""].join("\n");
     const lines = text
       .split("\n")
-      .map((l) => l.trim())
+      .map((line) => line.trim())
       .filter(Boolean);
-    const phoneRe = /(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/;
-    const rsvpLine = lines.find((l) => /\brsvp\b/i.test(l));
-    if (rsvpLine) {
-      const nameMatch = rsvpLine.match(/rsvp[^a-z0-9]*to\s+([^:|\d]+?)(?:\s*[-:,.]|$)/i);
-      const phoneMatch = rsvpLine.match(phoneRe);
-      let name = (nameMatch?.[1] || "").replace(/\s{2,}/g, " ").trim();
-      name = name.replace(/[:,\d]+$/, "").trim();
-      if (name && phoneMatch) return `RSVP: ${name} ${phoneMatch[0]}`.trim();
-      const colonPattern = rsvpLine.match(/rsvp\s*:\s*([^:\d]+?)\s*(\d)/i);
-      if (colonPattern && phoneMatch) {
-        const colonName = colonPattern[1]
-          .replace(/\s{2,}/g, " ")
+    const deadline = extractRsvpDeadline(text);
+
+    let url: string | null = null;
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      const nearby = [line, lines[i + 1] || "", lines[i + 2] || ""].join(" ").trim();
+      if (
+        !/\b(?:rsvp|respond|reply)\b/i.test(nearby) &&
+        !/\b(?:theknot|zola)\b/i.test(nearby)
+      ) {
+        continue;
+      }
+      const match = nearby.match(RSVP_URL_REGEX);
+      url = trimRsvpUrl(match?.[0] || null);
+      if (url) break;
+    }
+    if (!url) {
+      for (const line of lines) {
+        const match = line.match(RSVP_URL_REGEX);
+        url = trimRsvpUrl(match?.[0] || null);
+        if (url && /\b(?:rsvp|respond|reply|theknot|zola)\b/i.test(line)) break;
+        url = null;
+      }
+    }
+
+    const relevantLine =
+      lines.find((line) => /\brsvp|respond|reply\b/i.test(line)) ||
+      lines.find((line) => {
+        const maybeUrl = trimRsvpUrl(line.match(RSVP_URL_REGEX)?.[0] || null);
+        return Boolean(maybeUrl);
+      }) ||
+      "";
+    const relevantWindow = relevantLine
+      ? [relevantLine, lines[lines.indexOf(relevantLine) + 1] || "", lines[lines.indexOf(relevantLine) + 2] || ""]
+          .join(" ")
           .trim()
+      : text;
+
+    const phoneMatch = relevantWindow.match(RSVP_PHONE_REGEX) || text.match(RSVP_PHONE_REGEX);
+    const emailMatch = relevantWindow.match(RSVP_EMAIL_REGEX) || text.match(RSVP_EMAIL_REGEX);
+
+    let contact: string | null = null;
+    if (phoneMatch?.[0]) {
+      const nameMatch = relevantWindow.match(/rsvp[^a-z0-9]*to\s+([^:|\d]+?)(?:\s*[-:,.]|$)/i);
+      const colonPattern = relevantWindow.match(/rsvp\s*:\s*([^:\d]+?)\s*(\d)/i);
+      const withMatch = relevantWindow.match(/\bwith\s+([A-Z][A-Za-z' -]+)\b/i);
+      const toMatch = relevantWindow.match(/\bto\s+([A-Z][A-Za-z' -]+)\b/i);
+      const rawName =
+        (nameMatch?.[1] || colonPattern?.[1] || withMatch?.[1] || toMatch?.[1] || "")
+          .replace(/\s{2,}/g, " ")
+          .replace(/\s+at\s*$/i, "")
           .replace(/[:,\d]+$/, "")
           .trim();
-        if (colonName) return `RSVP: ${colonName} ${phoneMatch[0]}`.trim();
-      }
-      if (phoneMatch) return `RSVP: ${phoneMatch[0]}`;
-    }
-    for (const line of lines) {
-      const phone = line.match(phoneRe)?.[0] || null;
-      if (!phone) continue;
-      if (/\b(call|text|contact|rsvp)\b/i.test(line)) {
-        const name = (
-          line.match(/\bwith\s+([A-Z][A-Za-z'-]+)\b/i)?.[1] ||
-          line.match(/\bto\s+([A-Z][A-Za-z'-]+)\b/i)?.[1] ||
-          ""
-        ).trim();
-        return `RSVP: ${name ? `${name} ` : ""}${phone}`.trim();
+      contact = rawName ? `RSVP: ${rawName} ${phoneMatch[0]}` : `RSVP: ${phoneMatch[0]}`;
+    } else if (emailMatch?.[0]) {
+      contact = `RSVP: ${emailMatch[0]}`;
+    } else if (relevantWindow && /\b(?:rsvp|respond|reply|theknot|zola)\b/i.test(relevantWindow)) {
+      const stripped = stripRsvpNoise(relevantWindow, deadline, url);
+      if (
+        stripped &&
+        !/^(by|reply|respond)$/i.test(stripped) &&
+        /[A-Za-z]/.test(stripped) &&
+        stripped.length <= 120
+      ) {
+        contact = stripped;
       }
     }
-    return null;
+
+    return {
+      contact: contact || null,
+      url,
+      deadline,
+    };
   } catch {
-    return null;
+    return { contact: null, url: null, deadline: null };
   }
+}
+
+export function extractRsvpCompact(rawText: string, fallbackText?: string): string | null {
+  return extractRsvpDetails(rawText, fallbackText).contact;
 }
 
 /**

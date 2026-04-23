@@ -1,5 +1,50 @@
 export const BIRTHDAY_THEMES = [
     {
+        id: "scanned-birthday-bento-pop",
+        name: "Scanned Birthday Bento Pop",
+        defaultHeadline: "Birthday Bash!",
+        category: "Scanned",
+        family: "ocr",
+        layout: "pattern-play",
+        primaryColor: "#fff7eb",
+        secondaryColor: "#ff7b89",
+        headlineFont: "Playfair Display",
+        heroImage: "/themes/gummy-bear-main.jpg",
+        decorations: {
+            graphicType: "confetti"
+        }
+    },
+    {
+        id: "scanned-birthday-storybook-sparkle",
+        name: "Scanned Birthday Storybook Sparkle",
+        defaultHeadline: "Make a Wish",
+        category: "Scanned",
+        family: "ocr",
+        layout: "editorial-feature",
+        primaryColor: "#fff7fb",
+        secondaryColor: "#9f7aea",
+        headlineFont: "Cormorant",
+        heroImage: "/themes/flower-fairy-main.jpg",
+        decorations: {
+            graphicType: "sparkles"
+        }
+    },
+    {
+        id: "scanned-birthday-retro-neon",
+        name: "Scanned Birthday Retro Neon",
+        defaultHeadline: "Level Up",
+        category: "Scanned",
+        family: "ocr",
+        layout: "neon-night",
+        primaryColor: "#0b1020",
+        secondaryColor: "#14f1d9",
+        headlineFont: "Montserrat",
+        heroImage: "/themes/glow-disco-main.jpg",
+        decorations: {
+            graphicType: "neon"
+        }
+    },
+    {
         id: "rainbow_confetti_splash",
         name: "Gummy Bear Rainbow Pop",
         defaultHeadline: "Birthday Bash!",

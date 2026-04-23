@@ -5,6 +5,7 @@ import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import Link from "next/link";
 import { buildEditLink } from "@/utils/event-edit-route";
+import { normalizeUrlValue } from "@/utils/contact";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import type {
   EventData,
@@ -1036,9 +1037,9 @@ export default function WeddingTemplateView({
       rsvpEnabled: Boolean(
         weddingData.rsvp?.isEnabled !== false && weddingData.rsvp
       ),
-      rsvpLink: weddingData.rsvp?.link || "",
+      rsvpLink: normalizeUrlValue(weddingData.rsvp?.url || weddingData.rsvp?.link || "") || "",
       rsvp: {
-        url: weddingData.rsvp?.link || "#rsvp",
+        url: normalizeUrlValue(weddingData.rsvp?.url || weddingData.rsvp?.link || "") || "#rsvp",
         deadline: weddingData.rsvp?.deadline || undefined,
       },
       registry,

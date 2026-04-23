@@ -17,8 +17,10 @@ type EventRsvpPromptProps = {
   rsvpName?: string | null;
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
+  rsvpUrl?: string | null;
   eventTitle?: string | null;
   shareUrl?: string | null;
+  variant?: "default" | "wedding-scan";
 };
 
 const RSVP_OPTIONS: Array<{
@@ -45,8 +47,10 @@ export default function EventRsvpPrompt({
   rsvpName,
   rsvpPhone,
   rsvpEmail,
+  rsvpUrl,
   eventTitle,
   shareUrl,
+  variant = "default",
 }: EventRsvpPromptProps) {
   const { theme } = useTheme();
   const [intent, setIntent] = useState<ResponseIntent>(null);
@@ -102,7 +106,9 @@ export default function EventRsvpPrompt({
 
   const hasPhone = Boolean(rsvpPhone);
   const hasEmail = Boolean(rsvpEmail);
-  if (!hasPhone && !hasEmail) {
+  const hasUrl = Boolean(rsvpUrl);
+  const isWeddingScanVariant = variant === "wedding-scan";
+  if (!hasPhone && !hasEmail && !hasUrl) {
     return null;
   }
   if (!mounted) {
@@ -427,7 +433,13 @@ export default function EventRsvpPrompt({
     const label = existingRsvp === "yes" ? "Yes" : existingRsvp === "no" ? "No" : "Maybe";
     const icon = existingRsvp === "yes" ? "\u2705" : existingRsvp === "no" ? "\u274C" : "\u{1F914}";
     return (
-      <div className="inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-[#f7f2ff] px-3 py-1.5 text-sm font-semibold text-[#3f3269]">
+      <div
+        className={
+          isWeddingScanVariant
+            ? "inline-flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 text-sm font-medium text-[#2f261e] shadow-[0_12px_30px_rgba(37,26,10,0.08)]"
+            : "inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-[#f7f2ff] px-3 py-1.5 text-sm font-semibold text-[#3f3269]"
+        }
+      >
         <span aria-hidden="true">{icon}</span>
         <span>RSVP&apos;d: {label}</span>
       </div>
@@ -436,19 +448,41 @@ export default function EventRsvpPrompt({
 
   return (
     <div className="space-y-3">
+      {hasUrl ? (
+        <a
+          href={rsvpUrl || undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={
+            isWeddingScanVariant
+              ? "inline-flex min-h-11 items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 text-sm font-medium tracking-[0.08em] text-[#2f261e] uppercase shadow-[0_14px_32px_rgba(37,26,10,0.08)] transition hover:-translate-y-[1px] hover:bg-[#fbf7f1]"
+              : "inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-[#f7f2ff] px-3 py-1.5 text-sm font-semibold text-[#3f3269] shadow-sm transition hover:border-[#cabcf0] hover:bg-white"
+          }
+        >
+          <span aria-hidden="true">🔗</span>
+          <span>Open RSVP</span>
+        </a>
+      ) : null}
+
+      {!hasPhone && !hasEmail ? null : (
       <div className="flex flex-wrap gap-3">
         {RSVP_OPTIONS.map((option) => (
           <button
             key={option.intent}
             type="button"
             onClick={() => openModalFor(option.intent)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-white/90 px-3 py-1.5 text-sm font-semibold text-[#3f3269] shadow-sm transition hover:border-[#cabcf0] hover:bg-[#f7f2ff]"
+            className={
+              isWeddingScanVariant
+                ? "inline-flex min-h-11 items-center gap-2 rounded-full border border-black/5 bg-white/95 px-4 py-2 text-sm font-medium tracking-[0.08em] text-[#2f261e] uppercase shadow-[0_14px_32px_rgba(37,26,10,0.08)] transition hover:-translate-y-[1px] hover:bg-[#fbf7f1]"
+                : "inline-flex items-center gap-2 rounded-xl border border-[#ddd4f8] bg-white/90 px-3 py-1.5 text-sm font-semibold text-[#3f3269] shadow-sm transition hover:border-[#cabcf0] hover:bg-[#f7f2ff]"
+            }
           >
             <span aria-hidden="true">{option.icon}</span>
             <span suppressHydrationWarning>{option.label}</span>
           </button>
         ))}
       </div>
+      )}
 
       {declineModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">

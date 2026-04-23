@@ -29,12 +29,17 @@ import IndustrialWedding from "@/app/event/weddings/_renderers/industrial-weddin
 import LibraryWedding from "@/app/event/weddings/_renderers/library-wedding";
 import GardenWedding from "@/app/event/weddings/_renderers/garden-wedding";
 import SkylineWedding from "@/app/event/weddings/_renderers/skyline-wedding";
+import ScannedWeddingInviteView, {
+  type ScannedWeddingRegistryCard,
+} from "@/components/weddings/ScannedWeddingInviteView";
 import {
   ContentSections,
   Footer,
   type EventData,
   type ThemeConfig,
 } from "@/app/event/weddings/_renderers/content-sections";
+import { buildWeddingScanSchedule } from "@/lib/wedding-scan";
+import { getRegistryBrandByUrl } from "@/utils/registry-links";
 
 type TemplateConfig = {
   id: string;
@@ -47,10 +52,88 @@ type TemplateConfig = {
 interface Props {
   template: TemplateConfig;
   event: EventData;
+  renderMode?: "default" | "scanned-invite-preview";
 }
 
-export default function WeddingRenderer({ template, event }: Props) {
+function buildPreviewRegistryCards(registry: Array<{ label?: string; url?: string }>): ScannedWeddingRegistryCard[] {
+  return registry
+    .filter((item) => typeof item?.url === "string" && item.url.trim())
+    .map((item) => {
+      const url = item.url!.trim();
+      const brand = getRegistryBrandByUrl(url);
+      let host = "";
+      try {
+        host = new URL(url).hostname.replace(/^www\./, "");
+      } catch {
+        host = url;
+      }
+      return {
+        label: item.label?.trim() || brand?.defaultLabel || "Registry",
+        url,
+        host,
+        badgeText: (brand?.defaultLabel || item.label || host || "R").trim().slice(0, 1).toUpperCase(),
+        accentColor: brand?.accentColor || "#334155",
+        textColor: brand?.foregroundColor || "#FFFFFF",
+        brandLabel: brand?.defaultLabel || null,
+      };
+    });
+}
+
+export default function WeddingRenderer({ template, event, renderMode = "default" }: Props) {
   const { layout, theme } = template;
+
+  if (renderMode === "scanned-invite-preview") {
+    const registryCards = buildPreviewRegistryCards(
+      Array.isArray((event as any).registry) ? (event as any).registry : [],
+    );
+    const schedule = Array.isArray((event as any).schedule) ? (event as any).schedule : [];
+    const firstScheduleTime =
+      typeof schedule[0]?.time === "string" && schedule[0].time.trim()
+        ? schedule[0].time.trim()
+        : null;
+    const previewScheduleRows = buildWeddingScanSchedule({
+      title: event.headlineTitle || "Your Names",
+      schedule,
+      timeLabel: firstScheduleTime,
+    });
+    const previewLocation =
+      (typeof (event as any).venue?.address === "string" && (event as any).venue.address) ||
+      (typeof event.location === "string" && event.location) ||
+      (typeof (event as any).venue?.name === "string" && (event as any).venue.name) ||
+      null;
+
+    return (
+      <ScannedWeddingInviteView
+        title={event.headlineTitle || "Your Names"}
+        location={previewLocation}
+        dateLabel={typeof event.date === "string" ? event.date : null}
+        timeLabel={firstScheduleTime}
+        imageUrl={
+          (typeof (event as any).customHeroImage === "string" && (event as any).customHeroImage) ||
+          (typeof (event as any).gallery?.[0]?.url === "string" && (event as any).gallery[0].url) ||
+          null
+        }
+        shareUrl="#preview"
+        calendarLinks={null}
+        flyerColors={{
+          background: theme.colors.background,
+          primary: theme.colors.secondary,
+          secondary: theme.colors.primary,
+          accent: theme.colors.accent,
+          text: theme.colors.text,
+        }}
+        registryCards={registryCards}
+        scheduleRows={previewScheduleRows}
+        previewMode
+        showRsvpPreview={Boolean((event as any).rsvpEnabled)}
+        rsvpPreviewText={
+          (event as any).rsvp?.deadline
+            ? `RSVP by ${(event as any).rsvp.deadline}.`
+            : "RSVP is enabled for this wedding."
+        }
+      />
+    );
+  }
 
   return (
     <div

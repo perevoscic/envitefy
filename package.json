@@ -35,7 +35,12 @@
     "images:optimize:signup-webp:diff": "node scripts/optimize-public-images.mjs --signup-templates-webp --diff",
     "images:optimize:signup-webp:staged": "node scripts/optimize-public-images.mjs --signup-templates-webp --staged",
     "birthday:themes": "node scripts/generate-birthday-theme-images.mjs",
-    "birthday:extract-elements": "node scripts/extract-theme-elements.mjs"
+    "birthday:extract-elements": "node scripts/extract-theme-elements.mjs",
+    "storyboard:generate": "node scripts/generate-storyboard-images.mjs",
+    "storyboard:video": "node scripts/assemble-storyboard-video.mjs",
+    "marketing:campaign": "node scripts/generate-marketing-campaign.mjs",
+    "campaign": "node scripts/generate-marketing-campaign.mjs",
+    "campaign:video": "node scripts/assemble-storyboard-video.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.887.0",

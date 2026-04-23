@@ -14,12 +14,15 @@ import {
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
+import type { OcrSkinSelection } from "@/lib/ocr/skin";
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
-import { findFirstEmail } from "@/utils/contact";
+import { findFirstEmail, normalizeUrlValue } from "@/utils/contact";
+import { extractColorsFromImage } from "@/utils/image-colors";
 import { buildEventPath } from "@/utils/event-url";
 import { uploadMediaFile } from "@/utils/media-upload-client";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { readFileAsDataUrl } from "@/utils/thumbnail";
+import { buildWeddingScanFlyerColorsFromImageColors } from "@/lib/wedding-scan";
 
 type EventFields = {
   title: string;
@@ -30,7 +33,16 @@ type EventFields = {
   timezone: string;
   numberOfGuests: number;
   reminders?: { minutes: number }[] | null;
-  rsvp?: string | null;
+  rsvp?:
+    | string
+    | {
+        isEnabled?: boolean;
+        url?: string | null;
+        link?: string | null;
+        deadline?: string | null;
+        contact?: string | null;
+      }
+    | null;
   /** OCR guest tips (flyer footer); maps to event thingsToDo / Good To Know. */
   thingsToDo?: string | null;
 };
@@ -41,6 +53,8 @@ type SubmitScannedEventParams = {
   ocrMeta?: {
     category?: string | null;
     birthdayTemplateHint?: BirthdayTemplateHint | null;
+    ocrSkin?: OcrSkinSelection | null;
+    flyerColors?: Record<string, string> | null;
   };
 };
 
@@ -193,6 +207,7 @@ export default function Dashboard({
     selectedEventHref: sidebarSelectedEventHref,
     selectedEventEditHref: sidebarSelectedEventEditHref,
     activeEventTab: sidebarActiveEventTab,
+    setEventContextSourcePage,
     clearEventContext,
   } = useSidebar();
   const selectedEventId = initialEventContext?.eventId ?? sidebarSelectedEventId ?? null;
@@ -918,7 +933,35 @@ export default function Dashboard({
           return null;
         };
 
-        const cleanedRsvp = data?.fieldsGuess?.rsvp ? cleanRsvp(data.fieldsGuess.rsvp) : null;
+        const rawRsvp =
+          typeof data?.fieldsGuess?.rsvp === "string" && data.fieldsGuess.rsvp.trim()
+            ? data.fieldsGuess.rsvp.trim()
+            : null;
+        const cleanedRsvp = rawRsvp ? cleanRsvp(rawRsvp) : null;
+        const scannedRsvpUrl =
+          typeof (data?.fieldsGuess as { rsvpUrl?: unknown })?.rsvpUrl === "string" &&
+          (data.fieldsGuess as { rsvpUrl?: string }).rsvpUrl?.trim()
+            ? normalizeUrlValue((data.fieldsGuess as { rsvpUrl?: string }).rsvpUrl!.trim())
+            : null;
+        const scannedRsvpDeadline =
+          typeof (data?.fieldsGuess as { rsvpDeadline?: unknown })?.rsvpDeadline === "string" &&
+          (data.fieldsGuess as { rsvpDeadline?: string }).rsvpDeadline?.trim()
+            ? (data.fieldsGuess as { rsvpDeadline?: string }).rsvpDeadline!.trim()
+            : null;
+        const isWeddingOcrResult =
+          String(data?.category || "")
+            .trim()
+            .toLowerCase() === "weddings";
+        const structuredWeddingRsvp =
+          isWeddingOcrResult && (rawRsvp || scannedRsvpUrl || scannedRsvpDeadline)
+            ? {
+                isEnabled: true,
+                contact: rawRsvp || undefined,
+                url: scannedRsvpUrl || undefined,
+                link: scannedRsvpUrl || undefined,
+                deadline: scannedRsvpDeadline || undefined,
+              }
+            : null;
 
         const goodToKnowRaw = (data?.fieldsGuess as { goodToKnow?: unknown })?.goodToKnow;
         const thingsToDoFromScan =
@@ -934,7 +977,7 @@ export default function Dashboard({
               timezone: String(data.fieldsGuess.timezone || tz || "UTC"),
               reminders: [{ minutes: 1440 }],
               numberOfGuests: 0,
-              rsvp: cleanedRsvp,
+              rsvp: structuredWeddingRsvp || cleanedRsvp,
               thingsToDo: thingsToDoFromScan || undefined,
             }
           : null;
@@ -950,6 +993,7 @@ export default function Dashboard({
             ocrMeta: {
               category: data?.category || null,
               birthdayTemplateHint: data?.birthdayTemplateHint || null,
+              ocrSkin: data?.ocrSkin || null,
             },
           });
           if (!created) {
@@ -1121,9 +1165,44 @@ export default function Dashboard({
             : ocrCategory;
         const normalizedBirthdayTemplateHint =
           ocrMeta?.birthdayTemplateHint || ocrBirthdayTemplateHint;
+        const normalizedOcrSkin =
+          ocrMeta?.ocrSkin && typeof ocrMeta.ocrSkin === "object" ? ocrMeta.ocrSkin : null;
         const isBirthdayOcrEvent =
           normalizedBirthdayTemplateHint?.detected &&
           (normalizedOcrCategory || "").toLowerCase() === "birthdays";
+        const isWeddingOcrEvent = (normalizedOcrCategory || "").trim().toLowerCase() === "weddings";
+        let flyerColors =
+          ocrMeta?.flyerColors && typeof ocrMeta.flyerColors === "object"
+            ? ocrMeta.flyerColors
+            : null;
+        if (!flyerColors && isWeddingOcrEvent && normalizedOcrSkin?.category === "wedding") {
+          flyerColors = normalizedOcrSkin.palette;
+        }
+        if (!flyerColors && isWeddingOcrEvent) {
+          try {
+            const previewDataUrl =
+              typeof previewUrl === "string" && previewUrl.startsWith("data:image/")
+                ? previewUrl
+                : fileForUpload instanceof File &&
+                    typeof fileForUpload.type === "string" &&
+                    fileForUpload.type.startsWith("image/")
+                  ? await readFileAsDataUrl(fileForUpload)
+                  : null;
+            if (previewDataUrl) {
+              const imageColors = await extractColorsFromImage(previewDataUrl);
+              flyerColors = imageColors
+                ? buildWeddingScanFlyerColorsFromImageColors(imageColors)
+                : null;
+            }
+          } catch {
+            flyerColors = null;
+          }
+        }
+
+        const structuredWeddingRsvp =
+          isWeddingOcrEvent && eventInput.rsvp && typeof eventInput.rsvp === "object"
+            ? eventInput.rsvp
+            : null;
 
         const payload: any = {
           title: eventInput.title || "Event",
@@ -1135,16 +1214,30 @@ export default function Dashboard({
             endISO: ready.end,
             location: ready.location || undefined,
             description: eventInput.description || undefined,
-            rsvp: eventInput.rsvp || undefined,
+            rsvp: structuredWeddingRsvp || eventInput.rsvp || undefined,
+            rsvpDeadline: structuredWeddingRsvp?.deadline || undefined,
             timezone,
             numberOfGuests: eventInput.numberOfGuests || 0,
             reminders: eventInput.reminders || undefined,
-            createdVia: isBirthdayOcrEvent ? "ocr-birthday-renderer" : "ocr",
+            createdVia: isBirthdayOcrEvent
+              ? "ocr-birthday-skin"
+              : isWeddingOcrEvent
+                ? "ocr-wedding-renderer"
+                : "ocr",
             thumbnail,
             attachment: attachment || undefined,
+            ocrSkin:
+              normalizedOcrSkin &&
+              ((isBirthdayOcrEvent && normalizedOcrSkin.category === "birthday") ||
+                (isWeddingOcrEvent && normalizedOcrSkin.category === "wedding"))
+                ? normalizedOcrSkin
+                : undefined,
+            flyerColors: isWeddingOcrEvent ? flyerColors || undefined : undefined,
             templateId: isBirthdayOcrEvent ? "party-pop" : undefined,
             variationId: isBirthdayOcrEvent
-              ? normalizedBirthdayTemplateHint.themeId || undefined
+              ? normalizedOcrSkin?.category === "birthday"
+                ? normalizedOcrSkin.skinId
+                : normalizedBirthdayTemplateHint.themeId || undefined
               : undefined,
             birthdayAudience: isBirthdayOcrEvent
               ? normalizedBirthdayTemplateHint.audience || "neutral"
@@ -1214,7 +1307,7 @@ export default function Dashboard({
         };
       }
     },
-    [invalidateEventCache, ocrBirthdayTemplateHint, ocrCategory, uploadedFile],
+    [invalidateEventCache, ocrBirthdayTemplateHint, ocrCategory, previewUrl, uploadedFile],
   );
 
   const submitScannedEvent = useCallback(
@@ -1245,7 +1338,10 @@ export default function Dashboard({
         const { eventId, savedTitle } = saveResult;
 
         const eventTitle = savedTitle || eventInput.title || "Event";
-        router.push(buildEventPath(eventId, eventTitle, { created: true }));
+        const eventHref = buildEventPath(eventId, eventTitle, { created: true });
+        clearEventContext();
+        setEventContextSourcePage("invitedEvents");
+        router.push(eventHref);
         return true;
       } finally {
         isSubmittingRef.current = false;

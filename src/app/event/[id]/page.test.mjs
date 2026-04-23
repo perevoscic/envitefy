@@ -38,12 +38,54 @@ test("event route branches football discovery/template events into the football 
     /if \(editParam && canManageCreatedEvent && isFootballDiscoveryTemplate\) \{/,
   );
   assert.match(source, /redirect\("\/event"\)/);
-  assert.match(source, /isOcrBirthdayRenderer/);
-  assert.match(source, /const isBirthdayRendererEvent =/);
-  assert.match(source, /createdVia === "birthday-renderer" \|\| isOcrBirthdayRenderer\(createdVia\)/);
-  assert.match(source, /selectBirthdayOcrThemeId/);
+  assert.match(source, /import BirthdaySkin from "@\/components\/BirthdaySkin";/);
+  assert.match(source, /const isScannedBirthdayInviteEvent =/);
+  assert.match(source, /categoryNormalized === "birthdays" && isScannedInviteEvent && isOcrEvent/);
+  assert.match(source, /if \(isScannedBirthdayInviteEvent\) \{/);
+  assert.match(source, /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "birthday"\);/);
+  assert.match(source, /<BirthdaySkin/);
   assert.match(source, /calendarLinks=\{calendarLinks\}/);
+  assert.match(source, /palette=\{ocrSkin\?\.palette \|\| null\}/);
+  assert.match(source, /rsvpName=\{rsvpName\}/);
+  assert.match(source, /rsvpPhone=\{rsvpPhone\}/);
+  assert.match(source, /rsvpEmail=\{rsvpEmail\}/);
+  assert.match(source, /rsvpUrl=\{rsvpUrl\}/);
+  assert.match(source, /planCopy=\{birthdayPlanCopy\}/);
+  assert.ok(
+    source.indexOf("if (isScannedBirthdayInviteEvent)") <
+      source.indexOf("if (isBirthdayTemplate || isBirthdayRendererEvent)"),
+    "scanned birthday branch should run before the old birthday renderer/template branch"
+  );
+  assert.match(source, /const isBirthdayRendererEvent =/);
+  assert.match(source, /categoryNormalized === "birthdays" && createdVia === "birthday-renderer"/);
+  assert.match(source, /const birthdayThemeId = variationId \|\| BIRTHDAY_THEMES\[0\]\?\.id;/);
   assert.match(source, /const hideHostDashboard =/);
   assert.match(source, /const showHostDashboard = canManageCreatedEvent && !hideHostDashboard/);
   assert.match(source, /showHostDashboard=\{showHostDashboard\}/);
+  assert.match(
+    source,
+    /const ScannedWeddingInviteView = nextDynamic\(\s*\(\) => import\("@\/components\/weddings\/ScannedWeddingInviteView"\),/m,
+    "ScannedWeddingInviteView should be dynamically imported"
+  );
+  assert.match(source, /const isScannedWeddingInviteEvent =/);
+  assert.match(source, /categoryNormalized === "weddings" && isScannedInviteEvent && isOcrEvent/);
+  assert.match(source, /if \(isScannedWeddingInviteEvent\) \{/);
+  assert.match(source, /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "wedding"\);/);
+  assert.match(source, /<ScannedWeddingInviteView/);
+  assert.match(source, /eventId=\{row\.id\}/);
+  assert.match(source, /flyerColors=\{ocrSkin\?\.palette \|\| flyerColors\}/);
+  assert.match(source, /skinId=\{ocrSkin\?\.skinId \|\| null\}/);
+  assert.match(source, /scheduleRows=\{scannedWeddingSchedule\}/);
+  assert.match(source, /rsvpName=\{rsvpName\}/);
+  assert.match(source, /rsvpPhone=\{rsvpPhone\}/);
+  assert.match(source, /rsvpEmail=\{rsvpEmail\}/);
+  assert.match(source, /rsvpUrl=\{rsvpUrl\}/);
+  assert.match(source, /rsvpDeadline=\{rsvpDeadline \|\| null\}/);
+  assert.match(source, /registryCards=\{registryCards\}/);
+  assert.match(source, /showPublicShareAction=\{!isReadOnly && canManageCreatedEvent\}/);
+  assert.ok(
+    source.indexOf("if (isScannedWeddingInviteEvent)") <
+      source.indexOf('const isBabyShowerTemplate ='),
+    "scanned wedding branch should run before later template fallbacks"
+  );
 });

@@ -9,6 +9,7 @@ import type { CSSProperties } from "react";
 import { cache } from "react";
 import AccessCodeGate from "@/components/AccessCodeGate";
 import AppleCalendarLink from "@/components/AppleCalendarLink";
+import BirthdaySkin from "@/components/BirthdaySkin";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 import {
   CalendarIconApple,
@@ -26,7 +27,6 @@ import SponsoredSupplies from "@/components/SponsoredSupplies";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
-import { isOcrBirthdayRenderer, selectBirthdayOcrThemeId } from "@/lib/birthday-ocr-template";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { isScannedInviteCreatedVia, normalizeDashboardEventOwnership } from "@/lib/dashboard-data";
 import { isGymDiscoveryV2EventData } from "@/lib/discovery/event-data";
@@ -44,13 +44,19 @@ import { getEventAccessCookieName, verifyEventAccessCookieValue } from "@/lib/ev
 import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
+import { normalizeOcrSkinSelection } from "@/lib/ocr/skin";
 import { createServerTimingTracker } from "@/lib/server-timing";
 import { resolveEventThemeColor } from "@/lib/theme-color";
+import {
+  buildWeddingScanSchedule,
+  buildWeddingScanFlyerColorsFromImageColors,
+  normalizeWeddingFlyerColors,
+} from "@/lib/wedding-scan";
 import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
 import type { SignupForm } from "@/types/signup";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
-import { findFirstEmail } from "@/utils/contact";
+import { findFirstEmail, findFirstUrl, normalizeUrlValue } from "@/utils/contact";
 import { buildEditLink, resolveEditHref } from "@/utils/event-edit-route";
 import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
 import type { ImageColors } from "@/utils/image-colors";
@@ -87,6 +93,10 @@ const BabyShowerTemplateView = nextDynamic(() => import("@/components/BabyShower
 const BirthdayRenderer = nextDynamic(() => import("@/components/birthdays/BirthdayRenderer"), {
   loading: () => null,
 });
+const ScannedWeddingInviteView = nextDynamic(
+  () => import("@/components/weddings/ScannedWeddingInviteView"),
+  { loading: () => null },
+);
 const EventOwnerWorkspace = nextDynamic(() => import("@/components/EventOwnerWorkspace"), {
   loading: () => null,
 });
@@ -956,20 +966,46 @@ export default async function EventPage({
   }
 
   // Detect RSVP phone and build SMS/Call links
-  // First try the rsvp field, then fall back to searching description/location
-  const rsvpField = typeof data?.rsvp === "string" ? data.rsvp : "";
-  const aggregateContactText = `${rsvpField} ${
+  // Prefer structured wedding RSVP data, then fall back to the legacy flat string field.
+  const rsvpRecord =
+    data?.rsvp && typeof data.rsvp === "object" && !Array.isArray(data.rsvp)
+      ? (data.rsvp as Record<string, unknown>)
+      : null;
+  const structuredRsvpContact =
+    typeof rsvpRecord?.contact === "string" ? rsvpRecord.contact.trim() : "";
+  const structuredRsvpUrl =
+    typeof rsvpRecord?.url === "string" && rsvpRecord.url.trim()
+      ? normalizeUrlValue(rsvpRecord.url.trim()) || ""
+      : typeof rsvpRecord?.link === "string" && rsvpRecord.link.trim()
+        ? normalizeUrlValue(rsvpRecord.link.trim()) || ""
+        : "";
+  const rsvpField =
+    typeof data?.rsvp === "string" ? data.rsvp : structuredRsvpContact || "";
+  const aggregateContactText = `${rsvpField} ${structuredRsvpUrl} ${
     (data?.description as string | undefined) || ""
   } ${(data?.location as string | undefined) || ""}`.trim();
   const rsvpPhone = extractFirstPhoneNumber(aggregateContactText);
   const rsvpEmail =
     findFirstEmail(rsvpField) ?? findFirstEmail(aggregateContactText) ?? findFirstEmail(data);
+  const rsvpUrl =
+    structuredRsvpUrl ||
+    normalizeUrlValue(findFirstUrl(rsvpField)) ||
+    normalizeUrlValue(findFirstUrl(aggregateContactText)) ||
+    normalizeUrlValue(findFirstUrl(data?.rsvp));
+  const rsvpDeadline =
+    (typeof rsvpRecord?.deadline === "string" && rsvpRecord.deadline.trim()) ||
+    (typeof data?.rsvpDeadline === "string" && data.rsvpDeadline.trim()) ||
+    "";
 
-  const rsvpContactSource = rsvpField || rsvpEmail || "";
+  const rsvpContactSource = structuredRsvpContact || rsvpField || rsvpEmail || "";
   // Extract just the name from RSVP field (remove "RSVP:" prefix, phone number, and option text)
   const rsvpNameRaw = rsvpContactSource
     ? rsvpContactSource
         .replace(/^RSVP:?\s*/i, "") // Remove "RSVP:" or "RSVP" prefix
+        .replace(/\b(?:rsvp|respond|reply)\s+by\s+[A-Z][a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,\s*\d{4})?(?:\s+at)?/gi, "")
+        .replace(/\bhttps?:\/\/\S+\b/gi, "")
+        .replace(/\bwww\.\S+\b/gi, "")
+        .replace(/\b[a-z0-9-]+\.(?:com|net|org|io|co|us|info|wedding|events)(?:\/\S*)?\b/gi, "")
         .replace(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/g, "") // Remove phone number
         .replace(/\(\d{3}\)\s*\d{3}[-.\s]?\d{4}/g, "") // Remove (555) 123-4567 format
         .trim()
@@ -999,6 +1035,29 @@ export default async function EventPage({
     }
     return null;
   })();
+  const flyerColors = (() => {
+    const ocrSkinPalette = normalizeOcrSkinSelection((data as any)?.ocrSkin)?.palette;
+    if (ocrSkinPalette) {
+      return normalizeWeddingFlyerColors(ocrSkinPalette);
+    }
+    const raw = data?.flyerColors;
+    if (raw && typeof raw === "object") {
+      return normalizeWeddingFlyerColors(raw);
+    }
+    if (imageColors) {
+      return buildWeddingScanFlyerColorsFromImageColors(imageColors);
+    }
+    return null;
+  })();
+  const scannedWeddingSchedule = buildWeddingScanSchedule({
+    title,
+    description: typeof data?.description === "string" ? data.description : "",
+    ocrText: typeof data?.ocrText === "string" ? data.ocrText : "",
+    location: locationText,
+    venue: venueText,
+    schedule: Array.isArray(data?.schedule) ? data.schedule : [],
+    timeLabel: formattedTimeAndDate.time || null,
+  });
 
   // Birthday editor can persist explicit gradient/color selections
   const headerBgCss: string | null =
@@ -1191,10 +1250,13 @@ export default async function EventPage({
     variationId &&
     categoryNormalized === "birthdays" &&
     createdVia !== "simple-template";
+  const isScannedBirthdayInviteEvent =
+    categoryNormalized === "birthdays" && isScannedInviteEvent && isOcrEvent;
   const isBirthdayRendererEvent =
-    categoryNormalized === "birthdays" &&
-    (createdVia === "birthday-renderer" || isOcrBirthdayRenderer(createdVia));
+    categoryNormalized === "birthdays" && createdVia === "birthday-renderer";
   const isWeddingTemplate = templateId && variationId && categoryNormalized === "weddings";
+  const isScannedWeddingInviteEvent =
+    categoryNormalized === "weddings" && isScannedInviteEvent && isOcrEvent;
   const isDiscoverySimpleTemplate = isGymnasticsDiscoveryTemplate || isFootballDiscoveryTemplate;
   const isSimpleTemplate =
     (createdVia === "simple-template" || createdVia === "template" || isDiscoverySimpleTemplate) &&
@@ -1205,36 +1267,97 @@ export default async function EventPage({
   const shouldRenderFootballPage =
     Boolean(isFootballDiscoveryTemplate) || Boolean(isFootballSeasonTemplate);
 
+  if (isScannedBirthdayInviteEvent) {
+    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "birthday");
+    const scannedBirthdayImageUrl =
+      attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
+        ? attachmentInfo.dataUrl
+        : headerImageUrl;
+    const birthdayPlanCopy =
+      (typeof data?.goodToKnow === "string" && data.goodToKnow.trim()) ||
+      (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
+      (typeof data?.description === "string" && data.description.trim()) ||
+      "Games, food & fun!";
+
+    return (
+      <BirthdaySkin
+        title={title}
+        honoreeName={
+          (typeof data?.birthdayName === "string" && data.birthdayName.trim()) ||
+          (typeof data?.childName === "string" && data.childName.trim()) ||
+          null
+        }
+        dateLabel={formattedTimeAndDate.date || whenLabel || null}
+        timeLabel={formattedTimeAndDate.time || null}
+        location={locationText || venueText || null}
+        imageUrl={scannedBirthdayImageUrl}
+        shareUrl={shareUrl}
+        calendarLinks={calendarLinks}
+        palette={ocrSkin?.palette || null}
+        rsvpName={rsvpName}
+        rsvpPhone={rsvpPhone}
+        rsvpEmail={rsvpEmail}
+        rsvpUrl={rsvpUrl}
+        planCopy={birthdayPlanCopy}
+        actions={
+          !isReadOnly &&
+          isOwner && (
+            <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
+              {canManageCreatedEvent && (
+                <Link
+                  href={buildEditLink(row.id, data, title)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors rounded-md"
+                  title="Edit event"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span className="hidden sm:inline">Edit</span>
+                </Link>
+              )}
+              <EventDeleteModal eventId={row.id} eventTitle={title} />
+              <EventActions
+                shareUrl={shareUrl}
+                event={data as any}
+                calendarTitle={title}
+                historyId={!isReadOnly ? row.id : undefined}
+                className=""
+                variant="compact"
+                tone={"default" as any}
+                showCalendar={false}
+                showEmail={false}
+              />
+            </div>
+          )
+        }
+      />
+    );
+  }
+
   // If it's a birthday template, render the template view
   if (isBirthdayTemplate || isBirthdayRendererEvent) {
-    const birthdayAudience =
-      typeof (data as any)?.birthdayAudience === "string"
-        ? ((data as any).birthdayAudience as string)
-        : null;
-    const birthdayHintThemeId =
-      typeof (data as any)?.birthdayTemplateHint?.themeId === "string"
-        ? ((data as any).birthdayTemplateHint.themeId as string)
-        : null;
-    const birthdayThemeId =
-      variationId ||
-      birthdayHintThemeId ||
-      selectBirthdayOcrThemeId(
-        birthdayAudience === "girl" || birthdayAudience === "boy" ? birthdayAudience : "neutral",
-      );
-    const birthdayTheme = data.theme?.id
+    const birthdayThemeId = variationId || BIRTHDAY_THEMES[0]?.id;
+    const birthdayThemeBase = data.theme?.id
       ? data.theme
       : BIRTHDAY_THEMES.find((t) => t.id === birthdayThemeId) || BIRTHDAY_THEMES[0];
+    const birthdayTheme = birthdayThemeBase;
 
     if (isBirthdayRendererEvent || data.theme?.layout) {
       return (
         <BirthdayRenderer
           template={birthdayTheme}
           eventId={row.id}
-          heroImageUrl={
-            isOcrBirthdayRenderer(createdVia)
-              ? attachmentInfo?.dataUrl || headerImageUrl || null
-              : null
-          }
+          heroImageUrl={null}
           event={{
             headlineTitle: title || data.headlineTitle,
             date:
@@ -1266,7 +1389,7 @@ export default async function EventPage({
             gallery: Array.isArray(data.gallery)
               ? data.gallery.map((item: any) => (typeof item === "string" ? item : item.url))
               : [],
-            rsvpDeadline: data.rsvpDeadline || data.rsvp?.deadline,
+            rsvpDeadline: rsvpDeadline || undefined,
             numberOfGuests: data.numberOfGuests || 0,
           }}
           isOwner={isOwner}
@@ -1353,6 +1476,37 @@ export default async function EventPage({
         viewerKind={viewerKind}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
+      />
+    );
+  }
+
+  if (isScannedWeddingInviteEvent) {
+    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "wedding");
+    const scannedWeddingImageUrl =
+      attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
+        ? attachmentInfo.dataUrl
+        : headerImageUrl;
+
+    return (
+      <ScannedWeddingInviteView
+        eventId={row.id}
+        title={title}
+        location={locationText || venueText || null}
+        dateLabel={formattedTimeAndDate.date || whenLabel || null}
+        timeLabel={formattedTimeAndDate.time || null}
+        imageUrl={scannedWeddingImageUrl}
+        shareUrl={shareUrl}
+        calendarLinks={calendarLinks}
+        flyerColors={ocrSkin?.palette || flyerColors}
+        skinId={ocrSkin?.skinId || null}
+        scheduleRows={scannedWeddingSchedule}
+        rsvpName={rsvpName}
+        rsvpPhone={rsvpPhone}
+        rsvpEmail={rsvpEmail}
+        rsvpUrl={rsvpUrl}
+        rsvpDeadline={rsvpDeadline || null}
+        registryCards={registryCards}
+        showPublicShareAction={!isReadOnly && canManageCreatedEvent}
       />
     );
   }
@@ -1704,7 +1858,7 @@ export default async function EventPage({
           </div>
           {/* Second row: RSVP (left) and Add to calendar (right) */}
           <div className="mt-4 grid grid-cols-2 gap-4">
-            {(rsvpName || rsvpPhone || rsvpEmail) && (
+            {(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl) && (
               <div id="event-rsvp">
                 <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                   RSVP
@@ -1715,6 +1869,7 @@ export default async function EventPage({
                     rsvpName={rsvpName}
                     rsvpPhone={rsvpPhone}
                     rsvpEmail={rsvpEmail}
+                    rsvpUrl={rsvpUrl}
                     eventTitle={title}
                     shareUrl={shareUrl}
                   />
@@ -2023,7 +2178,7 @@ export default async function EventPage({
       {!isReadOnly && (
         <div className="event-modern-mobile-bar md:hidden">
           <div className="mx-auto flex max-w-3xl items-center gap-2">
-            {(rsvpName || rsvpPhone || rsvpEmail) && (
+            {(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl) && (
               <a
                 href="#event-rsvp"
                 className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"

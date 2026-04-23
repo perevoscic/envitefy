@@ -24,6 +24,8 @@ interface SidebarContextType {
   setSelectedEventEditHref: (href: string | null) => void;
   activeEventTab: EventContextTab;
   setActiveEventTab: (tab: EventContextTab) => void;
+  eventContextSourcePage: EventListPage;
+  setEventContextSourcePage: (page: EventListPage) => void;
   clearEventContext: () => void;
 }
 
@@ -32,6 +34,8 @@ export type EventContextTab =
   | "guests"
   | "communications"
   | "settings";
+
+export type EventListPage = "myEvents" | "invitedEvents";
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 export const SIDEBAR_STORAGE_KEY = "sidebar:collapsed";
@@ -99,6 +103,8 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
   >(null);
   const [activeEventTab, setActiveEventTab] =
     useState<EventContextTab>("dashboard");
+  const [eventContextSourcePage, setEventContextSourcePage] =
+    useState<EventListPage>("myEvents");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -177,6 +183,8 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
         setSelectedEventEditHref,
         activeEventTab,
         setActiveEventTab,
+        eventContextSourcePage,
+        setEventContextSourcePage,
         clearEventContext,
       }}
     >

@@ -80,7 +80,7 @@ export const SIDEBAR_ITEM_CARD_CLASS =
   "nav-chrome-motion rounded-full";
 export const SIDEBAR_BADGE_CLASS =
   "inline-flex min-w-[20px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-[#7269dd] shadow-[0_8px_18px_rgba(126,111,233,0.14)]";
-export const SIDEBAR_WIDTH_REM = "19rem";
+export const SIDEBAR_WIDTH_REM = "20rem";
 export const SUBPAGE_STICKY_HEADER_CLASS =
   "sticky top-0 z-20 -mx-5 bg-[linear-gradient(180deg,rgba(245,243,255,0.98),rgba(245,243,255,0.82))] px-5 pb-4 pt-2 backdrop-blur-xl";
 export const SIDEBAR_DIVIDER_CLASS = "h-px w-full bg-transparent";

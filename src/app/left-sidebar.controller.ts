@@ -64,6 +64,8 @@ type LeftSidebarControllerArgs = {
     setSelectedEventEditHref: (value: string) => void;
     activeEventTab: EventContextTab;
     setActiveEventTab: (value: EventContextTab) => void;
+    eventContextSourcePage: EventListPage;
+    setEventContextSourcePage: (value: EventListPage) => void;
     clearEventContext: () => void;
   };
   router: {
@@ -172,6 +174,8 @@ export function useLeftSidebarController({
     setSelectedEventEditHref,
     activeEventTab,
     setActiveEventTab,
+    eventContextSourcePage,
+    setEventContextSourcePage,
     clearEventContext,
   } = sidebar;
 
@@ -194,8 +198,6 @@ export function useLeftSidebarController({
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
   const [eventSidebarMode, setEventSidebarMode] =
     useState<EventSidebarMode>("owner");
-  const [eventContextSourcePage, setEventContextSourcePage] =
-    useState<EventListPage>("myEvents");
   const [isHydrated, setIsHydrated] = useState(false);
   const [defaultCalendarProvider, setDefaultCalendarProvider] =
     useState<CalendarProviderKey | null>(null);
@@ -506,6 +508,18 @@ export function useLeftSidebarController({
     if (!pathname || pathname === "/") return;
     invitedNavigationPendingRef.current = false;
   }, [pathname]);
+
+  useEffect(() => {
+    const isPublicEventRoute = Boolean(
+      pathname &&
+        (pathname.startsWith("/event/") || pathname.startsWith("/smart-signup-form/"))
+    );
+    if (!isPublicEventRoute) return;
+    if (selectedEventId) return;
+    if (eventContextSourcePage !== "invitedEvents") return;
+    setEventSidebarMode("guest");
+    setSidebarPage("invitedEvents");
+  }, [eventContextSourcePage, pathname, selectedEventId]);
 
   useEffect(() => {
     const prevPage = prevSidebarPageRef.current;
@@ -1053,10 +1067,68 @@ export function useLeftSidebarController({
       countGroupedEventItems(invitedEventsGrouped.past),
     [invitedEventsGrouped.past, invitedEventsGrouped.upcoming]
   );
+
+  const inferEventListSourceFromPath = useCallback(
+    (currentPath: string | null): EventListPage | null => {
+      const routePath = String(currentPath || "").trim();
+      if (
+        !routePath ||
+        (!routePath.startsWith("/event/") && !routePath.startsWith("/smart-signup-form/"))
+      ) {
+        return null;
+      }
+
+      const matchesItem = (item: GroupedEventItem) => {
+        const itemHref = String(item.href || "").trim();
+        const itemPath = itemHref
+          ? (() => {
+              try {
+                return new URL(itemHref, "https://envitefy.local").pathname;
+              } catch {
+                return itemHref.split("?")[0] || "";
+              }
+            })()
+          : "";
+
+        return (
+          itemPath === routePath ||
+          routePath === `/event/${item.row.id}` ||
+          routePath === `/smart-signup-form/${item.row.id}` ||
+          routePath.endsWith(`-${item.row.id}`)
+        );
+      };
+
+      const invitedItems = [
+        ...invitedEventsGrouped.upcoming.flatMap((section) => section.items),
+        ...invitedEventsGrouped.past.flatMap((section) => section.items),
+      ];
+      if (invitedItems.some(matchesItem)) return "invitedEvents";
+
+      const ownedItems = [
+        ...myEventsGrouped.upcoming.flatMap((section) => section.items),
+        ...myEventsGrouped.past.flatMap((section) => section.items),
+      ];
+      if (ownedItems.some(matchesItem)) return "myEvents";
+
+      return null;
+    },
+    [invitedEventsGrouped.past, invitedEventsGrouped.upcoming, myEventsGrouped.past, myEventsGrouped.upcoming]
+  );
   const isCreateEntryActive =
     isCreateRouteActive ||
     sidebarPage === "createEvent" ||
     sidebarPage === "createEventOther";
+
+  useEffect(() => {
+    const inferredSource = inferEventListSourceFromPath(pathname);
+    if (!inferredSource) return;
+    if (eventContextSourcePage !== inferredSource) {
+      setEventContextSourcePage(inferredSource);
+    }
+    if (inferredSource === "invitedEvents") {
+      setEventSidebarMode("guest");
+    }
+  }, [eventContextSourcePage, inferEventListSourceFromPath, pathname, setEventContextSourcePage]);
 
   useEffect(() => {
     const onDeleted = (event: Event) => {

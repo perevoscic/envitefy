@@ -38,6 +38,7 @@ import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { normalizeUrlValue } from "@/utils/contact";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import Link from "next/link";
@@ -1717,9 +1718,12 @@ const App = () => {
       rsvpEnabled: Boolean(
         (data as any).rsvp?.isEnabled !== false && (data as any).rsvp
       ),
-      rsvpLink: (data as any).rsvp?.link || "",
+      rsvpLink:
+        normalizeUrlValue((data as any).rsvp?.url || (data as any).rsvp?.link || "") || "",
       rsvp: {
-        url: (data as any).rsvp?.link || "#rsvp",
+        url:
+          normalizeUrlValue((data as any).rsvp?.url || (data as any).rsvp?.link || "") ||
+          "#rsvp",
         deadline: (data as any).rsvp?.deadline || undefined,
       },
       registry: Array.isArray((data as any).registry)
@@ -2092,7 +2096,15 @@ const App = () => {
           endISO,
           location,
           description: data.story?.text || undefined,
-          rsvp: data.rsvp?.isEnabled ? data.rsvp?.deadline || "" : undefined,
+          rsvp: data.rsvp?.isEnabled
+            ? {
+                ...data.rsvp,
+                isEnabled: true,
+                url: normalizeUrlValue(data.rsvp?.url || data.rsvp?.link || "") || undefined,
+                link: normalizeUrlValue(data.rsvp?.url || data.rsvp?.link || "") || undefined,
+                deadline: data.rsvp?.deadline || undefined,
+              }
+            : undefined,
           numberOfGuests: 0,
           templateId: "wedding",
           variationId,
@@ -3214,7 +3226,11 @@ const App = () => {
       >
         <div className="w-full max-w-[100%] md:max-w-[calc(100%-420px)] xl:max-w-[1000px] my-4 md:my-8 md:ml-auto md:mr-[420px] transition-all duration-500 ease-in-out">
           <div className="mb-6 shadow-2xl md:rounded-xl overflow-hidden">
-            <WeddingRenderer template={selectedTemplate} event={previewEvent} />
+            <WeddingRenderer
+              template={selectedTemplate}
+              event={previewEvent}
+              renderMode="scanned-invite-preview"
+            />
           </div>
           <div
             className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${

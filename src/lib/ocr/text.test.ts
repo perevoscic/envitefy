@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   detectCategory,
+  extractRsvpDetails,
   inferTimezoneFromAddress,
   pickTitle,
   splitVenueFromAddress,
@@ -32,4 +33,33 @@ test("splitVenueFromAddress keeps venue separate from street address", () => {
 test("detectCategory recognizes medical and sports text", () => {
   assert.equal(detectCategory("Dental cleaning appointment with Sacred Heart"), "Doctor Appointments");
   assert.equal(detectCategory("Volleyball practice schedule Monday 4:30"), "Sport Events");
+});
+
+test("extractRsvpDetails captures wedding RSVP url and deadline", () => {
+  const details = extractRsvpDetails(
+    [
+      "RSVP by December 1st at:",
+      "theknot.com/us/isabellaandjonathon",
+    ].join("\n"),
+  );
+
+  assert.equal(details.url, "https://theknot.com/us/isabellaandjonathon");
+  assert.equal(details.deadline, "December 1st");
+  assert.equal(details.contact, null);
+});
+
+test("extractRsvpDetails keeps phone-based RSVP contact", () => {
+  const details = extractRsvpDetails("RSVP to Maria at 555-123-4567");
+
+  assert.equal(details.contact, "RSVP: Maria 555-123-4567");
+  assert.equal(details.url, null);
+  assert.equal(details.deadline, null);
+});
+
+test("extractRsvpDetails does not treat generic links as RSVP links", () => {
+  const details = extractRsvpDetails("Photos: www.example.com/gallery");
+
+  assert.equal(details.url, null);
+  assert.equal(details.deadline, null);
+  assert.equal(details.contact, null);
 });

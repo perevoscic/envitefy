@@ -25,9 +25,37 @@ export const DEFAULT_CONTINUITY_RULE =
   "This must look like the same ad campaign sequence as the previous frames, keeping the same character, same outfit, same props, same flyer, same environment, same lighting, same branding, and same premium commercial aesthetic.";
 export const DEFAULT_NEGATIVE_PROMPT =
   "no character change, no wardrobe change, no different location, no different flyer design, no different phone, no split image, no collage, no watermark, no floating text, single frame only.";
+export const DEFAULT_CONTINUITY_CONTRACT = `You are generating a sequence of highly consistent images for a visual story.
+
+Your goal is to preserve continuity across all frames.
+
+Global continuity rules:
+- Keep the same main character identity in every image.
+- Keep the same face, age, hairstyle, body type, and overall appearance unless a change is explicitly requested.
+- Keep the same outfit in every image unless a change is explicitly requested.
+- Keep the same environment and layout across all frames unless a change is explicitly requested.
+- Keep the same props and key objects consistent across all frames.
+- Keep the same photographic style, color tone, lighting style, and mood across all frames.
+- Keep the same framing style unless a change is explicitly requested.
+- Make each frame feel like part of the same short cinematic ad or photo sequence.
+- Preserve realism and visual continuity.
+
+Output requirements:
+- Generate the image based on the scene description provided.
+- Follow the scene-specific action carefully.
+- Do not redesign the character, room, or objects.
+- Only change the action, pose, expression, and small camera shift needed for that scene.
+- Maintain a premium, polished, believable visual style.
+
+Now generate the requested frame using the following fixed continuity details and scene content.`;
 
 function clean(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function cleanNullable(value) {
+  const normalized = clean(value);
+  return normalized || null;
 }
 
 function toSourceValue(value, source) {
@@ -192,16 +220,16 @@ function pickLegacyAwareStringField(overrideValues, inferredValues, defaultValue
 
 function buildDefaultActionSequence(frameCount) {
   const base = [
-    "establishing shot",
-    "notices the key moment",
-    "moves closer",
-    "engages with the key object",
-    "prepares to act",
-    "captures the moment",
-    "checks the result",
-    "reacts positively",
-    "keeps moving with confidence",
-    "hero closing shot",
+    "the high-stakes moment hits in the real environment",
+    "the mess or friction is visible in specific proof",
+    "outside pressure or social stakes escalate the tension",
+    "the character reaches a decision point instead of circling",
+    "the product enters the scene with intent",
+    "capture turns the messy source into clean input",
+    "the event or page takes visible shape",
+    "the result looks polished and send-ready",
+    "confidence replaces hesitation in the room",
+    "single final payoff frame with the CTA",
   ];
 
   if (frameCount <= base.length) {
@@ -213,6 +241,111 @@ function buildDefaultActionSequence(frameCount) {
     out.splice(out.length - 1, 0, `progression beat ${out.length}`);
   }
   return out.slice(0, frameCount);
+}
+
+function pickStoryboardDefault(list, index, fallback) {
+  if (!Array.isArray(list) || list.length === 0) return fallback;
+  return clean(list[index]) || fallback;
+}
+
+function buildDefaultFrameMetadata(frameCount) {
+  const roles = alignActionSequence(
+    [
+      "hook",
+      "pain-proof",
+      "chaos-escalation",
+      "decision-point",
+      "product-entry",
+      "capture-proof",
+      "creation-proof",
+      "send-ready-proof",
+      "emotional-release",
+      "final-payoff",
+    ],
+    frameCount,
+  );
+
+  const shots = alignActionSequence(
+    [
+      "wide environmental hook shot",
+      "tight problem-detail insert",
+      "over-the-shoulder pressure shot",
+      "profile reaction medium shot",
+      "clean product-entry close-up",
+      "hands-in-action capture close-up",
+      "three-quarter progress reveal",
+      "balanced send-ready proof shot",
+      "relief portrait medium shot",
+      "hero payoff end-card shot",
+    ],
+    frameCount,
+  );
+
+  const screenStates = alignActionSequence(
+    [
+      "problem context with no clean output yet",
+      "messy or incomplete source proof",
+      "pressure is visible and the task still feels unresolved",
+      "the decision to use the product is about to happen",
+      "the product is now visible and usable",
+      "capture is converting the messy source into clean structured input",
+      "the draft event or page is visibly taking shape",
+      "the final result reads as polished and send-ready",
+      "the product has removed uncertainty and the user is emotionally calmer",
+      "single final CTA or payoff state only",
+    ],
+    frameCount,
+  );
+
+  const propFocus = alignActionSequence(
+    [
+      "environment and people stakes over the phone",
+      "the messy proof artifact or source material",
+      "pressure props that show why the moment matters now",
+      "the person deciding what to do next",
+      "the product entry moment without over-explaining the UI",
+      "hands, source material, and capture proof",
+      "the emerging result on screen plus one supporting prop",
+      "the polished result rather than the mechanism",
+      "the person and the emotional release in the room",
+      "brand and payoff with no duplicate end card",
+    ],
+    frameCount,
+  );
+
+  const emotionalBeats = alignActionSequence(
+    [
+      "tension",
+      "friction",
+      "pressure",
+      "decision",
+      "relief begins",
+      "control",
+      "confidence building",
+      "certainty",
+      "relief",
+      "conversion",
+    ],
+    frameCount,
+  );
+
+  const proofTargets = alignActionSequence(
+    [
+      "show why the moment matters right now",
+      "prove the pain with concrete visual evidence",
+      "show the cost of staying stuck",
+      "make the turn toward the product feel earned",
+      "introduce the product clearly",
+      "prove the product action",
+      "prove the event creation or page-building result",
+      "prove the result is send-ready",
+      "prove the emotional transformation",
+      "land the single final payoff and CTA",
+    ],
+    frameCount,
+  );
+
+  return { roles, shots, screenStates, propFocus, emotionalBeats, proofTargets };
 }
 
 export function alignActionSequence(actions, frameCount) {
@@ -314,6 +447,17 @@ export function normalizeSceneSpec(looseInput, inferredSpec = {}) {
     ),
     actionSequence: toSourceValue(actionSequence, actionSource),
     extraNotes: pickStringField(looseInput?.extraNotes, "", ""),
+    environmentStrategy: pickStringField("", inferredSpec.environmentStrategy, ""),
+    propPriority: pickStringField("", inferredSpec.propPriority, ""),
+    disallowedProps: pickStringField("", inferredSpec.disallowedProps, ""),
+    screenProofRequirements: pickStringField("", inferredSpec.screenProofRequirements, ""),
+    visualArc: pickStringField("", inferredSpec.visualArc, ""),
+    identityLock: pickStringField("", inferredSpec.identityLock, ""),
+    appearanceLock: pickStringField("", inferredSpec.appearanceLock, ""),
+    environmentLayoutLock: pickStringField("", inferredSpec.environmentLayoutLock, ""),
+    propContinuityLock: pickStringField("", inferredSpec.propContinuityLock, ""),
+    styleContinuityLock: pickStringField("", inferredSpec.styleContinuityLock, ""),
+    framingBaseline: pickStringField("", inferredSpec.framingBaseline, ""),
   };
 }
 
@@ -342,6 +486,17 @@ export function materializeSceneSpec(sceneSpec) {
       ? sceneSpec.actionSequence.value.map((item) => clean(item)).filter(Boolean)
       : [],
     extraNotes: clean(sceneSpec?.extraNotes?.value),
+    environmentStrategy: clean(sceneSpec?.environmentStrategy?.value),
+    propPriority: clean(sceneSpec?.propPriority?.value),
+    disallowedProps: clean(sceneSpec?.disallowedProps?.value),
+    screenProofRequirements: clean(sceneSpec?.screenProofRequirements?.value),
+    visualArc: clean(sceneSpec?.visualArc?.value),
+    identityLock: clean(sceneSpec?.identityLock?.value),
+    appearanceLock: clean(sceneSpec?.appearanceLock?.value),
+    environmentLayoutLock: clean(sceneSpec?.environmentLayoutLock?.value),
+    propContinuityLock: clean(sceneSpec?.propContinuityLock?.value),
+    styleContinuityLock: clean(sceneSpec?.styleContinuityLock?.value),
+    framingBaseline: clean(sceneSpec?.framingBaseline?.value),
   };
 }
 
@@ -369,9 +524,34 @@ export function buildCanonicalFramePrompt(sceneSpec, frameDetails) {
   const screenLock = clean(materialized.screenLock) || DEFAULT_SCREEN_LOCK;
   const visualStyle = clean(materialized.visualStyle) || DEFAULT_VISUAL_STYLE;
   const notes = clean(materialized.extraNotes);
+  const continuityDetails = [
+    `Main character identity: ${clean(materialized.characterLock) || DEFAULT_CHARACTER_LOCK}.`,
+    `Overall appearance: ${clean(materialized.appearanceLock) || clean(materialized.characterLock) || DEFAULT_CHARACTER_LOCK}.`,
+    `Outfit: ${clean(materialized.outfitLock) || DEFAULT_OUTFIT_LOCK}.`,
+    `Environment and layout: ${clean(materialized.environmentLayoutLock) || locationLock}.`,
+    `Props and key objects: ${clean(materialized.propContinuityLock) || propLines.join(", ")}.`,
+    `Photographic style and mood: ${clean(materialized.styleContinuityLock) || `${visualStyle} ${mood}`}.`,
+    `Framing baseline: ${clean(materialized.framingBaseline) || composition}.`,
+    clean(materialized.identityLock),
+    clean(materialized.environmentStrategy),
+    clean(materialized.propPriority) ? `Prop priority: ${clean(materialized.propPriority)}.` : "",
+    clean(materialized.disallowedProps) ? `Disallowed props: ${clean(materialized.disallowedProps)}.` : "",
+    clean(materialized.screenProofRequirements)
+      ? `Screen proof requirements: ${clean(materialized.screenProofRequirements)}.`
+      : "",
+    clean(materialized.visualArc) ? `Visual arc: ${clean(materialized.visualArc)}.` : "",
+  ].filter(Boolean);
 
   return [
     `Frame ${frameNumber} of ${materialized.numberOfFrames}, ${materialized.cameraFormat} image.`,
+    "",
+    "CONTINUITY CONTRACT:",
+    DEFAULT_CONTINUITY_CONTRACT,
+    "",
+    "FIXED CONTINUITY DETAILS:",
+    ...continuityDetails,
+    "",
+    "Now generate the requested frame using the following fixed continuity details and scene content.",
     "",
     "SCENE:",
     actionBeat.endsWith(".") ? actionBeat : `${actionBeat}.`,
@@ -418,16 +598,42 @@ export function buildCanonicalFramePrompt(sceneSpec, frameDetails) {
 
 export function buildFallbackFramePlan(sceneSpec) {
   const materialized = materializeSceneSpec(sceneSpec);
+  const defaults = buildDefaultFrameMetadata(materialized.actionSequence.length);
 
   return materialized.actionSequence.map((actionBeat, index) => ({
     frameNumber: index + 1,
     title: `Frame ${index + 1}`,
     actionBeat,
-    cameraShot: `${materialized.cameraFormat} campaign still`,
+    cameraShot:
+      `${materialized.cameraFormat} ${pickStoryboardDefault(
+        defaults.shots,
+        index,
+        "campaign still",
+      )}`,
+    composition: materialized.composition || DEFAULT_COMPOSITION,
+    mood: materialized.mood || DEFAULT_MOOD,
+    persuasionRole: pickStoryboardDefault(defaults.roles, index, "progression"),
+    screenState: pickStoryboardDefault(defaults.screenStates, index, "same product world, advancing state"),
+    propFocus:
+      clean(materialized.propPriority) ||
+      pickStoryboardDefault(defaults.propFocus, index, "same core props with tighter emphasis per frame"),
+    emotionalBeat: pickStoryboardDefault(defaults.emotionalBeats, index, "transition"),
+    proofTarget: pickStoryboardDefault(defaults.proofTargets, index, "move closer to product proof"),
+    mustDifferFromPrevious:
+      index === 0
+        ? "establish the baseline world"
+        : "change the shot family, action, pose, expression, screen state, prop focus, or camera distance without redesigning the scene",
     prompt: buildCanonicalFramePrompt(sceneSpec, {
       frameNumber: index + 1,
       actionBeat,
-      cameraShot: `${materialized.cameraFormat} campaign still`,
+      cameraShot:
+        `${materialized.cameraFormat} ${pickStoryboardDefault(
+          defaults.shots,
+          index,
+          "campaign still",
+        )}`,
+      composition: materialized.composition || DEFAULT_COMPOSITION,
+      mood: materialized.mood || DEFAULT_MOOD,
     }),
   }));
 }
@@ -443,12 +649,22 @@ export function normalizeFramePlan(sceneSpec, rawFrames) {
       title: clean(candidate.title) || defaultFrame.title,
       actionBeat: clean(candidate.actionBeat) || defaultFrame.actionBeat,
       cameraShot: clean(candidate.cameraShot) || defaultFrame.cameraShot,
+      composition: clean(candidate.composition) || clean(defaultFrame.composition) || DEFAULT_COMPOSITION,
+      mood: clean(candidate.mood) || clean(defaultFrame.mood) || DEFAULT_MOOD,
+      persuasionRole: clean(candidate.persuasionRole) || clean(defaultFrame.persuasionRole),
+      screenState: clean(candidate.screenState) || clean(defaultFrame.screenState),
+      propFocus: clean(candidate.propFocus) || clean(defaultFrame.propFocus),
+      emotionalBeat: clean(candidate.emotionalBeat) || clean(defaultFrame.emotionalBeat),
+      proofTarget: clean(candidate.proofTarget) || clean(defaultFrame.proofTarget),
+      mustDifferFromPrevious:
+        clean(candidate.mustDifferFromPrevious) || clean(defaultFrame.mustDifferFromPrevious),
       prompt: buildCanonicalFramePrompt(sceneSpec, {
         frameNumber: index + 1,
         actionBeat: clean(candidate.actionBeat) || defaultFrame.actionBeat,
         cameraShot: clean(candidate.cameraShot) || defaultFrame.cameraShot,
-        composition: clean(candidate.composition),
-        mood: clean(candidate.mood),
+        composition:
+          clean(candidate.composition) || clean(defaultFrame.composition) || DEFAULT_COMPOSITION,
+        mood: clean(candidate.mood) || clean(defaultFrame.mood) || DEFAULT_MOOD,
       }),
     };
   });
@@ -459,6 +675,17 @@ export function resolveImageSize(cameraFormat) {
   if (normalized === "horizontal") return "1536x1024";
   if (normalized === "square") return "1024x1024";
   return "1024x1536";
+}
+
+export function resolveRenderDimensions(cameraFormat) {
+  const normalized = normalizeCameraFormat(cameraFormat) || DEFAULT_CAMERA_FORMAT;
+  if (normalized === "horizontal") {
+    return { width: 1920, height: 1080, aspectRatio: "16:9", cameraFormat: "horizontal" };
+  }
+  if (normalized === "square") {
+    return { width: 1080, height: 1080, aspectRatio: "1:1", cameraFormat: "square" };
+  }
+  return { width: 1080, height: 1920, aspectRatio: "9:16", cameraFormat: "vertical" };
 }
 
 export function formatRunTimestamp(date = new Date()) {
@@ -488,9 +715,20 @@ export function buildRunPaths(projectRoot, options = {}) {
     slug,
     runDir,
     imagesDir: path.join(runDir, "images"),
+    captionedImagesDir: path.join(runDir, "images-captioned"),
     requestPath: path.join(runDir, "request.json"),
+    statusPath: path.join(runDir, "status.json"),
+    briefPath: path.join(runDir, "brief.json"),
+    personaPath: path.join(runDir, "persona.json"),
+    critiquePath: path.join(runDir, "critique.json"),
     sceneSpecPath: path.join(runDir, "scene-spec.json"),
+    framePlanPath: path.join(runDir, "frame-plan.json"),
+    socialCopyPath: path.join(runDir, "social-copy.json"),
+    creativeQaPath: path.join(runDir, "creative-qa.json"),
     framesPath: path.join(runDir, "frames.json"),
+    concatPath: path.join(runDir, "frames.concat.txt"),
+    captionsPath: path.join(runDir, "captions.srt"),
+    videoPath: path.join(runDir, "video.mp4"),
   };
 }
 
@@ -501,17 +739,41 @@ export function createFramesManifest(runPaths, sceneSpec, frames, models) {
       outputRoot: runPaths.outputRoot,
       runDir: runPaths.runDir,
       imagesDir: runPaths.imagesDir,
+      captionedImagesDir: runPaths.captionedImagesDir,
       slug: runPaths.slug,
       timestamp: runPaths.timestamp,
     },
     models,
     imageSize: resolveImageSize(sceneSpec?.cameraFormat?.value),
+    renderSize: resolveRenderDimensions(sceneSpec?.cameraFormat?.value),
     sceneSpec: materializeSceneSpec(sceneSpec),
     frames: frames.map((frame) => ({
       ...frame,
-      imageFile: path.join("images", `frame-${String(frame.frameNumber).padStart(2, "0")}.png`),
-      status: "pending",
-      error: null,
+      composition: clean(frame.composition),
+      mood: clean(frame.mood),
+      imageFile:
+        clean(frame.imageFile) || path.join("images", `frame-${String(frame.frameNumber).padStart(2, "0")}.png`),
+      captionedImageFile:
+        clean(frame.captionedImageFile) ||
+        path.join("images-captioned", `frame-${String(frame.frameNumber).padStart(2, "0")}.png`),
+      status: clean(frame.status) || "pending",
+      error: cleanNullable(frame.error),
+      effectiveImageModel: cleanNullable(frame.effectiveImageModel),
+      caption: {
+        text: clean(frame.caption?.text),
+        emphasisWord: clean(frame.caption?.emphasisWord),
+        voiceover: clean(frame.caption?.voiceover),
+        durationSec:
+          typeof frame.caption?.durationSec === "number" && Number.isFinite(frame.caption.durationSec)
+            ? frame.caption.durationSec
+            : null,
+        transition: clean(frame.caption?.transition),
+        kineticStyle: clean(frame.caption?.kineticStyle),
+        captionRole: clean(frame.caption?.captionRole),
+        status: clean(frame.caption?.status) || "pending",
+        dirty: frame.caption?.dirty !== false,
+        updatedAt: cleanNullable(frame.caption?.updatedAt),
+      },
     })),
   };
 }
