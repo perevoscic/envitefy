@@ -54,6 +54,7 @@ import {
   normalizeWeddingFlyerColors,
 } from "@/lib/wedding-scan";
 import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
+import { sanitizePersistedMediaUrl } from "@/lib/absolute-url";
 import type { SignupForm } from "@/types/signup";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
@@ -648,9 +649,13 @@ export default async function EventPage({
   }
   if (media.heroImageInline) {
     (data as any).heroImage = buildMediaUrl("hero");
+  } else if (typeof (data as any)?.heroImage === "string") {
+    (data as any).heroImage = sanitizePersistedMediaUrl((data as any).heroImage);
   }
   if (media.customHeroImageInline) {
     (data as any).customHeroImage = buildMediaUrl("hero");
+  } else if (typeof (data as any)?.customHeroImage === "string") {
+    (data as any).customHeroImage = sanitizePersistedMediaUrl((data as any).customHeroImage);
   }
   const requestedTab = String(((awaitedSearchParams as any)?.tab ?? "") as string)
     .trim()
@@ -754,11 +759,28 @@ export default async function EventPage({
     );
   }
 
-  const rawThumbnailValue =
-    typeof (data as any)?.thumbnail === "string" ? ((data as any).thumbnail as string) : null;
+  // Sanitize persisted media URLs: loopback absolute URLs (e.g. `http://localhost:3000/...`)
+  // are rewritten to site-relative paths so the browser resolves them against whatever
+  // origin is serving the page. Inline `data:` values pass through unchanged.
+  const rawThumbnailValue = sanitizePersistedMediaUrl(
+    typeof (data as any)?.thumbnail === "string" ? ((data as any).thumbnail as string) : null,
+  );
   const thumbnailIsInline =
     typeof rawThumbnailValue === "string" && rawThumbnailValue.trim().startsWith("data:");
-  const rawAttachment = data && typeof data.attachment === "object" ? data.attachment : null;
+  const rawAttachment = (() => {
+    const source = data && typeof data.attachment === "object" ? data.attachment : null;
+    if (!source) return null;
+    const healed: Record<string, unknown> = { ...source };
+    for (const key of ["dataUrl", "previewImageUrl", "thumbnailUrl"] as const) {
+      const current = (source as any)[key];
+      if (typeof current === "string") {
+        const next = sanitizePersistedMediaUrl(current);
+        if (next !== current) healed[key] = next;
+      }
+    }
+    data.attachment = healed;
+    return healed;
+  })();
   const attachmentDataUrl =
     rawAttachment && typeof rawAttachment.dataUrl === "string"
       ? (rawAttachment.dataUrl as string)
@@ -1073,11 +1095,12 @@ export default async function EventPage({
     typeof (data as any)?.templateBackgroundCss === "string" && (data as any).templateBackgroundCss
       ? ((data as any).templateBackgroundCss as string)
       : null;
-  const profileImageUrl: string | null =
+  const profileImageUrl: string | null = sanitizePersistedMediaUrl(
     typeof (data as any)?.profileImage === "object" &&
-    typeof (data as any)?.profileImage?.dataUrl === "string"
+      typeof (data as any)?.profileImage?.dataUrl === "string"
       ? ((data as any).profileImage.dataUrl as string)
-      : null;
+      : null,
+  );
 
   // Title style from Birthday editor
   const titleStyle: any = (data as any)?.titleStyle || {};
@@ -1285,6 +1308,16 @@ export default async function EventPage({
       (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
       (typeof data?.description === "string" && data.description.trim()) ||
       "Games, food & fun!";
+    const birthdayActivities = Array.isArray((data as any)?.activities)
+      ? ((data as any).activities as unknown[])
+          .map((item) => (typeof item === "string" ? item.trim() : ""))
+          .filter(Boolean)
+      : [];
+    const birthdayAttire =
+      typeof (data as any)?.attire === "string" && (data as any).attire.trim()
+        ? ((data as any).attire as string).trim()
+        : null;
+    const birthdayRegistryUrl = registryLinks[0]?.url || null;
 
     return (
       <BirthdaySkin
@@ -1306,6 +1339,9 @@ export default async function EventPage({
         rsvpEmail={rsvpEmail}
         rsvpUrl={rsvpUrl}
         planCopy={birthdayPlanCopy}
+        activities={birthdayActivities}
+        attire={birthdayAttire}
+        registryUrl={birthdayRegistryUrl}
         actions={
           !isReadOnly &&
           isOwner && (
@@ -1529,6 +1565,16 @@ export default async function EventPage({
       (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
       (typeof data?.description === "string" && data.description.trim()) ||
       "Details, RSVP, and calendar links are ready to share.";
+    const scannedInviteActivities = Array.isArray((data as any)?.activities)
+      ? ((data as any).activities as unknown[])
+          .map((item) => (typeof item === "string" ? item.trim() : ""))
+          .filter(Boolean)
+      : [];
+    const scannedInviteAttire =
+      typeof (data as any)?.attire === "string" && (data as any).attire.trim()
+        ? ((data as any).attire as string).trim()
+        : null;
+    const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
 
     return (
       <ScannedInviteSkin
@@ -1545,6 +1591,9 @@ export default async function EventPage({
         rsvpEmail={rsvpEmail}
         rsvpUrl={rsvpUrl}
         detailCopy={scannedInviteDetailCopy}
+        activities={scannedInviteActivities}
+        attire={scannedInviteAttire}
+        registryUrl={scannedInviteRegistryUrl}
         actions={
           !isReadOnly &&
           isOwner && (

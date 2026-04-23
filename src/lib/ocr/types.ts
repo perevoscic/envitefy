@@ -8,6 +8,9 @@ export type EventOcrLlmResult = {
   rsvp?: string | null;
   rsvpUrl?: string | null;
   rsvpDeadline?: string | null;
+  activities?: string[] | null;
+  attire?: string | null;
+  registryUrl?: string | null;
   yearVisible?: boolean | null;
   birthdayAudience?: "girl" | "boy" | "neutral" | null;
   birthdaySignals?: string[] | null;

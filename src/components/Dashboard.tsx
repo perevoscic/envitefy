@@ -45,6 +45,12 @@ type EventFields = {
     | null;
   /** OCR guest tips (flyer footer); maps to event thingsToDo / Good To Know. */
   thingsToDo?: string | null;
+  /** OCR extracted attire / dress code text. */
+  attire?: string | null;
+  /** OCR extracted event flow/activity list. */
+  activities?: string[] | null;
+  /** OCR extracted gift registry URL. */
+  registryUrl?: string | null;
 };
 
 type SubmitScannedEventParams = {
@@ -966,6 +972,23 @@ export default function Dashboard({
         const goodToKnowRaw = (data?.fieldsGuess as { goodToKnow?: unknown })?.goodToKnow;
         const thingsToDoFromScan =
           typeof goodToKnowRaw === "string" && goodToKnowRaw.trim() ? goodToKnowRaw.trim() : null;
+        const attireFromScanRaw = (data?.fieldsGuess as { attire?: unknown })?.attire;
+        const attireFromScan =
+          typeof attireFromScanRaw === "string" && attireFromScanRaw.trim()
+            ? attireFromScanRaw.trim()
+            : null;
+        const activitiesFromScanRaw = (data?.fieldsGuess as { activities?: unknown })?.activities;
+        const activitiesFromScan = Array.isArray(activitiesFromScanRaw)
+          ? activitiesFromScanRaw
+              .map((item) => (typeof item === "string" ? item.trim() : ""))
+              .filter(Boolean)
+              .slice(0, 8)
+          : [];
+        const registryUrlRaw = (data?.fieldsGuess as { registryUrl?: unknown })?.registryUrl;
+        const registryUrlFromScan =
+          typeof registryUrlRaw === "string" && registryUrlRaw.trim()
+            ? normalizeUrlValue(registryUrlRaw.trim())
+            : null;
 
         const adjusted: EventFields | null = data?.fieldsGuess
           ? {
@@ -979,6 +1002,9 @@ export default function Dashboard({
               numberOfGuests: 0,
               rsvp: structuredWeddingRsvp || cleanedRsvp,
               thingsToDo: thingsToDoFromScan || undefined,
+              attire: attireFromScan || undefined,
+              activities: activitiesFromScan.length ? activitiesFromScan : undefined,
+              registryUrl: registryUrlFromScan || undefined,
             }
           : null;
         await finishScanUi();
@@ -1204,6 +1230,35 @@ export default function Dashboard({
           isWeddingOcrEvent && eventInput.rsvp && typeof eventInput.rsvp === "object"
             ? eventInput.rsvp
             : null;
+        const existingRegistries = Array.isArray((eventInput as any)?.registries)
+          ? ((eventInput as any).registries as any[])
+          : [];
+        const normalizedRegistryUrl =
+          typeof eventInput.registryUrl === "string" && eventInput.registryUrl.trim()
+            ? normalizeUrlValue(eventInput.registryUrl.trim())
+            : null;
+        const mergedRegistries = [...existingRegistries];
+        if (normalizedRegistryUrl) {
+          const hasAlready = mergedRegistries.some(
+            (item) =>
+              item &&
+              typeof item === "object" &&
+              typeof item.url === "string" &&
+              item.url.trim().toLowerCase() === normalizedRegistryUrl.toLowerCase(),
+          );
+          if (!hasAlready) {
+            mergedRegistries.push({
+              label: "Registry",
+              url: normalizedRegistryUrl,
+            });
+          }
+        }
+        const normalizedActivities = Array.isArray(eventInput.activities)
+          ? eventInput.activities
+              .map((item) => (typeof item === "string" ? item.trim() : ""))
+              .filter(Boolean)
+              .slice(0, 8)
+          : [];
 
         const payload: any = {
           title: eventInput.title || "Event",
@@ -1245,6 +1300,12 @@ export default function Dashboard({
               ? normalizedBirthdayTemplateHint.honoreeName || undefined
               : undefined,
             age: isBirthdayOcrEvent ? normalizedBirthdayTemplateHint.age || undefined : undefined,
+            attire:
+              typeof eventInput.attire === "string" && eventInput.attire.trim()
+                ? eventInput.attire.trim()
+                : undefined,
+            activities: normalizedActivities.length ? normalizedActivities : undefined,
+            registries: mergedRegistries.length ? mergedRegistries : undefined,
             thingsToDo:
               typeof eventInput.thingsToDo === "string" && eventInput.thingsToDo.trim()
                 ? eventInput.thingsToDo.trim()
@@ -1506,7 +1567,7 @@ export default function Dashboard({
         </div>
       )}
       {scanStatus !== "idle" && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#f4eeff]/78 p-4 backdrop-blur-md">
+        <div className="fixed inset-y-0 left-0 right-0 z-[65] flex items-center justify-center bg-[#f4eeff]/78 p-4 backdrop-blur-md lg:left-[20rem]">
           <div role="status" aria-live="polite" className="w-full max-w-md">
             <SnapProcessingCard
               status={scanStatus}

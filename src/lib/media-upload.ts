@@ -1,7 +1,6 @@
 import { put } from "@vercel/blob";
 import sharp from "sharp";
 import { randomUUID } from "node:crypto";
-import { absoluteUrl } from "./absolute-url.ts";
 import {
   type UploadKind,
   type UploadResponse,
@@ -115,9 +114,13 @@ function buildPrivateBlobProxyPath(pathname: string): string {
   return `/api/blob/${encodedPath}`;
 }
 
-async function resolveBlobAssetUrl(pathname: string, blobUrl: string, access: BlobAccess): Promise<string> {
+function resolveBlobAssetUrl(pathname: string, blobUrl: string, access: BlobAccess): string {
   if (access === "public") return blobUrl;
-  return absoluteUrl(buildPrivateBlobProxyPath(pathname));
+  // Persist a site-relative path so the stored value does not bake in a host.
+  // The `/api/blob/<pathname>` proxy streams private blobs from whatever origin
+  // is serving the page (previously this was `absoluteUrl(...)` which baked
+  // `http://localhost:3000` into the DB during local dev and broke mobile loads).
+  return buildPrivateBlobProxyPath(pathname);
 }
 
 async function uploadBlobAsset(params: UploadBlobParams): Promise<BlobAsset> {
@@ -141,7 +144,7 @@ async function uploadBlobAsset(params: UploadBlobParams): Promise<BlobAsset> {
   }
   detectedBlobStoreAccess = resolvedAccess;
   return {
-    url: await resolveBlobAssetUrl(blob.pathname, blob.url, resolvedAccess),
+    url: resolveBlobAssetUrl(blob.pathname, blob.url, resolvedAccess),
     pathname: blob.pathname,
     sizeBytes: params.bytes.length,
     access: resolvedAccess,

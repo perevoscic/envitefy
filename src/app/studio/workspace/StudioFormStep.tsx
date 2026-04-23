@@ -573,7 +573,7 @@ export function StudioFormStep({
             </button>
           </div>
 
-          {isMobileViewport ? (
+          {isMobileViewport && mobilePane !== "preview" ? (
             <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#edf1f7] bg-white/95 px-5 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <button
@@ -603,13 +603,13 @@ export function StudioFormStep({
         </section>
 
         <aside
-          className={`relative min-h-0 ${
+          className={
             isMobileViewport
               ? mobilePane === "preview"
-                ? "flex w-full flex-col bg-[#121a34]"
+                ? "fixed inset-0 z-[60] flex flex-col bg-[#121a34]"
                 : "hidden"
-              : "flex w-2/5 shrink-0 flex-col bg-[#121a34]"
-          }`}
+              : "relative min-h-0 flex w-2/5 shrink-0 flex-col bg-[#121a34]"
+          }
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(116,132,216,0.15),_transparent_42%),radial-gradient(circle,_rgba(255,255,255,0.06)_1px,_transparent_1px)] [background-size:100%_100%,26px_26px]" />
 
@@ -646,6 +646,7 @@ export function StudioFormStep({
               isGenerating={isGenerating}
               sharingId={sharingId}
               copySuccess={copySuccess}
+              isFullscreenPreview={isMobileViewport && mobilePane === "preview"}
               saveCurrentProjectToLibrary={saveCurrentProjectToLibrary}
               openCurrentLiveCardFullscreen={openCurrentLiveCardFullscreen}
               shareCurrentProject={shareCurrentProject}

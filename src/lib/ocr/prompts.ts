@@ -33,6 +33,11 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • If an RSVP website/link appears (The Knot, Zola, website URL, www link), put only that link in rsvpUrl. Else null.
   • If an RSVP-by or respond-by date appears, put the printed short date text in rsvpDeadline (e.g., "December 1st"). Else null.
 
+  FEATURE DETECTION:
+  • Activities: detect explicit event flow items from the flyer (e.g., "cake cutting", "cocktail hour", "games", "dancing", "dinner", "ceremony", "reception"). Return short phrases in activities[] preserving wording where possible. If none, activities is null.
+  • Attire: if dress code / attire guidance appears (e.g., "Black Tie", "Casual", "Superhero Costume", "Formal Attire"), return concise text in attire. Else null.
+  • Registry: if a gift registry or wishlist link appears, return a single clean URL in registryUrl. Else null.
+
   GOOD TO KNOW (guest reminders):
   • Read the **bottom** of the flyer and any **small or cursive** lines: practical tips for guests (e.g. "don't forget a towel and sunscreen!", "bring a swimsuit", "gifts optional"). Put that wording in **goodToKnow** — preserve meaning; fix obvious OCR typos only (e.g. "twoel" → "towel"). One sentence or short phrase; do **not** put RSVP, phone, address, or date/time here (those go in other fields). If nothing like that appears, goodToKnow is null.
   
@@ -47,16 +52,17 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Clinical tone only. Title is the appointment type (e.g., "Dental Cleaning"). Never invitation wording. Never include DOB.
   
   OUTPUT (strict JSON only, no extra text):
-  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "rsvpUrl": string|null, "rsvpDeadline": string|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null, "goodToKnow": string|null }
+  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "rsvpUrl": string|null, "rsvpDeadline": string|null, "activities": string[]|null, "attire": string|null, "registryUrl": string|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null, "goodToKnow": string|null }
   `;
 
   const user = `
-  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,rsvpUrl,rsvpDeadline,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge,goodToKnow}.
+  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,rsvpUrl,rsvpDeadline,activities,attire,registryUrl,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge,goodToKnow}.
   If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include it in the title. If the flyer has a big headline naming the party (pool party, bash, theme), keep it in the title together with the child’s name and age (see TITLE rules). Do not include dates/times in the title.
   For birthdayAudience, use text/theme cues only. Do not infer from a face or from the honoree name alone.
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
   The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
   Keep RSVP details out of the description. Put RSVP wording in rsvp, RSVP links in rsvpUrl, and RSVP-by dates in rsvpDeadline.
+  Also extract activities[] when event flow items are printed, attire when dress code exists, and registryUrl when a gift registry link appears.
   If year is missing, use the next occurrence on/after ${todayIso} and set yearVisible=false.
   If a start and end time are printed for the party, return both as start and end (same date).
   Always fill **goodToKnow** when the image has a bottom/footer guest tip (don't forget / bring / remember), including cursive. Keep those tips out of the main description sentence.

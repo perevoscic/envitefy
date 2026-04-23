@@ -41,6 +41,9 @@ type Props = {
   rsvpEmail?: string | null;
   rsvpUrl?: string | null;
   planCopy?: string | null;
+  activities?: string[] | null;
+  attire?: string | null;
+  registryUrl?: string | null;
   previewMode?: boolean;
   actions?: ReactNode;
 };
@@ -108,6 +111,9 @@ export default function BirthdaySkin({
   rsvpEmail,
   rsvpUrl,
   planCopy,
+  activities,
+  attire,
+  registryUrl,
   previewMode = false,
   actions,
 }: Props) {
@@ -123,6 +129,11 @@ export default function BirthdaySkin({
   const directionsHref = buildMapsHref(location);
   const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail });
   const displayPlanCopy = String(planCopy || "").trim() || "Games, Food & Fun!";
+  const displayAttire = String(attire || "").trim();
+  const displayRegistryUrl = String(registryUrl || "").trim();
+  const displayActivities = Array.isArray(activities)
+    ? activities.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 4)
+    : [];
   const chipTextColor = ensureReadableTextColor(colors.accent, "#ffffff", { minContrast: 3 });
   const primaryTileTextColor = ensureReadableTextColor(colors.primary, "#ffffff", {
     minContrast: 3,
@@ -333,6 +344,54 @@ export default function BirthdaySkin({
                 <Sparkles className="h-6 w-6" />
               </div>
             </motion.section>
+            {displayAttire ? (
+              <motion.section
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.45 }}
+                className="col-span-1 flex flex-col justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
+              >
+                <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
+                  Dress Code
+                </div>
+                <div className="mt-2 text-xl font-bold text-black/90">{displayAttire}</div>
+              </motion.section>
+            ) : null}
+            {displayRegistryUrl ? (
+              <motion.a
+                href={displayRegistryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.48 }}
+                className="col-span-1 flex items-center justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 text-center shadow-sm transition hover:scale-[1.01] md:col-span-1"
+              >
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
+                    Registry
+                  </div>
+                  <div className="mt-2 text-lg font-bold text-black/90">View Gift List</div>
+                </div>
+              </motion.a>
+            ) : null}
+            {displayActivities.length ? (
+              <motion.section
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="col-span-2 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm"
+              >
+                <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
+                  Event Flow
+                </div>
+                <ul className="mt-3 space-y-1 text-sm font-medium text-black/80">
+                  {displayActivities.map((item) => (
+                    <li key={item}>- {item}</li>
+                  ))}
+                </ul>
+              </motion.section>
+            ) : null}
           </div>
         </div>
 

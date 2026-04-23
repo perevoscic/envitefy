@@ -63,6 +63,46 @@ export function isLoopbackHost(candidate: string | null | undefined): boolean {
   }
 }
 
+/**
+ * Convert an absolute URL with a loopback host (e.g. `http://localhost:3000/api/blob/...`)
+ * to a site-relative path so the value loads from whatever origin is serving the page.
+ *
+ * Returns `null` when the value is not a loopback absolute URL. Use this when reading
+ * media URLs that may have been persisted during local development.
+ */
+export function rewriteLoopbackUrlToRelativePath(
+  value: string | null | undefined,
+): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (!isLoopbackHost(parsed.hostname)) return null;
+    const path = parsed.pathname || "/";
+    return `${path}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sanitize a persisted media URL for client-side rendering. Loopback absolute URLs are
+ * rewritten to relative paths so mobile browsers (which cannot reach the dev machine)
+ * can still load them through the current origin. All other values pass through
+ * unchanged; inline `data:`, site-relative, and remote `https:` URLs are all valid.
+ */
+export function sanitizePersistedMediaUrl(
+  value: string | null | undefined,
+): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const loopback = rewriteLoopbackUrlToRelativePath(trimmed);
+  return loopback || trimmed;
+}
+
 const fallbackOriginParts = (): { proto: string; host: string } => {
   const envOrigin =
     sanitizeOrigin(process.env.NEXTAUTH_URL) ||

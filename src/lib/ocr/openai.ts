@@ -27,6 +27,16 @@ export function llmEventToRawText(payload: any): string {
     parts.push(payload.rsvpUrl.trim());
   if (typeof payload?.rsvpDeadline === "string" && payload.rsvpDeadline.trim())
     parts.push(`RSVP by ${payload.rsvpDeadline.trim()}`);
+  if (Array.isArray(payload?.activities)) {
+    const activities = payload.activities
+      .map((item: unknown) => (typeof item === "string" ? item.trim() : ""))
+      .filter(Boolean);
+    if (activities.length) parts.push(`Activities: ${activities.join(", ")}`);
+  }
+  if (typeof payload?.attire === "string" && payload.attire.trim())
+    parts.push(`Dress code: ${payload.attire.trim()}`);
+  if (typeof payload?.registryUrl === "string" && payload.registryUrl.trim())
+    parts.push(payload.registryUrl.trim());
   if (typeof payload?.goodToKnow === "string" && payload.goodToKnow.trim())
     parts.push(payload.goodToKnow.trim());
   return parts.join("\n").trim();
