@@ -10,6 +10,8 @@ import type {
   EventDiscoveryRow,
 } from "@/lib/discovery/types";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
+import { invalidateUserHistory } from "@/lib/history-cache";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
 import {
   normalizePrimarySignupSource,
@@ -540,6 +542,176 @@ export async function getTopUsersByScans(
     scans: Number(r.scans_total || 0),
     shares: Number(r.shares_sent || 0),
   }));
+}
+
+export type AdminUserDeleteResult = {
+  userId: string;
+  email: string;
+  deletedUserCount: number;
+  deletedEventCount: number;
+  deletedShareCount: number;
+  deletedOauthTokenCount: number;
+  deletedPasswordResetCount: number;
+  affectedUserIds: string[];
+};
+
+export async function deleteUserForAdmin(userId: string): Promise<AdminUserDeleteResult> {
+  const result = await withClient(async (client) => {
+    await client.query("begin");
+    try {
+      const targetRes = await client.query<{ id: string; email: string }>(
+        `select id, email from users where id = $1 limit 1`,
+        [userId],
+      );
+      const target = targetRes.rows[0] || null;
+      if (!target) {
+        throw new Error("User not found");
+      }
+
+      const affectedUsersRes = await client.query<{ related_user_id: string | null }>(
+        `
+          with owned_events as (
+            select id
+            from event_history
+            where user_id = $1
+          ),
+          impacted_users as (
+            select owner_user_id as related_user_id
+            from event_shares
+            where recipient_user_id = $1
+            union
+            select recipient_user_id as related_user_id
+            from event_shares
+            where owner_user_id = $1
+            union
+            select owner_user_id as related_user_id
+            from event_shares
+            where event_id in (select id from owned_events)
+            union
+            select recipient_user_id as related_user_id
+            from event_shares
+            where event_id in (select id from owned_events)
+          )
+          select distinct related_user_id
+          from impacted_users
+          where related_user_id is not null
+            and related_user_id <> $1
+        `,
+        [userId],
+      );
+      const affectedUserIds = Array.from(
+        new Set(
+          (affectedUsersRes.rows || [])
+            .map((row) => row.related_user_id)
+            .filter((value): value is string => Boolean(value)),
+        ),
+      );
+
+      const [eventCountRes, shareCountRes, oauthCountRes, passwordResetCountRes] =
+        await Promise.all([
+          client.query<{ n: string }>(
+            `select count(*)::text as n from event_history where user_id = $1`,
+            [userId],
+          ),
+          client.query<{ n: string }>(
+            `
+              with owned_events as (
+                select id
+                from event_history
+                where user_id = $1
+              ),
+              doomed_shares as (
+                select distinct id
+                from event_shares
+                where owner_user_id = $1
+                   or recipient_user_id = $1
+                   or event_id in (select id from owned_events)
+              )
+              select count(*)::text as n
+              from doomed_shares
+            `,
+            [userId],
+          ),
+          client.query<{ n: string }>(
+            `
+              select count(*)::text as n
+              from oauth_tokens
+              where user_id = $1
+                 or lower(email) = lower($2)
+            `,
+            [userId, target.email],
+          ),
+          client.query<{ n: string }>(
+            `
+              select count(*)::text as n
+              from password_resets
+              where lower(email) = lower($1)
+            `,
+            [target.email],
+          ),
+        ]);
+
+      await client.query(
+        `
+          with owned_events as (
+            select id
+            from event_history
+            where user_id = $1
+          )
+          delete from event_shares
+          where owner_user_id = $1
+             or recipient_user_id = $1
+             or event_id in (select id from owned_events)
+        `,
+        [userId],
+      );
+
+      await client.query(
+        `
+          delete from oauth_tokens
+          where user_id = $1
+             or lower(email) = lower($2)
+        `,
+        [userId, target.email],
+      );
+
+      await client.query(`delete from password_resets where lower(email) = lower($1)`, [target.email]);
+      await client.query(`delete from event_history where user_id = $1`, [userId]);
+
+      const deleteUserRes = await client.query<{ id: string }>(
+        `delete from users where id = $1 returning id`,
+        [userId],
+      );
+      if ((deleteUserRes.rowCount || 0) !== 1) {
+        throw new Error("User delete failed");
+      }
+
+      await client.query("commit");
+
+      return {
+        userId: target.id,
+        email: target.email,
+        deletedUserCount: deleteUserRes.rowCount || 0,
+        deletedEventCount: Number(eventCountRes.rows[0]?.n || 0),
+        deletedShareCount: Number(shareCountRes.rows[0]?.n || 0),
+        deletedOauthTokenCount: Number(oauthCountRes.rows[0]?.n || 0),
+        deletedPasswordResetCount: Number(passwordResetCountRes.rows[0]?.n || 0),
+        affectedUserIds: Array.from(new Set([target.id, ...affectedUserIds])),
+      };
+    } catch (error) {
+      try {
+        await client.query("rollback");
+      } catch {}
+      throw error;
+    }
+  });
+
+  for (const affectedUserId of result.affectedUserIds) {
+    invalidateUserHistory(affectedUserId);
+    invalidateUserDashboard(affectedUserId);
+  }
+
+  return result;
 }
 
 export async function incrementUserScanCounters(params: {

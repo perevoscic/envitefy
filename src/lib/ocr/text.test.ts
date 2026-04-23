@@ -35,6 +35,13 @@ test("detectCategory recognizes medical and sports text", () => {
   assert.equal(detectCategory("Volleyball practice schedule Monday 4:30"), "Sport Events");
 });
 
+test("detectCategory recognizes expanded invite categories", () => {
+  assert.equal(detectCategory("Join us for Ava's Baby Shower brunch"), "Baby Showers");
+  assert.equal(detectCategory("Olivia's Bridal Shower at Magnolia House"), "Bridal Showers");
+  assert.equal(detectCategory("Class of 2026 Graduation Party"), "Graduations");
+  assert.equal(detectCategory("You're invited to our neighborhood fundraiser gala"), "General Events");
+});
+
 test("extractRsvpDetails captures wedding RSVP url and deadline", () => {
   const details = extractRsvpDetails(
     [

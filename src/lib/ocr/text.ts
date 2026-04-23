@@ -746,11 +746,29 @@ export function detectCategory(fullText: string): string | null {
     if (isDoctorLike) return "Doctor Appointments";
     if (hasAppt) return "Appointments";
 
+    if (/\bbridal\s*shower\b/i.test(fullText)) return "Bridal Showers";
     const hasWedding =
       /(wedding|marriage|marieage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText);
     const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(fullText);
     if (hasWedding && !hasBirthday) return "Weddings";
     if (hasBirthday && !hasWedding) return "Birthdays";
+    if (/(baby\s*shower|baby\s*sprinkle|gender\s*reveal|sip\s*(and|&)\s*see)/i.test(fullText)) {
+      return "Baby Showers";
+    }
+    if (/(engagement\s*(party|celebration)?|she said yes|proposal party)/i.test(fullText)) {
+      return "Engagements";
+    }
+    if (/(anniversary|vow\s*renewal)/i.test(fullText)) return "Anniversaries";
+    if (/(graduation|grad\s*party|commencement|class of\s+\d{4})/i.test(fullText)) {
+      return "Graduations";
+    }
+    if (
+      /(baptism|christening|communion|first holy communion|confirmation|bar mitzvah|bat mitzvah|baby dedication)/i.test(
+        fullText,
+      )
+    ) {
+      return "Religious Events";
+    }
 
     if (
       /(practice\s*schedule|team\s*practice|school\s*year\s*.*practice|group\s+.*\b\d{1,2}:\d{2})/i.test(
@@ -769,6 +787,13 @@ export function detectCategory(fullText: string): string | null {
     }
     if (/(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/i.test(fullText)) {
       return "Car Pool";
+    }
+    if (
+      /(you'?re invited|join us|celebrat(e|ion)|party|open house|fundraiser|gala|cookout|bbq|picnic)/i.test(
+        fullText,
+      )
+    ) {
+      return "General Events";
     }
   } catch {}
   return null;

@@ -1,0 +1,8 @@
+{
+  "name": "Ethereal Invitations",
+  "description": "A premium, AI-powered wedding invitation event page generator that extracts style and details from uploaded invitation cards.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}

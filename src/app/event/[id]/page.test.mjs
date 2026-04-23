@@ -39,6 +39,7 @@ test("event route branches football discovery/template events into the football 
   );
   assert.match(source, /redirect\("\/event"\)/);
   assert.match(source, /import BirthdaySkin from "@\/components\/BirthdaySkin";/);
+  assert.match(source, /import ScannedInviteSkin from "@\/components\/ScannedInviteSkin";/);
   assert.match(source, /const isScannedBirthdayInviteEvent =/);
   assert.match(source, /categoryNormalized === "birthdays" && isScannedInviteEvent && isOcrEvent/);
   assert.match(source, /if \(isScannedBirthdayInviteEvent\) \{/);
@@ -85,7 +86,18 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /showPublicShareAction=\{!isReadOnly && canManageCreatedEvent\}/);
   assert.ok(
     source.indexOf("if (isScannedWeddingInviteEvent)") <
+      source.indexOf("if (isGenericScannedInviteEvent)"),
+    "scanned wedding branch should run before the generic scanned invite branch"
+  );
+  assert.match(source, /const isGenericScannedInviteEvent =/);
+  assert.match(source, /isOcrInviteCategory\(categoryRaw\)/);
+  assert.match(source, /if \(isGenericScannedInviteEvent\) \{/);
+  assert.match(source, /<ScannedInviteSkin/);
+  assert.match(source, /categoryLabel=\{categoryRaw \|\| "General Event"\}/);
+  assert.match(source, /palette=\{ocrSkin\?\.palette \|\| null\}/);
+  assert.ok(
+    source.indexOf("if (isGenericScannedInviteEvent)") <
       source.indexOf('const isBabyShowerTemplate ='),
-    "scanned wedding branch should run before later template fallbacks"
+    "generic scanned invite branch should run before later template fallbacks"
   );
 });

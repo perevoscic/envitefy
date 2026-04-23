@@ -39,6 +39,7 @@ export default function AdminPage() {
   const [usersError, setUsersError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [activeStatView, setActiveStatView] = useState<StatView>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -128,7 +129,11 @@ export default function AdminPage() {
     setUsersError(null);
 
     try {
-      const res = await fetchStatUsers(view);
+      const res = await fetchStatUsers(
+        view,
+        null,
+        view === "all" ? Math.min(200, Math.max(100, overview?.totalUsers || 0)) : undefined,
+      );
       setUsers(res.items || []);
       setUsersCursor(res.nextCursor || null);
     } catch (e: any) {
@@ -144,7 +149,13 @@ export default function AdminPage() {
     setUsersError(null);
     try {
       const res = activeStatView
-        ? await fetchStatUsers(activeStatView, usersCursor)
+        ? await fetchStatUsers(
+            activeStatView,
+            usersCursor,
+            activeStatView === "all"
+              ? Math.min(200, Math.max(100, overview?.totalUsers || 0))
+              : undefined,
+          )
         : await fetchUsers(q.trim(), usersCursor);
       setUsers((prev) => [...prev, ...(res.items || [])]);
       setUsersCursor(res.nextCursor || null);
@@ -160,6 +171,34 @@ export default function AdminPage() {
     if (activeStatView === "scans") return "Users by Total Scans";
     if (activeStatView === "shares") return "Users by Shares Sent";
     return "User Search";
+  }
+
+  async function handleDeleteUser(user: any) {
+    const displayName =
+      [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() || user?.email || "this user";
+    const confirmed = window.confirm(
+      `Delete ${displayName}? This permanently removes the user account, owned events, shares, and saved sign-in tokens.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingUserId(user.id);
+    setUsersError(null);
+
+    try {
+      await deleteAdminUser(user.id);
+      setUsers((prev) => prev.filter((entry) => entry.id !== user.id));
+
+      try {
+        const res = await fetch("/api/admin/stats", { cache: "no-store" });
+        if (!res.ok) throw new Error(`Failed: ${res.status}`);
+        const json = await res.json();
+        setOverview(json.overview);
+      } catch {}
+    } catch (e: any) {
+      setUsersError(e?.message || String(e));
+    } finally {
+      setDeletingUserId(null);
+    }
   }
 
   return (
@@ -608,13 +647,23 @@ export default function AdminPage() {
                             </div>
                           </div>
 
-                          <div className="pt-2 border-t border-[#e5defa]">
-                            <p className="text-xs uppercase tracking-wider text-[#8b7fb6] mb-1">
-                              Joined
-                            </p>
-                            <p className="text-sm text-[#5b4d86]">
-                              {formatDate(u.created_at)}
-                            </p>
+                          <div className="flex items-end justify-between gap-3 pt-2 border-t border-[#e5defa]">
+                            <div>
+                              <p className="text-xs uppercase tracking-wider text-[#8b7fb6] mb-1">
+                                Joined
+                              </p>
+                              <p className="text-sm text-[#5b4d86]">
+                                {formatDate(u.created_at)}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(u)}
+                              disabled={deletingUserId === u.id}
+                              className="rounded-xl border border-[#f0b8c7] bg-[#fff2f5] px-3 py-2 text-sm font-semibold text-[#b84367] transition-colors hover:bg-[#ffe7ee] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {deletingUserId === u.id ? "Deleting…" : "Delete"}
+                            </button>
                           </div>
                         </div>
                       );
@@ -634,6 +683,7 @@ export default function AdminPage() {
                           <th className="px-4 py-3 text-right">Scans</th>
                           <th className="px-4 py-3">Events</th>
                           <th className="px-4 py-3">Joined</th>
+                          <th className="px-4 py-3 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#e8e1fb] bg-white">
@@ -677,6 +727,16 @@ export default function AdminPage() {
                               </td>
                               <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
                                 {formatDate(u.created_at)}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteUser(u)}
+                                  disabled={deletingUserId === u.id}
+                                  className="rounded-xl border border-[#f0b8c7] bg-[#fff2f5] px-3 py-2 text-sm font-semibold text-[#b84367] transition-colors hover:bg-[#ffe7ee] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {deletingUserId === u.id ? "Deleting…" : "Delete"}
+                                </button>
                               </td>
                             </tr>
                           );
@@ -1025,10 +1085,13 @@ async function fetchUsers(q: string, cursor?: string | null) {
   };
 }
 
-async function fetchStatUsers(view: StatView, cursor?: string | null) {
+async function fetchStatUsers(view: StatView, cursor?: string | null, limit?: number) {
   const params = new URLSearchParams();
   if (view) params.set("view", view);
   if (cursor) params.set("cursor", cursor);
+  if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
+    params.set("limit", String(Math.floor(limit)));
+  }
   const res = await fetch(`/api/admin/users/filter?${params.toString()}`, {
     cache: "no-store",
   });
@@ -1038,4 +1101,15 @@ async function fetchStatUsers(view: StatView, cursor?: string | null) {
     items: any[];
     nextCursor: string | null;
   };
+}
+
+async function deleteAdminUser(userId: string) {
+  const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(json?.error || `Delete failed: ${res.status}`);
+  }
+  return json as { ok: boolean; userId: string };
 }

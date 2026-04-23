@@ -3,7 +3,16 @@ import OpenAI from "openai";
 import { resolveStudioProvider } from "@/lib/studio/provider";
 import type { StudioProvider } from "@/lib/studio/types";
 
-export type OcrSkinCategory = "birthday" | "wedding";
+export type OcrSkinCategory =
+  | "birthday"
+  | "wedding"
+  | "baby-shower"
+  | "bridal-shower"
+  | "engagement"
+  | "anniversary"
+  | "graduation"
+  | "religious"
+  | "general";
 
 export type OcrSkinId =
   | "scanned-birthday-bento-pop"
@@ -11,7 +20,10 @@ export type OcrSkinId =
   | "scanned-birthday-retro-neon"
   | "scanned-wedding-editorial-paper"
   | "scanned-wedding-gilded-romance"
-  | "scanned-wedding-noir-modern";
+  | "scanned-wedding-noir-modern"
+  | "scanned-invite-bento-celebration"
+  | "scanned-invite-soft-radiance"
+  | "scanned-invite-evening-luxe";
 
 export type OcrSkinPalette = {
   background: string;
@@ -32,7 +44,7 @@ export type OcrSkinSelection = {
 };
 
 type OcrSkinPromptInput = {
-  category: OcrSkinCategory;
+  category: OcrSkinCategory | string;
   imageBytes: Buffer;
   mimeType: string;
   ocrText: string;
@@ -66,34 +78,66 @@ const WEDDING_SKIN_IDS = [
   "scanned-wedding-noir-modern",
 ] as const;
 
-const OCR_SKIN_ID_SET = new Set<OcrSkinId>([...BIRTHDAY_SKIN_IDS, ...WEDDING_SKIN_IDS]);
+const GENERIC_INVITE_SKIN_IDS = [
+  "scanned-invite-bento-celebration",
+  "scanned-invite-soft-radiance",
+  "scanned-invite-evening-luxe",
+] as const;
+
+const GENERIC_OCR_SKIN_CATEGORIES = [
+  "baby-shower",
+  "bridal-shower",
+  "engagement",
+  "anniversary",
+  "graduation",
+  "religious",
+  "general",
+] as const;
+
+const OCR_SKIN_ID_SET = new Set<OcrSkinId>([
+  ...BIRTHDAY_SKIN_IDS,
+  ...WEDDING_SKIN_IDS,
+  ...GENERIC_INVITE_SKIN_IDS,
+]);
+
+const OCR_INVITE_CATEGORY_LABELS: Record<OcrSkinCategory, string> = {
+  birthday: "Birthday",
+  wedding: "Wedding",
+  "baby-shower": "Baby Shower",
+  "bridal-shower": "Bridal Shower",
+  engagement: "Engagement",
+  anniversary: "Anniversary",
+  graduation: "Graduation",
+  religious: "Religious Celebration",
+  general: "General Event",
+};
 
 const DEFAULT_OCR_SKIN_PALETTES: Record<OcrSkinId, OcrSkinPalette> = {
   "scanned-birthday-bento-pop": {
-    background: "#fff7eb",
-    primary: "#ff7b89",
-    secondary: "#ffd166",
-    accent: "#4cc9f0",
-    text: "#351628",
-    dominant: "#ff9f6e",
-    themeColor: "#ff7b89",
+    background: "#d6ebee",
+    primary: "#ef2f92",
+    secondary: "#1ba3e4",
+    accent: "#ff9a1f",
+    text: "#101010",
+    dominant: "#ef2f92",
+    themeColor: "#ef2f92",
   },
   "scanned-birthday-storybook-sparkle": {
-    background: "#fff7fb",
-    primary: "#f3d7f4",
-    secondary: "#ffd9e8",
-    accent: "#9f7aea",
-    text: "#3f244b",
-    dominant: "#e9b7da",
-    themeColor: "#9f7aea",
+    background: "#fff3fb",
+    primary: "#c285ff",
+    secondary: "#ff8bb7",
+    accent: "#6ed0ff",
+    text: "#2d1b45",
+    dominant: "#ffb2d7",
+    themeColor: "#c285ff",
   },
   "scanned-birthday-retro-neon": {
     background: "#0b1020",
-    primary: "#161f3d",
-    secondary: "#291b57",
-    accent: "#14f1d9",
+    primary: "#ff4fb3",
+    secondary: "#14f1d9",
+    accent: "#f7b801",
     text: "#f5efff",
-    dominant: "#ff4fb3",
+    dominant: "#161f3d",
     themeColor: "#14f1d9",
   },
   "scanned-wedding-editorial-paper": {
@@ -123,6 +167,33 @@ const DEFAULT_OCR_SKIN_PALETTES: Record<OcrSkinId, OcrSkinPalette> = {
     dominant: "#2a3345",
     themeColor: "#f1d39a",
   },
+  "scanned-invite-bento-celebration": {
+    background: "#dcecf7",
+    primary: "#e91e8f",
+    secondary: "#16a5e3",
+    accent: "#ff9f1c",
+    text: "#111827",
+    dominant: "#e91e8f",
+    themeColor: "#e91e8f",
+  },
+  "scanned-invite-soft-radiance": {
+    background: "#f7f0ff",
+    primary: "#b56ef4",
+    secondary: "#ff7aa8",
+    accent: "#53c7ff",
+    text: "#24163d",
+    dominant: "#ffb347",
+    themeColor: "#b56ef4",
+  },
+  "scanned-invite-evening-luxe": {
+    background: "#111827",
+    primary: "#5eead4",
+    secondary: "#f472b6",
+    accent: "#fbbf24",
+    text: "#f9fafb",
+    dominant: "#1f2937",
+    themeColor: "#5eead4",
+  },
 };
 
 function safeString(value: unknown): string {
@@ -133,7 +204,38 @@ function normalizeCategory(value: unknown): OcrSkinCategory | null {
   const normalized = safeString(value).toLowerCase();
   if (normalized === "birthday" || normalized === "birthdays") return "birthday";
   if (normalized === "wedding" || normalized === "weddings") return "wedding";
+  if (
+    normalized === "baby shower" ||
+    normalized === "baby showers" ||
+    normalized === "gender reveal" ||
+    normalized === "gender reveals"
+  ) {
+    return "baby-shower";
+  }
+  if (normalized === "bridal shower" || normalized === "bridal showers") return "bridal-shower";
+  if (normalized === "engagement" || normalized === "engagements") return "engagement";
+  if (normalized === "anniversary" || normalized === "anniversaries") return "anniversary";
+  if (normalized === "graduation" || normalized === "graduations") return "graduation";
+  if (
+    normalized === "religious event" ||
+    normalized === "religious events" ||
+    normalized === "religious celebration" ||
+    normalized === "religious celebrations"
+  ) {
+    return "religious";
+  }
+  if (
+    normalized === "general event" ||
+    normalized === "general events" ||
+    normalized === "general"
+  ) {
+    return "general";
+  }
   return null;
+}
+
+export function isOcrInviteCategory(value: unknown): boolean {
+  return Boolean(normalizeCategory(value));
 }
 
 function normalizeHex(value: unknown): string | null {
@@ -154,10 +256,24 @@ function normalizeHex(value: unknown): string | null {
 function normalizeSkinId(category: OcrSkinCategory, value: unknown): OcrSkinId | null {
   const id = safeString(value) as OcrSkinId;
   if (!OCR_SKIN_ID_SET.has(id)) return null;
-  if (category === "birthday" && BIRTHDAY_SKIN_IDS.includes(id as (typeof BIRTHDAY_SKIN_IDS)[number])) {
+  if (
+    category === "birthday" &&
+    BIRTHDAY_SKIN_IDS.includes(id as (typeof BIRTHDAY_SKIN_IDS)[number])
+  ) {
     return id;
   }
-  if (category === "wedding" && WEDDING_SKIN_IDS.includes(id as (typeof WEDDING_SKIN_IDS)[number])) {
+  if (
+    category === "wedding" &&
+    WEDDING_SKIN_IDS.includes(id as (typeof WEDDING_SKIN_IDS)[number])
+  ) {
+    return id;
+  }
+  if (
+    GENERIC_OCR_SKIN_CATEGORIES.includes(
+      category as (typeof GENERIC_OCR_SKIN_CATEGORIES)[number],
+    ) &&
+    GENERIC_INVITE_SKIN_IDS.includes(id as (typeof GENERIC_INVITE_SKIN_IDS)[number])
+  ) {
     return id;
   }
   return null;
@@ -219,15 +335,29 @@ function buildAllowedSkinRules(category: OcrSkinCategory): string {
     ].join("\n");
   }
 
+  if (category === "wedding") {
+    return [
+      'Allowed skinId values: "scanned-wedding-editorial-paper", "scanned-wedding-gilded-romance", "scanned-wedding-noir-modern".',
+      'Pick "scanned-wedding-editorial-paper" for airy, floral, cream, stationery-like, classic, delicate, or soft editorial wedding invites.',
+      'Pick "scanned-wedding-gilded-romance" for warm gold, ballroom, formal, traditional, ornate, luxurious, or champagne-toned wedding invites.',
+      'Pick "scanned-wedding-noir-modern" for black-and-white, moody, fashion-editorial, city-night, stark, minimal, or modern luxury wedding invites.',
+    ].join("\n");
+  }
+
   return [
-    'Allowed skinId values: "scanned-wedding-editorial-paper", "scanned-wedding-gilded-romance", "scanned-wedding-noir-modern".',
-    'Pick "scanned-wedding-editorial-paper" for airy, floral, cream, stationery-like, classic, delicate, or soft editorial wedding invites.',
-    'Pick "scanned-wedding-gilded-romance" for warm gold, ballroom, formal, traditional, ornate, luxurious, or champagne-toned wedding invites.',
-    'Pick "scanned-wedding-noir-modern" for black-and-white, moody, fashion-editorial, city-night, stark, minimal, or modern luxury wedding invites.',
+    'Allowed skinId values: "scanned-invite-bento-celebration", "scanned-invite-soft-radiance", "scanned-invite-evening-luxe".',
+    `This flyer is for a ${OCR_INVITE_CATEGORY_LABELS[category].toLowerCase()} or related invitation surface.`,
+    'Pick "scanned-invite-bento-celebration" for bright, playful, confetti-forward, saturated, kid-friendly, or high-energy flyers.',
+    'Pick "scanned-invite-soft-radiance" for airy, floral, brunch, shower, pastel, delicate, or daytime editorial flyers.',
+    'Pick "scanned-invite-evening-luxe" for dark, metallic, dramatic, formal, nightlife, or high-contrast flyers.',
   ].join("\n");
 }
 
 function buildPrompt(input: OcrSkinPromptInput): string {
+  const category = normalizeCategory(input.category);
+  if (!category) {
+    return "Return JSON only.";
+  }
   const title = safeString(input.fieldsGuess?.title);
   const location = safeString(input.fieldsGuess?.location);
   const description = safeString(input.fieldsGuess?.description);
@@ -238,20 +368,26 @@ function buildPrompt(input: OcrSkinPromptInput): string {
   return [
     "You select one allowed mobile invite UI skin for a scanned event invitation.",
     "Return JSON only.",
-    buildAllowedSkinRules(input.category),
-    "Also extract a coherent palette from the flyer itself.",
+    buildAllowedSkinRules(category),
+    "Also extract the EXACT dominant color palette from the flyer itself.",
     "Palette must use six-digit hex colors and include: background, primary, secondary, accent, text, dominant, themeColor.",
+    "Palette values are direct UI render tokens, not soft suggestions.",
+    "For vivid flyers, keep saturated pinks, cyans, oranges, blues, purples, and neon accents when they are present.",
+    "Do not mute, soften, or pastelize a vivid flyer palette unless the flyer is already soft.",
+    "If the flyer background is colorful, preserve that color truth instead of washing it out to near-white.",
     "Do not invent a new skinId. Choose only from the allowed list.",
     "Prefer the flyer's visual mood, typography attitude, and composition feel over generic category defaults.",
     "",
-    `Category: ${input.category}`,
+    `Category: ${category}`,
     title ? `Title: ${title}` : "Title: Not provided",
     location ? `Location: ${location}` : "Location: Not provided",
     description ? `Description: ${description}` : "Description: Not provided",
-    input.category === "birthday" && hintAudience ? `Birthday audience hint: ${hintAudience}` : "",
-    input.category === "birthday" && hintName ? `Birthday honoree hint: ${hintName}` : "",
-    input.category === "birthday" && hintAge ? `Birthday age hint: ${hintAge}` : "",
-    input.category === "birthday" && hintThemeId ? `Existing birthday OCR theme hint: ${hintThemeId}` : "",
+    category === "birthday" && hintAudience ? `Birthday audience hint: ${hintAudience}` : "",
+    category === "birthday" && hintName ? `Birthday honoree hint: ${hintName}` : "",
+    category === "birthday" && hintAge ? `Birthday age hint: ${hintAge}` : "",
+    category === "birthday" && hintThemeId
+      ? `Existing birthday OCR theme hint: ${hintThemeId}`
+      : "",
     input.ocrText ? `OCR text:\n${input.ocrText}` : "OCR text: Not provided",
     "",
     'Response shape: {"skinId":"allowed-id","palette":{"background":"#xxxxxx","primary":"#xxxxxx","secondary":"#xxxxxx","accent":"#xxxxxx","text":"#xxxxxx","dominant":"#xxxxxx","themeColor":"#xxxxxx"}}',
@@ -265,7 +401,9 @@ function resolveOpenAiTextModel(): string {
 }
 
 function resolveGeminiTextModel(): string {
-  return process.env.STUDIO_GEMINI_TEXT_MODEL || process.env.GEMINI_MODEL || "gemini-3-flash-preview";
+  return (
+    process.env.STUDIO_GEMINI_TEXT_MODEL || process.env.GEMINI_MODEL || "gemini-3-flash-preview"
+  );
 }
 
 function getOpenAiClient(): OpenAI | null {
@@ -422,7 +560,9 @@ export function normalizeOcrSkinSelection(
   };
 }
 
-export async function inferOcrSkinSelection(input: OcrSkinPromptInput): Promise<OcrSkinSelection | null> {
+export async function inferOcrSkinSelection(
+  input: OcrSkinPromptInput,
+): Promise<OcrSkinSelection | null> {
   const category = normalizeCategory(input.category);
   if (!category) return null;
   const provider = ocrSkinDeps.resolveStudioProvider();

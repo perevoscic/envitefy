@@ -26,7 +26,7 @@ import {
   llmRewriteSmartDescription,
   llmRewriteWedding,
 } from "@/lib/ocr/openai";
-import { inferOcrSkinSelection } from "@/lib/ocr/skin";
+import { inferOcrSkinSelection, isOcrInviteCategory } from "@/lib/ocr/skin";
 import {
   buildNextOccurrence,
   createEmptyPracticeSchedule,
@@ -1427,7 +1427,7 @@ export async function handleOcrRequest(request: Request) {
       birthdayAge: llmImage?.birthdayAge,
     });
     const ocrSkin =
-      category === "Birthdays" || category === "Weddings"
+      isOcrInviteCategory(category)
         ? await inferOcrSkinSelection({
             category,
             imageBytes: ocrBuffer,

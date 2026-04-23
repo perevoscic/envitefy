@@ -14,7 +14,7 @@ import {
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
-import type { OcrSkinSelection } from "@/lib/ocr/skin";
+import { isOcrInviteCategory, type OcrSkinSelection } from "@/lib/ocr/skin";
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { findFirstEmail, normalizeUrlValue } from "@/utils/contact";
 import { extractColorsFromImage } from "@/utils/image-colors";
@@ -1171,6 +1171,7 @@ export default function Dashboard({
           normalizedBirthdayTemplateHint?.detected &&
           (normalizedOcrCategory || "").toLowerCase() === "birthdays";
         const isWeddingOcrEvent = (normalizedOcrCategory || "").trim().toLowerCase() === "weddings";
+        const isInviteOcrEvent = isOcrInviteCategory(normalizedOcrCategory);
         let flyerColors =
           ocrMeta?.flyerColors && typeof ocrMeta.flyerColors === "object"
             ? ocrMeta.flyerColors
@@ -1223,15 +1224,12 @@ export default function Dashboard({
               ? "ocr-birthday-skin"
               : isWeddingOcrEvent
                 ? "ocr-wedding-renderer"
+                : isInviteOcrEvent
+                  ? "ocr-invite-skin"
                 : "ocr",
             thumbnail,
             attachment: attachment || undefined,
-            ocrSkin:
-              normalizedOcrSkin &&
-              ((isBirthdayOcrEvent && normalizedOcrSkin.category === "birthday") ||
-                (isWeddingOcrEvent && normalizedOcrSkin.category === "wedding"))
-                ? normalizedOcrSkin
-                : undefined,
+            ocrSkin: isInviteOcrEvent ? normalizedOcrSkin || undefined : undefined,
             flyerColors: isWeddingOcrEvent ? flyerColors || undefined : undefined,
             templateId: isBirthdayOcrEvent ? "party-pop" : undefined,
             variationId: isBirthdayOcrEvent

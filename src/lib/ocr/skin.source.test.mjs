@@ -19,14 +19,17 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(source, /inferWithGemini/);
   assert.match(source, /scanned-birthday-bento-pop/);
   assert.match(source, /scanned-wedding-noir-modern/);
+  assert.match(source, /scanned-invite-bento-celebration/);
+  assert.match(source, /EXACT dominant color palette from the flyer itself/);
+  assert.match(source, /Do not mute, soften, or pastelize a vivid flyer palette unless the flyer is already soft\./);
 });
 
-test("ocr pipeline adds provider-aware ocrSkin only for birthday and wedding scans", () => {
+test("ocr pipeline adds provider-aware ocrSkin for invite-like OCR categories", () => {
   const source = readSource("src/lib/ocr/pipeline.ts");
 
-  assert.match(source, /import \{ inferOcrSkinSelection \} from "@\/lib\/ocr\/skin";/);
+  assert.match(source, /import \{ inferOcrSkinSelection, isOcrInviteCategory \} from "@\/lib\/ocr\/skin";/);
   assert.match(source, /const ocrSkin =/);
-  assert.match(source, /category === "Birthdays" \|\| category === "Weddings"/);
+  assert.match(source, /isOcrInviteCategory\(category\)/);
   assert.match(source, /await inferOcrSkinSelection\(\{/);
   assert.match(source, /ocrSkin,/);
 });

@@ -623,16 +623,6 @@ export function StudioFormStep({
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </button>
-              {imageFinishPresets.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setShowStylePicker(true)}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/18 bg-white/10 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md"
-                >
-                  <Wand2 className="h-4 w-4" />
-                  Style
-                </button>
-              ) : null}
             </div>
           ) : null}
 

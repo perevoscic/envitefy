@@ -28,31 +28,30 @@ type Palette = {
 
 type Props = {
   title: string;
-  honoreeName?: string | null;
+  categoryLabel?: string | null;
   dateLabel?: string | null;
   timeLabel?: string | null;
   location?: string | null;
   imageUrl?: string | null;
-  shareUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
   palette?: Palette;
   rsvpName?: string | null;
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
   rsvpUrl?: string | null;
-  planCopy?: string | null;
+  detailCopy?: string | null;
   previewMode?: boolean;
   actions?: ReactNode;
 };
 
 const DEFAULT_PALETTE = {
-  background: "#d6ebee",
-  primary: "#ef2f92",
-  secondary: "#1ba3e4",
-  accent: "#ff9a1f",
+  background: "#eaf2ff",
+  primary: "#ef476f",
+  secondary: "#118ab2",
+  accent: "#ff9f1c",
   text: "#101010",
-  dominant: "#ef2f92",
-  themeColor: "#ef2f92",
+  dominant: "#ef476f",
+  themeColor: "#ef476f",
 };
 
 function buildMapsHref(location: string | null | undefined): string | null {
@@ -77,37 +76,25 @@ function buildRsvpHref({
   return null;
 }
 
-function extractHonoreeName(title: string, honoreeName?: string | null) {
-  const explicit = String(honoreeName || "").trim();
-  if (explicit) return explicit;
-
-  const trimmedTitle = String(title || "").trim();
-  if (!trimmedTitle) return "birthday star";
-
-  const apostropheIndex = trimmedTitle.indexOf("'s ");
-  if (apostropheIndex > 0) {
-    return trimmedTitle.slice(0, apostropheIndex).trim();
-  }
-
-  const firstLine = trimmedTitle.split(/\n+/)[0]?.trim();
-  return firstLine || "birthday star";
+function formatCategoryLabel(value: string | null | undefined) {
+  const trimmed = String(value || "").trim();
+  return trimmed ? trimmed.replace(/\s+/g, " ") : "Celebration";
 }
 
-export default function BirthdaySkin({
+export default function ScannedInviteSkin({
   title,
-  honoreeName,
+  categoryLabel,
   dateLabel,
   timeLabel,
   location,
   imageUrl,
-  shareUrl,
   calendarLinks,
   palette,
   rsvpName,
   rsvpPhone,
   rsvpEmail,
   rsvpUrl,
-  planCopy,
+  detailCopy,
   previewMode = false,
   actions,
 }: Props) {
@@ -116,13 +103,6 @@ export default function BirthdaySkin({
 
   const colors = useMemo(() => normalizeScannedInvitePalette(palette, DEFAULT_PALETTE), [palette]);
 
-  const displayName = extractHonoreeName(title, honoreeName);
-  const displayDate = String(dateLabel || "").trim() || "Date TBD";
-  const displayTime = String(timeLabel || "").trim() || "Time TBD";
-  const displayLocation = String(location || "").trim() || "Location TBD";
-  const directionsHref = buildMapsHref(location);
-  const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail });
-  const displayPlanCopy = String(planCopy || "").trim() || "Games, Food & Fun!";
   const chipTextColor = ensureReadableTextColor(colors.accent, "#ffffff", { minContrast: 3 });
   const primaryTileTextColor = ensureReadableTextColor(colors.primary, "#ffffff", {
     minContrast: 3,
@@ -130,6 +110,15 @@ export default function BirthdaySkin({
   const secondaryTileTextColor = ensureReadableTextColor(colors.secondary, "#ffffff", {
     minContrast: 3,
   });
+  const displayTitle = String(title || "").trim() || "Celebration";
+  const displayCategoryLabel = formatCategoryLabel(categoryLabel);
+  const displayDate = String(dateLabel || "").trim() || "Date TBD";
+  const displayTime = String(timeLabel || "").trim() || "Time TBD";
+  const displayLocation = String(location || "").trim() || "Location TBD";
+  const directionsHref = buildMapsHref(location);
+  const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail });
+  const displayDetailCopy =
+    String(detailCopy || "").trim() || "Details, RSVP, and calendar links are ready to share.";
 
   useEffect(() => {
     if (previewMode) return;
@@ -165,7 +154,7 @@ export default function BirthdaySkin({
 
   return (
     <motion.div
-      data-skin-id="birthday-skin"
+      data-skin-id="scanned-invite-skin"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="min-h-screen pb-10 font-sans"
@@ -190,15 +179,15 @@ export default function BirthdaySkin({
                 color: chipTextColor,
               }}
             >
-              Birthday Bash!
+              {displayCategoryLabel}
             </motion.div>
             <motion.h1
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              className="serif text-6xl lowercase leading-none tracking-tight md:text-8xl"
+              className="serif text-5xl leading-[0.95] tracking-tight md:text-7xl"
               style={{ color: "var(--theme-text)" }}
             >
-              {displayName}
+              {displayTitle}
             </motion.h1>
           </div>
 
@@ -214,7 +203,10 @@ export default function BirthdaySkin({
           >
             <div
               className="absolute -right-4 -top-4 z-10 flex h-16 w-16 items-center justify-center rounded-full shadow-xl"
-              style={{ backgroundColor: "var(--theme-primary)", color: primaryTileTextColor }}
+              style={{
+                backgroundColor: "var(--theme-primary)",
+                color: primaryTileTextColor,
+              }}
             >
               <Sparkles className="h-8 w-8" />
             </div>
@@ -238,7 +230,7 @@ export default function BirthdaySkin({
           </motion.button>
         </div>
 
-        <div className="max-w-6xl grid grid-cols-1 gap-6 md:grid-cols-4">
+        <div className="grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-4">
           <motion.section
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -249,7 +241,7 @@ export default function BirthdaySkin({
               <InfoBlock
                 icon={<Calendar className="h-8 w-8" />}
                 swatchColor="var(--theme-primary)"
-                label="Party time"
+                label="When"
                 title={displayDate}
                 subtitle={displayTime}
               />
@@ -257,8 +249,8 @@ export default function BirthdaySkin({
               <InfoBlock
                 icon={<MapPin className="h-8 w-8" />}
                 swatchColor="var(--theme-accent)"
-                label="The Spot"
-                title="Party Location"
+                label="Where"
+                title="Event Location"
                 subtitle={displayLocation}
               />
 
@@ -266,7 +258,7 @@ export default function BirthdaySkin({
                 <InfoBlock
                   icon={<MessageSquare className="h-8 w-8" />}
                   swatchColor="var(--theme-secondary)"
-                  label="RSVP to"
+                  label="RSVP"
                   title={String(rsvpName || rsvpEmail || "Host")}
                   subtitle={
                     String(rsvpPhone || rsvpEmail || "").trim() ||
@@ -322,9 +314,9 @@ export default function BirthdaySkin({
             >
               <div className="space-y-1">
                 <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
-                  Plan of Action
+                  Good to Know
                 </div>
-                <div className="text-2xl font-bold text-black/90">{displayPlanCopy}</div>
+                <div className="text-2xl font-bold text-black/90">{displayDetailCopy}</div>
               </div>
               <div
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
@@ -374,7 +366,7 @@ export default function BirthdaySkin({
                 <Calendar className="h-10 w-10" />
               </div>
               <h3 className="serif mb-8 text-2xl font-bold" style={{ color: "var(--theme-text)" }}>
-                Ready to Party?
+                Add it to your calendar
               </h3>
               <div className="space-y-4">
                 <CalendarModalLink

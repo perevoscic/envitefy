@@ -48,7 +48,7 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const view = searchParams.get("view") as "all" | "scans" | "shares" | null;
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const cursor = searchParams.get("cursor");
 
     if (!view) {
