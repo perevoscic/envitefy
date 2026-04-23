@@ -279,6 +279,21 @@ function normalizeSkinId(category: OcrSkinCategory, value: unknown): OcrSkinId |
   return null;
 }
 
+function hexToSaturation(hex: string): number {
+  const normalized = normalizeHex(hex);
+  if (!normalized) return 0;
+  const value = normalized.slice(1);
+  const r = Number.parseInt(value.slice(0, 2), 16) / 255;
+  const g = Number.parseInt(value.slice(2, 4), 16) / 255;
+  const b = Number.parseInt(value.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  if (delta === 0) return 0;
+  const lightness = (max + min) / 2;
+  return delta / (1 - Math.abs(2 * lightness - 1));
+}
+
 function normalizePalette(skinId: OcrSkinId, value: unknown): OcrSkinPalette {
   const fallback = DEFAULT_OCR_SKIN_PALETTES[skinId];
   const input = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -289,6 +304,23 @@ function normalizePalette(skinId: OcrSkinId, value: unknown): OcrSkinPalette {
   const text = normalizeHex(input.text) || fallback.text;
   const dominant = normalizeHex(input.dominant) || accent || fallback.dominant;
   const themeColor = normalizeHex(input.themeColor) || accent || dominant || fallback.themeColor;
+  const maxSaturation = Math.max(
+    hexToSaturation(primary),
+    hexToSaturation(secondary),
+    hexToSaturation(accent),
+    hexToSaturation(dominant),
+  );
+  if (maxSaturation < 0.18) {
+    return {
+      background,
+      primary: fallback.primary,
+      secondary: fallback.secondary,
+      accent: fallback.accent,
+      text,
+      dominant: fallback.dominant,
+      themeColor: fallback.themeColor,
+    };
+  }
   return {
     background,
     primary,

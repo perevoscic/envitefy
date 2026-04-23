@@ -284,6 +284,17 @@ export async function handleOcrRequest(request: Request) {
       visionMime = "image/png";
     }
 
+    let colorBuffer = ocrBuffer;
+    let colorMime = visionMime;
+    try {
+      colorBuffer = await sharp(ocrBuffer)
+        .rotate()
+        .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 88 })
+        .toBuffer();
+      colorMime = "image/jpeg";
+    } catch {}
+
     const preprocessStartedAt = Date.now();
     try {
       ocrBuffer = await sharp(ocrBuffer)
@@ -1430,8 +1441,8 @@ export async function handleOcrRequest(request: Request) {
       isOcrInviteCategory(category)
         ? await inferOcrSkinSelection({
             category,
-            imageBytes: ocrBuffer,
-            mimeType: visionMime,
+            imageBytes: colorBuffer,
+            mimeType: colorMime,
             ocrText: raw,
             fieldsGuess: {
               title: fieldsGuess.title,
