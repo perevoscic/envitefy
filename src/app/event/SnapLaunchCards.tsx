@@ -96,7 +96,7 @@ export default function SnapLaunchCards() {
 
   return (
     <>
-      <div className="mt-10 grid grid-cols-1 gap-3 pb-10 sm:grid-cols-2 sm:gap-6">
+      <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
         <button
           type="button"
           onClick={openCameraPicker}

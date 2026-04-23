@@ -29,12 +29,12 @@ export default function EventSnapLandingPage() {
               flyer or invite
             </span>
           </h1>
-          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-[#767287] sm:text-[1.35rem]">
-            Envitefy reads the details, detects invitation types, and routes them into
-            polished, interactive event pages automatically.
-          </p>
         </section>
         <SnapLaunchCards />
+        <p className="mx-auto mt-6 max-w-3xl pb-10 text-center text-lg leading-8 text-[#767287] sm:mt-8 sm:text-[1.35rem]">
+          Envitefy reads the details, detects invitation types, and routes them into
+          polished, interactive event pages automatically.
+        </p>
       </div>
     </main>
   );
