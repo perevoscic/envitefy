@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 import "dotenv/config";
-import fs from "node:fs/promises";
+import { config as loadEnv } from "dotenv";
 import path from "node:path";
+import fs from "node:fs/promises";
 import { normalizeCampaignInput, runCampaign } from "./lib/campaign-run.mjs";
 import { parseCliArgs, buildLooseInputFromCli } from "./lib/storyboard-generator.mjs";
 import { assembleVideoForRun } from "./lib/video-assembler.mjs";
+
+loadEnv({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 
 function clean(value) {
   return typeof value === "string" ? value.trim() : "";

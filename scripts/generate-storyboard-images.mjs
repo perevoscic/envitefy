@@ -143,7 +143,7 @@ function getOpenAiClient() {
 }
 
 function resolveTextModel() {
-  return process.env.STORYBOARD_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.4-mini";
+  return process.env.STORYBOARD_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-4.1-mini";
 }
 
 function resolveImageModel() {

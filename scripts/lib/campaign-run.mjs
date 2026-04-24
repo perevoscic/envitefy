@@ -260,55 +260,62 @@ async function clearRenderedRunArtifacts(runPaths) {
   ]);
 }
 
-function shouldRetryWithImageFallback(error, requestedModel) {
-  if (clean(requestedModel) !== "gpt-image-2") return false;
+const IMAGE_MODEL_FALLBACK_CHAIN = ["gpt-image-2", "gpt-image-1.5", "gpt-image-1"];
+
+function shouldRetryWithImageFallback(error) {
   const message = clean(error?.message || error);
-  return /model|not found|not exist|unsupported|invalid|unavailable/i.test(message);
+  if (!message) return true;
+  return /model|not found|not exist|unsupported|invalid|unavailable|access|permission|verified/i.test(message);
+}
+
+function buildImageModelAttemptOrder(requestedModel) {
+  const primary = clean(requestedModel);
+  if (!primary) return [...IMAGE_MODEL_FALLBACK_CHAIN];
+  const index = IMAGE_MODEL_FALLBACK_CHAIN.indexOf(primary);
+  if (index >= 0) return IMAGE_MODEL_FALLBACK_CHAIN.slice(index);
+  return [primary];
 }
 
 async function generateImageBuffer({ client, requestedModel, prompt, size, user }) {
-  try {
-    const response = await client.images.generate({
-      model: requestedModel,
-      prompt,
-      size,
-      quality: resolveImageQuality(),
-      background: "opaque",
-      user: clean(user) || undefined,
-      n: 1,
-    });
-    const b64 = response.data?.[0]?.b64_json || "";
-    if (!b64) throw new Error("No image payload returned from OpenAI.");
-    return {
-      buffer: Buffer.from(b64, "base64"),
-      effectiveModel: requestedModel,
-      warning: null,
-    };
-  } catch (error) {
-    if (!shouldRetryWithImageFallback(error, requestedModel)) throw error;
+  const attempts = buildImageModelAttemptOrder(requestedModel);
+  const firstModel = attempts[0];
+  let lastError = null;
 
-    const fallbackModel = "gpt-image-1";
-    const response = await client.images.generate({
-      model: fallbackModel,
-      prompt,
-      size,
-      quality: resolveImageQuality(),
-      background: "opaque",
-      user: clean(user) || undefined,
-      n: 1,
-    });
-    const b64 = response.data?.[0]?.b64_json || "";
-    if (!b64) throw new Error("No image payload returned from OpenAI fallback model.");
-    return {
-      buffer: Buffer.from(b64, "base64"),
-      effectiveModel: fallbackModel,
-      warning: `Image model fallback: requested gpt-image-2, retried with ${fallbackModel}.`,
-    };
+  for (let index = 0; index < attempts.length; index += 1) {
+    const model = attempts[index];
+    try {
+      const response = await client.images.generate({
+        model,
+        prompt,
+        size,
+        quality: resolveImageQuality(),
+        background: "opaque",
+        user: clean(user) || undefined,
+        n: 1,
+      });
+      const b64 = response.data?.[0]?.b64_json || "";
+      if (!b64) throw new Error(`No image payload returned from ${model}.`);
+
+      return {
+        buffer: Buffer.from(b64, "base64"),
+        effectiveModel: model,
+        warning:
+          model === firstModel
+            ? null
+            : `Image model fallback: requested ${firstModel}, succeeded with ${model}.`,
+      };
+    } catch (error) {
+      lastError = error;
+      const isLast = index === attempts.length - 1;
+      if (isLast || !shouldRetryWithImageFallback(error)) throw error;
+    }
   }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 export function resolveTextModel() {
-  return process.env.STORYBOARD_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.4-mini";
+  return process.env.STORYBOARD_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-4.1-mini";
 }
 
 export function resolveImageModel() {
@@ -516,6 +523,9 @@ function assertStoryboardFrameAlignment({ requestPayload, sceneSpec, framePlan, 
 
 export function applyCreativeQaFrameConstraints(sceneSpec, qaFeedback) {
   if (!sceneSpec || !qaFeedback) return sceneSpec;
+  if (clean(sceneSpec?.numberOfFrames?.source) === "user") {
+    return sceneSpec;
+  }
 
   const currentCount = normalizeFrameCountValue(sceneSpec?.numberOfFrames?.value, 1);
   const framesToCut = normalizePositiveIntegers(qaFeedback?.framesToCut).filter(
@@ -657,19 +667,20 @@ async function runStoryboardPlanningLoop({
       return { sceneSpec: workingSceneSpec, framePlan, socialCopy, creativeQa };
     }
 
-    setStageStatus(statusDoc, "creative-qa", "error", {
+    setStageStatus(statusDoc, "creative-qa", "warning", {
       error: Array.isArray(creativeQa?.reasons) ? creativeQa.reasons.join(" | ") : "Creative QA failed",
     });
     qaFeedback = creativeQa;
   }
 
-  const errorMessage =
+  const softReason =
     Array.isArray(creativeQa?.reasons) && creativeQa.reasons.length > 0
       ? creativeQa.reasons.join(" | ")
-      : "Creative QA failed after rewrite.";
-  statusDoc.error = errorMessage;
-  await persistStatus(errorMessage, "error", "creative-qa");
-  throw new Error(errorMessage);
+      : "Creative QA flagged issues but did not block image generation.";
+  pushWarning(statusDoc, `Creative QA soft-fail: ${softReason}`);
+  setStageStatus(statusDoc, "creative-qa", "warning", { error: softReason });
+  await persistStatus("Creative QA flagged issues — proceeding to images", "running", "creative-qa");
+  return { sceneSpec: workingSceneSpec, framePlan, socialCopy, creativeQa };
 }
 
 async function generateStoryboardImagesForRun({
