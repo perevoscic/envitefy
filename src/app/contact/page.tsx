@@ -6,14 +6,10 @@ import ThankYouModal from "@/components/ThankYouModal";
 
 export default function ContactPage() {
   const { data: session } = useSession();
-  const userName =
-    typeof session?.user?.name === "string" ? session.user.name : "";
-  const userEmail =
-    typeof session?.user?.email === "string" ? session.user.email : "";
+  const userName = typeof session?.user?.name === "string" ? session.user.name : "";
+  const userEmail = typeof session?.user?.email === "string" ? session.user.email : "";
   const [submitting, setSubmitting] = useState(false);
-  const [sent, setSent] = useState<null | { ok: boolean; message: string }>(
-    null
-  );
+  const [sent, setSent] = useState<null | { ok: boolean; message: string }>(null);
   const [showThankYou, setShowThankYou] = useState(false);
   return (
     <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-foreground flex items-center justify-center p-6">
@@ -29,11 +25,7 @@ export default function ContactPage() {
                   letterSpacing: "-0.085em",
                 }}
               >
-                Contact{" "}
-                <EnvitefyWordmark
-                  className="relative  text-[1.40em]"
-                  scaled={false}
-                />
+                Contact <EnvitefyWordmark className="relative  text-[1.40em]" scaled={false} />
               </span>
             </span>
           </h1>
@@ -49,11 +41,8 @@ export default function ContactPage() {
               setSent(null);
               setSubmitting(true);
               const form = e.currentTarget as HTMLFormElement;
-              const title =
-                (form.querySelector("#title") as HTMLInputElement)?.value || "";
-              const message =
-                (form.querySelector("#message") as HTMLTextAreaElement)
-                  ?.value || "";
+              const title = (form.querySelector("#title") as HTMLInputElement)?.value || "";
+              const message = (form.querySelector("#message") as HTMLTextAreaElement)?.value || "";
               const name = userName;
               const email = userEmail;
               try {
@@ -65,9 +54,7 @@ export default function ContactPage() {
                 const data = await res.json();
                 if (res.ok && data?.ok) {
                   // Clear form fields
-                  (
-                    form.querySelector("#message") as HTMLTextAreaElement
-                  ).value = "";
+                  (form.querySelector("#message") as HTMLTextAreaElement).value = "";
                   (form.querySelector("#title") as HTMLInputElement).value = "";
                   // Show thank you modal
                   setShowThankYou(true);
@@ -81,8 +68,7 @@ export default function ContactPage() {
               } catch (err: unknown) {
                 setSent({
                   ok: false,
-                  message:
-                    err instanceof Error ? err.message : "Network error.",
+                  message: err instanceof Error ? err.message : "Network error.",
                 });
               } finally {
                 setSubmitting(false);
@@ -138,7 +124,7 @@ export default function ContactPage() {
                 className="mt-1 w-full border border-[#d9cdfa] bg-[#fcfaff] text-foreground p-3 rounded"
               />
             </div>
-            <div className="pt-2 flex items-center gap-3">
+            <div className="pt-2 flex items-center justify-end gap-3">
               <button
                 disabled={submitting}
                 className="inline-flex items-center justify-center rounded-full px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-[0_12px_30px_rgba(15,23,42,0.35)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.45)] focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
@@ -148,19 +134,14 @@ export default function ContactPage() {
               >
                 {submitting ? "Sending..." : "Send message"}
               </button>
-              {sent && !sent.ok && (
-                <span className="text-sm text-rose-500">{sent.message}</span>
-              )}
+              {sent && !sent.ok && <span className="text-sm text-rose-500">{sent.message}</span>}
             </div>
           </form>
         </div>
       </section>
 
       {/* Thank You Modal */}
-      <ThankYouModal
-        open={showThankYou}
-        onClose={() => setShowThankYou(false)}
-      />
+      <ThankYouModal open={showThankYou} onClose={() => setShowThankYou(false)} />
     </main>
   );
 }
