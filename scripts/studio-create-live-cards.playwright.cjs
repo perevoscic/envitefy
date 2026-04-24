@@ -14,9 +14,9 @@ const CATEGORY_FIXTURES = [
   {
     category: "Birthday",
     fields: {
-      "Birthday Person's Name": "Lara Bennett",
+      "Person's Name": "Lara Bennett",
       "Age Turning": "7",
-      "RSVP Phone or Email": "850-960-1214",
+      RSVP: "850-960-1214",
       "Event Date": "2026-05-23",
       "Start Time": "12:00",
       "Location / Address": "AMC Boulevard 10, Franklin, TN",
@@ -43,7 +43,7 @@ const CATEGORY_FIXTURES = [
     fields: {
       "Couple Names": "Ava Collins & James Porter",
       "Event Title": "Our Wedding Weekend",
-      "RSVP Phone or Email": "wedding@collinsporter.com",
+      RSVP: "wedding@collinsporter.com",
       "Event Date": "2026-10-10",
       "Start Time": "16:30",
       "Location / Address": "The Conservatory, 125 Garden Terrace, Charleston, SC",
@@ -56,7 +56,7 @@ const CATEGORY_FIXTURES = [
     fields: {
       "Bride's Name": "Madeline Rivers",
       "Hosted By": "Sofia and Chloe",
-      "RSVP Phone or Email": "sofia@example.com",
+      RSVP: "sofia@example.com",
       "Event Date": "2026-08-08",
       "Start Time": "11:00",
       "Location / Address": "Willow House, 44 Magnolia Street, Savannah, GA",
@@ -69,7 +69,7 @@ const CATEGORY_FIXTURES = [
     fields: {
       "Honoree / Parent Name(s)": "Elena Martinez",
       'Baby Name or "Baby of"': "Baby Mateo",
-      "RSVP Phone or Email": "elena.shower@example.com",
+      RSVP: "elena.shower@example.com",
       "Event Date": "2026-07-19",
       "Start Time": "13:00",
       "Location / Address": "Olive Room, 212 Harbor Avenue, Tampa, FL",
@@ -82,7 +82,7 @@ const CATEGORY_FIXTURES = [
     fields: {
       "Event Title": "Lincoln Memorial Discovery Day",
       "Grade / Class Level": "3rd Grade",
-      "RSVP Phone or Email": "mrs.harper@school.org",
+      RSVP: "mrs.harper@school.org",
       "Event Date": "2026-04-30",
       "Start Time": "08:15",
       "Location / Address": "Lincoln Memorial, 2 Lincoln Memorial Circle NW, Washington, DC",
@@ -96,7 +96,7 @@ const CATEGORY_FIXTURES = [
     fields: {
       "Couple Names": "Naomi & Daniel Brooks",
       "Years Celebrating": "25",
-      "RSVP Phone or Email": "brooksanniversary@example.com",
+      RSVP: "brooksanniversary@example.com",
       "Event Date": "2026-06-14",
       "Start Time": "18:30",
       "Location / Address": "The Marlowe Room, 17 Crescent Avenue, Chicago, IL",
@@ -108,7 +108,7 @@ const CATEGORY_FIXTURES = [
     category: "Housewarming",
     fields: {
       "Host Name(s)": "The Carter Family",
-      "RSVP Phone or Email": "hello@carterhome.com",
+      RSVP: "hello@carterhome.com",
       "New Address Note":
         "Come tour our new place, enjoy appetizers on the patio, and help us celebrate the move.",
       "Event Date": "2026-05-16",
@@ -123,7 +123,7 @@ const CATEGORY_FIXTURES = [
     fields: {
       "Event Title": "Founder Appreciation Night",
       "Main Person / Host / Honoree": "North Shore Creative",
-      "RSVP Phone or Email": "events@northshorecreative.com",
+      RSVP: "events@northshorecreative.com",
       "Event Date": "2026-11-05",
       "Start Time": "18:00",
       "Location / Address": "Pier 9 Loft, 90 Harbor Way, Seattle, WA",
@@ -309,22 +309,45 @@ async function fieldControl(page, labelText) {
 }
 
 async function fillControl(control, value) {
-  const tagName = await control.evaluate((node) => node.tagName.toLowerCase());
-  if (tagName === "select") {
+  const meta = await control.evaluate((node) => ({
+    tag: node.tagName.toLowerCase(),
+    type: node.type || "",
+    inputMode: node.getAttribute("inputmode") || "",
+    maxLength: node.getAttribute("maxlength") || "",
+  }));
+  if (meta.tag === "select") {
     await control.selectOption(String(value));
     return;
   }
-  await control.fill(String(value));
+  let next = String(value);
+  // Studio renders non-Wedding eventDate as a text input expecting MM/DD
+  // (inputmode=numeric, maxlength=5). An ISO YYYY-MM-DD otherwise gets mangled
+  // to "20/26" by the normalizer.
+  const isMonthDayInput =
+    meta.tag === "input" &&
+    meta.type === "text" &&
+    meta.inputMode === "numeric" &&
+    meta.maxLength === "5";
+  if (isMonthDayInput) {
+    const isoMatch = next.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoMatch) next = `${isoMatch[2]}/${isoMatch[3]}`;
+  }
+  await control.fill(next);
 }
 
 async function fillFixtureDetails(page, fixture) {
   for (const [label, value] of Object.entries(fixture.fields)) {
     if (label === "Event description") {
-      await page.locator("#studio-details-description").fill(String(value));
+      await page.locator("#studio-event-details").fill(String(value));
       continue;
     }
-    const control = await fieldControl(page, label);
-    await fillControl(control, value);
+    try {
+      const control = await fieldControl(page, label);
+      await fillControl(control, value);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed filling field "${label}" with "${value}": ${message}`);
+    }
   }
 }
 
@@ -351,7 +374,7 @@ async function waitForSaveReady(page, timeoutMs) {
   const startedAt = Date.now();
   const failureHeading = page.getByText("Generation Failed");
   const saveButtons = page.getByRole("button", {
-    name: /Save to Library|Save Changes|Saved to Library/i,
+    name: /^Save to Library$/i,
   });
 
   while (Date.now() - startedAt < timeoutMs) {
@@ -370,17 +393,21 @@ async function waitForSaveReady(page, timeoutMs) {
 }
 
 async function waitForSavedState(page, timeoutMs) {
+  // After saving, the "Save to Library" button stays mounted but becomes disabled.
   const startedAt = Date.now();
-  const savedButtons = page.getByRole("button", { name: /^Saved to Library$/i });
-  const savedStatus = page.getByText(/^SAVED$/i).first();
+  const saveButtons = page.getByRole("button", { name: /^Save to Library$/i });
   while (Date.now() - startedAt < timeoutMs) {
-    const savedButton = await findVisibleEnabledButton(savedButtons);
-    if (savedButton) {
-      return;
+    const count = await saveButtons.count();
+    let allDisabled = count > 0;
+    for (let i = 0; i < count; i += 1) {
+      const button = saveButtons.nth(i);
+      if (!(await button.isVisible())) continue;
+      if (await button.isEnabled()) {
+        allDisabled = false;
+        break;
+      }
     }
-    if ((await savedStatus.count()) > 0 && (await savedStatus.isVisible())) {
-      return;
-    }
+    if (allDisabled) return;
     await sleep(500);
   }
   throw new Error(`Timed out waiting for the library save state after ${timeoutMs}ms.`);
@@ -401,26 +428,46 @@ async function createLiveCard(page, baseUrl, fixture, timeoutMs) {
     page.getByRole("button", { name: `Select ${fixture.category}` }),
     `Could not find a visible selector button for ${fixture.category}.`,
   );
-  await page.getByRole("button", { name: /^Details$/i }).first().waitFor({ state: "visible" });
-  await clickVisibleEnabledButton(
-    page.getByRole("button", { name: /^Details$/i }),
-    "Could not find a visible Details step button.",
-  );
-  await page.locator("#studio-details-description").waitFor({ state: "visible" });
+
+  await page.locator("#studio-event-details").waitFor({ state: "visible" });
   await fillFixtureDetails(page, fixture);
-  await clickVisibleEnabledButton(
-    page.getByRole("button", { name: /^Editor$/i }),
-    "Could not find a visible Editor step button.",
-  );
+  await page.locator("#studio-design-idea").fill(fixture.prompt);
 
-  const promptBox = page.locator("aside textarea:visible").first();
-  await promptBox.waitFor({ state: "visible" });
-  await promptBox.fill(fixture.prompt);
+  // Diagnostic: report which generation buttons currently exist and snapshot field state.
+  const candidateButtons = page.getByRole("button", {
+    name: /(Preview|Update|Regenerate)\s+Live\s+Card/i,
+  });
+  const candidateCount = await candidateButtons.count();
+  if (candidateCount === 0) {
+    const allButtons = await page.locator("button:visible").allInnerTexts();
+    throw new Error(
+      `No 'Preview/Update/Regenerate Live Card' button found. Visible buttons: ${JSON.stringify(allButtons)}`,
+    );
+  }
 
-  await clickVisibleEnabledButton(
-    page.getByRole("button", { name: /Create Live Card|Update Invitation/i }),
-    "Could not find a visible live-card generation button.",
-  );
+  const button = await findVisibleEnabledButton(candidateButtons);
+  if (!button) {
+    const inputSnapshot = await page.evaluate(() => {
+      const labelOf = (el) => {
+        if (el.id) {
+          const lbl = document.querySelector(`label[for="${el.id}"]`);
+          if (lbl) return lbl.textContent?.trim();
+        }
+        const wrap = el.closest("div");
+        const sibLabel = wrap?.querySelector("label");
+        return sibLabel?.textContent?.trim() || el.name || el.placeholder || el.type;
+      };
+      return Array.from(document.querySelectorAll("input, textarea, select")).map((el) => ({
+        label: labelOf(el),
+        type: el.type || el.tagName.toLowerCase(),
+        value: el.value,
+      }));
+    });
+    throw new Error(
+      `Generation button still disabled (form invalid). Field state:\n${JSON.stringify(inputSnapshot, null, 2)}`,
+    );
+  }
+  await button.click();
 
   const saveButton = await waitForSaveReady(page, timeoutMs);
   await saveButton.click();
