@@ -3,7 +3,8 @@ import nodemailer from "nodemailer";
 
 export const runtime = "nodejs";
 
-const CONTACT_TO = "contact@envitefy.com";
+const CONTACT_TO = "no-reply@envitefy.com";
+const CONTACT_FROM = "Envitefy <no-reply@envitefy.com>";
 
 type ContactBody = {
   name?: string;
@@ -37,8 +38,6 @@ async function sendEmail(params: {
 
   const port = Number.parseInt(portStr, 10) || 587;
   const secure = (secureStr || "").toLowerCase() === "true" || port === 465;
-  const from = getEnv("SMTP_FROM") || user;
-
   const transporter = nodemailer.createTransport({
     host,
     port,
@@ -47,7 +46,7 @@ async function sendEmail(params: {
   } as any);
 
   const info = await transporter.sendMail({
-    from,
+    from: CONTACT_FROM,
     to: CONTACT_TO,
     subject: params.subject,
     text: params.text,
