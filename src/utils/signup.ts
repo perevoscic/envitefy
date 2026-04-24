@@ -248,12 +248,15 @@ const sanitizeSafetyFlags = (raw: unknown): SignupSafetyFlags | null => {
   return anyTrue ? merged : null;
 };
 
+import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
+
 const sanitizeSignupHeaderImage = (raw: unknown): SignupHeaderImageAsset | null => {
   if (!raw || typeof raw !== "object") return null;
-  const dataUrl =
+  const dataUrl = sanitizePersistedMediaUrl(
     typeof (raw as any).dataUrl === "string" && (raw as any).dataUrl.trim()
       ? (raw as any).dataUrl.trim()
-      : null;
+      : null,
+  );
   if (!dataUrl) return null;
   const sizeBytes =
     typeof (raw as any).sizeBytes === "number" && Number.isFinite((raw as any).sizeBytes)
@@ -272,10 +275,11 @@ const sanitizeSignupHeaderImage = (raw: unknown): SignupHeaderImageAsset | null 
     name: String((raw as any).name || "image"),
     type: String((raw as any).type || "image/*"),
     dataUrl,
-    thumbnailUrl:
+    thumbnailUrl: sanitizePersistedMediaUrl(
       typeof (raw as any).thumbnailUrl === "string" && (raw as any).thumbnailUrl.trim()
         ? (raw as any).thumbnailUrl.trim()
         : null,
+    ),
     sizeBytes,
     width,
     height,

@@ -16,6 +16,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
+import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface from "@/components/studio/StudioLiveCardActionSurface";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
@@ -763,14 +764,18 @@ export default function StudioWorkspace() {
       }
 
       const previewUrl =
-        clean(uploadResult.value.stored.display?.url) ||
-        clean(uploadResult.value.eventMedia.attachment?.previewImageUrl) ||
-        clean(uploadResult.value.eventMedia.thumbnail) ||
-        "";
+        sanitizePersistedMediaUrl(
+          clean(uploadResult.value.stored.display?.url) ||
+            clean(uploadResult.value.eventMedia.attachment?.previewImageUrl) ||
+            clean(uploadResult.value.eventMedia.thumbnail) ||
+            "",
+        ) || "";
       const sourceUrl =
-        clean(uploadResult.value.stored.source?.url) ||
-        clean(uploadResult.value.eventMedia.attachment?.dataUrl) ||
-        previewUrl;
+        sanitizePersistedMediaUrl(
+          clean(uploadResult.value.stored.source?.url) ||
+            clean(uploadResult.value.eventMedia.attachment?.dataUrl) ||
+            previewUrl,
+        ) || "";
 
       if (!previewUrl || !sourceUrl) {
         throw new Error("Unable to prepare the uploaded invitation.");

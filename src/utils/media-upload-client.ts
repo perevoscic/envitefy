@@ -7,6 +7,7 @@ import {
   resolveAttachmentPreviewUrl,
   validateUploadFileMeta,
 } from "@/lib/upload-config";
+import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
 import type { SignupHeaderImageAsset } from "@/types/signup";
 
 export function validateClientUploadFile(file: File, usage: UploadUsage): string | null {
@@ -64,8 +65,11 @@ export function signupHeaderImageFromUpload(
   return {
     name: upload.eventMedia.attachment?.name || fallbackName,
     type: upload.stored.display?.mimeType || "image/webp",
-    dataUrl: upload.stored.display?.url || upload.eventMedia.thumbnail || "",
-    thumbnailUrl: upload.stored.thumb?.url || upload.eventMedia.thumbnail || null,
+    dataUrl:
+      sanitizePersistedMediaUrl(upload.stored.display?.url || upload.eventMedia.thumbnail || "") || "",
+    thumbnailUrl: sanitizePersistedMediaUrl(
+      upload.stored.thumb?.url || upload.eventMedia.thumbnail || null,
+    ),
     sizeBytes: upload.stored.display?.sizeBytes ?? null,
     width: upload.stored.display?.width ?? null,
     height: upload.stored.display?.height ?? null,
@@ -114,9 +118,9 @@ export async function persistImageMediaValue(params: {
   fallbackValue?: string | null;
 }): Promise<string | null> {
   const value = typeof params.value === "string" ? params.value.trim() : "";
-  if (!value) return params.fallbackValue || null;
+  if (!value) return sanitizePersistedMediaUrl(params.fallbackValue);
   if (/^https?:\/\//i.test(value) || (value.startsWith("/") && !isLegacyLocalUploadPath(value))) {
-    return value;
+    return sanitizePersistedMediaUrl(value);
   }
   if (!value.startsWith("blob:") && !value.startsWith("data:")) {
     if (isLegacyLocalUploadPath(value)) {
@@ -128,9 +132,11 @@ export async function persistImageMediaValue(params: {
         eventId: params.eventId,
         uploadToken: params.uploadToken,
       });
-      return upload.stored.display?.url || upload.eventMedia.thumbnail || params.fallbackValue || null;
+      return sanitizePersistedMediaUrl(
+        upload.stored.display?.url || upload.eventMedia.thumbnail || params.fallbackValue || null,
+      );
     }
-    return params.fallbackValue || null;
+    return sanitizePersistedMediaUrl(params.fallbackValue);
   }
 
   const file = await fileFromMediaValue(value, params.fileName || "event-image.png");
@@ -141,7 +147,9 @@ export async function persistImageMediaValue(params: {
     eventId: params.eventId,
     uploadToken: params.uploadToken,
   });
-  return upload.stored.display?.url || upload.eventMedia.thumbnail || params.fallbackValue || null;
+  return sanitizePersistedMediaUrl(
+    upload.stored.display?.url || upload.eventMedia.thumbnail || params.fallbackValue || null,
+  );
 }
 
 export function mergeUploadedEventMedia(params: {

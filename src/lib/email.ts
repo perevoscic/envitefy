@@ -2,6 +2,7 @@ import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import nodemailer from "nodemailer";
 import { getUserByEmail } from "@/lib/db";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
+import { resolvePublicAssetOrigin } from "@/lib/public-asset-url";
 import type { SignupForm, SignupResponse } from "@/types/signup";
 
 type NonEmptyString = string & { _brand: "NonEmptyString" };
@@ -275,11 +276,7 @@ export async function sendShareEventEmail(params: {
     ? `${senderName} shared an event with you on Envitefy`
     : `An event was shared with you on Envitefy`;
   const acceptUrl = `${params.eventUrl}?accept=1`;
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.NEXTAUTH_URL ||
-    process.env.PUBLIC_BASE_URL ||
-    "https://envitefy.com";
+  const baseUrl = resolvePublicAssetOrigin();
   const signupUrl = `${baseUrl}/snap`;
   const text = [
     `${senderName || params.ownerEmail} shared an event with you on Envitefy.`,

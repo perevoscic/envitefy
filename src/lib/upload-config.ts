@@ -1,3 +1,5 @@
+import { sanitizePersistedMediaUrl } from "./public-asset-url";
+
 export const IMAGE_UPLOAD_MIME_TYPES = [
   "image/jpeg",
   "image/png",
@@ -201,7 +203,7 @@ export function resolveAttachmentPreviewUrl(
   fallbackThumbnail?: string | null,
 ): string | null {
   if (!attachment || typeof attachment !== "object") {
-    return typeof fallbackThumbnail === "string" && fallbackThumbnail.trim() ? fallbackThumbnail : null;
+    return sanitizePersistedMediaUrl(fallbackThumbnail);
   }
 
   const type = String(attachment.type || "").trim().toLowerCase();
@@ -211,10 +213,12 @@ export function resolveAttachmentPreviewUrl(
   const thumbnailUrl =
     typeof attachment.thumbnailUrl === "string" ? attachment.thumbnailUrl : null;
 
-  if (type.startsWith("image/") && dataUrl) return dataUrl;
-  if (previewImageUrl) return previewImageUrl;
-  if (thumbnailUrl) return thumbnailUrl;
-  if (typeof fallbackThumbnail === "string" && fallbackThumbnail.trim()) return fallbackThumbnail;
+  if (type.startsWith("image/") && dataUrl) return sanitizePersistedMediaUrl(dataUrl);
+  if (previewImageUrl) return sanitizePersistedMediaUrl(previewImageUrl);
+  if (thumbnailUrl) return sanitizePersistedMediaUrl(thumbnailUrl);
+  if (typeof fallbackThumbnail === "string" && fallbackThumbnail.trim()) {
+    return sanitizePersistedMediaUrl(fallbackThumbnail);
+  }
   return null;
 }
 
@@ -223,19 +227,19 @@ export function resolveCoverImageUrlFromEventData(data: Record<string, any> | nu
 
   const explicitCover =
     typeof data.coverImageUrl === "string" && data.coverImageUrl.trim() ? data.coverImageUrl : null;
-  if (explicitCover) return explicitCover;
+  if (explicitCover) return sanitizePersistedMediaUrl(explicitCover);
 
   const thumbnail = typeof data.thumbnail === "string" && data.thumbnail.trim() ? data.thumbnail : null;
-  if (thumbnail) return thumbnail;
+  if (thumbnail) return sanitizePersistedMediaUrl(thumbnail);
 
   const customHeroImage =
     typeof data.customHeroImage === "string" && data.customHeroImage.trim()
       ? data.customHeroImage
       : null;
-  if (customHeroImage) return customHeroImage;
+  if (customHeroImage) return sanitizePersistedMediaUrl(customHeroImage);
 
   const heroImage = typeof data.heroImage === "string" && data.heroImage.trim() ? data.heroImage : null;
-  if (heroImage) return heroImage;
+  if (heroImage) return sanitizePersistedMediaUrl(heroImage);
 
   return resolveAttachmentPreviewUrl(
     data.attachment && typeof data.attachment === "object" ? data.attachment : null,

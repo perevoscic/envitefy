@@ -29,6 +29,22 @@ export default function EmailPreviewsPage() {
 
   const emailTypes = [
     {
+      title: "HTML Editor",
+      description:
+        "Paste any HTML document, preview live, and send as a campaign",
+      href: "/admin/emails/editor",
+      icon: "</>",
+      color: "from-[#b4a4ef] to-[#6f57c8]",
+    },
+    {
+      title: "Relaunch Magazine",
+      description:
+        "Envitefy is back — full-HTML magazine-style relaunch announcement",
+      href: "/admin/emails/magazine",
+      icon: "📰",
+      color: "from-[#c6b2ff] to-[#7f5be3]",
+    },
+    {
       title: "Password Reset",
       description: "Email sent when user requests a password reset",
       href: "/admin/emails/password-reset",

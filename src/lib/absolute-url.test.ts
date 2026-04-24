@@ -7,6 +7,7 @@ import {
   rewriteLoopbackUrlToRelativePath,
   sanitizePersistedMediaUrl,
 } from "./absolute-url.ts";
+import { buildPublicAssetUrl, resolvePublicAssetOrigin } from "./public-asset-url.ts";
 
 test("isLoopbackHost recognizes loopback hosts with or without protocol", () => {
   assert.equal(isLoopbackHost("localhost:3000"), true);
@@ -86,4 +87,27 @@ test("sanitizePersistedMediaUrl rewrites loopback URLs and passes everything els
   );
   assert.equal(sanitizePersistedMediaUrl(null), null);
   assert.equal(sanitizePersistedMediaUrl("   "), null);
+});
+
+test("resolvePublicAssetOrigin falls back to envitefy.com for loopback or empty origins", () => {
+  assert.equal(resolvePublicAssetOrigin("http://localhost:3000"), "https://envitefy.com");
+  assert.equal(resolvePublicAssetOrigin("http://127.0.0.1:3000"), "https://envitefy.com");
+  assert.equal(resolvePublicAssetOrigin(""), "https://envitefy.com");
+  assert.equal(resolvePublicAssetOrigin(null), "https://envitefy.com");
+  assert.equal(resolvePublicAssetOrigin("https://preview.envitefy.com"), "https://preview.envitefy.com");
+});
+
+test("buildPublicAssetUrl rewrites loopback absolute urls to canonical public urls", () => {
+  assert.equal(
+    buildPublicAssetUrl("http://localhost:3000/images/example.webp"),
+    "https://envitefy.com/images/example.webp",
+  );
+  assert.equal(
+    buildPublicAssetUrl("/images/example.webp"),
+    "https://envitefy.com/images/example.webp",
+  );
+  assert.equal(
+    buildPublicAssetUrl("https://cdn.example.com/example.webp"),
+    "https://cdn.example.com/example.webp",
+  );
 });

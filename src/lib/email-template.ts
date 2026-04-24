@@ -1,3 +1,5 @@
+import { resolvePublicAssetOrigin } from "./public-asset-url";
+
 /**
  * Client-safe email template generator
  * This file has no server dependencies and can be used in client components
@@ -23,28 +25,7 @@ export function createEmailTemplate(params: {
   buttonUrl?: string;
   footerText?: string;
 }): string {
-  // Resolve a public, absolute base URL for images/links used in emails.
-  // Avoid localhost values which are not reachable by email clients.
-  const candidate =
-    process.env.PUBLIC_BASE_URL ||
-    process.env.APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    "";
-  let baseUrl = candidate || "https://envitefy.com";
-  try {
-    const u = new URL(baseUrl);
-    const host = (u.hostname || "").toLowerCase();
-    if (
-      host === "localhost" ||
-      host === "127.0.0.1" ||
-      host.endsWith(".local") ||
-      u.protocol.startsWith("http") === false
-    ) {
-      baseUrl = "https://envitefy.com";
-    }
-  } catch {
-    baseUrl = "https://envitefy.com";
-  }
+  const baseUrl = resolvePublicAssetOrigin();
   const _logoUrl = `${baseUrl}/Logo_stacked.png`;
   const currentYear = new Date().getFullYear();
   const socialIcons = [

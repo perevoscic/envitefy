@@ -114,10 +114,10 @@ const STAGE_ORDER = [
 const INITIAL_FORM = {
   criteria: "",
   productName: "",
-  targetVertical: "General",
-  tone: "premium, modern, social-native",
-  callToAction: "Start your event page",
-  frameCount: "10",
+  targetVertical: "",
+  tone: "",
+  callToAction: "",
+  frameCount: "",
   notes: "",
   characterLock: "",
   outfitLock: "",
@@ -272,6 +272,7 @@ function TextField({
   max?: number;
   step?: number;
 }) {
+  const hasValue = `${value}`.length > 0;
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
@@ -283,7 +284,11 @@ function TextField({
         min={min}
         max={max}
         step={step}
-        className="w-full rounded-[18px] border border-[#ddd8e9] bg-[#fbfafc] px-4 py-3 text-sm text-[#271a45] outline-none transition focus:border-[#8f78df] focus:bg-white"
+        style={{ WebkitTextFillColor: hasValue ? "#271a45" : "#8a84a1" }}
+        className={cn(
+          "w-full rounded-[18px] border border-[#ddd8e9] bg-[#fbfafc] px-4 py-3 text-sm outline-none transition placeholder:text-[#8a84a1] focus:border-[#8f78df] focus:bg-white",
+          hasValue ? "text-[#271a45]" : "text-[#8a84a1]",
+        )}
       />
     </div>
   );
@@ -312,7 +317,7 @@ function TextAreaField({
         onChange={onChange}
         placeholder={placeholder}
         rows={rows}
-        className="w-full resize-none rounded-[18px] border border-[#ddd8e9] bg-[#fbfafc] px-4 py-3 text-sm text-[#271a45] outline-none transition focus:border-[#8f78df] focus:bg-white"
+        className="w-full resize-none rounded-[18px] border border-[#ddd8e9] bg-[#fbfafc] px-4 py-3 text-sm text-[#271a45] outline-none transition placeholder:text-[#8a84a1] focus:border-[#8f78df] focus:bg-white"
       />
       {helper ? <p className="px-1 text-xs text-[#8a84a1]">{helper}</p> : null}
     </div>
@@ -324,11 +329,13 @@ function SelectField({
   value,
   onChange,
   options,
+  emptyLabel,
 }: {
   label: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   options: string[];
+  emptyLabel?: string;
 }) {
   return (
     <div className="space-y-1.5">
@@ -337,8 +344,16 @@ function SelectField({
         <select
           value={value}
           onChange={onChange}
-          className="w-full appearance-none rounded-[18px] border border-[#ddd8e9] bg-[#fbfafc] px-4 py-3 pr-10 text-sm text-[#271a45] outline-none transition focus:border-[#8f78df] focus:bg-white"
+          className={cn(
+            "w-full appearance-none rounded-[18px] border border-[#ddd8e9] bg-[#fbfafc] px-4 py-3 pr-10 text-sm outline-none transition focus:border-[#8f78df] focus:bg-white",
+            value ? "text-[#271a45]" : "text-[#8a84a1]",
+          )}
         >
+          {emptyLabel ? (
+            <option value="" className="text-[#271a45]">
+              {emptyLabel}
+            </option>
+          ) : null}
           {options.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -560,13 +575,18 @@ export default function MarketingCampaignsPage() {
     setSubmitting(true);
     setError(null);
     try {
+      const parsedFrameCount = Number.parseInt(`${form.frameCount}`.trim(), 10);
+      const frameCount =
+        Number.isFinite(parsedFrameCount) && parsedFrameCount >= 1
+          ? Math.min(24, parsedFrameCount)
+          : 10;
       const payload = {
         criteria: form.criteria,
         productName: form.productName,
-        targetVertical: form.targetVertical,
+        targetVertical: form.targetVertical || "General",
         tone: form.tone,
         callToAction: form.callToAction,
-        frameCount: Number.parseInt(form.frameCount, 10),
+        frameCount,
         notes: form.notes,
         overrides: {
           characterLock: form.characterLock,
@@ -833,12 +853,13 @@ export default function MarketingCampaignsPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <SelectField
-                    label="Vertical"
+                    label="Category"
                     value={form.targetVertical}
                     onChange={(event) =>
                       setForm((current) => ({ ...current, targetVertical: event.target.value }))
                     }
-                    options={TARGET_VERTICALS}
+                    emptyLabel="General"
+                    options={TARGET_VERTICALS.filter((vertical) => vertical !== "General")}
                   />
                   <TextField
                     label="Frames"
@@ -847,6 +868,7 @@ export default function MarketingCampaignsPage() {
                     max={24}
                     value={form.frameCount}
                     onChange={(event) => setForm((current) => ({ ...current, frameCount: event.target.value }))}
+                    placeholder="10"
                   />
                 </div>
 

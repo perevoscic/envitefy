@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { resolvePublicAssetOrigin } from "@/lib/public-asset-url";
 
 interface Campaign {
   id: string;
@@ -24,11 +25,21 @@ interface Campaign {
   };
 }
 
+function isFullHtmlDocument(value: string): boolean {
+  const html = value.trim().toLowerCase();
+  return (
+    html.startsWith("<!doctype html") ||
+    html.includes("<html") ||
+    html.includes("<body")
+  );
+}
+
 export default function CampaignsPage() {
   const { data: session, status } = useSession();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComposer, setShowComposer] = useState(false);
+  const [campaignReloadKey, setCampaignReloadKey] = useState(0);
 
   // Form state
   const [subject, setSubject] = useState("");
@@ -137,6 +148,7 @@ export default function CampaignsPage() {
     }
 
     const loadCampaigns = async () => {
+      setLoading(true);
       try {
         const res = await fetch("/api/admin/campaigns");
         const data = await res.json();
@@ -150,8 +162,8 @@ export default function CampaignsPage() {
       }
     };
 
-    loadCampaigns();
-  }, [isAdmin, status]);
+    void loadCampaigns();
+  }, [campaignReloadKey, isAdmin, status]);
 
   if (status === "loading") {
     return <div className="p-6">Loading…</div>;
@@ -192,7 +204,6 @@ export default function CampaignsPage() {
 
     // Handle test and all modes
     const isTest = selectedPlans.includes("test");
-    const isAll = selectedPlans.includes("all");
     if (isTest && (!testEmail || !testEmail.trim())) {
       alert("Please enter at least one recipient email address");
       return;
@@ -247,8 +258,7 @@ export default function CampaignsPage() {
         setButtonUrl("");
         setSelectedPlans([]);
         setShowComposer(false);
-        // Reload campaigns
-        loadCampaigns();
+        setCampaignReloadKey((value) => value + 1);
       } else {
         alert(`Error: ${data.error}`);
       }
@@ -267,24 +277,21 @@ export default function CampaignsPage() {
 
   // Generate email preview HTML (client-side version of createEmailTemplate)
   const generatePreviewHtml = () => {
-    const origin = window.location.origin || "";
-    let baseUrl = origin;
-    try {
-      const url = new URL(baseUrl || "https://envitefy.com");
-      const host = (url.hostname || "").toLowerCase();
-      if (
-        host === "localhost" ||
-        host === "127.0.0.1" ||
-        host.endsWith(".local") ||
-        !url.protocol.startsWith("http")
-      ) {
-        baseUrl = "https://envitefy.com";
-      } else {
-        baseUrl = `${url.protocol}//${url.host}`;
-      }
-    } catch {
-      baseUrl = "https://envitefy.com";
+    const greeting = "Hi, ";
+    const firstName = "Taylor";
+    const lastName = "Smith";
+    const previewBody = body
+      .replace(/\{\{greeting\}\}/g, greeting)
+      .replace(/\{\{firstName\}\}/g, firstName)
+      .replace(/\{\{lastName\}\}/g, lastName);
+
+    if (isFullHtmlDocument(previewBody)) {
+      return previewBody;
     }
+
+    const baseUrl = resolvePublicAssetOrigin(
+      typeof window !== "undefined" ? window.location.origin : undefined,
+    );
     const socialIcons = [
       {
         href: "https://www.instagram.com/envitefy/",
@@ -313,13 +320,6 @@ export default function CampaignsPage() {
       )
       .join("");
     const currentYear = new Date().getFullYear();
-    const greeting = "Hi, "; // Sample greeting for preview
-    const firstName = "Taylor";
-    const lastName = "Smith";
-    const previewBody = body
-      .replace(/\{\{greeting\}\}/g, greeting)
-      .replace(/\{\{firstName\}\}/g, firstName)
-      .replace(/\{\{lastName\}\}/g, lastName);
 
     return `
 <!DOCTYPE html>

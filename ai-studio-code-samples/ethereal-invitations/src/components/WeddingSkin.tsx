@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MapPin, Calendar, Download, Share2, Sparkles, ArrowLeft, MessageSquare, CalendarPlus } from 'lucide-react';
+import { MapPin, Calendar, Download, Share2, Sparkles, MessageSquare, CalendarPlus } from 'lucide-react';
 import { EventData } from '../services/geminiService';
 
 interface SkinProps {
@@ -48,15 +48,9 @@ export function WeddingSkin({
           </h1>
         </motion.div>
 
-        <button 
-          onClick={onReset}
-          className="absolute top-6 left-6 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center border border-gray-200 hover:bg-white transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 mt-12 text-ink">
+      <div className="max-w-7xl mx-auto px-6 pt-3 grid grid-cols-1 lg:grid-cols-12 gap-12 mt-12 text-ink">
         {/* Left Column: Image and Main Info */}
         <div className="lg:col-span-8 space-y-16">
           <div className="bg-white rounded-[2.5rem] p-8 md:p-16 shadow-2xl shadow-ink/5 border border-ink/5 relative overflow-hidden">

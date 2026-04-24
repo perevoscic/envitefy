@@ -64,6 +64,13 @@ export interface BulkEmailParams {
   }>;
   buttonText?: string;
   buttonUrl?: string;
+  /**
+   * When true, `body` is treated as a complete HTML document and sent as-is
+   * (after {{firstName}}/{{lastName}}/{{greeting}} substitution). The default
+   * Envitefy header/footer/wrapper is NOT applied. Use this for fully custom
+   * campaigns authored in the HTML editor.
+   */
+  rawHtml?: boolean;
 }
 
 export interface BulkEmailResult {
@@ -107,14 +114,16 @@ export async function sendBulkEmail(
           .replace(/\{\{firstName\}\}/g, firstName)
           .replace(/\{\{lastName\}\}/g, lastName);
 
-        const html = createEmailTemplate({
-          title: params.subject,
-          body: personalizedBody,
-          buttonText: params.buttonText,
-          buttonUrl: params.buttonUrl,
-          footerText:
-            "You're receiving this because you have an Envitefy account.",
-        });
+        const html = params.rawHtml
+          ? personalizedBody
+          : createEmailTemplate({
+              title: params.subject,
+              body: personalizedBody,
+              buttonText: params.buttonText,
+              buttonUrl: params.buttonUrl,
+              footerText:
+                "You're receiving this because you have an Envitefy account.",
+            });
 
         await resendHttpSend({
           from: fromEmail,
