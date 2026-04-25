@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import Script from "next/script";
 import { authOptions } from "@/lib/auth";
 import { absoluteUrl } from "@/lib/absolute-url";
 import {
@@ -77,5 +78,26 @@ export default async function StudioPage(props: {
   if (session?.user) {
     return <StudioWorkspace />;
   }
-  return <StudioMarketingPage />;
+  const studioWebPageLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: "Envitefy Studio",
+    url: "https://envitefy.com/studio",
+    description: DEFAULT_DESCRIPTION,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Envitefy",
+      url: "https://envitefy.com",
+    },
+    about: ["live card invitations", "hosted event pages", "RSVP event pages"],
+  };
+
+  return (
+    <>
+      <StudioMarketingPage />
+      <Script id="ld-studio-webpage" type="application/ld+json">
+        {JSON.stringify(studioWebPageLd)}
+      </Script>
+    </>
+  );
 }

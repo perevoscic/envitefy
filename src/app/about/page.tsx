@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     ],
     type: "website",
   },
+  alternates: { canonical: "/about" },
 };
 
 const featureCards = [

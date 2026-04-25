@@ -17,14 +17,14 @@ export const DEFAULT_LOCATION_LOCK =
 export const DEFAULT_BACKGROUND_ANCHORS =
   "bulletin board, wood accents, front desk, pendant light, large window, soft daylight";
 export const DEFAULT_SCREEN_LOCK =
-  "the same clean Envitefy-style mobile event page, modern white interface, simple typography";
+  "the same clean Envitefy mobile event page, modern white interface, simple typography, the Envitefy wordmark in the header matching public/email/envitefy-wordmark-email.png, and the Envitefy app icon matching public/favicon.png anywhere a launcher icon, favicon, or small app badge appears";
 export const DEFAULT_COMPOSITION =
   "foreground flyer or phone detail, the mother in the midground, and the bright gymnastics lobby anchors in the background";
 export const DEFAULT_MOOD = "focused, modern, warm, premium";
 export const DEFAULT_CONTINUITY_RULE =
   "This must look like the same ad campaign sequence as the previous frames, keeping the same character, same outfit, same props, same flyer, same environment, same lighting, same branding, and same premium commercial aesthetic.";
 export const DEFAULT_NEGATIVE_PROMPT =
-  "no character change, no wardrobe change, no different location, no different flyer design, no different phone, no split image, no collage, no watermark, no floating text, single frame only.";
+  "no character change, no wardrobe change, no different location, no different flyer design, no different phone, no split image, no collage, no watermark, no floating text, no garbled readable text on paper props, single frame only.";
 export const DEFAULT_CONTINUITY_CONTRACT = `You are generating a sequence of highly consistent images for a visual story.
 
 Your goal is to preserve continuity across all frames.
@@ -248,6 +248,25 @@ function pickStoryboardDefault(list, index, fallback) {
   return clean(list[index]) || fallback;
 }
 
+const SHOT_FAMILIES = new Set([
+  "wide-environment",
+  "environment-detail",
+  "hands-action",
+  "over-shoulder",
+  "phone-proof",
+  "reaction",
+  "social-proof",
+  "final-hero",
+]);
+
+const PHONE_DOMINANCE_VALUES = new Set(["none", "secondary", "dominant"]);
+const BRANDING_PRESENCE_VALUES = new Set(["none", "subtle", "screen", "hero"]);
+
+function normalizeEnumValue(value, allowedValues, fallback) {
+  const normalized = clean(value).toLowerCase();
+  return allowedValues.has(normalized) ? normalized : fallback;
+}
+
 function buildDefaultFrameMetadata(frameCount) {
   const roles = alignActionSequence(
     [
@@ -277,6 +296,54 @@ function buildDefaultFrameMetadata(frameCount) {
       "balanced send-ready proof shot",
       "relief portrait medium shot",
       "hero payoff end-card shot",
+    ],
+    frameCount,
+  );
+
+  const shotFamilies = alignActionSequence(
+    [
+      "wide-environment",
+      "environment-detail",
+      "reaction",
+      "hands-action",
+      "over-shoulder",
+      "phone-proof",
+      "social-proof",
+      "phone-proof",
+      "reaction",
+      "final-hero",
+    ],
+    frameCount,
+  );
+
+  const phoneDominance = alignActionSequence(
+    [
+      "none",
+      "none",
+      "secondary",
+      "secondary",
+      "secondary",
+      "dominant",
+      "secondary",
+      "dominant",
+      "none",
+      "none",
+    ],
+    frameCount,
+  );
+
+  const brandingPresence = alignActionSequence(
+    [
+      "none",
+      "none",
+      "none",
+      "none",
+      "subtle",
+      "screen",
+      "subtle",
+      "screen",
+      "none",
+      "hero",
     ],
     frameCount,
   );
@@ -345,7 +412,17 @@ function buildDefaultFrameMetadata(frameCount) {
     frameCount,
   );
 
-  return { roles, shots, screenStates, propFocus, emotionalBeats, proofTargets };
+  return {
+    roles,
+    shots,
+    shotFamilies,
+    phoneDominance,
+    brandingPresence,
+    screenStates,
+    propFocus,
+    emotionalBeats,
+    proofTargets,
+  };
 }
 
 export function alignActionSequence(actions, frameCount) {
@@ -518,6 +595,9 @@ export function buildCanonicalFramePrompt(sceneSpec, frameDetails) {
   const cameraShot = clean(frameDetails?.cameraShot) || `${materialized.cameraFormat} campaign still`;
   const composition = clean(frameDetails?.composition) || materialized.composition || DEFAULT_COMPOSITION;
   const mood = clean(frameDetails?.mood) || materialized.mood || DEFAULT_MOOD;
+  const shotFamily = clean(frameDetails?.shotFamily);
+  const phoneDominance = clean(frameDetails?.phoneDominance);
+  const brandingPresence = clean(frameDetails?.brandingPresence);
   const propLines = buildPropLockLines(materialized);
   const locationLock = clean(materialized.locationLock) || DEFAULT_LOCATION_LOCK;
   const backgroundAnchors = clean(materialized.backgroundAnchors) || DEFAULT_BACKGROUND_ANCHORS;
@@ -574,6 +654,11 @@ export function buildCanonicalFramePrompt(sceneSpec, frameDetails) {
     "",
     "CAMERA:",
     cameraShot,
+    shotFamily || phoneDominance || brandingPresence ? "" : null,
+    shotFamily || phoneDominance || brandingPresence ? "SHOT INTENT:" : null,
+    shotFamily ? `Shot family: ${shotFamily}.` : null,
+    phoneDominance ? `Phone dominance: ${phoneDominance}.` : null,
+    brandingPresence ? `Branding presence: ${brandingPresence}.` : null,
     "",
     "COMPOSITION:",
     composition.endsWith(".") ? composition : `${composition}.`,
@@ -623,6 +708,22 @@ export function buildFallbackFramePlan(sceneSpec) {
       index === 0
         ? "establish the baseline world"
         : "change the shot family, action, pose, expression, screen state, prop focus, or camera distance without redesigning the scene",
+    shotFamily: normalizeEnumValue(
+      pickStoryboardDefault(defaults.shotFamilies, index, "environment-detail"),
+      SHOT_FAMILIES,
+      "environment-detail",
+    ),
+    phoneDominance: normalizeEnumValue(
+      pickStoryboardDefault(defaults.phoneDominance, index, "secondary"),
+      PHONE_DOMINANCE_VALUES,
+      "secondary",
+    ),
+    brandingPresence: normalizeEnumValue(
+      pickStoryboardDefault(defaults.brandingPresence, index, "none"),
+      BRANDING_PRESENCE_VALUES,
+      "none",
+    ),
+    disallowedPropRisk: "",
     prompt: buildCanonicalFramePrompt(sceneSpec, {
       frameNumber: index + 1,
       actionBeat,
@@ -634,6 +735,21 @@ export function buildFallbackFramePlan(sceneSpec) {
         )}`,
       composition: materialized.composition || DEFAULT_COMPOSITION,
       mood: materialized.mood || DEFAULT_MOOD,
+      shotFamily: normalizeEnumValue(
+        pickStoryboardDefault(defaults.shotFamilies, index, "environment-detail"),
+        SHOT_FAMILIES,
+        "environment-detail",
+      ),
+      phoneDominance: normalizeEnumValue(
+        pickStoryboardDefault(defaults.phoneDominance, index, "secondary"),
+        PHONE_DOMINANCE_VALUES,
+        "secondary",
+      ),
+      brandingPresence: normalizeEnumValue(
+        pickStoryboardDefault(defaults.brandingPresence, index, "none"),
+        BRANDING_PRESENCE_VALUES,
+        "none",
+      ),
     }),
   }));
 }
@@ -658,6 +774,18 @@ export function normalizeFramePlan(sceneSpec, rawFrames) {
       proofTarget: clean(candidate.proofTarget) || clean(defaultFrame.proofTarget),
       mustDifferFromPrevious:
         clean(candidate.mustDifferFromPrevious) || clean(defaultFrame.mustDifferFromPrevious),
+      shotFamily: normalizeEnumValue(candidate.shotFamily, SHOT_FAMILIES, defaultFrame.shotFamily),
+      phoneDominance: normalizeEnumValue(
+        candidate.phoneDominance,
+        PHONE_DOMINANCE_VALUES,
+        defaultFrame.phoneDominance,
+      ),
+      brandingPresence: normalizeEnumValue(
+        candidate.brandingPresence,
+        BRANDING_PRESENCE_VALUES,
+        defaultFrame.brandingPresence,
+      ),
+      disallowedPropRisk: clean(candidate.disallowedPropRisk),
       prompt: buildCanonicalFramePrompt(sceneSpec, {
         frameNumber: index + 1,
         actionBeat: clean(candidate.actionBeat) || defaultFrame.actionBeat,
@@ -665,6 +793,17 @@ export function normalizeFramePlan(sceneSpec, rawFrames) {
         composition:
           clean(candidate.composition) || clean(defaultFrame.composition) || DEFAULT_COMPOSITION,
         mood: clean(candidate.mood) || clean(defaultFrame.mood) || DEFAULT_MOOD,
+        shotFamily: normalizeEnumValue(candidate.shotFamily, SHOT_FAMILIES, defaultFrame.shotFamily),
+        phoneDominance: normalizeEnumValue(
+          candidate.phoneDominance,
+          PHONE_DOMINANCE_VALUES,
+          defaultFrame.phoneDominance,
+        ),
+        brandingPresence: normalizeEnumValue(
+          candidate.brandingPresence,
+          BRANDING_PRESENCE_VALUES,
+          defaultFrame.brandingPresence,
+        ),
       }),
     };
   });
@@ -751,6 +890,10 @@ export function createFramesManifest(runPaths, sceneSpec, frames, models) {
       ...frame,
       composition: clean(frame.composition),
       mood: clean(frame.mood),
+      shotFamily: clean(frame.shotFamily),
+      phoneDominance: clean(frame.phoneDominance),
+      brandingPresence: clean(frame.brandingPresence),
+      disallowedPropRisk: clean(frame.disallowedPropRisk),
       imageFile:
         clean(frame.imageFile) || path.join("images", `frame-${String(frame.frameNumber).padStart(2, "0")}.png`),
       captionedImageFile:

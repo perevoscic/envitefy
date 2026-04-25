@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  title: "Privacy Policy | Envitefy",
+  description:
+    "Envitefy privacy policy covering uploaded content, event details, accounts, cookies, and data choices.",
+  alternates: { canonical: "/privacy" },
   openGraph: {
     title: "Privacy Policy — Envitefy",
     description:

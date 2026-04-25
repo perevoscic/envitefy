@@ -32,6 +32,34 @@ const faqPairs = [
     "Yes! Guests can open and RSVP via an email or text link — no downloads needed.",
   ],
   [
+    "Can Envitefy turn a PDF into an event page?",
+    "Yes. Snap can process PDFs with event details and help create a hosted event page with RSVP, links, maps, and calendar actions.",
+  ],
+  [
+    "Can I upload a flyer or invite screenshot?",
+    "Yes. Envitefy Snap accepts flyers, invite screenshots, images, and schedules, then lets you review the extracted event details before saving or sharing.",
+  ],
+  [
+    "What is a live card invitation?",
+    "A live card is a shareable invitation connected to a hosted event page, so the design, details, RSVP actions, and updates live together.",
+  ],
+  [
+    "Can Envitefy event pages include RSVP links?",
+    "Yes. Event pages can include RSVP-oriented guest actions alongside event details, maps, links, and calendar saves.",
+  ],
+  [
+    "Can guests save events to a calendar?",
+    "Yes. Envitefy keeps dates, times, and locations structured so calendar save actions can be available from the shared page.",
+  ],
+  [
+    "Can I include registry links or outside resources?",
+    "Yes. Hosts can include helpful links such as registries, signups, tickets, meet resources, or other event pages.",
+  ],
+  [
+    "Does Envitefy support gymnastics meet pages?",
+    "Yes. Envitefy Gymnastics supports meet pages with schedules, venue details, hotel information, maps, and parent-friendly sharing.",
+  ],
+  [
     "Can I co-manage events with other Envitefy users?",
     "Yes. Invite another Envitefy user from the share menu and they'll accept from their email to stay synced on every change.",
   ],

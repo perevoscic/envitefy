@@ -1,0 +1,106 @@
+{
+  "hook": "when the invites won’t arrive",
+  "endCard": "create your child’s live birthday invitation now at invitefy.com",
+  "frames": [
+    {
+      "frameNumber": 1,
+      "text": "last-minute flyer delays spike stress",
+      "emphasisWord": "stress",
+      "voiceover": "last-minute flyer delays spike stress",
+      "durationSec": 2.5,
+      "transition": "cut",
+      "kineticStyle": "pop-in",
+      "captionRole": "hook"
+    },
+    {
+      "frameNumber": 2,
+      "text": "messy paper chaos wastes time",
+      "emphasisWord": "chaos",
+      "voiceover": "messy paper chaos wastes time",
+      "durationSec": 2.5,
+      "transition": "crossfade",
+      "kineticStyle": "word-by-word",
+      "captionRole": "pain-proof"
+    },
+    {
+      "frameNumber": 3,
+      "text": "ready to fix it fast",
+      "emphasisWord": "fix",
+      "voiceover": "ready to fix it fast",
+      "durationSec": 2.2,
+      "transition": "whip",
+      "kineticStyle": "typewriter",
+      "captionRole": "decision-point"
+    },
+    {
+      "frameNumber": 4,
+      "text": "deciding to act cuts overwhelm",
+      "emphasisWord": "act",
+      "voiceover": "deciding to act cuts overwhelm",
+      "durationSec": 2.3,
+      "transition": "cut",
+      "kineticStyle": "pop-in",
+      "captionRole": "product-entry"
+    },
+    {
+      "frameNumber": 5,
+      "text": "details turn instantly digital",
+      "emphasisWord": "instantly",
+      "voiceover": "details turn instantly digital",
+      "durationSec": 2.3,
+      "transition": "crossfade",
+      "kineticStyle": "word-by-word",
+      "captionRole": "product-proof"
+    },
+    {
+      "frameNumber": 6,
+      "text": "relief blooms as control returns",
+      "emphasisWord": "relief",
+      "voiceover": "relief blooms as control returns",
+      "durationSec": 2.5,
+      "transition": "cut",
+      "kineticStyle": "pop-in",
+      "captionRole": "emotional-release"
+    },
+    {
+      "frameNumber": 7,
+      "text": "trusted feedback boosts confidence",
+      "emphasisWord": "confidence",
+      "voiceover": "trusted feedback boosts confidence",
+      "durationSec": 2.4,
+      "transition": "crossfade",
+      "kineticStyle": "word-by-word",
+      "captionRole": "social-proof"
+    },
+    {
+      "frameNumber": 8,
+      "text": "ready-to-send invites look perfect",
+      "emphasisWord": "perfect",
+      "voiceover": "ready-to-send invites look perfect",
+      "durationSec": 2.3,
+      "transition": "whip",
+      "kineticStyle": "typewriter",
+      "captionRole": "send-ready-proof"
+    },
+    {
+      "frameNumber": 9,
+      "text": "calm returns with time regained",
+      "emphasisWord": "calm",
+      "voiceover": "calm returns with time regained",
+      "durationSec": 2.2,
+      "transition": "cut",
+      "kineticStyle": "pop-in",
+      "captionRole": "relief-proof"
+    },
+    {
+      "frameNumber": 10,
+      "text": "confident, prepared, and stress-free",
+      "emphasisWord": "confident",
+      "voiceover": "confident, prepared, and stress-free",
+      "durationSec": 2.4,
+      "transition": "crossfade",
+      "kineticStyle": "word-by-word",
+      "captionRole": "final-payoff"
+    }
+  ]
+}

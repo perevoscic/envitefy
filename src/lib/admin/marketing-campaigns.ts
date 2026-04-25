@@ -34,6 +34,13 @@ export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T>
   }
 }
 
+async function fileExists(filePath: string) {
+  return fs
+    .access(filePath)
+    .then(() => true)
+    .catch(() => false);
+}
+
 export async function listMarketingRuns(projectRoot = process.cwd()) {
   const root = getMarketingRunsRoot(projectRoot);
   const entries = await fs.readdir(root, { withFileTypes: true }).catch(() => []);
@@ -91,13 +98,21 @@ export async function readMarketingRunDetail(runId: string, projectRoot = proces
     .catch(() => false);
 
   const normalizedFrames = Array.isArray(frames?.frames)
-    ? frames.frames.map((frame: any) => ({
-        ...frame,
-        imageUrl: frame?.imageFile ? buildRunAssetUrl(safeRunId, frame.imageFile) : null,
-        captionedImageUrl: frame?.captionedImageFile
-          ? buildRunAssetUrl(safeRunId, frame.captionedImageFile)
-          : null,
-      }))
+    ? await Promise.all(
+        frames.frames.map(async (frame: any) => {
+          const imagePath = frame?.imageFile ? path.join(runDir, frame.imageFile) : "";
+          const captionedImagePath = frame?.captionedImageFile ? path.join(runDir, frame.captionedImageFile) : "";
+          const [hasImage, hasCaptionedImage] = await Promise.all([
+            imagePath ? fileExists(imagePath) : false,
+            captionedImagePath ? fileExists(captionedImagePath) : false,
+          ]);
+          return {
+            ...frame,
+            imageUrl: hasImage ? buildRunAssetUrl(safeRunId, frame.imageFile) : null,
+            captionedImageUrl: hasCaptionedImage ? buildRunAssetUrl(safeRunId, frame.captionedImageFile) : null,
+          };
+        }),
+      )
     : [];
 
   return {

@@ -6,6 +6,8 @@ import {
   BRIEF_SYSTEM_PROMPT,
   COORDINATOR_SYSTEM_PROMPT,
   CREATIVE_QA_RESPONSE_FORMAT,
+  CREATIVE_QA_SYSTEM_PROMPT,
+  FRAME_PLAN_RESPONSE_FORMAT,
   SOCIAL_COPY_RESPONSE_FORMAT,
   SOCIAL_COPY_SYSTEM_PROMPT,
 } from "./lib/campaign-agents.mjs";
@@ -17,9 +19,15 @@ test("brief prompt requires one audience, one pain, one promise, and one proof m
 
 test("art direction and coordinator prompts enforce continuity plus meaningful variation", () => {
   assert.match(ART_DIRECTION_SYSTEM_PROMPT, /same person, outfit, props, room layout, phone, flyer, lighting, style, and framing baseline/i);
+  assert.match(ART_DIRECTION_SYSTEM_PROMPT, /do not freeze the campaign into one repeated composition/i);
+  assert.match(ART_DIRECTION_SYSTEM_PROMPT, /subject should usually seem unaware of the camera/i);
   assert.match(COORDINATOR_SYSTEM_PROMPT, /No more than two frames may use the same base composition/i);
   assert.match(COORDINATOR_SYSTEM_PROMPT, /at least four distinct shot families/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /No more than three frames may be phone-dominant/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /Avoid direct phone presentation to camera/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /subject should not hold the phone up to the lens in an unnatural sales-demo pose/i);
   assert.match(COORDINATOR_SYSTEM_PROMPT, /exactly one payoff or CTA frame, and it must be the final frame/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /Classify any Google search/i);
 });
 
 test("social copy prompt bans literal filler captions", () => {
@@ -34,6 +42,12 @@ test("brief, social copy, and creative qa schemas require the new fields", () =>
   assert.ok(briefRequired.includes("singlePain"));
   assert.ok(briefRequired.includes("proofMoment"));
 
+  const framePlanRequired = FRAME_PLAN_RESPONSE_FORMAT.json_schema.schema.properties.frames.items.required;
+  assert.ok(framePlanRequired.includes("shotFamily"));
+  assert.ok(framePlanRequired.includes("phoneDominance"));
+  assert.ok(framePlanRequired.includes("brandingPresence"));
+  assert.ok(framePlanRequired.includes("disallowedPropRisk"));
+
   const socialCopyRequired = SOCIAL_COPY_RESPONSE_FORMAT.json_schema.schema.properties.frames.items.required;
   assert.ok(socialCopyRequired.includes("captionRole"));
 
@@ -44,4 +58,10 @@ test("brief, social copy, and creative qa schemas require the new fields", () =>
   assert.ok(creativeQaRequired.includes("requiredShotFamilies"));
   assert.ok(creativeQaRequired.includes("singleFinalPayoffFrame"));
   assert.ok(creativeQaRequired.includes("rewriteBrief"));
+});
+
+test("creative qa prompt fails repeated phone-presentation loops", () => {
+  assert.match(CREATIVE_QA_SYSTEM_PROMPT, /same person in the same room holding the same phone toward camera/i);
+  assert.match(CREATIVE_QA_SYSTEM_PROMPT, /ten-frame plan normally fails when more than three frames are phone-dominant/i);
+  assert.match(CREATIVE_QA_SYSTEM_PROMPT, /unnatural phone presentation poses/i);
 });

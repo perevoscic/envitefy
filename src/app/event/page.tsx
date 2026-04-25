@@ -5,6 +5,7 @@ import SnapLaunchCards from "./SnapLaunchCards";
 export const metadata: Metadata = {
   title: "Snap or upload invite · Envitefy",
   description: "Scan a flyer with your camera or upload an image to create your event.",
+  alternates: { canonical: "/event" },
 };
 
 export const viewport: Viewport = {

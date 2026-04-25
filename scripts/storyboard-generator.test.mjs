@@ -12,6 +12,7 @@ import {
   buildFallbackFramePlan,
   buildRunPaths,
   createFramesManifest,
+  normalizeFramePlan,
   normalizeSceneSpec,
   resolveImageSize,
   resolveRenderDimensions,
@@ -37,6 +38,8 @@ test("normalizeSceneSpec defaults to the Envitefy lock values", () => {
   assert.equal(spec.visualStyle.source, "default");
   assert.equal(spec.cameraFormat.value, "vertical");
   assert.equal(spec.cameraFormat.source, "default");
+  assert.match(spec.screenLock.value, /envitefy-wordmark-email\.png/i);
+  assert.match(spec.screenLock.value, /favicon\.png/i);
 });
 
 test("normalizeSceneSpec prefers overrides and maps legacy fields into lock fields", () => {
@@ -113,6 +116,8 @@ test("buildFallbackFramePlan emits the sectioned lock prompt format", () => {
   assert.match(frames[0].prompt, /PROP LOCK:/);
   assert.match(frames[0].prompt, /LOCATION LOCK:/);
   assert.match(frames[0].prompt, /SCREEN LOCK:/);
+  assert.match(frames[0].prompt, /envitefy-wordmark-email\.png/i);
+  assert.match(frames[0].prompt, /favicon\.png/i);
   assert.match(frames[0].prompt, /COMPOSITION:\nphone and flyer in the foreground, mother midground, bright lobby in the background\./);
   assert.match(frames[0].prompt, /MOOD:\ncurious, focused, premium\./);
   assert.match(frames[0].prompt, /notices the flyer/);
@@ -177,6 +182,67 @@ test("fallback frame plans use conversion roles and varied default shot families
   assert.match(frames[0].cameraShot, /wide environmental hook shot/);
   assert.match(frames[1].cameraShot, /tight problem-detail insert/);
   assert.match(frames[2].mustDifferFromPrevious, /change the shot family/i);
+  assert.equal(frames[0].shotFamily, "wide-environment");
+  assert.equal(frames[0].phoneDominance, "none");
+  assert.equal(frames[4].brandingPresence, "subtle");
+  assert.equal(frames[0].disallowedPropRisk, "");
+});
+
+test("normalizeFramePlan preserves structured shot metadata", () => {
+  const spec = normalizeSceneSpec(
+    {
+      rawPrompt: "a founder reviews the campaign frames",
+      overrides: {
+        numberOfFrames: 2,
+      },
+      extraNotes: "",
+    },
+    {},
+  );
+
+  const frames = normalizeFramePlan(spec, [
+    {
+      title: "context",
+      actionBeat: "reviews a cluttered table",
+      cameraShot: "wide context",
+      composition: "wide room with phone secondary",
+      mood: "focused",
+      persuasionRole: "hook",
+      screenState: "no screen proof",
+      propFocus: "planning table",
+      emotionalBeat: "pressure",
+      proofTarget: "show pain",
+      mustDifferFromPrevious: "baseline",
+      shotFamily: "wide-environment",
+      phoneDominance: "none",
+      brandingPresence: "none",
+      disallowedPropRisk: "",
+    },
+    {
+      title: "proof",
+      actionBeat: "checks the finished invite",
+      cameraShot: "angled close-up",
+      composition: "phone angled on counter",
+      mood: "relieved",
+      persuasionRole: "proof",
+      screenState: "finished page",
+      propFocus: "phone",
+      emotionalBeat: "confidence",
+      proofTarget: "show result",
+      mustDifferFromPrevious: "change angle",
+      shotFamily: "phone-proof",
+      phoneDominance: "dominant",
+      brandingPresence: "screen",
+      disallowedPropRisk: "",
+    },
+  ]);
+
+  assert.equal(frames[0].shotFamily, "wide-environment");
+  assert.equal(frames[0].phoneDominance, "none");
+  assert.equal(frames[1].shotFamily, "phone-proof");
+  assert.equal(frames[1].phoneDominance, "dominant");
+  assert.equal(frames[1].brandingPresence, "screen");
+  assert.match(frames[1].prompt, /SHOT INTENT:/);
 });
 
 test("createFramesManifest includes caption and captioned image placeholders", () => {
@@ -200,7 +266,9 @@ test("createFramesManifest includes caption and captioned image placeholders", (
     imageModel: "gpt-image-2",
   });
 
-  assert.equal(manifest.frames[0].captionedImageFile, "images-captioned/frame-01.png");
+  assert.equal(manifest.frames[0].captionedImageFile, path.join("images-captioned", "frame-01.png"));
+  assert.equal(manifest.frames[0].shotFamily, "wide-environment");
+  assert.equal(manifest.frames[0].phoneDominance, "none");
   assert.equal(manifest.frames[0].caption.text, "");
   assert.equal(manifest.frames[0].caption.status, "pending");
   assert.equal(manifest.frames[0].caption.dirty, true);

@@ -28,9 +28,13 @@ export async function POST(
     const hasRewritePlan =
       (Array.isArray(creativeQa?.framesToRewrite) && creativeQa.framesToRewrite.length > 0) ||
       (Array.isArray(creativeQa?.framesToCut) && creativeQa.framesToCut.length > 0) ||
-      Boolean(typeof creativeQa?.rewriteBrief === "string" && creativeQa.rewriteBrief.trim());
+      Boolean(typeof creativeQa?.rewriteBrief === "string" && creativeQa.rewriteBrief.trim()) ||
+      Boolean(status?.state === "awaiting_storyboard_review" && status?.stages?.coordinator?.error);
     if (!hasRewritePlan) {
-      return NextResponse.json({ error: "Creative QA feedback is required before regenerating." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Storyboard budget or Creative QA feedback is required before regenerating." },
+        { status: 400 },
+      );
     }
 
     if (status) {

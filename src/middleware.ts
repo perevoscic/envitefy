@@ -23,6 +23,7 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/reset",
   "/snap",
   "/showcase",
+  "/guides",
 ]);
 
 const RESERVED_EVENT_PATHS = new Set([
@@ -68,6 +69,7 @@ const isAllowedForUnauth = (pathname: string) => {
   if (isSmartSignupSharePath(normalized)) return true;
   if (isStudioCardSharePath(normalized)) return true;
   if (isLandingShowcasePath(normalized)) return true;
+  if (normalized.startsWith("/guides/")) return true;
   return false;
 };
 
@@ -139,6 +141,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/videos/") ||
     pathname === "/manifest.webmanifest" ||
     pathname === "/robots.txt" ||
+    pathname === "/llms.txt" ||
     pathname === "/sitemap.xml"
   ) {
     return ok();

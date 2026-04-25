@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-04-25T20:55:32.495Z",
+  "input": {
+    "criteria": "need 10 prompt for gpt-imnage-2 that will be sonsitent theough 1-10, repeate teh rules , the charcter desctipiron in each prompt. scenario is a mom looks at the phone see that her flyer for her daughters birhtday has been delaid, anbd it wont make it on time, she then google it flyer in seconds, easy to shar adn envitefye.com coms on top of the search list, she opens it, enters he daughtrs birthday detail and create her live card. logo to use if need in the website. use the invite as the finel result",
+    "productName": "",
+    "targetVertical": "General",
+    "tone": "",
+    "callToAction": "",
+    "jobLabel": "",
+    "outputRoot": "",
+    "referenceImages": [
+      {
+        "path": "reference-images\\01-favicon.png",
+        "absolutePath": "",
+        "originalName": "favicon.png",
+        "mimeType": "image/png",
+        "size": 190213
+      },
+      {
+        "path": "reference-images\\02-envitefy-wordmark-email.png",
+        "absolutePath": "",
+        "originalName": "envitefy-wordmark-email.png",
+        "mimeType": "image/png",
+        "size": 62240
+      }
+    ],
+    "looseInput": {
+      "rawPrompt": "need 10 prompt for gpt-imnage-2 that will be sonsitent theough 1-10, repeate teh rules , the charcter desctipiron in each prompt. scenario is a mom looks at the phone see that her flyer for her daughters birhtday has been delaid, anbd it wont make it on time, she then google it flyer in seconds, easy to shar adn envitefye.com coms on top of the search list, she opens it, enters he daughtrs birthday detail and create her live card. logo to use if need in the website. use the invite as the finel result\nTarget vertical: General\nReference images: favicon.png, envitefy-wordmark-email.png",
+      "overrides": {
+        "numberOfFrames": 10,
+        "characterLock": "",
+        "outfitLock": "",
+        "phoneLock": "",
+        "flyerLock": "",
+        "accessoryLock": "",
+        "locationLock": "",
+        "backgroundAnchors": "",
+        "screenLock": "",
+        "composition": "",
+        "mood": "",
+        "mainCharacterDetails": "",
+        "locationEnvironment": "",
+        "propsKeyObjects": "",
+        "visualStyle": "",
+        "cameraFormat": "vertical",
+        "frameToFrameChanges": "",
+        "actionSequence": []
+      },
+      "extraNotes": "",
+      "jobLabel": "",
+      "outputRoot": "",
+      "referenceImages": [
+        {
+          "path": "reference-images\\01-favicon.png",
+          "absolutePath": "",
+          "originalName": "favicon.png",
+          "mimeType": "image/png",
+          "size": 190213
+        },
+        {
+          "path": "reference-images\\02-envitefy-wordmark-email.png",
+          "absolutePath": "",
+          "originalName": "envitefy-wordmark-email.png",
+          "mimeType": "image/png",
+          "size": 62240
+        }
+      ]
+    }
+  },
+  "models": {
+    "textModel": "gpt-4.1-mini",
+    "imageModel": "gpt-image-2"
+  },
+  "run": {
+    "outputRoot": "C:\\Users\\rjosan\\Develop_local\\envitefy\\qa-artifacts\\storyboard-runs",
+    "runDir": "C:\\Users\\rjosan\\Develop_local\\envitefy\\qa-artifacts\\storyboard-runs\\20260425-155532-marketing-campaign",
+    "slug": "marketing-campaign",
+    "timestamp": "20260425-155532"
+  }
+}

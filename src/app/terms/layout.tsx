@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  title: "Terms of Use | Envitefy",
+  description:
+    "Envitefy terms for using Snap uploads, event pages, live cards, calendar features, and account services.",
+  alternates: { canonical: "/terms" },
   openGraph: {
     title: "Terms of Use — Envitefy",
     description:

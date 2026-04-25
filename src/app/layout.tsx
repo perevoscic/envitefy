@@ -166,6 +166,41 @@ export default async function RootLayout({
             name: "Envitefy",
             url: siteUrl,
             logo: `${siteUrl}/Logo_stacked.png`,
+            description:
+              "Envitefy turns invites, flyers, PDFs, schedules, and studio-created cards into hosted live event pages with RSVPs, calendar saves, maps, registry links, and gymnastics meet pages.",
+            sameAs: ["https://www.youtube.com/@Envitefy"],
+            contactPoint: {
+              "@type": "ContactPoint",
+              contactType: "customer support",
+              url: `${siteUrl}/contact`,
+            },
+          })}
+        </Script>
+        <Script
+          id="ld-software-application"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+        >
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": ["WebApplication", "SoftwareApplication"],
+            name: "Envitefy",
+            url: siteUrl,
+            applicationCategory: "EventManagementApplication",
+            operatingSystem: "Web",
+            description:
+              "Create hosted live event pages, live card invitations, RSVP pages, Snap/upload pages from PDFs and flyers, and gymnastics meet pages.",
+            publisher: {
+              "@type": "Organization",
+              name: "Envitefy",
+              url: siteUrl,
+              logo: `${siteUrl}/Logo_stacked.png`,
+            },
+            offers: {
+              "@type": "Offer",
+              category: "SaaS",
+              url: `${siteUrl}/snap`,
+            },
           })}
         </Script>
       </head>

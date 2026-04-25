@@ -1,0 +1,134 @@
+{
+  "rawPrompt": "need 10 prompt for gpt-imnage-2 that will be sonsitent theough 1-10, repeate teh rules , the charcter desctipiron in each prompt. scenario is a mom looks at the phone see that her flyer for her daughters birhtday has been delaid, anbd it wont make it on time, she then google it flyer in seconds, easy to shar adn envitefye.com coms on top of the search list, she opens it, enters he daughtrs birthday detail and create her live card. logo to use if need in the website. use the invite as the finel result\nTarget vertical: General\nReference images: favicon.png, envitefy-wordmark-email.png",
+  "numberOfFrames": {
+    "value": 10,
+    "source": "user"
+  },
+  "characterLock": {
+    "value": "Emily, a 34-year-old full-time working mom, with consistent facial features and warm, approachable expression reflecting her emotional journey from stress to relief.",
+    "source": "inferred"
+  },
+  "outfitLock": {
+    "value": "Casual, comfortable home outfit in soft, neutral tones, consistent throughout all frames, no changes in clothing or accessories.",
+    "source": "inferred"
+  },
+  "phoneLock": {
+    "value": "Same modern smartphone model with visible screen details, consistent size and color, used naturally in hand or on surfaces, never facing camera directly.",
+    "source": "inferred"
+  },
+  "flyerLock": {
+    "value": "Physical birthday invitation flyer visible only in early frames as a source of stress, consistent design showing delay notice, not shown after resolution begins.",
+    "source": "inferred"
+  },
+  "accessoryLock": {
+    "value": "Minimal accessories: simple wristwatch or bracelet, consistent throughout; no distracting or changing accessories allowed.",
+    "source": "inferred"
+  },
+  "locationLock": {
+    "value": "Home kitchen environment with consistent layout: wooden table, neutral-toned walls, window with natural light from the left side, plants on windowsill, no changes in furniture or decor.",
+    "source": "inferred"
+  },
+  "backgroundAnchors": {
+    "value": "Kitchen counter with fruit bowl and coffee maker visible in background; window with sheer curtains allowing soft daylight; consistent throughout sequence.",
+    "source": "inferred"
+  },
+  "screenLock": {
+    "value": "Phone screen content changes per narrative but always clearly legible and consistent in style: delayed flyer message, Google search results with Invitefy.com top, Invitefy.com input form, live invitation preview, and confirmation screen.",
+    "source": "inferred"
+  },
+  "composition": {
+    "value": "Vertical short-form ad with varied framing: candid side-angle, over-the-shoulder, three-quarter rear views, insert close-ups of phone screen on table, and occasional medium shots; no repeated phone-facing poses; natural, observational camera angles.",
+    "source": "inferred"
+  },
+  "mood": {
+    "value": "Emotional progression from anxious and stressed to relieved and confident, expressed through natural facial expressions and body language, warm and inviting atmosphere throughout.",
+    "source": "inferred"
+  },
+  "mainCharacterDetails": {
+    "value": "Emily shows subtle emotional shifts: initial worry (furrowed brow, tense posture), focused concentration during phone use, then visible relief with soft smile and relaxed posture by final frames.",
+    "source": "inferred"
+  },
+  "locationEnvironment": {
+    "value": "Bright, tidy kitchen with warm natural light, subtle morning or afternoon ambiance; no clutter or distracting elements; consistent window light direction throughout.",
+    "source": "inferred"
+  },
+  "propsKeyObjects": {
+    "value": "Delayed physical flyer (early frames), smartphone, coffee mug on table, laptop closed on counter (background), printed Invitefy.com logo flyer visible only in final frames, no extraneous props allowed.",
+    "source": "inferred"
+  },
+  "visualStyle": {
+    "value": "Clean, warm photographic style with soft natural lighting, shallow depth of field to isolate subject and props, slight vignette to focus attention; consistent color grading with warm tones.",
+    "source": "inferred"
+  },
+  "cameraFormat": {
+    "value": "vertical",
+    "source": "user"
+  },
+  "frameToFrameChanges": {
+    "value": "Permitted variations include camera distance (close insert to medium shot), camera height (eye level to slightly above or below), body angle (side profile, three-quarter rear, over-the-shoulder), hand action (holding phone, typing, resting), eyeline direction (looking at phone, off-frame, down), prop emphasis (flyer, phone screen, coffee mug), and foreground elements (tabletop objects). No repeated identical framing or poses.",
+    "source": "inferred"
+  },
+  "actionSequence": {
+    "value": [
+      "Frame 1: Emily looks worriedly at her phone showing delayed flyer notification, seated at kitchen table, side profile view.",
+      "Frame 2: Close insert of phone screen showing delayed flyer message, hand holding phone naturally.",
+      "Frame 3: Over-the-shoulder view of Emily googling 'flyer delays', Invitefy.com top search result visible on phone screen.",
+      "Frame 4: Medium shot of Emily leaning forward, focused, selecting Invitefy.com link on phone, three-quarter rear angle.",
+      "Frame 5: Close insert of phone screen showing Invitefy.com input form with birthday details being typed, hand in mid-action.",
+      "Frame 6: Side-angle medium shot of Emily smiling softly as she previews live digital invitation on phone screen, phone resting on table.",
+      "Frame 7: Over-the-shoulder view of phone screen showing live invitation preview with warm, personalized design and Invitefy.com branding.",
+      "Frame 8: Close insert of phone screen showing confirmation message of invitation sent successfully, subtle hand gesture of relief.",
+      "Frame 9: Medium shot of Emily relaxed, smiling, looking slightly away from phone, natural candid moment in kitchen.",
+      "Frame 10: Final frame showing Invitefy.com logo and website URL on a clean graphic overlay, with soft kitchen background blurred."
+    ],
+    "source": "inferred"
+  },
+  "extraNotes": {
+    "value": "",
+    "source": "empty"
+  },
+  "environmentStrategy": {
+    "value": "Maintain consistent kitchen environment with natural daylight, no changes in furniture or decor; use subtle foreground elements like coffee mug or fruit bowl to add depth and realism without clutter.",
+    "source": "inferred"
+  },
+  "propPriority": {
+    "value": "Primary props are the smartphone and delayed flyer (early frames); secondary props include coffee mug and background kitchen items; flyer only appears early to establish problem, phone screen content prioritized for product proof; no extraneous or unrelated props allowed.",
+    "source": "inferred"
+  },
+  "disallowedProps": {
+    "value": "No physical flyer printing equipment, no unrelated party planning items (balloons, cakes), no complex technical devices or multiple screens, no distracting accessories or clutter, no props indicating other product features.",
+    "source": "inferred"
+  },
+  "screenProofRequirements": {
+    "value": "Phone screen must clearly show delayed flyer notification, Google search results with Invitefy.com top listing, Invitefy.com input form with birthday details, live digital invitation preview with warm personalized design including Invitefy.com logo, and confirmation of invitation sent; all screen content legible and consistent in style.",
+    "source": "inferred"
+  },
+  "visualArc": {
+    "value": "Starts with anxious, stressed mood focused on problem (delayed flyer), transitions through discovery and action (googling, inputting details), culminates in emotional relief and confidence with live invitation preview and confirmation, ending on brand logo reinforcing trust and solution.",
+    "source": "inferred"
+  },
+  "identityLock": {
+    "value": "Emily's identity remains consistent: same face, hair style, and warm approachable demeanor throughout; no changes to age or ethnicity; emotional expression evolves naturally but identity fixed.",
+    "source": "inferred"
+  },
+  "appearanceLock": {
+    "value": "Consistent hairstyle, minimal makeup, no changes in facial hair or accessories; outfit remains the same casual home wear throughout all frames.",
+    "source": "inferred"
+  },
+  "environmentLayoutLock": {
+    "value": "Kitchen layout fixed: table position, window placement, counter background elements remain unchanged; lighting direction consistent from window side; no rearrangement of furniture or props.",
+    "source": "inferred"
+  },
+  "propContinuityLock": {
+    "value": "Delayed flyer only visible in first two frames; smartphone present in all frames with consistent model and case; coffee mug and fruit bowl remain in background but may vary in foreground emphasis; no new props introduced mid-sequence.",
+    "source": "inferred"
+  },
+  "styleContinuityLock": {
+    "value": "Photographic style consistent: warm natural light, soft focus backgrounds, candid observational framing; no sudden shifts to studio lighting or posed shots; color grading uniform across frames.",
+    "source": "inferred"
+  },
+  "framingBaseline": {
+    "value": "Sequence employs varied candid framing: side profiles, over-the-shoulder, three-quarter rear views, and close inserts of phone screen on table; no repeated identical poses or direct phone-facing shots; camera angles and distances vary to maintain visual interest and naturalism.",
+    "source": "inferred"
+  }
+}

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import fs from "node:fs";
+import fsPromises from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
@@ -26,6 +27,7 @@ export async function GET(
     const { runId } = await context.params;
     const file = new URL(request.url).searchParams.get("file") || "";
     const absolutePath = resolveRunAssetPath(runId, file);
+    await fsPromises.access(absolutePath);
     const stream = fs.createReadStream(absolutePath);
     return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
       headers: {
@@ -34,6 +36,9 @@ export async function GET(
       },
     });
   } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return NextResponse.json({ error: "Run asset not found" }, { status: 404 });
+    }
     return adminErrorResponse(error, "Failed to read run asset");
   }
 }

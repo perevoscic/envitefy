@@ -76,14 +76,16 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
     isMarketingRoot ||
     pathname === "/landing" ||
     pathname === "/snap" ||
-    pathname === "/gymnastics";
+    pathname === "/gymnastics" ||
+    pathname === "/guides" ||
+    (pathname?.startsWith("/guides/") ?? false);
 
   if (isMarketingRoute) {
     return (
       <footer className="relative z-[2] bg-[#f8f5ff] px-4 pt-8 pb-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl isolate overflow-hidden rounded-[2rem] border border-[#eadfd5] bg-[rgba(255,250,246,0.9)] shadow-[0_30px_80px_rgba(43,27,22,0.10)] backdrop-blur-[12px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.82),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.72),rgba(255,255,255,0.4)_46%,rgba(201,143,107,0.08)_100%)]" />
-          <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,0.7fr))] lg:px-10">
+          <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(0,1.1fr)_repeat(4,minmax(0,0.68fr))] lg:px-10">
             <div className="max-lg:col-span-full pr-4">
               <Link href="/" className="inline-flex items-center overflow-visible">
                 <EnvitefyWordmark
@@ -114,6 +116,29 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                   </Link>
                   <Link href="/how-it-works" className="block hover:text-[#2b1b16]">
                     How it works
+                  </Link>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#4d352c]">
+                  Guides
+                </h4>
+                <div className="mt-4 space-y-3 text-sm text-[#8b7568]">
+                  <Link href="/guides" className="block hover:text-[#2b1b16]">
+                    Guides hub
+                  </Link>
+                  <Link
+                    href="/guides/pdf-to-event-page"
+                    className="block hover:text-[#2b1b16]"
+                  >
+                    PDF to event page
+                  </Link>
+                  <Link
+                    href="/guides/gymnastics-meet-page"
+                    className="block hover:text-[#2b1b16]"
+                  >
+                    Gymnastics meet page
                   </Link>
                 </div>
               </div>
@@ -193,6 +218,10 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
             <span className="hidden opacity-40 sm:inline">•</span>
             <Link href="/faq" className="hover:text-foreground">
               FAQ
+            </Link>
+            <span className="hidden opacity-40 sm:inline">•</span>
+            <Link href="/guides" className="hover:text-foreground">
+              Guides
             </Link>
             <span className="hidden opacity-40 sm:inline">•</span>
             <Link href="https://envitefy.com/terms" className="hover:text-foreground">

@@ -1,0 +1,35 @@
+{
+  "pass": true,
+  "reasons": [
+    "The storyboard provides a clear emotional arc from stress to relief, matching the persona's journey and the campaign's emotional shift.",
+    "The sequence includes a variety of shot families: wide environment, environment detail, hands action, over-the-shoulder, phone proof, reaction, social proof, and final hero shot, ensuring visual variety.",
+    "Phone-dominant frames are limited to three (frames 5, 8, and 7 has subtle branding but is not phone dominant), complying with the phone budget.",
+    "Product proof frames (5 and 8) show the live digital invitation creation and the polished send-ready invite, fulfilling proof requirements.",
+    "The final frame (10) is a clear in-scene emotional payoff showing the host's relief and confidence, satisfying the final payoff requirement.",
+    "Continuity is well maintained with consistent character, environment, props, and photographic style.",
+    "The storyboard avoids hard blockers such as multiple end cards, disallowed props, or unclear product value."
+  ],
+  "framesToRewrite": [],
+  "framesToCut": [],
+  "captionIssues": [
+    "Captions could be polished for emotional impact and clarity but are generally aligned with frame content.",
+    "Social proof caption could be more specific to strengthen credibility."
+  ],
+  "blockedCaptionPatterns": [],
+  "requiredShotFamilies": [
+    "wide-environment",
+    "environment-detail",
+    "hands-action",
+    "over-shoulder",
+    "phone-proof",
+    "reaction",
+    "social-proof",
+    "final-hero"
+  ],
+  "singleFinalPayoffFrame": 10,
+  "maxPhoneDominantFrames": 3,
+  "valueClarityScore": 4,
+  "visualVarietyScore": 4,
+  "productProofScore": 4,
+  "rewriteBrief": "No rewrites required. Consider minor caption polishing to enhance emotional engagement and specificity in social proof frame."
+}

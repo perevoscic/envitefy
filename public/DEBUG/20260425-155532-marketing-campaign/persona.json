@@ -1,0 +1,23 @@
+{
+  "name": "Emily",
+  "age": "34",
+  "occupation": "Full-time working mom",
+  "lifeContext": "I juggle a full-time job and managing my household, including planning my kids' birthday parties. Time is always tight, and I rely on efficient solutions to keep everything on track.",
+  "triggerMoment": "I realize the physical birthday invitation flyers I ordered haven’t arrived yet, and the party is just a few days away. I feel the stress mounting because I need to get the invites out immediately to ensure friends and family can come.",
+  "objections": [
+    "Will the digital invitation look personal and special enough?",
+    "Is it really easy to create and send without wasting time?",
+    "Will everyone receive the invite promptly without technical issues?"
+  ],
+  "aspirations": [
+    "To send invitations quickly without last-minute panic",
+    "To feel confident that all guests are informed on time",
+    "To have a simple, stress-free way to create and share beautiful invites"
+  ],
+  "voiceTone": "Warm, approachable, and reassuring, like a helpful friend who understands the chaos of party planning",
+  "contextBeforeProduct": "I’m staring at my phone, anxiously refreshing the tracking number for the physical flyers, realizing they won’t arrive in time. The clock is ticking, and I feel overwhelmed trying to figure out a backup plan.",
+  "whyNow": "Because the party date is close and physical invites won’t make it on time, I need an immediate solution to avoid disappointing my child and guests.",
+  "whatFeelsMessy": "Coordinating last-minute flyer orders, worrying about guests not getting invitations, and scrambling to find an easy way to notify everyone quickly.",
+  "whatSuccessLooksLike": "I instantly create and send a personalized live digital invitation that my friends and family receive immediately, giving me peace of mind and more time to focus on the party itself.",
+  "whatWouldMakeHerSend": "A simple, user-friendly platform where I enter the birthday details, see a beautiful live invitation preview, and can send it right away without complicated steps or delays."
+}

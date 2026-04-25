@@ -271,21 +271,21 @@ export default function AdminPage() {
             </Link>
 
             <Link
-              href="/admin/marketing-campaigns"
+              href="/admin/marketing-images"
               className="group relative overflow-hidden rounded-2xl border border-[#dcd4f5] bg-white shadow transition-all hover:shadow-lg"
             >
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
-                      Marketing Campaigns
+                      Marketing Images
                     </p>
                     <p className="text-sm text-[#5b4d86]">
-                      Storyboards, captions, and short-form video renders
+                      Branded storyboards, image frames, and video renders
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c6f1e3] to-[#46bb91] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
-                    MC
+                    MI
                   </div>
                 </div>
               </div>

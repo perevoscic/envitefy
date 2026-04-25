@@ -1,0 +1,54 @@
+{
+  "resonatesBecause": [
+    "Clearly addresses a relatable pain point for busy moms facing last-minute invitation delays.",
+    "Emotional shift from stress to relief aligns well with the target audience's feelings.",
+    "Focus on ease and speed matches the persona's need for quick, simple solutions.",
+    "Use of a mom character and warm, approachable language fits the brand guardrails and persona voice.",
+    "The scenario of googling flyer delays and finding Invitefy.com grounds the story in a believable user journey."
+  ],
+  "feelsOffBecause": [
+    "Promise of 'instant' creation and sending risks sounding like empty speed claims without visible proof of delivery reliability.",
+    "The campaign risks feeling generic by relying heavily on a typical 'last-minute save' storyline without unique brand personality.",
+    "Visuals might overemphasize the technical process (inputting details, preview screens) which could feel dry or unengaging to the emotional audience.",
+    "The product value feels mushy if the invitations' personalization and emotional impact aren't convincingly shown.",
+    "The hook is functional but lacks an emotional or surprising element to grab attention strongly."
+  ],
+  "suggestedBeats": [
+    "Open with mom's mounting anxiety over delayed flyers to create empathy immediately.",
+    "Show mom googling 'flyer delays' and Invitefy.com appearing as the top solution to build credibility.",
+    "Demonstrate quick, intuitive input of birthday details with minimal steps to reinforce ease.",
+    "Preview a warm, personalized live digital invitation that looks special and inviting.",
+    "Show mom sending the invite and receiving immediate confirmation to establish trust in delivery.",
+    "Close with mom visibly relieved and confident, focusing on emotional payoff.",
+    "Include Invitefy.com logo and website URL clearly at beginning and end."
+  ],
+  "confusions": [
+    "The difference between 'live digital invitation' and a standard e-invite is unclear, risking confusion about what makes Invitefy.com special.",
+    "Without proof of reliable delivery or recipient experience, users may doubt if guests really get the invites on time.",
+    "The term 'live' invitation might confuse users expecting interactive or real-time features that aren't explained.",
+    "Potential users might question if the invitation looks personal enough versus generic digital invites."
+  ],
+  "repetitionRisks": [
+    "Multiple shots of mom interacting with the phone or website risk visual monotony if not varied in framing and emotion.",
+    "Showing the input screen repeatedly could feel like stock demo footage common in tech ads.",
+    "Reusing similar worried mom expressions without emotional progression might weaken narrative impact."
+  ],
+  "missingProof": [
+    "No demonstration or testimonial showing that guests promptly receive and respond to the digital invitations.",
+    "Absence of visual or verbal proof that the platform is truly fast and hassle-free beyond the mom's perspective.",
+    "Lack of evidence that the invitations feel personal and special enough to satisfy emotional objections.",
+    "No metrics or social proof to back Invitefy.com's search ranking or reliability claims."
+  ],
+  "genericAdSignals": [
+    "Typical 'last-minute save' storyline without unique brand voice or distinctive storytelling elements.",
+    "Standard depiction of stressed mom and quick fix solution common in many parenting tech ads.",
+    "Overused visual tropes like googling problems and website screenshots that can feel like stock ad behavior.",
+    "Generic promise of 'instant creation' without differentiating features or emotional hooks."
+  ],
+  "beatsToCut": [
+    "Extended scenes focusing on typing or website navigation that do not add emotional value.",
+    "Any mention or visuals related to physical flyer printing or delays beyond establishing the initial problem.",
+    "Overemphasis on showing multiple website features unrelated to the core invitation creation and sending.",
+    "Generic party planning tips or unrelated product features that dilute the main message."
+  ]
+}

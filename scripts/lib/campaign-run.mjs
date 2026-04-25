@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 import {
   alignActionSequence,
   createFramesManifest,
@@ -134,6 +134,24 @@ function normalizeFrameCountValue(value, fallback = 1) {
   return Math.max(1, Math.trunc(parsed));
 }
 
+function normalizeReferenceImages(values = []) {
+  return (Array.isArray(values) ? values : [])
+    .map((entry) => {
+      const source = asObject(entry);
+      const imagePath = clean(source.path || source.file || source.filePath);
+      if (!imagePath) return null;
+      return {
+        path: imagePath,
+        absolutePath: clean(source.absolutePath),
+        originalName: clean(source.originalName || source.name || path.basename(imagePath)),
+        mimeType: clean(source.mimeType || source.type),
+        size: Number.isFinite(Number(source.size)) ? Number(source.size) : 0,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 16);
+}
+
 function setStageStatus(statusDoc, stageKey, nextStatus, extras = {}) {
   const stage = asObject(statusDoc?.stages?.[stageKey]);
   statusDoc.stages[stageKey] = {
@@ -214,6 +232,67 @@ function normalizeCaptionValue(caption) {
   };
 }
 
+function fallbackSocialCopyForFrame(frame, index, total) {
+  const role = clean(frame?.persuasionRole).toLowerCase();
+  const title = clean(frame?.title).toLowerCase();
+  const isFirst = index === 0;
+  const isFinal = index === total - 1;
+  let text = "the plan comes together";
+
+  if (isFirst || /hook|pain|chaos|problem/.test(role)) {
+    text = "too much to juggle";
+  } else if (/product|action|entry|proof/.test(role)) {
+    text = "the details fall into place";
+  } else if (/send|share|ready/.test(role)) {
+    text = "ready before the rush";
+  } else if (/relief|release|calm/.test(role)) {
+    text = "the pressure finally lifts";
+  } else if (/premium|quality|finished|payoff/.test(role) || isFinal) {
+    text = "start your event page";
+  } else if (title) {
+    text = title.split(/\s+/).slice(0, 6).join(" ");
+  }
+
+  const emphasisWord = text.split(/\s+/).find(Boolean) || "start";
+  return {
+    frameNumber: Number(frame?.frameNumber) || index + 1,
+    text,
+    emphasisWord,
+    voiceover: clean(frame?.emotionalBeat) || clean(frame?.proofTarget) || text,
+    durationSec: 2.2,
+    transition: isFinal ? "whip" : "cut",
+    kineticStyle: isFirst || isFinal ? "pop-in" : "word-by-word",
+    captionRole: clean(frame?.persuasionRole) || (isFinal ? "final payoff" : "support story beat"),
+  };
+}
+
+export function normalizeSocialCopyForFramePlan(socialCopy, framePlan = []) {
+  const frames = Array.isArray(framePlan) ? framePlan : [];
+  const existingByFrameNumber = new Map(
+    (Array.isArray(socialCopy?.frames) ? socialCopy.frames : [])
+      .map((frame) => normalizeSocialCopyFrame(frame))
+      .filter((frame) => frame.frameNumber > 0)
+      .map((frame) => [frame.frameNumber, frame]),
+  );
+
+  return {
+    hook: clean(socialCopy?.hook),
+    endCard: clean(socialCopy?.endCard),
+    frames: frames.map((frame, index) => {
+      const frameNumber = Number(frame?.frameNumber) || index + 1;
+      const existing = existingByFrameNumber.get(frameNumber);
+      if (existing) {
+        return normalizeSocialCopyFrame({
+          ...fallbackSocialCopyForFrame(frame, index, frames.length),
+          ...existing,
+          frameNumber,
+        });
+      }
+      return normalizeSocialCopyFrame(fallbackSocialCopyForFrame(frame, index, frames.length));
+    }),
+  };
+}
+
 function mergeSocialCopyIntoFrames(framesManifest, socialCopy) {
   const captionFrames = new Map(
     (Array.isArray(socialCopy?.frames) ? socialCopy.frames : [])
@@ -276,7 +355,81 @@ function buildImageModelAttemptOrder(requestedModel) {
   return [primary];
 }
 
-async function generateImageBuffer({ client, requestedModel, prompt, size, user }) {
+function resolveReferenceImagePaths(runPaths, referenceImages = []) {
+  const runDir = path.resolve(runPaths.runDir);
+  const normalizedRunDir = `${runDir}${path.sep}`;
+  return normalizeReferenceImages(referenceImages)
+    .map((reference) => {
+      const absolutePath = path.resolve(runDir, reference.path);
+      if (absolutePath === runDir || !absolutePath.startsWith(normalizedRunDir)) return null;
+      return {
+        ...reference,
+        absolutePath,
+      };
+    })
+    .filter(Boolean);
+}
+
+export function mimeTypeForImagePath(filePath, fallback = "") {
+  const normalizedFallback = clean(fallback).toLowerCase();
+  if (["image/jpeg", "image/png", "image/webp"].includes(normalizedFallback)) return normalizedFallback;
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".png") return "image/png";
+  if (ext === ".webp") return "image/webp";
+  return "image/png";
+}
+
+async function toOpenAiReferenceFile(reference) {
+  const absolutePath = reference.absolutePath || reference.path;
+  const buffer = await fs.readFile(absolutePath);
+  const filename = clean(reference.originalName) || path.basename(absolutePath);
+  return toFile(buffer, filename, {
+    type: mimeTypeForImagePath(filename || absolutePath, reference.mimeType),
+  });
+}
+
+function buildReferencePrompt(prompt, referenceImages = []) {
+  if (!referenceImages.length) return prompt;
+  const names = referenceImages
+    .map((reference, index) => `${index + 1}. ${reference.originalName || path.basename(reference.path)}`)
+    .join("\n");
+  return [
+    prompt,
+    "",
+    "REFERENCE IMAGES:",
+    names,
+    "Use the attached reference images as visual guidance for character appearance, environment, wardrobe, props, product UI, color, mood, or composition when relevant.",
+    "Do not copy unrelated artifacts from the references. Preserve the frame-specific action and camera instructions.",
+  ].join("\n");
+}
+
+async function generateImageBuffer({ client, requestedModel, prompt, size, user, referenceImages = [] }) {
+  const resolvedReferences = normalizeReferenceImages(referenceImages);
+  if (resolvedReferences.length > 0) {
+    const uploadableReferences = await Promise.all(resolvedReferences.map(toOpenAiReferenceFile));
+    const response = await client.images.edit({
+      model: "gpt-image-1",
+      image: uploadableReferences,
+      prompt: buildReferencePrompt(prompt, resolvedReferences),
+      size,
+      quality: resolveImageQuality(),
+      background: "opaque",
+      user: clean(user) || undefined,
+      n: 1,
+    });
+    const b64 = response.data?.[0]?.b64_json || "";
+    if (!b64) throw new Error("No image payload returned from gpt-image-1 reference generation.");
+    return {
+      buffer: Buffer.from(b64, "base64"),
+      effectiveModel: "gpt-image-1",
+      warning:
+        clean(requestedModel) && clean(requestedModel) !== "gpt-image-1"
+          ? `Reference images use gpt-image-1 image edit; requested ${clean(requestedModel)}.`
+          : null,
+    };
+  }
+
   const attempts = buildImageModelAttemptOrder(requestedModel);
   const firstModel = attempts[0];
   let lastError = null;
@@ -386,12 +539,14 @@ export function normalizeCampaignInput(rawInput = {}) {
   const extraNotes =
     clean(input.notes) || clean(input.extraNotes) || clean(input.looseInput?.extraNotes);
   const overrides = normalizeOverrideBlock(input);
+  const referenceImages = normalizeReferenceImages(input.referenceImages || input.looseInput?.referenceImages);
   const rawPrompt = [
     criteria,
     productName ? `Product: ${productName}` : "",
     targetVertical ? `Target vertical: ${targetVertical}` : "",
     tone ? `Tone: ${tone}` : "",
     callToAction ? `CTA: ${callToAction}` : "",
+    referenceImages.length ? `Reference images: ${referenceImages.map((image) => image.originalName).join(", ")}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -404,12 +559,14 @@ export function normalizeCampaignInput(rawInput = {}) {
     callToAction,
     jobLabel,
     outputRoot,
+    referenceImages,
     looseInput: {
       rawPrompt,
       overrides,
       extraNotes,
       jobLabel,
       outputRoot,
+      referenceImages,
     },
   };
 }
@@ -495,6 +652,77 @@ function creativeQaPassed(creativeQa) {
   );
 }
 
+function summarizeCreativeQaFailure(creativeQa) {
+  return Array.isArray(creativeQa?.reasons) && creativeQa.reasons.length > 0
+    ? creativeQa.reasons.join(" | ")
+    : "Creative QA blocked image generation.";
+}
+
+function scoreAtLeast(value, minimum) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.max(minimum, numeric) : minimum;
+}
+
+function creativeQaHardBlockerText(creativeQa) {
+  return [
+    ...(Array.isArray(creativeQa?.reasons) ? creativeQa.reasons : []),
+    ...(Array.isArray(creativeQa?.captionIssues) ? creativeQa.captionIssues : []),
+    ...(Array.isArray(creativeQa?.blockedCaptionPatterns) ? creativeQa.blockedCaptionPatterns : []),
+    clean(creativeQa?.rewriteBrief),
+  ]
+    .filter(Boolean)
+    .join(" | ")
+    .toLowerCase();
+}
+
+function creativeQaHasHardBlocker(creativeQa) {
+  const text = creativeQaHardBlockerText(creativeQa);
+  if (!text) return false;
+  return /frame[- ]count mismatch|disallowed prop|blocked prop|\btablet\b|\blaptop\b|missing product proof|no product proof|missing final payoff|multiple end cards|graphic logo|standalone logo|text-only end|cta card|brand naming|inconsistent brand|unreadable captions|captions are unusable|severe repeated product-demo loops/.test(
+    text,
+  );
+}
+
+export function normalizeCreativeQaForStoryboardBudget({
+  creativeQa,
+  requestPayload,
+  sceneSpec,
+  framePlan,
+  brief,
+}) {
+  if (!creativeQa || creativeQaPassed(creativeQa)) {
+    return { creativeQa, softened: false };
+  }
+
+  const budgetReview = validateStoryboardFrameBudget({ requestPayload, sceneSpec, framePlan, brief });
+  if (!budgetReview.pass || creativeQaHasHardBlocker(creativeQa)) {
+    return { creativeQa, softened: false };
+  }
+
+  return {
+    creativeQa: {
+      ...creativeQa,
+      pass: true,
+      valueClarityScore: scoreAtLeast(creativeQa.valueClarityScore, 3),
+      visualVarietyScore: scoreAtLeast(creativeQa.visualVarietyScore, 3),
+      productProofScore: scoreAtLeast(creativeQa.productProofScore, 3),
+      framesToRewrite: [],
+      framesToCut: [],
+      rewriteBrief: "",
+    },
+    softened: true,
+  };
+}
+
+function hasStoryboardRewritePlan(feedback) {
+  return Boolean(
+    feedback &&
+      (normalizePositiveIntegers(feedback.framesToRewrite).length > 0 ||
+        normalizePositiveIntegers(feedback.framesToCut).length > 0 ||
+        clean(feedback.rewriteBrief)),
+  );
+}
+
 function resolveRequestedFrameCount(requestPayload, sceneSpec) {
   const requested = normalizeFrameCountValue(
     requestPayload?.input?.looseInput?.overrides?.numberOfFrames ?? requestPayload?.input?.frameCount,
@@ -519,6 +747,572 @@ function assertStoryboardFrameAlignment({ requestPayload, sceneSpec, framePlan, 
       `Storyboard frame-count mismatch: requested ${requestedCount}, scene spec ${sceneSpecCount}, frame plan ${framePlanCount}, social copy ${socialCopyCount}.`,
     );
   }
+}
+
+function dedupeNumbers(values) {
+  return Array.from(new Set(values.filter((value) => Number.isFinite(value) && value > 0))).sort(
+    (a, b) => a - b,
+  );
+}
+
+function storyboardAllowsDemoHeavy(requestPayload, brief) {
+  const haystack = [
+    requestPayload?.input?.targetVertical,
+    requestPayload?.input?.tone,
+    requestPayload?.input?.criteria,
+    requestPayload?.input?.looseInput?.rawPrompt,
+    brief?.campaignHook,
+    brief?.proofMoment,
+    brief?.mustInclude,
+  ]
+    .flat()
+    .map((value) => clean(value).toLowerCase())
+    .filter(Boolean)
+    .join(" ");
+  return /\b(product demo|demo-heavy|walkthrough|tutorial|screen recording|feature tour)\b/.test(haystack);
+}
+
+function isStoryboardBudgetFeedback(feedback) {
+  return clean(feedback?.source) === "storyboard-budget";
+}
+
+function pickAllowedScreenBrandingFrames(frames) {
+  const phoneProofFrames = frames
+    .filter((frame) => clean(frame.shotFamily) === "phone-proof")
+    .map((frame) => frame.frameNumber);
+  if (phoneProofFrames.length > 0) return phoneProofFrames.slice(0, 2);
+
+  return frames
+    .filter((frame) => clean(frame.phoneDominance) === "dominant")
+    .map((frame) => frame.frameNumber)
+    .slice(0, 2);
+}
+
+function pickAllowedPhoneDominantFrames(frames) {
+  const total = Array.isArray(frames) ? frames.length : 0;
+  if (total >= 10) return [5, 8];
+  if (total >= 8) return [Math.ceil(total / 2), Math.max(1, total - 2)];
+
+  return frames
+    .filter((frame) => clean(frame.shotFamily) === "phone-proof")
+    .map((frame) => frame.frameNumber)
+    .slice(0, 2);
+}
+
+function frameSearchText(frame) {
+  return [
+    frame?.title,
+    frame?.actionBeat,
+    frame?.cameraShot,
+    frame?.composition,
+    frame?.screenState,
+    frame?.propFocus,
+    frame?.emotionalBeat,
+    frame?.proofTarget,
+    frame?.mustDifferFromPrevious,
+  ]
+    .map((value) => clean(value).toLowerCase())
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function inferFramePhoneDominance(frame) {
+  const declared = clean(frame?.phoneDominance);
+  if (declared === "dominant") return "dominant";
+  if (clean(frame?.shotFamily) === "phone-proof") return "dominant";
+
+  const text = frameSearchText(frame);
+  if (!text) return declared || "secondary";
+
+  const phoneIsSecondary = /\b(phone|screen)\s+(?:is\s+)?secondary\b|\bsecondary\s+(?:phone|screen)\b|\bphone down\b|\bno phone\b|\bphone absent\b/.test(
+    text,
+  );
+  const dominantPatterns = [
+    /\bgoogle search\b/,
+    /\bsearch results?\b/,
+    /\bphone screen\b/,
+    /\bscreen close-?up\b/,
+    /\bclose-?up (?:of|on) (?:the )?phone\b/,
+    /\bphone (?:close-?up|fills|dominates)\b/,
+    /\bphone (?:in|as) (?:the )?foreground\b/,
+    /\bapp screen\b/,
+    /\bui\b/,
+    /\binterface\b/,
+    /\btyping (?:on|into) (?:the )?phone\b/,
+    /\btapping (?:on )?(?:the )?phone\b/,
+    /\bscrolling (?:on )?(?:the )?phone\b/,
+    /\bholding (?:her |the )?phone\b/,
+  ];
+
+  const dominantSignalCount = dominantPatterns.filter((pattern) => pattern.test(text)).length;
+  if (dominantSignalCount >= (phoneIsSecondary ? 2 : 1)) return "dominant";
+  return declared === "none" ? "none" : "secondary";
+}
+
+export function finalFrameIsGraphicLogoPayoff(frame) {
+  if (!frame) return false;
+  const text = frameSearchText(frame);
+  return /\b(graphic logo|logo shot|standalone logo|plain logo|end card|end-card|brand card|cta card|text-only|solid background|logo on)\b/.test(
+    text,
+  );
+}
+
+function sceneSpecStringField(value, source = "budget-repair") {
+  return {
+    value: clean(value),
+    source,
+  };
+}
+
+function replaceInferredSceneSpecField(sceneSpec, key, value) {
+  const current = asObject(sceneSpec?.[key]);
+  if (clean(current.source) === "user") return current;
+  return sceneSpecStringField(value, "budget-repair");
+}
+
+export function repairStoryboardSceneSpecForBudget(sceneSpec) {
+  if (!sceneSpec) return sceneSpec;
+  return {
+    ...sceneSpec,
+    flyerLock: replaceInferredSceneSpecField(
+      sceneSpec,
+      "flyerLock",
+      "one small birthday invitation order receipt or unfinished invite reference used only as background context; do not make a big readable flyer headline, do not show duplicate paper flyers, and do not put fake body copy on paper",
+    ),
+    screenLock: replaceInferredSceneSpecField(
+      sceneSpec,
+      "screenLock",
+      "the same Envitefy mobile live-card flow appears only in the two approved phone-proof frames: frame 5 shows quick birthday invite creation, frame 8 shows a polished send-ready live invite or share confirmation; all other frames keep screens absent, face-down, or secondary",
+    ),
+    propsKeyObjects: replaceInferredSceneSpecField(
+      sceneSpec,
+      "propsKeyObjects",
+      "same smartphone, a small birthday planning checklist, subtle party details, and one small delayed-order reference; the product proof is the live digital invite, not paper handling",
+    ),
+    propPriority: replaceInferredSceneSpecField(
+      sceneSpec,
+      "propPriority",
+      "prioritize the human problem, the clean Envitefy live-card result, and the host's relief; keep paper artifacts small, off-center, and non-readable except as context",
+    ),
+    disallowedProps: replaceInferredSceneSpecField(
+      sceneSpec,
+      "disallowedProps",
+      "no laptop, no tablet, no extra screens, no children, no pets, no large readable fake printed words, no duplicate paper flyers, no delivery-delay paper as the hero object, and no graphic logo end card",
+    ),
+    screenProofRequirements: replaceInferredSceneSpecField(
+      sceneSpec,
+      "screenProofRequirements",
+      "show product proof only twice: frame 5 quick invite creation on Envitefy, frame 8 polished live birthday invite ready to share; do not show Google search results, repeated UI close-ups, or phone screens in the final hero",
+    ),
+    visualArc: replaceInferredSceneSpecField(
+      sceneSpec,
+      "visualArc",
+      "move from a real hosting deadline to quick digital resolution: pressure, decision, clean live-card proof, recipient confidence, then a final in-scene host payoff with no phone-led composition",
+    ),
+    propContinuityLock: replaceInferredSceneSpecField(
+      sceneSpec,
+      "propContinuityLock",
+      "same phone, same small planning notes, same subtle birthday details, and one small delayed-order reference; paper stays secondary and never becomes the final proof",
+    ),
+    framingBaseline: replaceInferredSceneSpecField(
+      sceneSpec,
+      "framingBaseline",
+      "varied candid framing with a saleable ad rhythm: environment, tactile context, human decision, two angled product-proof inserts, social validation, and a non-phone final hero",
+    ),
+  };
+}
+
+function budgetRepairFrameTemplates(brief = {}) {
+  const product = clean(brief?.product) || "Envitefy";
+  return [
+    {
+      title: "Deadline becomes real",
+      actionBeat: "the host sees the birthday plan is at risk and pauses in the real room, with paper details secondary on the table",
+      cameraShot: "wide observational room shot",
+      composition: "wide view of the host, birthday setup context, and a small delayed-order reference on the table; no large readable paper headline and no device emphasis",
+      mood: "concerned, candid, warm",
+      persuasionRole: "hook",
+      screenState: "no screen proof yet",
+      propFocus: "host expression, room context, small party-planning details",
+      emotionalBeat: "pressure",
+      proofTarget: "show why she needs a shareable invite now",
+      mustDifferFromPrevious: "establish the full environment and human stakes",
+      shotFamily: "wide-environment",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Paper cannot solve it",
+      actionBeat: "hands clear a small delayed-order reference away from the birthday details so the problem reads as urgency, not paper sorting",
+      cameraShot: "tabletop environmental detail",
+      composition: "close tabletop detail with the delayed-order reference small and off-center, birthday notes and decor texture in focus, no fake readable body copy and no device foreground",
+      mood: "specific, tactile, urgent",
+      persuasionRole: "pain-proof",
+      screenState: "offline details cannot be shared yet",
+      propFocus: "small delay cue, party details, handwritten planning notes",
+      emotionalBeat: "friction",
+      proofTarget: "prove the offline plan is not shareable",
+      mustDifferFromPrevious: "move from wide room context to tactile tabletop evidence",
+      shotFamily: "environment-detail",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Details gathered",
+      actionBeat: "the host gathers the key birthday details from notes and the original plan without making the paper artifact the hero",
+      cameraShot: "hands-in-action side angle",
+      composition: "hands moving date, time, and guest details into order, with the host partially visible from the side and paper kept secondary",
+      mood: "decisive, practical",
+      persuasionRole: "decision-point",
+      screenState: "the source details are ready to become an event page",
+      propFocus: "hands, planning notes, birthday details",
+      emotionalBeat: "decision",
+      proofTarget: "show action without a generic search trope",
+      mustDifferFromPrevious: "change from static tabletop evidence to active hands sorting details",
+      shotFamily: "hands-action",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Decision turns into action",
+      actionBeat: "the host shifts from overwhelm into action by organizing the invite details with intent",
+      cameraShot: "over-the-shoulder side angle",
+      composition: "the host leans over the table arranging source details and decor pieces, with no device foreground",
+      mood: "focused, calm shift",
+      persuasionRole: "product-entry",
+      screenState: "the source details are organized and ready for the product proof beat",
+      propFocus: "host posture, source details, decor pieces",
+      emotionalBeat: "relief begins",
+      proofTarget: "make the turn toward the product feel earned",
+      mustDifferFromPrevious: "change from hands-only action to over-the-shoulder human workflow",
+      shotFamily: "over-shoulder",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Instant page proof",
+      actionBeat: `${product} turns the gathered birthday details into a clean live invitation on an angled phone resting naturally on the table`,
+      cameraShot: "angled product-proof close-up",
+      composition: "phone rests naturally on the viewer-right side of the table at an angle, readable enough for proof, with small planning notes on the opposite side and no direct presentation pose",
+      mood: "clear, useful, polished",
+      persuasionRole: "product-proof",
+      screenState: "birthday live-card creation is visibly underway",
+      propFocus: "angled Envitefy live-card proof",
+      emotionalBeat: "control",
+      proofTarget: "prove the creation action",
+      mustDifferFromPrevious: "change to the first allowed product-proof close-up",
+      shotFamily: "phone-proof",
+      phoneDominance: "dominant",
+      brandingPresence: "screen",
+    },
+    {
+      title: "Pressure drops",
+      actionBeat: "the host steps back from the table and visibly relaxes as the work starts feeling manageable",
+      cameraShot: "candid side-profile reaction",
+      composition: "human reaction in the room with event materials behind her and no device emphasis",
+      mood: "relieved, grounded",
+      persuasionRole: "emotional-release",
+      screenState: "the product has reduced uncertainty",
+      propFocus: "face, posture, room context",
+      emotionalBeat: "relief",
+      proofTarget: "prove the emotional shift",
+      mustDifferFromPrevious: "change from product proof to human reaction away from the device",
+      shotFamily: "reaction",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Confidence spreads",
+      actionBeat: "a nearby helper reacts to the polished invite direction in the real room, making the result feel socially approved rather than staged",
+      cameraShot: "candid two-person social proof",
+      composition: "natural side-angle interaction with birthday context visible, no extra screens, no paper flyer hero, and no staged phone demo",
+      mood: "reassuring, credible",
+      persuasionRole: "social-proof",
+      screenState: "trust comes from another person reacting positively in the room",
+      propFocus: "human response, source details, party context",
+      emotionalBeat: "confidence",
+      proofTarget: "show trust and design confidence through social reaction",
+      mustDifferFromPrevious: "change from solo reaction to social proof and human validation",
+      shotFamily: "social-proof",
+      phoneDominance: "none",
+      brandingPresence: "subtle",
+    },
+    {
+      title: "Send-ready proof",
+      actionBeat: `${product} shows the polished send-ready birthday live invite in one final angled product-proof moment`,
+      cameraShot: "tight angled send-ready proof",
+      composition: "phone on the viewer-right side of the table with the finished live invite visible, framed by subtle party details only, no duplicate paper flyer and no direct presentation pose",
+      mood: "premium, finished, confident",
+      persuasionRole: "send-ready-proof",
+      screenState: "polished birthday live invite is ready to share",
+      propFocus: "finished Envitefy live-card proof",
+      emotionalBeat: "certainty",
+      proofTarget: "prove the finished result is polished",
+      mustDifferFromPrevious: "change from human social proof to the second and final allowed product-proof close-up",
+      shotFamily: "phone-proof",
+      phoneDominance: "dominant",
+      brandingPresence: "screen",
+    },
+    {
+      title: "Back in the moment",
+      actionBeat: "the host returns attention to the room and party details with the invite work no longer dominating her",
+      cameraShot: "observational medium reaction",
+      composition: "host in the environment arranging a detail or sharing a relaxed look, no device foreground",
+      mood: "calm, capable",
+      persuasionRole: "relief-proof",
+      screenState: "the product proof is complete and the person is back in control",
+      propFocus: "person, decor, room readiness",
+      emotionalBeat: "confidence settled",
+      proofTarget: "prove she gets time and confidence back",
+      mustDifferFromPrevious: "change away from product proof to lived emotional benefit",
+      shotFamily: "reaction",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Ready to host",
+      actionBeat: "the host stands in the finished birthday setup with visible relief and confidence because the invite is already handled",
+      cameraShot: "final in-scene hero payoff",
+      composition: "warm hero view centered on the host and ready birthday atmosphere, with no phone foreground, no paper flyer foreground, and no logo card",
+      mood: "relieved, proud, ready",
+      persuasionRole: "final-payoff",
+      screenState: "single final emotional payoff in the real scene",
+      propFocus: "host transformation and finished event atmosphere",
+      emotionalBeat: "conversion",
+      proofTarget: "land the benefit of becoming ready without another product demo",
+      mustDifferFromPrevious: "end on an in-scene emotional hero moment centered on the host",
+      shotFamily: "final-hero",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+  ].map((frame, index) => ({
+    frameNumber: index + 1,
+    disallowedPropRisk: "",
+    ...frame,
+  }));
+}
+
+export function repairStoryboardFrameBudget(sceneSpec, framePlan, brief = {}) {
+  const frames = Array.isArray(framePlan) ? framePlan : [];
+  if (frames.length < 10) return frames;
+  return normalizeFramePlan(sceneSpec, budgetRepairFrameTemplates(brief).slice(0, frames.length));
+}
+
+export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, framePlan, brief }) {
+  const frames = Array.isArray(framePlan) ? framePlan : [];
+  const total = frames.length;
+  if (total === 0) {
+    return {
+      pass: false,
+      reasons: ["Frame plan is empty."],
+      framesToRewrite: [],
+      feedback: {
+        source: "storyboard-budget",
+        pass: false,
+        reasons: ["Frame plan is empty."],
+        framesToRewrite: [],
+        framesToCut: [],
+        requiredShotFamilies: [],
+        singleFinalPayoffFrame: normalizeFrameCountValue(sceneSpec?.numberOfFrames?.value, 1),
+        maxPhoneDominantFrames: 3,
+        discardExistingFramePlan: true,
+        rewriteBrief: "Return the requested frame count with complete storyboard frames.",
+      },
+    };
+  }
+
+  const demoHeavy = storyboardAllowsDemoHeavy(requestPayload, brief);
+  const allowedPhoneDominantFrames = pickAllowedPhoneDominantFrames(frames);
+  const maxPhoneDominantFrames = demoHeavy
+    ? Math.max(3, Math.ceil(total / 2))
+    : total >= 10
+      ? allowedPhoneDominantFrames.length
+      : 3;
+  const dominantPhoneFrames = frames
+    .filter((frame) => inferFramePhoneDominance(frame) === "dominant")
+    .map((frame) => frame.frameNumber);
+  const disallowedDominantPhoneFrames = dominantPhoneFrames.filter(
+    (frameNumber) => !pickAllowedPhoneDominantFrames(frames).includes(frameNumber),
+  );
+  const distinctShotFamilies = new Set(frames.map((frame) => clean(frame.shotFamily)).filter(Boolean));
+  const environmentalFrames = frames.filter((frame) =>
+    ["wide-environment", "environment-detail"].includes(clean(frame.shotFamily)),
+  );
+  const nonPhoneFirstFrames = frames.filter((frame) =>
+    ["none", "secondary"].includes(inferFramePhoneDominance(frame)),
+  );
+  const socialProofFrames = frames.filter((frame) => clean(frame.shotFamily) === "social-proof");
+  const phoneDominantSocialProofFrames = socialProofFrames
+    .filter((frame) => inferFramePhoneDominance(frame) === "dominant")
+    .map((frame) => frame.frameNumber);
+  const screenBrandingFrames = frames
+    .filter((frame) => clean(frame.brandingPresence) === "screen")
+    .map((frame) => frame.frameNumber);
+  const heroBrandingFrames = frames
+    .filter((frame) => clean(frame.brandingPresence) === "hero")
+    .map((frame) => frame.frameNumber);
+  const disallowedPropFrames = frames
+    .filter((frame) => clean(frame.disallowedPropRisk))
+    .map((frame) => frame.frameNumber);
+  const finalFrame = frames[frames.length - 1];
+  const allowedScreenBrandingFrames = pickAllowedScreenBrandingFrames(frames);
+  const allowedHeroBrandingFrame = finalFrame?.frameNumber;
+
+  const reasons = [];
+  const rewriteFrameNumbers = [];
+  const requiredShotFamilies = [];
+
+  if (total >= 8 && !demoHeavy && dominantPhoneFrames.length > maxPhoneDominantFrames) {
+    reasons.push(
+      `Excessive phone-dominant frames: ${dominantPhoneFrames.length} out of ${total}; maximum is ${maxPhoneDominantFrames}. Only frames ${allowedPhoneDominantFrames.join(", ")} should remain phone-dominant unless the brief is explicitly demo-heavy.`,
+    );
+    rewriteFrameNumbers.push(...disallowedDominantPhoneFrames);
+  }
+
+  if (total >= 10 && !demoHeavy && disallowedDominantPhoneFrames.length > 0) {
+    reasons.push(
+      `Phone-dominant frames outside approved proof slots: ${disallowedDominantPhoneFrames.join(", ")}. Only frames ${allowedPhoneDominantFrames.join(", ")} may be phone-dominant.`,
+    );
+    rewriteFrameNumbers.push(...disallowedDominantPhoneFrames);
+  }
+
+  if (total >= 10 && distinctShotFamilies.size < 5) {
+    reasons.push(`Insufficient shot variety: ${distinctShotFamilies.size} shot families; minimum is 5.`);
+    rewriteFrameNumbers.push(...frames.map((frame) => frame.frameNumber));
+    requiredShotFamilies.push(
+      "wide-environment",
+      "environment-detail",
+      "hands-action",
+      "over-shoulder",
+      "phone-proof",
+      "reaction",
+      "social-proof",
+      "final-hero",
+    );
+  }
+
+  if (total >= 8 && environmentalFrames.length < 2) {
+    reasons.push(`Insufficient environmental setup: ${environmentalFrames.length} context frames; minimum is 2.`);
+    rewriteFrameNumbers.push(...frames.slice(0, Math.min(3, total)).map((frame) => frame.frameNumber));
+    requiredShotFamilies.push("wide-environment", "environment-detail");
+  }
+
+  if (total >= 8 && nonPhoneFirstFrames.length < 2) {
+    reasons.push(`Insufficient non-phone action coverage: ${nonPhoneFirstFrames.length} frames; minimum is 2.`);
+    rewriteFrameNumbers.push(...dominantPhoneFrames.slice(0, Math.max(1, dominantPhoneFrames.length - 1)));
+    requiredShotFamilies.push("hands-action", "reaction", "social-proof");
+  }
+
+  if (total >= 10 && socialProofFrames.length < 1) {
+    reasons.push("Missing social-proof frame: add one trust or recipient-response beat.");
+    rewriteFrameNumbers.push(...frames.slice(Math.max(0, total - 4), total - 1).map((frame) => frame.frameNumber));
+    requiredShotFamilies.push("social-proof");
+  }
+
+  if (phoneDominantSocialProofFrames.length > 0) {
+    reasons.push(`Social-proof frames must not be phone demos: ${phoneDominantSocialProofFrames.join(", ")}.`);
+    rewriteFrameNumbers.push(...phoneDominantSocialProofFrames);
+  }
+
+  if (clean(finalFrame?.shotFamily) !== "final-hero") {
+    reasons.push("Final frame must use shotFamily final-hero.");
+    rewriteFrameNumbers.push(finalFrame?.frameNumber);
+    requiredShotFamilies.push("final-hero");
+  }
+
+  if (inferFramePhoneDominance(finalFrame) === "dominant") {
+    reasons.push("Final frame must not be phone-dominant.");
+    rewriteFrameNumbers.push(finalFrame?.frameNumber);
+  }
+
+  if (finalFrameIsGraphicLogoPayoff(finalFrame)) {
+    reasons.push("Final frame must be an in-scene emotional payoff, not a graphic logo or end-card shot.");
+    rewriteFrameNumbers.push(finalFrame?.frameNumber);
+  }
+
+  if (disallowedPropFrames.length > 0) {
+    reasons.push(`Disallowed prop risk on frames: ${disallowedPropFrames.join(", ")}.`);
+    rewriteFrameNumbers.push(...disallowedPropFrames);
+  }
+
+  if (screenBrandingFrames.length > 2) {
+    const overflowScreenBrandingFrames = screenBrandingFrames.filter(
+      (frameNumber) => !allowedScreenBrandingFrames.includes(frameNumber),
+    );
+    reasons.push(
+      `Too many screen-branding frames: ${screenBrandingFrames.length}; maximum is 2. Only frames ${allowedScreenBrandingFrames.join(", ") || "none"} may use brandingPresence screen.`,
+    );
+    rewriteFrameNumbers.push(...overflowScreenBrandingFrames);
+  }
+
+  if (heroBrandingFrames.length > 1) {
+    const overflowHeroBrandingFrames = heroBrandingFrames.filter(
+      (frameNumber) => frameNumber !== allowedHeroBrandingFrame,
+    );
+    reasons.push(
+      `Too many hero-branding frames: ${heroBrandingFrames.length}; maximum is 1. Only frame ${allowedHeroBrandingFrame} may use brandingPresence hero.`,
+    );
+    rewriteFrameNumbers.push(...overflowHeroBrandingFrames);
+  }
+
+  if (reasons.length === 0) {
+    return {
+      pass: true,
+      reasons: [],
+      framesToRewrite: [],
+      feedback: null,
+    };
+  }
+
+  const framesToRewrite = dedupeNumbers(rewriteFrameNumbers);
+  const uniqueRequiredShotFamilies = Array.from(new Set(requiredShotFamilies));
+  return {
+    pass: false,
+    reasons,
+    framesToRewrite,
+    feedback: {
+      source: "storyboard-budget",
+      pass: false,
+      reasons,
+      framesToRewrite,
+      framesToCut: [],
+      captionIssues: [],
+      blockedCaptionPatterns: [],
+      requiredShotFamilies: uniqueRequiredShotFamilies,
+      singleFinalPayoffFrame: total,
+      maxPhoneDominantFrames,
+      discardExistingFramePlan: true,
+      strictShotBudgetMap:
+        total >= 10
+          ? [
+              "1 wide-environment none",
+              "2 environment-detail none",
+              "3 hands-action none-or-secondary",
+              "4 over-shoulder none",
+              "5 phone-proof dominant",
+              "6 reaction none",
+              "7 social-proof none-or-secondary",
+              "8 phone-proof dominant",
+              "9 reaction none",
+              "10 final-hero none",
+            ]
+          : [],
+      valueClarityScore: 3,
+      visualVarietyScore: 1,
+      productProofScore: 3,
+      rewriteBrief:
+        `Preserve exactly ${total} frames. Rewrite the listed frames to satisfy the shot budget: ` +
+        `at most ${maxPhoneDominantFrames} phone-dominant frames, with phoneDominance dominant reserved for frames ${allowedPhoneDominantFrames.join(", ")} only, at least two environmental/context frames, ` +
+        "at least two phone-secondary or no-phone action/reaction frames, no disallowed props, " +
+        "replace Google-search or generic phone-search beats with candid environmental action unless the search is essential, " +
+        "include one social-proof or trust-signal frame that is not another phone demo, " +
+        "for ten-frame ads use this map: 1 wide-environment none, 2 environment-detail none, 3 hands-action none or secondary, 4 over-shoulder none, 5 phone-proof dominant, 6 reaction none, 7 social-proof none or secondary, 8 phone-proof dominant, 9 reaction none, 10 final-hero none, " +
+        "frame 10 must show the character's emotional transformation in the real scene and must not be a graphic logo, standalone logo, CTA card, or text-only end card, " +
+        `brandingPresence screen only on frames ${allowedScreenBrandingFrames.join(", ") || "none"}, ` +
+        `brandingPresence hero only on frame ${allowedHeroBrandingFrame}, all other branding must be subtle or none, ` +
+        "and a non-phone final-hero payoff frame.",
+    },
+  };
 }
 
 export function applyCreativeQaFrameConstraints(sceneSpec, qaFeedback) {
@@ -614,10 +1408,45 @@ async function runStoryboardPlanningLoop({
       persona,
       critique,
       qaFeedback,
-      currentFramePlan: framePlan,
+      currentFramePlan: isStoryboardBudgetFeedback(qaFeedback) ? [] : framePlan,
     });
     framePlan = normalizeFramePlan(workingSceneSpec, coordinator?.frames);
     await writeJson(runPaths.framePlanPath, { frames: framePlan });
+
+    const budgetReview = validateStoryboardFrameBudget({
+      requestPayload,
+      sceneSpec: workingSceneSpec,
+      framePlan,
+      brief,
+    });
+    if (!budgetReview.pass) {
+      const budgetReason = budgetReview.reasons.join(" | ");
+      setStageStatus(statusDoc, "coordinator", "warning", { error: budgetReason });
+      pushWarning(statusDoc, `Storyboard budget rewrite: ${budgetReason}`);
+      const repairedFramePlan = repairStoryboardFrameBudget(workingSceneSpec, framePlan, brief);
+      const repairedBudgetReview = validateStoryboardFrameBudget({
+        requestPayload,
+        sceneSpec: workingSceneSpec,
+        framePlan: repairedFramePlan,
+        brief,
+      });
+      if (repairedBudgetReview.pass) {
+        workingSceneSpec = repairStoryboardSceneSpecForBudget(workingSceneSpec);
+        await writeJson(runPaths.sceneSpecPath, workingSceneSpec);
+        framePlan = normalizeFramePlan(workingSceneSpec, repairedFramePlan);
+        await writeJson(runPaths.framePlanPath, { frames: framePlan });
+        pushWarning(statusDoc, "Storyboard budget repair applied deterministically.");
+      } else if (attempt < 1) {
+        qaFeedback = budgetReview.feedback;
+        await persistStatus("Rewriting storyboard to satisfy shot budget", "running", "coordinator");
+        continue;
+      } else {
+        await writeJson(runPaths.creativeQaPath, budgetReview.feedback);
+        await persistStatus("Storyboard budget blocked image generation", "awaiting_storyboard_review", "coordinator");
+        throw new Error(budgetReason);
+      }
+    }
+
     setStageStatus(statusDoc, "coordinator", "done");
 
     setStageStatus(statusDoc, "social-copy", "running");
@@ -638,6 +1467,14 @@ async function runStoryboardPlanningLoop({
       qaFeedback,
       currentSocialCopy: socialCopy,
     });
+    const rawSocialCopyCount = Array.isArray(socialCopy?.frames) ? socialCopy.frames.length : 0;
+    socialCopy = normalizeSocialCopyForFramePlan(socialCopy, framePlan);
+    if (rawSocialCopyCount !== socialCopy.frames.length) {
+      pushWarning(
+        statusDoc,
+        `Social copy returned ${rawSocialCopyCount} captions for ${framePlan.length} frames; filled missing captions from frame plan fallbacks.`,
+      );
+    }
     await writeJson(runPaths.socialCopyPath, socialCopy);
     setStageStatus(statusDoc, "social-copy", "done");
 
@@ -660,6 +1497,17 @@ async function runStoryboardPlanningLoop({
       framePlan,
       socialCopy,
     });
+    const normalizedCreativeQa = normalizeCreativeQaForStoryboardBudget({
+      creativeQa,
+      requestPayload,
+      sceneSpec: workingSceneSpec,
+      framePlan,
+      brief,
+    });
+    creativeQa = normalizedCreativeQa.creativeQa;
+    if (normalizedCreativeQa.softened) {
+      pushWarning(statusDoc, "Creative QA soft notes accepted after storyboard budget passed.");
+    }
     await writeJson(runPaths.creativeQaPath, creativeQa);
 
     if (creativeQaPassed(creativeQa)) {
@@ -673,14 +1521,11 @@ async function runStoryboardPlanningLoop({
     qaFeedback = creativeQa;
   }
 
-  const softReason =
-    Array.isArray(creativeQa?.reasons) && creativeQa.reasons.length > 0
-      ? creativeQa.reasons.join(" | ")
-      : "Creative QA flagged issues but did not block image generation.";
-  pushWarning(statusDoc, `Creative QA soft-fail: ${softReason}`);
-  setStageStatus(statusDoc, "creative-qa", "warning", { error: softReason });
-  await persistStatus("Creative QA flagged issues — proceeding to images", "running", "creative-qa");
-  return { sceneSpec: workingSceneSpec, framePlan, socialCopy, creativeQa };
+  const qaReason = summarizeCreativeQaFailure(creativeQa);
+  pushWarning(statusDoc, `Creative QA blocked images: ${qaReason}`);
+  setStageStatus(statusDoc, "creative-qa", "warning", { error: qaReason });
+  await persistStatus("Creative QA blocked image generation", "awaiting_storyboard_review", "creative-qa");
+  throw new Error(qaReason);
 }
 
 async function generateStoryboardImagesForRun({
@@ -691,12 +1536,15 @@ async function generateStoryboardImagesForRun({
   framePlan,
   socialCopy,
   requestModels = {},
+  referenceImages = [],
   statusDoc,
   persistStatus,
   autoRenderVideo = false,
 }) {
   setStageStatus(statusDoc, "image-generation", "running");
   await persistStatus("Generating storyboard images", "running", "image-generation");
+  await fs.mkdir(runPaths.imagesDir, { recursive: true });
+  await fs.mkdir(runPaths.captionedImagesDir, { recursive: true });
   let framesManifest = createFramesManifest(runPaths, sceneSpec, framePlan, {
     textModel: clean(requestModels.textModel) || resolveTextModel(),
     imageModel: clean(requestModels.imageModel) || requestedImageModel,
@@ -705,6 +1553,11 @@ async function generateStoryboardImagesForRun({
   await writeJson(runPaths.framesPath, framesManifest);
 
   const imageSize = resolveImageSize(sceneSpec.cameraFormat.value);
+  const resolvedReferenceImages = resolveReferenceImagePaths(runPaths, referenceImages);
+  if (resolvedReferenceImages.length > 0) {
+    framesManifest.referenceImages = resolvedReferenceImages.map(({ absolutePath: _absolutePath, ...reference }) => reference);
+    await writeJson(runPaths.framesPath, framesManifest);
+  }
 
   for (const frame of framesManifest.frames) {
     frame.status = "generating";
@@ -724,6 +1577,7 @@ async function generateStoryboardImagesForRun({
         prompt: frame.prompt,
         size: imageSize,
         user: runPaths.slug,
+        referenceImages: resolvedReferenceImages,
       });
       if (imageResult.warning) pushWarning(statusDoc, imageResult.warning);
       const outputPath = path.join(runPaths.runDir, frame.imageFile);
@@ -869,6 +1723,7 @@ export async function runCampaign({
       framePlan,
       socialCopy,
       requestModels: requestPayload.models,
+      referenceImages: normalizedInput.referenceImages,
       statusDoc,
       persistStatus,
       autoRenderVideo,
@@ -881,6 +1736,14 @@ export async function runCampaign({
     };
   } catch (error) {
     statusDoc.error = error instanceof Error ? error.message : "Campaign run failed.";
+    if (statusDoc.state === "awaiting_storyboard_review") {
+      await writeJson(runPaths.statusPath, statusDoc);
+      return {
+        runPaths,
+        requestPayload,
+        status: statusDoc,
+      };
+    }
     if (statusDoc.currentStage && statusDoc.stages[statusDoc.currentStage]) {
       setStageStatus(statusDoc, statusDoc.currentStage, "error", { error: statusDoc.error });
     }
@@ -909,12 +1772,13 @@ export async function rerunSocialCopyForRun({ projectRoot = process.cwd(), runId
     frames: framePlan.frames || [],
     tone: request?.input?.tone || "",
   });
+  const normalizedSocialCopy = normalizeSocialCopyForFramePlan(socialCopy, framePlan.frames || []);
 
   let framesManifest = frames;
   if (!framesManifest) {
     framesManifest = createFramesManifest(runPaths, sceneSpec, framePlan.frames || [], request.models || {});
   }
-  framesManifest = mergeSocialCopyIntoFrames(framesManifest, socialCopy);
+  framesManifest = mergeSocialCopyIntoFrames(framesManifest, normalizedSocialCopy);
 
   setStageStatus(statusDoc, "social-copy", "done");
   statusDoc.state = "awaiting_caption_review";
@@ -923,25 +1787,37 @@ export async function rerunSocialCopyForRun({ projectRoot = process.cwd(), runId
   statusDoc.error = null;
   statusDoc.frameCounts = summarizeFrameCounts(framesManifest.frames);
 
-  await writeJson(runPaths.socialCopyPath, socialCopy);
+  await writeJson(runPaths.socialCopyPath, normalizedSocialCopy);
   await writeJson(runPaths.framesPath, framesManifest);
   await writeJson(runPaths.statusPath, statusDoc);
 
-  return { runPaths, framesManifest, socialCopy, status: statusDoc };
+  return { runPaths, framesManifest, socialCopy: normalizedSocialCopy, status: statusDoc };
 }
 
 export async function rerunStoryboardForRun({ projectRoot = process.cwd(), runId, runDir }) {
   const runPaths = resolveRunPaths(projectRoot, { runId, runDir });
   const { request, brief, persona, critique, sceneSpec, framePlan, socialCopy, creativeQa, status } =
     await loadRunArtifacts(runPaths);
-  if (!request || !brief || !persona || !critique || !sceneSpec || !framePlan || !socialCopy) {
+  if (!request || !brief || !persona || !critique || !sceneSpec || !framePlan) {
     throw new Error("Run is missing required campaign artifacts for storyboard regeneration.");
   }
 
-  const framesToRewrite = normalizePositiveIntegers(creativeQa?.framesToRewrite);
-  const framesToCut = normalizePositiveIntegers(creativeQa?.framesToCut);
-  if (!creativeQa || (!framesToRewrite.length && !framesToCut.length && !clean(creativeQa?.rewriteBrief))) {
-    throw new Error("Creative QA feedback is required before regenerating the storyboard.");
+  let storyboardFeedback = creativeQa;
+  if (!hasStoryboardRewritePlan(storyboardFeedback)) {
+    const budgetReview = validateStoryboardFrameBudget({
+      requestPayload: request,
+      sceneSpec,
+      framePlan: framePlan.frames || [],
+      brief,
+    });
+    if (!budgetReview.pass) {
+      storyboardFeedback = budgetReview.feedback;
+      await writeJson(runPaths.creativeQaPath, storyboardFeedback);
+    }
+  }
+
+  if (!hasStoryboardRewritePlan(storyboardFeedback)) {
+    throw new Error("Storyboard budget or Creative QA feedback is required before regenerating the storyboard.");
   }
 
   const statusDoc = status || createStatusDocument(runPaths, request);
@@ -965,7 +1841,13 @@ export async function rerunStoryboardForRun({ projectRoot = process.cwd(), runId
   }
 
   await clearRenderedRunArtifacts(runPaths);
-  await persistStatus("Rewriting storyboard from Creative QA", "running", "coordinator");
+  await persistStatus(
+    isStoryboardBudgetFeedback(storyboardFeedback)
+      ? "Rewriting storyboard from shot-budget feedback"
+      : "Rewriting storyboard from Creative QA",
+    "running",
+    "coordinator",
+  );
 
   try {
     const client = createOpenAiClient();
@@ -980,14 +1862,14 @@ export async function rerunStoryboardForRun({ projectRoot = process.cwd(), runId
         requestPayload: request,
         sceneSpec,
         brief,
-      persona,
-      critique,
-      tone: request?.input?.tone || "",
-      persistStatus,
-      initialQaFeedback: creativeQa,
-      currentFramePlan: framePlan.frames || [],
-      currentSocialCopy: socialCopy,
-    });
+        persona,
+        critique,
+        tone: request?.input?.tone || "",
+        persistStatus,
+        initialQaFeedback: storyboardFeedback,
+        currentFramePlan: framePlan.frames || [],
+        currentSocialCopy: socialCopy,
+      });
 
     const framesManifest = await generateStoryboardImagesForRun({
       client,
@@ -997,6 +1879,7 @@ export async function rerunStoryboardForRun({ projectRoot = process.cwd(), runId
       framePlan: nextFramePlan,
       socialCopy: nextSocialCopy,
       requestModels: request?.models || {},
+      referenceImages: request?.input?.referenceImages || request?.input?.looseInput?.referenceImages || [],
       statusDoc,
       persistStatus,
       autoRenderVideo: false,

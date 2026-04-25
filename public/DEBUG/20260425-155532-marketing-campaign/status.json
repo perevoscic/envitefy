@@ -1,0 +1,88 @@
+{
+  "generatedAt": "2026-04-25T21:00:39.822Z",
+  "run": {
+    "outputRoot": "C:\\Users\\rjosan\\Develop_local\\envitefy\\qa-artifacts\\storyboard-runs",
+    "runDir": "C:\\Users\\rjosan\\Develop_local\\envitefy\\qa-artifacts\\storyboard-runs\\20260425-155532-marketing-campaign",
+    "slug": "marketing-campaign",
+    "timestamp": "20260425-155532"
+  },
+  "state": "awaiting_caption_review",
+  "currentStage": "image-generation",
+  "message": "Review captions before rendering video",
+  "error": null,
+  "warningMessages": [
+    "Storyboard budget rewrite: Excessive phone-dominant frames: 6 out of 10; maximum is 2. Only frames 5, 8 should remain phone-dominant unless the brief is explicitly demo-heavy. | Phone-dominant frames outside approved proof slots: 2, 3, 6, 7. Only frames 5, 8 may be phone-dominant. | Missing social-proof frame: add one trust or recipient-response beat.",
+    "Storyboard budget repair applied deterministically.",
+    "Reference images use gpt-image-1 image edit; requested gpt-image-2."
+  ],
+  "frameCounts": {
+    "total": 10,
+    "pending": 0,
+    "generating": 0,
+    "done": 10,
+    "error": 0
+  },
+  "request": {
+    "productName": "",
+    "targetVertical": "General",
+    "tone": "",
+    "callToAction": "",
+    "frameCount": 10
+  },
+  "stages": {
+    "brief": {
+      "status": "done",
+      "file": "brief.json",
+      "updatedAt": "2026-04-25T20:55:38.456Z",
+      "error": null
+    },
+    "persona": {
+      "status": "done",
+      "file": "persona.json",
+      "updatedAt": "2026-04-25T20:55:42.239Z",
+      "error": null
+    },
+    "critique": {
+      "status": "done",
+      "file": "critique.json",
+      "updatedAt": "2026-04-25T20:55:50.645Z",
+      "error": null
+    },
+    "art-direction": {
+      "status": "done",
+      "file": "scene-spec.json",
+      "updatedAt": "2026-04-25T20:56:06.696Z",
+      "error": null
+    },
+    "coordinator": {
+      "status": "done",
+      "file": "frame-plan.json",
+      "updatedAt": "2026-04-25T20:56:23.863Z",
+      "error": null
+    },
+    "social-copy": {
+      "status": "done",
+      "file": "social-copy.json",
+      "updatedAt": "2026-04-25T20:56:30.310Z",
+      "error": null
+    },
+    "creative-qa": {
+      "status": "done",
+      "file": "creative-qa.json",
+      "updatedAt": "2026-04-25T20:56:34.525Z",
+      "error": null
+    },
+    "image-generation": {
+      "status": "done",
+      "file": "frames.json",
+      "updatedAt": "2026-04-25T21:00:39.822Z",
+      "error": null
+    },
+    "video": {
+      "status": "pending",
+      "file": "video.mp4",
+      "updatedAt": null,
+      "error": null
+    }
+  }
+}
