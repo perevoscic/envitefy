@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Privacy Policy — Envitefy",
     description:
-      "This page explains the information we collect, how we use and share it, and the choices you have.",
+      "This policy summarizes how Envitefy handles account, event, RSVP, and sign-up information.",
     url: "https://envitefy.com/privacy",
     siteName: "Envitefy",
     images: [
@@ -23,10 +23,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function PrivacyLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function PrivacyLayout({ children }: { children: React.ReactNode }) {
   return children;
 }
