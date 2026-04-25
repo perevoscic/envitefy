@@ -15,172 +15,59 @@ export default function PrivacyPage() {
                 </span>
               </h1>
               <p className="mt-5 text-lg sm:text-xl text-foreground/80 max-w-3xl mx-auto">
-                This page explains the information we collect, how we use and
-                share it, and the choices you have.
+                This policy summarizes what we collect, how we use it, and the choices available to
+                you.
               </p>
 
               <div className="mt-8 text-left max-w-3xl mx-auto space-y-6 text-foreground/80">
                 <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Information we collect
-                  </h2>
+                  <h2 className="text-xl font-semibold text-foreground">Information we collect</h2>
                   <ul className="mt-2 list-disc pl-6 space-y-1">
+                    <li>Account and profile details you provide.</li>
                     <li>
-                      Account info: email and optional name details to create
-                      and manage your account.
+                      Event content, uploads, RSVP responses, and sign-up submissions processed
+                      through the platform.
                     </li>
-                    <li>
-                      Content you upload: images/PDFs to be analyzed, along with
-                      extracted text, and events/history you save in the app.
-                    </li>
-                    <li>
-                      Connected accounts: if you link with your favorite
-                      calendar service, we store the tokens needed to create
-                      calendar events on your behalf.
-                    </li>
-                    <li>
-                      Usage data: basic logs and device info to keep the service
-                      secure and reliable.
-                    </li>
+                    <li>Integration data required to connect third-party calendar services.</li>
+                    <li>Operational and security-related usage data.</li>
                   </ul>
                 </section>
 
                 <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    How we use information
-                  </h2>
+                  <h2 className="text-xl font-semibold text-foreground">How we use information</h2>
                   <ul className="mt-2 list-disc pl-6 space-y-1">
+                    <li>Provide and improve Envitefy services.</li>
                     <li>
-                      Provide recognition and event extraction and generate
-                      `.ics` files.
+                      Power event pages, RSVP flows, and sign-up workflows, including our newer
+                      participation features.
                     </li>
-                    <li>
-                      Create calendar events in Google/Outlook when you ask us
-                      to.
-                    </li>
-                    <li>
-                      Operate, secure, troubleshoot, and improve the product.
-                    </li>
-                    <li>
-                      Communicate about your account, features, and support.
-                    </li>
+                    <li>Support integrations, account management, and support.</li>
+                    <li>Maintain security, integrity, and reliability.</li>
                   </ul>
                 </section>
 
                 <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Event recognition and extraction
-                  </h2>
+                  <h2 className="text-xl font-semibold text-foreground">Information sharing</h2>
                   <p className="mt-2">
-                    We use event recognition to extract text from images and PDF
-                    files. The output is then processed to extract event
-                    details.
+                    We share information only as needed to provide the service, comply with legal
+                    obligations, and work with trusted infrastructure providers. We do not sell
+                    personal information.
                   </p>
                 </section>
 
                 <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    When we share information
-                  </h2>
-                  <ul className="mt-2 list-disc pl-6 space-y-1">
-                    <li>
-                      Calendar providers: your favorite calendar service when
-                      you connect and ask us to create events.
-                    </li>
-                    <li>
-                      Service providers: hosting and infrastructure to run the
-                      service. app.
-                    </li>
-                    <li>
-                      Legal/safety: if required by law or to protect users and
-                      the service.
-                    </li>
-                  </ul>
+                  <h2 className="text-xl font-semibold text-foreground">Data management</h2>
                   <p className="mt-2">
-                    We don&apos;t sell your personal information.
+                    You may request access, correction, or deletion of eligible account data. You
+                    may also disconnect integrations at any time.
                   </p>
                 </section>
 
                 <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Cookies
-                  </h2>
+                  <h2 className="text-xl font-semibold text-foreground">Policy updates</h2>
                   <p className="mt-2">
-                    We use necessary cookies to keep you signed in and operate
-                    the site. You can clear cookies in your browser; doing so
-                    may sign you out.
-                  </p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Data retention &amp; deletion
-                  </h2>
-                  <p className="mt-2">
-                    We keep data for as long as needed to provide the service
-                    and comply with legal obligations. You can request deletion
-                    of your account data and disconnect calendar service at any
-                    time. Events created in your calendars via providers remain
-                    in your calendars unless you remove them there.
-                  </p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Security
-                  </h2>
-                  <p className="mt-2">
-                    We use industry-standard measures to protect data in transit
-                    and at rest where applicable, limit access to authorized
-                    personnel, and rely on vetted providers for sensitive
-                    operations like payments and email.
-                  </p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Children&apos;s privacy
-                  </h2>
-                  <p className="mt-2">
-                    The service isn&apos;t intended for children under 13, and
-                    we don&apos;t knowingly collect their personal information.
-                  </p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Storage and processing
-                  </h2>
-                  <p className="mt-2">
-                    We may process and store information in the United States
-                    only.
-                  </p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Your choices &amp; rights
-                  </h2>
-                  <ul className="mt-2 list-disc pl-6 space-y-1">
-                    <li>
-                      Access, correct, or delete your data where applicable.
-                    </li>
-                    <li>
-                      Disconnect calendar service and revoke provider access.
-                    </li>
-                    <li>Manage emails via in-message links or settings.</li>
-                    <li>Contact us to make a request or ask a question.</li>
-                  </ul>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Changes to this policy
-                  </h2>
-                  <p className="mt-2">
-                    We may update this policy by posting a new version here. If
-                    changes are material, we&apos;ll take reasonable steps to
-                    notify you.
+                    We may update this policy from time to time by publishing a revised version on
+                    this page.
                   </p>
                 </section>
               </div>

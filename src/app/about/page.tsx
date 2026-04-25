@@ -1,15 +1,15 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import Link from "next/link";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 
 export const metadata: Metadata = {
   title: "About — Envitefy",
   description:
-    "Envitefy focuses on Snap for flyer capture and Gymnastics for meet pages and logistics.",
+    "Envitefy is a professional event platform for event creation, public event pages, RSVP and sign-up flows, and calendar-ready coordination.",
   openGraph: {
     title: "About — Envitefy",
     description:
-      "Envitefy focuses on Snap for flyer capture and Gymnastics for meet pages and logistics.",
+      "Envitefy is a professional event platform for event creation, public event pages, RSVP and sign-up flows, and calendar-ready coordination.",
     url: "https://envitefy.com/about",
     siteName: "Envitefy",
     images: [
@@ -24,30 +24,26 @@ export const metadata: Metadata = {
   },
 };
 
-const featureCards = [
+const productPillars = [
   {
-    icon: "📸",
-    title: "Snap capture",
+    title: "Event creation and publishing",
     description:
-      "Snap turns flyers, screenshots, and invites into clean event details that are ready to review and save.",
+      "Build and manage events with structured details that are clear for hosts, guests, and organizers.",
   },
   {
-    icon: "🤸",
-    title: "Gymnastics pages",
+    title: "Public event experiences",
     description:
-      "Gymnastics accounts unlock polished meet pages with session details, venue information, and parent-friendly sharing.",
+      "Deliver polished event pages with shareable links designed for modern communication and reliable updates.",
   },
   {
-    icon: "📅",
-    title: "Calendar ready",
+    title: "RSVP and sign-up flows",
     description:
-      "Dates, times, and locations stay structured so events are easy to save to Google, Apple, and Outlook.",
+      "Coordinate attendance and participant responses with streamlined workflows for social and program-based events.",
   },
   {
-    icon: "🔗",
-    title: "One clean link",
+    title: "Calendar and operational continuity",
     description:
-      "Share a page that stays current instead of passing around another screenshot, PDF, or text thread.",
+      "Keep critical event details synchronized across planning, sharing, and follow-through.",
   },
 ] as const;
 
@@ -74,85 +70,54 @@ export default function AboutPage() {
                 </span>
               </h1>
               <p className="mt-4 text-base font-medium uppercase tracking-[0.2em] text-foreground/60 sm:text-lg">
-                Snap it. Save it. Share it.
+                Professional Event Infrastructure
               </p>
               <p className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed text-foreground/80 sm:text-xl">
-                Envitefy now focuses on two product surfaces: Snap for quick
-                flyer capture, and Gymnastics for meet pages and logistics.
+                Envitefy is built for teams and hosts who expect a premium standard for event
+                communication, coordination, and execution.
               </p>
             </div>
           </div>
         </div>
 
         <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {featureCards.map((card) => (
+          {productPillars.map((pillar) => (
             <div
-              key={card.title}
+              key={pillar.title}
               className="rounded-2xl border border-[#e5dcff] bg-gradient-to-br from-white to-[#f8f4ff] p-6 transition-all duration-300 hover:border-[#cfc2ff] hover:shadow-lg"
             >
-              <div className="mb-3 text-4xl">{card.icon}</div>
-              <h2 className="mb-2 text-xl font-semibold text-foreground">
-                {card.title}
-              </h2>
-              <p className="leading-relaxed text-foreground/70">
-                {card.description}
-              </p>
+              <h2 className="mb-2 text-xl font-semibold text-foreground">{pillar.title}</h2>
+              <p className="leading-relaxed text-foreground/70">{pillar.description}</p>
             </div>
           ))}
         </div>
 
         <div className="mb-16 rounded-3xl border border-[#e5dcff] bg-gradient-to-br from-white to-[#f8f4ff] p-8 sm:p-10">
           <h2 className="mb-8 text-center text-3xl font-bold sm:text-4xl">
-            Why the narrower focus
+            Introducing our new capability
           </h2>
           <div className="mx-auto max-w-4xl space-y-6 text-lg leading-relaxed text-foreground/80">
             <p>
-              We built Envitefy to reduce event-entry friction for busy
-              families. The fastest path to that goal is keeping the product
-              surface smaller and clearer.
+              Envitefy now includes advanced RSVP and sign-up workflows that complement event
+              publishing and public sharing.
             </p>
             <p>
-              Snap stays available to every profile because quick capture is the
-              foundation. Gymnastics is the second live surface because meet
-              workflows need their own dedicated structure, not a generic event
-              builder.
+              This feature expands planning visibility for organizers while providing a simple and
+              dependable response experience for guests and participants.
             </p>
             <p>
-              Existing users can keep signing in. New account creation starts
-              only from the Snap or Gymnastics entry points so the right product
-              access is assigned from day one.
-            </p>
-          </div>
-        </div>
-
-        <div className="mb-16 rounded-3xl border border-[#e5dcff] bg-gradient-to-br from-white to-[#f8f4ff] p-8 sm:p-10">
-          <h2 className="mb-8 text-center text-3xl font-bold sm:text-4xl">
-            Our story
-          </h2>
-          <div className="mx-auto max-w-3xl space-y-6 text-lg leading-relaxed text-foreground/80">
-            <p>
-              We started Envitefy as parents trying to make sense of event
-              details scattered across flyers, screenshots, and chat threads.
-            </p>
-            <p>
-              The product keeps evolving, but the core standard stays the same:
-              event details should be accurate, fast to save, and easy to share.
-            </p>
-            <p>
-              That is why the product now centers on Snap and Gymnastics instead
-              of trying to market every possible event vertical at once.
+              Our product direction remains focused on quality, reliability, and elegant execution
+              across every stage of the event lifecycle.
             </p>
           </div>
         </div>
 
         <div className="text-center">
           <div className="rounded-3xl border border-[#d9ceff] bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] p-8 sm:p-10">
-            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
-              Pick the right starting point
-            </h2>
+            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Start with Envitefy</h2>
             <p className="mx-auto mb-8 max-w-2xl text-lg text-foreground/80">
-              New users can create an account from Snap or Gymnastics. Existing
-              users can continue logging in.
+              Choose the product surface that fits your workflow, and scale your event experience
+              with confidence.
             </p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Link
