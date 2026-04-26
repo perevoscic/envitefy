@@ -56,24 +56,29 @@ test("studio invitation image prompt keeps custom themes invitation-ready", () =
     },
     {
       style:
-        "Highest-priority visual direction from the user: Great Gatsby. Treat the user's words as the theme of the invitation.",
+        "Highest-priority visual direction from the user: Great Gatsby. Treat the Design Idea as the theme of the invitation.",
     },
   );
 
   assert.match(prompt, /Theme words must be interpreted through the selected event type/);
   assert.match(
     prompt,
-    /Build the artwork around the selected event type first, then express the Design Idea through that celebration type\./,
+    /Build the artwork around the selected event type first, then express the private visual direction through that celebration type\./,
   );
-  assert.match(prompt, /Treat the Design Idea as the main visual concept when one is provided\./);
+  assert.match(prompt, /Treat the private visual direction as the main visual concept when one is provided\./);
   assert.match(
     prompt,
-    /Let Event Details sharpen specificity and approved wording, but do not let them replace the Design Idea\./,
+    /Let supporting event details sharpen specificity and approved wording, but do not let them replace the private visual direction\./,
   );
   assert.match(
     prompt,
-    /Never print raw Design Idea wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy\./,
+    /Never print raw private visual direction wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy\./,
   );
+  assert.match(
+    prompt,
+    /Form labels, section headings, prompt labels, and instruction text are internal only\. Never print them anywhere in the image\./,
+  );
+  assert.doesNotMatch(prompt, /Design Idea/);
   assert.match(prompt, /Keep the final concept invitation-ready and celebration-oriented/);
   assert.match(prompt, /themeStyle should describe the invitation-ready version of the concept/);
 });
@@ -119,7 +124,7 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
   );
   assert.match(
     imagePrompt,
-    /If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text\./,
+    /If the private visual direction contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text\./,
   );
 });
 
@@ -329,9 +334,11 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
     },
   );
 
-  assert.match(prompt, /Core creative inputs:/);
-  assert.match(prompt, /Design Idea: modern race car/);
-  assert.match(prompt, /Event Details: Modern race car theme/);
+  assert.match(prompt, /Core creative inputs \(internal, not visible copy\):/);
+  assert.match(prompt, /Private Visual Direction: modern race car/);
+  assert.match(prompt, /Supporting Context: Modern race car theme/);
+  assert.doesNotMatch(prompt, /Design Idea: modern race car/);
+  assert.doesNotMatch(prompt, /Event Details: Modern race car theme/);
   assert.match(prompt, /Age or Milestone: 9/);
   assert.match(
     prompt,
@@ -392,7 +399,7 @@ test("studio invitation image prompt applies selected image finish presets to st
   assert.match(prompt, /Selected image finish preset: Golden Glow - warm light, elegant celebration\./);
   assert.match(
     prompt,
-    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's Design Idea\./,
+    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's private visual direction\./,
   );
   assert.match(prompt, /Image Finish Preset: Golden Glow/);
 });

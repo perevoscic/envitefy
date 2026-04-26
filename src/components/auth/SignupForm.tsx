@@ -1,14 +1,12 @@
 "use client";
 
-import { FormEvent, useRef, useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
 
 declare global {
   interface GrecaptchaClient {
-    execute: (
-      siteKey: string,
-      options: { action: string }
-    ) => Promise<string>;
+    execute: (siteKey: string, options: { action: string }) => Promise<string>;
     ready?: (cb: () => void) => void;
   }
 
@@ -56,9 +54,7 @@ export default function SignupForm({
     });
 
     if (!siteKey) {
-      console.warn(
-        "[SignupForm] No NEXT_PUBLIC_RECAPTCHA_SITE_KEY in env, skipping reCAPTCHA"
-      );
+      console.warn("[SignupForm] No NEXT_PUBLIC_RECAPTCHA_SITE_KEY in env, skipping reCAPTCHA");
       setRecaptchaLoaded(true); // Skip if no key configured
       return;
     }
@@ -112,8 +108,7 @@ export default function SignupForm({
         setMessage(err);
         setToastText(err);
         setToastOpen(true);
-        if (toastTimerRef.current !== undefined)
-          window.clearTimeout(toastTimerRef.current);
+        if (toastTimerRef.current !== undefined) window.clearTimeout(toastTimerRef.current);
         toastTimerRef.current = window.setTimeout(() => {
           setToastOpen(false);
           toastTimerRef.current = undefined;
@@ -128,8 +123,7 @@ export default function SignupForm({
       console.log("[SignupForm] Getting reCAPTCHA token", {
         hasSiteKey: !!siteKey,
         hasGrecaptcha: typeof window !== "undefined" && !!window.grecaptcha,
-        grecaptchaReady:
-          typeof window !== "undefined" && window.grecaptcha?.ready,
+        grecaptchaReady: typeof window !== "undefined" && window.grecaptcha?.ready,
       });
 
       if (siteKey && typeof window !== "undefined" && window.grecaptcha) {
@@ -147,8 +141,7 @@ export default function SignupForm({
           setMessage(errMsg);
           setToastText(errMsg);
           setToastOpen(true);
-          if (toastTimerRef.current !== undefined)
-            window.clearTimeout(toastTimerRef.current);
+          if (toastTimerRef.current !== undefined) window.clearTimeout(toastTimerRef.current);
           toastTimerRef.current = window.setTimeout(() => {
             setToastOpen(false);
             toastTimerRef.current = undefined;
@@ -156,9 +149,7 @@ export default function SignupForm({
           return;
         }
       } else {
-        console.warn(
-          "[SignupForm] reCAPTCHA not available, continuing without it"
-        );
+        console.warn("[SignupForm] reCAPTCHA not available, continuing without it");
       }
 
       const res = await fetch("/api/auth/signup", {
@@ -176,12 +167,11 @@ export default function SignupForm({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const errMsg = (data?.error) || "Failed to create account";
+        const errMsg = data?.error || "Failed to create account";
         setMessage(errMsg);
         setToastText(errMsg);
         setToastOpen(true);
-        if (toastTimerRef.current !== undefined)
-          window.clearTimeout(toastTimerRef.current);
+        if (toastTimerRef.current !== undefined) window.clearTimeout(toastTimerRef.current);
         toastTimerRef.current = window.setTimeout(() => {
           setToastOpen(false);
           toastTimerRef.current = undefined;
@@ -199,6 +189,7 @@ export default function SignupForm({
         try {
           localStorage.setItem("welcomeAfterSignup", "1");
         } catch {}
+        showAuthTransition("Creating your workspace...");
         onSuccess?.();
         // Force a full page reload to ensure session is available
         window.location.href = successRedirectUrl;
@@ -214,8 +205,10 @@ export default function SignupForm({
     setSubmitting(true);
     try {
       await ensureSignupSourceCookie();
+      showAuthTransition("Opening Google sign up...");
       await signIn("google", { callbackUrl: successRedirectUrl });
     } catch (err) {
+      hideAuthTransition();
       console.error("Google sign-up error:", err);
       setMessage(err instanceof Error ? err.message : "Failed to sign up with Google");
     } finally {
@@ -304,11 +297,7 @@ export default function SignupForm({
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <div
-          className={`relative ${
-            message === "Passwords do not match." ? "input-shake" : ""
-          }`}
-        >
+        <div className={`relative ${message === "Passwords do not match." ? "input-shake" : ""}`}>
           <input
             name="password"
             type={showPassword ? "text" : "password"}
@@ -361,11 +350,7 @@ export default function SignupForm({
             </svg>
           </button>
         </div>
-        <div
-          className={`relative ${
-            message === "Passwords do not match." ? "input-shake" : ""
-          }`}
-        >
+        <div className={`relative ${message === "Passwords do not match." ? "input-shake" : ""}`}>
           <input
             name="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
@@ -443,11 +428,7 @@ export default function SignupForm({
           disabled={submitting || !recaptchaLoaded}
           className="btn btn-primary w-full justify-center"
         >
-          {submitting
-            ? "Creating..."
-            : !recaptchaLoaded
-            ? "Loading..."
-            : "Create account"}
+          {submitting ? "Creating..." : !recaptchaLoaded ? "Loading..." : "Create account"}
         </button>
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
@@ -465,9 +446,7 @@ export default function SignupForm({
       {toastOpen && toastText && (
         <div
           className={`fixed left-1/2 -translate-x-1/2 bottom-6 z-50 transition-all duration-200 ${
-            toastOpen
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-2 pointer-events-none"
+            toastOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
           }`}
           aria-live="polite"
           aria-atomic="true"

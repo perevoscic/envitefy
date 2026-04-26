@@ -38,8 +38,37 @@ test("normalizeSceneSpec defaults to the Envitefy lock values", () => {
   assert.equal(spec.visualStyle.source, "default");
   assert.equal(spec.cameraFormat.value, "vertical");
   assert.equal(spec.cameraFormat.source, "default");
+  assert.doesNotMatch(spec.flyerLock.value, /gymnastics|gym\b|athlete|medal|trophy/i);
+  assert.doesNotMatch(spec.locationLock.value, /gymnastics|gym\b|facility lobby|front desk/i);
+  assert.doesNotMatch(spec.backgroundAnchors.value, /gymnastics|gym\b|bulletin board|front desk/i);
+  assert.match(DEFAULT_NEGATIVE_PROMPT, /no gym, no gymnastics/i);
+  assert.match(DEFAULT_NEGATIVE_PROMPT, /no physical birthday cake/i);
+  assert.match(DEFAULT_NEGATIVE_PROMPT, /no floating phone/i);
   assert.match(spec.screenLock.value, /envitefy-wordmark-email\.png/i);
   assert.match(spec.screenLock.value, /favicon\.png/i);
+});
+
+test("normalizeSceneSpec scrubs gymnastics drift from birthday campaigns unless explicitly requested", () => {
+  const spec = normalizeSceneSpec(
+    {
+      rawPrompt: "a mom fixes a delayed flyer for her daughter's birthday using Envitefy",
+      overrides: {},
+      extraNotes: "",
+    },
+    {
+      locationLock: "bright gymnastics facility lobby with athlete posters and medals",
+      flyerLock: "colorful gymnastics meet flyer",
+      backgroundAnchors: "front desk, trophies, gymnastics bulletin board",
+      composition: "mother in a gymnastics lobby holding a flyer",
+      propsKeyObjects: "smartphone and gymnastics flyer",
+    },
+  );
+
+  assert.equal(spec.locationLock.source, "birthday-safety");
+  assert.equal(spec.flyerLock.source, "birthday-safety");
+  assert.doesNotMatch(spec.locationLock.value, /facility lobby|athlete|medal|trophy|Bright Stars/i);
+  assert.doesNotMatch(spec.flyerLock.value, /gymnastics meet|athlete|medal|trophy|Bright Stars/i);
+  assert.match(spec.propsKeyObjects.value, /live birthday card/i);
 });
 
 test("normalizeSceneSpec prefers overrides and maps legacy fields into lock fields", () => {
@@ -124,6 +153,31 @@ test("buildFallbackFramePlan emits the sectioned lock prompt format", () => {
   assert.match(frames[1].prompt, /raises her phone to scan it/);
   assert.match(frames[0].prompt, /Now generate the requested frame using the following fixed continuity details and scene content\./);
   assert.match(frames[0].prompt, new RegExp(DEFAULT_NEGATIVE_PROMPT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+});
+
+test("canonical birthday frame prompts require supported phones and natural paper orientation", () => {
+  const spec = normalizeSceneSpec(
+    {
+      rawPrompt: "a mom creates a live card for her daughter's birthday after printed flyers are delayed",
+      overrides: {
+        numberOfFrames: 1,
+        actionSequence: ["she enters the birthday details into Envitefy"],
+      },
+      extraNotes: "",
+    },
+    {},
+  );
+
+  const [frame] = buildFallbackFramePlan(spec);
+
+  assert.match(frame.prompt, /PHYSICAL PROP RULES:/);
+  assert.match(frame.prompt, /never show a phone floating in air/i);
+  assert.match(frame.prompt, /papers must face the main character's natural reading direction/i);
+  assert.match(frame.prompt, /BIRTHDAY SAFETY RULES:/);
+  assert.match(frame.prompt, /before the party/i);
+  assert.match(frame.prompt, /Do not show gymnastics/i);
+  assert.match(frame.prompt, /Do not show a physical birthday cake/i);
+  assert.match(frame.prompt, /digital Envitefy live birthday card/i);
 });
 
 test("legacy props input still appears in prop lock when explicit lock fields are absent", () => {

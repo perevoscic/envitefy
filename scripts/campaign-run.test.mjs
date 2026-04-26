@@ -289,18 +289,25 @@ test("repairStoryboardFrameBudget replaces phone-heavy plans with a compliant ma
     framePlan: repaired,
     brief: {},
   });
+  const repairedWithoutPrompts = repaired.map(({ prompt: _prompt, ...frame }) => frame);
 
   assert.equal(repaired.length, 10);
   assert.equal(repaired[0].shotFamily, "wide-environment");
+  assert.doesNotMatch(JSON.stringify(repairedWithoutPrompts), /Bright Stars|facility lobby|athlete|medal|trophy/i);
+  assert.match(repaired[0].composition, /no cake/i);
   assert.doesNotMatch(repaired[1].actionBeat, /sort the source flyer/i);
+  assert.match(repaired[1].composition, /papers oriented toward the host/i);
   assert.match(repaired[1].proofTarget, /offline plan is not shareable/i);
   assert.equal(repaired[3].phoneDominance, "none");
   assert.equal(repaired[3].brandingPresence, "none");
   assert.equal(repaired[4].phoneDominance, "dominant");
   assert.match(repaired[4].composition, /viewer-right side/i);
+  assert.match(repaired[4].composition, /visible table support/i);
   assert.equal(repaired[7].phoneDominance, "dominant");
   assert.equal(repaired[9].shotFamily, "final-hero");
   assert.match(repaired[9].composition, /no paper flyer foreground/i);
+  assert.match(repaired[9].screenState, /live card has been shared/i);
+  assert.match(repaired[9].propFocus, /digital invitation result/i);
   assert.equal(repaired[9].brandingPresence, "none");
   assert.equal(review.pass, true);
 });
@@ -318,6 +325,8 @@ test("repairStoryboardSceneSpecForBudget removes unsellable paper and screen loc
   assert.match(repaired.flyerLock.value, /small birthday invitation order receipt/i);
   assert.match(repaired.screenProofRequirements.value, /product proof only twice/i);
   assert.match(repaired.disallowedProps.value, /no large readable fake printed words/i);
+  assert.match(repaired.disallowedProps.value, /no gymnastics/i);
+  assert.match(repaired.disallowedProps.value, /no physical birthday cake/i);
   assert.doesNotMatch(repaired.screenProofRequirements.value, /every frame/i);
 });
 

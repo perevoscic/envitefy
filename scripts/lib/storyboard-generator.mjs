@@ -11,20 +11,20 @@ export const DEFAULT_OUTFIT_LOCK =
   "the same light beige sweater, blue jeans, white sneakers";
 export const DEFAULT_PHONE_LOCK = "the same black modern smartphone";
 export const DEFAULT_FLYER_LOCK =
-  "the same colorful gymnastics meet flyer with athlete photos, schedule sections, icons, and bold headers";
+  "the same small delayed invitation order notice and birthday planning notes, kept secondary and not used as readable hero props";
 export const DEFAULT_LOCATION_LOCK =
-  "the same bright modern gymnastics facility lobby with a bulletin board, wood accents, front desk, pendant light, large window, and soft daylight";
+  "the same modern home kitchen and living room planning space with warm daylight, a table or counter, subtle birthday planning details, and no party already underway";
 export const DEFAULT_BACKGROUND_ANCHORS =
-  "bulletin board, wood accents, front desk, pendant light, large window, soft daylight";
+  "home kitchen or living room, table or counter, warm daylight, small planning notes, subtle birthday details";
 export const DEFAULT_SCREEN_LOCK =
   "the same clean Envitefy mobile event page, modern white interface, simple typography, the Envitefy wordmark in the header matching public/email/envitefy-wordmark-email.png, and the Envitefy app icon matching public/favicon.png anywhere a launcher icon, favicon, or small app badge appears";
 export const DEFAULT_COMPOSITION =
-  "foreground flyer or phone detail, the mother in the midground, and the bright gymnastics lobby anchors in the background";
+  "varied candid vertical ad frames mixing home environment, tabletop detail, over-the-shoulder action, supported phone proof, and final digital live-card result";
 export const DEFAULT_MOOD = "focused, modern, warm, premium";
 export const DEFAULT_CONTINUITY_RULE =
   "This must look like the same ad campaign sequence as the previous frames, keeping the same character, same outfit, same props, same flyer, same environment, same lighting, same branding, and same premium commercial aesthetic.";
 export const DEFAULT_NEGATIVE_PROMPT =
-  "no character change, no wardrobe change, no different location, no different flyer design, no different phone, no split image, no collage, no watermark, no floating text, no garbled readable text on paper props, single frame only.";
+  "no character change, no wardrobe change, no different location, no different phone, no split image, no collage, no watermark, no floating text, no garbled readable text on paper props, no gym, no gymnastics, no sports venue, no dance studio, no studio lobby, no trophies, no medals, no athlete posters, no physical birthday cake unless explicitly requested, no completed party scene, no children unless explicitly requested, no floating phone, no camera-facing notebook staging, no upside-down planner text from the character's perspective, single frame only.";
 export const DEFAULT_CONTINUITY_CONTRACT = `You are generating a sequence of highly consistent images for a visual story.
 
 Your goal is to preserve continuity across all frames.
@@ -56,6 +56,76 @@ function clean(value) {
 function cleanNullable(value) {
   const normalized = clean(value);
   return normalized || null;
+}
+
+const BIRTHDAY_CONTEXT_REGEX = /\b(birthday|daughter'?s birthday|son'?s birthday|birthday party)\b/i;
+const GYMNASTICS_CONTEXT_REGEX = /\b(gymnastics|gymnast|gym\b|sports?\s+venue|athlete|meet\b|trophy|medal|dance studio)\b/i;
+
+function isBirthdayCampaign(looseInput = {}) {
+  const haystack = [
+    looseInput.rawPrompt,
+    looseInput.overrides?.targetVertical,
+    looseInput.overrides?.category,
+    looseInput.extraNotes,
+  ]
+    .map((value) => clean(value))
+    .filter(Boolean)
+    .join("\n");
+  return BIRTHDAY_CONTEXT_REGEX.test(haystack);
+}
+
+function explicitlyAllowsGymnastics(looseInput = {}) {
+  const haystack = [
+    looseInput.rawPrompt,
+    looseInput.extraNotes,
+    looseInput.overrides?.targetVertical,
+    looseInput.overrides?.locationLock,
+    looseInput.overrides?.locationEnvironment,
+    looseInput.overrides?.flyerLock,
+    looseInput.overrides?.propsKeyObjects,
+  ]
+    .map((value) => clean(value))
+    .filter(Boolean)
+    .join("\n");
+  return GYMNASTICS_CONTEXT_REGEX.test(haystack);
+}
+
+function containsGymnasticsDrift(value) {
+  return GYMNASTICS_CONTEXT_REGEX.test(clean(value));
+}
+
+function birthdayDefaultForField(fieldName, defaultValue) {
+  const birthdayDefaults = {
+    flyerLock:
+      "one small delayed invitation order notice and simple birthday planning notes, kept secondary; no big readable flyer headline, no duplicate printed flyers, and no sports or activity-venue content",
+    locationLock:
+      "the same modern home kitchen and living room planning space with warm daylight, a table or counter, subtle birthday planning details, and no party already underway",
+    backgroundAnchors:
+      "home kitchen or living room, table or counter, warm daylight, small planning notes, subtle birthday details, no gym or sports decor",
+    composition:
+      "varied candid vertical ad frames showing the pre-party problem, supported phone product proof, and the digital Envitefy live-card result; no completed party scene",
+    propsKeyObjects:
+      "same supported smartphone, small birthday planning checklist, one small delayed-order notice, and the digital Envitefy live birthday card as the final result",
+  };
+  return birthdayDefaults[fieldName] || defaultValue;
+}
+
+function pickBirthdayAwareStringField(looseInput, fieldName, overrideValue, inferredValue, defaultValue = "") {
+  const override = clean(overrideValue);
+  if (override) return toSourceValue(override, "user");
+
+  const birthdayCampaign = isBirthdayCampaign(looseInput);
+  const allowGymnastics = explicitlyAllowsGymnastics(looseInput);
+  const birthdayDefault = birthdayDefaultForField(fieldName, defaultValue);
+  const inferred = clean(inferredValue);
+  if (inferred && !(birthdayCampaign && !allowGymnastics && containsGymnasticsDrift(inferred))) {
+    return toSourceValue(inferred, "inferred");
+  }
+  if (birthdayCampaign) return toSourceValue(birthdayDefault, inferred ? "birthday-safety" : "default");
+
+  const fallback = clean(defaultValue);
+  if (fallback) return toSourceValue(fallback, "default");
+  return toSourceValue("", "empty");
 }
 
 function toSourceValue(value, source) {
@@ -472,24 +542,32 @@ export function normalizeSceneSpec(looseInput, inferredSpec = {}) {
       inferredSpec.phoneLock,
       hasLegacyPropsLock ? "" : DEFAULT_PHONE_LOCK,
     ),
-    flyerLock: pickStringField(
+    flyerLock: pickBirthdayAwareStringField(
+      looseInput,
+      "flyerLock",
       looseInput?.overrides?.flyerLock,
       inferredSpec.flyerLock,
       hasLegacyPropsLock ? "" : DEFAULT_FLYER_LOCK,
     ),
     accessoryLock: pickStringField(looseInput?.overrides?.accessoryLock, inferredSpec.accessoryLock),
-    locationLock: pickLegacyAwareStringField(
-      [looseInput?.overrides?.locationLock, looseInput?.overrides?.locationEnvironment],
-      [inferredSpec.locationLock, inferredSpec.locationEnvironment],
+    locationLock: pickBirthdayAwareStringField(
+      looseInput,
+      "locationLock",
+      looseInput?.overrides?.locationLock || looseInput?.overrides?.locationEnvironment,
+      inferredSpec.locationLock || inferredSpec.locationEnvironment,
       DEFAULT_LOCATION_LOCK,
     ),
-    backgroundAnchors: pickStringField(
+    backgroundAnchors: pickBirthdayAwareStringField(
+      looseInput,
+      "backgroundAnchors",
       looseInput?.overrides?.backgroundAnchors,
       inferredSpec.backgroundAnchors,
       DEFAULT_BACKGROUND_ANCHORS,
     ),
     screenLock: pickStringField(looseInput?.overrides?.screenLock, inferredSpec.screenLock, DEFAULT_SCREEN_LOCK),
-    composition: pickStringField(
+    composition: pickBirthdayAwareStringField(
+      looseInput,
+      "composition",
       looseInput?.overrides?.composition,
       inferredSpec.composition,
       DEFAULT_COMPOSITION,
@@ -503,7 +581,9 @@ export function normalizeSceneSpec(looseInput, inferredSpec = {}) {
       looseInput?.overrides?.locationEnvironment,
       inferredSpec.locationEnvironment,
     ),
-    propsKeyObjects: pickStringField(
+    propsKeyObjects: pickBirthdayAwareStringField(
+      looseInput,
+      "propsKeyObjects",
       looseInput?.overrides?.propsKeyObjects,
       inferredSpec.propsKeyObjects,
     ),
@@ -604,6 +684,20 @@ export function buildCanonicalFramePrompt(sceneSpec, frameDetails) {
   const screenLock = clean(materialized.screenLock) || DEFAULT_SCREEN_LOCK;
   const visualStyle = clean(materialized.visualStyle) || DEFAULT_VISUAL_STYLE;
   const notes = clean(materialized.extraNotes);
+  const birthdayCampaign = BIRTHDAY_CONTEXT_REGEX.test(materialized.rawPrompt);
+  const physicalPropRules = [
+    "Phone physics: any phone must be visibly held by a hand with natural fingers around it or physically resting flat/supported on a table, counter, or stand; never show a phone floating in air.",
+    "Paper orientation: notebooks, planners, receipts, notices, and papers must face the main character's natural reading direction, not be staged toward the camera; avoid upside-down writing from her perspective.",
+    "Paper text discipline: paper prop text should be partial, minimal, or unreadable unless the scene explicitly requires a readable UI-like proof.",
+  ];
+  const birthdaySafetyRules = birthdayCampaign
+    ? [
+        "Birthday campaign safety: this is before the party; show the mother solving an invitation delay, not hosting a party already in progress.",
+        "Do not show gymnastics, gym facilities, sports venues, dance studios, athlete posters, trophies, medals, or invented venues such as Bright Stars Gymnastics.",
+        "Do not show a physical birthday cake, completed party table, or children unless the user's prompt explicitly requests them.",
+        "The final result is the digital Envitefy live birthday card or share confirmation, not a printed flyer or party scene.",
+      ]
+    : [];
   const continuityDetails = [
     `Main character identity: ${clean(materialized.characterLock) || DEFAULT_CHARACTER_LOCK}.`,
     `Overall appearance: ${clean(materialized.appearanceLock) || clean(materialized.characterLock) || DEFAULT_CHARACTER_LOCK}.`,
@@ -630,6 +724,12 @@ export function buildCanonicalFramePrompt(sceneSpec, frameDetails) {
     "",
     "FIXED CONTINUITY DETAILS:",
     ...continuityDetails,
+    "",
+    "PHYSICAL PROP RULES:",
+    ...physicalPropRules,
+    birthdaySafetyRules.length ? "" : null,
+    birthdaySafetyRules.length ? "BIRTHDAY SAFETY RULES:" : null,
+    ...birthdaySafetyRules,
     "",
     "Now generate the requested frame using the following fixed continuity details and scene content.",
     "",

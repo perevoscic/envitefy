@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { FormEvent, useState } from "react";
+import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -49,6 +50,7 @@ export default function LoginForm({
       });
       if (result?.ok) {
         // Keep the modal open until navigation so the current page does not flash.
+        showAuthTransition("Taking you to your workspace...");
         onSuccess?.();
         window.location.replace(successRedirectUrl);
         return;
@@ -64,8 +66,10 @@ export default function LoginForm({
   const onGoogleSignIn = async () => {
     setSubmitting(true);
     try {
+      showAuthTransition("Opening Google sign in...");
       await signIn("google", { callbackUrl: successRedirectUrl });
     } catch (err) {
+      hideAuthTransition();
       console.error("Google sign-in error:", err);
       setMessage("Failed to sign in with Google");
     } finally {
@@ -293,7 +297,9 @@ export default function LoginForm({
         </p>
       ) : null}
       {message ? (
-        <p className={cx("text-sm font-medium text-error", isInline && "text-[#ffd7d7]")}>{message}</p>
+        <p className={cx("text-sm font-medium text-error", isInline && "text-[#ffd7d7]")}>
+          {message}
+        </p>
       ) : null}
     </form>
   );

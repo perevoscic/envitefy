@@ -14,6 +14,7 @@ test("login form supports redirect targets passed by the caller", () => {
 
   assert.match(loginForm, /successRedirectUrl = "\/"/);
   assert.match(loginForm, /callbackUrl: successRedirectUrl/);
+  assert.match(loginForm, /showAuthTransition\("Taking you to your workspace\.\.\."\)/);
   assert.match(loginForm, /window\.location\.replace\(successRedirectUrl\)/);
   assert.match(loginForm, /signIn\("google", \{ callbackUrl: successRedirectUrl \}\)/);
   assert.match(authModal, /<LoginForm[\s\S]*successRedirectUrl=\{successRedirectUrl\}/s);
@@ -50,7 +51,7 @@ test("middleware redirects disabled event builders to gymnastics", () => {
   assert.match(middleware, /normalizedPathname === "\/event\/new"/);
   assert.match(
     middleware,
-    /DISABLED_EVENT_ROUTE_PREFIXES\.some\(\(prefix\) =>\s*matchesPathPrefix\(normalizedPathname, prefix\)\s*\)/s
+    /DISABLED_EVENT_ROUTE_PREFIXES\.some\(\(prefix\) =>\s*matchesPathPrefix\(normalizedPathname, prefix\)\s*\)/s,
   );
   assert.match(middleware, /url\.pathname = "\/event\/gymnastics";/);
   assert.match(featureVisibility, /href: "\/event\/weddings\/customize"/);
