@@ -13,6 +13,13 @@ function line(label: string, value: string | null | undefined): string {
   return `${label}: ${value?.trim().length ? value.trim() : "Not provided"}`;
 }
 
+function sanitizeImagePromptBriefText(value: string | null | undefined): string | undefined {
+  if (!value?.trim()) return undefined;
+  return value
+    .replace(/\bDesign\s+Idea\b/gi, "private visual direction")
+    .replace(/\bEvent\s+Details\b/gi, "supporting event details");
+}
+
 function renderLinks(links: StudioEventDetails["links"]): string {
   if (!Array.isArray(links) || links.length === 0) return "Links: None";
   return ["Links:", ...links.slice(0, 8).map((item) => `- ${item.label}: ${item.url}`)].join("\n");
@@ -24,6 +31,21 @@ function renderCoreCreativeInputs(event: StudioEventDetails): string {
     line("Selected Event Type", event.category || event.occasion),
     line("Design Idea", event.userIdea),
     line("Event Details", event.description),
+    line("Honoree / Couple / Main Person", event.honoreeName),
+    line("Sport", event.sportType),
+    line("Team / Host", event.teamName),
+    line("Opponent", event.opponentName),
+    line("Age or Milestone", event.ageOrMilestone),
+    line("Event Year", event.eventYear),
+  ].join("\n");
+}
+
+function renderImageCreativeInputs(event: StudioEventDetails): string {
+  return [
+    "Core creative inputs (internal, not visible copy):",
+    line("Selected Event Type", event.category || event.occasion),
+    line("Private Visual Direction", sanitizeImagePromptBriefText(event.userIdea)),
+    line("Supporting Context", sanitizeImagePromptBriefText(event.description)),
     line("Honoree / Couple / Main Person", event.honoreeName),
     line("Sport", event.sportType),
     line("Team / Host", event.teamName),
@@ -685,7 +707,7 @@ export function buildInvitationImagePrompt(
     ...(imageFinishPreset
       ? [
           `- Selected image finish preset: ${imageFinishPreset.label} - ${imageFinishPreset.description}.`,
-          "- Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's Design Idea.",
+          "- Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's private visual direction.",
         ]
       : []),
     "- High-quality vertical invitation card composition (9:16 mobile card).",
@@ -693,6 +715,7 @@ export function buildInvitationImagePrompt(
     "- This is a finished invitation poster image, not a screenshot and not an app UI mockup.",
     "- Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay.",
     "- Treat all visible text as integrated invitation typography inside the scene, not as interface chrome or floating app labels.",
+    "- Form labels, section headings, prompt labels, and instruction text are internal only. Never print them anywhere in the image.",
     "- Keep lighting, perspective, depth, and environment continuous across the full card.",
     "- Do not split the composition into separate top and bottom scenes.",
     "- Do not create a collage, stacked sections, framed panels, segmented card design, or a horizontal text band dividing two scenes.",
@@ -792,12 +815,12 @@ export function buildInvitationImagePrompt(
           "- Preserve the composition, subject placement, lighting, and background art as much as possible while applying the edit.",
         ]
       : []),
-    "- Build the artwork around the selected event type first, then express the Design Idea through that celebration type.",
-    "- Treat the Design Idea as the main visual concept when one is provided.",
-    "- Let Event Details sharpen specificity and approved wording, but do not let them replace the Design Idea.",
-    "- Design Idea is private art direction, not default visible invitation copy in the artwork.",
-    "- Never print raw Design Idea wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy.",
-    "- If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text.",
+    "- Build the artwork around the selected event type first, then express the private visual direction through that celebration type.",
+    "- Treat the private visual direction as the main visual concept when one is provided.",
+    "- Let supporting event details sharpen specificity and approved wording, but do not let them replace the private visual direction.",
+    "- The private visual direction is art direction only, not default visible invitation copy in the artwork.",
+    "- Never print raw private visual direction wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy.",
+    "- If the private visual direction contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text.",
     ...(pageSurface && isEditingExistingImage
       ? []
       : [
@@ -857,7 +880,7 @@ export function buildInvitationImagePrompt(
         ]
       : []),
     "",
-    renderCoreCreativeInputs(event),
+    renderImageCreativeInputs(event),
     ...(approvedVisibleCopy ? ["", approvedVisibleCopy] : []),
     "",
     "Event details to influence visual style:",
@@ -872,8 +895,8 @@ export function buildInvitationImagePrompt(
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
-    line("Design Idea", event.userIdea),
-    line("Event Details", event.description),
+    line("Private Visual Direction", sanitizeImagePromptBriefText(event.userIdea)),
+    line("Supporting Context", sanitizeImagePromptBriefText(event.description)),
     line("Date", event.date),
     line("Venue", event.venueName),
     line("Broadcast / Stream", event.broadcastInfo),
@@ -894,10 +917,10 @@ export function buildInvitationImagePrompt(
       : "",
     "",
     "Design direction:",
-    line("Tone", guidance?.tone),
-    line("Visual Style", guidance?.style),
-    line("Audience", guidance?.audience),
-    line("Color Palette", guidance?.colorPalette),
+    line("Tone", sanitizeImagePromptBriefText(guidance?.tone)),
+    line("Visual Style", sanitizeImagePromptBriefText(guidance?.style)),
+    line("Audience", sanitizeImagePromptBriefText(guidance?.audience)),
+    line("Color Palette", sanitizeImagePromptBriefText(guidance?.colorPalette)),
     line("Image Finish Preset", imageFinishPreset?.label),
     line("Subject Treatment", refCount > 0 ? humanizeSubjectTransformMode(guidance) : "Not requested"),
     line("Likeness Strength", refCount > 0 ? humanizeLikenessStrength(guidance) : "Default"),

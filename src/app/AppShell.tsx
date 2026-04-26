@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { MenuProvider } from "@/contexts/MenuContext";
+import { useEffect, useRef, useState } from "react";
 import { EventCacheProvider } from "@/app/event-cache-context";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import { MainContentWrapper } from "@/components/MainContentWrapper";
+import { MenuProvider } from "@/contexts/MenuContext";
+import { AUTH_TRANSITION_CLEAR_EVENT, AUTH_TRANSITION_EVENT } from "@/utils/authTransition";
 
 const LeftSidebar = dynamic(() => import("./left-sidebar"), {
   loading: () => null,
@@ -20,21 +21,23 @@ function isMarketingPath(pathname: string) {
   return MARKETING_PATHS.has(pathname);
 }
 
-function MarketingSignedInRedirectOverlay() {
+function AuthTransitionOverlay({
+  message = "Taking you to your workspace...",
+}: {
+  message?: string;
+}) {
   return (
     <div
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-[#F8F5FF]/92 backdrop-blur-[8px]"
       role="status"
       aria-live="polite"
-      aria-label="Loading your workspace"
+      aria-label={message}
     >
       <div
         className="h-10 w-10 rounded-full border-2 border-foreground/15 border-t-foreground/65 animate-spin"
         aria-hidden
       />
-      <p className="text-sm font-medium text-foreground/75">
-        Taking you to your workspace…
-      </p>
+      <p className="text-sm font-medium text-foreground/75">{message}</p>
     </div>
   );
 }
@@ -50,6 +53,7 @@ export default function AppShell({
   const router = useRouter();
   const { status } = useSession();
   const wasAuthenticated = useRef(false);
+  const [authTransitionMessage, setAuthTransitionMessage] = useState<string | null>(null);
   const hasServerSession = Boolean(serverSession?.user);
   if (status === "authenticated") wasAuthenticated.current = true;
   if (status === "unauthenticated") wasAuthenticated.current = false;
@@ -62,6 +66,21 @@ export default function AppShell({
   const showWorkspaceChrome = isAuthenticated && !onMarketing;
   const isRedirectingFromMarketing = onMarketing && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
+
+  useEffect(() => {
+    const onTransition = (event: Event) => {
+      const detail = (event as CustomEvent<{ message?: string }>).detail;
+      setAuthTransitionMessage(detail?.message || "Loading...");
+    };
+    const onClear = () => setAuthTransitionMessage(null);
+
+    window.addEventListener(AUTH_TRANSITION_EVENT, onTransition);
+    window.addEventListener(AUTH_TRANSITION_CLEAR_EVENT, onClear);
+    return () => {
+      window.removeEventListener(AUTH_TRANSITION_EVENT, onTransition);
+      window.removeEventListener(AUTH_TRANSITION_CLEAR_EVENT, onClear);
+    };
+  }, []);
 
   useEffect(() => {
     if (!onMarketing || !isAuthenticated) return;
@@ -79,6 +98,7 @@ export default function AppShell({
 
   return (
     <EventCacheProvider>
+      {authTransitionMessage ? <AuthTransitionOverlay message={authTransitionMessage} /> : null}
       {showWorkspaceChrome ? (
         <MenuProvider>
           <LeftSidebar />
@@ -89,7 +109,7 @@ export default function AppShell({
       ) : (
         <MainContentWrapper isAuthenticated={false}>
           {isRedirectingFromMarketing ? (
-            <MarketingSignedInRedirectOverlay />
+            <AuthTransitionOverlay message="Taking you to your workspace..." />
           ) : (
             <>
               <div className="flex-1 min-w-0">{children}</div>

@@ -121,7 +121,7 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   );
   assert.match(
     promptSource,
-    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's Design Idea\./,
+    /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's private visual direction\./,
   );
   assert.match(
     promptSource,
@@ -219,31 +219,31 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   assert.match(promptSource, /Core creative inputs:/);
   assert.match(
     promptSource,
-    /Treat the Design Idea as the main visual concept when one is provided\./,
+    /Form labels, section headings, prompt labels, and instruction text are internal only\. Never print them anywhere in the image\./,
   );
   assert.match(
     promptSource,
-    /Let Event Details sharpen specificity and approved wording, but do not let them replace the Design Idea\./,
+    /Treat the private visual direction as the main visual concept when one is provided\./,
   );
   assert.match(
     promptSource,
-    /Design Idea is private art direction, not default visible invitation copy\./,
+    /Let supporting event details sharpen specificity and approved wording, but do not let them replace the private visual direction\./,
   );
   assert.match(
     promptSource,
-    /Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear\./,
+    /The private visual direction is art direction only, not default visible invitation copy in the artwork\./,
   );
   assert.match(
     promptSource,
-    /Never print raw Design Idea wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy\./,
+    /Never print raw private visual direction wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy\./,
   );
   assert.match(
     promptSource,
     /Visible invitation text is required in the final raster for page\/live-card images, but keep it sparse, readable, and intentionally designed\./,
   );
   assert.match(promptSource, /line\("Age or Milestone", event\.ageOrMilestone\)/);
-  assert.match(promptSource, /line\("Design Idea", event\.userIdea\)/);
-  assert.match(promptSource, /line\("Event Details", event\.description\)/);
+  assert.match(promptSource, /line\("Private Visual Direction", sanitizeImagePromptBriefText\(event\.userIdea\)\)/);
+  assert.match(promptSource, /line\("Supporting Context", sanitizeImagePromptBriefText\(event\.description\)\)/);
   assert.match(promptSource, /line\("Image Finish Preset", imageFinishPreset\?\.label\)/);
   assert.match(
     promptSource,

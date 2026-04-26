@@ -5,8 +5,7 @@ import test from "node:test";
 
 const repoRoot = process.cwd();
 
-const readSource = (relativePath) =>
-  fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
 test("AppShell hides workspace chrome on marketing routes and redirects signed-in users to root", () => {
   const appShell = readSource("src/app/AppShell.tsx");
@@ -19,4 +18,6 @@ test("AppShell hides workspace chrome on marketing routes and redirects signed-i
   assert.match(appShell, /isRedirectingFromMarketing/);
   assert.match(appShell, /router\.replace\("\/"\)/);
   assert.match(appShell, /animate-spin/);
+  assert.match(appShell, /AUTH_TRANSITION_EVENT/);
+  assert.match(appShell, /authTransitionMessage/);
 });
