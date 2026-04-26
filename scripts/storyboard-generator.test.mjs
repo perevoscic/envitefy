@@ -45,7 +45,7 @@ test("normalizeSceneSpec defaults to the Envitefy lock values", () => {
   assert.match(DEFAULT_NEGATIVE_PROMPT, /no party setup/i);
   assert.match(DEFAULT_NEGATIVE_PROMPT, /no floating phone/i);
   assert.match(DEFAULT_NEGATIVE_PROMPT, /no phone standing upright/i);
-  assert.match(DEFAULT_NEGATIVE_PROMPT, /no open notebook as the main prop/i);
+  assert.match(DEFAULT_NEGATIVE_PROMPT, /no extra tabletop planning props/i);
   assert.match(DEFAULT_NEGATIVE_PROMPT, /no offline props for the delay/i);
   assert.match(DEFAULT_NEGATIVE_PROMPT, /no party-decor clutter/i);
   assert.match(spec.screenLock.value, /envitefy-wordmark-email\.png/i);
@@ -175,11 +175,11 @@ test("canonical birthday frame prompts require supported phones and natural pape
   const [frame] = buildFallbackFramePlan(spec);
 
   assert.match(frame.prompt, /PHYSICAL PROP RULES:/);
-  assert.match(frame.prompt, /never show a phone floating/i);
+  assert.match(frame.prompt, /display visible/i);
   assert.match(frame.prompt, /place the phone flat on the table/i);
   assert.match(frame.prompt, /show delay only as a modern digital signal/i);
-  assert.match(frame.prompt, /avoid open notebooks and planner pages/i);
-  assert.match(frame.prompt, /facing the main character's natural reading direction/i);
+  assert.match(frame.prompt, /keep counters and tables clean/i);
+  assert.match(frame.prompt, /add extra tabletop props only when the user explicitly requests them/i);
   assert.match(frame.prompt, /BIRTHDAY SAFETY RULES:/);
   assert.match(frame.prompt, /before the party/i);
   assert.match(frame.prompt, /Do not show gymnastics/i);

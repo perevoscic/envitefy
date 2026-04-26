@@ -431,7 +431,7 @@ function buildReferencePrompt(prompt, referenceImages = []) {
     "REFERENCE IMAGES:",
     names,
     "Use the attached reference images as visual guidance for character appearance, environment, wardrobe, props, product UI, color, mood, or composition when relevant.",
-    "If a reference image is named frame-01-character-reference, use it only for the same person's face, hairstyle, wardrobe, body type, and home lighting; do not copy its pose, camera angle, table setup, notebook, or prop layout into later frames.",
+    "If a reference image is named frame-01-character-reference, use it only for the same person's face, hairstyle, wardrobe, body type, and home lighting; do not copy its pose, camera angle, table setup, or prop layout into later frames.",
     "Do not copy unrelated artifacts from the references. Preserve the frame-specific action and camera instructions.",
   ].join("\n");
 }
@@ -447,9 +447,9 @@ function expandMinimalBirthdayDelayCriteria(criteria) {
   if (!isBirthday || !isDelay) return text;
 
   return [
-    text,
-    "Interpretation guardrail: this is a modern digital problem. Show a parent discovering on her phone or laptop that printed invitations/flyers will not arrive in time, searching for a fast digital invitation option, opening envitefy.com, creating a live birthday card, and sharing the live invite.",
-    "Use a clean ordinary home before the party. Do not invent offline delay props, handoff scenes, party-decor clutter, or party already underway unless the user explicitly asked for it.",
+    text.replace(/\bflyers?\b/gi, "invite order"),
+    "Interpretation guardrail: this is a modern digital problem. Show a parent discovering on her phone or laptop that a printer or invite order will not be ready in time, searching for a fast digital invitation option, opening envitefy.com, creating a live birthday card, and sharing the live invite.",
+    "Use a clean ordinary home before the party. Do not invent extra tabletop planning props, offline delay props, handoff scenes, party-decor clutter, or party already underway unless the user explicitly asked for them.",
   ].join("\n");
 }
 
@@ -933,27 +933,27 @@ export function repairStoryboardSceneSpecForBudget(sceneSpec) {
     flyerLock: replaceInferredSceneSpecField(
       sceneSpec,
       "flyerLock",
-      "digital delay evidence shown on phone or laptop only, plus minimal birthday detail cards used only as background context; keep surfaces clean and ordinary with no offline delay props, big readable flyer headline, duplicate paper flyers, open notebooks as hero props, or fake body copy on paper",
+      "digital delay evidence shown on phone or laptop only; keep surfaces clean and ordinary with no extra tabletop planning props, offline delay props, or fake body copy unless explicitly requested",
     ),
     screenLock: replaceInferredSceneSpecField(
       sceneSpec,
       "screenLock",
-      "the same Envitefy mobile live-card flow appears only in the two approved phone-proof frames: frame 5 shows quick birthday invite creation, frame 8 shows a polished send-ready live invite or share confirmation; all other frames keep screens absent, face-down, or secondary",
+      "the same Envitefy mobile live-card flow appears only in the two approved phone-proof frames: frame 5 shows quick birthday invite creation, frame 8 shows a polished send-ready live invite or share confirmation; all other frames keep screens absent or secondary",
     ),
     propsKeyObjects: replaceInferredSceneSpecField(
       sceneSpec,
       "propsKeyObjects",
-      "same smartphone, optional laptop for email/search proof, minimal birthday detail cards, and clean everyday home context; the product proof is the live digital invite, not offline delay props, notebook, or party decoration handling",
+      "same smartphone, optional laptop for email/search proof, and clean everyday home context; the product proof is the live digital invite, not offline delay props or party decoration handling",
     ),
     propPriority: replaceInferredSceneSpecField(
       sceneSpec,
       "propPriority",
-      "prioritize the human problem, the clean Envitefy live-card result, and the host's relief; prove delay with digital UI, keep any paper artifacts small, off-center, and non-readable except as context; avoid open notebooks and planner pages",
+      "prioritize the human problem, the clean Envitefy live-card result, and the host's relief; prove delay with digital UI; keep counters clear unless extra tabletop props are explicitly requested",
     ),
     disallowedProps: replaceInferredSceneSpecField(
       sceneSpec,
       "disallowedProps",
-      "no tablet, no extra screens beyond one phone and optional laptop for search/email proof, no children, no pets, no gym, no gymnastics, no sports venue, no dance studio, no trophies, no medals, no athlete posters, no completed party table, no party-decor clutter, no offline delay props, no open notebook as the main prop, no readable planner pages facing the camera, no large readable fake printed words, no duplicate paper flyers, no phone standing upright or leaning unsupported, and no graphic logo end card",
+      "no tablet, no extra screens beyond one phone and optional laptop for search/email proof, no children, no pets, no gym, no gymnastics, no sports venue, no dance studio, no trophies, no medals, no athlete posters, no completed party table, no party-decor clutter, no extra tabletop planning props, no offline delay props, no large readable fake printed words, no phone standing upright or leaning unsupported, and no graphic logo end card",
     ),
     screenProofRequirements: replaceInferredSceneSpecField(
       sceneSpec,
@@ -968,12 +968,12 @@ export function repairStoryboardSceneSpecForBudget(sceneSpec) {
     propContinuityLock: replaceInferredSceneSpecField(
       sceneSpec,
       "propContinuityLock",
-      "same phone, optional laptop for search/email proof, same small detail cards, and same clean home context; paper stays secondary and never becomes the final proof; avoid offline delay props and recurring open notebooks",
+      "same phone, optional laptop for search/email proof, and same clean home context; avoid extra tabletop planning props and offline delay props unless explicitly requested",
     ),
     framingBaseline: replaceInferredSceneSpecField(
       sceneSpec,
       "framingBaseline",
-      "varied candid framing with a saleable ad rhythm: environment, phone alert, laptop/email or order-status proof, search intent, product entry, two flat-phone or two-hands product-proof inserts, social validation, and a non-phone final hero; do not repeat static kitchen or seated table notebook shots",
+      "varied candid framing with a saleable ad rhythm: environment, phone alert, laptop/email or order-status proof, search intent, product entry, two flat-phone or two-hands product-proof inserts, social validation, and a non-phone final hero; do not repeat static kitchen or seated table shots",
     ),
   };
 }
@@ -985,7 +985,7 @@ function budgetRepairFrameTemplates(brief = {}) {
       title: "Deadline becomes real",
       actionBeat: "the host walks from the hallway into the kitchen while reading a printed-invite delay alert on her phone held in both hands",
       cameraShot: "wide observational room shot",
-      composition: "wide movement shot with the host mid-step entering the kitchen, phone naturally held with visible fingers, clean counter in the background, ordinary home context, no open notebook, no party setup",
+      composition: "wide movement shot with the host mid-step entering the kitchen, phone naturally held with visible fingers, clean counter in the background, ordinary home context, no party setup",
       mood: "concerned, candid, warm",
       persuasionRole: "hook",
       screenState: "no screen proof yet",
@@ -1001,7 +1001,7 @@ function budgetRepairFrameTemplates(brief = {}) {
       title: "Delay is digital",
       actionBeat: "over her shoulder, the laptop on the counter shows an order-status page or email delay page while her hands hover near the trackpad",
       cameraShot: "over-the-shoulder digital proof insert",
-      composition: "angled over-the-shoulder view of laptop delay proof with minimal readable page content, clean counter surface, no notebook, no party setup",
+      composition: "angled over-the-shoulder view of laptop delay proof with minimal readable page content, clean counter surface, no party setup",
       mood: "specific, digital, urgent",
       persuasionRole: "pain-proof",
       screenState: "digital order or email delay proof",
@@ -1017,7 +1017,7 @@ function budgetRepairFrameTemplates(brief = {}) {
       title: "Search for a faster way",
       actionBeat: "standing at the counter, she searches for a faster digital invite option on her phone with both thumbs",
       cameraShot: "hands-in-action side angle",
-      composition: "side-angle hands and phone action with her torso moving through frame, search screen visible only enough to suggest intent, clean counter, no notebook, no party scene",
+      composition: "side-angle hands and phone action with her torso moving through frame, search screen visible only enough to suggest intent, clean counter, no party scene",
       mood: "decisive, practical",
       persuasionRole: "decision-point",
       screenState: "search intent for fast digital invite solution",
@@ -1033,7 +1033,7 @@ function budgetRepairFrameTemplates(brief = {}) {
       title: "Decision turns into action",
       actionBeat: "from a three-quarter rear angle, she leaves the counter and moves toward the living room with the decision made",
       cameraShot: "over-the-shoulder side angle",
-      composition: "over-the-shoulder moving shot with her body crossing from kitchen into living room, clean home background changes, no device foreground, no notebook and no party scene",
+      composition: "over-the-shoulder moving shot with her body crossing from kitchen into living room, clean home background changes, no device foreground and no party scene",
       mood: "focused, calm shift",
       persuasionRole: "product-entry",
       screenState: "the source details are organized and ready for the product proof beat",
@@ -1081,7 +1081,7 @@ function budgetRepairFrameTemplates(brief = {}) {
       title: "Confidence spreads",
       actionBeat: "a nearby helper reacts to the polished invite direction in the real room, making the result feel socially approved rather than staged",
       cameraShot: "candid two-person social proof",
-      composition: "natural side-angle interaction in the living room with phone face-down flat on a side table, no extra screens, no open notebook, no party setup, no paper flyer hero, and no staged phone demo",
+      composition: "natural side-angle interaction in the living room with no phone foreground, no extra screens, no party setup, no extra tabletop planning props, and no staged phone demo",
       mood: "reassuring, credible",
       persuasionRole: "social-proof",
       screenState: "trust comes from another person reacting positively in the room",
@@ -1097,7 +1097,7 @@ function budgetRepairFrameTemplates(brief = {}) {
       title: "Send-ready proof",
       actionBeat: `${product} shows the polished send-ready birthday live invite on a phone lying flat screen-up on the counter`,
       cameraShot: "tight angled send-ready proof",
-      composition: "phone lies flat with full contact on the counter, finished live invite visible, framed by clean home surface only, no upright or leaning phone, no duplicate paper flyer, and no direct presentation pose",
+      composition: "phone lies flat screen-up with full contact on the counter, finished live invite visible, framed by clean home surface only, no upright or leaning phone, no extra tabletop planning props, and no direct presentation pose",
       mood: "premium, finished, confident",
       persuasionRole: "send-ready-proof",
       screenState: "polished birthday live invite is ready to share",
@@ -1129,7 +1129,7 @@ function budgetRepairFrameTemplates(brief = {}) {
       title: "Ready to host",
       actionBeat: "the host relaxes in the same home planning space with visible relief and confidence because the digital invite is already shared",
       cameraShot: "final in-scene hero payoff",
-      composition: "warm hero view centered on the relieved host in the pre-party home setting, with no phone foreground, no paper flyer foreground, no party setup, no activity-venue content, and no logo card",
+      composition: "warm hero view centered on the relieved host in the pre-party home setting, with no phone foreground, no extra tabletop planning props, no party setup, no activity-venue content, and no logo card",
       mood: "relieved, proud, ready",
       persuasionRole: "final-payoff",
       screenState: "single final emotional payoff after the Envitefy live card has been shared",
