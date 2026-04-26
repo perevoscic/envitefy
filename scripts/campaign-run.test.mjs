@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
+import { readFile } from "node:fs/promises";
 import {
   applyCreativeQaFrameConstraints,
   buildImageModelComplianceError,
@@ -160,6 +161,26 @@ test("mimeTypeForImagePath preserves supported reference image mime types", () =
   assert.equal(mimeTypeForImagePath("reference-images/safe-name", "application/octet-stream"), "image/png");
 });
 
+test("normalizeCampaignInput expands short birthday delay prompts into digital-only guardrails", () => {
+  const input = normalizeCampaignInput({
+    criteria: "daughter birthday flyer delayed",
+  });
+
+  assert.match(input.criteria, /modern digital problem/i);
+  assert.match(input.criteria, /phone or laptop/i);
+  assert.match(input.criteria, /Do not invent offline delay props/i);
+  assert.match(input.looseInput.rawPrompt, /envitefy\.com/i);
+});
+
+test("campaign image generation uses real image references for consistency", async () => {
+  const source = await readFile(new URL("./lib/campaign-run.mjs", import.meta.url), "utf8");
+
+  assert.match(source, /import \{ toFile \} from "openai\/uploads";/);
+  assert.match(source, /client\.images\.edit/);
+  assert.match(source, /frame-01-character-reference\.png/);
+  assert.match(source, /do not copy its pose, camera angle, table setup, notebook, or prop layout/i);
+});
+
 test("normalizeSocialCopyForFramePlan pads missing captions to match frame count", () => {
   const framePlan = Array.from({ length: 10 }, (_value, index) => ({
     frameNumber: index + 1,
@@ -246,17 +267,17 @@ test("validateStoryboardFrameBudget fails excessive phone-dominant frames", () =
 
   assert.equal(review.pass, false);
   assert.match(review.reasons.join(" "), /Excessive phone-dominant frames/);
-  assert.match(review.reasons.join(" "), /Only frames 5, 8 should remain phone-dominant/);
+  assert.match(review.reasons.join(" "), /Only frames 3, 5, 8 should remain phone-dominant/);
   assert.equal(review.feedback.framesToCut.length, 0);
   assert.equal(review.feedback.singleFinalPayoffFrame, 10);
   assert.equal(review.feedback.source, "storyboard-budget");
   assert.equal(review.feedback.discardExistingFramePlan, true);
-  assert.equal(review.feedback.maxPhoneDominantFrames, 2);
+  assert.equal(review.feedback.maxPhoneDominantFrames, 3);
   assert.deepEqual(review.feedback.strictShotBudgetMap.slice(0, 2), [
     "1 wide-environment none",
     "2 environment-detail none",
   ]);
-  assert.match(review.feedback.rewriteBrief, /phoneDominance dominant reserved for frames 5, 8 only/);
+  assert.match(review.feedback.rewriteBrief, /phoneDominance dominant reserved for frames 3, 5, 8 only/);
   assert.match(review.feedback.rewriteBrief, /10 final-hero none/);
 });
 
@@ -294,16 +315,24 @@ test("repairStoryboardFrameBudget replaces phone-heavy plans with a compliant ma
   assert.equal(repaired.length, 10);
   assert.equal(repaired[0].shotFamily, "wide-environment");
   assert.doesNotMatch(JSON.stringify(repairedWithoutPrompts), /Bright Stars|facility lobby|athlete|medal|trophy/i);
-  assert.match(repaired[0].composition, /no cake/i);
+  assert.doesNotMatch(JSON.stringify(repairedWithoutPrompts), /envelope|package slip|physical mail|mail handoff|letter/i);
+  assert.match(repaired[0].composition, /ordinary home context/i);
+  assert.match(repaired[0].composition, /no open notebook/i);
+  assert.match(repaired[0].actionBeat, /walks from the hallway into the kitchen/i);
   assert.doesNotMatch(repaired[1].actionBeat, /sort the source flyer/i);
-  assert.match(repaired[1].composition, /papers oriented toward the host/i);
+  assert.match(repaired[1].actionBeat, /laptop on the counter shows/i);
+  assert.match(repaired[1].composition, /no notebook/i);
   assert.match(repaired[1].proofTarget, /offline plan is not shareable/i);
+  assert.match(repaired[2].actionBeat, /searches for a faster digital invite/i);
+  assert.equal(repaired[2].phoneDominance, "dominant");
+  assert.match(repaired[3].composition, /no device foreground/i);
   assert.equal(repaired[3].phoneDominance, "none");
   assert.equal(repaired[3].brandingPresence, "none");
   assert.equal(repaired[4].phoneDominance, "dominant");
-  assert.match(repaired[4].composition, /viewer-right side/i);
-  assert.match(repaired[4].composition, /visible table support/i);
+  assert.match(repaired[4].composition, /phone lies flat screen-up/i);
+  assert.match(repaired[4].composition, /no upright or leaning phone/i);
   assert.equal(repaired[7].phoneDominance, "dominant");
+  assert.match(repaired[7].composition, /phone lies flat with full contact/i);
   assert.equal(repaired[9].shotFamily, "final-hero");
   assert.match(repaired[9].composition, /no paper flyer foreground/i);
   assert.match(repaired[9].screenState, /live card has been shared/i);
@@ -322,11 +351,15 @@ test("repairStoryboardSceneSpecForBudget removes unsellable paper and screen loc
     disallowedProps: { value: "", source: "empty" },
   });
 
-  assert.match(repaired.flyerLock.value, /small birthday invitation order receipt/i);
+  assert.match(repaired.flyerLock.value, /digital delay evidence/i);
   assert.match(repaired.screenProofRequirements.value, /product proof only twice/i);
   assert.match(repaired.disallowedProps.value, /no large readable fake printed words/i);
   assert.match(repaired.disallowedProps.value, /no gymnastics/i);
-  assert.match(repaired.disallowedProps.value, /no physical birthday cake/i);
+  assert.match(repaired.disallowedProps.value, /no completed party table/i);
+  assert.match(repaired.disallowedProps.value, /no open notebook as the main prop/i);
+  assert.match(repaired.disallowedProps.value, /no offline delay props/i);
+  assert.match(repaired.framingBaseline.value, /phone alert/i);
+  assert.match(repaired.framingBaseline.value, /do not repeat static kitchen or seated table notebook shots/i);
   assert.doesNotMatch(repaired.screenProofRequirements.value, /every frame/i);
 });
 

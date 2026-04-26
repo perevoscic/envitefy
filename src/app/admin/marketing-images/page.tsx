@@ -911,7 +911,7 @@ export default function MarketingCampaignsPage() {
                   label="Optional Guardrails"
                   value={form.notes}
                   onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-                  placeholder="No gymnastics, no cake, before the party, phone must be held or resting on the table."
+                  placeholder="Same woman, no open notebooks, no cake, phone held in hands or lying flat."
                   helper="Use this for hard constraints, not for the main campaign brief. Add exclusions for props, locations, staging, or physical continuity."
                 />
 

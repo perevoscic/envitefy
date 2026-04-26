@@ -22,8 +22,11 @@ test("art direction and coordinator prompts enforce continuity plus meaningful v
   assert.match(ART_DIRECTION_SYSTEM_PROMPT, /do not freeze the campaign into one repeated composition/i);
   assert.match(ART_DIRECTION_SYSTEM_PROMPT, /subject should usually seem unaware of the camera/i);
   assert.match(ART_DIRECTION_SYSTEM_PROMPT, /birthday invite\/flyer-delay campaign must not become gymnastics/i);
-  assert.match(ART_DIRECTION_SYSTEM_PROMPT, /Phones must be physically held by visible fingers or supported/i);
+  assert.match(ART_DIRECTION_SYSTEM_PROMPT, /Phones must be physically held by visible fingers or lying flat/i);
   assert.match(ART_DIRECTION_SYSTEM_PROMPT, /Paper props must face the character's natural reading direction/i);
+  assert.match(ART_DIRECTION_SYSTEM_PROMPT, /Delay proof must be digital/i);
+  assert.match(ART_DIRECTION_SYSTEM_PROMPT, /Do not invent handoff scenes or offline delay props/i);
+  assert.match(ART_DIRECTION_SYSTEM_PROMPT, /Do not build the first four frames as the same seated table\/notebook scene/i);
   assert.match(COORDINATOR_SYSTEM_PROMPT, /No more than two frames may use the same base composition/i);
   assert.match(COORDINATOR_SYSTEM_PROMPT, /at least four distinct shot families/i);
   assert.match(COORDINATOR_SYSTEM_PROMPT, /No more than three frames may be phone-dominant/i);
@@ -32,8 +35,11 @@ test("art direction and coordinator prompts enforce continuity plus meaningful v
   assert.match(COORDINATOR_SYSTEM_PROMPT, /exactly one payoff or CTA frame, and it must be the final frame/i);
   assert.match(COORDINATOR_SYSTEM_PROMPT, /Classify any Google search/i);
   assert.match(COORDINATOR_SYSTEM_PROMPT, /invented gym locations such as Bright Stars Gymnastics/i);
-  assert.match(COORDINATOR_SYSTEM_PROMPT, /do not show a physical birthday cake/i);
-  assert.match(COORDINATOR_SYSTEM_PROMPT, /never imply it hangs in air/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /keep the home clean and ordinary/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /never imply it hangs in air, stands upright, leans/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /Do not create handoff scenes or offline delay props/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /party-decor clutter/i);
+  assert.match(COORDINATOR_SYSTEM_PROMPT, /Do not build frames 1-4 as four versions/i);
 });
 
 test("social copy prompt bans literal filler captions", () => {

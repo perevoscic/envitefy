@@ -6,25 +6,25 @@ export const DEFAULT_FRAME_TO_FRAME_CHANGES = "pose, action, camera angle, frami
 export const DEFAULT_VISUAL_STYLE =
   "cinematic ad photography, realistic, premium startup commercial, clean modern lifestyle, natural lighting, shallow depth of field, subtle motion realism, polished brand-ad look.";
 export const DEFAULT_CHARACTER_LOCK =
-  "the same young mother in her early 30s, shoulder-length brown hair, natural makeup";
+  "the same young mother in her early 30s, shoulder-length wavy chestnut-brown hair worn down with a side part, natural makeup, consistent face and features in every frame, no bun or updo";
 export const DEFAULT_OUTFIT_LOCK =
-  "the same light beige sweater, blue jeans, white sneakers";
+  "the same soft blush-pink button-front blouse, blue jeans, simple gold watch, white sneakers";
 export const DEFAULT_PHONE_LOCK = "the same black modern smartphone";
 export const DEFAULT_FLYER_LOCK =
-  "the same small delayed invitation order notice and birthday planning notes, kept secondary and not used as readable hero props";
+  "the same digital delay evidence shown on a phone or computer screen, plus minimal birthday detail cards kept secondary; clean ordinary home surfaces, open space, and no planner pages";
 export const DEFAULT_LOCATION_LOCK =
-  "the same modern home kitchen and living room planning space with warm daylight, a table or counter, subtle birthday planning details, and no party already underway";
+  "the same modern home kitchen and living room planning space with warm daylight, a table or counter, clean everyday home context, and no party already underway";
 export const DEFAULT_BACKGROUND_ANCHORS =
-  "home kitchen or living room, table or counter, warm daylight, small planning notes, subtle birthday details";
+  "home kitchen or living room, counter, window light, phone, laptop only when needed for search or email proof, subtle birthday context";
 export const DEFAULT_SCREEN_LOCK =
   "the same clean Envitefy mobile event page, modern white interface, simple typography, the Envitefy wordmark in the header matching public/email/envitefy-wordmark-email.png, and the Envitefy app icon matching public/favicon.png anywhere a launcher icon, favicon, or small app badge appears";
 export const DEFAULT_COMPOSITION =
-  "varied candid vertical ad frames mixing home environment, tabletop detail, over-the-shoulder action, supported phone proof, and final digital live-card result";
+  "varied candid vertical ad frames mixing home movement, phone notification proof, browser search, product entry, two-handed or flat-phone product proof, reaction, and final digital live-card result";
 export const DEFAULT_MOOD = "focused, modern, warm, premium";
 export const DEFAULT_CONTINUITY_RULE =
   "This must look like the same ad campaign sequence as the previous frames, keeping the same character, same outfit, same props, same flyer, same environment, same lighting, same branding, and same premium commercial aesthetic.";
 export const DEFAULT_NEGATIVE_PROMPT =
-  "no character change, no wardrobe change, no different location, no different phone, no split image, no collage, no watermark, no floating text, no garbled readable text on paper props, no gym, no gymnastics, no sports venue, no dance studio, no studio lobby, no trophies, no medals, no athlete posters, no physical birthday cake unless explicitly requested, no completed party scene, no children unless explicitly requested, no floating phone, no camera-facing notebook staging, no upside-down planner text from the character's perspective, single frame only.";
+  "no character change, no hairstyle change, no bun, no updo, no wardrobe change, no different location, no different phone, no split image, no collage, no watermark, no floating text, no garbled readable text on paper props, no offline props for the delay, no open notebook as the main prop, no readable planner page facing camera, no gym, no gymnastics, no sports venue, no dance studio, no studio lobby, no trophies, no medals, no athlete posters, no completed party scene, no children unless explicitly requested, no party setup unless explicitly requested, no party-decor clutter unless explicitly requested, no floating phone, no phone standing upright, no phone leaning unsupported, no propped-up phone, no camera-facing notebook staging, no upside-down planner text from the character's perspective, single frame only.";
 export const DEFAULT_CONTINUITY_CONTRACT = `You are generating a sequence of highly consistent images for a visual story.
 
 Your goal is to preserve continuity across all frames.
@@ -97,15 +97,15 @@ function containsGymnasticsDrift(value) {
 function birthdayDefaultForField(fieldName, defaultValue) {
   const birthdayDefaults = {
     flyerLock:
-      "one small delayed invitation order notice and simple birthday planning notes, kept secondary; no big readable flyer headline, no duplicate printed flyers, and no sports or activity-venue content",
+      "digital delay evidence shown on phone or laptop only, plus minimal birthday detail cards kept secondary; clean ordinary home surfaces with no offline delay props, big readable flyer headline, duplicate printed flyers, open notebooks, or sports or activity-venue content",
     locationLock:
       "the same modern home kitchen and living room planning space with warm daylight, a table or counter, subtle birthday planning details, and no party already underway",
     backgroundAnchors:
-      "home kitchen or living room, table or counter, warm daylight, small planning notes, subtle birthday details, no gym or sports decor",
+      "home kitchen or living room, counter, warm daylight, phone, laptop only for search or email proof, subtle birthday context, no gym or sports decor, no open notebook, no offline delay props",
     composition:
-      "varied candid vertical ad frames showing the pre-party problem, supported phone product proof, and the digital Envitefy live-card result; no completed party scene",
+      "varied candid vertical ad frames showing the pre-party problem with distinct phone notification, laptop/email proof, search, product-entry, supported phone proof, reaction, and digital Envitefy live-card result beats; no offline delay props, no completed party scene, and no repeated notebook-at-table shots",
     propsKeyObjects:
-      "same supported smartphone, small birthday planning checklist, one small delayed-order notice, and the digital Envitefy live birthday card as the final result",
+      "same supported smartphone, optional laptop for search/email proof, minimal birthday detail cards, and the digital Envitefy live birthday card as the final result; no offline delay props and no recurring open notebook",
   };
   return birthdayDefaults[fieldName] || defaultValue;
 }
@@ -686,15 +686,18 @@ export function buildCanonicalFramePrompt(sceneSpec, frameDetails) {
   const notes = clean(materialized.extraNotes);
   const birthdayCampaign = BIRTHDAY_CONTEXT_REGEX.test(materialized.rawPrompt);
   const physicalPropRules = [
-    "Phone physics: any phone must be visibly held by a hand with natural fingers around it or physically resting flat/supported on a table, counter, or stand; never show a phone floating in air.",
-    "Paper orientation: notebooks, planners, receipts, notices, and papers must face the main character's natural reading direction, not be staged toward the camera; avoid upside-down writing from her perspective.",
-    "Paper text discipline: paper prop text should be partial, minimal, or unreadable unless the scene explicitly requires a readable UI-like proof.",
+    "Phone physics: any phone must be visibly held by one or both hands with natural fingers around it, or lying flat screen-up or face-down on a table/counter; never show a phone floating, standing upright, leaning, balanced on an edge, or propped without a visible support.",
+    "Product-proof phone shots: when the Envitefy screen is the proof, place the phone flat on the table or naturally held in two hands; do not make it stand vertically like a display.",
+    "Delay proof: show delay only as a modern digital signal such as a phone notification, email inbox, browser order-status page, or search result; do not stage a handoff scene.",
+    "Paper orientation: avoid open notebooks and planner pages as recurring hero props. If paper appears, use only small birthday detail cards facing the main character's natural reading direction, not staged toward the camera.",
+    "Paper text discipline: paper prop text should be hidden, partial, minimal, or unreadable; do not ask the model to create readable notebook or planner handwriting.",
+    "Frame variety: avoid repeating the same seated table pose with notebook and phone; each adjacent frame must change location within the home, body angle, prop focus, and action.",
   ];
   const birthdaySafetyRules = birthdayCampaign
     ? [
-        "Birthday campaign safety: this is before the party; show the mother solving an invitation delay, not hosting a party already in progress.",
+        "Birthday campaign safety: this is before the party; show the mother solving a digital invitation/flyer delay, not hosting a party already in progress.",
         "Do not show gymnastics, gym facilities, sports venues, dance studios, athlete posters, trophies, medals, or invented venues such as Bright Stars Gymnastics.",
-        "Do not show a physical birthday cake, completed party table, or children unless the user's prompt explicitly requests them.",
+        "Keep the home ordinary and pre-event; do not show a completed party scene, party-decor clutter, or children unless the user's prompt explicitly requests them.",
         "The final result is the digital Envitefy live birthday card or share confirmation, not a printed flyer or party scene.",
       ]
     : [];
