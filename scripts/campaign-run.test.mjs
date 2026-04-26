@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import {
   applyCreativeQaFrameConstraints,
+  buildImageModelComplianceError,
   finalFrameIsGraphicLogoPayoff,
   inferFramePhoneDominance,
   mimeTypeForImagePath,
@@ -11,6 +12,7 @@ import {
   normalizeSocialCopyForFramePlan,
   repairStoryboardFrameBudget,
   repairStoryboardSceneSpecForBudget,
+  resolveImageModel,
   resolveRunPaths,
   validateStoryboardFrameBudget,
 } from "./lib/campaign-run.mjs";
@@ -96,6 +98,58 @@ test("normalizeCampaignInput carries reference images into the run input", () =>
   assert.equal(input.referenceImages[0].path, "reference-images/01-kitchen.png");
   assert.equal(input.looseInput.referenceImages[0].originalName, "kitchen.png");
   assert.match(input.looseInput.rawPrompt, /Reference images: kitchen\.png/);
+});
+
+test("normalizeCampaignInput normalizes envitefye.com typo to envitefy.com", () => {
+  const input = normalizeCampaignInput({
+    criteria: "Show why envitefye.com helps hosts launch quickly",
+    callToAction: "Start at envitefye.com today",
+    looseInput: {
+      extraNotes: "Never misspell envitefye.com in screen text",
+    },
+  });
+
+  assert.match(input.criteria, /envitefy\.com/);
+  assert.doesNotMatch(input.criteria, /envitefye\.com/);
+  assert.match(input.callToAction, /envitefy\.com/);
+  assert.match(input.looseInput.extraNotes, /envitefy\.com/);
+});
+
+test("resolveImageModel is pinned to gpt-image-2", () => {
+  process.env.STORYBOARD_OPENAI_IMAGE_MODEL = "gpt-image-1";
+  process.env.STUDIO_OPENAI_IMAGE_MODEL = "gpt-image-1";
+
+  assert.equal(resolveImageModel(), "gpt-image-2");
+
+  delete process.env.STORYBOARD_OPENAI_IMAGE_MODEL;
+  delete process.env.STUDIO_OPENAI_IMAGE_MODEL;
+});
+
+test("buildImageModelComplianceError returns hard blocker when effective model drifts", () => {
+  const message = buildImageModelComplianceError(
+    [
+      { frameNumber: 1, effectiveImageModel: "gpt-image-2" },
+      { frameNumber: 2, effectiveImageModel: "gpt-image-1" },
+      { frameNumber: 3, effectiveImageModel: "gpt-image-1.5" },
+    ],
+    "gpt-image-2",
+  );
+
+  assert.match(message, /Image model compliance failure/);
+  assert.match(message, /frame 2=gpt-image-1/);
+  assert.match(message, /frame 3=gpt-image-1.5/);
+});
+
+test("buildImageModelComplianceError passes when all effective models are gpt-image-2", () => {
+  const message = buildImageModelComplianceError(
+    [
+      { frameNumber: 1, effectiveImageModel: "gpt-image-2" },
+      { frameNumber: 2, effectiveImageModel: "gpt-image-2" },
+    ],
+    "gpt-image-2",
+  );
+
+  assert.equal(message, "");
 });
 
 test("mimeTypeForImagePath preserves supported reference image mime types", () => {

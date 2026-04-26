@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import OpenAI, { toFile } from "openai";
+import OpenAI from "openai";
 import {
   alignActionSequence,
   createFramesManifest,
@@ -115,6 +115,26 @@ function summarizeFrameCounts(frames) {
   }
 
   return summary;
+}
+
+function collectNonCompliantImageModels(frames = [], expectedModel = "gpt-image-2") {
+  const expected = clean(expectedModel).toLowerCase();
+  return (Array.isArray(frames) ? frames : [])
+    .map((frame) => ({
+      frameNumber: Number.isFinite(Number(frame?.frameNumber)) ? Math.trunc(Number(frame.frameNumber)) : 0,
+      effectiveImageModel: clean(frame?.effectiveImageModel),
+    }))
+    .filter(
+      (frame) =>
+        frame.frameNumber > 0 && frame.effectiveImageModel && frame.effectiveImageModel.toLowerCase() !== expected,
+    );
+}
+
+export function buildImageModelComplianceError(frames = [], expectedModel = "gpt-image-2") {
+  const mismatches = collectNonCompliantImageModels(frames, expectedModel);
+  if (!mismatches.length) return "";
+  const details = mismatches.map((item) => `frame ${item.frameNumber}=${item.effectiveImageModel}`).join(", ");
+  return `Image model compliance failure: expected ${expectedModel} but got ${details}.`;
 }
 
 function normalizePositiveIntegers(values = []) {
@@ -339,7 +359,26 @@ async function clearRenderedRunArtifacts(runPaths) {
   ]);
 }
 
-const IMAGE_MODEL_FALLBACK_CHAIN = ["gpt-image-2", "gpt-image-1.5", "gpt-image-1"];
+const CANONICAL_BRAND_DOMAIN = "envitefy.com";
+const BRAND_DOMAIN_TYPO_REGEX = /\benvitefye\.com\b/gi;
+const IMAGE_MODEL_FALLBACK_CHAIN = ["gpt-image-2"];
+
+function normalizeBrandDomainText(value) {
+  const text = clean(value);
+  if (!text) return text;
+  return text.replace(BRAND_DOMAIN_TYPO_REGEX, CANONICAL_BRAND_DOMAIN);
+}
+
+function normalizeBrandDomainDeep(value) {
+  if (typeof value === "string") return normalizeBrandDomainText(value);
+  if (Array.isArray(value)) return value.map((entry) => normalizeBrandDomainDeep(entry));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, normalizeBrandDomainDeep(entry)]),
+    );
+  }
+  return value;
+}
 
 function shouldRetryWithImageFallback(error) {
   const message = clean(error?.message || error);
@@ -380,15 +419,6 @@ export function mimeTypeForImagePath(filePath, fallback = "") {
   return "image/png";
 }
 
-async function toOpenAiReferenceFile(reference) {
-  const absolutePath = reference.absolutePath || reference.path;
-  const buffer = await fs.readFile(absolutePath);
-  const filename = clean(reference.originalName) || path.basename(absolutePath);
-  return toFile(buffer, filename, {
-    type: mimeTypeForImagePath(filename || absolutePath, reference.mimeType),
-  });
-}
-
 function buildReferencePrompt(prompt, referenceImages = []) {
   if (!referenceImages.length) return prompt;
   const names = referenceImages
@@ -406,29 +436,8 @@ function buildReferencePrompt(prompt, referenceImages = []) {
 
 async function generateImageBuffer({ client, requestedModel, prompt, size, user, referenceImages = [] }) {
   const resolvedReferences = normalizeReferenceImages(referenceImages);
-  if (resolvedReferences.length > 0) {
-    const uploadableReferences = await Promise.all(resolvedReferences.map(toOpenAiReferenceFile));
-    const response = await client.images.edit({
-      model: "gpt-image-1",
-      image: uploadableReferences,
-      prompt: buildReferencePrompt(prompt, resolvedReferences),
-      size,
-      quality: resolveImageQuality(),
-      background: "opaque",
-      user: clean(user) || undefined,
-      n: 1,
-    });
-    const b64 = response.data?.[0]?.b64_json || "";
-    if (!b64) throw new Error("No image payload returned from gpt-image-1 reference generation.");
-    return {
-      buffer: Buffer.from(b64, "base64"),
-      effectiveModel: "gpt-image-1",
-      warning:
-        clean(requestedModel) && clean(requestedModel) !== "gpt-image-1"
-          ? `Reference images use gpt-image-1 image edit; requested ${clean(requestedModel)}.`
-          : null,
-    };
-  }
+  const promptWithReferences =
+    resolvedReferences.length > 0 ? buildReferencePrompt(prompt, resolvedReferences) : prompt;
 
   const attempts = buildImageModelAttemptOrder(requestedModel);
   const firstModel = attempts[0];
@@ -439,7 +448,7 @@ async function generateImageBuffer({ client, requestedModel, prompt, size, user,
     try {
       const response = await client.images.generate({
         model,
-        prompt,
+        prompt: promptWithReferences,
         size,
         quality: resolveImageQuality(),
         background: "opaque",
@@ -472,7 +481,7 @@ export function resolveTextModel() {
 }
 
 export function resolveImageModel() {
-  return process.env.STORYBOARD_OPENAI_IMAGE_MODEL || process.env.STUDIO_OPENAI_IMAGE_MODEL || "gpt-image-2";
+  return "gpt-image-2";
 }
 
 export function resolveImageQuality() {
@@ -524,20 +533,22 @@ function normalizeOverrideBlock(rawInput = {}) {
 }
 
 export function normalizeCampaignInput(rawInput = {}) {
-  const input = asObject(rawInput);
-  const criteria =
+  const input = normalizeBrandDomainDeep(asObject(rawInput));
+  const criteria = normalizeBrandDomainText(
     clean(input.criteria) ||
-    clean(input.prompt) ||
-    clean(input.rawPrompt) ||
-    clean(input.looseInput?.rawPrompt);
-  const productName = clean(input.productName);
+      clean(input.prompt) ||
+      clean(input.rawPrompt) ||
+      clean(input.looseInput?.rawPrompt),
+  );
+  const productName = normalizeBrandDomainText(clean(input.productName));
   const targetVertical = clean(input.targetVertical);
   const tone = clean(input.tone);
-  const callToAction = clean(input.callToAction || input.cta);
+  const callToAction = normalizeBrandDomainText(clean(input.callToAction || input.cta));
   const jobLabel = clean(input.jobLabel || input.job);
   const outputRoot = clean(input.outputRoot);
-  const extraNotes =
-    clean(input.notes) || clean(input.extraNotes) || clean(input.looseInput?.extraNotes);
+  const extraNotes = normalizeBrandDomainText(
+    clean(input.notes) || clean(input.extraNotes) || clean(input.looseInput?.extraNotes),
+  );
   const overrides = normalizeOverrideBlock(input);
   const referenceImages = normalizeReferenceImages(input.referenceImages || input.looseInput?.referenceImages);
   const rawPrompt = [
@@ -552,11 +563,11 @@ export function normalizeCampaignInput(rawInput = {}) {
     .join("\n");
 
   return {
-    criteria,
-    productName,
+    criteria: normalizeBrandDomainText(criteria),
+    productName: normalizeBrandDomainText(productName),
     targetVertical,
     tone,
-    callToAction,
+    callToAction: normalizeBrandDomainText(callToAction),
     jobLabel,
     outputRoot,
     referenceImages,
@@ -1584,6 +1595,11 @@ async function generateStoryboardImagesForRun({
       await fs.writeFile(outputPath, imageResult.buffer);
       frame.status = "done";
       frame.effectiveImageModel = imageResult.effectiveModel;
+      const modelComplianceError = buildImageModelComplianceError([frame], "gpt-image-2");
+      if (modelComplianceError) {
+        frame.status = "error";
+        frame.error = modelComplianceError;
+      }
     } catch (error) {
       frame.status = "error";
       frame.error = error instanceof Error ? error.message : "Image generation failed.";
@@ -1595,6 +1611,16 @@ async function generateStoryboardImagesForRun({
   }
 
   const hadError = framesManifest.frames.some((frame) => frame.status === "error");
+  const modelComplianceError = buildImageModelComplianceError(framesManifest.frames, "gpt-image-2");
+  if (modelComplianceError) {
+    setStageStatus(statusDoc, "image-generation", "error", {
+      error: modelComplianceError,
+    });
+    statusDoc.error = modelComplianceError;
+    await persistStatus("Image generation failed model compliance checks", "error", "image-generation");
+    throw new Error(statusDoc.error);
+  }
+
   if (hadError) {
     setStageStatus(statusDoc, "image-generation", "error", {
       error: "One or more storyboard frames failed to generate.",

@@ -2,6 +2,26 @@ function clean(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+const CANONICAL_BRAND_DOMAIN = "envitefy.com";
+const BRAND_DOMAIN_TYPO_REGEX = /\benvitefye\.com\b/gi;
+
+function normalizeBrandDomainText(value) {
+  const text = clean(value);
+  if (!text) return text;
+  return text.replace(BRAND_DOMAIN_TYPO_REGEX, CANONICAL_BRAND_DOMAIN);
+}
+
+function normalizeBrandDomainDeep(value) {
+  if (typeof value === "string") return normalizeBrandDomainText(value);
+  if (Array.isArray(value)) return value.map((entry) => normalizeBrandDomainDeep(entry));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, normalizeBrandDomainDeep(entry)]),
+    );
+  }
+  return value;
+}
+
 function resolveJsonObject(text) {
   const raw = typeof text === "string" ? text.trim() : "";
   if (!raw) return null;
@@ -41,7 +61,8 @@ async function runStructuredStage({
     ],
   });
 
-  return resolveJsonObject(completion.choices?.[0]?.message?.content || "") || {};
+  const raw = resolveJsonObject(completion.choices?.[0]?.message?.content || "") || {};
+  return normalizeBrandDomainDeep(raw);
 }
 
 function stringArraySchema() {
@@ -528,6 +549,7 @@ export async function runBriefAgent({ client, model, campaignInput }) {
       campaignInput.tone ? `Desired tone: ${campaignInput.tone}` : "",
       campaignInput.callToAction ? `CTA: ${campaignInput.callToAction}` : "",
       campaignInput.looseInput?.extraNotes ? `Extra notes: ${campaignInput.looseInput.extraNotes}` : "",
+      "Brand naming must be exact in every field: envitefy.com (never envitefye.com or any variant).",
       "Choose one audience, one pain, one promise, and one proof moment. Do not make the brief broad or generic.",
     ],
   });
