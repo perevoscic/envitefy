@@ -123,8 +123,7 @@ export default function ScannedInviteSkin({
   const displayLocation = String(location || "").trim() || "Location TBD";
   const directionsHref = buildMapsHref(location);
   const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail });
-  const displayDetailCopy =
-    String(detailCopy || "").trim() || "Details, RSVP, and calendar links are ready to share.";
+  const displayDetailCopy = String(detailCopy || "").trim();
   const displayAttire = String(attire || "").trim();
   const displayRegistryUrl = String(registryUrl || "").trim();
   const displayActivities = Array.isArray(activities)
@@ -176,7 +175,14 @@ export default function ScannedInviteSkin({
       }}
     >
       <div className="mx-auto max-w-6xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+5.75rem)] md:px-8 md:pt-8">
-        {actions ? <div className="mb-5 hidden justify-end md:flex">{actions}</div> : null}
+        {actions ? (
+          <>
+            <div className="fixed right-4 top-[calc(env(safe-area-inset-top)+6.75rem)] z-[35] md:hidden">
+              {actions}
+            </div>
+            <div className="mb-5 hidden justify-end md:flex">{actions}</div>
+          </>
+        ) : null}
 
         <div className="mb-12 flex max-w-6xl flex-col items-center justify-between gap-8 pt-4 text-center md:flex-row md:items-center md:pt-12 md:text-left">
           <div className="flex-1 space-y-4 text-center md:text-left">
@@ -313,29 +319,31 @@ export default function ScannedInviteSkin({
               disabled={!directRsvpHref || previewMode}
             />
 
-            <motion.section
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="col-span-2 flex items-center justify-between gap-6 rounded-[3rem] border border-black/5 p-7 shadow-sm backdrop-blur-sm md:p-10"
-              style={{
-                backgroundColor:
-                  mixHexColors(colors.background, "#ffffff", 0.12) || colors.background,
-              }}
-            >
-              <div className="space-y-1">
-                <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
-                  Good to Know
-                </div>
-                <div className="text-2xl font-bold text-black/90">{displayDetailCopy}</div>
-              </div>
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
-                style={{ color: "var(--theme-secondary)" }}
+            {displayDetailCopy ? (
+              <motion.section
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="col-span-2 flex items-center justify-between gap-6 rounded-[3rem] border border-black/5 p-7 shadow-sm backdrop-blur-sm md:p-10"
+                style={{
+                  backgroundColor:
+                    mixHexColors(colors.background, "#ffffff", 0.12) || colors.background,
+                }}
               >
-                <Sparkles className="h-6 w-6" />
-              </div>
-            </motion.section>
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
+                    Good to Know
+                  </div>
+                  <div className="text-2xl font-bold text-black/90">{displayDetailCopy}</div>
+                </div>
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
+                  style={{ color: "var(--theme-secondary)" }}
+                >
+                  <Sparkles className="h-6 w-6" />
+                </div>
+              </motion.section>
+            ) : null}
             {displayAttire ? (
               <motion.section
                 initial={{ y: 20, opacity: 0 }}
