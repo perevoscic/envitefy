@@ -42,6 +42,7 @@ export type GroupedEventItem = {
   row: HistoryRow;
   href: string;
   openMode: "dashboard" | "preview";
+  showQuickActions: boolean;
   title: string;
   dateLabel: string;
   dateMs: number;
@@ -683,6 +684,17 @@ export function buildGroupedEventLists(args: {
         : rawShareStatus === "pending"
           ? "pending"
           : null;
+    const createdVia = String(
+      data?.createdVia ||
+        data?.source ||
+        data?.ingestMethod ||
+        data?.origin ||
+        "",
+    )
+      .trim()
+      .toLowerCase();
+    const isSnappedOrUploaded =
+      Boolean(data?.invitedFromScan) || /(snap|scan|ocr|upload)/.test(createdVia);
 
     const categoryColor = defaultCategoryColor(category);
     const palette = colorClasses(isInvited ? "slate" : categoryColor);
@@ -700,6 +712,7 @@ export function buildGroupedEventLists(args: {
       row,
       href,
       openMode,
+      showQuickActions: isInvited || isSnappedOrUploaded,
       title: row.title || "Untitled event",
       dateLabel,
       dateMs,

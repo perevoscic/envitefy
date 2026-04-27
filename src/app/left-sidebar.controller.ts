@@ -141,6 +141,8 @@ export type LeftSidebarControllerViewModel = {
   isCompactNavActive: (id: CompactNavItemId) => boolean;
   openOwnerEventContext: (item: GroupedEventItem) => void;
   openGuestEventContext: (item: GroupedEventItem) => void;
+  shareEventFromList: (item: GroupedEventItem) => Promise<void>;
+  deleteEventFromList: (item: GroupedEventItem) => Promise<void>;
   isHistoryRowActive: (rowId: string) => boolean;
   handleEventTabChange: (tab: EventContextTab) => void;
   handleSidebarBackToEvents: () => void;
@@ -1265,6 +1267,42 @@ export function useLeftSidebarController({
     ]
   );
 
+  const shareEventFromList = useCallback(async (item: GroupedEventItem) => {
+    const eventTitle = item?.title || item?.row?.title || "Event";
+    const eventHref = item?.href || `/event/${item?.row?.id || ""}`;
+    const eventUrl = new URL(eventHref, window.location.origin).toString();
+    if ((navigator as any).share) {
+      await (navigator as any).share({
+        title: eventTitle,
+        text: `Join me at ${eventTitle}`,
+        url: eventUrl,
+      });
+      return;
+    }
+    await navigator.clipboard.writeText(eventUrl);
+  }, []);
+
+  const deleteEventFromList = useCallback(
+    async (item: GroupedEventItem) => {
+      const eventId = String(item?.row?.id || "").trim();
+      if (!eventId) return;
+      const eventLabel = item?.title || item?.row?.title || "Untitled event";
+      const ok = window.confirm(
+        `Are you sure you want to delete this event?\n\n${eventLabel}`
+      );
+      if (!ok) return;
+      const response = await fetch(`/api/history/${eventId}`, { method: "DELETE" });
+      if (!response.ok) {
+        throw new Error("Failed to delete event");
+      }
+      window.dispatchEvent(new CustomEvent("history:deleted", { detail: { id: eventId } }));
+      if (selectedEventId === eventId) {
+        clearEventContext();
+      }
+    },
+    [clearEventContext, selectedEventId]
+  );
+
   const isHistoryRowActive = useCallback(
     (rowId: string) => {
       if (!rowId) return false;
@@ -1392,6 +1430,8 @@ export function useLeftSidebarController({
     isCompactNavActive,
     openOwnerEventContext,
     openGuestEventContext,
+    shareEventFromList,
+    deleteEventFromList,
     isHistoryRowActive,
     handleEventTabChange,
     handleSidebarBackToEvents,

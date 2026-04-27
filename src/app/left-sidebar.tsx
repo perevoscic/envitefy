@@ -37,8 +37,10 @@ import {
   Stethoscope,
   WandSparkles,
   Trophy,
+  Trash2,
   Upload,
   User,
+  Share2,
   Users,
 } from "lucide-react";
 import { useSidebar } from "./sidebar-context";
@@ -712,6 +714,8 @@ function EventListPanel({
   emptyPastCopy,
   isHistoryRowActive,
   onRowClick,
+  onShareRow,
+  onDeleteRow,
   pastExpanded,
   setPastExpanded,
   showPendingBadge,
@@ -724,6 +728,8 @@ function EventListPanel({
   emptyPastCopy: string;
   isHistoryRowActive: (rowId: string) => boolean;
   onRowClick: (item: GroupedEventItem) => void;
+  onShareRow: (item: GroupedEventItem) => Promise<void> | void;
+  onDeleteRow: (item: GroupedEventItem) => Promise<void> | void;
   pastExpanded: boolean;
   setPastExpanded: Dispatch<SetStateAction<boolean>>;
   showPendingBadge: boolean;
@@ -732,28 +738,47 @@ function EventListPanel({
 }) {
   const renderRows = (items: GroupedEventItem[], muted: boolean) =>
     items.map((item) => (
-      <button
+      <div
         key={item.row.id}
-        type="button"
-        onClick={() => onRowClick(item)}
         className={`${SIDEBAR_SUBMENU_ROW_CLASS} items-start px-2 py-2.5 ${
           isHistoryRowActive(item.row.id)
             ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS
             : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
         } ${muted ? pastRowOpacityClass : ""}`}
       >
-        <span
-          className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${
-            isHistoryRowActive(item.row.id)
-              ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
-              : `${item.tintClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
-          }`}
+        <button
+          type="button"
+          onClick={() => onRowClick(item)}
+          className="flex min-w-0 flex-1 items-start gap-3 text-left"
         >
-          <CalendarDays size={16} />
-        </span>
-        <span className="min-w-0 flex-1">
-          {showPendingBadge ? (
-            <span className="flex items-center gap-2">
+          <span
+            className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${
+              isHistoryRowActive(item.row.id)
+                ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
+                : `${item.tintClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
+            }`}
+          >
+            <CalendarDays size={16} />
+          </span>
+          <span className="min-w-0 flex-1">
+            {showPendingBadge ? (
+              <span className="flex items-center gap-2">
+                <span
+                  className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-none md:text-[1.02rem] ${
+                    isHistoryRowActive(item.row.id)
+                      ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+                      : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+                  }`}
+                >
+                  {item.title}
+                </span>
+                {item.shareStatus === "pending" ? (
+                  <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
+                    Pending
+                  </span>
+                ) : null}
+              </span>
+            ) : (
               <span
                 className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-none md:text-[1.02rem] ${
                   isHistoryRowActive(item.row.id)
@@ -763,34 +788,49 @@ function EventListPanel({
               >
                 {item.title}
               </span>
-              {item.shareStatus === "pending" ? (
-                <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
-                  Pending
-                </span>
-              ) : null}
-            </span>
-          ) : (
+            )}
             <span
-              className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-none md:text-[1.02rem] ${
+              className={`mt-0.5 block truncate text-xs ${
                 isHistoryRowActive(item.row.id)
-                  ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
-                  : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+                  ? "text-[#9d95db]"
+                  : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
               }`}
             >
-              {item.title}
+              {item.dateLabel}
             </span>
-          )}
-          <span
-            className={`mt-0.5 block truncate text-xs ${
-              isHistoryRowActive(item.row.id)
-                ? "text-[#9d95db]"
-                : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
-            }`}
-          >
-            {item.dateLabel}
           </span>
-        </span>
-      </button>
+        </button>
+        {item.showQuickActions ? (
+          <span className="ml-2 flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void onShareRow(item);
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e0ff] bg-white/85 text-[#7a6fd1] transition hover:bg-white"
+              aria-label={`Share ${item.title}`}
+              title="Share event"
+            >
+              <Share2 size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void onDeleteRow(item);
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#ffe1ea] bg-white/85 text-[#d2618e] transition hover:bg-white"
+              aria-label={`Delete ${item.title}`}
+              title="Delete event"
+            >
+              <Trash2 size={13} />
+            </button>
+          </span>
+        ) : null}
+      </div>
     ));
 
   const renderGroupSections = (
@@ -1281,6 +1321,8 @@ export default function LeftSidebar() {
                       emptyPastCopy="No past events."
                       isHistoryRowActive={viewModel.isHistoryRowActive}
                       onRowClick={viewModel.openOwnerEventContext}
+                      onShareRow={viewModel.shareEventFromList}
+                      onDeleteRow={viewModel.deleteEventFromList}
                       pastExpanded={viewModel.showPastMyEvents}
                       setPastExpanded={viewModel.setShowPastMyEvents}
                       showPendingBadge={false}
@@ -1304,6 +1346,8 @@ export default function LeftSidebar() {
                       emptyPastCopy="No past invited events."
                       isHistoryRowActive={viewModel.isHistoryRowActive}
                       onRowClick={viewModel.openGuestEventContext}
+                      onShareRow={viewModel.shareEventFromList}
+                      onDeleteRow={viewModel.deleteEventFromList}
                       pastExpanded={viewModel.showPastInvitedEvents}
                       setPastExpanded={viewModel.setShowPastInvitedEvents}
                       showPendingBadge
