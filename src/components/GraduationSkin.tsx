@@ -65,10 +65,6 @@ export default function GraduationSkin({
     dominant: palette?.dominant || "#5b3cc4",
     themeColor: palette?.themeColor || "#5b3cc4",
   };
-  const graduationActivities =
-    Array.isArray(activities) && activities.length
-      ? activities
-      : ["Commencement", "Photo Moments", "Celebration Gathering"];
 
   return (
     <ScannedInviteSkin
@@ -84,12 +80,9 @@ export default function GraduationSkin({
       rsvpPhone={rsvpPhone}
       rsvpEmail={rsvpEmail}
       rsvpUrl={rsvpUrl}
-      detailCopy={
-        detailCopy ||
-        "Join us to honor the graduate, celebrate this milestone, and capture memories together."
-      }
-      activities={graduationActivities}
-      attire={attire || "Grad celebration attire"}
+      detailCopy={detailCopy}
+      activities={activities}
+      attire={attire}
       registryUrl={registryUrl}
       actions={actions}
     />

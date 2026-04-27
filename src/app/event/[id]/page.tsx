@@ -1565,7 +1565,7 @@ export default async function EventPage({
       (typeof data?.goodToKnow === "string" && data.goodToKnow.trim()) ||
       (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
       (typeof data?.description === "string" && data.description.trim()) ||
-      "Details, RSVP, and calendar links are ready to share.";
+      null;
     const scannedInviteActivities = Array.isArray((data as any)?.activities)
       ? ((data as any).activities as unknown[])
           .map((item) => (typeof item === "string" ? item.trim() : ""))
