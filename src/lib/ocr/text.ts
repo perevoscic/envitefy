@@ -747,9 +747,11 @@ export function detectCategory(fullText: string): string | null {
     if (hasAppt) return "Appointments";
 
     if (/\bbridal\s*shower\b/i.test(fullText)) return "Bridal Showers";
+    const hasGraduation = /(graduation|grad\s*party|commencement|class of\s+\d{4})/i.test(fullText);
     const hasWedding =
       /(wedding|marriage|marieage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText);
     const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(fullText);
+    if (hasGraduation) return "Graduations";
     if (hasWedding && !hasBirthday) return "Weddings";
     if (hasBirthday && !hasWedding) return "Birthdays";
     if (/(baby\s*shower|baby\s*sprinkle|gender\s*reveal|sip\s*(and|&)\s*see)/i.test(fullText)) {
@@ -759,9 +761,6 @@ export function detectCategory(fullText: string): string | null {
       return "Engagements";
     }
     if (/(anniversary|vow\s*renewal)/i.test(fullText)) return "Anniversaries";
-    if (/(graduation|grad\s*party|commencement|class of\s+\d{4})/i.test(fullText)) {
-      return "Graduations";
-    }
     if (
       /(baptism|christening|communion|first holy communion|confirmation|bar mitzvah|bat mitzvah|baby dedication)/i.test(
         fullText,

@@ -10,6 +10,7 @@ import { cache } from "react";
 import AccessCodeGate from "@/components/AccessCodeGate";
 import AppleCalendarLink from "@/components/AppleCalendarLink";
 import BirthdaySkin from "@/components/BirthdaySkin";
+import GraduationSkin from "@/components/GraduationSkin";
 import ScannedInviteSkin from "@/components/ScannedInviteSkin";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 import {
@@ -1575,6 +1576,69 @@ export default async function EventPage({
         ? ((data as any).attire as string).trim()
         : null;
     const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
+    const scannedInviteActions =
+      !isReadOnly &&
+      isOwner && (
+        <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
+          {canManageCreatedEvent && (
+            <Link
+              href={buildEditLink(row.id, data, title)}
+              className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+              title="Edit event"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span className="hidden sm:inline">Edit</span>
+            </Link>
+          )}
+          <EventDeleteModal eventId={row.id} eventTitle={title} />
+          <EventActions
+            shareUrl={shareUrl}
+            event={data as any}
+            calendarTitle={title}
+            historyId={!isReadOnly ? row.id : undefined}
+            className=""
+            variant="compact"
+            tone={"default" as any}
+            showCalendar={false}
+            showEmail={false}
+          />
+        </div>
+      );
+
+    if (categoryNormalized === "graduations") {
+      return (
+        <GraduationSkin
+          title={title}
+          dateLabel={formattedTimeAndDate.date || whenLabel || null}
+          timeLabel={formattedTimeAndDate.time || null}
+          location={locationText || venueText || null}
+          imageUrl={scannedInviteImageUrl}
+          calendarLinks={calendarLinks}
+          palette={ocrSkin?.palette || null}
+          rsvpName={rsvpName}
+          rsvpPhone={rsvpPhone}
+          rsvpEmail={rsvpEmail}
+          rsvpUrl={rsvpUrl}
+          detailCopy={scannedInviteDetailCopy}
+          activities={scannedInviteActivities}
+          attire={scannedInviteAttire}
+          registryUrl={scannedInviteRegistryUrl}
+          actions={scannedInviteActions}
+        />
+      );
+    }
 
     return (
       <ScannedInviteSkin
@@ -1594,47 +1658,7 @@ export default async function EventPage({
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
         registryUrl={scannedInviteRegistryUrl}
-        actions={
-          !isReadOnly &&
-          isOwner && (
-            <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-              {canManageCreatedEvent && (
-                <Link
-                  href={buildEditLink(row.id, data, title)}
-                  className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
-                  title="Edit event"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                  >
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                  <span className="hidden sm:inline">Edit</span>
-                </Link>
-              )}
-              <EventDeleteModal eventId={row.id} eventTitle={title} />
-              <EventActions
-                shareUrl={shareUrl}
-                event={data as any}
-                calendarTitle={title}
-                historyId={!isReadOnly ? row.id : undefined}
-                className=""
-                variant="compact"
-                tone={"default" as any}
-                showCalendar={false}
-                showEmail={false}
-              />
-            </div>
-          )
-        }
+        actions={scannedInviteActions}
       />
     );
   }
