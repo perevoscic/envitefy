@@ -174,14 +174,9 @@ export default function ScannedInviteSkin({
         color: "var(--theme-text)",
       }}
     >
-      <div className="mx-auto max-w-6xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+5.75rem)] md:px-8 md:pt-8">
+      <div className="mx-auto max-w-6xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+1rem)] md:px-8 md:pt-8">
         {actions ? (
-          <>
-            <div className="fixed right-4 top-[calc(env(safe-area-inset-top)+6.75rem)] z-[35] md:hidden">
-              {actions}
-            </div>
-            <div className="mb-5 hidden justify-end md:flex">{actions}</div>
-          </>
+          <div className="mb-5 flex justify-end">{actions}</div>
         ) : null}
 
         <div className="mb-12 flex max-w-6xl flex-col items-center justify-between gap-8 pt-4 text-center md:flex-row md:items-center md:pt-12 md:text-left">
