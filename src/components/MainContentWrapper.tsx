@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { SIDEBAR_WIDTH_REM } from "@/app/left-sidebar.model";
+import { EVENT_SKIN_TOP_OFFSET_VAR } from "@/components/event-skin-layout";
 import { useEffect, useState } from "react";
 
 /** Must match the mobile <header> in left-sidebar.tsx:
@@ -41,8 +42,15 @@ export function MainContentWrapper({
   const paddingLeft =
     reserveSidebarSpace && isDesktop ? SIDEBAR_WIDTH_REM : "0";
 
+  const eventSkinTopOffset =
+    !isDesktop && isAuthenticated
+      ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
+      : "max(0px, env(safe-area-inset-top))";
+
   const paddingTop = isStudioCardShare
     ? "0px"
+    : isEventSharePage
+      ? "0px"
     : !isDesktop && isAuthenticated
       ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
       : "max(0px, env(safe-area-inset-top))";
@@ -58,11 +66,16 @@ export function MainContentWrapper({
       className={`min-h-[100dvh] text-foreground flex flex-col ${shellBgClass} ${className}`}
       style={{
         minHeight: "100dvh",
-        backgroundColor: isEventSharePage ? "var(--event-page-background-color, #F8F5FF)" : undefined,
+        backgroundColor: isEventSharePage
+          ? "var(--event-page-background-color, #F8F5FF)"
+          : undefined,
         paddingTop,
         paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
         transition: "padding-left 200ms ease-out",
+        ...(isEventSharePage
+          ? { [EVENT_SKIN_TOP_OFFSET_VAR]: eventSkinTopOffset }
+          : null),
       }}
       data-static-illustration="true"
     >

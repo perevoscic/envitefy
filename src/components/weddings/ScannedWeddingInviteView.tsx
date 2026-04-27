@@ -5,6 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Calendar, Download, MapPin, Share2 } from "lucide-react";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import {
+  EVENT_SKIN_ACTIONS_CLASS,
+  EVENT_SKIN_FOOTER_CLASS,
+  EVENT_SKIN_FOOTER_DIVIDER_CLASS,
+  EVENT_SKIN_FOOTER_TEXT_CLASS,
+  EVENT_SKIN_HERO_TOP_PADDING_CLASS,
+} from "@/components/event-skin-layout";
+import {
   DEFAULT_WEDDING_SCAN_FLYER_COLORS,
   normalizeWeddingFlyerColors,
   parseWeddingCoupleNames,
@@ -215,7 +222,9 @@ export default function ScannedWeddingInviteView({
         backgroundImage: rootBackgroundImage,
       }}
     >
-      <div className="relative min-h-[42vh] overflow-hidden px-5 pb-14 pt-8 md:min-h-[58vh] md:px-8 md:pb-20 md:pt-10">
+      <div
+        className={`relative min-h-[42vh] overflow-hidden px-5 pb-14 md:min-h-[58vh] md:px-8 md:pb-20 ${EVENT_SKIN_HERO_TOP_PADDING_CLASS}`}
+      >
         <div
           className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]"
           style={{
@@ -232,7 +241,7 @@ export default function ScannedWeddingInviteView({
         />
 
         {actions && !previewMode ? (
-          <div className="relative z-10 mx-auto flex max-w-7xl justify-end">{actions}</div>
+          <div className={`mx-auto max-w-7xl ${EVENT_SKIN_ACTIONS_CLASS}`}>{actions}</div>
         ) : null}
 
         <div className="relative z-10 mx-auto mt-8 max-w-5xl text-center md:mt-10">
@@ -564,12 +573,12 @@ export default function ScannedWeddingInviteView({
         </aside>
       </div>
 
-      <div className="mt-14 text-center">
+      <div className={EVENT_SKIN_FOOTER_CLASS}>
         <div
-          className="mx-auto mb-5 h-px w-16"
+          className={EVENT_SKIN_FOOTER_DIVIDER_CLASS}
           style={{ backgroundColor: isNoirModern ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)" }}
         />
-        <div className="text-[10px] uppercase tracking-[0.46em]" style={{ color: subtleTextColor }}>
+        <div className={EVENT_SKIN_FOOTER_TEXT_CLASS} style={{ color: subtleTextColor }}>
           Snapped by <span style={{ color: isNoirModern ? "rgba(255,255,255,0.52)" : "rgba(0,0,0,0.4)" }}>Envitefy</span>
         </div>
       </div>

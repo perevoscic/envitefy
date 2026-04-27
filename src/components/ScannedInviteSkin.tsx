@@ -5,6 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Calendar, CalendarPlus, MapPin, MessageSquare, Sparkles } from "lucide-react";
 import {
+  EVENT_SKIN_ACTIONS_CLASS,
+  EVENT_SKIN_CONTENT_TOP_PADDING_CLASS,
+  EVENT_SKIN_FOOTER_CLASS,
+  EVENT_SKIN_FOOTER_DIVIDER_CLASS,
+  EVENT_SKIN_FOOTER_TEXT_CLASS,
+} from "@/components/event-skin-layout";
+import {
   ensureReadableTextColor,
   mixHexColors,
   normalizeScannedInvitePalette,
@@ -174,10 +181,10 @@ export default function ScannedInviteSkin({
         color: "var(--theme-text)",
       }}
     >
-      <div className="mx-auto max-w-6xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+1rem)] md:px-8 md:pt-8">
-        {actions ? (
-          <div className="mb-5 flex justify-end">{actions}</div>
-        ) : null}
+      <div
+        className={`mx-auto max-w-6xl px-4 md:px-8 ${EVENT_SKIN_CONTENT_TOP_PADDING_CLASS}`}
+      >
+        {actions ? <div className={EVENT_SKIN_ACTIONS_CLASS}>{actions}</div> : null}
 
         <div className="mb-12 flex max-w-6xl flex-col items-center justify-between gap-8 pt-4 text-center md:flex-row md:items-center md:pt-12 md:text-left">
           <div className="flex-1 space-y-4 text-center md:text-left">
@@ -390,10 +397,13 @@ export default function ScannedInviteSkin({
           </div>
         </div>
 
-        <div className="mt-20 pb-8 text-center opacity-20 transition-opacity hover:opacity-50">
-          <div className="mx-auto mb-4 h-px w-8 bg-black/20" />
-          <div className="text-[10px] font-black uppercase tracking-[0.5em]">
-            SNAPPED BY ENVITEFY
+        <div className={EVENT_SKIN_FOOTER_CLASS}>
+          <div
+            className={EVENT_SKIN_FOOTER_DIVIDER_CLASS}
+            style={{ backgroundColor: "rgba(0,0,0,0.1)" }}
+          />
+          <div className={EVENT_SKIN_FOOTER_TEXT_CLASS} style={{ color: "rgba(0,0,0,0.3)" }}>
+            Snapped by <span style={{ color: "rgba(0,0,0,0.4)" }}>Envitefy</span>
           </div>
         </div>
       </div>
