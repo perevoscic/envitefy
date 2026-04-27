@@ -171,7 +171,14 @@ export async function generateStudioInvitation(
   }
 
   const hasErrors = Boolean(errors.text || errors.image);
-  const ok = !hasErrors && (invitation !== null || imageDataUrl !== null);
+  const hasTextSuccess = invitation !== null;
+  const hasImageSuccess = imageDataUrl !== null;
+  const ok =
+    mode === "text"
+      ? hasTextSuccess
+      : mode === "image"
+        ? hasImageSuccess
+        : hasTextSuccess || hasImageSuccess;
 
   return {
     ok,

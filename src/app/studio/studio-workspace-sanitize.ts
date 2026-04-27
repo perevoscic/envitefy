@@ -556,6 +556,7 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
     typeof value.imageDataUrl === "string" && value.imageDataUrl.startsWith("data:image/")
       ? value.imageDataUrl
       : null;
+  const imageUrl = typeof value.imageUrl === "string" && value.imageUrl.trim() ? value.imageUrl : null;
   const themeNormalization = normalizeStudioThemeNormalization(value.themeNormalization);
   const warnings = Array.isArray(value.warnings)
     ? value.warnings.map(readString).filter(Boolean).slice(0, 8)
@@ -580,13 +581,14 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
       liveCard: null,
       invitation: null,
       imageDataUrl: null,
+      imageUrl: null,
       themeNormalization,
       warnings,
       errors,
     };
   }
 
-  if (!liveCard && !invitation && !imageDataUrl) return null;
+  if (!liveCard && !invitation && !imageDataUrl && !imageUrl) return null;
 
   return {
     ok: true,
@@ -594,6 +596,7 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
     liveCard,
     invitation: invitation || liveCard?.invitation || null,
     imageDataUrl,
+    imageUrl,
     themeNormalization,
     warnings,
     errors,

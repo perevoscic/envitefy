@@ -28,7 +28,7 @@ test("live card updates reuse the current image in the studio generation request
   );
   assert.match(
     source,
-    /response\.imageDataUrl \|\| existingItem\?\.url \|\| getFallbackThumbnail\(currentDetails\)/,
+    /response\.imageUrl \|\|\s*response\.imageDataUrl \|\|\s*existingItem\?\.url \|\|\s*getFallbackThumbnail\(currentDetails\)/,
   );
   assert.match(source, /persistStudioLibraryImageUrl/);
   assert.match(
