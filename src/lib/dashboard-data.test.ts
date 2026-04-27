@@ -108,6 +108,48 @@ test("toDashboardEvent uses pdf preview urls instead of pdf source urls as cover
   assert.equal(event?.coverImageUrl, "https://blob.example.com/display.webp");
 });
 
+test("toDashboardEvent preserves and clamps valid dashboard thumbnail focus", () => {
+  const event = toDashboardEvent({
+    id: "evt_focus",
+    title: "Graduation Invite",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-06-05T18:00:00.000Z",
+      thumbnailFocus: {
+        target: "face",
+        x: 1.2,
+        y: -0.1,
+        confidence: 1.5,
+      },
+    },
+  });
+
+  assert.deepEqual(event?.thumbnailFocus, {
+    target: "face",
+    x: 1,
+    y: 0,
+    confidence: 1,
+  });
+});
+
+test("toDashboardEvent ignores invalid dashboard thumbnail focus", () => {
+  const event = toDashboardEvent({
+    id: "evt_bad_focus",
+    title: "Graduation Invite",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-06-05T18:00:00.000Z",
+      thumbnailFocus: {
+        target: "pet",
+        x: 0.5,
+        y: 0.5,
+      },
+    },
+  });
+
+  assert.equal(event?.thumbnailFocus, null);
+});
+
 test("db projections keep invite marker ownership logic in source", () => {
   const source = readFileSync(new URL("./db.ts", import.meta.url), "utf8");
 
@@ -117,4 +159,6 @@ test("db projections keep invite marker ownership logic in source", () => {
   assert.match(source, /'invitedFromScan', \$\{invitedFromScanSql\}/);
   assert.match(source, /previewImageUrl/);
   assert.match(source, /thumbnailUrl/);
+  assert.match(source, /thumbnailFocus/);
+  assert.match(source, /thumbnail_focus/);
 });

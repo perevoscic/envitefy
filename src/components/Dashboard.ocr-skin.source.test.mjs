@@ -11,11 +11,15 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   const source = readSource("src/components/Dashboard.tsx");
 
   assert.match(source, /ocrSkin\?: OcrSkinSelection \| null;/);
+  assert.match(source, /thumbnailFocus\?: ThumbnailFocus \| null;/);
   assert.match(source, /ocrSkin: data\?\.ocrSkin \|\| null,/);
+  assert.match(source, /thumbnailFocus: normalizeThumbnailFocus\(data\?\.thumbnailFocus\),/);
   assert.match(source, /const normalizedOcrSkin =/);
+  assert.match(source, /const normalizedThumbnailFocus = normalizeThumbnailFocus\(ocrMeta\?\.thumbnailFocus\);/);
   assert.match(source, /const isInviteOcrEvent = isOcrInviteCategory\(normalizedOcrCategory\);/);
   assert.match(source, /flyerColors = normalizedOcrSkin\.palette;/);
   assert.match(source, /ocrSkin:\s*isInviteOcrEvent \? normalizedOcrSkin \|\| undefined : undefined,/);
+  assert.match(source, /thumbnailFocus:\s*isInviteOcrEvent && normalizedThumbnailFocus/);
   assert.match(source, /"ocr-invite-skin"/);
   assert.match(source, /variationId: isBirthdayOcrEvent\s*\?\s*normalizedOcrSkin\?\.category === "birthday"/);
   assert.match(source, /normalizedOcrSkin\.skinId/);

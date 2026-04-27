@@ -5,8 +5,7 @@ import test from "node:test";
 
 const repoRoot = process.cwd();
 
-const readSource = (relativePath) =>
-  fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
 test("event route branches football discovery/template events into the football renderer", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
@@ -14,7 +13,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(
     source,
     /const FootballDiscoveryContent = nextDynamic\(\s*\(\) => import\("@\/components\/football-discovery\/FootballDiscoveryContent"\),/m,
-    "FootballDiscoveryContent should be dynamically imported"
+    "FootballDiscoveryContent should be dynamically imported",
   );
   assert.match(source, /isGymMeetTemplateId/);
   assert.match(source, /resolveFootballSeasonTemplateChrome/);
@@ -26,12 +25,11 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /hideOwnerActions=\{Boolean\(discoveryEditConfig\)\}/);
   assert.ok(
     source.includes("const shouldRenderFootballPage ="),
-    "football renderer gate is missing"
+    "football renderer gate is missing",
   );
   assert.ok(
-    source.indexOf("if (shouldRenderFootballPage)") <
-      source.indexOf("if (isSimpleTemplate)"),
-    "football renderer branch should run before the generic SimpleTemplateView branch"
+    source.indexOf("if (shouldRenderFootballPage)") < source.indexOf("if (isSimpleTemplate)"),
+    "football renderer branch should run before the generic SimpleTemplateView branch",
   );
   assert.match(
     source,
@@ -43,10 +41,15 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /const isScannedBirthdayInviteEvent =/);
   assert.match(source, /categoryNormalized === "birthdays" && isScannedInviteEvent && isOcrEvent/);
   assert.match(source, /if \(isScannedBirthdayInviteEvent\) \{/);
-  assert.match(source, /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "birthday"\);/);
+  assert.match(
+    source,
+    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "birthday", undefined, \{/,
+  );
   assert.match(source, /<BirthdaySkin/);
   assert.match(source, /calendarLinks=\{calendarLinks\}/);
+  assert.match(source, /skinId=\{ocrSkin\?\.skinId \|\| null\}/);
   assert.match(source, /palette=\{ocrSkin\?\.palette \|\| null\}/);
+  assert.match(source, /background=\{ocrSkin\?\.background \|\| null\}/);
   assert.match(source, /rsvpName=\{rsvpName\}/);
   assert.match(source, /rsvpPhone=\{rsvpPhone\}/);
   assert.match(source, /rsvpEmail=\{rsvpEmail\}/);
@@ -55,7 +58,7 @@ test("event route branches football discovery/template events into the football 
   assert.ok(
     source.indexOf("if (isScannedBirthdayInviteEvent)") <
       source.indexOf("if (isBirthdayTemplate || isBirthdayRendererEvent)"),
-    "scanned birthday branch should run before the old birthday renderer/template branch"
+    "scanned birthday branch should run before the old birthday renderer/template branch",
   );
   assert.match(source, /const isBirthdayRendererEvent =/);
   assert.match(source, /categoryNormalized === "birthdays" && createdVia === "birthday-renderer"/);
@@ -66,16 +69,20 @@ test("event route branches football discovery/template events into the football 
   assert.match(
     source,
     /const ScannedWeddingInviteView = nextDynamic\(\s*\(\) => import\("@\/components\/weddings\/ScannedWeddingInviteView"\),/m,
-    "ScannedWeddingInviteView should be dynamically imported"
+    "ScannedWeddingInviteView should be dynamically imported",
   );
   assert.match(source, /const isScannedWeddingInviteEvent =/);
   assert.match(source, /categoryNormalized === "weddings" && isScannedInviteEvent && isOcrEvent/);
   assert.match(source, /if \(isScannedWeddingInviteEvent\) \{/);
-  assert.match(source, /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "wedding"\);/);
+  assert.match(
+    source,
+    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "wedding", undefined, \{/,
+  );
   assert.match(source, /<ScannedWeddingInviteView/);
   assert.match(source, /eventId=\{row\.id\}/);
   assert.match(source, /flyerColors=\{ocrSkin\?\.palette \|\| flyerColors\}/);
   assert.match(source, /skinId=\{ocrSkin\?\.skinId \|\| null\}/);
+  assert.match(source, /background=\{ocrSkin\?\.background \|\| null\}/);
   assert.match(source, /scheduleRows=\{scannedWeddingSchedule\}/);
   assert.match(source, /rsvpName=\{rsvpName\}/);
   assert.match(source, /rsvpPhone=\{rsvpPhone\}/);
@@ -87,17 +94,19 @@ test("event route branches football discovery/template events into the football 
   assert.ok(
     source.indexOf("if (isScannedWeddingInviteEvent)") <
       source.indexOf("if (isGenericScannedInviteEvent)"),
-    "scanned wedding branch should run before the generic scanned invite branch"
+    "scanned wedding branch should run before the generic scanned invite branch",
   );
   assert.match(source, /const isGenericScannedInviteEvent =/);
   assert.match(source, /isOcrInviteCategory\(categoryRaw\)/);
   assert.match(source, /if \(isGenericScannedInviteEvent\) \{/);
   assert.match(source, /<ScannedInviteSkin/);
   assert.match(source, /categoryLabel=\{categoryRaw \|\| "General Event"\}/);
+  assert.match(source, /skinId=\{ocrSkin\?\.skinId \|\| null\}/);
   assert.match(source, /palette=\{ocrSkin\?\.palette \|\| null\}/);
+  assert.match(source, /background=\{ocrSkin\?\.background \|\| null\}/);
   assert.ok(
     source.indexOf("if (isGenericScannedInviteEvent)") <
-      source.indexOf('const isBabyShowerTemplate ='),
-    "generic scanned invite branch should run before later template fallbacks"
+      source.indexOf("const isBabyShowerTemplate ="),
+    "generic scanned invite branch should run before later template fallbacks",
   );
 });

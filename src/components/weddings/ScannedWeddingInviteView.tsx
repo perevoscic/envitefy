@@ -11,6 +11,8 @@ import {
   EVENT_SKIN_FOOTER_TEXT_CLASS,
   EVENT_SKIN_HERO_TOP_PADDING_CLASS,
 } from "@/components/event-skin-layout";
+import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 import {
   DEFAULT_WEDDING_SCAN_FLYER_COLORS,
   normalizeWeddingFlyerColors,
@@ -62,8 +64,9 @@ type Props = {
   imageUrl: string | null;
   shareUrl: string;
   calendarLinks: CalendarLinks | null;
-  skinId?: WeddingScanSkinId | null;
+  skinId?: string | null;
   flyerColors?: FlyerColors;
+  background?: OcrSkinBackground | null;
   rsvpName?: string | null;
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
@@ -89,6 +92,7 @@ export default function ScannedWeddingInviteView({
   calendarLinks,
   skinId,
   flyerColors,
+  background,
   rsvpName,
   rsvpPhone,
   rsvpEmail,
@@ -122,7 +126,8 @@ export default function ScannedWeddingInviteView({
   const hasRsvp = Boolean(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl);
   const showRsvpSection = hasRsvp || (previewMode && showRsvpPreview);
   const hasRegistries = registryCards.length > 0;
-  const timelineRows = scheduleRows.length > 0 ? scheduleRows : [{ time: displayTime, title: "Wedding Starts" }];
+  const timelineRows =
+    scheduleRows.length > 0 ? scheduleRows : [{ time: displayTime, title: "Wedding Starts" }];
   const mutedTextColor = isNoirModern ? "rgba(255,255,255,0.72)" : "rgba(0,0,0,0.45)";
   const subtleTextColor = isNoirModern ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)";
   const thinBorderColor = isNoirModern ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.05)";
@@ -200,30 +205,39 @@ export default function ScannedWeddingInviteView({
     setShowImageLightbox(true);
   };
 
-  const headline = couple.partner1 && couple.partner2 ? (
-    <>
-      <span className="block">{couple.partner1}</span>
-      <span className="block">
-        <span className="opacity-30">&amp;&nbsp;</span>
-        {couple.partner2}
-      </span>
-    </>
-  ) : (
-    couple.displayTitle
-  );
+  const headline =
+    couple.partner1 && couple.partner2 ? (
+      <>
+        <span className="block">{couple.partner1}</span>
+        <span className="block">
+          <span className="opacity-30">&amp;&nbsp;</span>
+          {couple.partner2}
+        </span>
+      </>
+    ) : (
+      couple.displayTitle
+    );
 
   return (
     <div
       data-skin-id={resolvedSkinId}
-      className="min-h-screen pb-10"
+      className="relative min-h-screen overflow-hidden pb-10"
       style={{
         backgroundColor: colors.background,
         color: colors.text,
         backgroundImage: rootBackgroundImage,
       }}
     >
+      <ScannedSkinBackground
+        category="wedding"
+        title={title}
+        skinId={resolvedSkinId}
+        palette={colors}
+        background={background}
+        darkMode={isNoirModern}
+      />
       <div
-        className={`relative min-h-[42vh] overflow-hidden px-5 pb-14 md:min-h-[58vh] md:px-8 md:pb-20 ${EVENT_SKIN_HERO_TOP_PADDING_CLASS}`}
+        className={`relative z-10 min-h-[42vh] overflow-hidden px-5 pb-14 md:min-h-[58vh] md:px-8 md:pb-20 ${EVENT_SKIN_HERO_TOP_PADDING_CLASS}`}
       >
         <div
           className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]"
@@ -272,7 +286,7 @@ export default function ScannedWeddingInviteView({
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-5 pt-8 md:pt-10 lg:grid-cols-12 lg:items-start lg:gap-10 lg:px-8">
+      <div className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 gap-8 px-5 pt-8 md:pt-10 lg:grid-cols-12 lg:items-start lg:gap-10 lg:px-8">
         <div className="space-y-8 lg:col-span-8">
           <section
             className="overflow-hidden rounded-[2.2rem] p-6 shadow-[0_24px_80px_rgba(37,26,10,0.08)] backdrop-blur md:p-10"
@@ -353,13 +367,15 @@ export default function ScannedWeddingInviteView({
                     className="max-w-md text-[0.98rem] font-light leading-relaxed"
                     style={{ color: mutedTextColor }}
                   >
-                    Reply directly from the event page using the saved RSVP contact found on
-                    the invitation.
+                    Reply directly from the event page using the saved RSVP contact found on the
+                    invitation.
                   </div>
                   {rsvpDeadline?.trim() ? (
                     <div
                       className="text-sm font-medium tracking-[0.08em] uppercase"
-                      style={{ color: isNoirModern ? "rgba(255,255,255,0.76)" : "rgba(0,0,0,0.55)" }}
+                      style={{
+                        color: isNoirModern ? "rgba(255,255,255,0.76)" : "rgba(0,0,0,0.55)",
+                      }}
                     >
                       RSVP by {rsvpDeadline.trim()}
                     </div>
@@ -386,14 +402,20 @@ export default function ScannedWeddingInviteView({
                       variant="wedding-scan"
                     />
                   ) : (
-                    <RsvpPreviewCard colors={colors} text={rsvpPreviewText} darkMode={isNoirModern} />
+                    <RsvpPreviewCard
+                      colors={colors}
+                      text={rsvpPreviewText}
+                      darkMode={isNoirModern}
+                    />
                   )}
                 </div>
               </div>
             </section>
           ) : null}
 
-          <div className={`grid grid-cols-1 gap-5 ${showPublicShareAction && !previewMode ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
+          <div
+            className={`grid grid-cols-1 gap-5 ${showPublicShareAction && !previewMode ? "md:grid-cols-4" : "md:grid-cols-3"}`}
+          >
             <ActionCard
               title="Save Event"
               subtitle="Sync to calendar"
@@ -496,11 +518,16 @@ export default function ScannedWeddingInviteView({
                     <span className="min-w-0">
                       <span
                         className="block text-[13px] font-semibold uppercase tracking-[0.18em]"
-                        style={{ color: isNoirModern ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.85)" }}
+                        style={{
+                          color: isNoirModern ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.85)",
+                        }}
                       >
                         {link.label}
                       </span>
-                      <span className="mt-2 block truncate text-sm" style={{ color: mutedTextColor }}>
+                      <span
+                        className="mt-2 block truncate text-sm"
+                        style={{ color: mutedTextColor }}
+                      >
                         {link.brandLabel || link.host}
                       </span>
                     </span>
@@ -531,7 +558,11 @@ export default function ScannedWeddingInviteView({
             >
               <div className="overflow-hidden rounded-[1.45rem] border border-black/5 bg-white">
                 {imageUrl ? (
-                  <img src={imageUrl} alt={`${title} invitation`} className="h-auto w-full object-cover" />
+                  <img
+                    src={imageUrl}
+                    alt={`${title} invitation`}
+                    className="h-auto w-full object-cover"
+                  />
                 ) : (
                   <div
                     className="aspect-[4/5] w-full"
@@ -543,7 +574,10 @@ export default function ScannedWeddingInviteView({
               </div>
             </button>
             <div className="mt-6 flex items-center justify-between px-1">
-              <div className="text-[10px] uppercase tracking-[0.42em]" style={{ color: subtleTextColor }}>
+              <div
+                className="text-[10px] uppercase tracking-[0.42em]"
+                style={{ color: subtleTextColor }}
+              >
                 Digital Keepsake
               </div>
               <button
@@ -562,7 +596,10 @@ export default function ScannedWeddingInviteView({
                 <Share2 className="h-4 w-4" />
               </button>
             </div>
-            <div className="min-h-5 pt-2 text-right text-[10px] uppercase tracking-[0.24em]" style={{ color: subtleTextColor }}>
+            <div
+              className="min-h-5 pt-2 text-right text-[10px] uppercase tracking-[0.24em]"
+              style={{ color: subtleTextColor }}
+            >
               {shareMessage === "copied"
                 ? "Link copied"
                 : shareMessage === "shared"
@@ -573,13 +610,16 @@ export default function ScannedWeddingInviteView({
         </aside>
       </div>
 
-      <div className={EVENT_SKIN_FOOTER_CLASS}>
+      <div className={`relative z-10 ${EVENT_SKIN_FOOTER_CLASS}`}>
         <div
           className={EVENT_SKIN_FOOTER_DIVIDER_CLASS}
           style={{ backgroundColor: isNoirModern ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)" }}
         />
         <div className={EVENT_SKIN_FOOTER_TEXT_CLASS} style={{ color: subtleTextColor }}>
-          Snapped by <span style={{ color: isNoirModern ? "rgba(255,255,255,0.52)" : "rgba(0,0,0,0.4)" }}>Envitefy</span>
+          Snapped by{" "}
+          <span style={{ color: isNoirModern ? "rgba(255,255,255,0.52)" : "rgba(0,0,0,0.4)" }}>
+            Envitefy
+          </span>
         </div>
       </div>
 
@@ -861,10 +901,19 @@ function CalendarLinkRow({
       onClick={onChoose}
       className="flex items-center gap-4 rounded-[1.35rem] px-3 py-4 transition hover:bg-black/[0.03]"
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-[1rem]" style={{ backgroundColor: `${tone}12`, color: tone }}>
-        {label === "Apple Calendar" ? <Download className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-[1rem]"
+        style={{ backgroundColor: `${tone}12`, color: tone }}
+      >
+        {label === "Apple Calendar" ? (
+          <Download className="h-5 w-5" />
+        ) : (
+          <Calendar className="h-5 w-5" />
+        )}
       </div>
-      <span className="text-[13px] font-semibold uppercase tracking-[0.2em] text-black/90">{label}</span>
+      <span className="text-[13px] font-semibold uppercase tracking-[0.2em] text-black/90">
+        {label}
+      </span>
     </a>
   );
 }

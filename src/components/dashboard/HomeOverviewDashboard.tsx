@@ -14,6 +14,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { FlipClock } from "@/components/ui/flip-clock";
+import {
+  thumbnailFocusToObjectPosition,
+  type ThumbnailFocus,
+} from "@/lib/thumbnail-focus";
 
 type DashboardEventItem = {
   id: string;
@@ -24,6 +28,7 @@ type DashboardEventItem = {
   status: string | null;
   category: string | null;
   coverImageUrl?: string | null;
+  thumbnailFocus?: ThumbnailFocus | null;
   numberOfGuests?: number;
   reminderCount?: number;
   mapsUrl?: string | null;
@@ -236,6 +241,7 @@ function InvitationEventCard({
   const statusClassName = getInvitationStatusTextClass(item);
   const countdown = buildCountdownParts(parseSafeDate(item.startAt), now);
   const isInvited = item.ownership === "invited";
+  const thumbnailObjectPosition = thumbnailFocusToObjectPosition(item.thumbnailFocus);
   const primaryButtonClassName = `group/btn inline-flex min-h-[56px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] px-5 py-4 text-sm font-bold text-white shadow-xl transition-all sm:min-h-[60px] sm:min-w-[170px] sm:px-8 sm:text-base ${
     isInvited
       ? "bg-indigo-600 hover:opacity-90"
@@ -305,6 +311,11 @@ function InvitationEventCard({
                   unoptimized
                   sizes="(max-width: 768px) 100vw, 48vw"
                   className="object-cover transition-transform duration-[4000ms] group-hover:scale-105"
+                  style={
+                    thumbnailObjectPosition
+                      ? { objectPosition: thumbnailObjectPosition }
+                      : undefined
+                  }
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent" />
               </>

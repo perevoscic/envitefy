@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import ScannedInviteSkin from "@/components/ScannedInviteSkin";
+import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 
 type CalendarLinks = {
   google: string;
@@ -26,7 +27,9 @@ type Props = {
   location?: string | null;
   imageUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
+  skinId?: string | null;
   palette?: Palette;
+  background?: OcrSkinBackground | null;
   rsvpName?: string | null;
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
@@ -45,7 +48,9 @@ export default function GraduationSkin({
   location,
   imageUrl,
   calendarLinks,
+  skinId,
   palette,
+  background,
   rsvpName,
   rsvpPhone,
   rsvpEmail,
@@ -70,12 +75,15 @@ export default function GraduationSkin({
     <ScannedInviteSkin
       title={title}
       categoryLabel="🎓 Graduation Celebration"
+      backgroundCategory="graduation"
       dateLabel={dateLabel}
       timeLabel={timeLabel}
       location={location}
       imageUrl={imageUrl}
       calendarLinks={calendarLinks}
+      skinId={skinId}
       palette={graduationPalette}
+      background={background}
       rsvpName={rsvpName}
       rsvpPhone={rsvpPhone}
       rsvpEmail={rsvpEmail}

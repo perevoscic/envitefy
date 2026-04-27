@@ -1,45 +1,35 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import OpenAI from "openai";
+import {
+  buildOcrSkinBackgroundPromptRules,
+  normalizeOcrSkinBackground,
+  normalizeOcrSkinCategory,
+  resolveOcrSkinBackground,
+  type OcrSkinBackground,
+  type OcrSkinCategory,
+  type OcrSkinId,
+  type OcrSkinPalette,
+} from "@/lib/ocr/skin-background";
 import { resolveStudioProvider } from "@/lib/studio/provider";
 import type { StudioProvider } from "@/lib/studio/types";
 
-export type OcrSkinCategory =
-  | "birthday"
-  | "wedding"
-  | "baby-shower"
-  | "bridal-shower"
-  | "engagement"
-  | "anniversary"
-  | "graduation"
-  | "religious"
-  | "general";
-
-export type OcrSkinId =
-  | "scanned-birthday-bento-pop"
-  | "scanned-birthday-storybook-sparkle"
-  | "scanned-birthday-retro-neon"
-  | "scanned-wedding-editorial-paper"
-  | "scanned-wedding-gilded-romance"
-  | "scanned-wedding-noir-modern"
-  | "scanned-invite-bento-celebration"
-  | "scanned-invite-soft-radiance"
-  | "scanned-invite-evening-luxe";
-
-export type OcrSkinPalette = {
-  background: string;
-  primary: string;
-  secondary: string;
-  accent: string;
-  text: string;
-  dominant: string;
-  themeColor: string;
-};
+export type {
+  OcrSkinBackground,
+  OcrSkinBackgroundDensity,
+  OcrSkinBackgroundObjectKind,
+  OcrSkinBackgroundPlacement,
+  OcrSkinBackgroundTexture,
+  OcrSkinCategory,
+  OcrSkinId,
+  OcrSkinPalette,
+} from "@/lib/ocr/skin-background";
 
 export type OcrSkinSelection = {
   version: 1;
   category: OcrSkinCategory;
   skinId: OcrSkinId;
   palette: OcrSkinPalette;
+  background?: OcrSkinBackground;
   provider: StudioProvider;
 };
 
@@ -64,6 +54,7 @@ type OcrSkinPromptInput = {
 type RawOcrSkinPayload = {
   skinId?: unknown;
   palette?: Record<string, unknown> | null;
+  background?: Record<string, unknown> | null;
 };
 
 const BIRTHDAY_SKIN_IDS = [
@@ -200,42 +191,8 @@ function safeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function normalizeCategory(value: unknown): OcrSkinCategory | null {
-  const normalized = safeString(value).toLowerCase();
-  if (normalized === "birthday" || normalized === "birthdays") return "birthday";
-  if (normalized === "wedding" || normalized === "weddings") return "wedding";
-  if (
-    normalized === "baby shower" ||
-    normalized === "baby showers" ||
-    normalized === "gender reveal" ||
-    normalized === "gender reveals"
-  ) {
-    return "baby-shower";
-  }
-  if (normalized === "bridal shower" || normalized === "bridal showers") return "bridal-shower";
-  if (normalized === "engagement" || normalized === "engagements") return "engagement";
-  if (normalized === "anniversary" || normalized === "anniversaries") return "anniversary";
-  if (normalized === "graduation" || normalized === "graduations") return "graduation";
-  if (
-    normalized === "religious event" ||
-    normalized === "religious events" ||
-    normalized === "religious celebration" ||
-    normalized === "religious celebrations"
-  ) {
-    return "religious";
-  }
-  if (
-    normalized === "general event" ||
-    normalized === "general events" ||
-    normalized === "general"
-  ) {
-    return "general";
-  }
-  return null;
-}
-
 export function isOcrInviteCategory(value: unknown): boolean {
-  return Boolean(normalizeCategory(value));
+  return Boolean(normalizeOcrSkinCategory(value));
 }
 
 function normalizeHex(value: unknown): string | null {
@@ -386,7 +343,7 @@ function buildAllowedSkinRules(category: OcrSkinCategory): string {
 }
 
 function buildPrompt(input: OcrSkinPromptInput): string {
-  const category = normalizeCategory(input.category);
+  const category = normalizeOcrSkinCategory(input.category);
   if (!category) {
     return "Return JSON only.";
   }
@@ -409,6 +366,7 @@ function buildPrompt(input: OcrSkinPromptInput): string {
     "If the flyer background is colorful, preserve that color truth instead of washing it out to near-white.",
     "Do not invent a new skinId. Choose only from the allowed list.",
     "Prefer the flyer's visual mood, typography attitude, and composition feel over generic category defaults.",
+    buildOcrSkinBackgroundPromptRules(category),
     "",
     `Category: ${category}`,
     title ? `Title: ${title}` : "Title: Not provided",
@@ -422,7 +380,7 @@ function buildPrompt(input: OcrSkinPromptInput): string {
       : "",
     input.ocrText ? `OCR text:\n${input.ocrText}` : "OCR text: Not provided",
     "",
-    'Response shape: {"skinId":"allowed-id","palette":{"background":"#xxxxxx","primary":"#xxxxxx","secondary":"#xxxxxx","accent":"#xxxxxx","text":"#xxxxxx","dominant":"#xxxxxx","themeColor":"#xxxxxx"}}',
+    'Response shape: {"skinId":"allowed-id","palette":{"background":"#xxxxxx","primary":"#xxxxxx","secondary":"#xxxxxx","accent":"#xxxxxx","text":"#xxxxxx","dominant":"#xxxxxx","themeColor":"#xxxxxx"},"background":{"version":1,"seed":"unique-kebab-case","texture":"paper","density":"low","placement":"corners","objectKinds":["allowed-kind"],"colors":["#xxxxxx"]}}',
   ]
     .filter(Boolean)
     .join("\n");
@@ -552,8 +510,27 @@ async function inferWithGemini(input: OcrSkinPromptInput): Promise<RawOcrSkinPay
                 "themeColor",
               ],
             },
+            background: {
+              type: Type.OBJECT,
+              properties: {
+                version: { type: Type.NUMBER },
+                seed: { type: Type.STRING },
+                texture: { type: Type.STRING },
+                density: { type: Type.STRING },
+                placement: { type: Type.STRING },
+                objectKinds: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                },
+                colors: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                },
+              },
+              required: ["version", "seed", "texture", "density", "placement", "objectKinds"],
+            },
           },
-          required: ["skinId", "palette"],
+          required: ["skinId", "palette", "background"],
         },
       },
     });
@@ -575,19 +552,35 @@ export function normalizeOcrSkinSelection(
   value: unknown,
   categoryInput?: unknown,
   providerInput?: unknown,
+  backgroundContext?: { title?: unknown } | null,
 ): OcrSkinSelection | null {
   if (!value || typeof value !== "object") return null;
-  const category = normalizeCategory(categoryInput || (value as any)?.category);
+  const category = normalizeOcrSkinCategory(categoryInput || (value as any)?.category);
   if (!category) return null;
   const providerRaw = providerInput || (value as any)?.provider;
   const provider: StudioProvider = providerRaw === "openai" ? "openai" : "gemini";
   const skinId = normalizeSkinId(category, (value as any)?.skinId);
   if (!skinId) return null;
+  const palette = normalizePalette(skinId, (value as any)?.palette);
+  const background = normalizeOcrSkinBackground((value as any)?.background, {
+    category,
+    title: safeString(backgroundContext?.title) || safeString((value as any)?.title),
+    skinId,
+    palette,
+  });
   return {
     version: 1,
     category,
     skinId,
-    palette: normalizePalette(skinId, (value as any)?.palette),
+    palette,
+    background:
+      background ||
+      resolveOcrSkinBackground(null, {
+        category,
+        title: safeString(backgroundContext?.title) || safeString((value as any)?.title),
+        skinId,
+        palette,
+      }),
     provider,
   };
 }
@@ -595,12 +588,14 @@ export function normalizeOcrSkinSelection(
 export async function inferOcrSkinSelection(
   input: OcrSkinPromptInput,
 ): Promise<OcrSkinSelection | null> {
-  const category = normalizeCategory(input.category);
+  const category = normalizeOcrSkinCategory(input.category);
   if (!category) return null;
   const provider = ocrSkinDeps.resolveStudioProvider();
   const raw =
     provider === "openai"
       ? await ocrSkinDeps.inferWithOpenAi({ ...input, category })
       : await ocrSkinDeps.inferWithGemini({ ...input, category });
-  return normalizeOcrSkinSelection(raw, category, provider);
+  return normalizeOcrSkinSelection(raw, category, provider, {
+    title: input.fieldsGuess?.title,
+  });
 }

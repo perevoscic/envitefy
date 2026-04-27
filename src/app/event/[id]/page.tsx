@@ -1406,7 +1406,9 @@ export default async function EventPage({
     Boolean(isFootballDiscoveryTemplate) || Boolean(isFootballSeasonTemplate);
 
   if (isScannedBirthdayInviteEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "birthday");
+    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "birthday", undefined, {
+      title,
+    });
     const scannedBirthdayImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
@@ -1441,7 +1443,9 @@ export default async function EventPage({
         imageUrl={scannedBirthdayImageUrl}
         shareUrl={shareUrl}
         calendarLinks={calendarLinks}
+        skinId={ocrSkin?.skinId || null}
         palette={ocrSkin?.palette || null}
+        background={ocrSkin?.background || null}
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
@@ -1632,7 +1636,9 @@ export default async function EventPage({
   }
 
   if (isScannedWeddingInviteEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "wedding");
+    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "wedding", undefined, {
+      title,
+    });
     const scannedWeddingImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
@@ -1668,6 +1674,7 @@ export default async function EventPage({
         calendarLinks={calendarLinks}
         flyerColors={ocrSkin?.palette || flyerColors}
         skinId={ocrSkin?.skinId || null}
+        background={ocrSkin?.background || null}
         scheduleRows={scannedWeddingSchedule}
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
@@ -1682,7 +1689,9 @@ export default async function EventPage({
   }
 
   if (isGenericScannedInviteEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, categoryRaw);
+    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, categoryRaw, undefined, {
+      title,
+    });
     const scannedInviteImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
@@ -1752,7 +1761,9 @@ export default async function EventPage({
           location={locationText || venueText || null}
           imageUrl={scannedInviteImageUrl}
           calendarLinks={calendarLinks}
+          skinId={ocrSkin?.skinId || null}
           palette={ocrSkin?.palette || null}
+          background={ocrSkin?.background || null}
           rsvpName={rsvpName}
           rsvpPhone={rsvpPhone}
           rsvpEmail={rsvpEmail}
@@ -1775,7 +1786,9 @@ export default async function EventPage({
         location={locationText || venueText || null}
         imageUrl={scannedInviteImageUrl}
         calendarLinks={calendarLinks}
+        skinId={ocrSkin?.skinId || null}
         palette={ocrSkin?.palette || null}
+        background={ocrSkin?.background || null}
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}

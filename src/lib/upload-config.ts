@@ -1,4 +1,4 @@
-import { sanitizePersistedMediaUrl } from "./public-asset-url";
+import { sanitizePersistedMediaUrl } from "./public-asset-url.ts";
 
 export const IMAGE_UPLOAD_MIME_TYPES = [
   "image/jpeg",

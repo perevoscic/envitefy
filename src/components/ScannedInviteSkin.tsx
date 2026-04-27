@@ -11,6 +11,8 @@ import {
   EVENT_SKIN_FOOTER_DIVIDER_CLASS,
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
+import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 import {
   ensureReadableTextColor,
   mixHexColors,
@@ -36,12 +38,15 @@ type Palette = {
 type Props = {
   title: string;
   categoryLabel?: string | null;
+  backgroundCategory?: string | null;
   dateLabel?: string | null;
   timeLabel?: string | null;
   location?: string | null;
   imageUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
+  skinId?: string | null;
   palette?: Palette;
+  background?: OcrSkinBackground | null;
   rsvpName?: string | null;
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
@@ -94,12 +99,15 @@ function formatCategoryLabel(value: string | null | undefined) {
 export default function ScannedInviteSkin({
   title,
   categoryLabel,
+  backgroundCategory,
   dateLabel,
   timeLabel,
   location,
   imageUrl,
   calendarLinks,
+  skinId,
   palette,
+  background,
   rsvpName,
   rsvpPhone,
   rsvpEmail,
@@ -114,7 +122,10 @@ export default function ScannedInviteSkin({
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
 
-  const colors = useMemo(() => normalizeScannedInvitePalette(palette, DEFAULT_PALETTE), [palette]);
+  const colors = useMemo(
+    () => normalizeScannedInvitePalette(palette as any, DEFAULT_PALETTE as any),
+    [palette],
+  );
 
   const chipTextColor = ensureReadableTextColor(colors.accent, "#ffffff", { minContrast: 3 });
   const primaryTileTextColor = ensureReadableTextColor(colors.primary, "#ffffff", {
@@ -134,7 +145,10 @@ export default function ScannedInviteSkin({
   const displayAttire = String(attire || "").trim();
   const displayRegistryUrl = String(registryUrl || "").trim();
   const displayActivities = Array.isArray(activities)
-    ? activities.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 4)
+    ? activities
+        .map((item) => String(item || "").trim())
+        .filter(Boolean)
+        .slice(0, 4)
     : [];
 
   useEffect(() => {
@@ -174,15 +188,22 @@ export default function ScannedInviteSkin({
       data-skin-id="scanned-invite-skin"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen pb-10 font-sans"
+      className="relative min-h-screen overflow-hidden pb-10 font-sans"
       style={{
         ...themeStyle,
         backgroundColor: "var(--theme-background)",
         color: "var(--theme-text)",
       }}
     >
+      <ScannedSkinBackground
+        category={backgroundCategory || categoryLabel || "general"}
+        title={title}
+        skinId={skinId}
+        palette={colors}
+        background={background}
+      />
       <div
-        className={`mx-auto max-w-6xl px-4 md:px-8 ${EVENT_SKIN_CONTENT_TOP_PADDING_CLASS}`}
+        className={`relative z-10 mx-auto max-w-6xl px-4 md:px-8 ${EVENT_SKIN_CONTENT_TOP_PADDING_CLASS}`}
       >
         {actions ? <div className={EVENT_SKIN_ACTIONS_CLASS}>{actions}</div> : null}
 

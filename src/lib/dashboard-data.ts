@@ -1,4 +1,8 @@
 import { resolveCoverImageUrlFromEventData } from "./upload-config.ts";
+import {
+  normalizeThumbnailFocus,
+  type ThumbnailFocus,
+} from "./thumbnail-focus.ts";
 
 export type DashboardEventOwnership = "owned" | "invited";
 export type DashboardEventShareStatus = "accepted" | "pending" | null;
@@ -18,6 +22,7 @@ export type DashboardEvent = {
   locationLat: number | null;
   locationLng: number | null;
   coverImageUrl: string | null;
+  thumbnailFocus: ThumbnailFocus | null;
   status: string | null;
   category: string | null;
   updatedAt: string | null;
@@ -209,6 +214,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     locationLat,
     locationLng,
     coverImageUrl: resolveCoverImageUrlFromEventData(data),
+    thumbnailFocus: normalizeThumbnailFocus(data?.thumbnailFocus),
     status: normalizeStatus(data?.status),
     category: firstString(data?.category, row?.data?.category),
     updatedAt: parseIso(data?.updatedAt) ?? parseIso(row?.created_at) ?? null,

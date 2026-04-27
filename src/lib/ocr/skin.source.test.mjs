@@ -11,6 +11,8 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   const source = readSource("src/lib/ocr/skin.ts");
 
   assert.match(source, /import \{ resolveStudioProvider \} from "@\/lib\/studio\/provider";/);
+  assert.match(source, /buildOcrSkinBackgroundPromptRules/);
+  assert.match(source, /type OcrSkinBackground/);
   assert.match(source, /export const ocrSkinDeps = \{/);
   assert.match(source, /resolveStudioProvider,/);
   assert.match(source, /const provider = ocrSkinDeps\.resolveStudioProvider\(\);/);
@@ -21,13 +23,24 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(source, /scanned-wedding-noir-modern/);
   assert.match(source, /scanned-invite-bento-celebration/);
   assert.match(source, /EXACT dominant color palette from the flyer itself/);
-  assert.match(source, /Do not mute, soften, or pastelize a vivid flyer palette unless the flyer is already soft\./);
+  assert.match(
+    source,
+    /Do not mute, soften, or pastelize a vivid flyer palette unless the flyer is already soft\./,
+  );
+  assert.match(source, /"background":\{"version":1,"seed":"unique-kebab-case"/);
+  assert.match(source, /objectKinds/);
+  assert.match(source, /required: \["skinId", "palette", "background"\]/);
+  assert.match(source, /normalizeOcrSkinBackground/);
+  assert.match(source, /resolveOcrSkinBackground/);
 });
 
 test("ocr pipeline adds provider-aware ocrSkin for invite-like OCR categories", () => {
   const source = readSource("src/lib/ocr/pipeline.ts");
 
-  assert.match(source, /import \{ inferOcrSkinSelection, isOcrInviteCategory \} from "@\/lib\/ocr\/skin";/);
+  assert.match(
+    source,
+    /import \{ inferOcrSkinSelection, isOcrInviteCategory \} from "@\/lib\/ocr\/skin";/,
+  );
   assert.match(source, /const ocrSkin =/);
   assert.match(source, /isOcrInviteCategory\(category\)/);
   assert.match(source, /await inferOcrSkinSelection\(\{/);

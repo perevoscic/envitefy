@@ -54,6 +54,7 @@ import {
   extractGuestReminderFromFlyerText,
 } from "@/lib/ocr/text";
 import { validateUploadFileMeta } from "@/lib/upload-config";
+import { normalizeThumbnailFocus } from "@/lib/thumbnail-focus";
 import { resolveInferredInviteDatetime } from "@/lib/ocr/inferred-invite-date.mjs";
 
 function toLocalNoZ(date: Date | null) {
@@ -1182,7 +1183,7 @@ export async function handleOcrRequest(request: Request) {
       let practiceTz = tz;
       let practiceTitle: string | null = null;
       let practiceTimeframe: string | null = null;
-      let practiceGroups: any[] = [];
+      const practiceGroups: any[] = [];
 
       if (allowDeepScheduleExtraction) {
         try {
@@ -1440,7 +1441,7 @@ export async function handleOcrRequest(request: Request) {
     const ocrSkin =
       isOcrInviteCategory(category)
         ? await inferOcrSkinSelection({
-            category,
+            category: category || "general",
             imageBytes: colorBuffer,
             mimeType: colorMime,
             ocrText: raw,
@@ -1460,6 +1461,7 @@ export async function handleOcrRequest(request: Request) {
                 : null,
           })
         : null;
+    const thumbnailFocus = normalizeThumbnailFocus(llmImage?.thumbnailFocus);
 
     void (async () => {
       try {
@@ -1497,6 +1499,7 @@ export async function handleOcrRequest(request: Request) {
       category,
       birthdayTemplateHint,
       ocrSkin,
+      thumbnailFocus,
       ocrSource,
     };
     if (includeTimings) {

@@ -16,6 +16,10 @@ import {
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { isOcrInviteCategory, type OcrSkinSelection } from "@/lib/ocr/skin";
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
+import {
+  normalizeThumbnailFocus,
+  type ThumbnailFocus,
+} from "@/lib/thumbnail-focus";
 import { findFirstEmail, normalizeUrlValue } from "@/utils/contact";
 import { extractColorsFromImage } from "@/utils/image-colors";
 import { buildEventPath } from "@/utils/event-url";
@@ -61,6 +65,7 @@ type SubmitScannedEventParams = {
     birthdayTemplateHint?: BirthdayTemplateHint | null;
     ocrSkin?: OcrSkinSelection | null;
     flyerColors?: Record<string, string> | null;
+    thumbnailFocus?: ThumbnailFocus | null;
   };
 };
 
@@ -1020,6 +1025,7 @@ export default function Dashboard({
               category: data?.category || null,
               birthdayTemplateHint: data?.birthdayTemplateHint || null,
               ocrSkin: data?.ocrSkin || null,
+              thumbnailFocus: normalizeThumbnailFocus(data?.thumbnailFocus),
             },
           });
           if (!created) {
@@ -1193,6 +1199,7 @@ export default function Dashboard({
           ocrMeta?.birthdayTemplateHint || ocrBirthdayTemplateHint;
         const normalizedOcrSkin =
           ocrMeta?.ocrSkin && typeof ocrMeta.ocrSkin === "object" ? ocrMeta.ocrSkin : null;
+        const normalizedThumbnailFocus = normalizeThumbnailFocus(ocrMeta?.thumbnailFocus);
         const isBirthdayOcrEvent =
           normalizedBirthdayTemplateHint?.detected &&
           (normalizedOcrCategory || "").toLowerCase() === "birthdays";
@@ -1283,6 +1290,10 @@ export default function Dashboard({
                   ? "ocr-invite-skin"
                 : "ocr",
             thumbnail,
+            thumbnailFocus:
+              isInviteOcrEvent && normalizedThumbnailFocus
+                ? normalizedThumbnailFocus
+                : undefined,
             attachment: attachment || undefined,
             ocrSkin: isInviteOcrEvent ? normalizedOcrSkin || undefined : undefined,
             flyerColors: isWeddingOcrEvent ? flyerColors || undefined : undefined,

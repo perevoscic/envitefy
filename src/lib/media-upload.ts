@@ -331,7 +331,7 @@ async function processImageUpload(params: {
       access: "public",
     }),
     uploadBlobAsset({
-      pathname: `event-media/${params.scopeId}/${params.usage}/${getOriginalOutputName(
+      pathname: `event-media/${params.scopeId}/${params.usage}/source/${getOriginalOutputName(
         params.validated.fileName,
       )}`,
       bytes: params.validated.bytes,

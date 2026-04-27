@@ -1,3 +1,5 @@
+import type { ThumbnailFocus } from "@/lib/thumbnail-focus";
+
 export type EventOcrLlmResult = {
   title?: string;
   start?: string | null;
@@ -18,6 +20,8 @@ export type EventOcrLlmResult = {
   birthdayAge?: number | string | null;
   /** Short guest reminder from flyer footer (e.g. "Don't forget a towel and sunscreen!"). */
   goodToKnow?: string | null;
+  /** Dashboard thumbnail crop focus. Coordinates are normalized 0..1 in the upright image. */
+  thumbnailFocus?: ThumbnailFocus | null;
 };
 
 export type GymnasticsScheduleEvent = {

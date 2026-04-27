@@ -1689,6 +1689,7 @@ function _buildDashboardDataProjectionSql(
     'locationLng', ${dataSql}->'locationLng',
     'lng', ${dataSql}->'lng',
     'coverImageUrl', ${buildDashboardCoverImageUrlSql(dataSql, idSql)},
+    'thumbnailFocus', ${dataSql}->'thumbnailFocus',
     'thumbnail', ${buildDashboardSafeMediaJsonSql(
       `${dataSql}->'thumbnail'`,
       `${dataSql}->>'thumbnail'`,
@@ -1756,6 +1757,7 @@ type DashboardProjectionQueryRow = {
   location_lng: any;
   lng: any;
   cover_image_url: any;
+  thumbnail_focus: any;
   thumbnail: any;
   hero_image: any;
   status: any;
@@ -1851,6 +1853,7 @@ function mapDashboardProjectionRowToEventHistoryRow(
       locationLng: row.location_lng ?? null,
       lng: row.lng ?? null,
       coverImageUrl: row.cover_image_url ?? null,
+      thumbnailFocus: row.thumbnail_focus ?? null,
       thumbnail: row.thumbnail ?? null,
       heroImage: row.hero_image ?? null,
       status: row.status ?? null,
@@ -2005,8 +2008,9 @@ async function listProjectedDashboardHistoryRowsByIds(
        coalesce(eh.data, '{}'::jsonb)->'lat' as lat,
        coalesce(eh.data, '{}'::jsonb)->'locationLng' as location_lng,
        coalesce(eh.data, '{}'::jsonb)->'lng' as lng,
-       ${buildDashboardCoverImageUrlSql("coalesce(eh.data, '{}'::jsonb)", "eh.id")} as cover_image_url,
-       ${buildDashboardSafeMediaJsonSql(
+        ${buildDashboardCoverImageUrlSql("coalesce(eh.data, '{}'::jsonb)", "eh.id")} as cover_image_url,
+        coalesce(eh.data, '{}'::jsonb)->'thumbnailFocus' as thumbnail_focus,
+        ${buildDashboardSafeMediaJsonSql(
          "coalesce(eh.data, '{}'::jsonb)->'thumbnail'",
          "coalesce(eh.data, '{}'::jsonb)->>'thumbnail'",
        )} as thumbnail,

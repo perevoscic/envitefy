@@ -40,6 +40,14 @@ export function buildEventExtractionPrompt(todayIso: string) {
 
   GOOD TO KNOW (guest reminders):
   • Read the **bottom** of the flyer and any **small or cursive** lines: practical tips for guests (e.g. "don't forget a towel and sunscreen!", "bring a swimsuit", "gifts optional"). Put that wording in **goodToKnow** — preserve meaning; fix obvious OCR typos only (e.g. "twoel" → "towel"). One sentence or short phrase; do **not** put RSVP, phone, address, or date/time here (those go in other fields). If nothing like that appears, goodToKnow is null.
+
+  THUMBNAIL FOCUS (for dashboard card cropping, not identity recognition):
+  • Return thumbnailFocus as an object with target, x, y, and optional confidence.
+  • Coordinates are normalized 0..1 in the upright image: x=0 left, x=1 right, y=0 top, y=1 bottom. Use the center point of the chosen subject.
+  • Choose target="face" and center on the clearest/largest visible human face when one exists.
+  • If no face is visible, choose target="title" and center on the main printed invitation title/headline.
+  • If neither is clear, choose target="center" with x=0.5 and y=0.5.
+  • Do not identify the person. Only locate the best crop focus point.
   
   DATE/TIME:
   • Use the date/time from the flyer. If no year is printed, choose the next upcoming calendar date for that month/day (same calendar year when that date is still ahead this year; if that month/day has already passed this year, use next year — e.g. viewing in December for a January party uses the following year). Set yearVisible=false when the flyer does not print a year.
@@ -52,17 +60,18 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Clinical tone only. Title is the appointment type (e.g., "Dental Cleaning"). Never invitation wording. Never include DOB.
   
   OUTPUT (strict JSON only, no extra text):
-  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "rsvpUrl": string|null, "rsvpDeadline": string|null, "activities": string[]|null, "attire": string|null, "registryUrl": string|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null, "goodToKnow": string|null }
+  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "rsvpUrl": string|null, "rsvpDeadline": string|null, "activities": string[]|null, "attire": string|null, "registryUrl": string|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null, "goodToKnow": string|null, "thumbnailFocus": { "target": "face"|"title"|"center", "x": number, "y": number, "confidence": number|null } }
   `;
 
   const user = `
-  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,rsvpUrl,rsvpDeadline,activities,attire,registryUrl,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge,goodToKnow}.
+  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,rsvpUrl,rsvpDeadline,activities,attire,registryUrl,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge,goodToKnow,thumbnailFocus}.
   If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include it in the title. If the flyer has a big headline naming the party (pool party, bash, theme), keep it in the title together with the child’s name and age (see TITLE rules). Do not include dates/times in the title.
   For birthdayAudience, use text/theme cues only. Do not infer from a face or from the honoree name alone.
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
   The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
   Keep RSVP details out of the description. Put RSVP wording in rsvp, RSVP links in rsvpUrl, and RSVP-by dates in rsvpDeadline.
   Also extract activities[] when event flow items are printed, attire when dress code exists, and registryUrl when a gift registry link appears.
+  Also return thumbnailFocus for dashboard card cropping: face first, then main title/headline, then image center.
   If year is missing, use the next occurrence on/after ${todayIso} and set yearVisible=false.
   If a start and end time are printed for the party, return both as start and end (same date).
   Always fill **goodToKnow** when the image has a bottom/footer guest tip (don't forget / bring / remember), including cursive. Keep those tips out of the main description sentence.

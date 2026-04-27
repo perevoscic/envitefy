@@ -34,3 +34,12 @@ test("dashboard uses the shared flip clock and keeps countdown parts mapped to D
     /<FlipClock\s+units=\{\[\s*\{ label: "Days", value: countdown\.days \},\s*\{ label: "Hours", value: countdown\.hours \},\s*\{ label: "Mins", value: countdown\.minutes \},\s*\]\}/s,
   );
 });
+
+test("dashboard invitation card applies thumbnail focus as image object position", () => {
+  const source = readFileSync(new URL("./HomeOverviewDashboard.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /thumbnailFocusToObjectPosition/);
+  assert.match(source, /thumbnailFocus\?: ThumbnailFocus \| null/);
+  assert.match(source, /const thumbnailObjectPosition = thumbnailFocusToObjectPosition\(item\.thumbnailFocus\);/);
+  assert.match(source, /objectPosition: thumbnailObjectPosition/);
+});
