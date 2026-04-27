@@ -11,5 +11,12 @@ export function normalizeStudioProvider(value: unknown): StudioProvider | null {
 }
 
 export function resolveStudioProvider(): StudioProvider {
-  return normalizeStudioProvider(process.env.STUDIO_PROVIDER) || "gemini";
+  const configuredProvider = safeString(process.env.STUDIO_PROVIDER);
+  if (configuredProvider) {
+    const provider = normalizeStudioProvider(configuredProvider);
+    if (provider) return provider;
+    throw new Error('Invalid STUDIO_PROVIDER. Expected "openai" or "gemini".');
+  }
+
+  return process.env.NODE_ENV === "production" ? "openai" : "gemini";
 }

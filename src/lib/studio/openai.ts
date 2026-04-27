@@ -69,7 +69,7 @@ function resolveImageModel(): string {
 }
 
 function resolveImageEditModel(): string {
-  return process.env.STUDIO_OPENAI_IMAGE_EDIT_MODEL || resolveImageModel();
+  return process.env.STUDIO_OPENAI_IMAGE_EDIT_MODEL || "gpt-image-2";
 }
 
 function resolveImageSize(): "1024x1024" | "1536x1024" | "1024x1536" | "auto" {
@@ -207,10 +207,10 @@ async function postOpenAiImageGeneration(
 
   if (referenceImages?.length) {
     try {
-      const client = getOpenAiClient();
+      const client = openAiStudioDeps.getOpenAiClient();
       const uploadables = await Promise.all(
         referenceImages.map((image, index) =>
-          toUploadableImage(image, "studio-openai-reference", index),
+          openAiStudioDeps.toUploadableImage(image, "studio-openai-reference", index),
         ),
       );
       const response = await client.images.edit({
@@ -256,7 +256,7 @@ async function postOpenAiImageGeneration(
   }
 
   try {
-    const client = getOpenAiClient();
+    const client = openAiStudioDeps.getOpenAiClient();
     const response = await client.images.generate({
       model,
       prompt,

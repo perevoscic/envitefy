@@ -81,6 +81,145 @@ test("generateStudioInvitation uses edit mode when imageEdit carries an app-owne
   assert.ok(capturedPrompt.length > 0);
 });
 
+test("generateStudioInvitation dispatches live-card text and fresh images through OpenAI", async () => {
+  let calledText = false;
+  let calledImage = false;
+
+  mock.method(studioGenerationDeps, "resolveStudioProvider", () => "openai");
+  mock.method(studioGenerationDeps, "normalizeStudioTheme", async () => ({
+    riskLevel: "safe",
+    normalizedTheme: "",
+    visualMotifs: [],
+    paletteHints: [],
+    notes: "",
+  }));
+  mock.method(studioGenerationDeps, "applyStudioThemeNormalization", (request: any) => request);
+  mock.method(studioGenerationDeps, "resolveStudioReferenceImages", async () => []);
+  mock.method(studioGenerationDeps, "generateStudioLiveCardWithGemini", async () => {
+    throw new Error("expected OpenAI text path");
+  });
+  mock.method(studioGenerationDeps, "generateInvitationImageWithGemini", async () => {
+    throw new Error("expected OpenAI image path");
+  });
+  mock.method(studioGenerationDeps, "generateStudioLiveCardWithOpenAi", async () => {
+    calledText = true;
+    return {
+      ok: true,
+      warnings: [],
+      liveCard: {
+        title: "Lara's 7th Birthday Bash",
+        description: "A movie birthday celebration.",
+        palette: {
+          primary: "#111827",
+          secondary: "#F9FAFB",
+          accent: "#F59E0B",
+        },
+        themeStyle: "movie birthday",
+        interactiveMetadata: {
+          rsvpMessage: "Can you make it?",
+          funFacts: [],
+          ctaLabel: "RSVP",
+          shareNote: "Join Lara for a movie birthday.",
+        },
+        invitation: {
+          title: "Lara's 7th Birthday Bash",
+          subtitle: "Movie & Lunch Celebration",
+          openingLine: "Join us for a birthday party!",
+          scheduleLine: "Saturday May 23rd at 1:00 PM",
+          locationLine: "AMC Boulevard 10",
+          detailsLine: "",
+          callToAction: "RSVP",
+          socialCaption: "Join Lara for a movie birthday.",
+          hashtags: [],
+        },
+      },
+    };
+  });
+  mock.method(studioGenerationDeps, "generateInvitationImageWithOpenAi", async () => {
+    calledImage = true;
+    return {
+      ok: true,
+      imageDataUrl: "data:image/png;base64,T1BFTkFJ",
+      warnings: [],
+    };
+  });
+
+  const result = await generateStudioInvitation({
+    mode: "both",
+    surface: "page",
+    event: {
+      title: "Lara's 7th Birthday Bash",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Lara",
+      ageOrMilestone: "7",
+      userIdea: "movie cats",
+      date: "2026-05-23",
+      startTime: "1:00 PM",
+      venueName: "AMC Boulevard 10",
+      links: [],
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(calledText, true);
+  assert.equal(calledImage, true);
+  assert.equal(result.imageDataUrl, "data:image/png;base64,T1BFTkFJ");
+});
+
+test("generateStudioInvitation dispatches existing-image edits through OpenAI", async () => {
+  let capturedSourceImage = "";
+
+  mock.method(studioGenerationDeps, "resolveStudioProvider", () => "openai");
+  mock.method(studioGenerationDeps, "normalizeStudioTheme", async () => ({
+    riskLevel: "safe",
+    normalizedTheme: "",
+    visualMotifs: [],
+    paletteHints: [],
+    notes: "",
+  }));
+  mock.method(studioGenerationDeps, "applyStudioThemeNormalization", (request: any) => request);
+  mock.method(studioGenerationDeps, "resolveStudioReferenceImages", async () => []);
+  mock.method(studioGenerationDeps, "generateInvitationImageWithOpenAi", async () => {
+    throw new Error("expected OpenAI edit path, not generate path");
+  });
+  mock.method(studioGenerationDeps, "editInvitationImageWithGemini", async () => {
+    throw new Error("expected OpenAI edit path");
+  });
+  mock.method(studioGenerationDeps, "editInvitationImageWithOpenAi", async (_prompt, source) => {
+    capturedSourceImage = String(source);
+    return {
+      ok: true,
+      imageDataUrl: "data:image/png;base64,T1BFTkFJX0VESVQ=",
+      warnings: [],
+    };
+  });
+
+  const result = await generateStudioInvitation({
+    mode: "image",
+    surface: "page",
+    event: {
+      title: "Lara's 7th Birthday Bash",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Lara",
+      ageOrMilestone: "7",
+      userIdea: "movie cats",
+      date: "2026-05-23",
+      startTime: "3:00 PM",
+      venueName: "AMC Boulevard 10",
+      links: [],
+    },
+    imageEdit: {
+      sourceImageDataUrl: "/api/blob/event-media/upload-123/header/display.webp",
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.imageDataUrl, "data:image/png;base64,T1BFTkFJX0VESVQ=");
+  assert.equal(capturedSourceImage, "/api/blob/event-media/upload-123/header/display.webp");
+});
+
 test("generateStudioInvitation strips Design Idea-only terms before approving visible image copy", async () => {
   let capturedPrompt = "";
 
